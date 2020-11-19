@@ -7,8 +7,12 @@ import (
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
+	_v11 "k8s.io/api/core/v1"
+	_v1beta1 "k8s.io/api/policy/v1beta1"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // suppress unused package warning
@@ -129,7 +133,7 @@ func (v ClusterWorkflowTemplateList) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ClusterWorkflowTemplateList) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha1(&r, v)
 	return r.Error()
 }
@@ -247,7 +251,7 @@ func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha11(in *jle
 		case "metadata":
 			easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in, &out.ObjectMeta)
 		case "spec":
-			(out.Spec).UnmarshalEasyJSON(in)
+			easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha12(in, &out.Spec)
 		case "kind":
 			out.Kind = string(in.String())
 		case "apiVersion":
@@ -274,7 +278,7 @@ func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha11(out *jw
 	{
 		const prefix string = ",\"spec\":"
 		out.RawString(prefix)
-		(in.Spec).MarshalEasyJSON(out)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha12(out, in.Spec)
 	}
 	if in.Kind != "" {
 		const prefix string = ",\"kind\":"
@@ -303,7 +307,7 @@ func (v ClusterWorkflowTemplate) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ClusterWorkflowTemplate) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha11(&r, v)
 	return r.Error()
 }
@@ -311,6 +315,15244 @@ func (v *ClusterWorkflowTemplate) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ClusterWorkflowTemplate) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha11(l, v)
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha12(in *jlexer.Lexer, out *WorkflowTemplateSpec) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "workflowMetadata":
+			if in.IsNull() {
+				in.Skip()
+				out.WorkflowMetadata = nil
+			} else {
+				if out.WorkflowMetadata == nil {
+					out.WorkflowMetadata = new(_v1.ObjectMeta)
+				}
+				easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in, out.WorkflowMetadata)
+			}
+		case "templates":
+			if in.IsNull() {
+				in.Skip()
+				out.Templates = nil
+			} else {
+				in.Delim('[')
+				if out.Templates == nil {
+					if !in.IsDelim(']') {
+						out.Templates = make([]Template, 0, 0)
+					} else {
+						out.Templates = []Template{}
+					}
+				} else {
+					out.Templates = (out.Templates)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v4 Template
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(in, &v4)
+					out.Templates = append(out.Templates, v4)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "entrypoint":
+			out.Entrypoint = string(in.String())
+		case "arguments":
+			easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(in, &out.Arguments)
+		case "serviceAccountName":
+			out.ServiceAccountName = string(in.String())
+		case "automountServiceAccountToken":
+			if in.IsNull() {
+				in.Skip()
+				out.AutomountServiceAccountToken = nil
+			} else {
+				if out.AutomountServiceAccountToken == nil {
+					out.AutomountServiceAccountToken = new(bool)
+				}
+				*out.AutomountServiceAccountToken = bool(in.Bool())
+			}
+		case "executor":
+			if in.IsNull() {
+				in.Skip()
+				out.Executor = nil
+			} else {
+				if out.Executor == nil {
+					out.Executor = new(ExecutorConfig)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha15(in, out.Executor)
+			}
+		case "volumes":
+			if in.IsNull() {
+				in.Skip()
+				out.Volumes = nil
+			} else {
+				in.Delim('[')
+				if out.Volumes == nil {
+					if !in.IsDelim(']') {
+						out.Volumes = make([]_v11.Volume, 0, 0)
+					} else {
+						out.Volumes = []_v11.Volume{}
+					}
+				} else {
+					out.Volumes = (out.Volumes)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v5 _v11.Volume
+					easyjsonAa42d34bDecodeK8sIoApiCoreV1(in, &v5)
+					out.Volumes = append(out.Volumes, v5)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "volumeClaimTemplates":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeClaimTemplates = nil
+			} else {
+				in.Delim('[')
+				if out.VolumeClaimTemplates == nil {
+					if !in.IsDelim(']') {
+						out.VolumeClaimTemplates = make([]_v11.PersistentVolumeClaim, 0, 0)
+					} else {
+						out.VolumeClaimTemplates = []_v11.PersistentVolumeClaim{}
+					}
+				} else {
+					out.VolumeClaimTemplates = (out.VolumeClaimTemplates)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v6 _v11.PersistentVolumeClaim
+					easyjsonAa42d34bDecodeK8sIoApiCoreV11(in, &v6)
+					out.VolumeClaimTemplates = append(out.VolumeClaimTemplates, v6)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "parallelism":
+			if in.IsNull() {
+				in.Skip()
+				out.Parallelism = nil
+			} else {
+				if out.Parallelism == nil {
+					out.Parallelism = new(int64)
+				}
+				*out.Parallelism = int64(in.Int64())
+			}
+		case "artifactRepositoryRef":
+			if in.IsNull() {
+				in.Skip()
+				out.ArtifactRepositoryRef = nil
+			} else {
+				if out.ArtifactRepositoryRef == nil {
+					out.ArtifactRepositoryRef = new(ArtifactRepositoryRef)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha16(in, out.ArtifactRepositoryRef)
+			}
+		case "suspend":
+			if in.IsNull() {
+				in.Skip()
+				out.Suspend = nil
+			} else {
+				if out.Suspend == nil {
+					out.Suspend = new(bool)
+				}
+				*out.Suspend = bool(in.Bool())
+			}
+		case "nodeSelector":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.NodeSelector = make(map[string]string)
+				} else {
+					out.NodeSelector = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v7 string
+					v7 = string(in.String())
+					(out.NodeSelector)[key] = v7
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "affinity":
+			if in.IsNull() {
+				in.Skip()
+				out.Affinity = nil
+			} else {
+				if out.Affinity == nil {
+					out.Affinity = new(_v11.Affinity)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV12(in, out.Affinity)
+			}
+		case "tolerations":
+			if in.IsNull() {
+				in.Skip()
+				out.Tolerations = nil
+			} else {
+				in.Delim('[')
+				if out.Tolerations == nil {
+					if !in.IsDelim(']') {
+						out.Tolerations = make([]_v11.Toleration, 0, 0)
+					} else {
+						out.Tolerations = []_v11.Toleration{}
+					}
+				} else {
+					out.Tolerations = (out.Tolerations)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v8 _v11.Toleration
+					easyjsonAa42d34bDecodeK8sIoApiCoreV13(in, &v8)
+					out.Tolerations = append(out.Tolerations, v8)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "imagePullSecrets":
+			if in.IsNull() {
+				in.Skip()
+				out.ImagePullSecrets = nil
+			} else {
+				in.Delim('[')
+				if out.ImagePullSecrets == nil {
+					if !in.IsDelim(']') {
+						out.ImagePullSecrets = make([]_v11.LocalObjectReference, 0, 4)
+					} else {
+						out.ImagePullSecrets = []_v11.LocalObjectReference{}
+					}
+				} else {
+					out.ImagePullSecrets = (out.ImagePullSecrets)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v9 _v11.LocalObjectReference
+					easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, &v9)
+					out.ImagePullSecrets = append(out.ImagePullSecrets, v9)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "hostNetwork":
+			if in.IsNull() {
+				in.Skip()
+				out.HostNetwork = nil
+			} else {
+				if out.HostNetwork == nil {
+					out.HostNetwork = new(bool)
+				}
+				*out.HostNetwork = bool(in.Bool())
+			}
+		case "dnsPolicy":
+			if in.IsNull() {
+				in.Skip()
+				out.DNSPolicy = nil
+			} else {
+				if out.DNSPolicy == nil {
+					out.DNSPolicy = new(_v11.DNSPolicy)
+				}
+				*out.DNSPolicy = _v11.DNSPolicy(in.String())
+			}
+		case "dnsConfig":
+			if in.IsNull() {
+				in.Skip()
+				out.DNSConfig = nil
+			} else {
+				if out.DNSConfig == nil {
+					out.DNSConfig = new(_v11.PodDNSConfig)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV15(in, out.DNSConfig)
+			}
+		case "onExit":
+			out.OnExit = string(in.String())
+		case "ttlSecondsAfterFinished":
+			if in.IsNull() {
+				in.Skip()
+				out.TTLSecondsAfterFinished = nil
+			} else {
+				if out.TTLSecondsAfterFinished == nil {
+					out.TTLSecondsAfterFinished = new(int32)
+				}
+				*out.TTLSecondsAfterFinished = int32(in.Int32())
+			}
+		case "ttlStrategy":
+			if in.IsNull() {
+				in.Skip()
+				out.TTLStrategy = nil
+			} else {
+				if out.TTLStrategy == nil {
+					out.TTLStrategy = new(TTLStrategy)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha17(in, out.TTLStrategy)
+			}
+		case "activeDeadlineSeconds":
+			if in.IsNull() {
+				in.Skip()
+				out.ActiveDeadlineSeconds = nil
+			} else {
+				if out.ActiveDeadlineSeconds == nil {
+					out.ActiveDeadlineSeconds = new(int64)
+				}
+				*out.ActiveDeadlineSeconds = int64(in.Int64())
+			}
+		case "priority":
+			if in.IsNull() {
+				in.Skip()
+				out.Priority = nil
+			} else {
+				if out.Priority == nil {
+					out.Priority = new(int32)
+				}
+				*out.Priority = int32(in.Int32())
+			}
+		case "schedulerName":
+			out.SchedulerName = string(in.String())
+		case "podGC":
+			if in.IsNull() {
+				in.Skip()
+				out.PodGC = nil
+			} else {
+				if out.PodGC == nil {
+					out.PodGC = new(PodGC)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha18(in, out.PodGC)
+			}
+		case "podPriorityClassName":
+			out.PodPriorityClassName = string(in.String())
+		case "podPriority":
+			if in.IsNull() {
+				in.Skip()
+				out.PodPriority = nil
+			} else {
+				if out.PodPriority == nil {
+					out.PodPriority = new(int32)
+				}
+				*out.PodPriority = int32(in.Int32())
+			}
+		case "hostAliases":
+			if in.IsNull() {
+				in.Skip()
+				out.HostAliases = nil
+			} else {
+				in.Delim('[')
+				if out.HostAliases == nil {
+					if !in.IsDelim(']') {
+						out.HostAliases = make([]_v11.HostAlias, 0, 1)
+					} else {
+						out.HostAliases = []_v11.HostAlias{}
+					}
+				} else {
+					out.HostAliases = (out.HostAliases)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v10 _v11.HostAlias
+					easyjsonAa42d34bDecodeK8sIoApiCoreV16(in, &v10)
+					out.HostAliases = append(out.HostAliases, v10)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "securityContext":
+			if in.IsNull() {
+				in.Skip()
+				out.SecurityContext = nil
+			} else {
+				if out.SecurityContext == nil {
+					out.SecurityContext = new(_v11.PodSecurityContext)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV17(in, out.SecurityContext)
+			}
+		case "podSpecPatch":
+			out.PodSpecPatch = string(in.String())
+		case "podDisruptionBudget":
+			if in.IsNull() {
+				in.Skip()
+				out.PodDisruptionBudget = nil
+			} else {
+				if out.PodDisruptionBudget == nil {
+					out.PodDisruptionBudget = new(_v1beta1.PodDisruptionBudgetSpec)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiPolicyV1beta1(in, out.PodDisruptionBudget)
+			}
+		case "metrics":
+			if in.IsNull() {
+				in.Skip()
+				out.Metrics = nil
+			} else {
+				if out.Metrics == nil {
+					out.Metrics = new(Metrics)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha19(in, out.Metrics)
+			}
+		case "shutdown":
+			out.Shutdown = ShutdownStrategy(in.String())
+		case "workflowTemplateRef":
+			if in.IsNull() {
+				in.Skip()
+				out.WorkflowTemplateRef = nil
+			} else {
+				if out.WorkflowTemplateRef == nil {
+					out.WorkflowTemplateRef = new(WorkflowTemplateRef)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha110(in, out.WorkflowTemplateRef)
+			}
+		case "synchronization":
+			if in.IsNull() {
+				in.Skip()
+				out.Synchronization = nil
+			} else {
+				if out.Synchronization == nil {
+					out.Synchronization = new(Synchronization)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha111(in, out.Synchronization)
+			}
+		case "volumeClaimGC":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeClaimGC = nil
+			} else {
+				if out.VolumeClaimGC == nil {
+					out.VolumeClaimGC = new(VolumeClaimGC)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha112(in, out.VolumeClaimGC)
+			}
+		case "retryStrategy":
+			if in.IsNull() {
+				in.Skip()
+				out.RetryStrategy = nil
+			} else {
+				if out.RetryStrategy == nil {
+					out.RetryStrategy = new(RetryStrategy)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha113(in, out.RetryStrategy)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha12(out *jwriter.Writer, in WorkflowTemplateSpec) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.WorkflowMetadata != nil {
+		const prefix string = ",\"workflowMetadata\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV11(out, *in.WorkflowMetadata)
+	}
+	if len(in.Templates) != 0 {
+		const prefix string = ",\"templates\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v11, v12 := range in.Templates {
+				if v11 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(out, v12)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Entrypoint != "" {
+		const prefix string = ",\"entrypoint\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Entrypoint))
+	}
+	if true {
+		const prefix string = ",\"arguments\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(out, in.Arguments)
+	}
+	if in.ServiceAccountName != "" {
+		const prefix string = ",\"serviceAccountName\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.ServiceAccountName))
+	}
+	if in.AutomountServiceAccountToken != nil {
+		const prefix string = ",\"automountServiceAccountToken\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.AutomountServiceAccountToken))
+	}
+	if in.Executor != nil {
+		const prefix string = ",\"executor\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha15(out, *in.Executor)
+	}
+	if len(in.Volumes) != 0 {
+		const prefix string = ",\"volumes\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v13, v14 := range in.Volumes {
+				if v13 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV1(out, v14)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.VolumeClaimTemplates) != 0 {
+		const prefix string = ",\"volumeClaimTemplates\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v15, v16 := range in.VolumeClaimTemplates {
+				if v15 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV11(out, v16)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Parallelism != nil {
+		const prefix string = ",\"parallelism\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.Parallelism))
+	}
+	if in.ArtifactRepositoryRef != nil {
+		const prefix string = ",\"artifactRepositoryRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha16(out, *in.ArtifactRepositoryRef)
+	}
+	if in.Suspend != nil {
+		const prefix string = ",\"suspend\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.Suspend))
+	}
+	if len(in.NodeSelector) != 0 {
+		const prefix string = ",\"nodeSelector\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('{')
+			v17First := true
+			for v17Name, v17Value := range in.NodeSelector {
+				if v17First {
+					v17First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v17Name))
+				out.RawByte(':')
+				out.String(string(v17Value))
+			}
+			out.RawByte('}')
+		}
+	}
+	if in.Affinity != nil {
+		const prefix string = ",\"affinity\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV12(out, *in.Affinity)
+	}
+	if len(in.Tolerations) != 0 {
+		const prefix string = ",\"tolerations\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v18, v19 := range in.Tolerations {
+				if v18 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV13(out, v19)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.ImagePullSecrets) != 0 {
+		const prefix string = ",\"imagePullSecrets\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v20, v21 := range in.ImagePullSecrets {
+				if v20 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, v21)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.HostNetwork != nil {
+		const prefix string = ",\"hostNetwork\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.HostNetwork))
+	}
+	if in.DNSPolicy != nil {
+		const prefix string = ",\"dnsPolicy\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.DNSPolicy))
+	}
+	if in.DNSConfig != nil {
+		const prefix string = ",\"dnsConfig\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV15(out, *in.DNSConfig)
+	}
+	if in.OnExit != "" {
+		const prefix string = ",\"onExit\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.OnExit))
+	}
+	if in.TTLSecondsAfterFinished != nil {
+		const prefix string = ",\"ttlSecondsAfterFinished\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.TTLSecondsAfterFinished))
+	}
+	if in.TTLStrategy != nil {
+		const prefix string = ",\"ttlStrategy\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha17(out, *in.TTLStrategy)
+	}
+	if in.ActiveDeadlineSeconds != nil {
+		const prefix string = ",\"activeDeadlineSeconds\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.ActiveDeadlineSeconds))
+	}
+	if in.Priority != nil {
+		const prefix string = ",\"priority\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.Priority))
+	}
+	if in.SchedulerName != "" {
+		const prefix string = ",\"schedulerName\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.SchedulerName))
+	}
+	if in.PodGC != nil {
+		const prefix string = ",\"podGC\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha18(out, *in.PodGC)
+	}
+	if in.PodPriorityClassName != "" {
+		const prefix string = ",\"podPriorityClassName\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.PodPriorityClassName))
+	}
+	if in.PodPriority != nil {
+		const prefix string = ",\"podPriority\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.PodPriority))
+	}
+	if len(in.HostAliases) != 0 {
+		const prefix string = ",\"hostAliases\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v22, v23 := range in.HostAliases {
+				if v22 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV16(out, v23)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.SecurityContext != nil {
+		const prefix string = ",\"securityContext\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV17(out, *in.SecurityContext)
+	}
+	if in.PodSpecPatch != "" {
+		const prefix string = ",\"podSpecPatch\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.PodSpecPatch))
+	}
+	if in.PodDisruptionBudget != nil {
+		const prefix string = ",\"podDisruptionBudget\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiPolicyV1beta1(out, *in.PodDisruptionBudget)
+	}
+	if in.Metrics != nil {
+		const prefix string = ",\"metrics\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha19(out, *in.Metrics)
+	}
+	if in.Shutdown != "" {
+		const prefix string = ",\"shutdown\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Shutdown))
+	}
+	if in.WorkflowTemplateRef != nil {
+		const prefix string = ",\"workflowTemplateRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha110(out, *in.WorkflowTemplateRef)
+	}
+	if in.Synchronization != nil {
+		const prefix string = ",\"synchronization\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha111(out, *in.Synchronization)
+	}
+	if in.VolumeClaimGC != nil {
+		const prefix string = ",\"volumeClaimGC\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha112(out, *in.VolumeClaimGC)
+	}
+	if in.RetryStrategy != nil {
+		const prefix string = ",\"retryStrategy\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha113(out, *in.RetryStrategy)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha113(in *jlexer.Lexer, out *RetryStrategy) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "limit":
+			if in.IsNull() {
+				in.Skip()
+				out.Limit = nil
+			} else {
+				if out.Limit == nil {
+					out.Limit = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.Limit).UnmarshalJSON(data))
+				}
+			}
+		case "retryPolicy":
+			out.RetryPolicy = RetryPolicy(in.String())
+		case "backoff":
+			if in.IsNull() {
+				in.Skip()
+				out.Backoff = nil
+			} else {
+				if out.Backoff == nil {
+					out.Backoff = new(Backoff)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha114(in, out.Backoff)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha113(out *jwriter.Writer, in RetryStrategy) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Limit != nil {
+		const prefix string = ",\"limit\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Raw((*in.Limit).MarshalJSON())
+	}
+	if in.RetryPolicy != "" {
+		const prefix string = ",\"retryPolicy\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.RetryPolicy))
+	}
+	if in.Backoff != nil {
+		const prefix string = ",\"backoff\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha114(out, *in.Backoff)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha114(in *jlexer.Lexer, out *Backoff) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "duration":
+			out.Duration = string(in.String())
+		case "factor":
+			if in.IsNull() {
+				in.Skip()
+				out.Factor = nil
+			} else {
+				if out.Factor == nil {
+					out.Factor = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.Factor).UnmarshalJSON(data))
+				}
+			}
+		case "maxDuration":
+			out.MaxDuration = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha114(out *jwriter.Writer, in Backoff) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Duration != "" {
+		const prefix string = ",\"duration\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Duration))
+	}
+	if in.Factor != nil {
+		const prefix string = ",\"factor\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((*in.Factor).MarshalJSON())
+	}
+	if in.MaxDuration != "" {
+		const prefix string = ",\"maxDuration\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.MaxDuration))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha112(in *jlexer.Lexer, out *VolumeClaimGC) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "strategy":
+			out.Strategy = VolumeClaimGCStrategy(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha112(out *jwriter.Writer, in VolumeClaimGC) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Strategy != "" {
+		const prefix string = ",\"strategy\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Strategy))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha111(in *jlexer.Lexer, out *Synchronization) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "semaphore":
+			if in.IsNull() {
+				in.Skip()
+				out.Semaphore = nil
+			} else {
+				if out.Semaphore == nil {
+					out.Semaphore = new(SemaphoreRef)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha115(in, out.Semaphore)
+			}
+		case "mutex":
+			if in.IsNull() {
+				in.Skip()
+				out.Mutex = nil
+			} else {
+				if out.Mutex == nil {
+					out.Mutex = new(Mutex)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(in, out.Mutex)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha111(out *jwriter.Writer, in Synchronization) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Semaphore != nil {
+		const prefix string = ",\"semaphore\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha115(out, *in.Semaphore)
+	}
+	if in.Mutex != nil {
+		const prefix string = ",\"mutex\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(out, *in.Mutex)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(in *jlexer.Lexer, out *Mutex) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(out *jwriter.Writer, in Mutex) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha115(in *jlexer.Lexer, out *SemaphoreRef) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "configMapKeyRef":
+			if in.IsNull() {
+				in.Skip()
+				out.ConfigMapKeyRef = nil
+			} else {
+				if out.ConfigMapKeyRef == nil {
+					out.ConfigMapKeyRef = new(_v11.ConfigMapKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV18(in, out.ConfigMapKeyRef)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha115(out *jwriter.Writer, in SemaphoreRef) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.ConfigMapKeyRef != nil {
+		const prefix string = ",\"configMapKeyRef\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV18(out, *in.ConfigMapKeyRef)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV18(in *jlexer.Lexer, out *_v11.ConfigMapKeySelector) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV18(out *jwriter.Writer, in _v11.ConfigMapKeySelector) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.Optional))
+	}
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha110(in *jlexer.Lexer, out *WorkflowTemplateRef) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "clusterScope":
+			out.ClusterScope = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha110(out *jwriter.Writer, in WorkflowTemplateRef) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.ClusterScope {
+		const prefix string = ",\"clusterScope\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.ClusterScope))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha19(in *jlexer.Lexer, out *Metrics) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "prometheus":
+			if in.IsNull() {
+				in.Skip()
+				out.Prometheus = nil
+			} else {
+				in.Delim('[')
+				if out.Prometheus == nil {
+					if !in.IsDelim(']') {
+						out.Prometheus = make([]*Prometheus, 0, 8)
+					} else {
+						out.Prometheus = []*Prometheus{}
+					}
+				} else {
+					out.Prometheus = (out.Prometheus)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v24 *Prometheus
+					if in.IsNull() {
+						in.Skip()
+						v24 = nil
+					} else {
+						if v24 == nil {
+							v24 = new(Prometheus)
+						}
+						easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha117(in, v24)
+					}
+					out.Prometheus = append(out.Prometheus, v24)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha19(out *jwriter.Writer, in Metrics) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"prometheus\":"
+		out.RawString(prefix[1:])
+		if in.Prometheus == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v25, v26 := range in.Prometheus {
+				if v25 > 0 {
+					out.RawByte(',')
+				}
+				if v26 == nil {
+					out.RawString("null")
+				} else {
+					easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha117(out, *v26)
+				}
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha117(in *jlexer.Lexer, out *Prometheus) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "labels":
+			if in.IsNull() {
+				in.Skip()
+				out.Labels = nil
+			} else {
+				in.Delim('[')
+				if out.Labels == nil {
+					if !in.IsDelim(']') {
+						out.Labels = make([]*MetricLabel, 0, 8)
+					} else {
+						out.Labels = []*MetricLabel{}
+					}
+				} else {
+					out.Labels = (out.Labels)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v27 *MetricLabel
+					if in.IsNull() {
+						in.Skip()
+						v27 = nil
+					} else {
+						if v27 == nil {
+							v27 = new(MetricLabel)
+						}
+						easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha118(in, v27)
+					}
+					out.Labels = append(out.Labels, v27)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "help":
+			out.Help = string(in.String())
+		case "when":
+			out.When = string(in.String())
+		case "gauge":
+			if in.IsNull() {
+				in.Skip()
+				out.Gauge = nil
+			} else {
+				if out.Gauge == nil {
+					out.Gauge = new(Gauge)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha119(in, out.Gauge)
+			}
+		case "histogram":
+			if in.IsNull() {
+				in.Skip()
+				out.Histogram = nil
+			} else {
+				if out.Histogram == nil {
+					out.Histogram = new(Histogram)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha120(in, out.Histogram)
+			}
+		case "counter":
+			if in.IsNull() {
+				in.Skip()
+				out.Counter = nil
+			} else {
+				if out.Counter == nil {
+					out.Counter = new(Counter)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha121(in, out.Counter)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha117(out *jwriter.Writer, in Prometheus) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if len(in.Labels) != 0 {
+		const prefix string = ",\"labels\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v28, v29 := range in.Labels {
+				if v28 > 0 {
+					out.RawByte(',')
+				}
+				if v29 == nil {
+					out.RawString("null")
+				} else {
+					easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha118(out, *v29)
+				}
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"help\":"
+		out.RawString(prefix)
+		out.String(string(in.Help))
+	}
+	if in.When != "" {
+		const prefix string = ",\"when\":"
+		out.RawString(prefix)
+		out.String(string(in.When))
+	}
+	if in.Gauge != nil {
+		const prefix string = ",\"gauge\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha119(out, *in.Gauge)
+	}
+	if in.Histogram != nil {
+		const prefix string = ",\"histogram\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha120(out, *in.Histogram)
+	}
+	if in.Counter != nil {
+		const prefix string = ",\"counter\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha121(out, *in.Counter)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha121(in *jlexer.Lexer, out *Counter) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "value":
+			out.Value = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha121(out *jwriter.Writer, in Counter) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"value\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Value))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha120(in *jlexer.Lexer, out *Histogram) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "value":
+			out.Value = string(in.String())
+		case "buckets":
+			if in.IsNull() {
+				in.Skip()
+				out.Buckets = nil
+			} else {
+				in.Delim('[')
+				if out.Buckets == nil {
+					if !in.IsDelim(']') {
+						out.Buckets = make([]Amount, 0, 4)
+					} else {
+						out.Buckets = []Amount{}
+					}
+				} else {
+					out.Buckets = (out.Buckets)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v30 Amount
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v30).UnmarshalJSON(data))
+					}
+					out.Buckets = append(out.Buckets, v30)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha120(out *jwriter.Writer, in Histogram) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"value\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Value))
+	}
+	{
+		const prefix string = ",\"buckets\":"
+		out.RawString(prefix)
+		if in.Buckets == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v31, v32 := range in.Buckets {
+				if v31 > 0 {
+					out.RawByte(',')
+				}
+				out.Raw((v32).MarshalJSON())
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha119(in *jlexer.Lexer, out *Gauge) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "value":
+			out.Value = string(in.String())
+		case "realtime":
+			if in.IsNull() {
+				in.Skip()
+				out.Realtime = nil
+			} else {
+				if out.Realtime == nil {
+					out.Realtime = new(bool)
+				}
+				*out.Realtime = bool(in.Bool())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha119(out *jwriter.Writer, in Gauge) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"value\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Value))
+	}
+	{
+		const prefix string = ",\"realtime\":"
+		out.RawString(prefix)
+		if in.Realtime == nil {
+			out.RawString("null")
+		} else {
+			out.Bool(bool(*in.Realtime))
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha118(in *jlexer.Lexer, out *MetricLabel) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "value":
+			out.Value = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha118(out *jwriter.Writer, in MetricLabel) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"value\":"
+		out.RawString(prefix)
+		out.String(string(in.Value))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiPolicyV1beta1(in *jlexer.Lexer, out *_v1beta1.PodDisruptionBudgetSpec) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "minAvailable":
+			if in.IsNull() {
+				in.Skip()
+				out.MinAvailable = nil
+			} else {
+				if out.MinAvailable == nil {
+					out.MinAvailable = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.MinAvailable).UnmarshalJSON(data))
+				}
+			}
+		case "selector":
+			if in.IsNull() {
+				in.Skip()
+				out.Selector = nil
+			} else {
+				if out.Selector == nil {
+					out.Selector = new(_v1.LabelSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV12(in, out.Selector)
+			}
+		case "maxUnavailable":
+			if in.IsNull() {
+				in.Skip()
+				out.MaxUnavailable = nil
+			} else {
+				if out.MaxUnavailable == nil {
+					out.MaxUnavailable = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.MaxUnavailable).UnmarshalJSON(data))
+				}
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiPolicyV1beta1(out *jwriter.Writer, in _v1beta1.PodDisruptionBudgetSpec) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.MinAvailable != nil {
+		const prefix string = ",\"minAvailable\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Raw((*in.MinAvailable).MarshalJSON())
+	}
+	if in.Selector != nil {
+		const prefix string = ",\"selector\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV12(out, *in.Selector)
+	}
+	if in.MaxUnavailable != nil {
+		const prefix string = ",\"maxUnavailable\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((*in.MaxUnavailable).MarshalJSON())
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV12(in *jlexer.Lexer, out *_v1.LabelSelector) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "matchLabels":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.MatchLabels = make(map[string]string)
+				} else {
+					out.MatchLabels = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v33 string
+					v33 = string(in.String())
+					(out.MatchLabels)[key] = v33
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "matchExpressions":
+			if in.IsNull() {
+				in.Skip()
+				out.MatchExpressions = nil
+			} else {
+				in.Delim('[')
+				if out.MatchExpressions == nil {
+					if !in.IsDelim(']') {
+						out.MatchExpressions = make([]_v1.LabelSelectorRequirement, 0, 1)
+					} else {
+						out.MatchExpressions = []_v1.LabelSelectorRequirement{}
+					}
+				} else {
+					out.MatchExpressions = (out.MatchExpressions)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v34 _v1.LabelSelectorRequirement
+					easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV13(in, &v34)
+					out.MatchExpressions = append(out.MatchExpressions, v34)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV12(out *jwriter.Writer, in _v1.LabelSelector) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.MatchLabels) != 0 {
+		const prefix string = ",\"matchLabels\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('{')
+			v35First := true
+			for v35Name, v35Value := range in.MatchLabels {
+				if v35First {
+					v35First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v35Name))
+				out.RawByte(':')
+				out.String(string(v35Value))
+			}
+			out.RawByte('}')
+		}
+	}
+	if len(in.MatchExpressions) != 0 {
+		const prefix string = ",\"matchExpressions\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v36, v37 := range in.MatchExpressions {
+				if v36 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV13(out, v37)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV13(in *jlexer.Lexer, out *_v1.LabelSelectorRequirement) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "operator":
+			out.Operator = _v1.LabelSelectorOperator(in.String())
+		case "values":
+			if in.IsNull() {
+				in.Skip()
+				out.Values = nil
+			} else {
+				in.Delim('[')
+				if out.Values == nil {
+					if !in.IsDelim(']') {
+						out.Values = make([]string, 0, 4)
+					} else {
+						out.Values = []string{}
+					}
+				} else {
+					out.Values = (out.Values)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v38 string
+					v38 = string(in.String())
+					out.Values = append(out.Values, v38)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV13(out *jwriter.Writer, in _v1.LabelSelectorRequirement) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"operator\":"
+		out.RawString(prefix)
+		out.String(string(in.Operator))
+	}
+	if len(in.Values) != 0 {
+		const prefix string = ",\"values\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v39, v40 := range in.Values {
+				if v39 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v40))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV17(in *jlexer.Lexer, out *_v11.PodSecurityContext) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "seLinuxOptions":
+			if in.IsNull() {
+				in.Skip()
+				out.SELinuxOptions = nil
+			} else {
+				if out.SELinuxOptions == nil {
+					out.SELinuxOptions = new(_v11.SELinuxOptions)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV19(in, out.SELinuxOptions)
+			}
+		case "windowsOptions":
+			if in.IsNull() {
+				in.Skip()
+				out.WindowsOptions = nil
+			} else {
+				if out.WindowsOptions == nil {
+					out.WindowsOptions = new(_v11.WindowsSecurityContextOptions)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV110(in, out.WindowsOptions)
+			}
+		case "runAsUser":
+			if in.IsNull() {
+				in.Skip()
+				out.RunAsUser = nil
+			} else {
+				if out.RunAsUser == nil {
+					out.RunAsUser = new(int64)
+				}
+				*out.RunAsUser = int64(in.Int64())
+			}
+		case "runAsGroup":
+			if in.IsNull() {
+				in.Skip()
+				out.RunAsGroup = nil
+			} else {
+				if out.RunAsGroup == nil {
+					out.RunAsGroup = new(int64)
+				}
+				*out.RunAsGroup = int64(in.Int64())
+			}
+		case "runAsNonRoot":
+			if in.IsNull() {
+				in.Skip()
+				out.RunAsNonRoot = nil
+			} else {
+				if out.RunAsNonRoot == nil {
+					out.RunAsNonRoot = new(bool)
+				}
+				*out.RunAsNonRoot = bool(in.Bool())
+			}
+		case "supplementalGroups":
+			if in.IsNull() {
+				in.Skip()
+				out.SupplementalGroups = nil
+			} else {
+				in.Delim('[')
+				if out.SupplementalGroups == nil {
+					if !in.IsDelim(']') {
+						out.SupplementalGroups = make([]int64, 0, 8)
+					} else {
+						out.SupplementalGroups = []int64{}
+					}
+				} else {
+					out.SupplementalGroups = (out.SupplementalGroups)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v41 int64
+					v41 = int64(in.Int64())
+					out.SupplementalGroups = append(out.SupplementalGroups, v41)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "fsGroup":
+			if in.IsNull() {
+				in.Skip()
+				out.FSGroup = nil
+			} else {
+				if out.FSGroup == nil {
+					out.FSGroup = new(int64)
+				}
+				*out.FSGroup = int64(in.Int64())
+			}
+		case "sysctls":
+			if in.IsNull() {
+				in.Skip()
+				out.Sysctls = nil
+			} else {
+				in.Delim('[')
+				if out.Sysctls == nil {
+					if !in.IsDelim(']') {
+						out.Sysctls = make([]_v11.Sysctl, 0, 2)
+					} else {
+						out.Sysctls = []_v11.Sysctl{}
+					}
+				} else {
+					out.Sysctls = (out.Sysctls)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v42 _v11.Sysctl
+					easyjsonAa42d34bDecodeK8sIoApiCoreV111(in, &v42)
+					out.Sysctls = append(out.Sysctls, v42)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV17(out *jwriter.Writer, in _v11.PodSecurityContext) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.SELinuxOptions != nil {
+		const prefix string = ",\"seLinuxOptions\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV19(out, *in.SELinuxOptions)
+	}
+	if in.WindowsOptions != nil {
+		const prefix string = ",\"windowsOptions\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV110(out, *in.WindowsOptions)
+	}
+	if in.RunAsUser != nil {
+		const prefix string = ",\"runAsUser\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.RunAsUser))
+	}
+	if in.RunAsGroup != nil {
+		const prefix string = ",\"runAsGroup\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.RunAsGroup))
+	}
+	if in.RunAsNonRoot != nil {
+		const prefix string = ",\"runAsNonRoot\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.RunAsNonRoot))
+	}
+	if len(in.SupplementalGroups) != 0 {
+		const prefix string = ",\"supplementalGroups\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v43, v44 := range in.SupplementalGroups {
+				if v43 > 0 {
+					out.RawByte(',')
+				}
+				out.Int64(int64(v44))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.FSGroup != nil {
+		const prefix string = ",\"fsGroup\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.FSGroup))
+	}
+	if len(in.Sysctls) != 0 {
+		const prefix string = ",\"sysctls\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v45, v46 := range in.Sysctls {
+				if v45 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV111(out, v46)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV111(in *jlexer.Lexer, out *_v11.Sysctl) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "value":
+			out.Value = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV111(out *jwriter.Writer, in _v11.Sysctl) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"value\":"
+		out.RawString(prefix)
+		out.String(string(in.Value))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV110(in *jlexer.Lexer, out *_v11.WindowsSecurityContextOptions) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "gmsaCredentialSpecName":
+			if in.IsNull() {
+				in.Skip()
+				out.GMSACredentialSpecName = nil
+			} else {
+				if out.GMSACredentialSpecName == nil {
+					out.GMSACredentialSpecName = new(string)
+				}
+				*out.GMSACredentialSpecName = string(in.String())
+			}
+		case "gmsaCredentialSpec":
+			if in.IsNull() {
+				in.Skip()
+				out.GMSACredentialSpec = nil
+			} else {
+				if out.GMSACredentialSpec == nil {
+					out.GMSACredentialSpec = new(string)
+				}
+				*out.GMSACredentialSpec = string(in.String())
+			}
+		case "runAsUserName":
+			if in.IsNull() {
+				in.Skip()
+				out.RunAsUserName = nil
+			} else {
+				if out.RunAsUserName == nil {
+					out.RunAsUserName = new(string)
+				}
+				*out.RunAsUserName = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV110(out *jwriter.Writer, in _v11.WindowsSecurityContextOptions) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.GMSACredentialSpecName != nil {
+		const prefix string = ",\"gmsaCredentialSpecName\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(*in.GMSACredentialSpecName))
+	}
+	if in.GMSACredentialSpec != nil {
+		const prefix string = ",\"gmsaCredentialSpec\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.GMSACredentialSpec))
+	}
+	if in.RunAsUserName != nil {
+		const prefix string = ",\"runAsUserName\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.RunAsUserName))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV19(in *jlexer.Lexer, out *_v11.SELinuxOptions) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "user":
+			out.User = string(in.String())
+		case "role":
+			out.Role = string(in.String())
+		case "type":
+			out.Type = string(in.String())
+		case "level":
+			out.Level = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV19(out *jwriter.Writer, in _v11.SELinuxOptions) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.User != "" {
+		const prefix string = ",\"user\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.User))
+	}
+	if in.Role != "" {
+		const prefix string = ",\"role\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Role))
+	}
+	if in.Type != "" {
+		const prefix string = ",\"type\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Type))
+	}
+	if in.Level != "" {
+		const prefix string = ",\"level\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Level))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV16(in *jlexer.Lexer, out *_v11.HostAlias) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "ip":
+			out.IP = string(in.String())
+		case "hostnames":
+			if in.IsNull() {
+				in.Skip()
+				out.Hostnames = nil
+			} else {
+				in.Delim('[')
+				if out.Hostnames == nil {
+					if !in.IsDelim(']') {
+						out.Hostnames = make([]string, 0, 4)
+					} else {
+						out.Hostnames = []string{}
+					}
+				} else {
+					out.Hostnames = (out.Hostnames)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v47 string
+					v47 = string(in.String())
+					out.Hostnames = append(out.Hostnames, v47)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV16(out *jwriter.Writer, in _v11.HostAlias) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.IP != "" {
+		const prefix string = ",\"ip\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.IP))
+	}
+	if len(in.Hostnames) != 0 {
+		const prefix string = ",\"hostnames\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v48, v49 := range in.Hostnames {
+				if v48 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v49))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha18(in *jlexer.Lexer, out *PodGC) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "strategy":
+			out.Strategy = PodGCStrategy(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha18(out *jwriter.Writer, in PodGC) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Strategy != "" {
+		const prefix string = ",\"strategy\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Strategy))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha17(in *jlexer.Lexer, out *TTLStrategy) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "secondsAfterCompletion":
+			if in.IsNull() {
+				in.Skip()
+				out.SecondsAfterCompletion = nil
+			} else {
+				if out.SecondsAfterCompletion == nil {
+					out.SecondsAfterCompletion = new(int32)
+				}
+				*out.SecondsAfterCompletion = int32(in.Int32())
+			}
+		case "secondsAfterSuccess":
+			if in.IsNull() {
+				in.Skip()
+				out.SecondsAfterSuccess = nil
+			} else {
+				if out.SecondsAfterSuccess == nil {
+					out.SecondsAfterSuccess = new(int32)
+				}
+				*out.SecondsAfterSuccess = int32(in.Int32())
+			}
+		case "secondsAfterFailure":
+			if in.IsNull() {
+				in.Skip()
+				out.SecondsAfterFailure = nil
+			} else {
+				if out.SecondsAfterFailure == nil {
+					out.SecondsAfterFailure = new(int32)
+				}
+				*out.SecondsAfterFailure = int32(in.Int32())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha17(out *jwriter.Writer, in TTLStrategy) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.SecondsAfterCompletion != nil {
+		const prefix string = ",\"secondsAfterCompletion\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Int32(int32(*in.SecondsAfterCompletion))
+	}
+	if in.SecondsAfterSuccess != nil {
+		const prefix string = ",\"secondsAfterSuccess\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.SecondsAfterSuccess))
+	}
+	if in.SecondsAfterFailure != nil {
+		const prefix string = ",\"secondsAfterFailure\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.SecondsAfterFailure))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV15(in *jlexer.Lexer, out *_v11.PodDNSConfig) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "nameservers":
+			if in.IsNull() {
+				in.Skip()
+				out.Nameservers = nil
+			} else {
+				in.Delim('[')
+				if out.Nameservers == nil {
+					if !in.IsDelim(']') {
+						out.Nameservers = make([]string, 0, 4)
+					} else {
+						out.Nameservers = []string{}
+					}
+				} else {
+					out.Nameservers = (out.Nameservers)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v50 string
+					v50 = string(in.String())
+					out.Nameservers = append(out.Nameservers, v50)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "searches":
+			if in.IsNull() {
+				in.Skip()
+				out.Searches = nil
+			} else {
+				in.Delim('[')
+				if out.Searches == nil {
+					if !in.IsDelim(']') {
+						out.Searches = make([]string, 0, 4)
+					} else {
+						out.Searches = []string{}
+					}
+				} else {
+					out.Searches = (out.Searches)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v51 string
+					v51 = string(in.String())
+					out.Searches = append(out.Searches, v51)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "options":
+			if in.IsNull() {
+				in.Skip()
+				out.Options = nil
+			} else {
+				in.Delim('[')
+				if out.Options == nil {
+					if !in.IsDelim(']') {
+						out.Options = make([]_v11.PodDNSConfigOption, 0, 2)
+					} else {
+						out.Options = []_v11.PodDNSConfigOption{}
+					}
+				} else {
+					out.Options = (out.Options)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v52 _v11.PodDNSConfigOption
+					easyjsonAa42d34bDecodeK8sIoApiCoreV112(in, &v52)
+					out.Options = append(out.Options, v52)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV15(out *jwriter.Writer, in _v11.PodDNSConfig) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Nameservers) != 0 {
+		const prefix string = ",\"nameservers\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v53, v54 := range in.Nameservers {
+				if v53 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v54))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Searches) != 0 {
+		const prefix string = ",\"searches\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v55, v56 := range in.Searches {
+				if v55 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v56))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Options) != 0 {
+		const prefix string = ",\"options\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v57, v58 := range in.Options {
+				if v57 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV112(out, v58)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV112(in *jlexer.Lexer, out *_v11.PodDNSConfigOption) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "value":
+			if in.IsNull() {
+				in.Skip()
+				out.Value = nil
+			} else {
+				if out.Value == nil {
+					out.Value = new(string)
+				}
+				*out.Value = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV112(out *jwriter.Writer, in _v11.PodDNSConfigOption) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.Value != nil {
+		const prefix string = ",\"value\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.Value))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV14(in *jlexer.Lexer, out *_v11.LocalObjectReference) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV14(out *jwriter.Writer, in _v11.LocalObjectReference) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV13(in *jlexer.Lexer, out *_v11.Toleration) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "operator":
+			out.Operator = _v11.TolerationOperator(in.String())
+		case "value":
+			out.Value = string(in.String())
+		case "effect":
+			out.Effect = _v11.TaintEffect(in.String())
+		case "tolerationSeconds":
+			if in.IsNull() {
+				in.Skip()
+				out.TolerationSeconds = nil
+			} else {
+				if out.TolerationSeconds == nil {
+					out.TolerationSeconds = new(int64)
+				}
+				*out.TolerationSeconds = int64(in.Int64())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV13(out *jwriter.Writer, in _v11.Toleration) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Key != "" {
+		const prefix string = ",\"key\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	if in.Operator != "" {
+		const prefix string = ",\"operator\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Operator))
+	}
+	if in.Value != "" {
+		const prefix string = ",\"value\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Value))
+	}
+	if in.Effect != "" {
+		const prefix string = ",\"effect\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Effect))
+	}
+	if in.TolerationSeconds != nil {
+		const prefix string = ",\"tolerationSeconds\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.TolerationSeconds))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV12(in *jlexer.Lexer, out *_v11.Affinity) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "nodeAffinity":
+			if in.IsNull() {
+				in.Skip()
+				out.NodeAffinity = nil
+			} else {
+				if out.NodeAffinity == nil {
+					out.NodeAffinity = new(_v11.NodeAffinity)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV113(in, out.NodeAffinity)
+			}
+		case "podAffinity":
+			if in.IsNull() {
+				in.Skip()
+				out.PodAffinity = nil
+			} else {
+				if out.PodAffinity == nil {
+					out.PodAffinity = new(_v11.PodAffinity)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV114(in, out.PodAffinity)
+			}
+		case "podAntiAffinity":
+			if in.IsNull() {
+				in.Skip()
+				out.PodAntiAffinity = nil
+			} else {
+				if out.PodAntiAffinity == nil {
+					out.PodAntiAffinity = new(_v11.PodAntiAffinity)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV115(in, out.PodAntiAffinity)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV12(out *jwriter.Writer, in _v11.Affinity) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.NodeAffinity != nil {
+		const prefix string = ",\"nodeAffinity\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV113(out, *in.NodeAffinity)
+	}
+	if in.PodAffinity != nil {
+		const prefix string = ",\"podAffinity\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV114(out, *in.PodAffinity)
+	}
+	if in.PodAntiAffinity != nil {
+		const prefix string = ",\"podAntiAffinity\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV115(out, *in.PodAntiAffinity)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV115(in *jlexer.Lexer, out *_v11.PodAntiAffinity) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "requiredDuringSchedulingIgnoredDuringExecution":
+			if in.IsNull() {
+				in.Skip()
+				out.RequiredDuringSchedulingIgnoredDuringExecution = nil
+			} else {
+				in.Delim('[')
+				if out.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+					if !in.IsDelim(']') {
+						out.RequiredDuringSchedulingIgnoredDuringExecution = make([]_v11.PodAffinityTerm, 0, 1)
+					} else {
+						out.RequiredDuringSchedulingIgnoredDuringExecution = []_v11.PodAffinityTerm{}
+					}
+				} else {
+					out.RequiredDuringSchedulingIgnoredDuringExecution = (out.RequiredDuringSchedulingIgnoredDuringExecution)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v59 _v11.PodAffinityTerm
+					easyjsonAa42d34bDecodeK8sIoApiCoreV116(in, &v59)
+					out.RequiredDuringSchedulingIgnoredDuringExecution = append(out.RequiredDuringSchedulingIgnoredDuringExecution, v59)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "preferredDuringSchedulingIgnoredDuringExecution":
+			if in.IsNull() {
+				in.Skip()
+				out.PreferredDuringSchedulingIgnoredDuringExecution = nil
+			} else {
+				in.Delim('[')
+				if out.PreferredDuringSchedulingIgnoredDuringExecution == nil {
+					if !in.IsDelim(']') {
+						out.PreferredDuringSchedulingIgnoredDuringExecution = make([]_v11.WeightedPodAffinityTerm, 0, 1)
+					} else {
+						out.PreferredDuringSchedulingIgnoredDuringExecution = []_v11.WeightedPodAffinityTerm{}
+					}
+				} else {
+					out.PreferredDuringSchedulingIgnoredDuringExecution = (out.PreferredDuringSchedulingIgnoredDuringExecution)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v60 _v11.WeightedPodAffinityTerm
+					easyjsonAa42d34bDecodeK8sIoApiCoreV117(in, &v60)
+					out.PreferredDuringSchedulingIgnoredDuringExecution = append(out.PreferredDuringSchedulingIgnoredDuringExecution, v60)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV115(out *jwriter.Writer, in _v11.PodAntiAffinity) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.RequiredDuringSchedulingIgnoredDuringExecution) != 0 {
+		const prefix string = ",\"requiredDuringSchedulingIgnoredDuringExecution\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v61, v62 := range in.RequiredDuringSchedulingIgnoredDuringExecution {
+				if v61 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV116(out, v62)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.PreferredDuringSchedulingIgnoredDuringExecution) != 0 {
+		const prefix string = ",\"preferredDuringSchedulingIgnoredDuringExecution\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v63, v64 := range in.PreferredDuringSchedulingIgnoredDuringExecution {
+				if v63 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV117(out, v64)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV117(in *jlexer.Lexer, out *_v11.WeightedPodAffinityTerm) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "weight":
+			out.Weight = int32(in.Int32())
+		case "podAffinityTerm":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV116(in, &out.PodAffinityTerm)
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV117(out *jwriter.Writer, in _v11.WeightedPodAffinityTerm) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"weight\":"
+		out.RawString(prefix[1:])
+		out.Int32(int32(in.Weight))
+	}
+	{
+		const prefix string = ",\"podAffinityTerm\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV116(out, in.PodAffinityTerm)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV116(in *jlexer.Lexer, out *_v11.PodAffinityTerm) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "labelSelector":
+			if in.IsNull() {
+				in.Skip()
+				out.LabelSelector = nil
+			} else {
+				if out.LabelSelector == nil {
+					out.LabelSelector = new(_v1.LabelSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV12(in, out.LabelSelector)
+			}
+		case "namespaces":
+			if in.IsNull() {
+				in.Skip()
+				out.Namespaces = nil
+			} else {
+				in.Delim('[')
+				if out.Namespaces == nil {
+					if !in.IsDelim(']') {
+						out.Namespaces = make([]string, 0, 4)
+					} else {
+						out.Namespaces = []string{}
+					}
+				} else {
+					out.Namespaces = (out.Namespaces)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v65 string
+					v65 = string(in.String())
+					out.Namespaces = append(out.Namespaces, v65)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "topologyKey":
+			out.TopologyKey = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV116(out *jwriter.Writer, in _v11.PodAffinityTerm) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.LabelSelector != nil {
+		const prefix string = ",\"labelSelector\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV12(out, *in.LabelSelector)
+	}
+	if len(in.Namespaces) != 0 {
+		const prefix string = ",\"namespaces\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v66, v67 := range in.Namespaces {
+				if v66 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v67))
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"topologyKey\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.TopologyKey))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV114(in *jlexer.Lexer, out *_v11.PodAffinity) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "requiredDuringSchedulingIgnoredDuringExecution":
+			if in.IsNull() {
+				in.Skip()
+				out.RequiredDuringSchedulingIgnoredDuringExecution = nil
+			} else {
+				in.Delim('[')
+				if out.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+					if !in.IsDelim(']') {
+						out.RequiredDuringSchedulingIgnoredDuringExecution = make([]_v11.PodAffinityTerm, 0, 1)
+					} else {
+						out.RequiredDuringSchedulingIgnoredDuringExecution = []_v11.PodAffinityTerm{}
+					}
+				} else {
+					out.RequiredDuringSchedulingIgnoredDuringExecution = (out.RequiredDuringSchedulingIgnoredDuringExecution)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v68 _v11.PodAffinityTerm
+					easyjsonAa42d34bDecodeK8sIoApiCoreV116(in, &v68)
+					out.RequiredDuringSchedulingIgnoredDuringExecution = append(out.RequiredDuringSchedulingIgnoredDuringExecution, v68)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "preferredDuringSchedulingIgnoredDuringExecution":
+			if in.IsNull() {
+				in.Skip()
+				out.PreferredDuringSchedulingIgnoredDuringExecution = nil
+			} else {
+				in.Delim('[')
+				if out.PreferredDuringSchedulingIgnoredDuringExecution == nil {
+					if !in.IsDelim(']') {
+						out.PreferredDuringSchedulingIgnoredDuringExecution = make([]_v11.WeightedPodAffinityTerm, 0, 1)
+					} else {
+						out.PreferredDuringSchedulingIgnoredDuringExecution = []_v11.WeightedPodAffinityTerm{}
+					}
+				} else {
+					out.PreferredDuringSchedulingIgnoredDuringExecution = (out.PreferredDuringSchedulingIgnoredDuringExecution)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v69 _v11.WeightedPodAffinityTerm
+					easyjsonAa42d34bDecodeK8sIoApiCoreV117(in, &v69)
+					out.PreferredDuringSchedulingIgnoredDuringExecution = append(out.PreferredDuringSchedulingIgnoredDuringExecution, v69)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV114(out *jwriter.Writer, in _v11.PodAffinity) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.RequiredDuringSchedulingIgnoredDuringExecution) != 0 {
+		const prefix string = ",\"requiredDuringSchedulingIgnoredDuringExecution\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v70, v71 := range in.RequiredDuringSchedulingIgnoredDuringExecution {
+				if v70 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV116(out, v71)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.PreferredDuringSchedulingIgnoredDuringExecution) != 0 {
+		const prefix string = ",\"preferredDuringSchedulingIgnoredDuringExecution\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v72, v73 := range in.PreferredDuringSchedulingIgnoredDuringExecution {
+				if v72 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV117(out, v73)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV113(in *jlexer.Lexer, out *_v11.NodeAffinity) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "requiredDuringSchedulingIgnoredDuringExecution":
+			if in.IsNull() {
+				in.Skip()
+				out.RequiredDuringSchedulingIgnoredDuringExecution = nil
+			} else {
+				if out.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+					out.RequiredDuringSchedulingIgnoredDuringExecution = new(_v11.NodeSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV118(in, out.RequiredDuringSchedulingIgnoredDuringExecution)
+			}
+		case "preferredDuringSchedulingIgnoredDuringExecution":
+			if in.IsNull() {
+				in.Skip()
+				out.PreferredDuringSchedulingIgnoredDuringExecution = nil
+			} else {
+				in.Delim('[')
+				if out.PreferredDuringSchedulingIgnoredDuringExecution == nil {
+					if !in.IsDelim(']') {
+						out.PreferredDuringSchedulingIgnoredDuringExecution = make([]_v11.PreferredSchedulingTerm, 0, 1)
+					} else {
+						out.PreferredDuringSchedulingIgnoredDuringExecution = []_v11.PreferredSchedulingTerm{}
+					}
+				} else {
+					out.PreferredDuringSchedulingIgnoredDuringExecution = (out.PreferredDuringSchedulingIgnoredDuringExecution)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v74 _v11.PreferredSchedulingTerm
+					easyjsonAa42d34bDecodeK8sIoApiCoreV119(in, &v74)
+					out.PreferredDuringSchedulingIgnoredDuringExecution = append(out.PreferredDuringSchedulingIgnoredDuringExecution, v74)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV113(out *jwriter.Writer, in _v11.NodeAffinity) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		const prefix string = ",\"requiredDuringSchedulingIgnoredDuringExecution\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV118(out, *in.RequiredDuringSchedulingIgnoredDuringExecution)
+	}
+	if len(in.PreferredDuringSchedulingIgnoredDuringExecution) != 0 {
+		const prefix string = ",\"preferredDuringSchedulingIgnoredDuringExecution\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v75, v76 := range in.PreferredDuringSchedulingIgnoredDuringExecution {
+				if v75 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV119(out, v76)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV119(in *jlexer.Lexer, out *_v11.PreferredSchedulingTerm) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "weight":
+			out.Weight = int32(in.Int32())
+		case "preference":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV120(in, &out.Preference)
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV119(out *jwriter.Writer, in _v11.PreferredSchedulingTerm) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"weight\":"
+		out.RawString(prefix[1:])
+		out.Int32(int32(in.Weight))
+	}
+	{
+		const prefix string = ",\"preference\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV120(out, in.Preference)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV120(in *jlexer.Lexer, out *_v11.NodeSelectorTerm) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "matchExpressions":
+			if in.IsNull() {
+				in.Skip()
+				out.MatchExpressions = nil
+			} else {
+				in.Delim('[')
+				if out.MatchExpressions == nil {
+					if !in.IsDelim(']') {
+						out.MatchExpressions = make([]_v11.NodeSelectorRequirement, 0, 1)
+					} else {
+						out.MatchExpressions = []_v11.NodeSelectorRequirement{}
+					}
+				} else {
+					out.MatchExpressions = (out.MatchExpressions)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v77 _v11.NodeSelectorRequirement
+					easyjsonAa42d34bDecodeK8sIoApiCoreV121(in, &v77)
+					out.MatchExpressions = append(out.MatchExpressions, v77)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "matchFields":
+			if in.IsNull() {
+				in.Skip()
+				out.MatchFields = nil
+			} else {
+				in.Delim('[')
+				if out.MatchFields == nil {
+					if !in.IsDelim(']') {
+						out.MatchFields = make([]_v11.NodeSelectorRequirement, 0, 1)
+					} else {
+						out.MatchFields = []_v11.NodeSelectorRequirement{}
+					}
+				} else {
+					out.MatchFields = (out.MatchFields)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v78 _v11.NodeSelectorRequirement
+					easyjsonAa42d34bDecodeK8sIoApiCoreV121(in, &v78)
+					out.MatchFields = append(out.MatchFields, v78)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV120(out *jwriter.Writer, in _v11.NodeSelectorTerm) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.MatchExpressions) != 0 {
+		const prefix string = ",\"matchExpressions\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v79, v80 := range in.MatchExpressions {
+				if v79 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV121(out, v80)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.MatchFields) != 0 {
+		const prefix string = ",\"matchFields\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v81, v82 := range in.MatchFields {
+				if v81 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV121(out, v82)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV121(in *jlexer.Lexer, out *_v11.NodeSelectorRequirement) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "operator":
+			out.Operator = _v11.NodeSelectorOperator(in.String())
+		case "values":
+			if in.IsNull() {
+				in.Skip()
+				out.Values = nil
+			} else {
+				in.Delim('[')
+				if out.Values == nil {
+					if !in.IsDelim(']') {
+						out.Values = make([]string, 0, 4)
+					} else {
+						out.Values = []string{}
+					}
+				} else {
+					out.Values = (out.Values)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v83 string
+					v83 = string(in.String())
+					out.Values = append(out.Values, v83)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV121(out *jwriter.Writer, in _v11.NodeSelectorRequirement) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"operator\":"
+		out.RawString(prefix)
+		out.String(string(in.Operator))
+	}
+	if len(in.Values) != 0 {
+		const prefix string = ",\"values\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v84, v85 := range in.Values {
+				if v84 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v85))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV118(in *jlexer.Lexer, out *_v11.NodeSelector) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "nodeSelectorTerms":
+			if in.IsNull() {
+				in.Skip()
+				out.NodeSelectorTerms = nil
+			} else {
+				in.Delim('[')
+				if out.NodeSelectorTerms == nil {
+					if !in.IsDelim(']') {
+						out.NodeSelectorTerms = make([]_v11.NodeSelectorTerm, 0, 1)
+					} else {
+						out.NodeSelectorTerms = []_v11.NodeSelectorTerm{}
+					}
+				} else {
+					out.NodeSelectorTerms = (out.NodeSelectorTerms)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v86 _v11.NodeSelectorTerm
+					easyjsonAa42d34bDecodeK8sIoApiCoreV120(in, &v86)
+					out.NodeSelectorTerms = append(out.NodeSelectorTerms, v86)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV118(out *jwriter.Writer, in _v11.NodeSelector) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"nodeSelectorTerms\":"
+		out.RawString(prefix[1:])
+		if in.NodeSelectorTerms == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v87, v88 := range in.NodeSelectorTerms {
+				if v87 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV120(out, v88)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha16(in *jlexer.Lexer, out *ArtifactRepositoryRef) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "configMap":
+			out.ConfigMap = string(in.String())
+		case "key":
+			out.Key = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha16(out *jwriter.Writer, in ArtifactRepositoryRef) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.ConfigMap != "" {
+		const prefix string = ",\"configMap\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.ConfigMap))
+	}
+	if in.Key != "" {
+		const prefix string = ",\"key\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Key))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV11(in *jlexer.Lexer, out *_v11.PersistentVolumeClaim) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "metadata":
+			easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in, &out.ObjectMeta)
+		case "spec":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV122(in, &out.Spec)
+		case "status":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV123(in, &out.Status)
+		case "kind":
+			out.Kind = string(in.String())
+		case "apiVersion":
+			out.APIVersion = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV11(out *jwriter.Writer, in _v11.PersistentVolumeClaim) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if true {
+		const prefix string = ",\"metadata\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV11(out, in.ObjectMeta)
+	}
+	if true {
+		const prefix string = ",\"spec\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV122(out, in.Spec)
+	}
+	if true {
+		const prefix string = ",\"status\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV123(out, in.Status)
+	}
+	if in.Kind != "" {
+		const prefix string = ",\"kind\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Kind))
+	}
+	if in.APIVersion != "" {
+		const prefix string = ",\"apiVersion\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.APIVersion))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV123(in *jlexer.Lexer, out *_v11.PersistentVolumeClaimStatus) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "phase":
+			out.Phase = _v11.PersistentVolumeClaimPhase(in.String())
+		case "accessModes":
+			if in.IsNull() {
+				in.Skip()
+				out.AccessModes = nil
+			} else {
+				in.Delim('[')
+				if out.AccessModes == nil {
+					if !in.IsDelim(']') {
+						out.AccessModes = make([]_v11.PersistentVolumeAccessMode, 0, 4)
+					} else {
+						out.AccessModes = []_v11.PersistentVolumeAccessMode{}
+					}
+				} else {
+					out.AccessModes = (out.AccessModes)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v89 _v11.PersistentVolumeAccessMode
+					v89 = _v11.PersistentVolumeAccessMode(in.String())
+					out.AccessModes = append(out.AccessModes, v89)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "capacity":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Capacity = make(_v11.ResourceList)
+				} else {
+					out.Capacity = nil
+				}
+				for !in.IsDelim('}') {
+					key := _v11.ResourceName(in.String())
+					in.WantColon()
+					var v90 resource.Quantity
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v90).UnmarshalJSON(data))
+					}
+					(out.Capacity)[key] = v90
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "conditions":
+			if in.IsNull() {
+				in.Skip()
+				out.Conditions = nil
+			} else {
+				in.Delim('[')
+				if out.Conditions == nil {
+					if !in.IsDelim(']') {
+						out.Conditions = make([]_v11.PersistentVolumeClaimCondition, 0, 0)
+					} else {
+						out.Conditions = []_v11.PersistentVolumeClaimCondition{}
+					}
+				} else {
+					out.Conditions = (out.Conditions)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v91 _v11.PersistentVolumeClaimCondition
+					easyjsonAa42d34bDecodeK8sIoApiCoreV124(in, &v91)
+					out.Conditions = append(out.Conditions, v91)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV123(out *jwriter.Writer, in _v11.PersistentVolumeClaimStatus) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Phase != "" {
+		const prefix string = ",\"phase\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Phase))
+	}
+	if len(in.AccessModes) != 0 {
+		const prefix string = ",\"accessModes\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v92, v93 := range in.AccessModes {
+				if v92 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v93))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Capacity) != 0 {
+		const prefix string = ",\"capacity\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('{')
+			v94First := true
+			for v94Name, v94Value := range in.Capacity {
+				if v94First {
+					v94First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v94Name))
+				out.RawByte(':')
+				out.Raw((v94Value).MarshalJSON())
+			}
+			out.RawByte('}')
+		}
+	}
+	if len(in.Conditions) != 0 {
+		const prefix string = ",\"conditions\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v95, v96 := range in.Conditions {
+				if v95 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV124(out, v96)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV124(in *jlexer.Lexer, out *_v11.PersistentVolumeClaimCondition) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "type":
+			out.Type = _v11.PersistentVolumeClaimConditionType(in.String())
+		case "status":
+			out.Status = _v11.ConditionStatus(in.String())
+		case "lastProbeTime":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.LastProbeTime).UnmarshalJSON(data))
+			}
+		case "lastTransitionTime":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.LastTransitionTime).UnmarshalJSON(data))
+			}
+		case "reason":
+			out.Reason = string(in.String())
+		case "message":
+			out.Message = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV124(out *jwriter.Writer, in _v11.PersistentVolumeClaimCondition) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"type\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Type))
+	}
+	{
+		const prefix string = ",\"status\":"
+		out.RawString(prefix)
+		out.String(string(in.Status))
+	}
+	if true {
+		const prefix string = ",\"lastProbeTime\":"
+		out.RawString(prefix)
+		out.Raw((in.LastProbeTime).MarshalJSON())
+	}
+	if true {
+		const prefix string = ",\"lastTransitionTime\":"
+		out.RawString(prefix)
+		out.Raw((in.LastTransitionTime).MarshalJSON())
+	}
+	if in.Reason != "" {
+		const prefix string = ",\"reason\":"
+		out.RawString(prefix)
+		out.String(string(in.Reason))
+	}
+	if in.Message != "" {
+		const prefix string = ",\"message\":"
+		out.RawString(prefix)
+		out.String(string(in.Message))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV122(in *jlexer.Lexer, out *_v11.PersistentVolumeClaimSpec) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "accessModes":
+			if in.IsNull() {
+				in.Skip()
+				out.AccessModes = nil
+			} else {
+				in.Delim('[')
+				if out.AccessModes == nil {
+					if !in.IsDelim(']') {
+						out.AccessModes = make([]_v11.PersistentVolumeAccessMode, 0, 4)
+					} else {
+						out.AccessModes = []_v11.PersistentVolumeAccessMode{}
+					}
+				} else {
+					out.AccessModes = (out.AccessModes)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v97 _v11.PersistentVolumeAccessMode
+					v97 = _v11.PersistentVolumeAccessMode(in.String())
+					out.AccessModes = append(out.AccessModes, v97)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "selector":
+			if in.IsNull() {
+				in.Skip()
+				out.Selector = nil
+			} else {
+				if out.Selector == nil {
+					out.Selector = new(_v1.LabelSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV12(in, out.Selector)
+			}
+		case "resources":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV125(in, &out.Resources)
+		case "volumeName":
+			out.VolumeName = string(in.String())
+		case "storageClassName":
+			if in.IsNull() {
+				in.Skip()
+				out.StorageClassName = nil
+			} else {
+				if out.StorageClassName == nil {
+					out.StorageClassName = new(string)
+				}
+				*out.StorageClassName = string(in.String())
+			}
+		case "volumeMode":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeMode = nil
+			} else {
+				if out.VolumeMode == nil {
+					out.VolumeMode = new(_v11.PersistentVolumeMode)
+				}
+				*out.VolumeMode = _v11.PersistentVolumeMode(in.String())
+			}
+		case "dataSource":
+			if in.IsNull() {
+				in.Skip()
+				out.DataSource = nil
+			} else {
+				if out.DataSource == nil {
+					out.DataSource = new(_v11.TypedLocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV126(in, out.DataSource)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV122(out *jwriter.Writer, in _v11.PersistentVolumeClaimSpec) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.AccessModes) != 0 {
+		const prefix string = ",\"accessModes\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v98, v99 := range in.AccessModes {
+				if v98 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v99))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Selector != nil {
+		const prefix string = ",\"selector\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV12(out, *in.Selector)
+	}
+	if true {
+		const prefix string = ",\"resources\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV125(out, in.Resources)
+	}
+	if in.VolumeName != "" {
+		const prefix string = ",\"volumeName\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.VolumeName))
+	}
+	if in.StorageClassName != nil {
+		const prefix string = ",\"storageClassName\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.StorageClassName))
+	}
+	if in.VolumeMode != nil {
+		const prefix string = ",\"volumeMode\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.VolumeMode))
+	}
+	if in.DataSource != nil {
+		const prefix string = ",\"dataSource\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV126(out, *in.DataSource)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV126(in *jlexer.Lexer, out *_v11.TypedLocalObjectReference) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "apiGroup":
+			if in.IsNull() {
+				in.Skip()
+				out.APIGroup = nil
+			} else {
+				if out.APIGroup == nil {
+					out.APIGroup = new(string)
+				}
+				*out.APIGroup = string(in.String())
+			}
+		case "kind":
+			out.Kind = string(in.String())
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV126(out *jwriter.Writer, in _v11.TypedLocalObjectReference) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"apiGroup\":"
+		out.RawString(prefix[1:])
+		if in.APIGroup == nil {
+			out.RawString("null")
+		} else {
+			out.String(string(*in.APIGroup))
+		}
+	}
+	{
+		const prefix string = ",\"kind\":"
+		out.RawString(prefix)
+		out.String(string(in.Kind))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV125(in *jlexer.Lexer, out *_v11.ResourceRequirements) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "limits":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Limits = make(_v11.ResourceList)
+				} else {
+					out.Limits = nil
+				}
+				for !in.IsDelim('}') {
+					key := _v11.ResourceName(in.String())
+					in.WantColon()
+					var v100 resource.Quantity
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v100).UnmarshalJSON(data))
+					}
+					(out.Limits)[key] = v100
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "requests":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Requests = make(_v11.ResourceList)
+				} else {
+					out.Requests = nil
+				}
+				for !in.IsDelim('}') {
+					key := _v11.ResourceName(in.String())
+					in.WantColon()
+					var v101 resource.Quantity
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v101).UnmarshalJSON(data))
+					}
+					(out.Requests)[key] = v101
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV125(out *jwriter.Writer, in _v11.ResourceRequirements) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Limits) != 0 {
+		const prefix string = ",\"limits\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('{')
+			v102First := true
+			for v102Name, v102Value := range in.Limits {
+				if v102First {
+					v102First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v102Name))
+				out.RawByte(':')
+				out.Raw((v102Value).MarshalJSON())
+			}
+			out.RawByte('}')
+		}
+	}
+	if len(in.Requests) != 0 {
+		const prefix string = ",\"requests\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('{')
+			v103First := true
+			for v103Name, v103Value := range in.Requests {
+				if v103First {
+					v103First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v103Name))
+				out.RawByte(':')
+				out.Raw((v103Value).MarshalJSON())
+			}
+			out.RawByte('}')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV1(in *jlexer.Lexer, out *_v11.Volume) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "hostPath":
+			if in.IsNull() {
+				in.Skip()
+				out.HostPath = nil
+			} else {
+				if out.HostPath == nil {
+					out.HostPath = new(_v11.HostPathVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV127(in, out.HostPath)
+			}
+		case "emptyDir":
+			if in.IsNull() {
+				in.Skip()
+				out.EmptyDir = nil
+			} else {
+				if out.EmptyDir == nil {
+					out.EmptyDir = new(_v11.EmptyDirVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV128(in, out.EmptyDir)
+			}
+		case "gcePersistentDisk":
+			if in.IsNull() {
+				in.Skip()
+				out.GCEPersistentDisk = nil
+			} else {
+				if out.GCEPersistentDisk == nil {
+					out.GCEPersistentDisk = new(_v11.GCEPersistentDiskVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV129(in, out.GCEPersistentDisk)
+			}
+		case "awsElasticBlockStore":
+			if in.IsNull() {
+				in.Skip()
+				out.AWSElasticBlockStore = nil
+			} else {
+				if out.AWSElasticBlockStore == nil {
+					out.AWSElasticBlockStore = new(_v11.AWSElasticBlockStoreVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV130(in, out.AWSElasticBlockStore)
+			}
+		case "gitRepo":
+			if in.IsNull() {
+				in.Skip()
+				out.GitRepo = nil
+			} else {
+				if out.GitRepo == nil {
+					out.GitRepo = new(_v11.GitRepoVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV131(in, out.GitRepo)
+			}
+		case "secret":
+			if in.IsNull() {
+				in.Skip()
+				out.Secret = nil
+			} else {
+				if out.Secret == nil {
+					out.Secret = new(_v11.SecretVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV132(in, out.Secret)
+			}
+		case "nfs":
+			if in.IsNull() {
+				in.Skip()
+				out.NFS = nil
+			} else {
+				if out.NFS == nil {
+					out.NFS = new(_v11.NFSVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV133(in, out.NFS)
+			}
+		case "iscsi":
+			if in.IsNull() {
+				in.Skip()
+				out.ISCSI = nil
+			} else {
+				if out.ISCSI == nil {
+					out.ISCSI = new(_v11.ISCSIVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV134(in, out.ISCSI)
+			}
+		case "glusterfs":
+			if in.IsNull() {
+				in.Skip()
+				out.Glusterfs = nil
+			} else {
+				if out.Glusterfs == nil {
+					out.Glusterfs = new(_v11.GlusterfsVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV135(in, out.Glusterfs)
+			}
+		case "persistentVolumeClaim":
+			if in.IsNull() {
+				in.Skip()
+				out.PersistentVolumeClaim = nil
+			} else {
+				if out.PersistentVolumeClaim == nil {
+					out.PersistentVolumeClaim = new(_v11.PersistentVolumeClaimVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV136(in, out.PersistentVolumeClaim)
+			}
+		case "rbd":
+			if in.IsNull() {
+				in.Skip()
+				out.RBD = nil
+			} else {
+				if out.RBD == nil {
+					out.RBD = new(_v11.RBDVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV137(in, out.RBD)
+			}
+		case "flexVolume":
+			if in.IsNull() {
+				in.Skip()
+				out.FlexVolume = nil
+			} else {
+				if out.FlexVolume == nil {
+					out.FlexVolume = new(_v11.FlexVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV138(in, out.FlexVolume)
+			}
+		case "cinder":
+			if in.IsNull() {
+				in.Skip()
+				out.Cinder = nil
+			} else {
+				if out.Cinder == nil {
+					out.Cinder = new(_v11.CinderVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV139(in, out.Cinder)
+			}
+		case "cephfs":
+			if in.IsNull() {
+				in.Skip()
+				out.CephFS = nil
+			} else {
+				if out.CephFS == nil {
+					out.CephFS = new(_v11.CephFSVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV140(in, out.CephFS)
+			}
+		case "flocker":
+			if in.IsNull() {
+				in.Skip()
+				out.Flocker = nil
+			} else {
+				if out.Flocker == nil {
+					out.Flocker = new(_v11.FlockerVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV141(in, out.Flocker)
+			}
+		case "downwardAPI":
+			if in.IsNull() {
+				in.Skip()
+				out.DownwardAPI = nil
+			} else {
+				if out.DownwardAPI == nil {
+					out.DownwardAPI = new(_v11.DownwardAPIVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV142(in, out.DownwardAPI)
+			}
+		case "fc":
+			if in.IsNull() {
+				in.Skip()
+				out.FC = nil
+			} else {
+				if out.FC == nil {
+					out.FC = new(_v11.FCVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV143(in, out.FC)
+			}
+		case "azureFile":
+			if in.IsNull() {
+				in.Skip()
+				out.AzureFile = nil
+			} else {
+				if out.AzureFile == nil {
+					out.AzureFile = new(_v11.AzureFileVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV144(in, out.AzureFile)
+			}
+		case "configMap":
+			if in.IsNull() {
+				in.Skip()
+				out.ConfigMap = nil
+			} else {
+				if out.ConfigMap == nil {
+					out.ConfigMap = new(_v11.ConfigMapVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV145(in, out.ConfigMap)
+			}
+		case "vsphereVolume":
+			if in.IsNull() {
+				in.Skip()
+				out.VsphereVolume = nil
+			} else {
+				if out.VsphereVolume == nil {
+					out.VsphereVolume = new(_v11.VsphereVirtualDiskVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV146(in, out.VsphereVolume)
+			}
+		case "quobyte":
+			if in.IsNull() {
+				in.Skip()
+				out.Quobyte = nil
+			} else {
+				if out.Quobyte == nil {
+					out.Quobyte = new(_v11.QuobyteVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV147(in, out.Quobyte)
+			}
+		case "azureDisk":
+			if in.IsNull() {
+				in.Skip()
+				out.AzureDisk = nil
+			} else {
+				if out.AzureDisk == nil {
+					out.AzureDisk = new(_v11.AzureDiskVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV148(in, out.AzureDisk)
+			}
+		case "photonPersistentDisk":
+			if in.IsNull() {
+				in.Skip()
+				out.PhotonPersistentDisk = nil
+			} else {
+				if out.PhotonPersistentDisk == nil {
+					out.PhotonPersistentDisk = new(_v11.PhotonPersistentDiskVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV149(in, out.PhotonPersistentDisk)
+			}
+		case "projected":
+			if in.IsNull() {
+				in.Skip()
+				out.Projected = nil
+			} else {
+				if out.Projected == nil {
+					out.Projected = new(_v11.ProjectedVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV150(in, out.Projected)
+			}
+		case "portworxVolume":
+			if in.IsNull() {
+				in.Skip()
+				out.PortworxVolume = nil
+			} else {
+				if out.PortworxVolume == nil {
+					out.PortworxVolume = new(_v11.PortworxVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV151(in, out.PortworxVolume)
+			}
+		case "scaleIO":
+			if in.IsNull() {
+				in.Skip()
+				out.ScaleIO = nil
+			} else {
+				if out.ScaleIO == nil {
+					out.ScaleIO = new(_v11.ScaleIOVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV152(in, out.ScaleIO)
+			}
+		case "storageos":
+			if in.IsNull() {
+				in.Skip()
+				out.StorageOS = nil
+			} else {
+				if out.StorageOS == nil {
+					out.StorageOS = new(_v11.StorageOSVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV153(in, out.StorageOS)
+			}
+		case "csi":
+			if in.IsNull() {
+				in.Skip()
+				out.CSI = nil
+			} else {
+				if out.CSI == nil {
+					out.CSI = new(_v11.CSIVolumeSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV154(in, out.CSI)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV1(out *jwriter.Writer, in _v11.Volume) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.HostPath != nil {
+		const prefix string = ",\"hostPath\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV127(out, *in.HostPath)
+	}
+	if in.EmptyDir != nil {
+		const prefix string = ",\"emptyDir\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV128(out, *in.EmptyDir)
+	}
+	if in.GCEPersistentDisk != nil {
+		const prefix string = ",\"gcePersistentDisk\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV129(out, *in.GCEPersistentDisk)
+	}
+	if in.AWSElasticBlockStore != nil {
+		const prefix string = ",\"awsElasticBlockStore\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV130(out, *in.AWSElasticBlockStore)
+	}
+	if in.GitRepo != nil {
+		const prefix string = ",\"gitRepo\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV131(out, *in.GitRepo)
+	}
+	if in.Secret != nil {
+		const prefix string = ",\"secret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV132(out, *in.Secret)
+	}
+	if in.NFS != nil {
+		const prefix string = ",\"nfs\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV133(out, *in.NFS)
+	}
+	if in.ISCSI != nil {
+		const prefix string = ",\"iscsi\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV134(out, *in.ISCSI)
+	}
+	if in.Glusterfs != nil {
+		const prefix string = ",\"glusterfs\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV135(out, *in.Glusterfs)
+	}
+	if in.PersistentVolumeClaim != nil {
+		const prefix string = ",\"persistentVolumeClaim\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV136(out, *in.PersistentVolumeClaim)
+	}
+	if in.RBD != nil {
+		const prefix string = ",\"rbd\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV137(out, *in.RBD)
+	}
+	if in.FlexVolume != nil {
+		const prefix string = ",\"flexVolume\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV138(out, *in.FlexVolume)
+	}
+	if in.Cinder != nil {
+		const prefix string = ",\"cinder\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV139(out, *in.Cinder)
+	}
+	if in.CephFS != nil {
+		const prefix string = ",\"cephfs\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV140(out, *in.CephFS)
+	}
+	if in.Flocker != nil {
+		const prefix string = ",\"flocker\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV141(out, *in.Flocker)
+	}
+	if in.DownwardAPI != nil {
+		const prefix string = ",\"downwardAPI\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV142(out, *in.DownwardAPI)
+	}
+	if in.FC != nil {
+		const prefix string = ",\"fc\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV143(out, *in.FC)
+	}
+	if in.AzureFile != nil {
+		const prefix string = ",\"azureFile\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV144(out, *in.AzureFile)
+	}
+	if in.ConfigMap != nil {
+		const prefix string = ",\"configMap\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV145(out, *in.ConfigMap)
+	}
+	if in.VsphereVolume != nil {
+		const prefix string = ",\"vsphereVolume\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV146(out, *in.VsphereVolume)
+	}
+	if in.Quobyte != nil {
+		const prefix string = ",\"quobyte\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV147(out, *in.Quobyte)
+	}
+	if in.AzureDisk != nil {
+		const prefix string = ",\"azureDisk\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV148(out, *in.AzureDisk)
+	}
+	if in.PhotonPersistentDisk != nil {
+		const prefix string = ",\"photonPersistentDisk\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV149(out, *in.PhotonPersistentDisk)
+	}
+	if in.Projected != nil {
+		const prefix string = ",\"projected\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV150(out, *in.Projected)
+	}
+	if in.PortworxVolume != nil {
+		const prefix string = ",\"portworxVolume\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV151(out, *in.PortworxVolume)
+	}
+	if in.ScaleIO != nil {
+		const prefix string = ",\"scaleIO\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV152(out, *in.ScaleIO)
+	}
+	if in.StorageOS != nil {
+		const prefix string = ",\"storageos\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV153(out, *in.StorageOS)
+	}
+	if in.CSI != nil {
+		const prefix string = ",\"csi\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV154(out, *in.CSI)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV154(in *jlexer.Lexer, out *_v11.CSIVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "driver":
+			out.Driver = string(in.String())
+		case "readOnly":
+			if in.IsNull() {
+				in.Skip()
+				out.ReadOnly = nil
+			} else {
+				if out.ReadOnly == nil {
+					out.ReadOnly = new(bool)
+				}
+				*out.ReadOnly = bool(in.Bool())
+			}
+		case "fsType":
+			if in.IsNull() {
+				in.Skip()
+				out.FSType = nil
+			} else {
+				if out.FSType == nil {
+					out.FSType = new(string)
+				}
+				*out.FSType = string(in.String())
+			}
+		case "volumeAttributes":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.VolumeAttributes = make(map[string]string)
+				} else {
+					out.VolumeAttributes = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v104 string
+					v104 = string(in.String())
+					(out.VolumeAttributes)[key] = v104
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "nodePublishSecretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.NodePublishSecretRef = nil
+			} else {
+				if out.NodePublishSecretRef == nil {
+					out.NodePublishSecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.NodePublishSecretRef)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV154(out *jwriter.Writer, in _v11.CSIVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"driver\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Driver))
+	}
+	if in.ReadOnly != nil {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.ReadOnly))
+	}
+	if in.FSType != nil {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(*in.FSType))
+	}
+	if len(in.VolumeAttributes) != 0 {
+		const prefix string = ",\"volumeAttributes\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('{')
+			v105First := true
+			for v105Name, v105Value := range in.VolumeAttributes {
+				if v105First {
+					v105First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v105Name))
+				out.RawByte(':')
+				out.String(string(v105Value))
+			}
+			out.RawByte('}')
+		}
+	}
+	if in.NodePublishSecretRef != nil {
+		const prefix string = ",\"nodePublishSecretRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.NodePublishSecretRef)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV153(in *jlexer.Lexer, out *_v11.StorageOSVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "volumeName":
+			out.VolumeName = string(in.String())
+		case "volumeNamespace":
+			out.VolumeNamespace = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.SecretRef)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV153(out *jwriter.Writer, in _v11.StorageOSVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.VolumeName != "" {
+		const prefix string = ",\"volumeName\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.VolumeName))
+	}
+	if in.VolumeNamespace != "" {
+		const prefix string = ",\"volumeNamespace\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.VolumeNamespace))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.FSType))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.ReadOnly))
+	}
+	if in.SecretRef != nil {
+		const prefix string = ",\"secretRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.SecretRef)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV152(in *jlexer.Lexer, out *_v11.ScaleIOVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "gateway":
+			out.Gateway = string(in.String())
+		case "system":
+			out.System = string(in.String())
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.SecretRef)
+			}
+		case "sslEnabled":
+			out.SSLEnabled = bool(in.Bool())
+		case "protectionDomain":
+			out.ProtectionDomain = string(in.String())
+		case "storagePool":
+			out.StoragePool = string(in.String())
+		case "storageMode":
+			out.StorageMode = string(in.String())
+		case "volumeName":
+			out.VolumeName = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV152(out *jwriter.Writer, in _v11.ScaleIOVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"gateway\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Gateway))
+	}
+	{
+		const prefix string = ",\"system\":"
+		out.RawString(prefix)
+		out.String(string(in.System))
+	}
+	{
+		const prefix string = ",\"secretRef\":"
+		out.RawString(prefix)
+		if in.SecretRef == nil {
+			out.RawString("null")
+		} else {
+			easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.SecretRef)
+		}
+	}
+	if in.SSLEnabled {
+		const prefix string = ",\"sslEnabled\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.SSLEnabled))
+	}
+	if in.ProtectionDomain != "" {
+		const prefix string = ",\"protectionDomain\":"
+		out.RawString(prefix)
+		out.String(string(in.ProtectionDomain))
+	}
+	if in.StoragePool != "" {
+		const prefix string = ",\"storagePool\":"
+		out.RawString(prefix)
+		out.String(string(in.StoragePool))
+	}
+	if in.StorageMode != "" {
+		const prefix string = ",\"storageMode\":"
+		out.RawString(prefix)
+		out.String(string(in.StorageMode))
+	}
+	if in.VolumeName != "" {
+		const prefix string = ",\"volumeName\":"
+		out.RawString(prefix)
+		out.String(string(in.VolumeName))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV151(in *jlexer.Lexer, out *_v11.PortworxVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "volumeID":
+			out.VolumeID = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV151(out *jwriter.Writer, in _v11.PortworxVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"volumeID\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.VolumeID))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV150(in *jlexer.Lexer, out *_v11.ProjectedVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "sources":
+			if in.IsNull() {
+				in.Skip()
+				out.Sources = nil
+			} else {
+				in.Delim('[')
+				if out.Sources == nil {
+					if !in.IsDelim(']') {
+						out.Sources = make([]_v11.VolumeProjection, 0, 2)
+					} else {
+						out.Sources = []_v11.VolumeProjection{}
+					}
+				} else {
+					out.Sources = (out.Sources)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v106 _v11.VolumeProjection
+					easyjsonAa42d34bDecodeK8sIoApiCoreV155(in, &v106)
+					out.Sources = append(out.Sources, v106)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "defaultMode":
+			if in.IsNull() {
+				in.Skip()
+				out.DefaultMode = nil
+			} else {
+				if out.DefaultMode == nil {
+					out.DefaultMode = new(int32)
+				}
+				*out.DefaultMode = int32(in.Int32())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV150(out *jwriter.Writer, in _v11.ProjectedVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"sources\":"
+		out.RawString(prefix[1:])
+		if in.Sources == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v107, v108 := range in.Sources {
+				if v107 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV155(out, v108)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.DefaultMode != nil {
+		const prefix string = ",\"defaultMode\":"
+		out.RawString(prefix)
+		out.Int32(int32(*in.DefaultMode))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV155(in *jlexer.Lexer, out *_v11.VolumeProjection) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "secret":
+			if in.IsNull() {
+				in.Skip()
+				out.Secret = nil
+			} else {
+				if out.Secret == nil {
+					out.Secret = new(_v11.SecretProjection)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV156(in, out.Secret)
+			}
+		case "downwardAPI":
+			if in.IsNull() {
+				in.Skip()
+				out.DownwardAPI = nil
+			} else {
+				if out.DownwardAPI == nil {
+					out.DownwardAPI = new(_v11.DownwardAPIProjection)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV157(in, out.DownwardAPI)
+			}
+		case "configMap":
+			if in.IsNull() {
+				in.Skip()
+				out.ConfigMap = nil
+			} else {
+				if out.ConfigMap == nil {
+					out.ConfigMap = new(_v11.ConfigMapProjection)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV158(in, out.ConfigMap)
+			}
+		case "serviceAccountToken":
+			if in.IsNull() {
+				in.Skip()
+				out.ServiceAccountToken = nil
+			} else {
+				if out.ServiceAccountToken == nil {
+					out.ServiceAccountToken = new(_v11.ServiceAccountTokenProjection)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV159(in, out.ServiceAccountToken)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV155(out *jwriter.Writer, in _v11.VolumeProjection) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Secret != nil {
+		const prefix string = ",\"secret\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV156(out, *in.Secret)
+	}
+	if in.DownwardAPI != nil {
+		const prefix string = ",\"downwardAPI\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV157(out, *in.DownwardAPI)
+	}
+	if in.ConfigMap != nil {
+		const prefix string = ",\"configMap\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV158(out, *in.ConfigMap)
+	}
+	if in.ServiceAccountToken != nil {
+		const prefix string = ",\"serviceAccountToken\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV159(out, *in.ServiceAccountToken)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV159(in *jlexer.Lexer, out *_v11.ServiceAccountTokenProjection) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "audience":
+			out.Audience = string(in.String())
+		case "expirationSeconds":
+			if in.IsNull() {
+				in.Skip()
+				out.ExpirationSeconds = nil
+			} else {
+				if out.ExpirationSeconds == nil {
+					out.ExpirationSeconds = new(int64)
+				}
+				*out.ExpirationSeconds = int64(in.Int64())
+			}
+		case "path":
+			out.Path = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV159(out *jwriter.Writer, in _v11.ServiceAccountTokenProjection) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Audience != "" {
+		const prefix string = ",\"audience\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Audience))
+	}
+	if in.ExpirationSeconds != nil {
+		const prefix string = ",\"expirationSeconds\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.ExpirationSeconds))
+	}
+	{
+		const prefix string = ",\"path\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Path))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV158(in *jlexer.Lexer, out *_v11.ConfigMapProjection) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "items":
+			if in.IsNull() {
+				in.Skip()
+				out.Items = nil
+			} else {
+				in.Delim('[')
+				if out.Items == nil {
+					if !in.IsDelim(']') {
+						out.Items = make([]_v11.KeyToPath, 0, 1)
+					} else {
+						out.Items = []_v11.KeyToPath{}
+					}
+				} else {
+					out.Items = (out.Items)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v109 _v11.KeyToPath
+					easyjsonAa42d34bDecodeK8sIoApiCoreV160(in, &v109)
+					out.Items = append(out.Items, v109)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV158(out *jwriter.Writer, in _v11.ConfigMapProjection) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Items) != 0 {
+		const prefix string = ",\"items\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v110, v111 := range in.Items {
+				if v110 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV160(out, v111)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.Optional))
+	}
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV160(in *jlexer.Lexer, out *_v11.KeyToPath) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "path":
+			out.Path = string(in.String())
+		case "mode":
+			if in.IsNull() {
+				in.Skip()
+				out.Mode = nil
+			} else {
+				if out.Mode == nil {
+					out.Mode = new(int32)
+				}
+				*out.Mode = int32(in.Int32())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV160(out *jwriter.Writer, in _v11.KeyToPath) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix)
+		out.String(string(in.Path))
+	}
+	if in.Mode != nil {
+		const prefix string = ",\"mode\":"
+		out.RawString(prefix)
+		out.Int32(int32(*in.Mode))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV157(in *jlexer.Lexer, out *_v11.DownwardAPIProjection) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "items":
+			if in.IsNull() {
+				in.Skip()
+				out.Items = nil
+			} else {
+				in.Delim('[')
+				if out.Items == nil {
+					if !in.IsDelim(']') {
+						out.Items = make([]_v11.DownwardAPIVolumeFile, 0, 1)
+					} else {
+						out.Items = []_v11.DownwardAPIVolumeFile{}
+					}
+				} else {
+					out.Items = (out.Items)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v112 _v11.DownwardAPIVolumeFile
+					easyjsonAa42d34bDecodeK8sIoApiCoreV161(in, &v112)
+					out.Items = append(out.Items, v112)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV157(out *jwriter.Writer, in _v11.DownwardAPIProjection) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Items) != 0 {
+		const prefix string = ",\"items\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v113, v114 := range in.Items {
+				if v113 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV161(out, v114)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV161(in *jlexer.Lexer, out *_v11.DownwardAPIVolumeFile) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "path":
+			out.Path = string(in.String())
+		case "fieldRef":
+			if in.IsNull() {
+				in.Skip()
+				out.FieldRef = nil
+			} else {
+				if out.FieldRef == nil {
+					out.FieldRef = new(_v11.ObjectFieldSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV162(in, out.FieldRef)
+			}
+		case "resourceFieldRef":
+			if in.IsNull() {
+				in.Skip()
+				out.ResourceFieldRef = nil
+			} else {
+				if out.ResourceFieldRef == nil {
+					out.ResourceFieldRef = new(_v11.ResourceFieldSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV163(in, out.ResourceFieldRef)
+			}
+		case "mode":
+			if in.IsNull() {
+				in.Skip()
+				out.Mode = nil
+			} else {
+				if out.Mode == nil {
+					out.Mode = new(int32)
+				}
+				*out.Mode = int32(in.Int32())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV161(out *jwriter.Writer, in _v11.DownwardAPIVolumeFile) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Path))
+	}
+	if in.FieldRef != nil {
+		const prefix string = ",\"fieldRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV162(out, *in.FieldRef)
+	}
+	if in.ResourceFieldRef != nil {
+		const prefix string = ",\"resourceFieldRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV163(out, *in.ResourceFieldRef)
+	}
+	if in.Mode != nil {
+		const prefix string = ",\"mode\":"
+		out.RawString(prefix)
+		out.Int32(int32(*in.Mode))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV163(in *jlexer.Lexer, out *_v11.ResourceFieldSelector) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "containerName":
+			out.ContainerName = string(in.String())
+		case "resource":
+			out.Resource = string(in.String())
+		case "divisor":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.Divisor).UnmarshalJSON(data))
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV163(out *jwriter.Writer, in _v11.ResourceFieldSelector) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.ContainerName != "" {
+		const prefix string = ",\"containerName\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.ContainerName))
+	}
+	{
+		const prefix string = ",\"resource\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Resource))
+	}
+	if true {
+		const prefix string = ",\"divisor\":"
+		out.RawString(prefix)
+		out.Raw((in.Divisor).MarshalJSON())
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV162(in *jlexer.Lexer, out *_v11.ObjectFieldSelector) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "apiVersion":
+			out.APIVersion = string(in.String())
+		case "fieldPath":
+			out.FieldPath = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV162(out *jwriter.Writer, in _v11.ObjectFieldSelector) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.APIVersion != "" {
+		const prefix string = ",\"apiVersion\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.APIVersion))
+	}
+	{
+		const prefix string = ",\"fieldPath\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.FieldPath))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV156(in *jlexer.Lexer, out *_v11.SecretProjection) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "items":
+			if in.IsNull() {
+				in.Skip()
+				out.Items = nil
+			} else {
+				in.Delim('[')
+				if out.Items == nil {
+					if !in.IsDelim(']') {
+						out.Items = make([]_v11.KeyToPath, 0, 1)
+					} else {
+						out.Items = []_v11.KeyToPath{}
+					}
+				} else {
+					out.Items = (out.Items)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v115 _v11.KeyToPath
+					easyjsonAa42d34bDecodeK8sIoApiCoreV160(in, &v115)
+					out.Items = append(out.Items, v115)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV156(out *jwriter.Writer, in _v11.SecretProjection) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Items) != 0 {
+		const prefix string = ",\"items\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v116, v117 := range in.Items {
+				if v116 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV160(out, v117)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.Optional))
+	}
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV149(in *jlexer.Lexer, out *_v11.PhotonPersistentDiskVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "pdID":
+			out.PdID = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV149(out *jwriter.Writer, in _v11.PhotonPersistentDiskVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"pdID\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.PdID))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV148(in *jlexer.Lexer, out *_v11.AzureDiskVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "diskName":
+			out.DiskName = string(in.String())
+		case "diskURI":
+			out.DataDiskURI = string(in.String())
+		case "cachingMode":
+			if in.IsNull() {
+				in.Skip()
+				out.CachingMode = nil
+			} else {
+				if out.CachingMode == nil {
+					out.CachingMode = new(_v11.AzureDataDiskCachingMode)
+				}
+				*out.CachingMode = _v11.AzureDataDiskCachingMode(in.String())
+			}
+		case "fsType":
+			if in.IsNull() {
+				in.Skip()
+				out.FSType = nil
+			} else {
+				if out.FSType == nil {
+					out.FSType = new(string)
+				}
+				*out.FSType = string(in.String())
+			}
+		case "readOnly":
+			if in.IsNull() {
+				in.Skip()
+				out.ReadOnly = nil
+			} else {
+				if out.ReadOnly == nil {
+					out.ReadOnly = new(bool)
+				}
+				*out.ReadOnly = bool(in.Bool())
+			}
+		case "kind":
+			if in.IsNull() {
+				in.Skip()
+				out.Kind = nil
+			} else {
+				if out.Kind == nil {
+					out.Kind = new(_v11.AzureDataDiskKind)
+				}
+				*out.Kind = _v11.AzureDataDiskKind(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV148(out *jwriter.Writer, in _v11.AzureDiskVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"diskName\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.DiskName))
+	}
+	{
+		const prefix string = ",\"diskURI\":"
+		out.RawString(prefix)
+		out.String(string(in.DataDiskURI))
+	}
+	if in.CachingMode != nil {
+		const prefix string = ",\"cachingMode\":"
+		out.RawString(prefix)
+		out.String(string(*in.CachingMode))
+	}
+	if in.FSType != nil {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(*in.FSType))
+	}
+	if in.ReadOnly != nil {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.ReadOnly))
+	}
+	if in.Kind != nil {
+		const prefix string = ",\"kind\":"
+		out.RawString(prefix)
+		out.String(string(*in.Kind))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV147(in *jlexer.Lexer, out *_v11.QuobyteVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "registry":
+			out.Registry = string(in.String())
+		case "volume":
+			out.Volume = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		case "user":
+			out.User = string(in.String())
+		case "group":
+			out.Group = string(in.String())
+		case "tenant":
+			out.Tenant = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV147(out *jwriter.Writer, in _v11.QuobyteVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"registry\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Registry))
+	}
+	{
+		const prefix string = ",\"volume\":"
+		out.RawString(prefix)
+		out.String(string(in.Volume))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	if in.User != "" {
+		const prefix string = ",\"user\":"
+		out.RawString(prefix)
+		out.String(string(in.User))
+	}
+	if in.Group != "" {
+		const prefix string = ",\"group\":"
+		out.RawString(prefix)
+		out.String(string(in.Group))
+	}
+	if in.Tenant != "" {
+		const prefix string = ",\"tenant\":"
+		out.RawString(prefix)
+		out.String(string(in.Tenant))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV146(in *jlexer.Lexer, out *_v11.VsphereVirtualDiskVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "volumePath":
+			out.VolumePath = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "storagePolicyName":
+			out.StoragePolicyName = string(in.String())
+		case "storagePolicyID":
+			out.StoragePolicyID = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV146(out *jwriter.Writer, in _v11.VsphereVirtualDiskVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"volumePath\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.VolumePath))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.StoragePolicyName != "" {
+		const prefix string = ",\"storagePolicyName\":"
+		out.RawString(prefix)
+		out.String(string(in.StoragePolicyName))
+	}
+	if in.StoragePolicyID != "" {
+		const prefix string = ",\"storagePolicyID\":"
+		out.RawString(prefix)
+		out.String(string(in.StoragePolicyID))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV145(in *jlexer.Lexer, out *_v11.ConfigMapVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "items":
+			if in.IsNull() {
+				in.Skip()
+				out.Items = nil
+			} else {
+				in.Delim('[')
+				if out.Items == nil {
+					if !in.IsDelim(']') {
+						out.Items = make([]_v11.KeyToPath, 0, 1)
+					} else {
+						out.Items = []_v11.KeyToPath{}
+					}
+				} else {
+					out.Items = (out.Items)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v118 _v11.KeyToPath
+					easyjsonAa42d34bDecodeK8sIoApiCoreV160(in, &v118)
+					out.Items = append(out.Items, v118)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "defaultMode":
+			if in.IsNull() {
+				in.Skip()
+				out.DefaultMode = nil
+			} else {
+				if out.DefaultMode == nil {
+					out.DefaultMode = new(int32)
+				}
+				*out.DefaultMode = int32(in.Int32())
+			}
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV145(out *jwriter.Writer, in _v11.ConfigMapVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Items) != 0 {
+		const prefix string = ",\"items\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v119, v120 := range in.Items {
+				if v119 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV160(out, v120)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.DefaultMode != nil {
+		const prefix string = ",\"defaultMode\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.DefaultMode))
+	}
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.Optional))
+	}
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV144(in *jlexer.Lexer, out *_v11.AzureFileVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "secretName":
+			out.SecretName = string(in.String())
+		case "shareName":
+			out.ShareName = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV144(out *jwriter.Writer, in _v11.AzureFileVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"secretName\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.SecretName))
+	}
+	{
+		const prefix string = ",\"shareName\":"
+		out.RawString(prefix)
+		out.String(string(in.ShareName))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV143(in *jlexer.Lexer, out *_v11.FCVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "targetWWNs":
+			if in.IsNull() {
+				in.Skip()
+				out.TargetWWNs = nil
+			} else {
+				in.Delim('[')
+				if out.TargetWWNs == nil {
+					if !in.IsDelim(']') {
+						out.TargetWWNs = make([]string, 0, 4)
+					} else {
+						out.TargetWWNs = []string{}
+					}
+				} else {
+					out.TargetWWNs = (out.TargetWWNs)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v121 string
+					v121 = string(in.String())
+					out.TargetWWNs = append(out.TargetWWNs, v121)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "lun":
+			if in.IsNull() {
+				in.Skip()
+				out.Lun = nil
+			} else {
+				if out.Lun == nil {
+					out.Lun = new(int32)
+				}
+				*out.Lun = int32(in.Int32())
+			}
+		case "fsType":
+			out.FSType = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		case "wwids":
+			if in.IsNull() {
+				in.Skip()
+				out.WWIDs = nil
+			} else {
+				in.Delim('[')
+				if out.WWIDs == nil {
+					if !in.IsDelim(']') {
+						out.WWIDs = make([]string, 0, 4)
+					} else {
+						out.WWIDs = []string{}
+					}
+				} else {
+					out.WWIDs = (out.WWIDs)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v122 string
+					v122 = string(in.String())
+					out.WWIDs = append(out.WWIDs, v122)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV143(out *jwriter.Writer, in _v11.FCVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.TargetWWNs) != 0 {
+		const prefix string = ",\"targetWWNs\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v123, v124 := range in.TargetWWNs {
+				if v123 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v124))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Lun != nil {
+		const prefix string = ",\"lun\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.Lun))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.FSType))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.ReadOnly))
+	}
+	if len(in.WWIDs) != 0 {
+		const prefix string = ",\"wwids\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v125, v126 := range in.WWIDs {
+				if v125 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v126))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV142(in *jlexer.Lexer, out *_v11.DownwardAPIVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "items":
+			if in.IsNull() {
+				in.Skip()
+				out.Items = nil
+			} else {
+				in.Delim('[')
+				if out.Items == nil {
+					if !in.IsDelim(']') {
+						out.Items = make([]_v11.DownwardAPIVolumeFile, 0, 1)
+					} else {
+						out.Items = []_v11.DownwardAPIVolumeFile{}
+					}
+				} else {
+					out.Items = (out.Items)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v127 _v11.DownwardAPIVolumeFile
+					easyjsonAa42d34bDecodeK8sIoApiCoreV161(in, &v127)
+					out.Items = append(out.Items, v127)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "defaultMode":
+			if in.IsNull() {
+				in.Skip()
+				out.DefaultMode = nil
+			} else {
+				if out.DefaultMode == nil {
+					out.DefaultMode = new(int32)
+				}
+				*out.DefaultMode = int32(in.Int32())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV142(out *jwriter.Writer, in _v11.DownwardAPIVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Items) != 0 {
+		const prefix string = ",\"items\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v128, v129 := range in.Items {
+				if v128 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV161(out, v129)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.DefaultMode != nil {
+		const prefix string = ",\"defaultMode\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.DefaultMode))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV141(in *jlexer.Lexer, out *_v11.FlockerVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "datasetName":
+			out.DatasetName = string(in.String())
+		case "datasetUUID":
+			out.DatasetUUID = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV141(out *jwriter.Writer, in _v11.FlockerVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.DatasetName != "" {
+		const prefix string = ",\"datasetName\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.DatasetName))
+	}
+	if in.DatasetUUID != "" {
+		const prefix string = ",\"datasetUUID\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.DatasetUUID))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV140(in *jlexer.Lexer, out *_v11.CephFSVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "monitors":
+			if in.IsNull() {
+				in.Skip()
+				out.Monitors = nil
+			} else {
+				in.Delim('[')
+				if out.Monitors == nil {
+					if !in.IsDelim(']') {
+						out.Monitors = make([]string, 0, 4)
+					} else {
+						out.Monitors = []string{}
+					}
+				} else {
+					out.Monitors = (out.Monitors)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v130 string
+					v130 = string(in.String())
+					out.Monitors = append(out.Monitors, v130)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "path":
+			out.Path = string(in.String())
+		case "user":
+			out.User = string(in.String())
+		case "secretFile":
+			out.SecretFile = string(in.String())
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.SecretRef)
+			}
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV140(out *jwriter.Writer, in _v11.CephFSVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"monitors\":"
+		out.RawString(prefix[1:])
+		if in.Monitors == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v131, v132 := range in.Monitors {
+				if v131 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v132))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Path != "" {
+		const prefix string = ",\"path\":"
+		out.RawString(prefix)
+		out.String(string(in.Path))
+	}
+	if in.User != "" {
+		const prefix string = ",\"user\":"
+		out.RawString(prefix)
+		out.String(string(in.User))
+	}
+	if in.SecretFile != "" {
+		const prefix string = ",\"secretFile\":"
+		out.RawString(prefix)
+		out.String(string(in.SecretFile))
+	}
+	if in.SecretRef != nil {
+		const prefix string = ",\"secretRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.SecretRef)
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV139(in *jlexer.Lexer, out *_v11.CinderVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "volumeID":
+			out.VolumeID = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.SecretRef)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV139(out *jwriter.Writer, in _v11.CinderVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"volumeID\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.VolumeID))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	if in.SecretRef != nil {
+		const prefix string = ",\"secretRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.SecretRef)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV138(in *jlexer.Lexer, out *_v11.FlexVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "driver":
+			out.Driver = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.SecretRef)
+			}
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		case "options":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Options = make(map[string]string)
+				} else {
+					out.Options = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v133 string
+					v133 = string(in.String())
+					(out.Options)[key] = v133
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV138(out *jwriter.Writer, in _v11.FlexVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"driver\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Driver))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.SecretRef != nil {
+		const prefix string = ",\"secretRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.SecretRef)
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	if len(in.Options) != 0 {
+		const prefix string = ",\"options\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('{')
+			v134First := true
+			for v134Name, v134Value := range in.Options {
+				if v134First {
+					v134First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v134Name))
+				out.RawByte(':')
+				out.String(string(v134Value))
+			}
+			out.RawByte('}')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV137(in *jlexer.Lexer, out *_v11.RBDVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "monitors":
+			if in.IsNull() {
+				in.Skip()
+				out.CephMonitors = nil
+			} else {
+				in.Delim('[')
+				if out.CephMonitors == nil {
+					if !in.IsDelim(']') {
+						out.CephMonitors = make([]string, 0, 4)
+					} else {
+						out.CephMonitors = []string{}
+					}
+				} else {
+					out.CephMonitors = (out.CephMonitors)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v135 string
+					v135 = string(in.String())
+					out.CephMonitors = append(out.CephMonitors, v135)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "image":
+			out.RBDImage = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "pool":
+			out.RBDPool = string(in.String())
+		case "user":
+			out.RadosUser = string(in.String())
+		case "keyring":
+			out.Keyring = string(in.String())
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.SecretRef)
+			}
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV137(out *jwriter.Writer, in _v11.RBDVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"monitors\":"
+		out.RawString(prefix[1:])
+		if in.CephMonitors == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v136, v137 := range in.CephMonitors {
+				if v136 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v137))
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"image\":"
+		out.RawString(prefix)
+		out.String(string(in.RBDImage))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.RBDPool != "" {
+		const prefix string = ",\"pool\":"
+		out.RawString(prefix)
+		out.String(string(in.RBDPool))
+	}
+	if in.RadosUser != "" {
+		const prefix string = ",\"user\":"
+		out.RawString(prefix)
+		out.String(string(in.RadosUser))
+	}
+	if in.Keyring != "" {
+		const prefix string = ",\"keyring\":"
+		out.RawString(prefix)
+		out.String(string(in.Keyring))
+	}
+	if in.SecretRef != nil {
+		const prefix string = ",\"secretRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.SecretRef)
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV136(in *jlexer.Lexer, out *_v11.PersistentVolumeClaimVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "claimName":
+			out.ClaimName = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV136(out *jwriter.Writer, in _v11.PersistentVolumeClaimVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"claimName\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.ClaimName))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV135(in *jlexer.Lexer, out *_v11.GlusterfsVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "endpoints":
+			out.EndpointsName = string(in.String())
+		case "path":
+			out.Path = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV135(out *jwriter.Writer, in _v11.GlusterfsVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"endpoints\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.EndpointsName))
+	}
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix)
+		out.String(string(in.Path))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV134(in *jlexer.Lexer, out *_v11.ISCSIVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "targetPortal":
+			out.TargetPortal = string(in.String())
+		case "iqn":
+			out.IQN = string(in.String())
+		case "lun":
+			out.Lun = int32(in.Int32())
+		case "iscsiInterface":
+			out.ISCSIInterface = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		case "portals":
+			if in.IsNull() {
+				in.Skip()
+				out.Portals = nil
+			} else {
+				in.Delim('[')
+				if out.Portals == nil {
+					if !in.IsDelim(']') {
+						out.Portals = make([]string, 0, 4)
+					} else {
+						out.Portals = []string{}
+					}
+				} else {
+					out.Portals = (out.Portals)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v138 string
+					v138 = string(in.String())
+					out.Portals = append(out.Portals, v138)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "chapAuthDiscovery":
+			out.DiscoveryCHAPAuth = bool(in.Bool())
+		case "chapAuthSession":
+			out.SessionCHAPAuth = bool(in.Bool())
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.LocalObjectReference)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV14(in, out.SecretRef)
+			}
+		case "initiatorName":
+			if in.IsNull() {
+				in.Skip()
+				out.InitiatorName = nil
+			} else {
+				if out.InitiatorName == nil {
+					out.InitiatorName = new(string)
+				}
+				*out.InitiatorName = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV134(out *jwriter.Writer, in _v11.ISCSIVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"targetPortal\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.TargetPortal))
+	}
+	{
+		const prefix string = ",\"iqn\":"
+		out.RawString(prefix)
+		out.String(string(in.IQN))
+	}
+	{
+		const prefix string = ",\"lun\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Lun))
+	}
+	if in.ISCSIInterface != "" {
+		const prefix string = ",\"iscsiInterface\":"
+		out.RawString(prefix)
+		out.String(string(in.ISCSIInterface))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	if len(in.Portals) != 0 {
+		const prefix string = ",\"portals\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v139, v140 := range in.Portals {
+				if v139 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v140))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.DiscoveryCHAPAuth {
+		const prefix string = ",\"chapAuthDiscovery\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.DiscoveryCHAPAuth))
+	}
+	if in.SessionCHAPAuth {
+		const prefix string = ",\"chapAuthSession\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.SessionCHAPAuth))
+	}
+	if in.SecretRef != nil {
+		const prefix string = ",\"secretRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV14(out, *in.SecretRef)
+	}
+	if in.InitiatorName != nil {
+		const prefix string = ",\"initiatorName\":"
+		out.RawString(prefix)
+		out.String(string(*in.InitiatorName))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV133(in *jlexer.Lexer, out *_v11.NFSVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "server":
+			out.Server = string(in.String())
+		case "path":
+			out.Path = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV133(out *jwriter.Writer, in _v11.NFSVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"server\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Server))
+	}
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix)
+		out.String(string(in.Path))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV132(in *jlexer.Lexer, out *_v11.SecretVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "secretName":
+			out.SecretName = string(in.String())
+		case "items":
+			if in.IsNull() {
+				in.Skip()
+				out.Items = nil
+			} else {
+				in.Delim('[')
+				if out.Items == nil {
+					if !in.IsDelim(']') {
+						out.Items = make([]_v11.KeyToPath, 0, 1)
+					} else {
+						out.Items = []_v11.KeyToPath{}
+					}
+				} else {
+					out.Items = (out.Items)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v141 _v11.KeyToPath
+					easyjsonAa42d34bDecodeK8sIoApiCoreV160(in, &v141)
+					out.Items = append(out.Items, v141)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "defaultMode":
+			if in.IsNull() {
+				in.Skip()
+				out.DefaultMode = nil
+			} else {
+				if out.DefaultMode == nil {
+					out.DefaultMode = new(int32)
+				}
+				*out.DefaultMode = int32(in.Int32())
+			}
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV132(out *jwriter.Writer, in _v11.SecretVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.SecretName != "" {
+		const prefix string = ",\"secretName\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.SecretName))
+	}
+	if len(in.Items) != 0 {
+		const prefix string = ",\"items\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v142, v143 := range in.Items {
+				if v142 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV160(out, v143)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.DefaultMode != nil {
+		const prefix string = ",\"defaultMode\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(*in.DefaultMode))
+	}
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.Optional))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV131(in *jlexer.Lexer, out *_v11.GitRepoVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "repository":
+			out.Repository = string(in.String())
+		case "revision":
+			out.Revision = string(in.String())
+		case "directory":
+			out.Directory = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV131(out *jwriter.Writer, in _v11.GitRepoVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"repository\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Repository))
+	}
+	if in.Revision != "" {
+		const prefix string = ",\"revision\":"
+		out.RawString(prefix)
+		out.String(string(in.Revision))
+	}
+	if in.Directory != "" {
+		const prefix string = ",\"directory\":"
+		out.RawString(prefix)
+		out.String(string(in.Directory))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV130(in *jlexer.Lexer, out *_v11.AWSElasticBlockStoreVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "volumeID":
+			out.VolumeID = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "partition":
+			out.Partition = int32(in.Int32())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV130(out *jwriter.Writer, in _v11.AWSElasticBlockStoreVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"volumeID\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.VolumeID))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.Partition != 0 {
+		const prefix string = ",\"partition\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Partition))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV129(in *jlexer.Lexer, out *_v11.GCEPersistentDiskVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "pdName":
+			out.PDName = string(in.String())
+		case "fsType":
+			out.FSType = string(in.String())
+		case "partition":
+			out.Partition = int32(in.Int32())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV129(out *jwriter.Writer, in _v11.GCEPersistentDiskVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"pdName\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.PDName))
+	}
+	if in.FSType != "" {
+		const prefix string = ",\"fsType\":"
+		out.RawString(prefix)
+		out.String(string(in.FSType))
+	}
+	if in.Partition != 0 {
+		const prefix string = ",\"partition\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Partition))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV128(in *jlexer.Lexer, out *_v11.EmptyDirVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "medium":
+			out.Medium = _v11.StorageMedium(in.String())
+		case "sizeLimit":
+			if in.IsNull() {
+				in.Skip()
+				out.SizeLimit = nil
+			} else {
+				if out.SizeLimit == nil {
+					out.SizeLimit = new(resource.Quantity)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.SizeLimit).UnmarshalJSON(data))
+				}
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV128(out *jwriter.Writer, in _v11.EmptyDirVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Medium != "" {
+		const prefix string = ",\"medium\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Medium))
+	}
+	if in.SizeLimit != nil {
+		const prefix string = ",\"sizeLimit\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((*in.SizeLimit).MarshalJSON())
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV127(in *jlexer.Lexer, out *_v11.HostPathVolumeSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "path":
+			out.Path = string(in.String())
+		case "type":
+			if in.IsNull() {
+				in.Skip()
+				out.Type = nil
+			} else {
+				if out.Type == nil {
+					out.Type = new(_v11.HostPathType)
+				}
+				*out.Type = _v11.HostPathType(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV127(out *jwriter.Writer, in _v11.HostPathVolumeSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Path))
+	}
+	if in.Type != nil {
+		const prefix string = ",\"type\":"
+		out.RawString(prefix)
+		out.String(string(*in.Type))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha15(in *jlexer.Lexer, out *ExecutorConfig) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "serviceAccountName":
+			out.ServiceAccountName = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha15(out *jwriter.Writer, in ExecutorConfig) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.ServiceAccountName != "" {
+		const prefix string = ",\"serviceAccountName\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.ServiceAccountName))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(in *jlexer.Lexer, out *Arguments) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "parameters":
+			if in.IsNull() {
+				in.Skip()
+				out.Parameters = nil
+			} else {
+				in.Delim('[')
+				if out.Parameters == nil {
+					if !in.IsDelim(']') {
+						out.Parameters = make([]Parameter, 0, 0)
+					} else {
+						out.Parameters = []Parameter{}
+					}
+				} else {
+					out.Parameters = (out.Parameters)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v144 Parameter
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(in, &v144)
+					out.Parameters = append(out.Parameters, v144)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "artifacts":
+			if in.IsNull() {
+				in.Skip()
+				out.Artifacts = nil
+			} else {
+				in.Delim('[')
+				if out.Artifacts == nil {
+					if !in.IsDelim(']') {
+						out.Artifacts = make(Artifacts, 0, 0)
+					} else {
+						out.Artifacts = Artifacts{}
+					}
+				} else {
+					out.Artifacts = (out.Artifacts)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v145 Artifact
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(in, &v145)
+					out.Artifacts = append(out.Artifacts, v145)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(out *jwriter.Writer, in Arguments) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Parameters) != 0 {
+		const prefix string = ",\"parameters\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v146, v147 := range in.Parameters {
+				if v146 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(out, v147)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Artifacts) != 0 {
+		const prefix string = ",\"artifacts\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v148, v149 := range in.Artifacts {
+				if v148 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(out, v149)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(in *jlexer.Lexer, out *Artifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "path":
+			out.Path = string(in.String())
+		case "mode":
+			if in.IsNull() {
+				in.Skip()
+				out.Mode = nil
+			} else {
+				if out.Mode == nil {
+					out.Mode = new(int32)
+				}
+				*out.Mode = int32(in.Int32())
+			}
+		case "from":
+			out.From = string(in.String())
+		case "globalName":
+			out.GlobalName = string(in.String())
+		case "archive":
+			if in.IsNull() {
+				in.Skip()
+				out.Archive = nil
+			} else {
+				if out.Archive == nil {
+					out.Archive = new(ArchiveStrategy)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha124(in, out.Archive)
+			}
+		case "optional":
+			out.Optional = bool(in.Bool())
+		case "subPath":
+			out.SubPath = string(in.String())
+		case "recurseMode":
+			out.RecurseMode = bool(in.Bool())
+		case "archiveLogs":
+			if in.IsNull() {
+				in.Skip()
+				out.ArchiveLogs = nil
+			} else {
+				if out.ArchiveLogs == nil {
+					out.ArchiveLogs = new(bool)
+				}
+				*out.ArchiveLogs = bool(in.Bool())
+			}
+		case "s3":
+			if in.IsNull() {
+				in.Skip()
+				out.S3 = nil
+			} else {
+				if out.S3 == nil {
+					out.S3 = new(S3Artifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha125(in, out.S3)
+			}
+		case "git":
+			if in.IsNull() {
+				in.Skip()
+				out.Git = nil
+			} else {
+				if out.Git == nil {
+					out.Git = new(GitArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha126(in, out.Git)
+			}
+		case "http":
+			if in.IsNull() {
+				in.Skip()
+				out.HTTP = nil
+			} else {
+				if out.HTTP == nil {
+					out.HTTP = new(HTTPArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha127(in, out.HTTP)
+			}
+		case "artifactory":
+			if in.IsNull() {
+				in.Skip()
+				out.Artifactory = nil
+			} else {
+				if out.Artifactory == nil {
+					out.Artifactory = new(ArtifactoryArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha128(in, out.Artifactory)
+			}
+		case "hdfs":
+			if in.IsNull() {
+				in.Skip()
+				out.HDFS = nil
+			} else {
+				if out.HDFS == nil {
+					out.HDFS = new(HDFSArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha129(in, out.HDFS)
+			}
+		case "raw":
+			if in.IsNull() {
+				in.Skip()
+				out.Raw = nil
+			} else {
+				if out.Raw == nil {
+					out.Raw = new(RawArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha130(in, out.Raw)
+			}
+		case "oss":
+			if in.IsNull() {
+				in.Skip()
+				out.OSS = nil
+			} else {
+				if out.OSS == nil {
+					out.OSS = new(OSSArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha131(in, out.OSS)
+			}
+		case "gcs":
+			if in.IsNull() {
+				in.Skip()
+				out.GCS = nil
+			} else {
+				if out.GCS == nil {
+					out.GCS = new(GCSArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha132(in, out.GCS)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(out *jwriter.Writer, in Artifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.Path != "" {
+		const prefix string = ",\"path\":"
+		out.RawString(prefix)
+		out.String(string(in.Path))
+	}
+	if in.Mode != nil {
+		const prefix string = ",\"mode\":"
+		out.RawString(prefix)
+		out.Int32(int32(*in.Mode))
+	}
+	if in.From != "" {
+		const prefix string = ",\"from\":"
+		out.RawString(prefix)
+		out.String(string(in.From))
+	}
+	if in.GlobalName != "" {
+		const prefix string = ",\"globalName\":"
+		out.RawString(prefix)
+		out.String(string(in.GlobalName))
+	}
+	if in.Archive != nil {
+		const prefix string = ",\"archive\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha124(out, *in.Archive)
+	}
+	if in.Optional {
+		const prefix string = ",\"optional\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Optional))
+	}
+	if in.SubPath != "" {
+		const prefix string = ",\"subPath\":"
+		out.RawString(prefix)
+		out.String(string(in.SubPath))
+	}
+	if in.RecurseMode {
+		const prefix string = ",\"recurseMode\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.RecurseMode))
+	}
+	if in.ArchiveLogs != nil {
+		const prefix string = ",\"archiveLogs\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.ArchiveLogs))
+	}
+	if in.S3 != nil {
+		const prefix string = ",\"s3\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha125(out, *in.S3)
+	}
+	if in.Git != nil {
+		const prefix string = ",\"git\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha126(out, *in.Git)
+	}
+	if in.HTTP != nil {
+		const prefix string = ",\"http\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha127(out, *in.HTTP)
+	}
+	if in.Artifactory != nil {
+		const prefix string = ",\"artifactory\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha128(out, *in.Artifactory)
+	}
+	if in.HDFS != nil {
+		const prefix string = ",\"hdfs\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha129(out, *in.HDFS)
+	}
+	if in.Raw != nil {
+		const prefix string = ",\"raw\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha130(out, *in.Raw)
+	}
+	if in.OSS != nil {
+		const prefix string = ",\"oss\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha131(out, *in.OSS)
+	}
+	if in.GCS != nil {
+		const prefix string = ",\"gcs\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha132(out, *in.GCS)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha132(in *jlexer.Lexer, out *GCSArtifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "bucket":
+			out.Bucket = string(in.String())
+		case "serviceAccountKeySecret":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, &out.ServiceAccountKeySecret)
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha132(out *jwriter.Writer, in GCSArtifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"bucket\":"
+		out.RawString(prefix)
+		out.String(string(in.Bucket))
+	}
+	if true {
+		const prefix string = ",\"serviceAccountKeySecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, in.ServiceAccountKeySecret)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV164(in *jlexer.Lexer, out *_v11.SecretKeySelector) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV164(out *jwriter.Writer, in _v11.SecretKeySelector) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.Optional))
+	}
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha131(in *jlexer.Lexer, out *OSSArtifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "endpoint":
+			out.Endpoint = string(in.String())
+		case "bucket":
+			out.Bucket = string(in.String())
+		case "accessKeySecret":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, &out.AccessKeySecret)
+		case "secretKeySecret":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, &out.SecretKeySecret)
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha131(out *jwriter.Writer, in OSSArtifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"endpoint\":"
+		out.RawString(prefix)
+		out.String(string(in.Endpoint))
+	}
+	{
+		const prefix string = ",\"bucket\":"
+		out.RawString(prefix)
+		out.String(string(in.Bucket))
+	}
+	{
+		const prefix string = ",\"accessKeySecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, in.AccessKeySecret)
+	}
+	{
+		const prefix string = ",\"secretKeySecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, in.SecretKeySecret)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha130(in *jlexer.Lexer, out *RawArtifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "data":
+			out.Data = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha130(out *jwriter.Writer, in RawArtifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"data\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Data))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha129(in *jlexer.Lexer, out *HDFSArtifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "path":
+			out.Path = string(in.String())
+		case "force":
+			out.Force = bool(in.Bool())
+		case "addresses":
+			if in.IsNull() {
+				in.Skip()
+				out.Addresses = nil
+			} else {
+				in.Delim('[')
+				if out.Addresses == nil {
+					if !in.IsDelim(']') {
+						out.Addresses = make([]string, 0, 4)
+					} else {
+						out.Addresses = []string{}
+					}
+				} else {
+					out.Addresses = (out.Addresses)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v150 string
+					v150 = string(in.String())
+					out.Addresses = append(out.Addresses, v150)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "hdfsUser":
+			out.HDFSUser = string(in.String())
+		case "krbCCacheSecret":
+			if in.IsNull() {
+				in.Skip()
+				out.KrbCCacheSecret = nil
+			} else {
+				if out.KrbCCacheSecret == nil {
+					out.KrbCCacheSecret = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.KrbCCacheSecret)
+			}
+		case "krbKeytabSecret":
+			if in.IsNull() {
+				in.Skip()
+				out.KrbKeytabSecret = nil
+			} else {
+				if out.KrbKeytabSecret == nil {
+					out.KrbKeytabSecret = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.KrbKeytabSecret)
+			}
+		case "krbUsername":
+			out.KrbUsername = string(in.String())
+		case "krbRealm":
+			out.KrbRealm = string(in.String())
+		case "krbConfigConfigMap":
+			if in.IsNull() {
+				in.Skip()
+				out.KrbConfigConfigMap = nil
+			} else {
+				if out.KrbConfigConfigMap == nil {
+					out.KrbConfigConfigMap = new(_v11.ConfigMapKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV18(in, out.KrbConfigConfigMap)
+			}
+		case "krbServicePrincipalName":
+			out.KrbServicePrincipalName = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha129(out *jwriter.Writer, in HDFSArtifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Path))
+	}
+	if in.Force {
+		const prefix string = ",\"force\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Force))
+	}
+	{
+		const prefix string = ",\"addresses\":"
+		out.RawString(prefix)
+		if in.Addresses == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v151, v152 := range in.Addresses {
+				if v151 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v152))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.HDFSUser != "" {
+		const prefix string = ",\"hdfsUser\":"
+		out.RawString(prefix)
+		out.String(string(in.HDFSUser))
+	}
+	if in.KrbCCacheSecret != nil {
+		const prefix string = ",\"krbCCacheSecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.KrbCCacheSecret)
+	}
+	if in.KrbKeytabSecret != nil {
+		const prefix string = ",\"krbKeytabSecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.KrbKeytabSecret)
+	}
+	if in.KrbUsername != "" {
+		const prefix string = ",\"krbUsername\":"
+		out.RawString(prefix)
+		out.String(string(in.KrbUsername))
+	}
+	if in.KrbRealm != "" {
+		const prefix string = ",\"krbRealm\":"
+		out.RawString(prefix)
+		out.String(string(in.KrbRealm))
+	}
+	if in.KrbConfigConfigMap != nil {
+		const prefix string = ",\"krbConfigConfigMap\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV18(out, *in.KrbConfigConfigMap)
+	}
+	if in.KrbServicePrincipalName != "" {
+		const prefix string = ",\"krbServicePrincipalName\":"
+		out.RawString(prefix)
+		out.String(string(in.KrbServicePrincipalName))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha128(in *jlexer.Lexer, out *ArtifactoryArtifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "url":
+			out.URL = string(in.String())
+		case "usernameSecret":
+			if in.IsNull() {
+				in.Skip()
+				out.UsernameSecret = nil
+			} else {
+				if out.UsernameSecret == nil {
+					out.UsernameSecret = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.UsernameSecret)
+			}
+		case "passwordSecret":
+			if in.IsNull() {
+				in.Skip()
+				out.PasswordSecret = nil
+			} else {
+				if out.PasswordSecret == nil {
+					out.PasswordSecret = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.PasswordSecret)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha128(out *jwriter.Writer, in ArtifactoryArtifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"url\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.URL))
+	}
+	if in.UsernameSecret != nil {
+		const prefix string = ",\"usernameSecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.UsernameSecret)
+	}
+	if in.PasswordSecret != nil {
+		const prefix string = ",\"passwordSecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.PasswordSecret)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha127(in *jlexer.Lexer, out *HTTPArtifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "url":
+			out.URL = string(in.String())
+		case "headers":
+			if in.IsNull() {
+				in.Skip()
+				out.Headers = nil
+			} else {
+				in.Delim('[')
+				if out.Headers == nil {
+					if !in.IsDelim(']') {
+						out.Headers = make([]Header, 0, 2)
+					} else {
+						out.Headers = []Header{}
+					}
+				} else {
+					out.Headers = (out.Headers)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v153 Header
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha133(in, &v153)
+					out.Headers = append(out.Headers, v153)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha127(out *jwriter.Writer, in HTTPArtifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"url\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.URL))
+	}
+	if len(in.Headers) != 0 {
+		const prefix string = ",\"headers\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v154, v155 := range in.Headers {
+				if v154 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha133(out, v155)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha133(in *jlexer.Lexer, out *Header) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "value":
+			out.Value = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha133(out *jwriter.Writer, in Header) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"value\":"
+		out.RawString(prefix)
+		out.String(string(in.Value))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha126(in *jlexer.Lexer, out *GitArtifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "repo":
+			out.Repo = string(in.String())
+		case "revision":
+			out.Revision = string(in.String())
+		case "depth":
+			if in.IsNull() {
+				in.Skip()
+				out.Depth = nil
+			} else {
+				if out.Depth == nil {
+					out.Depth = new(uint64)
+				}
+				*out.Depth = uint64(in.Uint64())
+			}
+		case "fetch":
+			if in.IsNull() {
+				in.Skip()
+				out.Fetch = nil
+			} else {
+				in.Delim('[')
+				if out.Fetch == nil {
+					if !in.IsDelim(']') {
+						out.Fetch = make([]string, 0, 4)
+					} else {
+						out.Fetch = []string{}
+					}
+				} else {
+					out.Fetch = (out.Fetch)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v156 string
+					v156 = string(in.String())
+					out.Fetch = append(out.Fetch, v156)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "usernameSecret":
+			if in.IsNull() {
+				in.Skip()
+				out.UsernameSecret = nil
+			} else {
+				if out.UsernameSecret == nil {
+					out.UsernameSecret = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.UsernameSecret)
+			}
+		case "passwordSecret":
+			if in.IsNull() {
+				in.Skip()
+				out.PasswordSecret = nil
+			} else {
+				if out.PasswordSecret == nil {
+					out.PasswordSecret = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.PasswordSecret)
+			}
+		case "sshPrivateKeySecret":
+			if in.IsNull() {
+				in.Skip()
+				out.SSHPrivateKeySecret = nil
+			} else {
+				if out.SSHPrivateKeySecret == nil {
+					out.SSHPrivateKeySecret = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.SSHPrivateKeySecret)
+			}
+		case "insecureIgnoreHostKey":
+			out.InsecureIgnoreHostKey = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha126(out *jwriter.Writer, in GitArtifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"repo\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Repo))
+	}
+	if in.Revision != "" {
+		const prefix string = ",\"revision\":"
+		out.RawString(prefix)
+		out.String(string(in.Revision))
+	}
+	if in.Depth != nil {
+		const prefix string = ",\"depth\":"
+		out.RawString(prefix)
+		out.Uint64(uint64(*in.Depth))
+	}
+	if len(in.Fetch) != 0 {
+		const prefix string = ",\"fetch\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v157, v158 := range in.Fetch {
+				if v157 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v158))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.UsernameSecret != nil {
+		const prefix string = ",\"usernameSecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.UsernameSecret)
+	}
+	if in.PasswordSecret != nil {
+		const prefix string = ",\"passwordSecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.PasswordSecret)
+	}
+	if in.SSHPrivateKeySecret != nil {
+		const prefix string = ",\"sshPrivateKeySecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.SSHPrivateKeySecret)
+	}
+	if in.InsecureIgnoreHostKey {
+		const prefix string = ",\"insecureIgnoreHostKey\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.InsecureIgnoreHostKey))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha125(in *jlexer.Lexer, out *S3Artifact) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "endpoint":
+			out.Endpoint = string(in.String())
+		case "bucket":
+			out.Bucket = string(in.String())
+		case "region":
+			out.Region = string(in.String())
+		case "insecure":
+			if in.IsNull() {
+				in.Skip()
+				out.Insecure = nil
+			} else {
+				if out.Insecure == nil {
+					out.Insecure = new(bool)
+				}
+				*out.Insecure = bool(in.Bool())
+			}
+		case "accessKeySecret":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, &out.AccessKeySecret)
+		case "secretKeySecret":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, &out.SecretKeySecret)
+		case "roleARN":
+			out.RoleARN = string(in.String())
+		case "useSDKCreds":
+			out.UseSDKCreds = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha125(out *jwriter.Writer, in S3Artifact) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"endpoint\":"
+		out.RawString(prefix)
+		out.String(string(in.Endpoint))
+	}
+	{
+		const prefix string = ",\"bucket\":"
+		out.RawString(prefix)
+		out.String(string(in.Bucket))
+	}
+	if in.Region != "" {
+		const prefix string = ",\"region\":"
+		out.RawString(prefix)
+		out.String(string(in.Region))
+	}
+	if in.Insecure != nil {
+		const prefix string = ",\"insecure\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.Insecure))
+	}
+	{
+		const prefix string = ",\"accessKeySecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, in.AccessKeySecret)
+	}
+	{
+		const prefix string = ",\"secretKeySecret\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, in.SecretKeySecret)
+	}
+	if in.RoleARN != "" {
+		const prefix string = ",\"roleARN\":"
+		out.RawString(prefix)
+		out.String(string(in.RoleARN))
+	}
+	if in.UseSDKCreds {
+		const prefix string = ",\"useSDKCreds\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.UseSDKCreds))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha124(in *jlexer.Lexer, out *ArchiveStrategy) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "tar":
+			if in.IsNull() {
+				in.Skip()
+				out.Tar = nil
+			} else {
+				if out.Tar == nil {
+					out.Tar = new(TarStrategy)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha134(in, out.Tar)
+			}
+		case "none":
+			if in.IsNull() {
+				in.Skip()
+				out.None = nil
+			} else {
+				if out.None == nil {
+					out.None = new(NoneStrategy)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha135(in, out.None)
+			}
+		case "zip":
+			if in.IsNull() {
+				in.Skip()
+				out.Zip = nil
+			} else {
+				if out.Zip == nil {
+					out.Zip = new(ZipStrategy)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(in, out.Zip)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha124(out *jwriter.Writer, in ArchiveStrategy) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Tar != nil {
+		const prefix string = ",\"tar\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha134(out, *in.Tar)
+	}
+	if in.None != nil {
+		const prefix string = ",\"none\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha135(out, *in.None)
+	}
+	if in.Zip != nil {
+		const prefix string = ",\"zip\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(out, *in.Zip)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(in *jlexer.Lexer, out *ZipStrategy) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(out *jwriter.Writer, in ZipStrategy) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha135(in *jlexer.Lexer, out *NoneStrategy) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha135(out *jwriter.Writer, in NoneStrategy) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha134(in *jlexer.Lexer, out *TarStrategy) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "compressionLevel":
+			if in.IsNull() {
+				in.Skip()
+				out.CompressionLevel = nil
+			} else {
+				if out.CompressionLevel == nil {
+					out.CompressionLevel = new(int32)
+				}
+				*out.CompressionLevel = int32(in.Int32())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha134(out *jwriter.Writer, in TarStrategy) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.CompressionLevel != nil {
+		const prefix string = ",\"compressionLevel\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Int32(int32(*in.CompressionLevel))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(in *jlexer.Lexer, out *Parameter) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "default":
+			if in.IsNull() {
+				in.Skip()
+				out.Default = nil
+			} else {
+				if out.Default == nil {
+					out.Default = new(AnyString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.Default).UnmarshalJSON(data))
+				}
+			}
+		case "value":
+			if in.IsNull() {
+				in.Skip()
+				out.Value = nil
+			} else {
+				if out.Value == nil {
+					out.Value = new(AnyString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.Value).UnmarshalJSON(data))
+				}
+			}
+		case "valueFrom":
+			if in.IsNull() {
+				in.Skip()
+				out.ValueFrom = nil
+			} else {
+				if out.ValueFrom == nil {
+					out.ValueFrom = new(ValueFrom)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha137(in, out.ValueFrom)
+			}
+		case "globalName":
+			out.GlobalName = string(in.String())
+		case "enum":
+			if in.IsNull() {
+				in.Skip()
+				out.Enum = nil
+			} else {
+				in.Delim('[')
+				if out.Enum == nil {
+					if !in.IsDelim(']') {
+						out.Enum = make([]AnyString, 0, 4)
+					} else {
+						out.Enum = []AnyString{}
+					}
+				} else {
+					out.Enum = (out.Enum)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v159 AnyString
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v159).UnmarshalJSON(data))
+					}
+					out.Enum = append(out.Enum, v159)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(out *jwriter.Writer, in Parameter) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.Default != nil {
+		const prefix string = ",\"default\":"
+		out.RawString(prefix)
+		out.Raw((*in.Default).MarshalJSON())
+	}
+	if in.Value != nil {
+		const prefix string = ",\"value\":"
+		out.RawString(prefix)
+		out.Raw((*in.Value).MarshalJSON())
+	}
+	if in.ValueFrom != nil {
+		const prefix string = ",\"valueFrom\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha137(out, *in.ValueFrom)
+	}
+	if in.GlobalName != "" {
+		const prefix string = ",\"globalName\":"
+		out.RawString(prefix)
+		out.String(string(in.GlobalName))
+	}
+	if len(in.Enum) != 0 {
+		const prefix string = ",\"enum\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v160, v161 := range in.Enum {
+				if v160 > 0 {
+					out.RawByte(',')
+				}
+				out.Raw((v161).MarshalJSON())
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha137(in *jlexer.Lexer, out *ValueFrom) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "path":
+			out.Path = string(in.String())
+		case "jsonPath":
+			out.JSONPath = string(in.String())
+		case "jqFilter":
+			out.JQFilter = string(in.String())
+		case "event":
+			out.Event = string(in.String())
+		case "parameter":
+			out.Parameter = string(in.String())
+		case "supplied":
+			if in.IsNull() {
+				in.Skip()
+				out.Supplied = nil
+			} else {
+				if out.Supplied == nil {
+					out.Supplied = new(SuppliedValueFrom)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha138(in, out.Supplied)
+			}
+		case "default":
+			if in.IsNull() {
+				in.Skip()
+				out.Default = nil
+			} else {
+				if out.Default == nil {
+					out.Default = new(AnyString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.Default).UnmarshalJSON(data))
+				}
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha137(out *jwriter.Writer, in ValueFrom) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Path != "" {
+		const prefix string = ",\"path\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Path))
+	}
+	if in.JSONPath != "" {
+		const prefix string = ",\"jsonPath\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.JSONPath))
+	}
+	if in.JQFilter != "" {
+		const prefix string = ",\"jqFilter\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.JQFilter))
+	}
+	if in.Event != "" {
+		const prefix string = ",\"event\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Event))
+	}
+	if in.Parameter != "" {
+		const prefix string = ",\"parameter\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Parameter))
+	}
+	if in.Supplied != nil {
+		const prefix string = ",\"supplied\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha138(out, *in.Supplied)
+	}
+	if in.Default != nil {
+		const prefix string = ",\"default\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((*in.Default).MarshalJSON())
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha138(in *jlexer.Lexer, out *SuppliedValueFrom) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha138(out *jwriter.Writer, in SuppliedValueFrom) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(in *jlexer.Lexer, out *Template) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "template":
+			out.Template = string(in.String())
+		case "arguments":
+			easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(in, &out.Arguments)
+		case "templateRef":
+			if in.IsNull() {
+				in.Skip()
+				out.TemplateRef = nil
+			} else {
+				if out.TemplateRef == nil {
+					out.TemplateRef = new(TemplateRef)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha139(in, out.TemplateRef)
+			}
+		case "inputs":
+			easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha140(in, &out.Inputs)
+		case "outputs":
+			easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha141(in, &out.Outputs)
+		case "nodeSelector":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.NodeSelector = make(map[string]string)
+				} else {
+					out.NodeSelector = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v162 string
+					v162 = string(in.String())
+					(out.NodeSelector)[key] = v162
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "affinity":
+			if in.IsNull() {
+				in.Skip()
+				out.Affinity = nil
+			} else {
+				if out.Affinity == nil {
+					out.Affinity = new(_v11.Affinity)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV12(in, out.Affinity)
+			}
+		case "metadata":
+			easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha142(in, &out.Metadata)
+		case "daemon":
+			if in.IsNull() {
+				in.Skip()
+				out.Daemon = nil
+			} else {
+				if out.Daemon == nil {
+					out.Daemon = new(bool)
+				}
+				*out.Daemon = bool(in.Bool())
+			}
+		case "steps":
+			if in.IsNull() {
+				in.Skip()
+				out.Steps = nil
+			} else {
+				in.Delim('[')
+				if out.Steps == nil {
+					if !in.IsDelim(']') {
+						out.Steps = make([]ParallelSteps, 0, 2)
+					} else {
+						out.Steps = []ParallelSteps{}
+					}
+				} else {
+					out.Steps = (out.Steps)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v163 ParallelSteps
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v163).UnmarshalJSON(data))
+					}
+					out.Steps = append(out.Steps, v163)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "container":
+			if in.IsNull() {
+				in.Skip()
+				out.Container = nil
+			} else {
+				if out.Container == nil {
+					out.Container = new(_v11.Container)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV165(in, out.Container)
+			}
+		case "script":
+			if in.IsNull() {
+				in.Skip()
+				out.Script = nil
+			} else {
+				if out.Script == nil {
+					out.Script = new(ScriptTemplate)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha143(in, out.Script)
+			}
+		case "resource":
+			if in.IsNull() {
+				in.Skip()
+				out.Resource = nil
+			} else {
+				if out.Resource == nil {
+					out.Resource = new(ResourceTemplate)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha144(in, out.Resource)
+			}
+		case "dag":
+			if in.IsNull() {
+				in.Skip()
+				out.DAG = nil
+			} else {
+				if out.DAG == nil {
+					out.DAG = new(DAGTemplate)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha145(in, out.DAG)
+			}
+		case "suspend":
+			if in.IsNull() {
+				in.Skip()
+				out.Suspend = nil
+			} else {
+				if out.Suspend == nil {
+					out.Suspend = new(SuspendTemplate)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha146(in, out.Suspend)
+			}
+		case "volumes":
+			if in.IsNull() {
+				in.Skip()
+				out.Volumes = nil
+			} else {
+				in.Delim('[')
+				if out.Volumes == nil {
+					if !in.IsDelim(']') {
+						out.Volumes = make([]_v11.Volume, 0, 0)
+					} else {
+						out.Volumes = []_v11.Volume{}
+					}
+				} else {
+					out.Volumes = (out.Volumes)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v164 _v11.Volume
+					easyjsonAa42d34bDecodeK8sIoApiCoreV1(in, &v164)
+					out.Volumes = append(out.Volumes, v164)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "initContainers":
+			if in.IsNull() {
+				in.Skip()
+				out.InitContainers = nil
+			} else {
+				in.Delim('[')
+				if out.InitContainers == nil {
+					if !in.IsDelim(']') {
+						out.InitContainers = make([]UserContainer, 0, 0)
+					} else {
+						out.InitContainers = []UserContainer{}
+					}
+				} else {
+					out.InitContainers = (out.InitContainers)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v165 UserContainer
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(in, &v165)
+					out.InitContainers = append(out.InitContainers, v165)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "sidecars":
+			if in.IsNull() {
+				in.Skip()
+				out.Sidecars = nil
+			} else {
+				in.Delim('[')
+				if out.Sidecars == nil {
+					if !in.IsDelim(']') {
+						out.Sidecars = make([]UserContainer, 0, 0)
+					} else {
+						out.Sidecars = []UserContainer{}
+					}
+				} else {
+					out.Sidecars = (out.Sidecars)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v166 UserContainer
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(in, &v166)
+					out.Sidecars = append(out.Sidecars, v166)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "archiveLocation":
+			if in.IsNull() {
+				in.Skip()
+				out.ArchiveLocation = nil
+			} else {
+				if out.ArchiveLocation == nil {
+					out.ArchiveLocation = new(ArtifactLocation)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha148(in, out.ArchiveLocation)
+			}
+		case "activeDeadlineSeconds":
+			if in.IsNull() {
+				in.Skip()
+				out.ActiveDeadlineSeconds = nil
+			} else {
+				if out.ActiveDeadlineSeconds == nil {
+					out.ActiveDeadlineSeconds = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.ActiveDeadlineSeconds).UnmarshalJSON(data))
+				}
+			}
+		case "retryStrategy":
+			if in.IsNull() {
+				in.Skip()
+				out.RetryStrategy = nil
+			} else {
+				if out.RetryStrategy == nil {
+					out.RetryStrategy = new(RetryStrategy)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha113(in, out.RetryStrategy)
+			}
+		case "parallelism":
+			if in.IsNull() {
+				in.Skip()
+				out.Parallelism = nil
+			} else {
+				if out.Parallelism == nil {
+					out.Parallelism = new(int64)
+				}
+				*out.Parallelism = int64(in.Int64())
+			}
+		case "tolerations":
+			if in.IsNull() {
+				in.Skip()
+				out.Tolerations = nil
+			} else {
+				in.Delim('[')
+				if out.Tolerations == nil {
+					if !in.IsDelim(']') {
+						out.Tolerations = make([]_v11.Toleration, 0, 0)
+					} else {
+						out.Tolerations = []_v11.Toleration{}
+					}
+				} else {
+					out.Tolerations = (out.Tolerations)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v167 _v11.Toleration
+					easyjsonAa42d34bDecodeK8sIoApiCoreV13(in, &v167)
+					out.Tolerations = append(out.Tolerations, v167)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "schedulerName":
+			out.SchedulerName = string(in.String())
+		case "priorityClassName":
+			out.PriorityClassName = string(in.String())
+		case "priority":
+			if in.IsNull() {
+				in.Skip()
+				out.Priority = nil
+			} else {
+				if out.Priority == nil {
+					out.Priority = new(int32)
+				}
+				*out.Priority = int32(in.Int32())
+			}
+		case "serviceAccountName":
+			out.ServiceAccountName = string(in.String())
+		case "automountServiceAccountToken":
+			if in.IsNull() {
+				in.Skip()
+				out.AutomountServiceAccountToken = nil
+			} else {
+				if out.AutomountServiceAccountToken == nil {
+					out.AutomountServiceAccountToken = new(bool)
+				}
+				*out.AutomountServiceAccountToken = bool(in.Bool())
+			}
+		case "executor":
+			if in.IsNull() {
+				in.Skip()
+				out.Executor = nil
+			} else {
+				if out.Executor == nil {
+					out.Executor = new(ExecutorConfig)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha15(in, out.Executor)
+			}
+		case "hostAliases":
+			if in.IsNull() {
+				in.Skip()
+				out.HostAliases = nil
+			} else {
+				in.Delim('[')
+				if out.HostAliases == nil {
+					if !in.IsDelim(']') {
+						out.HostAliases = make([]_v11.HostAlias, 0, 1)
+					} else {
+						out.HostAliases = []_v11.HostAlias{}
+					}
+				} else {
+					out.HostAliases = (out.HostAliases)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v168 _v11.HostAlias
+					easyjsonAa42d34bDecodeK8sIoApiCoreV16(in, &v168)
+					out.HostAliases = append(out.HostAliases, v168)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "securityContext":
+			if in.IsNull() {
+				in.Skip()
+				out.SecurityContext = nil
+			} else {
+				if out.SecurityContext == nil {
+					out.SecurityContext = new(_v11.PodSecurityContext)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV17(in, out.SecurityContext)
+			}
+		case "podSpecPatch":
+			out.PodSpecPatch = string(in.String())
+		case "metrics":
+			if in.IsNull() {
+				in.Skip()
+				out.Metrics = nil
+			} else {
+				if out.Metrics == nil {
+					out.Metrics = new(Metrics)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha19(in, out.Metrics)
+			}
+		case "synchronization":
+			if in.IsNull() {
+				in.Skip()
+				out.Synchronization = nil
+			} else {
+				if out.Synchronization == nil {
+					out.Synchronization = new(Synchronization)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha111(in, out.Synchronization)
+			}
+		case "memoize":
+			if in.IsNull() {
+				in.Skip()
+				out.Memoize = nil
+			} else {
+				if out.Memoize == nil {
+					out.Memoize = new(Memoize)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha149(in, out.Memoize)
+			}
+		case "timeout":
+			out.Timeout = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(out *jwriter.Writer, in Template) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.Template != "" {
+		const prefix string = ",\"template\":"
+		out.RawString(prefix)
+		out.String(string(in.Template))
+	}
+	if true {
+		const prefix string = ",\"arguments\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(out, in.Arguments)
+	}
+	if in.TemplateRef != nil {
+		const prefix string = ",\"templateRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha139(out, *in.TemplateRef)
+	}
+	if true {
+		const prefix string = ",\"inputs\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha140(out, in.Inputs)
+	}
+	if true {
+		const prefix string = ",\"outputs\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha141(out, in.Outputs)
+	}
+	if len(in.NodeSelector) != 0 {
+		const prefix string = ",\"nodeSelector\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('{')
+			v169First := true
+			for v169Name, v169Value := range in.NodeSelector {
+				if v169First {
+					v169First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v169Name))
+				out.RawByte(':')
+				out.String(string(v169Value))
+			}
+			out.RawByte('}')
+		}
+	}
+	if in.Affinity != nil {
+		const prefix string = ",\"affinity\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV12(out, *in.Affinity)
+	}
+	if true {
+		const prefix string = ",\"metadata\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha142(out, in.Metadata)
+	}
+	if in.Daemon != nil {
+		const prefix string = ",\"daemon\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.Daemon))
+	}
+	if len(in.Steps) != 0 {
+		const prefix string = ",\"steps\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v170, v171 := range in.Steps {
+				if v170 > 0 {
+					out.RawByte(',')
+				}
+				out.Raw((v171).MarshalJSON())
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Container != nil {
+		const prefix string = ",\"container\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV165(out, *in.Container)
+	}
+	if in.Script != nil {
+		const prefix string = ",\"script\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha143(out, *in.Script)
+	}
+	if in.Resource != nil {
+		const prefix string = ",\"resource\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha144(out, *in.Resource)
+	}
+	if in.DAG != nil {
+		const prefix string = ",\"dag\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha145(out, *in.DAG)
+	}
+	if in.Suspend != nil {
+		const prefix string = ",\"suspend\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha146(out, *in.Suspend)
+	}
+	if len(in.Volumes) != 0 {
+		const prefix string = ",\"volumes\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v172, v173 := range in.Volumes {
+				if v172 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV1(out, v173)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.InitContainers) != 0 {
+		const prefix string = ",\"initContainers\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v174, v175 := range in.InitContainers {
+				if v174 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(out, v175)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Sidecars) != 0 {
+		const prefix string = ",\"sidecars\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v176, v177 := range in.Sidecars {
+				if v176 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(out, v177)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.ArchiveLocation != nil {
+		const prefix string = ",\"archiveLocation\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha148(out, *in.ArchiveLocation)
+	}
+	if in.ActiveDeadlineSeconds != nil {
+		const prefix string = ",\"activeDeadlineSeconds\":"
+		out.RawString(prefix)
+		out.Raw((*in.ActiveDeadlineSeconds).MarshalJSON())
+	}
+	if in.RetryStrategy != nil {
+		const prefix string = ",\"retryStrategy\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha113(out, *in.RetryStrategy)
+	}
+	if in.Parallelism != nil {
+		const prefix string = ",\"parallelism\":"
+		out.RawString(prefix)
+		out.Int64(int64(*in.Parallelism))
+	}
+	if len(in.Tolerations) != 0 {
+		const prefix string = ",\"tolerations\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v178, v179 := range in.Tolerations {
+				if v178 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV13(out, v179)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.SchedulerName != "" {
+		const prefix string = ",\"schedulerName\":"
+		out.RawString(prefix)
+		out.String(string(in.SchedulerName))
+	}
+	if in.PriorityClassName != "" {
+		const prefix string = ",\"priorityClassName\":"
+		out.RawString(prefix)
+		out.String(string(in.PriorityClassName))
+	}
+	if in.Priority != nil {
+		const prefix string = ",\"priority\":"
+		out.RawString(prefix)
+		out.Int32(int32(*in.Priority))
+	}
+	if in.ServiceAccountName != "" {
+		const prefix string = ",\"serviceAccountName\":"
+		out.RawString(prefix)
+		out.String(string(in.ServiceAccountName))
+	}
+	if in.AutomountServiceAccountToken != nil {
+		const prefix string = ",\"automountServiceAccountToken\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.AutomountServiceAccountToken))
+	}
+	if in.Executor != nil {
+		const prefix string = ",\"executor\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha15(out, *in.Executor)
+	}
+	if len(in.HostAliases) != 0 {
+		const prefix string = ",\"hostAliases\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v180, v181 := range in.HostAliases {
+				if v180 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV16(out, v181)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.SecurityContext != nil {
+		const prefix string = ",\"securityContext\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV17(out, *in.SecurityContext)
+	}
+	if in.PodSpecPatch != "" {
+		const prefix string = ",\"podSpecPatch\":"
+		out.RawString(prefix)
+		out.String(string(in.PodSpecPatch))
+	}
+	if in.Metrics != nil {
+		const prefix string = ",\"metrics\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha19(out, *in.Metrics)
+	}
+	if in.Synchronization != nil {
+		const prefix string = ",\"synchronization\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha111(out, *in.Synchronization)
+	}
+	if in.Memoize != nil {
+		const prefix string = ",\"memoize\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha149(out, *in.Memoize)
+	}
+	if in.Timeout != "" {
+		const prefix string = ",\"timeout\":"
+		out.RawString(prefix)
+		out.String(string(in.Timeout))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha149(in *jlexer.Lexer, out *Memoize) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "key":
+			out.Key = string(in.String())
+		case "cache":
+			if in.IsNull() {
+				in.Skip()
+				out.Cache = nil
+			} else {
+				if out.Cache == nil {
+					out.Cache = new(Cache)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha150(in, out.Cache)
+			}
+		case "maxAge":
+			out.MaxAge = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha149(out *jwriter.Writer, in Memoize) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"key\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Key))
+	}
+	{
+		const prefix string = ",\"cache\":"
+		out.RawString(prefix)
+		if in.Cache == nil {
+			out.RawString("null")
+		} else {
+			easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha150(out, *in.Cache)
+		}
+	}
+	{
+		const prefix string = ",\"maxAge\":"
+		out.RawString(prefix)
+		out.String(string(in.MaxAge))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha150(in *jlexer.Lexer, out *Cache) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "configMap":
+			if in.IsNull() {
+				in.Skip()
+				out.ConfigMap = nil
+			} else {
+				if out.ConfigMap == nil {
+					out.ConfigMap = new(_v11.ConfigMapKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV18(in, out.ConfigMap)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha150(out *jwriter.Writer, in Cache) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"configMap\":"
+		out.RawString(prefix[1:])
+		if in.ConfigMap == nil {
+			out.RawString("null")
+		} else {
+			easyjsonAa42d34bEncodeK8sIoApiCoreV18(out, *in.ConfigMap)
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha148(in *jlexer.Lexer, out *ArtifactLocation) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "archiveLogs":
+			if in.IsNull() {
+				in.Skip()
+				out.ArchiveLogs = nil
+			} else {
+				if out.ArchiveLogs == nil {
+					out.ArchiveLogs = new(bool)
+				}
+				*out.ArchiveLogs = bool(in.Bool())
+			}
+		case "s3":
+			if in.IsNull() {
+				in.Skip()
+				out.S3 = nil
+			} else {
+				if out.S3 == nil {
+					out.S3 = new(S3Artifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha125(in, out.S3)
+			}
+		case "git":
+			if in.IsNull() {
+				in.Skip()
+				out.Git = nil
+			} else {
+				if out.Git == nil {
+					out.Git = new(GitArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha126(in, out.Git)
+			}
+		case "http":
+			if in.IsNull() {
+				in.Skip()
+				out.HTTP = nil
+			} else {
+				if out.HTTP == nil {
+					out.HTTP = new(HTTPArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha127(in, out.HTTP)
+			}
+		case "artifactory":
+			if in.IsNull() {
+				in.Skip()
+				out.Artifactory = nil
+			} else {
+				if out.Artifactory == nil {
+					out.Artifactory = new(ArtifactoryArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha128(in, out.Artifactory)
+			}
+		case "hdfs":
+			if in.IsNull() {
+				in.Skip()
+				out.HDFS = nil
+			} else {
+				if out.HDFS == nil {
+					out.HDFS = new(HDFSArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha129(in, out.HDFS)
+			}
+		case "raw":
+			if in.IsNull() {
+				in.Skip()
+				out.Raw = nil
+			} else {
+				if out.Raw == nil {
+					out.Raw = new(RawArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha130(in, out.Raw)
+			}
+		case "oss":
+			if in.IsNull() {
+				in.Skip()
+				out.OSS = nil
+			} else {
+				if out.OSS == nil {
+					out.OSS = new(OSSArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha131(in, out.OSS)
+			}
+		case "gcs":
+			if in.IsNull() {
+				in.Skip()
+				out.GCS = nil
+			} else {
+				if out.GCS == nil {
+					out.GCS = new(GCSArtifact)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha132(in, out.GCS)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha148(out *jwriter.Writer, in ArtifactLocation) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.ArchiveLogs != nil {
+		const prefix string = ",\"archiveLogs\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Bool(bool(*in.ArchiveLogs))
+	}
+	if in.S3 != nil {
+		const prefix string = ",\"s3\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha125(out, *in.S3)
+	}
+	if in.Git != nil {
+		const prefix string = ",\"git\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha126(out, *in.Git)
+	}
+	if in.HTTP != nil {
+		const prefix string = ",\"http\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha127(out, *in.HTTP)
+	}
+	if in.Artifactory != nil {
+		const prefix string = ",\"artifactory\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha128(out, *in.Artifactory)
+	}
+	if in.HDFS != nil {
+		const prefix string = ",\"hdfs\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha129(out, *in.HDFS)
+	}
+	if in.Raw != nil {
+		const prefix string = ",\"raw\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha130(out, *in.Raw)
+	}
+	if in.OSS != nil {
+		const prefix string = ",\"oss\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha131(out, *in.OSS)
+	}
+	if in.GCS != nil {
+		const prefix string = ",\"gcs\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha132(out, *in.GCS)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(in *jlexer.Lexer, out *UserContainer) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "mirrorVolumeMounts":
+			if in.IsNull() {
+				in.Skip()
+				out.MirrorVolumeMounts = nil
+			} else {
+				if out.MirrorVolumeMounts == nil {
+					out.MirrorVolumeMounts = new(bool)
+				}
+				*out.MirrorVolumeMounts = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		case "image":
+			out.Image = string(in.String())
+		case "command":
+			if in.IsNull() {
+				in.Skip()
+				out.Command = nil
+			} else {
+				in.Delim('[')
+				if out.Command == nil {
+					if !in.IsDelim(']') {
+						out.Command = make([]string, 0, 4)
+					} else {
+						out.Command = []string{}
+					}
+				} else {
+					out.Command = (out.Command)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v182 string
+					v182 = string(in.String())
+					out.Command = append(out.Command, v182)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "args":
+			if in.IsNull() {
+				in.Skip()
+				out.Args = nil
+			} else {
+				in.Delim('[')
+				if out.Args == nil {
+					if !in.IsDelim(']') {
+						out.Args = make([]string, 0, 4)
+					} else {
+						out.Args = []string{}
+					}
+				} else {
+					out.Args = (out.Args)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v183 string
+					v183 = string(in.String())
+					out.Args = append(out.Args, v183)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "workingDir":
+			out.WorkingDir = string(in.String())
+		case "ports":
+			if in.IsNull() {
+				in.Skip()
+				out.Ports = nil
+			} else {
+				in.Delim('[')
+				if out.Ports == nil {
+					if !in.IsDelim(']') {
+						out.Ports = make([]_v11.ContainerPort, 0, 1)
+					} else {
+						out.Ports = []_v11.ContainerPort{}
+					}
+				} else {
+					out.Ports = (out.Ports)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v184 _v11.ContainerPort
+					easyjsonAa42d34bDecodeK8sIoApiCoreV166(in, &v184)
+					out.Ports = append(out.Ports, v184)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "envFrom":
+			if in.IsNull() {
+				in.Skip()
+				out.EnvFrom = nil
+			} else {
+				in.Delim('[')
+				if out.EnvFrom == nil {
+					if !in.IsDelim(']') {
+						out.EnvFrom = make([]_v11.EnvFromSource, 0, 2)
+					} else {
+						out.EnvFrom = []_v11.EnvFromSource{}
+					}
+				} else {
+					out.EnvFrom = (out.EnvFrom)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v185 _v11.EnvFromSource
+					easyjsonAa42d34bDecodeK8sIoApiCoreV167(in, &v185)
+					out.EnvFrom = append(out.EnvFrom, v185)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "env":
+			if in.IsNull() {
+				in.Skip()
+				out.Env = nil
+			} else {
+				in.Delim('[')
+				if out.Env == nil {
+					if !in.IsDelim(']') {
+						out.Env = make([]_v11.EnvVar, 0, 1)
+					} else {
+						out.Env = []_v11.EnvVar{}
+					}
+				} else {
+					out.Env = (out.Env)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v186 _v11.EnvVar
+					easyjsonAa42d34bDecodeK8sIoApiCoreV168(in, &v186)
+					out.Env = append(out.Env, v186)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "resources":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV125(in, &out.Resources)
+		case "volumeMounts":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeMounts = nil
+			} else {
+				in.Delim('[')
+				if out.VolumeMounts == nil {
+					if !in.IsDelim(']') {
+						out.VolumeMounts = make([]_v11.VolumeMount, 0, 0)
+					} else {
+						out.VolumeMounts = []_v11.VolumeMount{}
+					}
+				} else {
+					out.VolumeMounts = (out.VolumeMounts)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v187 _v11.VolumeMount
+					easyjsonAa42d34bDecodeK8sIoApiCoreV169(in, &v187)
+					out.VolumeMounts = append(out.VolumeMounts, v187)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "volumeDevices":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeDevices = nil
+			} else {
+				in.Delim('[')
+				if out.VolumeDevices == nil {
+					if !in.IsDelim(']') {
+						out.VolumeDevices = make([]_v11.VolumeDevice, 0, 2)
+					} else {
+						out.VolumeDevices = []_v11.VolumeDevice{}
+					}
+				} else {
+					out.VolumeDevices = (out.VolumeDevices)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v188 _v11.VolumeDevice
+					easyjsonAa42d34bDecodeK8sIoApiCoreV170(in, &v188)
+					out.VolumeDevices = append(out.VolumeDevices, v188)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "livenessProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.LivenessProbe = nil
+			} else {
+				if out.LivenessProbe == nil {
+					out.LivenessProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.LivenessProbe)
+			}
+		case "readinessProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.ReadinessProbe = nil
+			} else {
+				if out.ReadinessProbe == nil {
+					out.ReadinessProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.ReadinessProbe)
+			}
+		case "startupProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.StartupProbe = nil
+			} else {
+				if out.StartupProbe == nil {
+					out.StartupProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.StartupProbe)
+			}
+		case "lifecycle":
+			if in.IsNull() {
+				in.Skip()
+				out.Lifecycle = nil
+			} else {
+				if out.Lifecycle == nil {
+					out.Lifecycle = new(_v11.Lifecycle)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV172(in, out.Lifecycle)
+			}
+		case "terminationMessagePath":
+			out.TerminationMessagePath = string(in.String())
+		case "terminationMessagePolicy":
+			out.TerminationMessagePolicy = _v11.TerminationMessagePolicy(in.String())
+		case "imagePullPolicy":
+			out.ImagePullPolicy = _v11.PullPolicy(in.String())
+		case "securityContext":
+			if in.IsNull() {
+				in.Skip()
+				out.SecurityContext = nil
+			} else {
+				if out.SecurityContext == nil {
+					out.SecurityContext = new(_v11.SecurityContext)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV173(in, out.SecurityContext)
+			}
+		case "stdin":
+			out.Stdin = bool(in.Bool())
+		case "stdinOnce":
+			out.StdinOnce = bool(in.Bool())
+		case "tty":
+			out.TTY = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(out *jwriter.Writer, in UserContainer) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.MirrorVolumeMounts != nil {
+		const prefix string = ",\"mirrorVolumeMounts\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Bool(bool(*in.MirrorVolumeMounts))
+	}
+	{
+		const prefix string = ",\"name\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Name))
+	}
+	if in.Image != "" {
+		const prefix string = ",\"image\":"
+		out.RawString(prefix)
+		out.String(string(in.Image))
+	}
+	if len(in.Command) != 0 {
+		const prefix string = ",\"command\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v189, v190 := range in.Command {
+				if v189 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v190))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Args) != 0 {
+		const prefix string = ",\"args\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v191, v192 := range in.Args {
+				if v191 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v192))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.WorkingDir != "" {
+		const prefix string = ",\"workingDir\":"
+		out.RawString(prefix)
+		out.String(string(in.WorkingDir))
+	}
+	if len(in.Ports) != 0 {
+		const prefix string = ",\"ports\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v193, v194 := range in.Ports {
+				if v193 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV166(out, v194)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.EnvFrom) != 0 {
+		const prefix string = ",\"envFrom\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v195, v196 := range in.EnvFrom {
+				if v195 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV167(out, v196)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Env) != 0 {
+		const prefix string = ",\"env\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v197, v198 := range in.Env {
+				if v197 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV168(out, v198)
+			}
+			out.RawByte(']')
+		}
+	}
+	if true {
+		const prefix string = ",\"resources\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV125(out, in.Resources)
+	}
+	if len(in.VolumeMounts) != 0 {
+		const prefix string = ",\"volumeMounts\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v199, v200 := range in.VolumeMounts {
+				if v199 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV169(out, v200)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.VolumeDevices) != 0 {
+		const prefix string = ",\"volumeDevices\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v201, v202 := range in.VolumeDevices {
+				if v201 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV170(out, v202)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.LivenessProbe != nil {
+		const prefix string = ",\"livenessProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.LivenessProbe)
+	}
+	if in.ReadinessProbe != nil {
+		const prefix string = ",\"readinessProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.ReadinessProbe)
+	}
+	if in.StartupProbe != nil {
+		const prefix string = ",\"startupProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.StartupProbe)
+	}
+	if in.Lifecycle != nil {
+		const prefix string = ",\"lifecycle\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV172(out, *in.Lifecycle)
+	}
+	if in.TerminationMessagePath != "" {
+		const prefix string = ",\"terminationMessagePath\":"
+		out.RawString(prefix)
+		out.String(string(in.TerminationMessagePath))
+	}
+	if in.TerminationMessagePolicy != "" {
+		const prefix string = ",\"terminationMessagePolicy\":"
+		out.RawString(prefix)
+		out.String(string(in.TerminationMessagePolicy))
+	}
+	if in.ImagePullPolicy != "" {
+		const prefix string = ",\"imagePullPolicy\":"
+		out.RawString(prefix)
+		out.String(string(in.ImagePullPolicy))
+	}
+	if in.SecurityContext != nil {
+		const prefix string = ",\"securityContext\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV173(out, *in.SecurityContext)
+	}
+	if in.Stdin {
+		const prefix string = ",\"stdin\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Stdin))
+	}
+	if in.StdinOnce {
+		const prefix string = ",\"stdinOnce\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.StdinOnce))
+	}
+	if in.TTY {
+		const prefix string = ",\"tty\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.TTY))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV173(in *jlexer.Lexer, out *_v11.SecurityContext) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "capabilities":
+			if in.IsNull() {
+				in.Skip()
+				out.Capabilities = nil
+			} else {
+				if out.Capabilities == nil {
+					out.Capabilities = new(_v11.Capabilities)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV174(in, out.Capabilities)
+			}
+		case "privileged":
+			if in.IsNull() {
+				in.Skip()
+				out.Privileged = nil
+			} else {
+				if out.Privileged == nil {
+					out.Privileged = new(bool)
+				}
+				*out.Privileged = bool(in.Bool())
+			}
+		case "seLinuxOptions":
+			if in.IsNull() {
+				in.Skip()
+				out.SELinuxOptions = nil
+			} else {
+				if out.SELinuxOptions == nil {
+					out.SELinuxOptions = new(_v11.SELinuxOptions)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV19(in, out.SELinuxOptions)
+			}
+		case "windowsOptions":
+			if in.IsNull() {
+				in.Skip()
+				out.WindowsOptions = nil
+			} else {
+				if out.WindowsOptions == nil {
+					out.WindowsOptions = new(_v11.WindowsSecurityContextOptions)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV110(in, out.WindowsOptions)
+			}
+		case "runAsUser":
+			if in.IsNull() {
+				in.Skip()
+				out.RunAsUser = nil
+			} else {
+				if out.RunAsUser == nil {
+					out.RunAsUser = new(int64)
+				}
+				*out.RunAsUser = int64(in.Int64())
+			}
+		case "runAsGroup":
+			if in.IsNull() {
+				in.Skip()
+				out.RunAsGroup = nil
+			} else {
+				if out.RunAsGroup == nil {
+					out.RunAsGroup = new(int64)
+				}
+				*out.RunAsGroup = int64(in.Int64())
+			}
+		case "runAsNonRoot":
+			if in.IsNull() {
+				in.Skip()
+				out.RunAsNonRoot = nil
+			} else {
+				if out.RunAsNonRoot == nil {
+					out.RunAsNonRoot = new(bool)
+				}
+				*out.RunAsNonRoot = bool(in.Bool())
+			}
+		case "readOnlyRootFilesystem":
+			if in.IsNull() {
+				in.Skip()
+				out.ReadOnlyRootFilesystem = nil
+			} else {
+				if out.ReadOnlyRootFilesystem == nil {
+					out.ReadOnlyRootFilesystem = new(bool)
+				}
+				*out.ReadOnlyRootFilesystem = bool(in.Bool())
+			}
+		case "allowPrivilegeEscalation":
+			if in.IsNull() {
+				in.Skip()
+				out.AllowPrivilegeEscalation = nil
+			} else {
+				if out.AllowPrivilegeEscalation == nil {
+					out.AllowPrivilegeEscalation = new(bool)
+				}
+				*out.AllowPrivilegeEscalation = bool(in.Bool())
+			}
+		case "procMount":
+			if in.IsNull() {
+				in.Skip()
+				out.ProcMount = nil
+			} else {
+				if out.ProcMount == nil {
+					out.ProcMount = new(_v11.ProcMountType)
+				}
+				*out.ProcMount = _v11.ProcMountType(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV173(out *jwriter.Writer, in _v11.SecurityContext) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Capabilities != nil {
+		const prefix string = ",\"capabilities\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV174(out, *in.Capabilities)
+	}
+	if in.Privileged != nil {
+		const prefix string = ",\"privileged\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.Privileged))
+	}
+	if in.SELinuxOptions != nil {
+		const prefix string = ",\"seLinuxOptions\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV19(out, *in.SELinuxOptions)
+	}
+	if in.WindowsOptions != nil {
+		const prefix string = ",\"windowsOptions\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV110(out, *in.WindowsOptions)
+	}
+	if in.RunAsUser != nil {
+		const prefix string = ",\"runAsUser\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.RunAsUser))
+	}
+	if in.RunAsGroup != nil {
+		const prefix string = ",\"runAsGroup\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.RunAsGroup))
+	}
+	if in.RunAsNonRoot != nil {
+		const prefix string = ",\"runAsNonRoot\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.RunAsNonRoot))
+	}
+	if in.ReadOnlyRootFilesystem != nil {
+		const prefix string = ",\"readOnlyRootFilesystem\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.ReadOnlyRootFilesystem))
+	}
+	if in.AllowPrivilegeEscalation != nil {
+		const prefix string = ",\"allowPrivilegeEscalation\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(*in.AllowPrivilegeEscalation))
+	}
+	if in.ProcMount != nil {
+		const prefix string = ",\"procMount\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.ProcMount))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV174(in *jlexer.Lexer, out *_v11.Capabilities) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "add":
+			if in.IsNull() {
+				in.Skip()
+				out.Add = nil
+			} else {
+				in.Delim('[')
+				if out.Add == nil {
+					if !in.IsDelim(']') {
+						out.Add = make([]_v11.Capability, 0, 4)
+					} else {
+						out.Add = []_v11.Capability{}
+					}
+				} else {
+					out.Add = (out.Add)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v203 _v11.Capability
+					v203 = _v11.Capability(in.String())
+					out.Add = append(out.Add, v203)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "drop":
+			if in.IsNull() {
+				in.Skip()
+				out.Drop = nil
+			} else {
+				in.Delim('[')
+				if out.Drop == nil {
+					if !in.IsDelim(']') {
+						out.Drop = make([]_v11.Capability, 0, 4)
+					} else {
+						out.Drop = []_v11.Capability{}
+					}
+				} else {
+					out.Drop = (out.Drop)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v204 _v11.Capability
+					v204 = _v11.Capability(in.String())
+					out.Drop = append(out.Drop, v204)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV174(out *jwriter.Writer, in _v11.Capabilities) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Add) != 0 {
+		const prefix string = ",\"add\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v205, v206 := range in.Add {
+				if v205 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v206))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Drop) != 0 {
+		const prefix string = ",\"drop\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v207, v208 := range in.Drop {
+				if v207 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v208))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV172(in *jlexer.Lexer, out *_v11.Lifecycle) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "postStart":
+			if in.IsNull() {
+				in.Skip()
+				out.PostStart = nil
+			} else {
+				if out.PostStart == nil {
+					out.PostStart = new(_v11.Handler)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV175(in, out.PostStart)
+			}
+		case "preStop":
+			if in.IsNull() {
+				in.Skip()
+				out.PreStop = nil
+			} else {
+				if out.PreStop == nil {
+					out.PreStop = new(_v11.Handler)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV175(in, out.PreStop)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV172(out *jwriter.Writer, in _v11.Lifecycle) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.PostStart != nil {
+		const prefix string = ",\"postStart\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV175(out, *in.PostStart)
+	}
+	if in.PreStop != nil {
+		const prefix string = ",\"preStop\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV175(out, *in.PreStop)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV175(in *jlexer.Lexer, out *_v11.Handler) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "exec":
+			if in.IsNull() {
+				in.Skip()
+				out.Exec = nil
+			} else {
+				if out.Exec == nil {
+					out.Exec = new(_v11.ExecAction)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV176(in, out.Exec)
+			}
+		case "httpGet":
+			if in.IsNull() {
+				in.Skip()
+				out.HTTPGet = nil
+			} else {
+				if out.HTTPGet == nil {
+					out.HTTPGet = new(_v11.HTTPGetAction)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV177(in, out.HTTPGet)
+			}
+		case "tcpSocket":
+			if in.IsNull() {
+				in.Skip()
+				out.TCPSocket = nil
+			} else {
+				if out.TCPSocket == nil {
+					out.TCPSocket = new(_v11.TCPSocketAction)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV178(in, out.TCPSocket)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV175(out *jwriter.Writer, in _v11.Handler) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Exec != nil {
+		const prefix string = ",\"exec\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV176(out, *in.Exec)
+	}
+	if in.HTTPGet != nil {
+		const prefix string = ",\"httpGet\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV177(out, *in.HTTPGet)
+	}
+	if in.TCPSocket != nil {
+		const prefix string = ",\"tcpSocket\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV178(out, *in.TCPSocket)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV178(in *jlexer.Lexer, out *_v11.TCPSocketAction) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "port":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.Port).UnmarshalJSON(data))
+			}
+		case "host":
+			out.Host = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV178(out *jwriter.Writer, in _v11.TCPSocketAction) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"port\":"
+		out.RawString(prefix[1:])
+		out.Raw((in.Port).MarshalJSON())
+	}
+	if in.Host != "" {
+		const prefix string = ",\"host\":"
+		out.RawString(prefix)
+		out.String(string(in.Host))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV177(in *jlexer.Lexer, out *_v11.HTTPGetAction) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "path":
+			out.Path = string(in.String())
+		case "port":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.Port).UnmarshalJSON(data))
+			}
+		case "host":
+			out.Host = string(in.String())
+		case "scheme":
+			out.Scheme = _v11.URIScheme(in.String())
+		case "httpHeaders":
+			if in.IsNull() {
+				in.Skip()
+				out.HTTPHeaders = nil
+			} else {
+				in.Delim('[')
+				if out.HTTPHeaders == nil {
+					if !in.IsDelim(']') {
+						out.HTTPHeaders = make([]_v11.HTTPHeader, 0, 2)
+					} else {
+						out.HTTPHeaders = []_v11.HTTPHeader{}
+					}
+				} else {
+					out.HTTPHeaders = (out.HTTPHeaders)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v209 _v11.HTTPHeader
+					easyjsonAa42d34bDecodeK8sIoApiCoreV179(in, &v209)
+					out.HTTPHeaders = append(out.HTTPHeaders, v209)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV177(out *jwriter.Writer, in _v11.HTTPGetAction) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Path != "" {
+		const prefix string = ",\"path\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Path))
+	}
+	{
+		const prefix string = ",\"port\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((in.Port).MarshalJSON())
+	}
+	if in.Host != "" {
+		const prefix string = ",\"host\":"
+		out.RawString(prefix)
+		out.String(string(in.Host))
+	}
+	if in.Scheme != "" {
+		const prefix string = ",\"scheme\":"
+		out.RawString(prefix)
+		out.String(string(in.Scheme))
+	}
+	if len(in.HTTPHeaders) != 0 {
+		const prefix string = ",\"httpHeaders\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v210, v211 := range in.HTTPHeaders {
+				if v210 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV179(out, v211)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV179(in *jlexer.Lexer, out *_v11.HTTPHeader) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "value":
+			out.Value = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV179(out *jwriter.Writer, in _v11.HTTPHeader) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"value\":"
+		out.RawString(prefix)
+		out.String(string(in.Value))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV176(in *jlexer.Lexer, out *_v11.ExecAction) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "command":
+			if in.IsNull() {
+				in.Skip()
+				out.Command = nil
+			} else {
+				in.Delim('[')
+				if out.Command == nil {
+					if !in.IsDelim(']') {
+						out.Command = make([]string, 0, 4)
+					} else {
+						out.Command = []string{}
+					}
+				} else {
+					out.Command = (out.Command)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v212 string
+					v212 = string(in.String())
+					out.Command = append(out.Command, v212)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV176(out *jwriter.Writer, in _v11.ExecAction) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Command) != 0 {
+		const prefix string = ",\"command\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v213, v214 := range in.Command {
+				if v213 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v214))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV171(in *jlexer.Lexer, out *_v11.Probe) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "initialDelaySeconds":
+			out.InitialDelaySeconds = int32(in.Int32())
+		case "timeoutSeconds":
+			out.TimeoutSeconds = int32(in.Int32())
+		case "periodSeconds":
+			out.PeriodSeconds = int32(in.Int32())
+		case "successThreshold":
+			out.SuccessThreshold = int32(in.Int32())
+		case "failureThreshold":
+			out.FailureThreshold = int32(in.Int32())
+		case "exec":
+			if in.IsNull() {
+				in.Skip()
+				out.Exec = nil
+			} else {
+				if out.Exec == nil {
+					out.Exec = new(_v11.ExecAction)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV176(in, out.Exec)
+			}
+		case "httpGet":
+			if in.IsNull() {
+				in.Skip()
+				out.HTTPGet = nil
+			} else {
+				if out.HTTPGet == nil {
+					out.HTTPGet = new(_v11.HTTPGetAction)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV177(in, out.HTTPGet)
+			}
+		case "tcpSocket":
+			if in.IsNull() {
+				in.Skip()
+				out.TCPSocket = nil
+			} else {
+				if out.TCPSocket == nil {
+					out.TCPSocket = new(_v11.TCPSocketAction)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV178(in, out.TCPSocket)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV171(out *jwriter.Writer, in _v11.Probe) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.InitialDelaySeconds != 0 {
+		const prefix string = ",\"initialDelaySeconds\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Int32(int32(in.InitialDelaySeconds))
+	}
+	if in.TimeoutSeconds != 0 {
+		const prefix string = ",\"timeoutSeconds\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(in.TimeoutSeconds))
+	}
+	if in.PeriodSeconds != 0 {
+		const prefix string = ",\"periodSeconds\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(in.PeriodSeconds))
+	}
+	if in.SuccessThreshold != 0 {
+		const prefix string = ",\"successThreshold\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(in.SuccessThreshold))
+	}
+	if in.FailureThreshold != 0 {
+		const prefix string = ",\"failureThreshold\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(in.FailureThreshold))
+	}
+	if in.Exec != nil {
+		const prefix string = ",\"exec\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV176(out, *in.Exec)
+	}
+	if in.HTTPGet != nil {
+		const prefix string = ",\"httpGet\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV177(out, *in.HTTPGet)
+	}
+	if in.TCPSocket != nil {
+		const prefix string = ",\"tcpSocket\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV178(out, *in.TCPSocket)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV170(in *jlexer.Lexer, out *_v11.VolumeDevice) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "devicePath":
+			out.DevicePath = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV170(out *jwriter.Writer, in _v11.VolumeDevice) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"devicePath\":"
+		out.RawString(prefix)
+		out.String(string(in.DevicePath))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV169(in *jlexer.Lexer, out *_v11.VolumeMount) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "readOnly":
+			out.ReadOnly = bool(in.Bool())
+		case "mountPath":
+			out.MountPath = string(in.String())
+		case "subPath":
+			out.SubPath = string(in.String())
+		case "mountPropagation":
+			if in.IsNull() {
+				in.Skip()
+				out.MountPropagation = nil
+			} else {
+				if out.MountPropagation == nil {
+					out.MountPropagation = new(_v11.MountPropagationMode)
+				}
+				*out.MountPropagation = _v11.MountPropagationMode(in.String())
+			}
+		case "subPathExpr":
+			out.SubPathExpr = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV169(out *jwriter.Writer, in _v11.VolumeMount) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.ReadOnly {
+		const prefix string = ",\"readOnly\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.ReadOnly))
+	}
+	{
+		const prefix string = ",\"mountPath\":"
+		out.RawString(prefix)
+		out.String(string(in.MountPath))
+	}
+	if in.SubPath != "" {
+		const prefix string = ",\"subPath\":"
+		out.RawString(prefix)
+		out.String(string(in.SubPath))
+	}
+	if in.MountPropagation != nil {
+		const prefix string = ",\"mountPropagation\":"
+		out.RawString(prefix)
+		out.String(string(*in.MountPropagation))
+	}
+	if in.SubPathExpr != "" {
+		const prefix string = ",\"subPathExpr\":"
+		out.RawString(prefix)
+		out.String(string(in.SubPathExpr))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV168(in *jlexer.Lexer, out *_v11.EnvVar) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "value":
+			out.Value = string(in.String())
+		case "valueFrom":
+			if in.IsNull() {
+				in.Skip()
+				out.ValueFrom = nil
+			} else {
+				if out.ValueFrom == nil {
+					out.ValueFrom = new(_v11.EnvVarSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV180(in, out.ValueFrom)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV168(out *jwriter.Writer, in _v11.EnvVar) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.Value != "" {
+		const prefix string = ",\"value\":"
+		out.RawString(prefix)
+		out.String(string(in.Value))
+	}
+	if in.ValueFrom != nil {
+		const prefix string = ",\"valueFrom\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV180(out, *in.ValueFrom)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV180(in *jlexer.Lexer, out *_v11.EnvVarSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "fieldRef":
+			if in.IsNull() {
+				in.Skip()
+				out.FieldRef = nil
+			} else {
+				if out.FieldRef == nil {
+					out.FieldRef = new(_v11.ObjectFieldSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV162(in, out.FieldRef)
+			}
+		case "resourceFieldRef":
+			if in.IsNull() {
+				in.Skip()
+				out.ResourceFieldRef = nil
+			} else {
+				if out.ResourceFieldRef == nil {
+					out.ResourceFieldRef = new(_v11.ResourceFieldSelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV163(in, out.ResourceFieldRef)
+			}
+		case "configMapKeyRef":
+			if in.IsNull() {
+				in.Skip()
+				out.ConfigMapKeyRef = nil
+			} else {
+				if out.ConfigMapKeyRef == nil {
+					out.ConfigMapKeyRef = new(_v11.ConfigMapKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV18(in, out.ConfigMapKeyRef)
+			}
+		case "secretKeyRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretKeyRef = nil
+			} else {
+				if out.SecretKeyRef == nil {
+					out.SecretKeyRef = new(_v11.SecretKeySelector)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV164(in, out.SecretKeyRef)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV180(out *jwriter.Writer, in _v11.EnvVarSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.FieldRef != nil {
+		const prefix string = ",\"fieldRef\":"
+		first = false
+		out.RawString(prefix[1:])
+		easyjsonAa42d34bEncodeK8sIoApiCoreV162(out, *in.FieldRef)
+	}
+	if in.ResourceFieldRef != nil {
+		const prefix string = ",\"resourceFieldRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV163(out, *in.ResourceFieldRef)
+	}
+	if in.ConfigMapKeyRef != nil {
+		const prefix string = ",\"configMapKeyRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV18(out, *in.ConfigMapKeyRef)
+	}
+	if in.SecretKeyRef != nil {
+		const prefix string = ",\"secretKeyRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV164(out, *in.SecretKeyRef)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV167(in *jlexer.Lexer, out *_v11.EnvFromSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "prefix":
+			out.Prefix = string(in.String())
+		case "configMapRef":
+			if in.IsNull() {
+				in.Skip()
+				out.ConfigMapRef = nil
+			} else {
+				if out.ConfigMapRef == nil {
+					out.ConfigMapRef = new(_v11.ConfigMapEnvSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV181(in, out.ConfigMapRef)
+			}
+		case "secretRef":
+			if in.IsNull() {
+				in.Skip()
+				out.SecretRef = nil
+			} else {
+				if out.SecretRef == nil {
+					out.SecretRef = new(_v11.SecretEnvSource)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV182(in, out.SecretRef)
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV167(out *jwriter.Writer, in _v11.EnvFromSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Prefix != "" {
+		const prefix string = ",\"prefix\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Prefix))
+	}
+	if in.ConfigMapRef != nil {
+		const prefix string = ",\"configMapRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV181(out, *in.ConfigMapRef)
+	}
+	if in.SecretRef != nil {
+		const prefix string = ",\"secretRef\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjsonAa42d34bEncodeK8sIoApiCoreV182(out, *in.SecretRef)
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV182(in *jlexer.Lexer, out *_v11.SecretEnvSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV182(out *jwriter.Writer, in _v11.SecretEnvSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Bool(bool(*in.Optional))
+	}
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV181(in *jlexer.Lexer, out *_v11.ConfigMapEnvSource) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "optional":
+			if in.IsNull() {
+				in.Skip()
+				out.Optional = nil
+			} else {
+				if out.Optional == nil {
+					out.Optional = new(bool)
+				}
+				*out.Optional = bool(in.Bool())
+			}
+		case "name":
+			out.Name = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV181(out *jwriter.Writer, in _v11.ConfigMapEnvSource) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Optional != nil {
+		const prefix string = ",\"optional\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Bool(bool(*in.Optional))
+	}
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Name))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV166(in *jlexer.Lexer, out *_v11.ContainerPort) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "hostPort":
+			out.HostPort = int32(in.Int32())
+		case "containerPort":
+			out.ContainerPort = int32(in.Int32())
+		case "protocol":
+			out.Protocol = _v11.Protocol(in.String())
+		case "hostIP":
+			out.HostIP = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV166(out *jwriter.Writer, in _v11.ContainerPort) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.HostPort != 0 {
+		const prefix string = ",\"hostPort\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(in.HostPort))
+	}
+	{
+		const prefix string = ",\"containerPort\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int32(int32(in.ContainerPort))
+	}
+	if in.Protocol != "" {
+		const prefix string = ",\"protocol\":"
+		out.RawString(prefix)
+		out.String(string(in.Protocol))
+	}
+	if in.HostIP != "" {
+		const prefix string = ",\"hostIP\":"
+		out.RawString(prefix)
+		out.String(string(in.HostIP))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha146(in *jlexer.Lexer, out *SuspendTemplate) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "duration":
+			out.Duration = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha146(out *jwriter.Writer, in SuspendTemplate) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Duration != "" {
+		const prefix string = ",\"duration\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Duration))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha145(in *jlexer.Lexer, out *DAGTemplate) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "target":
+			out.Target = string(in.String())
+		case "tasks":
+			if in.IsNull() {
+				in.Skip()
+				out.Tasks = nil
+			} else {
+				in.Delim('[')
+				if out.Tasks == nil {
+					if !in.IsDelim(']') {
+						out.Tasks = make([]DAGTask, 0, 0)
+					} else {
+						out.Tasks = []DAGTask{}
+					}
+				} else {
+					out.Tasks = (out.Tasks)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v215 DAGTask
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha151(in, &v215)
+					out.Tasks = append(out.Tasks, v215)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "failFast":
+			if in.IsNull() {
+				in.Skip()
+				out.FailFast = nil
+			} else {
+				if out.FailFast == nil {
+					out.FailFast = new(bool)
+				}
+				*out.FailFast = bool(in.Bool())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha145(out *jwriter.Writer, in DAGTemplate) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Target != "" {
+		const prefix string = ",\"target\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Target))
+	}
+	{
+		const prefix string = ",\"tasks\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.Tasks == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v216, v217 := range in.Tasks {
+				if v216 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha151(out, v217)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.FailFast != nil {
+		const prefix string = ",\"failFast\":"
+		out.RawString(prefix)
+		out.Bool(bool(*in.FailFast))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha151(in *jlexer.Lexer, out *DAGTask) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "template":
+			out.Template = string(in.String())
+		case "arguments":
+			easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(in, &out.Arguments)
+		case "templateRef":
+			if in.IsNull() {
+				in.Skip()
+				out.TemplateRef = nil
+			} else {
+				if out.TemplateRef == nil {
+					out.TemplateRef = new(TemplateRef)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha139(in, out.TemplateRef)
+			}
+		case "dependencies":
+			if in.IsNull() {
+				in.Skip()
+				out.Dependencies = nil
+			} else {
+				in.Delim('[')
+				if out.Dependencies == nil {
+					if !in.IsDelim(']') {
+						out.Dependencies = make([]string, 0, 4)
+					} else {
+						out.Dependencies = []string{}
+					}
+				} else {
+					out.Dependencies = (out.Dependencies)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v218 string
+					v218 = string(in.String())
+					out.Dependencies = append(out.Dependencies, v218)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "withItems":
+			if in.IsNull() {
+				in.Skip()
+				out.WithItems = nil
+			} else {
+				in.Delim('[')
+				if out.WithItems == nil {
+					if !in.IsDelim(']') {
+						out.WithItems = make([]Item, 0, 2)
+					} else {
+						out.WithItems = []Item{}
+					}
+				} else {
+					out.WithItems = (out.WithItems)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v219 Item
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v219).UnmarshalJSON(data))
+					}
+					out.WithItems = append(out.WithItems, v219)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "withParam":
+			out.WithParam = string(in.String())
+		case "withSequence":
+			if in.IsNull() {
+				in.Skip()
+				out.WithSequence = nil
+			} else {
+				if out.WithSequence == nil {
+					out.WithSequence = new(Sequence)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha152(in, out.WithSequence)
+			}
+		case "when":
+			out.When = string(in.String())
+		case "continueOn":
+			if in.IsNull() {
+				in.Skip()
+				out.ContinueOn = nil
+			} else {
+				if out.ContinueOn == nil {
+					out.ContinueOn = new(ContinueOn)
+				}
+				easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha153(in, out.ContinueOn)
+			}
+		case "onExit":
+			out.OnExit = string(in.String())
+		case "depends":
+			out.Depends = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha151(out *jwriter.Writer, in DAGTask) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"template\":"
+		out.RawString(prefix)
+		out.String(string(in.Template))
+	}
+	if true {
+		const prefix string = ",\"arguments\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(out, in.Arguments)
+	}
+	if in.TemplateRef != nil {
+		const prefix string = ",\"templateRef\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha139(out, *in.TemplateRef)
+	}
+	if len(in.Dependencies) != 0 {
+		const prefix string = ",\"dependencies\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v220, v221 := range in.Dependencies {
+				if v220 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v221))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.WithItems) != 0 {
+		const prefix string = ",\"withItems\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v222, v223 := range in.WithItems {
+				if v222 > 0 {
+					out.RawByte(',')
+				}
+				out.Raw((v223).MarshalJSON())
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.WithParam != "" {
+		const prefix string = ",\"withParam\":"
+		out.RawString(prefix)
+		out.String(string(in.WithParam))
+	}
+	if in.WithSequence != nil {
+		const prefix string = ",\"withSequence\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha152(out, *in.WithSequence)
+	}
+	if in.When != "" {
+		const prefix string = ",\"when\":"
+		out.RawString(prefix)
+		out.String(string(in.When))
+	}
+	if in.ContinueOn != nil {
+		const prefix string = ",\"continueOn\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha153(out, *in.ContinueOn)
+	}
+	if in.OnExit != "" {
+		const prefix string = ",\"onExit\":"
+		out.RawString(prefix)
+		out.String(string(in.OnExit))
+	}
+	if in.Depends != "" {
+		const prefix string = ",\"depends\":"
+		out.RawString(prefix)
+		out.String(string(in.Depends))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha153(in *jlexer.Lexer, out *ContinueOn) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "error":
+			out.Error = bool(in.Bool())
+		case "failed":
+			out.Failed = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha153(out *jwriter.Writer, in ContinueOn) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Error {
+		const prefix string = ",\"error\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Bool(bool(in.Error))
+	}
+	if in.Failed {
+		const prefix string = ",\"failed\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.Failed))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha152(in *jlexer.Lexer, out *Sequence) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "count":
+			if in.IsNull() {
+				in.Skip()
+				out.Count = nil
+			} else {
+				if out.Count == nil {
+					out.Count = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.Count).UnmarshalJSON(data))
+				}
+			}
+		case "start":
+			if in.IsNull() {
+				in.Skip()
+				out.Start = nil
+			} else {
+				if out.Start == nil {
+					out.Start = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.Start).UnmarshalJSON(data))
+				}
+			}
+		case "end":
+			if in.IsNull() {
+				in.Skip()
+				out.End = nil
+			} else {
+				if out.End == nil {
+					out.End = new(intstr.IntOrString)
+				}
+				if data := in.Raw(); in.Ok() {
+					in.AddError((*out.End).UnmarshalJSON(data))
+				}
+			}
+		case "format":
+			out.Format = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha152(out *jwriter.Writer, in Sequence) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Count != nil {
+		const prefix string = ",\"count\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Raw((*in.Count).MarshalJSON())
+	}
+	if in.Start != nil {
+		const prefix string = ",\"start\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((*in.Start).MarshalJSON())
+	}
+	if in.End != nil {
+		const prefix string = ",\"end\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((*in.End).MarshalJSON())
+	}
+	if in.Format != "" {
+		const prefix string = ",\"format\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Format))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha144(in *jlexer.Lexer, out *ResourceTemplate) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "action":
+			out.Action = string(in.String())
+		case "mergeStrategy":
+			out.MergeStrategy = string(in.String())
+		case "manifest":
+			out.Manifest = string(in.String())
+		case "setOwnerReference":
+			out.SetOwnerReference = bool(in.Bool())
+		case "successCondition":
+			out.SuccessCondition = string(in.String())
+		case "failureCondition":
+			out.FailureCondition = string(in.String())
+		case "flags":
+			if in.IsNull() {
+				in.Skip()
+				out.Flags = nil
+			} else {
+				in.Delim('[')
+				if out.Flags == nil {
+					if !in.IsDelim(']') {
+						out.Flags = make([]string, 0, 4)
+					} else {
+						out.Flags = []string{}
+					}
+				} else {
+					out.Flags = (out.Flags)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v224 string
+					v224 = string(in.String())
+					out.Flags = append(out.Flags, v224)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha144(out *jwriter.Writer, in ResourceTemplate) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"action\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Action))
+	}
+	if in.MergeStrategy != "" {
+		const prefix string = ",\"mergeStrategy\":"
+		out.RawString(prefix)
+		out.String(string(in.MergeStrategy))
+	}
+	if in.Manifest != "" {
+		const prefix string = ",\"manifest\":"
+		out.RawString(prefix)
+		out.String(string(in.Manifest))
+	}
+	if in.SetOwnerReference {
+		const prefix string = ",\"setOwnerReference\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.SetOwnerReference))
+	}
+	if in.SuccessCondition != "" {
+		const prefix string = ",\"successCondition\":"
+		out.RawString(prefix)
+		out.String(string(in.SuccessCondition))
+	}
+	if in.FailureCondition != "" {
+		const prefix string = ",\"failureCondition\":"
+		out.RawString(prefix)
+		out.String(string(in.FailureCondition))
+	}
+	if len(in.Flags) != 0 {
+		const prefix string = ",\"flags\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v225, v226 := range in.Flags {
+				if v225 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v226))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha143(in *jlexer.Lexer, out *ScriptTemplate) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "source":
+			out.Source = string(in.String())
+		case "name":
+			out.Name = string(in.String())
+		case "image":
+			out.Image = string(in.String())
+		case "command":
+			if in.IsNull() {
+				in.Skip()
+				out.Command = nil
+			} else {
+				in.Delim('[')
+				if out.Command == nil {
+					if !in.IsDelim(']') {
+						out.Command = make([]string, 0, 4)
+					} else {
+						out.Command = []string{}
+					}
+				} else {
+					out.Command = (out.Command)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v227 string
+					v227 = string(in.String())
+					out.Command = append(out.Command, v227)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "args":
+			if in.IsNull() {
+				in.Skip()
+				out.Args = nil
+			} else {
+				in.Delim('[')
+				if out.Args == nil {
+					if !in.IsDelim(']') {
+						out.Args = make([]string, 0, 4)
+					} else {
+						out.Args = []string{}
+					}
+				} else {
+					out.Args = (out.Args)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v228 string
+					v228 = string(in.String())
+					out.Args = append(out.Args, v228)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "workingDir":
+			out.WorkingDir = string(in.String())
+		case "ports":
+			if in.IsNull() {
+				in.Skip()
+				out.Ports = nil
+			} else {
+				in.Delim('[')
+				if out.Ports == nil {
+					if !in.IsDelim(']') {
+						out.Ports = make([]_v11.ContainerPort, 0, 1)
+					} else {
+						out.Ports = []_v11.ContainerPort{}
+					}
+				} else {
+					out.Ports = (out.Ports)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v229 _v11.ContainerPort
+					easyjsonAa42d34bDecodeK8sIoApiCoreV166(in, &v229)
+					out.Ports = append(out.Ports, v229)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "envFrom":
+			if in.IsNull() {
+				in.Skip()
+				out.EnvFrom = nil
+			} else {
+				in.Delim('[')
+				if out.EnvFrom == nil {
+					if !in.IsDelim(']') {
+						out.EnvFrom = make([]_v11.EnvFromSource, 0, 2)
+					} else {
+						out.EnvFrom = []_v11.EnvFromSource{}
+					}
+				} else {
+					out.EnvFrom = (out.EnvFrom)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v230 _v11.EnvFromSource
+					easyjsonAa42d34bDecodeK8sIoApiCoreV167(in, &v230)
+					out.EnvFrom = append(out.EnvFrom, v230)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "env":
+			if in.IsNull() {
+				in.Skip()
+				out.Env = nil
+			} else {
+				in.Delim('[')
+				if out.Env == nil {
+					if !in.IsDelim(']') {
+						out.Env = make([]_v11.EnvVar, 0, 1)
+					} else {
+						out.Env = []_v11.EnvVar{}
+					}
+				} else {
+					out.Env = (out.Env)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v231 _v11.EnvVar
+					easyjsonAa42d34bDecodeK8sIoApiCoreV168(in, &v231)
+					out.Env = append(out.Env, v231)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "resources":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV125(in, &out.Resources)
+		case "volumeMounts":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeMounts = nil
+			} else {
+				in.Delim('[')
+				if out.VolumeMounts == nil {
+					if !in.IsDelim(']') {
+						out.VolumeMounts = make([]_v11.VolumeMount, 0, 0)
+					} else {
+						out.VolumeMounts = []_v11.VolumeMount{}
+					}
+				} else {
+					out.VolumeMounts = (out.VolumeMounts)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v232 _v11.VolumeMount
+					easyjsonAa42d34bDecodeK8sIoApiCoreV169(in, &v232)
+					out.VolumeMounts = append(out.VolumeMounts, v232)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "volumeDevices":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeDevices = nil
+			} else {
+				in.Delim('[')
+				if out.VolumeDevices == nil {
+					if !in.IsDelim(']') {
+						out.VolumeDevices = make([]_v11.VolumeDevice, 0, 2)
+					} else {
+						out.VolumeDevices = []_v11.VolumeDevice{}
+					}
+				} else {
+					out.VolumeDevices = (out.VolumeDevices)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v233 _v11.VolumeDevice
+					easyjsonAa42d34bDecodeK8sIoApiCoreV170(in, &v233)
+					out.VolumeDevices = append(out.VolumeDevices, v233)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "livenessProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.LivenessProbe = nil
+			} else {
+				if out.LivenessProbe == nil {
+					out.LivenessProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.LivenessProbe)
+			}
+		case "readinessProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.ReadinessProbe = nil
+			} else {
+				if out.ReadinessProbe == nil {
+					out.ReadinessProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.ReadinessProbe)
+			}
+		case "startupProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.StartupProbe = nil
+			} else {
+				if out.StartupProbe == nil {
+					out.StartupProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.StartupProbe)
+			}
+		case "lifecycle":
+			if in.IsNull() {
+				in.Skip()
+				out.Lifecycle = nil
+			} else {
+				if out.Lifecycle == nil {
+					out.Lifecycle = new(_v11.Lifecycle)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV172(in, out.Lifecycle)
+			}
+		case "terminationMessagePath":
+			out.TerminationMessagePath = string(in.String())
+		case "terminationMessagePolicy":
+			out.TerminationMessagePolicy = _v11.TerminationMessagePolicy(in.String())
+		case "imagePullPolicy":
+			out.ImagePullPolicy = _v11.PullPolicy(in.String())
+		case "securityContext":
+			if in.IsNull() {
+				in.Skip()
+				out.SecurityContext = nil
+			} else {
+				if out.SecurityContext == nil {
+					out.SecurityContext = new(_v11.SecurityContext)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV173(in, out.SecurityContext)
+			}
+		case "stdin":
+			out.Stdin = bool(in.Bool())
+		case "stdinOnce":
+			out.StdinOnce = bool(in.Bool())
+		case "tty":
+			out.TTY = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha143(out *jwriter.Writer, in ScriptTemplate) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"source\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Source))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	if in.Image != "" {
+		const prefix string = ",\"image\":"
+		out.RawString(prefix)
+		out.String(string(in.Image))
+	}
+	if len(in.Command) != 0 {
+		const prefix string = ",\"command\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v234, v235 := range in.Command {
+				if v234 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v235))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Args) != 0 {
+		const prefix string = ",\"args\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v236, v237 := range in.Args {
+				if v236 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v237))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.WorkingDir != "" {
+		const prefix string = ",\"workingDir\":"
+		out.RawString(prefix)
+		out.String(string(in.WorkingDir))
+	}
+	if len(in.Ports) != 0 {
+		const prefix string = ",\"ports\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v238, v239 := range in.Ports {
+				if v238 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV166(out, v239)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.EnvFrom) != 0 {
+		const prefix string = ",\"envFrom\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v240, v241 := range in.EnvFrom {
+				if v240 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV167(out, v241)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Env) != 0 {
+		const prefix string = ",\"env\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v242, v243 := range in.Env {
+				if v242 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV168(out, v243)
+			}
+			out.RawByte(']')
+		}
+	}
+	if true {
+		const prefix string = ",\"resources\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV125(out, in.Resources)
+	}
+	if len(in.VolumeMounts) != 0 {
+		const prefix string = ",\"volumeMounts\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v244, v245 := range in.VolumeMounts {
+				if v244 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV169(out, v245)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.VolumeDevices) != 0 {
+		const prefix string = ",\"volumeDevices\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v246, v247 := range in.VolumeDevices {
+				if v246 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV170(out, v247)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.LivenessProbe != nil {
+		const prefix string = ",\"livenessProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.LivenessProbe)
+	}
+	if in.ReadinessProbe != nil {
+		const prefix string = ",\"readinessProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.ReadinessProbe)
+	}
+	if in.StartupProbe != nil {
+		const prefix string = ",\"startupProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.StartupProbe)
+	}
+	if in.Lifecycle != nil {
+		const prefix string = ",\"lifecycle\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV172(out, *in.Lifecycle)
+	}
+	if in.TerminationMessagePath != "" {
+		const prefix string = ",\"terminationMessagePath\":"
+		out.RawString(prefix)
+		out.String(string(in.TerminationMessagePath))
+	}
+	if in.TerminationMessagePolicy != "" {
+		const prefix string = ",\"terminationMessagePolicy\":"
+		out.RawString(prefix)
+		out.String(string(in.TerminationMessagePolicy))
+	}
+	if in.ImagePullPolicy != "" {
+		const prefix string = ",\"imagePullPolicy\":"
+		out.RawString(prefix)
+		out.String(string(in.ImagePullPolicy))
+	}
+	if in.SecurityContext != nil {
+		const prefix string = ",\"securityContext\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV173(out, *in.SecurityContext)
+	}
+	if in.Stdin {
+		const prefix string = ",\"stdin\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Stdin))
+	}
+	if in.StdinOnce {
+		const prefix string = ",\"stdinOnce\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.StdinOnce))
+	}
+	if in.TTY {
+		const prefix string = ",\"tty\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.TTY))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeK8sIoApiCoreV165(in *jlexer.Lexer, out *_v11.Container) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "image":
+			out.Image = string(in.String())
+		case "command":
+			if in.IsNull() {
+				in.Skip()
+				out.Command = nil
+			} else {
+				in.Delim('[')
+				if out.Command == nil {
+					if !in.IsDelim(']') {
+						out.Command = make([]string, 0, 4)
+					} else {
+						out.Command = []string{}
+					}
+				} else {
+					out.Command = (out.Command)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v248 string
+					v248 = string(in.String())
+					out.Command = append(out.Command, v248)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "args":
+			if in.IsNull() {
+				in.Skip()
+				out.Args = nil
+			} else {
+				in.Delim('[')
+				if out.Args == nil {
+					if !in.IsDelim(']') {
+						out.Args = make([]string, 0, 4)
+					} else {
+						out.Args = []string{}
+					}
+				} else {
+					out.Args = (out.Args)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v249 string
+					v249 = string(in.String())
+					out.Args = append(out.Args, v249)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "workingDir":
+			out.WorkingDir = string(in.String())
+		case "ports":
+			if in.IsNull() {
+				in.Skip()
+				out.Ports = nil
+			} else {
+				in.Delim('[')
+				if out.Ports == nil {
+					if !in.IsDelim(']') {
+						out.Ports = make([]_v11.ContainerPort, 0, 1)
+					} else {
+						out.Ports = []_v11.ContainerPort{}
+					}
+				} else {
+					out.Ports = (out.Ports)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v250 _v11.ContainerPort
+					easyjsonAa42d34bDecodeK8sIoApiCoreV166(in, &v250)
+					out.Ports = append(out.Ports, v250)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "envFrom":
+			if in.IsNull() {
+				in.Skip()
+				out.EnvFrom = nil
+			} else {
+				in.Delim('[')
+				if out.EnvFrom == nil {
+					if !in.IsDelim(']') {
+						out.EnvFrom = make([]_v11.EnvFromSource, 0, 2)
+					} else {
+						out.EnvFrom = []_v11.EnvFromSource{}
+					}
+				} else {
+					out.EnvFrom = (out.EnvFrom)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v251 _v11.EnvFromSource
+					easyjsonAa42d34bDecodeK8sIoApiCoreV167(in, &v251)
+					out.EnvFrom = append(out.EnvFrom, v251)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "env":
+			if in.IsNull() {
+				in.Skip()
+				out.Env = nil
+			} else {
+				in.Delim('[')
+				if out.Env == nil {
+					if !in.IsDelim(']') {
+						out.Env = make([]_v11.EnvVar, 0, 1)
+					} else {
+						out.Env = []_v11.EnvVar{}
+					}
+				} else {
+					out.Env = (out.Env)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v252 _v11.EnvVar
+					easyjsonAa42d34bDecodeK8sIoApiCoreV168(in, &v252)
+					out.Env = append(out.Env, v252)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "resources":
+			easyjsonAa42d34bDecodeK8sIoApiCoreV125(in, &out.Resources)
+		case "volumeMounts":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeMounts = nil
+			} else {
+				in.Delim('[')
+				if out.VolumeMounts == nil {
+					if !in.IsDelim(']') {
+						out.VolumeMounts = make([]_v11.VolumeMount, 0, 0)
+					} else {
+						out.VolumeMounts = []_v11.VolumeMount{}
+					}
+				} else {
+					out.VolumeMounts = (out.VolumeMounts)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v253 _v11.VolumeMount
+					easyjsonAa42d34bDecodeK8sIoApiCoreV169(in, &v253)
+					out.VolumeMounts = append(out.VolumeMounts, v253)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "volumeDevices":
+			if in.IsNull() {
+				in.Skip()
+				out.VolumeDevices = nil
+			} else {
+				in.Delim('[')
+				if out.VolumeDevices == nil {
+					if !in.IsDelim(']') {
+						out.VolumeDevices = make([]_v11.VolumeDevice, 0, 2)
+					} else {
+						out.VolumeDevices = []_v11.VolumeDevice{}
+					}
+				} else {
+					out.VolumeDevices = (out.VolumeDevices)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v254 _v11.VolumeDevice
+					easyjsonAa42d34bDecodeK8sIoApiCoreV170(in, &v254)
+					out.VolumeDevices = append(out.VolumeDevices, v254)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "livenessProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.LivenessProbe = nil
+			} else {
+				if out.LivenessProbe == nil {
+					out.LivenessProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.LivenessProbe)
+			}
+		case "readinessProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.ReadinessProbe = nil
+			} else {
+				if out.ReadinessProbe == nil {
+					out.ReadinessProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.ReadinessProbe)
+			}
+		case "startupProbe":
+			if in.IsNull() {
+				in.Skip()
+				out.StartupProbe = nil
+			} else {
+				if out.StartupProbe == nil {
+					out.StartupProbe = new(_v11.Probe)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV171(in, out.StartupProbe)
+			}
+		case "lifecycle":
+			if in.IsNull() {
+				in.Skip()
+				out.Lifecycle = nil
+			} else {
+				if out.Lifecycle == nil {
+					out.Lifecycle = new(_v11.Lifecycle)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV172(in, out.Lifecycle)
+			}
+		case "terminationMessagePath":
+			out.TerminationMessagePath = string(in.String())
+		case "terminationMessagePolicy":
+			out.TerminationMessagePolicy = _v11.TerminationMessagePolicy(in.String())
+		case "imagePullPolicy":
+			out.ImagePullPolicy = _v11.PullPolicy(in.String())
+		case "securityContext":
+			if in.IsNull() {
+				in.Skip()
+				out.SecurityContext = nil
+			} else {
+				if out.SecurityContext == nil {
+					out.SecurityContext = new(_v11.SecurityContext)
+				}
+				easyjsonAa42d34bDecodeK8sIoApiCoreV173(in, out.SecurityContext)
+			}
+		case "stdin":
+			out.Stdin = bool(in.Bool())
+		case "stdinOnce":
+			out.StdinOnce = bool(in.Bool())
+		case "tty":
+			out.TTY = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeK8sIoApiCoreV165(out *jwriter.Writer, in _v11.Container) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.Image != "" {
+		const prefix string = ",\"image\":"
+		out.RawString(prefix)
+		out.String(string(in.Image))
+	}
+	if len(in.Command) != 0 {
+		const prefix string = ",\"command\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v255, v256 := range in.Command {
+				if v255 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v256))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Args) != 0 {
+		const prefix string = ",\"args\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v257, v258 := range in.Args {
+				if v257 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v258))
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.WorkingDir != "" {
+		const prefix string = ",\"workingDir\":"
+		out.RawString(prefix)
+		out.String(string(in.WorkingDir))
+	}
+	if len(in.Ports) != 0 {
+		const prefix string = ",\"ports\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v259, v260 := range in.Ports {
+				if v259 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV166(out, v260)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.EnvFrom) != 0 {
+		const prefix string = ",\"envFrom\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v261, v262 := range in.EnvFrom {
+				if v261 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV167(out, v262)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Env) != 0 {
+		const prefix string = ",\"env\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v263, v264 := range in.Env {
+				if v263 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV168(out, v264)
+			}
+			out.RawByte(']')
+		}
+	}
+	if true {
+		const prefix string = ",\"resources\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV125(out, in.Resources)
+	}
+	if len(in.VolumeMounts) != 0 {
+		const prefix string = ",\"volumeMounts\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v265, v266 := range in.VolumeMounts {
+				if v265 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV169(out, v266)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.VolumeDevices) != 0 {
+		const prefix string = ",\"volumeDevices\":"
+		out.RawString(prefix)
+		{
+			out.RawByte('[')
+			for v267, v268 := range in.VolumeDevices {
+				if v267 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeK8sIoApiCoreV170(out, v268)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.LivenessProbe != nil {
+		const prefix string = ",\"livenessProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.LivenessProbe)
+	}
+	if in.ReadinessProbe != nil {
+		const prefix string = ",\"readinessProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.ReadinessProbe)
+	}
+	if in.StartupProbe != nil {
+		const prefix string = ",\"startupProbe\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV171(out, *in.StartupProbe)
+	}
+	if in.Lifecycle != nil {
+		const prefix string = ",\"lifecycle\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV172(out, *in.Lifecycle)
+	}
+	if in.TerminationMessagePath != "" {
+		const prefix string = ",\"terminationMessagePath\":"
+		out.RawString(prefix)
+		out.String(string(in.TerminationMessagePath))
+	}
+	if in.TerminationMessagePolicy != "" {
+		const prefix string = ",\"terminationMessagePolicy\":"
+		out.RawString(prefix)
+		out.String(string(in.TerminationMessagePolicy))
+	}
+	if in.ImagePullPolicy != "" {
+		const prefix string = ",\"imagePullPolicy\":"
+		out.RawString(prefix)
+		out.String(string(in.ImagePullPolicy))
+	}
+	if in.SecurityContext != nil {
+		const prefix string = ",\"securityContext\":"
+		out.RawString(prefix)
+		easyjsonAa42d34bEncodeK8sIoApiCoreV173(out, *in.SecurityContext)
+	}
+	if in.Stdin {
+		const prefix string = ",\"stdin\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Stdin))
+	}
+	if in.StdinOnce {
+		const prefix string = ",\"stdinOnce\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.StdinOnce))
+	}
+	if in.TTY {
+		const prefix string = ",\"tty\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.TTY))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha142(in *jlexer.Lexer, out *Metadata) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "annotations":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Annotations = make(map[string]string)
+				} else {
+					out.Annotations = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v269 string
+					v269 = string(in.String())
+					(out.Annotations)[key] = v269
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "labels":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Labels = make(map[string]string)
+				} else {
+					out.Labels = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v270 string
+					v270 = string(in.String())
+					(out.Labels)[key] = v270
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha142(out *jwriter.Writer, in Metadata) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Annotations) != 0 {
+		const prefix string = ",\"annotations\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('{')
+			v271First := true
+			for v271Name, v271Value := range in.Annotations {
+				if v271First {
+					v271First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v271Name))
+				out.RawByte(':')
+				out.String(string(v271Value))
+			}
+			out.RawByte('}')
+		}
+	}
+	if len(in.Labels) != 0 {
+		const prefix string = ",\"labels\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('{')
+			v272First := true
+			for v272Name, v272Value := range in.Labels {
+				if v272First {
+					v272First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v272Name))
+				out.RawByte(':')
+				out.String(string(v272Value))
+			}
+			out.RawByte('}')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha141(in *jlexer.Lexer, out *Outputs) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "parameters":
+			if in.IsNull() {
+				in.Skip()
+				out.Parameters = nil
+			} else {
+				in.Delim('[')
+				if out.Parameters == nil {
+					if !in.IsDelim(']') {
+						out.Parameters = make([]Parameter, 0, 0)
+					} else {
+						out.Parameters = []Parameter{}
+					}
+				} else {
+					out.Parameters = (out.Parameters)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v273 Parameter
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(in, &v273)
+					out.Parameters = append(out.Parameters, v273)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "artifacts":
+			if in.IsNull() {
+				in.Skip()
+				out.Artifacts = nil
+			} else {
+				in.Delim('[')
+				if out.Artifacts == nil {
+					if !in.IsDelim(']') {
+						out.Artifacts = make(Artifacts, 0, 0)
+					} else {
+						out.Artifacts = Artifacts{}
+					}
+				} else {
+					out.Artifacts = (out.Artifacts)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v274 Artifact
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(in, &v274)
+					out.Artifacts = append(out.Artifacts, v274)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "result":
+			if in.IsNull() {
+				in.Skip()
+				out.Result = nil
+			} else {
+				if out.Result == nil {
+					out.Result = new(string)
+				}
+				*out.Result = string(in.String())
+			}
+		case "exitCode":
+			if in.IsNull() {
+				in.Skip()
+				out.ExitCode = nil
+			} else {
+				if out.ExitCode == nil {
+					out.ExitCode = new(string)
+				}
+				*out.ExitCode = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha141(out *jwriter.Writer, in Outputs) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Parameters) != 0 {
+		const prefix string = ",\"parameters\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v275, v276 := range in.Parameters {
+				if v275 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(out, v276)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Artifacts) != 0 {
+		const prefix string = ",\"artifacts\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v277, v278 := range in.Artifacts {
+				if v277 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(out, v278)
+			}
+			out.RawByte(']')
+		}
+	}
+	if in.Result != nil {
+		const prefix string = ",\"result\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.Result))
+	}
+	if in.ExitCode != nil {
+		const prefix string = ",\"exitCode\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(*in.ExitCode))
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha140(in *jlexer.Lexer, out *Inputs) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "parameters":
+			if in.IsNull() {
+				in.Skip()
+				out.Parameters = nil
+			} else {
+				in.Delim('[')
+				if out.Parameters == nil {
+					if !in.IsDelim(']') {
+						out.Parameters = make([]Parameter, 0, 0)
+					} else {
+						out.Parameters = []Parameter{}
+					}
+				} else {
+					out.Parameters = (out.Parameters)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v279 Parameter
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(in, &v279)
+					out.Parameters = append(out.Parameters, v279)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "artifacts":
+			if in.IsNull() {
+				in.Skip()
+				out.Artifacts = nil
+			} else {
+				in.Delim('[')
+				if out.Artifacts == nil {
+					if !in.IsDelim(']') {
+						out.Artifacts = make(Artifacts, 0, 0)
+					} else {
+						out.Artifacts = Artifacts{}
+					}
+				} else {
+					out.Artifacts = (out.Artifacts)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v280 Artifact
+					easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(in, &v280)
+					out.Artifacts = append(out.Artifacts, v280)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha140(out *jwriter.Writer, in Inputs) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if len(in.Parameters) != 0 {
+		const prefix string = ",\"parameters\":"
+		first = false
+		out.RawString(prefix[1:])
+		{
+			out.RawByte('[')
+			for v281, v282 := range in.Parameters {
+				if v281 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(out, v282)
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Artifacts) != 0 {
+		const prefix string = ",\"artifacts\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v283, v284 := range in.Artifacts {
+				if v283 > 0 {
+					out.RawByte(',')
+				}
+				easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(out, v284)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha139(in *jlexer.Lexer, out *TemplateRef) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "name":
+			out.Name = string(in.String())
+		case "template":
+			out.Template = string(in.String())
+		case "runtimeResolution":
+			out.RuntimeResolution = bool(in.Bool())
+		case "clusterScope":
+			out.ClusterScope = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonAa42d34bEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha139(out *jwriter.Writer, in TemplateRef) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.Name != "" {
+		const prefix string = ",\"name\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.Name))
+	}
+	if in.Template != "" {
+		const prefix string = ",\"template\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Template))
+	}
+	if in.RuntimeResolution {
+		const prefix string = ",\"runtimeResolution\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.RuntimeResolution))
+	}
+	if in.ClusterScope {
+		const prefix string = ",\"clusterScope\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.ClusterScope))
+	}
+	out.RawByte('}')
 }
 func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in *jlexer.Lexer, out *_v1.ObjectMeta) {
 	isTopLevel := in.IsStart()
@@ -384,9 +15626,9 @@ func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in *jlexer.Lexer, out
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v4 string
-					v4 = string(in.String())
-					(out.Labels)[key] = v4
+					var v285 string
+					v285 = string(in.String())
+					(out.Labels)[key] = v285
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -404,9 +15646,9 @@ func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in *jlexer.Lexer, out
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v5 string
-					v5 = string(in.String())
-					(out.Annotations)[key] = v5
+					var v286 string
+					v286 = string(in.String())
+					(out.Annotations)[key] = v286
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -427,9 +15669,9 @@ func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in *jlexer.Lexer, out
 					out.OwnerReferences = (out.OwnerReferences)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v6 _v1.OwnerReference
-					easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV12(in, &v6)
-					out.OwnerReferences = append(out.OwnerReferences, v6)
+					var v287 _v1.OwnerReference
+					easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV14(in, &v287)
+					out.OwnerReferences = append(out.OwnerReferences, v287)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -450,9 +15692,9 @@ func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in *jlexer.Lexer, out
 					out.Finalizers = (out.Finalizers)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v7 string
-					v7 = string(in.String())
-					out.Finalizers = append(out.Finalizers, v7)
+					var v288 string
+					v288 = string(in.String())
+					out.Finalizers = append(out.Finalizers, v288)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -475,9 +15717,9 @@ func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV11(in *jlexer.Lexer, out
 					out.ManagedFields = (out.ManagedFields)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v8 _v1.ManagedFieldsEntry
-					easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV13(in, &v8)
-					out.ManagedFields = append(out.ManagedFields, v8)
+					var v289 _v1.ManagedFieldsEntry
+					easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV15(in, &v289)
+					out.ManagedFields = append(out.ManagedFields, v289)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -602,16 +15844,16 @@ func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV11(out *jwriter.Writer, 
 		}
 		{
 			out.RawByte('{')
-			v9First := true
-			for v9Name, v9Value := range in.Labels {
-				if v9First {
-					v9First = false
+			v290First := true
+			for v290Name, v290Value := range in.Labels {
+				if v290First {
+					v290First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v9Name))
+				out.String(string(v290Name))
 				out.RawByte(':')
-				out.String(string(v9Value))
+				out.String(string(v290Value))
 			}
 			out.RawByte('}')
 		}
@@ -626,16 +15868,16 @@ func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV11(out *jwriter.Writer, 
 		}
 		{
 			out.RawByte('{')
-			v10First := true
-			for v10Name, v10Value := range in.Annotations {
-				if v10First {
-					v10First = false
+			v291First := true
+			for v291Name, v291Value := range in.Annotations {
+				if v291First {
+					v291First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v10Name))
+				out.String(string(v291Name))
 				out.RawByte(':')
-				out.String(string(v10Value))
+				out.String(string(v291Value))
 			}
 			out.RawByte('}')
 		}
@@ -650,11 +15892,11 @@ func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV11(out *jwriter.Writer, 
 		}
 		{
 			out.RawByte('[')
-			for v11, v12 := range in.OwnerReferences {
-				if v11 > 0 {
+			for v292, v293 := range in.OwnerReferences {
+				if v292 > 0 {
 					out.RawByte(',')
 				}
-				easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV12(out, v12)
+				easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV14(out, v293)
 			}
 			out.RawByte(']')
 		}
@@ -669,11 +15911,11 @@ func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV11(out *jwriter.Writer, 
 		}
 		{
 			out.RawByte('[')
-			for v13, v14 := range in.Finalizers {
-				if v13 > 0 {
+			for v294, v295 := range in.Finalizers {
+				if v294 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v14))
+				out.String(string(v295))
 			}
 			out.RawByte(']')
 		}
@@ -698,18 +15940,18 @@ func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV11(out *jwriter.Writer, 
 		}
 		{
 			out.RawByte('[')
-			for v15, v16 := range in.ManagedFields {
-				if v15 > 0 {
+			for v296, v297 := range in.ManagedFields {
+				if v296 > 0 {
 					out.RawByte(',')
 				}
-				easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV13(out, v16)
+				easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV15(out, v297)
 			}
 			out.RawByte(']')
 		}
 	}
 	out.RawByte('}')
 }
-func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV13(in *jlexer.Lexer, out *_v1.ManagedFieldsEntry) {
+func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV15(in *jlexer.Lexer, out *_v1.ManagedFieldsEntry) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -770,7 +16012,7 @@ func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV13(in *jlexer.Lexer, out
 		in.Consumed()
 	}
 }
-func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV13(out *jwriter.Writer, in _v1.ManagedFieldsEntry) {
+func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV15(out *jwriter.Writer, in _v1.ManagedFieldsEntry) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -832,7 +16074,7 @@ func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV13(out *jwriter.Writer, 
 	}
 	out.RawByte('}')
 }
-func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV12(in *jlexer.Lexer, out *_v1.OwnerReference) {
+func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV14(in *jlexer.Lexer, out *_v1.OwnerReference) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -889,7 +16131,7 @@ func easyjsonAa42d34bDecodeK8sIoApimachineryPkgApisMetaV12(in *jlexer.Lexer, out
 		in.Consumed()
 	}
 }
-func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV12(out *jwriter.Writer, in _v1.OwnerReference) {
+func easyjsonAa42d34bEncodeK8sIoApimachineryPkgApisMetaV14(out *jwriter.Writer, in _v1.OwnerReference) {
 	out.RawByte('{')
 	first := true
 	_ = first

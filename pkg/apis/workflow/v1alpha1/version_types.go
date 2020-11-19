@@ -1,4 +1,4 @@
-//go:generate easyjson -all $GOFILE
+//go:generate easyjson -coerce_to_string -all $GOFILE
 package v1alpha1
 
 type Version struct {
