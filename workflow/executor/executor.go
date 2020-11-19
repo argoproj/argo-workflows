@@ -40,6 +40,12 @@ import (
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
+// Run	Seconds
+// 0	0.000
+// 1	1.000
+// 2	2.600
+// 3	5.160
+// 4	9.256
 var ExecutorRetry = wait.Backoff{
 	Steps:    5,
 	Duration: 1 * time.Second,
@@ -219,7 +225,9 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		log.Infof("Successfully download file: %s", artPath)
 		if art.Mode != nil {
 			err = chmod(artPath, *art.Mode, art.RecurseMode)
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -374,6 +382,9 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
 			log.Infof("No compression strategy needed. Staging skipped")
+			if !argofile.Exists(mountedArtPath) {
+				return "", "", errors.Errorf(errors.CodeNotFound, "%s no such file or directory", art.Path)
+			}
 			return fileName, mountedArtPath, nil
 		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
@@ -481,7 +492,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output *wfv1.Int64OrString
+		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
@@ -493,7 +504,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = wfv1.Int64OrStringPtr(fileContents)
+				output = wfv1.AnyStringPtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -507,12 +518,12 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = wfv1.Int64OrStringPtr(string(data))
+				output = wfv1.AnyStringPtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
-		output = wfv1.Int64OrStringPtr(strings.TrimSuffix(output.String(), "\n"))
+		output = wfv1.AnyStringPtr(strings.TrimSuffix(output.String(), "\n"))
 		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
@@ -826,7 +837,7 @@ func (we *WorkflowExecutor) AddError(err error) {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
-	return common.AddPodAnnotation(we.ClientSet, we.PodName, we.Namespace, key, value)
+	return common.AddPodAnnotation(we.ClientSet, we.PodName, we.Namespace, key, value, ExecutorRetry)
 }
 
 // isTarball returns whether or not the file is a tarball

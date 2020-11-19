@@ -15,7 +15,7 @@ data:
     instanceID: my-ci-controller
 
     # Parallelism limits the max total parallel workflows that can execute at the same time
-    # (available since Argo v2.3)
+    # (available since Argo v2.3). Controller must be restarted to take effect.
     parallelism: 10
 
     # Whether or not to emit events on node completion. These can take a up a lot of space in
@@ -236,7 +236,12 @@ data:
       # be in the form <argo-server-root-url>/oauth2/callback. It must be
       # browser-accessible.
       redirectUrl: https://argo-server/oauth2/callback
-
+      # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
+      scopes:
+       - groups
+      # RBAC Config. >= v2.12
+      rbac:
+        enabled: false
     # workflowRequirements restricts the Workflows that the controller will process.
     # Current options:
     #   referenceOnly: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller

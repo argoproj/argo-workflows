@@ -41,3 +41,69 @@ kubectl delete secret sso
     The old key will be in the memory the any running Argo Server, and they will therefore accept and user with token encrypted using the old key. Every Argo Server MUST be restarted. 
 
 All users will need to log in again. Sorry.
+
+
+## SSO RBAC
+
+> v2.12 and after
+
+You can optionally add RBAC to SSO. This allows you to give different users different access levels. Except for `client` auth mode, all users of the Argo Server must ultimately use a service account. So we allow you to define rules that map a user (maybe using their OIDC groups) to a service account by annotating the service account.  
+
+RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.
+
+Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You almost certainly want to be able configure RBAC using groups, so add `scopes:` to the SSO settings:
+
+```yaml
+sso:
+  # ...
+  scopes:
+   - groups
+  rbac:
+    enabled: true
+```
+
+!!! Note
+    Not all OIDC provider support the groups scope. Please speak to your provider about their options.
+
+To configure a service account to be used, annotate it:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  annotations:
+    # The rule is an expression used to determine if this service account 
+    # should be used. 
+    # * `groups` - an array of the OIDC groups
+    # * `iss` - the issuer ("argo-server")
+    # * `sub` - the subject (typically the username)
+    # Must evaluate to a boolean. 
+    # If you want an account to be the default to use, this rule can be "true".
+    # Details of the expression language are available in
+    # https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.
+    workflows.argoproj.io/rbac-rule: "'admin' in groups"
+    # The precedence is used to determine which service account to use whe
+    # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
+    # Numerically higher values have higher precedence (not lower, which maybe 
+    # counter-intuitive to you).
+    # If two rules match and have the same precedence, then which one used will 
+    # be arbitrary.
+    workflows.argoproj.io/rbac-rule-precedence: "1"
+```
+
+
+If no rule matches, we deny the user access.
+
+!!! Tip
+    You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
+    
+    ```yaml
+    metadata:
+      name: read-only
+      annotations:
+        workflows.argoproj.io/rbac-rule: "true"
+        workflows.argoproj.io/rbac-rule-precedence: "0"
+    ```
+    
+    The precedence must be the lowest of all your service accounts. 

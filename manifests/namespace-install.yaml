@@ -238,6 +238,7 @@ rules:
   - secrets
   verbs:
   - get
+  - create
 - apiGroups:
   - ""
   resources:
@@ -260,10 +261,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
   - serviceaccounts
   verbs:
   - get
+  - list
 - apiGroups:
   - argoproj.io
   resources:
@@ -364,11 +365,17 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo-server
+      volumes:
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment

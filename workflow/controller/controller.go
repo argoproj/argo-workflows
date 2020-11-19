@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -54,6 +55,8 @@ import (
 )
 
 const enoughTimeForInformerSync = 1 * time.Second
+
+const semaphoreConfigIndexName = "bySemaphoreConfigMap"
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -124,7 +127,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset),
+		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
@@ -138,17 +141,19 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 	workqueue.SetProvider(wfc.metrics)
 	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
-	wfc.throttler = sync.NewThrottler(0, wfc.wfQueue)
-	wfc.throttler.SetParallelism(wfc.getParallelism())
+	wfc.throttler = wfc.newThrottler()
+	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 
 	return &wfc, nil
 }
 
+func (wfc *WorkflowController) newThrottler() sync.Throttler {
+	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.Add(key) })
+}
+
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
-		return &wfc.Config
-	})
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
@@ -156,7 +161,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -164,6 +169,7 @@ var indexers = cache.Indexers{
 	indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
 	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+	semaphoreConfigIndexName:             workflowIndexerBySemaphoreKeys,
 }
 
 // Run starts an Workflow resource controller
@@ -180,6 +186,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers int) {
 	wfc.podInformer = wfc.newPodInformer()
 	wfc.updateEstimatorFactory()
 
+	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
@@ -193,13 +200,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers int) {
 	go wfc.runCronController(ctx)
 	go wfc.metrics.RunServer(ctx)
 
-	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
-		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
-			log.Error("Timed out waiting for caches to sync")
-			return
-		}
-	}
+	wfc.createClusterWorkflowTemplateInformer(ctx)
+	wfc.waitForCacheSync(ctx)
 
 	// Create Synchronization Manager
 	err := wfc.createSynchronizationManager()
@@ -207,12 +209,36 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers int) {
 		panic(err)
 	}
 
-	wfc.createClusterWorkflowTemplateInformer(ctx)
-
 	for i := 0; i < wfWorkers; i++ {
 		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+func workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		log.Warnf("cannot convert obj into unstructured.Unstructured in Indexer %s", semaphoreConfigIndexName)
+		return []string{}, nil
+	}
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		log.Warnf("failed to convert to workflow from unstructured: %v", err)
+		return []string{}, nil
+	}
+	return wf.GetSemaphoreKeys(), nil
+}
+
+func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
+	// Wait for all involved caches to be synced, before processing items from the queue is started
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	if wfc.cwftmplInformer != nil {
+		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
+			panic("Timed out waiting for caches to sync")
+		}
+	}
 }
 
 // Create and initialize the Synchronization Manager
@@ -256,6 +282,56 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	return nil
 }
 
+func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
+	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer retryWatcher.Stop()
+
+	for {
+		select {
+		case event := <-retryWatcher.ResultChan():
+			cm, ok := event.Object.(*apiv1.ConfigMap)
+			if !ok {
+				log.Errorf("invalid config map object received in config watcher. Ignored processing")
+				continue
+			}
+			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
+			wfc.notifySemaphoreConfigUpdate(cm)
+
+		case <-stopCh:
+			return
+		}
+	}
+}
+
+// notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
+	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(semaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
+	if err != nil {
+		log.Errorf("failed get the workflow from informer. %v", err)
+	}
+
+	for _, obj := range wfs {
+		un, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			log.Warnf("received object from indexer %s is not an unstructured", semaphoreConfigIndexName)
+			continue
+		}
+		wf, err := util.FromUnstructured(un)
+		if err != nil {
+			log.Errorf("failed to convert to workflow from unstructured: %v", err)
+			continue
+		}
+		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
+	}
+}
+
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
@@ -268,10 +344,6 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
-		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
-			log.Error("Timed out waiting for caches to sync")
-			return
-		}
 	} else {
 		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
 	}
@@ -469,8 +541,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if key, ok = wfc.throttler.Next(key); !ok {
-		log.WithFields(log.Fields{"key": key}).Warn("Workflow processing has been postponed due to max parallelism limit")
+	if !wfc.throttler.Admit(key.(string)) {
+		log.WithFields(log.Fields{"key": key}).Info("Workflow processing has been postponed due to max parallelism limit")
 		return true
 	}
 
@@ -480,55 +552,39 @@ func (wfc *WorkflowController) processNextItem() bool {
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates()
-		wfc.throttler.Remove(key)
 		return true
 	}
 
-	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
-		wfc.throttler.Remove(key)
+	if wf.Labels[common.LabelKeyCompleted] == "true" {
 		// can get here if we already added the completed=true label,
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
-
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
+	// make sure this is removed from the throttler is complete
+	defer func() {
+		// must be done with woc
+		if woc.wf.Labels[common.LabelKeyCompleted] == "true" {
+			wfc.throttler.Remove(key.(string))
+		}
+	}()
+
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
 		woc.log.Errorf("hydration failed: %v", err)
-		woc.markWorkflowError(err, true)
+		woc.markWorkflowError(err)
 		woc.persistUpdates()
-		wfc.throttler.Remove(key)
 		return true
-	}
-
-	if wf.Spec.Synchronization != nil {
-		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", woc.wf.Spec.Synchronization)
-		if err != nil {
-			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
-			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
-			woc.persistUpdates()
-			wfc.throttler.Remove(key)
-			return true
-		}
-		woc.updated = wfUpdate
-		if !acquired {
-			log.WithFields(log.Fields{"key": key, "message": msg}).Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.persistUpdates()
-			return true
-		}
 	}
 
 	startTime := time.Now()
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
-
-		wfc.throttler.Remove(key)
-
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
 		if woc.execWf.Spec.PodGC != nil {
@@ -679,8 +735,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			wfc.metrics.WorkflowUpdated(string(wf.GetUID()), getWfPhase(old), getWfPhase(new))
 		},
 		DeleteFunc: func(obj interface{}) {
-			wf := obj.(*unstructured.Unstructured)
-			wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			wf, ok := obj.(*unstructured.Unstructured)
+			if ok { // maybe cache.DeletedFinalStateUnknown
+				wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			}
 		},
 	})
 }
@@ -740,9 +798,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
-	c := wfc.kubeclientset.CoreV1().RESTClient()
-	resource := "pods"
-	namespace := wfc.GetManagedNamespace()
+	c := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
@@ -751,20 +807,12 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
-		req := c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Do().Get()
+		return c.List(options)
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.LabelSelector = labelSelector.String()
-		req := c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Watch()
+		return c.Watch(options)
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
@@ -831,10 +879,6 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 	return wfc.Config.ContainerRuntimeExecutor
 }
 
-func (wfc *WorkflowController) getParallelism() int {
-	return wfc.Config.Parallelism
-}
-
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
 	// Metrics config
 	path := wfc.Config.MetricsConfig.Path
@@ -842,7 +886,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		path = metrics.DefaultMetricsServerPath
 	}
 	port := wfc.Config.MetricsConfig.Port
-	if port == "" {
+	if port == 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
 	metricsConfig := metrics.ServerConfig{
@@ -860,7 +904,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	}
 
 	port = metricsConfig.Port
-	if wfc.Config.TelemetryConfig.Port != "" {
+	if wfc.Config.TelemetryConfig.Port > 0 {
 		port = wfc.Config.TelemetryConfig.Port
 	}
 	telemetryConfig := metrics.ServerConfig{
