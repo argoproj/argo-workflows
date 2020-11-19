@@ -103,3 +103,4 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [UFirstGroup](https://www.ufirstgroup.com)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
+1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
