@@ -836,32 +836,26 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
-				woc.wf.Status.Nodes[nodeID] = *newState
+			if node := woc.assessNodeStatus(pod, &node); node != nil {
+				woc.wf.Status.Nodes[nodeID] = *node
+				woc.markNodePhase(node.Name, node.Phase, node.Message)
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
 					c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 					err := c.Save(node.MemoizationStatus.Key, node.ID, node.Outputs)
 					if err != nil {
-						woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-						node.Phase = wfv1.NodeError
+						woc.markNodeError(node.Name, err)
 					}
 				}
-				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Fulfilled() && !node.IsDaemoned() {
-				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
-					if tmpVal == "true" {
-						return
-					}
+				if pod.Labels[common.LabelKeyCompleted] == "true" {
+					return
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
-				}
-				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
-					woc.onNodeComplete(&node)
 				}
 			}
 			if node.Succeeded() {
