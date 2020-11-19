@@ -1,4 +1,4 @@
-//go:generate easyjson  -coerce_to_string -all $GOFILE
+//go:generate easyjson -all $GOFILE
 package v1alpha1
 
 // A link to another app.

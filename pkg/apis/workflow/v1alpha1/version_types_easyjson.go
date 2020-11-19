@@ -123,7 +123,7 @@ func (v Version) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Version) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data, CoerceToString: true}
+	r := jlexer.Lexer{Data: data}
 	easyjsonD37af254DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha1(&r, v)
 	return r.Error()
 }
