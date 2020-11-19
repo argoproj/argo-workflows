@@ -901,7 +901,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 
 			// grace-period to allow informer sync
-			if node.StartedAt.Time.After(time.Now().Add(-enoughTimeForInformerSync)) {
+			recentlyStarted := recentlyStarted(node)
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "recentlyStarted": recentlyStarted}).Info()
+			if recentlyStarted {
 				woc.log.WithField("nodeName", node.Name).Info("allowing a short grace-period before marking node as error")
 				continue
 			}
@@ -918,6 +920,10 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 	return nil
+}
+
+func recentlyStarted(node wfv1.NodeStatus) bool {
+	return time.Now().Sub(node.StartedAt.Time) <= 10*time.Second
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
