@@ -77,9 +77,6 @@ func NewRootCommand() *cobra.Command {
 			if namespaced && managedNamespace == "" {
 				managedNamespace = namespace
 			}
-			if podWorkers > 0 {
-				log.Warn("--pod-workers is deprecated and ignored")
-			}
 
 			// start a controller on instances of our custom resource
 			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
@@ -87,7 +84,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			go wfController.Run(ctx, workflowWorkers)
+			go wfController.Run(ctx, workflowWorkers, podWorkers)
 
 			// Wait forever
 			select {}
@@ -103,7 +100,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
-	command.Flags().IntVar(&podWorkers, "pod-workers", 0, "Number of pod workers")
+	command.Flags().IntVar(&podWorkers, "pod-workers", 32, "Number of pod workers")
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
