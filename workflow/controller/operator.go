@@ -116,8 +116,23 @@ var (
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
-const maxOperationTime = 10 * time.Second
-const defaultRequeueTime = maxOperationTime
+var maxOperationTime = 10 * time.Second
+var defaultRequeueTime = maxOperationTime
+
+func init() {
+	v, found := os.LookupEnv("MAX_OPERATION_TIME")
+	if found {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			log.WithField("MAX_OPERATION_TIME", v).WithError(err).Fatal("failed to parse MAX_OPERATION_TIME")
+		}
+		maxOperationTime = d
+	}
+	defaultRequeueTime = maxOperationTime
+	log.WithFields(log.Fields{"maxOperationTime": maxOperationTime, "defaultRequeueTime": defaultRequeueTime}).Info()
+
+}
+
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
