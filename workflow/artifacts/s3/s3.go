@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/minio/minio-go/v7"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -103,6 +105,20 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 				log.Warnf("Failed to test if %s is a directory: %v", path, err)
 				return false, nil
 			}
+
+			createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
+			if createBucketIfNotPresent != nil {
+				log.Infof("Bucket %s does not exist. Trying to create...", outputArtifact.S3.Bucket)
+				err = s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
+					Region:        outputArtifact.S3.Region,
+					ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
+				})
+				if err != nil {
+					log.Warnf("Failed to create bucket: %v", outputArtifact.S3.Bucket)
+					return false, err
+				}
+			}
+
 			if isDir {
 				if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
 					log.Warnf("Failed to put directory: %v", err)

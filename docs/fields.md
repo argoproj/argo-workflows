@@ -617,7 +617,7 @@ WorkflowSpec is the specification of a Workflow.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
+|`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
@@ -632,13 +632,13 @@ WorkflowSpec is the specification of a Workflow.
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this Workflow|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.|
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.|
-|`parallelism`|`int64`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
+|`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
-|`podPriority`|`int32`|Priority to apply to workflow pods.|
+|`podPriority`|`integer`|Priority to apply to workflow pods.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
-|`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
@@ -648,7 +648,7 @@ WorkflowSpec is the specification of a Workflow.
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|~`ttlSecondsAfterFinished`~|~`integer`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
@@ -662,9 +662,10 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`artifactRepositoryRef`|[`ArtifactRepositoryRefStatus`](#artifactrepositoryrefstatus)|ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
-|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
+|`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -968,10 +969,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`concurrencyPolicy`|`string`|ConcurrencyPolicy is the K8s-style concurrency policy that will be used|
-|`failedJobsHistoryLimit`|`int32`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
+|`failedJobsHistoryLimit`|`integer`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
 |`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format|
-|`startingDeadlineSeconds`|`int64`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
-|`successfulJobsHistoryLimit`|`int32`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
+|`startingDeadlineSeconds`|`integer`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
+|`successfulJobsHistoryLimit`|`integer`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`suspend`|`boolean`|Suspend is a flag that will stop new CronWorkflows from running if set to true|
 |`timezone`|`string`|Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.|
 |`workflowMetadata`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be run|
@@ -1276,7 +1277,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
+|`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
@@ -1291,13 +1292,13 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this Workflow|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.|
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.|
-|`parallelism`|`int64`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
+|`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
-|`podPriority`|`int32`|Priority to apply to workflow pods.|
+|`podPriority`|`integer`|Priority to apply to workflow pods.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
-|`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
@@ -1307,7 +1308,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|~`ttlSecondsAfterFinished`~|~`integer`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
@@ -1492,8 +1493,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|`string`|_No description available_|
-|`key`|`string`|_No description available_|
+|`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
+|`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
 
 ## ExecutorConfig
 
@@ -1889,9 +1890,9 @@ Template is a reusable and composable unit of execution in a workflow
 |`name`|`string`|Name is the name of the template|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
-|`parallelism`|`int64`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
+|`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
-|`priority`|`int32`|Priority to apply to workflow pods.|
+|`priority`|`integer`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy describes how to retry a template when it fails|
@@ -1923,9 +1924,9 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`secondsAfterCompletion`|`int32`|SecondsAfterCompletion is the number of seconds to live after completion|
-|`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
-|`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
+|`secondsAfterCompletion`|`integer`|SecondsAfterCompletion is the number of seconds to live after completion|
+|`secondsAfterFailure`|`integer`|SecondsAfterFailure is the number of seconds to live after failure|
+|`secondsAfterSuccess`|`integer`|SecondsAfterSuccess is the number of seconds to live after success|
 
 ## VolumeClaimGC
 
@@ -1963,6 +1964,25 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
 
+## ArtifactRepositoryRefStatus
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
+|`default`|`boolean`|If this ref represents the default artifact repository, rather than a config map.|
+|`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
+|`namespace`|`string`|The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).|
+
 ## Condition
 
 _No description available_
@@ -1985,7 +2005,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`children`|`Array< string >`|Children is a list of child node IDs|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
-|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
+|`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
@@ -2173,7 +2193,7 @@ Artifact indicates an artifact to place at a specified path
 |`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
 |`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
-|`mode`|`int32`|mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.|
+|`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.|
 |`name`|`string`|name of the artifact. must be unique within a template's inputs/outputs.|
 |`optional`|`boolean`|Make Artifacts optional, if Artifacts doesn't generate or exist|
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
@@ -3470,7 +3490,7 @@ GitArtifact is the location of an git artifact
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`depth`|`int64`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
+|`depth`|`integer`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
 |`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
 |`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
@@ -3586,6 +3606,7 @@ S3Artifact is the location of an S3 artifact
 |:----------:|:----------:|---------------|
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
 |`bucket`|`string`|Bucket is the name of the bucket|
+|`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
 |`key`|`string`|Key is the key in the bucket where the artifact resides|
@@ -3946,7 +3967,7 @@ TarStrategy will tar and gzip the file or directory when saving
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+|`compressionLevel`|`integer`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
 
 ## ZipStrategy
 
@@ -3961,6 +3982,15 @@ Header indicate a key-value request header to be used when fetching artifacts ov
 |:----------:|:----------:|---------------|
 |`name`|`string`|Name is the header name|
 |`value`|`string`|Value is the literal value to use for the header|
+
+## CreateS3BucketOptions
+
+CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`objectLocking`|`boolean`|ObjectLocking Enable object locking|
 
 ## SuppliedValueFrom
 
@@ -4278,11 +4308,11 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 |`annotations`|`Map< string , string >`|Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: http://kubernetes.io/docs/user-guide/annotations|
 |`clusterName`|`string`|The name of the cluster which the object belongs to. This is used to distinguish resources with same name and namespace in different clusters. This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.|
 |`creationTimestamp`|[`Time`](#time)|CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata|
-|`deletionGracePeriodSeconds`|`int64`|Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only.|
+|`deletionGracePeriodSeconds`|`integer`|Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only.|
 |`deletionTimestamp`|[`Time`](#time)|DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested.Populated by the system when a graceful deletion is requested. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata|
 |`finalizers`|`Array< string >`|Must be empty before the object is deleted from the registry. Each entry is an identifier for the responsible component that will remove the entry from the list. If the deletionTimestamp of the object is non-nil, entries in this list can only be removed. Finalizers may be processed and removed in any order.  Order is NOT enforced because it introduces significant risk of stuck finalizers. finalizers is a shared field, any actor with permission can reorder it. If the finalizer list is processed in order, then this can lead to a situation in which the component responsible for the first finalizer in the list is waiting for a signal (field value, external system, or other) produced by a component responsible for a finalizer later in the list, resulting in a deadlock. Without enforced ordering finalizers are free to order amongst themselves and are not vulnerable to ordering changes in the list.|
 |`generateName`|`string`|GenerateName is an optional prefix, used by the server, to generate a unique name ONLY IF the Name field has not been provided. If this field is used, the name returned to the client will be different than the name passed. This value will also be combined with a unique suffix. The provided value has the same validation rules as the Name field, and may be truncated by the length of the suffix required to make the value unique on the server.If this field is specified and the generated name exists, the server will NOT return a 409 - instead, it will either return 201 Created or 500 with Reason ServerTimeout indicating a unique name could not be found in the time allotted, and the client should retry (optionally after the time indicated in the Retry-After header).Applied only if Name is not specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency|
-|`generation`|`int64`|A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.|
+|`generation`|`integer`|A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.|
 |`labels`|`Map< string , string >`|Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: http://kubernetes.io/docs/user-guide/labels|
 |`managedFields`|`Array<`[`ManagedFieldsEntry`](#managedfieldsentry)`>`|ManagedFields maps workflow-id and version to the set of fields that are managed by that workflow. This is mostly for internal housekeeping, and users typically shouldn't need to set or understand this field. A workflow can be the user's name, a controller's name, or the name of a specific apply path like "ci-cd". The set of fields is always in the version that the workflow used when modifying the object.|
 |`name`|`string`|Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names|
@@ -4379,10 +4409,10 @@ PodSecurityContext holds pod-level security attributes and common container sett
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`fsGroup`|`int64`|A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----If unset, the Kubelet will not modify the ownership and permissions of any volume.|
-|`runAsGroup`|`int64`|The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.|
+|`fsGroup`|`integer`|A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----If unset, the Kubelet will not modify the ownership and permissions of any volume.|
+|`runAsGroup`|`integer`|The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.|
 |`runAsNonRoot`|`boolean`|Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
-|`runAsUser`|`int64`|The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.|
+|`runAsUser`|`integer`|The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.|
 |`seLinuxOptions`|[`SELinuxOptions`](#selinuxoptions)|The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.|
 |`supplementalGroups`|`Array< integer >`|A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container.|
 |`sysctls`|`Array<`[`Sysctl`](#sysctl)`>`|Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch.|
@@ -4398,7 +4428,7 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 |`effect`|`string`|Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.|
 |`key`|`string`|Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.|
 |`operator`|`string`|Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.|
-|`tolerationSeconds`|`int64`|TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.|
+|`tolerationSeconds`|`integer`|TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.|
 |`value`|`string`|Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.|
 
 ## PersistentVolumeClaim
@@ -4511,7 +4541,7 @@ ObjectReference contains enough information to let you inspect or modify the ref
 
 ## IntOrString
 
-IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
+_No description available_
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -4870,13 +4900,13 @@ Probe describes a health check to be performed against a container to determine 
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`exec`|[`ExecAction`](#execaction)|One and only one of the following should be specified. Exec specifies the action to take.|
-|`failureThreshold`|`int32`|Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.|
+|`failureThreshold`|`integer`|Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.|
 |`httpGet`|[`HTTPGetAction`](#httpgetaction)|HTTPGet specifies the http request to perform.|
-|`initialDelaySeconds`|`int32`|Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
-|`periodSeconds`|`int32`|How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.|
-|`successThreshold`|`int32`|Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.|
+|`initialDelaySeconds`|`integer`|Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`periodSeconds`|`integer`|How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.|
+|`successThreshold`|`integer`|Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.|
 |`tcpSocket`|[`TCPSocketAction`](#tcpsocketaction)|TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported|
-|`timeoutSeconds`|`int32`|Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`timeoutSeconds`|`integer`|Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 
 ## ContainerPort
 
@@ -4892,9 +4922,9 @@ ContainerPort represents a network port in a single container.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`containerPort`|`int32`|Number of port to expose on the pod's IP address. This must be a valid port number, 0 < x < 65536.|
+|`containerPort`|`integer`|Number of port to expose on the pod's IP address. This must be a valid port number, 0 < x < 65536.|
 |`hostIP`|`string`|What host IP to bind the external port to.|
-|`hostPort`|`int32`|Number of port to expose on the host. If specified, this must be a valid port number, 0 < x < 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.|
+|`hostPort`|`integer`|Number of port to expose on the host. If specified, this must be a valid port number, 0 < x < 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.|
 |`name`|`string`|If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services.|
 |`protocol`|`string`|Protocol for port. Must be UDP, TCP, or SCTP. Defaults to "TCP".|
 
@@ -4954,9 +4984,9 @@ SecurityContext holds security configuration that will be applied to a container
 |`privileged`|`boolean`|Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.|
 |`procMount`|`string`|procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled.|
 |`readOnlyRootFilesystem`|`boolean`|Whether this container has a read-only root filesystem. Default is false.|
-|`runAsGroup`|`int64`|The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
+|`runAsGroup`|`integer`|The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
 |`runAsNonRoot`|`boolean`|Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
-|`runAsUser`|`int64`|The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
+|`runAsUser`|`integer`|The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
 |`seLinuxOptions`|[`SELinuxOptions`](#selinuxoptions)|The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
 |`windowsOptions`|[`WindowsSecurityContextOptions`](#windowssecuritycontextoptions)|The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
 
@@ -5477,7 +5507,7 @@ Represents a Persistent Disk resource in AWS.An AWS EBS disk must exist before m
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`fsType`|`string`|Filesystem type of the volume that you want to mount. Tip: Ensure that the filesystem type is supported by the host operating system. Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore|
-|`partition`|`int32`|The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as "1". Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).|
+|`partition`|`integer`|The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as "1". Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).|
 |`readOnly`|`boolean`|Specify "true" to force and set the ReadOnly property in VolumeMounts to "true". If omitted, the default is "false". More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore|
 |`volumeID`|`string`|Unique ID of the persistent disk resource in AWS (Amazon EBS volume). More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore|
 
@@ -5546,7 +5576,7 @@ Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data fie
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`defaultMode`|`int32`|Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
+|`defaultMode`|`integer`|Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
 |`items`|`Array<`[`KeyToPath`](#keytopath)`>`|If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.|
 |`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
 |`optional`|`boolean`|Specify whether the ConfigMap or its keys must be defined|
@@ -5571,7 +5601,7 @@ DownwardAPIVolumeSource represents a volume containing downward API info. Downwa
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`defaultMode`|`int32`|Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
+|`defaultMode`|`integer`|Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
 |`items`|`Array<`[`DownwardAPIVolumeFile`](#downwardapivolumefile)`>`|Items is a list of downward API volume file|
 
 ## EmptyDirVolumeSource
@@ -5601,7 +5631,7 @@ Represents a Fibre Channel volume. Fibre Channel volumes can only be mounted as 
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`fsType`|`string`|Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.|
-|`lun`|`int32`|Optional: FC target lun number|
+|`lun`|`integer`|Optional: FC target lun number|
 |`readOnly`|`boolean`|Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.|
 |`targetWWNs`|`Array< string >`|Optional: FC target worldwide names (WWNs)|
 |`wwids`|`Array< string >`|Optional: FC volume world wide identifiers (wwids) Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.|
@@ -5637,7 +5667,7 @@ Represents a Persistent Disk resource in Google Compute Engine.A GCE PD must exi
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`fsType`|`string`|Filesystem type of the volume that you want to mount. Tip: Ensure that the filesystem type is supported by the host operating system. Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
-|`partition`|`int32`|The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as "1". Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty). More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
+|`partition`|`integer`|The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as "1". Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty). More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
 |`pdName`|`string`|Unique name of the PD resource in GCE. Used to identify the disk in GCE. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
 |`readOnly`|`boolean`|ReadOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
 
@@ -5686,7 +5716,7 @@ Represents an ISCSI disk. ISCSI volumes can only be mounted as read/write once. 
 |`initiatorName`|`string`|Custom iSCSI Initiator Name. If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface <target portal>:<volume name> will be created for the connection.|
 |`iqn`|`string`|Target iSCSI Qualified Name.|
 |`iscsiInterface`|`string`|iSCSI Interface Name that uses an iSCSI transport. Defaults to 'default' (tcp).|
-|`lun`|`int32`|iSCSI Target Lun number.|
+|`lun`|`integer`|iSCSI Target Lun number.|
 |`portals`|`Array< string >`|iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).|
 |`readOnly`|`boolean`|ReadOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false.|
 |`secretRef`|[`LocalObjectReference`](#localobjectreference)|CHAP Secret for iSCSI target and initiator authentication|
@@ -5748,7 +5778,7 @@ Represents a projected volume source
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`defaultMode`|`int32`|Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
+|`defaultMode`|`integer`|Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
 |`sources`|`Array<`[`VolumeProjection`](#volumeprojection)`>`|list of volume projections|
 
 ## QuobyteVolumeSource
@@ -5815,7 +5845,7 @@ Adapts a Secret into a volume.The contents of the target Secret's Data field wil
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`defaultMode`|`int32`|Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
+|`defaultMode`|`integer`|Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
 |`items`|`Array<`[`KeyToPath`](#keytopath)`>`|If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.|
 |`optional`|`boolean`|Specify whether the Secret or its keys must be defined|
 |`secretName`|`string`|Name of the secret in the pod's namespace to use. More info: https://kubernetes.io/docs/concepts/storage/volumes#secret|
@@ -6007,7 +6037,7 @@ An empty preferred scheduling term matches all objects with implicit weight 0 (i
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`preference`|[`NodeSelectorTerm`](#nodeselectorterm)|A node selector term, associated with the corresponding weight.|
-|`weight`|`int32`|Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.|
+|`weight`|`integer`|Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.|
 
 ## NodeSelector
 
@@ -6026,7 +6056,7 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`podAffinityTerm`|[`PodAffinityTerm`](#podaffinityterm)|Required. A pod affinity term, associated with the corresponding weight.|
-|`weight`|`int32`|weight associated with matching the corresponding podAffinityTerm, in the range 1-100.|
+|`weight`|`integer`|weight associated with matching the corresponding podAffinityTerm, in the range 1-100.|
 
 ## PodAffinityTerm
 
@@ -6083,7 +6113,7 @@ Maps a string key to a path within a volume.
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`key`|`string`|The key to project.|
-|`mode`|`int32`|Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
+|`mode`|`integer`|Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
 |`path`|`string`|The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.|
 
 ## DownwardAPIVolumeFile
@@ -6094,7 +6124,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`fieldRef`|[`ObjectFieldSelector`](#objectfieldselector)|Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.|
-|`mode`|`int32`|Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
+|`mode`|`integer`|Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.|
 |`path`|`string`|Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'|
 |`resourceFieldRef`|[`ResourceFieldSelector`](#resourcefieldselector)|Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.|
 
@@ -6206,7 +6236,7 @@ ServiceAccountTokenProjection represents a projected service account token volum
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`audience`|`string`|Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.|
-|`expirationSeconds`|`int64`|ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.|
+|`expirationSeconds`|`integer`|ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.|
 |`path`|`string`|Path is the path relative to the mount point of the file to project the token into.|
 
 ## NodeSelectorRequirement

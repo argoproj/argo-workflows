@@ -1,4 +1,4 @@
-import {Tabs, Ticker} from 'argo-ui';
+import {Tabs, Ticker, Tooltip} from 'argo-ui';
 import * as moment from 'moment';
 import * as React from 'react';
 
@@ -31,7 +31,7 @@ interface Props {
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
         <div className='columns small-4'>{attr.title}</div>
-        <div className='columns small-8'>{attr.value}</div>
+        <div className='columns columns--narrower-height small-8'>{attr.value}</div>
     </div>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -164,6 +164,27 @@ function hasEnv(container: models.kubernetes.Container | models.Sidecar | models
     return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
 }
 
+const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
+    const {env} = props;
+    const secret = env.valueFrom?.secretKeyRef;
+    const secretValue = secret ? (
+        <>
+            <Tooltip content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'} arrow={false}>
+                <i className='fa fa-key' />
+            </Tooltip>
+            {secret.name}/{secret.key}
+        </>
+    ) : (
+        undefined
+    );
+
+    return (
+        <pre>
+            {env.name}={env.value || secretValue}
+        </pre>
+    );
+};
+
 export const WorkflowNodeContainer = (props: {
     nodeId: string;
     container: models.kubernetes.Container | models.Sidecar | models.Script;
@@ -187,7 +208,13 @@ export const WorkflowNodeContainer = (props: {
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</pre>
+                  value: (
+                      <pre className='workflow-node-info__multi-line'>
+                          {(container.env || []).map(e => (
+                              <EnvVar env={e} />
+                          ))}
+                      </pre>
+                  )
               }
             : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];

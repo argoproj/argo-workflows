@@ -1,27 +1,44 @@
 # IDE Set-Up
 
-## How To Use CRD Validation With Your Editor
+## Validating Argo YAML againt the JSON Schema
 
-Use either VS Code or Kubernetes and load the full Custom Resource Definitions (CRDs) into an IDE that support CRD validation (e.g IntelliJ, VS Code).
+Argo provides a [JSON Schema](https://raw.githubusercontent.com/argoproj/argo/master/api/jsonschema/schema.json) that enables validation of YAML resources in your IDE.
 
-CRD URLs:
+### IntelliJ IDEA (Community & Utimate Editions)
 
-* [ClusterWorkflowTemplate](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_clusterworkflowtemplates.yaml)
-* [WorkflowTemplate](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_workflowtemplates.yaml)
-* [CronWorkflow](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_cronworkflows.yaml)
-* [Workflow](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_workflows.yaml) 
+YAML validation is supported natively in IDEA.
 
-### IntelliJ
+Configure your IDE to reference the Argo schema and map it to your Argo YAML files:
 
-Install the Kubernetes plugin:
+![IDEA Configure Schema](assets/intellij-ide-step-1-config.png)
+- The schema is located at [https://raw.githubusercontent.com/argoproj/argo/master/api/jsonschema/schema.json](https://raw.githubusercontent.com/argoproj/argo/master/api/jsonschema/schema.json).
+- Specify a file glob pattern that locates **your** Argo files. The example glob here is for the Argo Github project!
+- Note that you may need to restart IDEA to pick up the changes.
 
-![Step 1](assets/ide-step-1.png)
+That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.
 
-Add the CRD URLs to the Kubernetes configuration panel (choose “IDE” for the scope):
+![IDEA Example Functionality](assets/intellij-ide-step-1-example-functionality.png)
 
-![Step 2](assets/ide-step-2.png)
+### VSCode
 
-Finally, open your CRDs and verify no errors appear, example:
+The [Red Hat YAML](https://github.com/redhat-developer/vscode-yaml) plugin will provide error highlighting and autocompletion for Argo resources.
 
-![Step 3](assets/ide-step-3.png)
+Install the Red Hat YAML plugin in VSCode and open extension settings:
 
+![VSCode Install Plugin](assets/vscode-ide-step-1-install-plugin.png)
+
+Open the YAML schemas settings:
+
+![VSCode YAML Schema Settings](assets/vscode-ide-step-2-schema-settings.png)
+
+Add the Argo schema setting `yaml.schemas`:
+
+![VSCode Specify Argo Schema](assets/vscode-ide-step-3-spec-schema.png)
+
+- The schema is located at [https://raw.githubusercontent.com/argoproj/argo/master/api/jsonschema/schema.json](https://raw.githubusercontent.com/argoproj/argo/master/api/jsonschema/schema.json).
+- Specify a file glob pattern that locates **your** Argo files. The example glob here is for the Argo Github project!
+- Note that other defined schemas with overlapping glob patterns may cause errors.
+
+That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.
+
+![VScode Example Functionality](assets/vscode-ide-step-4-example-functionality.png)

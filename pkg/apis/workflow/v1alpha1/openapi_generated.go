@@ -19,6 +19,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact":                    schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation":            schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef":       schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus": schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":         schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":             schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff":                     schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
@@ -28,6 +29,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition":                   schema_pkg_apis_workflow_v1alpha1_Condition(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":                  schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Counter":                     schema_pkg_apis_workflow_v1alpha1_Counter(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions":       schema_pkg_apis_workflow_v1alpha1_CreateS3BucketOptions(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow":                schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowList":            schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowSpec":            schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref),
@@ -413,14 +415,56 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref common.Referenc
 				Properties: map[string]spec.Schema{
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The name of the config map. Defaults to \"artifact-repositories\".",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"configMap": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The name of the config map. Defaults to \"artifact-repositories\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"default": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If this ref represents the default artifact repository, rather than a config map.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -709,6 +753,26 @@ func schema_pkg_apis_workflow_v1alpha1_Counter(ref common.ReferenceCallback) com
 					},
 				},
 				Required: []string{"value"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_CreateS3BucketOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "CreateS3BucketOptions options used to determine automatic automatic bucket-creation process",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"objectLocking": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ObjectLocking Enable object locking",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -1032,7 +1096,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"name", "template"},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
@@ -2740,6 +2804,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"createBucketIfNotPresent": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -2752,7 +2822,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -2817,12 +2887,18 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"createBucketIfNotPresent": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+						},
+					},
 				},
 				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4918,11 +4994,17 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus"),
 						},
 					},
+					"artifactRepositoryRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

@@ -494,6 +494,12 @@ func (we *WorkflowExecutor) SaveParameters() error {
 
 		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
+			executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
+			if executorType == common.ContainerRuntimeExecutorK8sAPI || executorType == common.ContainerRuntimeExecutorKubelet {
+				log.Infof("Copying output parameter %s from base image layer %s is not supported for k8sapi and kubelet executors. "+
+					"Consider using an emptyDir volume: https://argoproj.github.io/argo/empty-dir/.", param.Name, param.ValueFrom.Path)
+				continue
+			}
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
@@ -1082,13 +1088,13 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
 				if ctrStatus.Name == common.MainContainerName {
 					log.Debug(ctrStatus)
-					if ctrStatus.ContainerID != "" {
-						we.mainContainerID = containerID(ctrStatus.ContainerID)
-						return containerID(ctrStatus.ContainerID), nil
+					if ctrStatus.State.Waiting != nil {
+						// main container is still in waiting status
 					} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
 						// status still not ready, wait
-					} else if ctrStatus.State.Waiting != nil {
-						// main container is still in waiting status
+					} else if ctrStatus.ContainerID != "" {
+						we.mainContainerID = containerID(ctrStatus.ContainerID)
+						return containerID(ctrStatus.ContainerID), nil
 					} else {
 						// main container in running or terminated state but missing container ID
 						return "", errors.InternalError("Main container ID cannot be found")

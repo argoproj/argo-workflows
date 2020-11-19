@@ -924,16 +924,70 @@ func (a *ArtifactLocation) GetType() ArtifactLocationType {
 
 }
 
-type ArtifactRepositoryRef struct {
-	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
-	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+func (a *ArtifactLocation) GetKey() string {
+	if a.S3 != nil {
+		return a.S3.Key
+	}
+
+	if a.OSS != nil {
+		return a.OSS.Key
+	}
+
+	if a.GCS != nil {
+		return a.GCS.Key
+	}
+
+	return ""
 }
 
-func (r ArtifactRepositoryRef) GetConfigMap() string {
-	if r.ConfigMap == "" {
-		return "artifact-repositories"
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type ArtifactRepositoryRef struct {
+	// The name of the config map. Defaults to "artifact-repositories".
+	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
+	// The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (r *ArtifactRepositoryRef) GetConfigMapOr(configMap string) string {
+	if r == nil || r.ConfigMap == "" {
+		return configMap
 	}
 	return r.ConfigMap
+}
+
+func (r *ArtifactRepositoryRef) GetKeyOr(key string) string {
+	if r == nil || r.Key == "" {
+		return key
+	}
+	return r.Key
+}
+
+func (r *ArtifactRepositoryRef) String() string {
+	if r == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
+}
+
+var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: true}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type ArtifactRepositoryRefStatus struct {
+	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
+	// The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// If this ref represents the default artifact repository, rather than a config map.
+	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
+}
+
+func (r *ArtifactRepositoryRefStatus) String() string {
+	if r == nil {
+		return "nil"
+	}
+	if r.Default {
+		return "default-artifact-repository"
+	}
+	return fmt.Sprintf("%s/%s", r.Namespace, r.ArtifactRepositoryRef.String())
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1201,6 +1255,9 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
+
+	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
+	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1634,6 +1691,15 @@ type S3Bucket struct {
 
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
+}
+
+// CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
+type CreateS3BucketOptions struct {
+	// ObjectLocking Enable object locking
+	ObjectLocking bool `json:"objectLocking,omitempty" protobuf:"varint,3,opt,name=objectLocking"`
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -1958,7 +2024,7 @@ type DAGTask struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
-	Template string `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`

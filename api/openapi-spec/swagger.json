@@ -2080,12 +2080,10 @@
           }
         },
         "grpc_code": {
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "http_code": {
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "http_status": {
           "type": "string"
@@ -2186,8 +2184,7 @@
         },
         "mode": {
           "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "name": {
           "description": "name of the artifact. must be unique within a template's inputs/outputs.",
@@ -2269,9 +2266,32 @@
       "type": "object",
       "properties": {
         "configMap": {
+          "description": "The name of the config map. Defaults to \"artifact-repositories\".",
           "type": "string"
         },
         "key": {
+          "description": "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
+      "type": "object",
+      "properties": {
+        "configMap": {
+          "description": "The name of the config map. Defaults to \"artifact-repositories\".",
+          "type": "string"
+        },
+        "default": {
+          "description": "If this ref represents the default artifact repository, rather than a config map.",
+          "type": "boolean"
+        },
+        "key": {
+          "description": "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).",
           "type": "string"
         }
       }
@@ -2472,6 +2492,16 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.CreateS3BucketOptions": {
+      "description": "CreateS3BucketOptions options used to determine automatic automatic bucket-creation process",
+      "type": "object",
+      "properties": {
+        "objectLocking": {
+          "description": "ObjectLocking Enable object locking",
+          "type": "boolean"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.CronWorkflow": {
       "description": "CronWorkflow is the definition of a scheduled workflow resource",
       "type": "object",
@@ -2554,8 +2584,7 @@
         },
         "failedJobsHistoryLimit": {
           "description": "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "schedule": {
           "description": "Schedule is a schedule to run the Workflow in Cron format",
@@ -2563,13 +2592,11 @@
         },
         "startingDeadlineSeconds": {
           "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "successfulJobsHistoryLimit": {
           "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "suspend": {
           "description": "Suspend is a flag that will stop new CronWorkflows from running if set to true",
@@ -2633,8 +2660,7 @@
       "description": "DAGTask represents a node in the graph during DAG execution",
       "type": "object",
       "required": [
-        "name",
-        "template"
+        "name"
       ],
       "properties": {
         "arguments": {
@@ -2810,8 +2836,7 @@
       "properties": {
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "fetch": {
           "description": "Fetch specifies a number of refs that should be fetched before checkout",
@@ -3218,8 +3243,7 @@
         },
         "estimatedDuration": {
           "description": "EstimatedDuration in seconds.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "finishedAt": {
           "description": "Time at which this node completed",
@@ -3576,6 +3600,10 @@
           "description": "Bucket is the name of the bucket",
           "type": "string"
         },
+        "createBucketIfNotPresent": {
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions"
+        },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
           "type": "string"
@@ -3923,18 +3951,15 @@
       "properties": {
         "secondsAfterCompletion": {
           "description": "SecondsAfterCompletion is the number of seconds to live after completion",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "secondsAfterFailure": {
           "description": "SecondsAfterFailure is the number of seconds to live after failure",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "secondsAfterSuccess": {
           "description": "SecondsAfterSuccess is the number of seconds to live after success",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         }
       }
     },
@@ -3944,8 +3969,7 @@
       "properties": {
         "compressionLevel": {
           "description": "CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         }
       }
     },
@@ -4043,8 +4067,7 @@
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
@@ -4052,8 +4075,7 @@
         },
         "priority": {
           "description": "Priority to apply to workflow pods.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "priorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
@@ -4600,8 +4622,7 @@
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "affinity": {
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template",
@@ -4673,8 +4694,7 @@
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "podDisruptionBudget": {
           "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.",
@@ -4686,8 +4706,7 @@
         },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "podPriorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
@@ -4699,8 +4718,7 @@
         },
         "priority": {
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "retryStrategy": {
           "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.",
@@ -4750,8 +4768,7 @@
         },
         "ttlSecondsAfterFinished": {
           "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "ttlStrategy": {
           "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.",
@@ -4789,6 +4806,10 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "artifactRepositoryRef": {
+          "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus"
+        },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"
@@ -4802,8 +4823,7 @@
         },
         "estimatedDuration": {
           "description": "EstimatedDuration in seconds.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "finishedAt": {
           "description": "Time at which this workflow completed",
@@ -5068,8 +5088,7 @@
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "affinity": {
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template",
@@ -5141,8 +5160,7 @@
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "podDisruptionBudget": {
           "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.",
@@ -5154,8 +5172,7 @@
         },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "podPriorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
@@ -5167,8 +5184,7 @@
         },
         "priority": {
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "retryStrategy": {
           "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.",
@@ -5218,8 +5234,7 @@
         },
         "ttlSecondsAfterFinished": {
           "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "ttlStrategy": {
           "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.",
@@ -5313,8 +5328,7 @@
         },
         "partition": {
           "description": "The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as \"1\". Similarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty).",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "readOnly": {
           "description": "Specify \"true\" to force and set the ReadOnly property in VolumeMounts to \"true\". If omitted, the default is \"false\". More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore",
@@ -5575,8 +5589,7 @@
       "properties": {
         "defaultMode": {
           "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "items": {
           "description": "If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.",
@@ -5735,8 +5748,7 @@
       "properties": {
         "containerPort": {
           "description": "Number of port to expose on the pod's IP address. This must be a valid port number, 0 \u003c x \u003c 65536.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "hostIP": {
           "description": "What host IP to bind the external port to.",
@@ -5744,8 +5756,7 @@
         },
         "hostPort": {
           "description": "Number of port to expose on the host. If specified, this must be a valid port number, 0 \u003c x \u003c 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "name": {
           "description": "If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services.",
@@ -5783,8 +5794,7 @@
         },
         "mode": {
           "description": "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "path": {
           "description": "Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'",
@@ -5802,8 +5812,7 @@
       "properties": {
         "defaultMode": {
           "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "items": {
           "description": "Items is a list of downward API volume file",
@@ -5907,8 +5916,7 @@
         },
         "count": {
           "description": "The number of times this event has occurred.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "eventTime": {
           "description": "Time when this Event was first observed.",
@@ -5981,8 +5989,7 @@
       "properties": {
         "count": {
           "description": "Number of occurrences in this series up to the last heartbeat time",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "lastObservedTime": {
           "description": "Time of the last occurrence observed",
@@ -6031,8 +6038,7 @@
         },
         "lun": {
           "description": "Optional: FC target lun number",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "readOnly": {
           "description": "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.",
@@ -6113,8 +6119,7 @@
         },
         "partition": {
           "description": "The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as \"1\". Similarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty). More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "pdName": {
           "description": "Unique name of the PD resource in GCE. Used to identify the disk in GCE. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk",
@@ -6306,8 +6311,7 @@
         },
         "lun": {
           "description": "iSCSI Target Lun number.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "portals": {
           "description": "iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).",
@@ -6344,8 +6348,7 @@
         },
         "mode": {
           "description": "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "path": {
           "description": "The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.",
@@ -6807,13 +6810,11 @@
       "properties": {
         "fsGroup": {
           "description": "A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:\n\n1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----\n\nIf unset, the Kubelet will not modify the ownership and permissions of any volume.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "runAsGroup": {
           "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "runAsNonRoot": {
           "description": "Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
@@ -6821,8 +6822,7 @@
         },
         "runAsUser": {
           "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "seLinuxOptions": {
           "description": "The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
@@ -6884,8 +6884,7 @@
         },
         "weight": {
           "description": "Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         }
       }
     },
@@ -6899,8 +6898,7 @@
         },
         "failureThreshold": {
           "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "httpGet": {
           "description": "HTTPGet specifies the http request to perform.",
@@ -6908,18 +6906,15 @@
         },
         "initialDelaySeconds": {
           "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "periodSeconds": {
           "description": "How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "successThreshold": {
           "description": "Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "tcpSocket": {
           "description": "TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported",
@@ -6927,8 +6922,7 @@
         },
         "timeoutSeconds": {
           "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         }
       }
     },
@@ -6941,8 +6935,7 @@
       "properties": {
         "defaultMode": {
           "description": "Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "sources": {
           "description": "list of volume projections",
@@ -7208,8 +7201,7 @@
       "properties": {
         "defaultMode": {
           "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "items": {
           "description": "If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.",
@@ -7254,8 +7246,7 @@
         },
         "runAsGroup": {
           "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "runAsNonRoot": {
           "description": "Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
@@ -7263,8 +7254,7 @@
         },
         "runAsUser": {
           "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "seLinuxOptions": {
           "description": "The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
@@ -7289,8 +7279,7 @@
         },
         "expirationSeconds": {
           "description": "ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "path": {
           "description": "Path is the path relative to the mount point of the file to project the token into.",
@@ -7377,8 +7366,7 @@
         },
         "tolerationSeconds": {
           "description": "TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "value": {
           "description": "Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.",
@@ -7646,8 +7634,7 @@
         },
         "weight": {
           "description": "weight associated with matching the corresponding podAffinityTerm, in the range 1-100.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         }
       }
     },
@@ -7769,8 +7756,7 @@
         },
         "remainingItemCount": {
           "description": "remainingItemCount is the number of subsequent items in the list which are not included in this list response. If the list request contained label or field selectors, then the number of remaining items is unknown and the field will be left unset and omitted during serialization. If the list is complete (either because it is not chunking or because this is the last chunk), then there are no more remaining items and this field will be left unset and omitted during serialization. Servers older than v1.15 do not set this field. The intended use of the remainingItemCount is *estimating* the size of a collection. Clients should not rely on the remainingItemCount to be set or to be exact.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "resourceVersion": {
           "description": "String that identifies the server's internal version of this object that can be used by clients to determine when objects have changed. Value must be treated as opaque by clients and passed unmodified back to the server. Populated by the system. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency",
@@ -7838,8 +7824,7 @@
         },
         "deletionGracePeriodSeconds": {
           "description": "Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "deletionTimestamp": {
           "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
@@ -7859,8 +7844,7 @@
         },
         "generation": {
           "description": "A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.",
-          "type": "integer",
-          "format": "int64"
+          "type": "integer"
         },
         "labels": {
           "description": "Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: http://kubernetes.io/docs/user-guide/labels",
@@ -7986,8 +7970,7 @@
         },
         "retryAfterSeconds": {
           "description": "If specified, the time in seconds before the operation should be retried. Some errors may indicate the client must take an alternate action - for those errors this field may indicate how long to wait before taking the alternate action.",
-          "type": "integer",
-          "format": "int32"
+          "type": "integer"
         },
         "uid": {
           "description": "UID of the resource. (when there is a single resource which can be described). More info: http://kubernetes.io/docs/user-guide/identifiers#uids",
@@ -8001,9 +7984,10 @@
       "format": "date-time"
     },
     "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
-      "description": "IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.",
-      "type": "string",
-      "format": "int-or-string"
+      "type": [
+        "string",
+        "integer"
+      ]
     }
   },
   "securityDefinitions": {
