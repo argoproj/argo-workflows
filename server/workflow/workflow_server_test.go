@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"gopkg.in/square/go-jose.v2/jwt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,7 +23,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/server/auth/types"
 	testutil "github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/instanceid"
@@ -585,7 +586,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
-	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	return server, ctx
 }
 

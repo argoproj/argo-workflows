@@ -16,19 +16,18 @@ import (
 )
 
 type Then struct {
-	t                *testing.T
-	workflowName     string
-	wfTemplateNames  []string
-	cronWorkflowName string
-	client           v1alpha1.WorkflowInterface
-	cronClient       v1alpha1.CronWorkflowInterface
-	hydrator         hydrator.Interface
-	kubeClient       kubernetes.Interface
+	t          *testing.T
+	wf         *wfv1.Workflow
+	cronWf     *wfv1.CronWorkflow
+	client     v1alpha1.WorkflowInterface
+	cronClient v1alpha1.CronWorkflowInterface
+	hydrator   hydrator.Interface
+	kubeClient kubernetes.Interface
 }
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
 	t.t.Helper()
-	return t.expectWorkflow(t.workflowName, block)
+	return t.expectWorkflow(t.wf.Name, block)
 }
 
 func (t *Then) ExpectWorkflowName(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
@@ -50,6 +49,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if err != nil {
 		t.t.Fatal(err)
 	}
+	println(wf.Name, ":", wf.Status.Phase, wf.Status.Message)
 	block(t.t, &wf.ObjectMeta, &wf.Status)
 	if t.t.Failed() {
 		t.t.FailNow()
@@ -60,11 +60,11 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 
 func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {
 	t.t.Helper()
-	if t.cronWorkflowName == "" {
+	if t.cronWf == nil {
 		t.t.Fatal("No cron workflow to test")
 	}
 	println("Checking cron expectation")
-	cronWf, err := t.cronClient.Get(t.cronWorkflowName, metav1.GetOptions{})
+	cronWf, err := t.cronClient.Get(t.cronWf.Name, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -145,13 +145,11 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (t *Then) When() *When {
 	return &When{
-		t:                t.t,
-		client:           t.client,
-		cronClient:       t.cronClient,
-		hydrator:         t.hydrator,
-		workflowName:     t.workflowName,
-		wfTemplateNames:  t.wfTemplateNames,
-		cronWorkflowName: t.cronWorkflowName,
-		kubeClient:       t.kubeClient,
+		t:          t.t,
+		client:     t.client,
+		cronClient: t.cronClient,
+		hydrator:   t.hydrator,
+		wf:         t.wf,
+		kubeClient: t.kubeClient,
 	}
 }

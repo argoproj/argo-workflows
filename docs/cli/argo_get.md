@@ -27,6 +27,7 @@ argo get WORKFLOW... [flags]
 ```
   -h, --help                         help for get
       --no-color                     Disable colorized output
+      --no-utf8                      Use plain 7-bits ascii characters
       --node-field-selector string   selector of node to display, eg: --node-field-selector phase=abc
   -o, --output string                Output format. One of: json|yaml|wide
       --status string                Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)
@@ -35,6 +36,8 @@ argo get WORKFLOW... [flags]
 ### Options inherited from parent commands
 
 ```
+      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.

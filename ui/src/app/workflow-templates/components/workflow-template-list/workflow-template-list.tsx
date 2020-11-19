@@ -5,6 +5,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
@@ -42,7 +43,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {namespace: this.props.match.params.namespace};
+        this.state = {namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
@@ -74,7 +75,8 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 title='New Workflow Template'
                                 kind='WorkflowTemplate'
                                 upload={true}
-                                value={exampleWorkflowTemplate(this.namespace || 'default')}
+                                namespace={this.namespace || 'default'}
+                                value={exampleWorkflowTemplate()}
                                 onSubmit={wfTmpl =>
                                     services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)
@@ -82,6 +84,9 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 }
                                 editing={true}
                             />
+                            <p>
+                                <ExampleManifests />.
+                            </p>
                         </SlidingPanel>
                     </Page>
                 )}
@@ -113,7 +118,9 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
             return (
                 <ZeroState title='No workflow templates'>
                     <p>You can create new templates here or using the CLI.</p>
-                    <p>{learnMore}.</p>
+                    <p>
+                        <ExampleManifests />. {learnMore}.
+                    </p>
                 </ZeroState>
             );
         }
@@ -144,7 +151,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                         ))}
                     </div>
                     <p>
-                        <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. {learnMore}.
+                        <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
                     </p>
                 </div>
             </div>

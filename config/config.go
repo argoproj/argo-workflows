@@ -6,15 +6,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth/sso"
 )
 
-var emptyConfig = Config{}
+var EmptyConfigFunc = func() interface{} { return &Config{} }
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {
-	// SSO in settings for single-sign on
-	SSO sso.Config `json:"sso,omitempty"`
 
 	// NodeEvents configures how node events are omitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
@@ -90,6 +87,9 @@ type Config struct {
 
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
+
+	//Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
+	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
@@ -113,7 +113,7 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
-// ArtifactRepository represents a artifact repository in which a controller will store its artifacts
+// ArtifactRepository represents an artifact repository in which a controller will store its artifacts
 type ArtifactRepository struct {
 	// ArchiveLogs enables log archiving
 	ArchiveLogs *bool `json:"archiveLogs,omitempty"`
@@ -169,7 +169,7 @@ type ConnectionPool struct {
 
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
-	Port           string                  `json:"port"`
+	Port           int                     `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
@@ -180,7 +180,7 @@ type PostgreSQLConfig struct {
 
 type MySQLConfig struct {
 	Host           string                  `json:"host"`
-	Port           string                  `json:"port"`
+	Port           int                     `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	Options        map[string]string       `json:"options,omitempty"`
@@ -246,7 +246,7 @@ type MetricsConfig struct {
 	// Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
 	Path string `json:"path,omitempty"`
 	// Port is the port where metrics are emitted. Default is "9090"
-	Port string `json:"port,omitempty"`
+	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
 }

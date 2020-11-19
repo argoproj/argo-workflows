@@ -14,8 +14,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	commonutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -23,6 +25,8 @@ import (
 const (
 	workflowTTLResyncPeriod = 20 * time.Minute
 )
+
+type ConfigSupplier func() *config.Config
 
 type Controller struct {
 	wfclientset  wfclientset.Interface
@@ -177,8 +181,8 @@ func (c *Controller) deleteWorkflow(key string) error {
 	}
 	if c.ttlExpired(wf) {
 		log.Infof("Deleting TTL expired workflow %s/%s", wf.Namespace, wf.Name)
-		policy := metav1.DeletePropagationForeground
-		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: &policy})
+
+		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 		if err != nil {
 			return err
 		}
@@ -188,7 +192,8 @@ func (c *Controller) deleteWorkflow(key string) error {
 }
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
-	ttlStrategy := getTTLStrategy(wf)
+	ttlStrategy := wf.GetTTLStrategy()
+
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return false
@@ -208,7 +213,7 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 }
 
 func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
-	ttlStrategy := getTTLStrategy(wf)
+	ttlStrategy := wf.GetTTLStrategy()
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
@@ -233,13 +238,4 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) 
 	} else {
 		return nil, nil
 	}
-}
-
-func getTTLStrategy(wf *wfv1.Workflow) *wfv1.TTLStrategy {
-	ttlStrategy := wf.Spec.TTLStrategy
-
-	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
-		return wf.Status.StoredWorkflowSpec.TTLStrategy
-	}
-	return ttlStrategy
 }

@@ -93,7 +93,7 @@ type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
 	s := placeholderGenerator.NextPlaceholder()
-	return &wfv1.Parameter{Name: name, Value: &s}
+	return &wfv1.Parameter{Name: name, Value: wfv1.AnyStringPtr(s)}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -140,6 +140,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	if wf.Spec.WorkflowTemplateRef != nil {
 		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfSpecHolder.GetWorkflowSpec().Arguments.Parameters)
+		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfSpecHolder.GetWorkflowSpec().Arguments.Artifacts)
 	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
@@ -161,7 +162,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
-				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
+				ctx.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 			} else {
 				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
@@ -221,7 +222,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		if hasWorkflowTemplateRef {
 			tmpl = &wfv1.WorkflowStep{TemplateRef: wfTmplRef}
 		}
-		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args, map[string]interface{}{})
+		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +231,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +247,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
+		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{})
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
@@ -327,11 +328,6 @@ Templates should be referenced from within a "steps" or a "dag" template. Here i
           template: %s`
 
 		out = fmt.Sprintf(out, tmpl.Name, tmpl.TemplateRef.Template, tmpl.TemplateRef.Name, tmpl.TemplateRef.Template)
-		if tmpl.TemplateRef.RuntimeResolution {
-			out += `
-          runtimeResolution: %t`
-			out = fmt.Sprintf(out, tmpl.TemplateRef.RuntimeResolution)
-		}
 	} else if tmpl.Template != "" {
 		out += `
         template: %s`
@@ -362,12 +358,12 @@ For more information, see: %s
 	return out
 }
 
-func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) error {
+func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider) error {
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
 
-	scope, err := validateInputs(tmpl, extraScope)
+	scope, err := validateInputs(tmpl)
 	if err != nil {
 		return err
 	}
@@ -453,6 +449,9 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 			if !metrics.IsValidMetricName(metric.Name) {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters, '_', or ':'", tmpl.Name, metric.Name)
 			}
+			if err := metrics.ValidateMetricLabels(metric.GetMetricLabels()); err != nil {
+				return err
+			}
 			if metric.Help == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' must contain a help string under 'help: ' field", tmpl.Name, metric.Name)
 			}
@@ -462,7 +461,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 }
 
 // validateTemplateHolder validates a template holder and returns the validated template.
-func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) (*wfv1.Template, error) {
+func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider) (*wfv1.Template, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	tmplName := tmplHolder.GetTemplateName()
 	if tmplRef != nil {
@@ -476,8 +475,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, errors.New(errors.CodeBadRequest, "template name is required")
 		}
 		if tmplRef.RuntimeResolution {
-			// Let's see if the template exists at runtime.
-			return nil, nil
+			logrus.Warnf("the 'runtimeResolution' field is deprecated and ignored")
 		}
 	} else if tmplName != "" {
 		_, err := tmplCtx.GetTemplateByName(tmplName)
@@ -517,7 +515,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args, extraScope)
+	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args)
 }
 
 // validateTemplateType validates that only one template type is defined
@@ -542,7 +540,7 @@ func validateTemplateType(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func validateInputs(tmpl *wfv1.Template, extraScope map[string]interface{}) (map[string]interface{}, error) {
+func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 	err := validateWorkflowFieldNames(tmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.parameters%s", tmpl.Name, err.Error())
@@ -552,9 +550,6 @@ func validateInputs(tmpl *wfv1.Template, extraScope map[string]interface{}) (map
 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts%s", tmpl.Name, err.Error())
 	}
 	scope := make(map[string]interface{})
-	for name, value := range extraScope {
-		scope[name] = value
-	}
 	for _, param := range tmpl.Inputs.Parameters {
 		scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
 	}
@@ -710,10 +705,10 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
+		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) && !placeholderGenerator.IsPlaceholder(tmpl.ActiveDeadlineSeconds.StrVal) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
-		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && *i < 0 {
+		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && i != nil && *i < 0 {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 	}
@@ -766,6 +761,21 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 		if param.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 		}
+		if param.Enum != nil {
+			if len(param.Enum) == 0 {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)
+			}
+			valueSpecifiedInEnumList := false
+			for _, enum := range param.Enum {
+				if enum == *param.Value {
+					valueSpecifiedInEnumList = true
+					break
+				}
+			}
+			if !valueSpecifiedInEnumList {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
+			}
+		}
 	}
 	for _, art := range arguments.Artifacts {
 		if art.From == "" && !art.HasLocation() {
@@ -805,7 +815,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return err
 			}
-			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{}, scope)
+			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{})
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -827,7 +837,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
 
 			// Validate the template again with actual arguments.
-			_, err = ctx.validateTemplateHolder(&step, tmplCtx, &step.Arguments, scope)
+			_, err = ctx.validateTemplateHolder(&step, tmplCtx, &step.Arguments)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -1012,7 +1022,7 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 		// docker executor supports all modes of artifact outputs
 	case common.ContainerRuntimeExecutorPNS:
 		// pns supports copying from the base image, but only if there is no volume mount underneath it
-		errMsg := "pns executor does not support outputs from base image layer with volume mounts. must use emptyDir"
+		errMsg := "pns executor does not support outputs from base image layer with volume mounts. Use an emptyDir: https://argoproj.github.io/argo/empty-dir/"
 		for _, out := range tmpl.Outputs.Artifacts {
 			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
 				// output is in the base image layer. need to verify there are no volume mounts under it
@@ -1035,7 +1045,7 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 		}
 	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
 		// for kubelet/k8s fail validation if we detect artifact is copied from base image layer
-		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer. must use emptyDir", ctx.ContainerRuntimeExecutor)
+		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer.  Use an emptyDir: https://argoproj.github.io/argo/empty-dir/", ctx.ContainerRuntimeExecutor)
 		for _, out := range tmpl.Outputs.Artifacts {
 			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
@@ -1180,6 +1190,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if task.Depends != "" {
 			usingDepends = true
 		}
+
 		nameToTask[task.Name] = task
 	}
 
@@ -1193,6 +1204,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
 
+		if usingDepends && '0' <= task.Name[0] && task.Name[0] <= '9' {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using 'depends'", tmpl.Name, task.Name)
+		}
+
 		if usingDepends && len(task.Dependencies) > 0 {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use both 'depends' and 'dependencies' in the same DAG template", tmpl.Name)
 		}
@@ -1201,7 +1216,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
 		}
 
-		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, map[string]interface{}{})
+		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
@@ -1271,7 +1286,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return err
 		}
 		// Validate the template again with actual arguments.
-		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments, scope)
+		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}

@@ -3,9 +3,10 @@ import * as React from 'react';
 import {Link} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
+import {DurationPanel} from '../../../shared/components/duration-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {formatDuration, wfDuration} from '../../../shared/duration';
+import {wfDuration} from '../../../shared/duration';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
 interface WorkflowsRowProps {
@@ -56,8 +57,9 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                             <Timestamp date={wf.status.finishedAt} />
                         </div>
                         <div className='columns small-1'>
-                            <Ticker>{() => formatDuration(wfDuration(wf.status))}</Ticker>
+                            <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
                         </div>
+                        <div className='columns small-1'>{wf.status.progress || '-'}</div>
                         <div className='columns small-1'>
                             <div className='workflows-list__labels-container'>
                                 <div

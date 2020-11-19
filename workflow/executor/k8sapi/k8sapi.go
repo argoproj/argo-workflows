@@ -9,6 +9,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/workflow/executor/common/wait"
 )
 
 type K8sAPIExecutor struct {
@@ -60,8 +61,7 @@ func (k *K8sAPIExecutor) WaitInit() error {
 
 // Wait for the container to complete
 func (k *K8sAPIExecutor) Wait(containerID string) error {
-	log.Infof("Waiting for container %s to complete", containerID)
-	return k.client.waitForTermination(containerID, 0)
+	return wait.UntilTerminated(k.client.clientset, k.client.namespace, k.client.podName, containerID)
 }
 
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period

@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -55,12 +54,7 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo/issues/632
-func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	dclient, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		panic(err)
-	}
-
+func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
@@ -71,7 +65,7 @@ func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration
 		dclient,
 		ns,
 		resyncPeriod,
-		cache.Indexers{},
+		indexers,
 		tweakListOptions,
 	)
 	return informer
@@ -125,16 +119,23 @@ func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
 // FromUnstructured converts an unstructured object to a workflow
 func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
-	if wf.Spec.TTLSecondsAfterFinished != nil {
-		if wf.Spec.TTLStrategy == nil {
-			ttlstrategy := wfv1.TTLStrategy{SecondsAfterCompletion: wf.Spec.TTLSecondsAfterFinished}
-			wf.Spec.TTLStrategy = &ttlstrategy
-		} else if wf.Spec.TTLStrategy.SecondsAfterCompletion == nil {
-			wf.Spec.TTLStrategy.SecondsAfterCompletion = wf.Spec.TTLSecondsAfterFinished
-		}
-	}
+	err := FromUnstructuredObj(un, &wf)
 	return &wf, err
+}
+
+func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
+	if err != nil {
+		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {
+			data, err := json.Marshal(un)
+			if err != nil {
+				return err
+			}
+			return json.Unmarshal(data, v)
+		}
+		return err
+	}
+	return nil
 }
 
 // ToUnstructured converts an workflow to an Unstructured object
@@ -146,7 +147,7 @@ func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 	un := &unstructured.Unstructured{Object: obj}
 	// we need to add these values so that the `EventRecorder` does not error
 	un.SetKind(workflow.WorkflowKind)
-	un.SetAPIVersion(workflow.Version)
+	un.SetAPIVersion(workflow.APIVersion)
 	return un, nil
 }
 
@@ -248,7 +249,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			if len(parts) != 2 {
 				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			param := wfv1.Parameter{Name: parts[0], Value: &parts[1]}
+			param := wfv1.Parameter{Name: parts[0], Value: wfv1.AnyStringPtr(parts[1])}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -282,7 +283,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				param := wfv1.Parameter{Name: k, Value: &value}
+				param := wfv1.Parameter{Name: k, Value: wfv1.AnyStringPtr(value)}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue
@@ -415,7 +416,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	}
 	if node.Inputs != nil {
 		for _, inParam := range node.Inputs.Parameters {
-			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
+			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = inParam.Value.String()
 		}
 	}
 
@@ -476,7 +477,7 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 									if param.ValueFrom == nil || param.ValueFrom.Supplied == nil {
 										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw or it was already set", param.Name)
 									}
-									node.Outputs.Parameters[i].Value = &val
+									node.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(val)
 									node.Outputs.Parameters[i].ValueFrom = nil
 									nodeUpdated = true
 									hit = true
@@ -659,16 +660,11 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	switch wf.Status.Phase {
-	case wfv1.NodeFailed, wfv1.NodeError:
-	default:
-		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
-	}
+func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	var updated *wfv1.Workflow
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, wf, restartSuccessful, nodeFieldSelector)
+		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
 		return err == nil, err
 	})
 	if err != nil {
@@ -677,8 +673,17 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	return updated, err
 }
 
-func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	err := hydrator.Hydrate(wf)
+func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	wf, err := wfClient.Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	switch wf.Status.Phase {
+	case wfv1.NodeFailed, wfv1.NodeError:
+	default:
+		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
+	}
+	err = hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}

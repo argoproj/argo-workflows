@@ -304,6 +304,8 @@ spec:
                                 format: int32
                                 type: integer
                             type: object
+                          zip:
+                            type: object
                         type: object
                       archiveLogs:
                         type: boolean
@@ -469,6 +471,18 @@ spec:
                         type: object
                       http:
                         properties:
+                          headers:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                            type: array
                           url:
                             type: string
                         required:
@@ -585,6 +599,10 @@ spec:
                     properties:
                       default:
                         type: string
+                      enum:
+                        items:
+                          type: string
+                        type: array
                       globalName:
                         type: string
                       name:
@@ -1326,6 +1344,18 @@ spec:
                         type: object
                       http:
                         properties:
+                          headers:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                            type: array
                           url:
                             type: string
                         required:
@@ -1435,6 +1465,8 @@ spec:
                                     compressionLevel:
                                       format: int32
                                       type: integer
+                                  type: object
+                                zip:
                                   type: object
                               type: object
                             archiveLogs:
@@ -1601,6 +1633,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -1717,6 +1761,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -2307,6 +2355,8 @@ spec:
                                                 format: int32
                                                 type: integer
                                             type: object
+                                          zip:
+                                            type: object
                                         type: object
                                       archiveLogs:
                                         type: boolean
@@ -2472,6 +2522,18 @@ spec:
                                         type: object
                                       http:
                                         properties:
+                                          headers:
+                                            items:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                value:
+                                                  type: string
+                                              required:
+                                              - name
+                                              - value
+                                              type: object
+                                            type: array
                                           url:
                                             type: string
                                         required:
@@ -2588,6 +2650,10 @@ spec:
                                     properties:
                                       default:
                                         type: string
+                                      enum:
+                                        items:
+                                          type: string
+                                        type: array
                                       globalName:
                                         type: string
                                       name:
@@ -3251,6 +3317,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -3416,6 +3484,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -3532,6 +3612,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -3580,9 +3664,12 @@ spec:
                         type: object
                       key:
                         type: string
+                      maxAge:
+                        type: string
                     required:
                     - cache
                     - key
+                    - maxAge
                     type: object
                   metadata:
                     properties:
@@ -3675,6 +3762,8 @@ spec:
                                     compressionLevel:
                                       format: int32
                                       type: integer
+                                  type: object
+                                zip:
                                   type: object
                               type: object
                             archiveLogs:
@@ -3841,6 +3930,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -3959,6 +4060,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:

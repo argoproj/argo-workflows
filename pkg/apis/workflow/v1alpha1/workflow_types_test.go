@@ -113,38 +113,41 @@ func TestNodes_Any(t *testing.T) {
 	assert.True(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "foo" }))
 }
 
-func TestResourcesDuration(t *testing.T) {
-	t.Run("String", func(t *testing.T) {
-		assert.Equal(t, ResourcesDuration{}.String(), "")
-		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "1s*(100Mi memory)")
+func TestResourcesDuration_String(t *testing.T) {
+	assert.Empty(t, ResourcesDuration{}.String(), "empty")
+	assert.Equal(t, "1s*(100Mi memory)", ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "memory")
+}
+
+func TestResourcesDuration_Add(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		assert.Empty(t, ResourcesDuration{}.Add(ResourcesDuration{}))
 	})
-	t.Run("Add", func(t *testing.T) {
-		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
-		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.
-			Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).
-			String(), "2s*(100Mi memory)")
+	t.Run("X+Empty", func(t *testing.T) {
+		s := ResourcesDuration{"x": NewResourceDuration(time.Second)}.
+			Add(nil)
+		assert.Equal(t, ResourceDuration(1), s["x"])
 	})
-	t.Run("CPUAndMemory", func(t *testing.T) {
-		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
-		s := ResourcesDuration{corev1.ResourceCPU: NewResourceDuration(2 * time.Second)}.
-			Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).
-			String()
-		assert.Contains(t, s, "1s*(100Mi memory)")
-		assert.Contains(t, s, "2s*(1 cpu)")
+	t.Run("Empty+X", func(t *testing.T) {
+		s := ResourcesDuration{}.
+			Add(ResourcesDuration{"x": NewResourceDuration(time.Second)})
+		assert.Equal(t, ResourceDuration(1), s["x"])
+	})
+	t.Run("X+2X", func(t *testing.T) {
+		s := ResourcesDuration{"x": NewResourceDuration(1 * time.Second)}.
+			Add(ResourcesDuration{"x": NewResourceDuration(2 * time.Second)})
+		assert.Equal(t, ResourceDuration(3), s["x"])
+	})
+	t.Run("X+Y", func(t *testing.T) {
+		s := ResourcesDuration{"x": NewResourceDuration(1 * time.Second)}.
+			Add(ResourcesDuration{"y": NewResourceDuration(2 * time.Second)})
+		assert.Equal(t, ResourceDuration(1), s["x"])
+		assert.Equal(t, ResourceDuration(2), s["y"])
 	})
 }
 
 func TestResourceDuration(t *testing.T) {
 	assert.Equal(t, ResourceDuration(1), NewResourceDuration(1*time.Second))
 	assert.Equal(t, "1s", NewResourceDuration(1*time.Second).String())
-}
-
-func TestNodes_GetResourcesDuration(t *testing.T) {
-	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcesDuration())
-	assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: 3}, Nodes{
-		"foo": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 1}},
-		"bar": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 2}},
-	}.GetResourcesDuration())
 }
 
 func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
@@ -218,4 +221,103 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 
 	assert.NotNil(t, spec.GetVolumeClaimGC())
 	assert.Equal(t, &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}, spec.GetVolumeClaimGC())
+}
+
+func TestGetTTLStrategy(t *testing.T) {
+
+	spec := WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}
+	ttl := spec.GetTTLStrategy()
+	assert.Equal(t, int32(10), *ttl.SecondsAfterCompletion)
+
+	spec = WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10), TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	ttl = spec.GetTTLStrategy()
+	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
+
+	spec = WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	ttl = spec.GetTTLStrategy()
+	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
+}
+
+func TestWfGetTTLStrategy(t *testing.T) {
+	wf := Workflow{}
+
+	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	result := wf.GetTTLStrategy()
+	assert.Equal(t, int32(20), *result.SecondsAfterCompletion)
+
+	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(30)}
+	result = wf.GetTTLStrategy()
+	assert.Equal(t, int32(30), *result.SecondsAfterCompletion)
+}
+
+func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
+	assert := assert.New(t)
+	wf := Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "test",
+					},
+				}},
+			},
+		},
+	}
+	keys := wf.GetSemaphoreKeys()
+	assert.Len(keys, 1)
+	assert.Contains(keys, "test/test")
+	wf.Spec.Templates = []Template{
+		{
+			Name: "t1",
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "template",
+					},
+				}},
+			},
+		},
+		{
+			Name: "t1",
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "template1",
+					},
+				}},
+			},
+		},
+		{
+			Name: "t2",
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "template",
+					},
+				}},
+			},
+		},
+	}
+	keys = wf.GetSemaphoreKeys()
+	assert.Len(keys, 3)
+	assert.Contains(keys, "test/test")
+	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template1")
+
+	spec := wf.Spec.DeepCopy()
+	wf.Spec = WorkflowSpec{
+		WorkflowTemplateRef: &WorkflowTemplateRef{
+			Name: "test",
+		},
+	}
+	wf.Status.StoredWorkflowSpec = spec
+	keys = wf.GetSemaphoreKeys()
+	assert.Len(keys, 3)
+	assert.Contains(keys, "test/test")
+	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template1")
 }
