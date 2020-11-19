@@ -2365,8 +2365,7 @@
 <div class="highlight"><pre><span></span><code>argo submit hello-world.yaml    <span class="c1"># submit a workflow spec to Kubernetes</span>
 argo list                       <span class="c1"># list current workflows</span>
 argo get hello-world-xxx        <span class="c1"># get info about a specific workflow</span>
-argo logs -w hello-world-xxx    <span class="c1"># get logs from all steps in a workflow</span>
-argo logs hello-world-xxx-yyy   <span class="c1"># get logs from a specific step in a workflow</span>
+argo logs hello-world-xxx       <span class="c1"># print the logs from a workflow</span>
 argo delete hello-world-xxx     <span class="c1"># delete workflow</span>
 </code></pre></div>
 <p>You can also run workflow specs directly using <code>kubectl</code> but the Argo CLI provides syntax checking, nicer output, and requires less typing.</p>
@@ -2379,7 +2378,7 @@ kubectl delete wf hello-world-xxx
 </code></pre></div>
 <h2 id="hello-world">Hello World!<a class="headerlink" href="#hello-world" title="Permanent link">&para;</a></h2>
 <p>Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.</p>
-<p>You can run this directly from your shell with a simple docker command:</p>
+<p>You can run this directly from your shell with a simple docker command:</p>
 <div class="highlight"><pre><span></span><code>$ docker run docker/whalesay cowsay <span class="s2">&quot;hello world&quot;</span>
  _____________
 &lt; hello world &gt;
