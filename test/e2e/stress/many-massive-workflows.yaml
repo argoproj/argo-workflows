@@ -1,3 +1,32 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: massive-workflow
+  labels:
+    stress: "true"
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: "y"
+        value: "1"
+  ttlStrategy:
+    secondsAfterCompletion: 60
+  podGC:
+    strategy: OnPodCompletion
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: create-pod
+            template: create-pod
+            withSequence:
+              count: "{{workflow.parameters.y}}"
+    - name: create-pod
+      container:
+        image: argoproj/argosay:v2
+---
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -6,14 +35,12 @@ metadata:
     stress: "true"
 spec:
   entrypoint: main
-  podGC:
-    strategy: OnPodCompletion
   arguments:
     parameters:
       - name: "x"
-        value: 1
+        value: "1"
       - name: "y"
-        value: 1
+        value: "1"
   workflowMetadata:
     labels:
       stress: "true"
@@ -44,19 +71,9 @@ spec:
             labels:
               stress: "true"
           spec:
-            entrypoint: main
-            podGC:
-              strategy: OnPodCompletion
-            ttlStrategy:
-              secondsAfterCompletion: 60
-            templates:
-              - name: main
-                dag:
-                  tasks:
-                    - name: create-pod
-                      template: create-pod
-                      withSequence:
-                        count: "{{workflow.parameters.y}}"
-              - name: create-pod
-                container:
-                  image: argoproj/argosay:v2
+            arguments:
+              parameters:
+                - name: "y"
+                  value: "{{workflow.parameters.y}}"
+            workflowTemplateRef:
+              name: massive-workflow
