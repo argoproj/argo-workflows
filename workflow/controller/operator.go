@@ -897,17 +897,21 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 		if _, ok := seenPods[nodeID]; !ok {
 
-			// grace-period to allow informer sync
-			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Pending(), "recentlyStarted": recentlyStarted}).Debug("Workflow pod is missing")
-
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() || recentlyStarted {
+			if node.Pending() {
 				continue
 			}
 
-			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
+			node.Message = "pod deleted"
+			node.Phase = wfv1.NodeError
+			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
+			// See processNodeRetries for more details.
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+			woc.wf.Status.Nodes[nodeID] = node
+			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
+				WithField("node", node.Name).Error("Pod for node deleted")
+			woc.updated = true
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
 			// it is safe to extract the k8s-node information given this knowledge.
@@ -919,10 +923,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 	return nil
-}
-
-func recentlyStarted(node wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= 10*time.Second
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
