@@ -19,7 +19,6 @@ import (
 
 type eventSourceServer struct{}
 
-
 func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsourcepkg.CreateEventSourceRequest) (*esv1.EventSource, error){
 
 }
@@ -33,7 +32,6 @@ func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsour
 func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsourcepkg.UpdateEventSourceRequest) (*esv1.EventSource, error){
 
 }
-
 
 func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourcepkg.ListEventSourcesRequest) (*esv1.EventSourceList, error) {
 	client := auth.GetEventSourceClient(ctx)

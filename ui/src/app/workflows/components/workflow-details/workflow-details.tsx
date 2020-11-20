@@ -3,19 +3,19 @@ import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {Subscription} from 'rxjs';
-
-import {Link, NodePhase, Workflow} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {services} from '../../../shared/services';
 
 import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+
+import {Link, Workflow} from '../../../../models';
+import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
+import {RetryWatch} from '../../../shared/retry-watch';
+import {services} from '../../../shared/services';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperationAction, WorkflowOperationName, WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {EventsPanel} from '../events-panel';
@@ -44,12 +44,8 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         apis: PropTypes.object
     };
 
-    private changesSubscription: Subscription;
+    private retryWatch: RetryWatch<Workflow>;
     private timelineComponent: WorkflowTimeline;
-
-    private get resourceVersion() {
-        return this.state.workflow && this.state.workflow.metadata.resourceVersion;
-    }
 
     private get selectedTabKey() {
         return new URLSearchParams(this.props.location.search).get('tab') || 'workflow';
@@ -68,15 +64,17 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         this.state = {};
     }
 
-    public componentDidMount() {
-        this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
-        services.info.getInfo().then(info => this.setState({links: info.links}));
+    private get namespace() {
+        return this.props.match.params.namespace;
     }
 
-    public componentWillReceiveProps(nextProps: RouteComponentProps<any>) {
-        if (this.props.match.params.name !== nextProps.match.params.name || this.props.match.params.namespace !== nextProps.match.params.namespace) {
-            this.loadWorkflow(nextProps.match.params.namespace, nextProps.match.params.name);
-        }
+    private get name() {
+        return this.props.match.params.name;
+    }
+
+    public componentDidMount() {
+        this.loadWorkflow();
+        services.info.getInfo().then(info => this.setState({links: info.links}));
     }
 
     public componentDidUpdate(prevProps: RouteComponentProps<any>) {
@@ -90,13 +88,11 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     public componentWillUnmount() {
-        this.ensureUnsubscribed();
+        this.stopWatch();
     }
 
     public render() {
         const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes && this.state.workflow.status.nodes[this.selectedNodeId];
-        const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
-
         return (
             <Consumer>
                 {ctx => (
@@ -108,10 +104,10 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     title: 'Workflows',
                                     path: uiUrl('workflows')
                                 },
-                                {title: this.props.match.params.namespace + '/' + this.props.match.params.name}
+                                {title: this.namespace + '/' + this.name}
                             ],
                             actionMenu: {
-                                items: this.getItems(workflowPhase, ctx)
+                                items: this.getItems(ctx)
                             },
                             tools: (
                                 <div className='workflow-details__topbar-buttons'>
@@ -134,6 +130,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                             )
                         }}>
                         <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
+                            <ErrorNotice error={this.state.error} />
                             {(this.selectedTabKey === 'summary' && this.renderSummaryTab()) ||
                                 (this.state.workflow && (
                                     <div>
@@ -209,7 +206,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             });
     }
 
-    private getItems(workflowPhase: NodePhase, ctx: any) {
+    private getItems(ctx: any) {
         const workflowOperationsMap: WorkflowOperations = Operations.WorkflowOperationsMap;
         const items = Object.keys(workflowOperationsMap).map(actionName => {
             const workflowOperation = workflowOperationsMap[actionName];
@@ -322,26 +319,26 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         );
     }
 
-    private ensureUnsubscribed() {
-        if (this.changesSubscription) {
-            this.changesSubscription.unsubscribe();
+    private stopWatch() {
+        if (this.retryWatch) {
+            this.retryWatch.stop();
         }
-        this.changesSubscription = null;
     }
 
-    private loadWorkflow(namespace: string, name: string) {
-        try {
-            this.ensureUnsubscribed();
-            this.changesSubscription = services.workflows
-                .watch({name, namespace, resourceVersion: this.resourceVersion})
-                .map(changeEvent => changeEvent.object)
-                .subscribe(
-                    workflow => this.setState({workflow, error: null}),
-                    error => this.setState({error}, () => this.loadWorkflow(namespace, name))
+    private loadWorkflow() {
+        this.stopWatch();
+        services.workflows
+            .get(this.namespace, this.name)
+            .then(workflow => this.setState({workflow}))
+            .then(() => {
+                this.retryWatch = new RetryWatch<Workflow>(
+                    resourceVersion => services.workflows.watch({name: this.name, namespace: this.namespace, resourceVersion}),
+                    () => this.setState({}),
+                    e => this.setState({workflow: e.object}),
+                    error => this.setState({error})
                 );
-        } catch (error) {
-            this.setState({error});
-        }
+            })
+            .catch(error => this.setState({error}));
     }
 
     private get appContext(): AppContext {

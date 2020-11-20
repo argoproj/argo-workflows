@@ -24,7 +24,9 @@ import (
 	clusterwftemplatepkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	eventpkg "github.com/argoproj/argo/pkg/apiclient/event"
+	eventsourcepkg "github.com/argoproj/argo/pkg/apiclient/eventsource"
 	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
+	sensorpkg "github.com/argoproj/argo/pkg/apiclient/sensor"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
@@ -36,7 +38,9 @@ import (
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/event"
+	"github.com/argoproj/argo/server/eventsource"
 	"github.com/argoproj/argo/server/info"
+	"github.com/argoproj/argo/server/sensor"
 	"github.com/argoproj/argo/server/static"
 	"github.com/argoproj/argo/server/types"
 	"github.com/argoproj/argo/server/workflow"
@@ -113,6 +117,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		hsts:             opts.HSTS,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
+		clients:          opts.Clients,
 		gatekeeper:       gatekeeper,
 		oAuth2Service:    ssoIf,
 		configController: configController,
@@ -230,6 +235,8 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
+	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
+	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
@@ -274,6 +281,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	)
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(sensorpkg.RegisterSensorServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)

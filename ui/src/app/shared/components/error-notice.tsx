@@ -7,6 +7,9 @@ import {PhaseIcon} from './phase-icon';
 // If the error was a HTTP error (i.e. from super-agent), rather than just an unhelpful "Internal Server Error",
 // it will display any message in the body.
 export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {response?: {body: {message?: string}}}; onReload?: () => void; reloadAfterSeconds?: number}) => {
+    if (!props.error) {
+        return null;
+    }
     // This timer code is based on https://stackoverflow.com/questions/57137094/implementing-a-countdown-timer-in-react-with-hooks
     const reloadAfterSeconds = props.reloadAfterSeconds || 120;
     const reload = props.onReload || document.location.reload;

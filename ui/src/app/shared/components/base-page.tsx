@@ -3,6 +3,9 @@ import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 
+/**
+ * @deprecated Use React hooks instead.
+ */
 export class BasePage<P extends RouteComponentProps<any>, S> extends React.Component<P, S> {
     public static contextTypes = {
         router: PropTypes.object,

@@ -39,22 +39,24 @@ message UpdateEventSourceRequest {
 
 message EventSourcesLogsRequest {
     string namespace = 1;
-    // optional
+    // optional - only return entries for this event source
     string name = 2;
-    // optional
+    // optional - only return entries for this event source type (e.g. `webhook`)
     string eventSourceType = 3;
-    // optional
+    // optional - only return entries for this event name (e.g. `example`)
     string eventName = 4;
-    k8s.io.api.core.v1.PodLogOptions podLogOptions = 5;
+    // optional - only return entries where `msg` matches this regular expression
+    string grep = 5;
+    k8s.io.api.core.v1.PodLogOptions podLogOptions = 6;
 }
 
 // structured log entry
 message LogEntry {
     string namespace = 1;
     string eventSourceName = 2;
-    // optional
+    // optional - the event source type (e.g. `webhook`)
     string eventSourceType = 3;
-    // optional
+    // optional - the event name (e.g. `example`)
     string eventName = 4;
     string level = 5;
     k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 6;

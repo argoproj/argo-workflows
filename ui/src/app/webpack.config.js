@@ -76,7 +76,7 @@ const config = {
       disableDotRule: true
     },
     proxy: {
-      "/api": {
+      "/api/v1": {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },

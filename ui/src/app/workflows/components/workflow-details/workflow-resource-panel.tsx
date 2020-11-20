@@ -1,11 +1,23 @@
+import {Tabs} from 'argo-ui';
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
+import {ObjectEditor} from '../../../shared/components/object-editor/object-editor';
+import {WorkflowSpecPanel} from '../../../shared/components/workflow-spec-panel/workflow-spec-panel';
 
 export const WorkflowResourcePanel = (props: {workflow: Workflow}) => (
-    <div className='white-box' key='workflow-resource'>
-        <div className='white-box__details'>
-            <ResourceEditor readonly={true} value={props.workflow} kind='Workflow' />
-        </div>
-    </div>
+    <Tabs
+        navTransparent={true}
+        tabs={[
+            {
+                key: 'spec',
+                title: 'Spec',
+                content: <WorkflowSpecPanel spec={props.workflow.spec} />
+            },
+            {
+                key: 'manifest',
+                title: 'Manifest',
+                content: <ObjectEditor value={props.workflow} type='io.argoproj.workflow.v1alpha1.Workflow' />
+            }
+        ]}
+    />
 );
