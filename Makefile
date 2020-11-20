@@ -96,7 +96,7 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
-TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
+TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go' -not -name '*_easyjson.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
@@ -461,14 +461,6 @@ wait:
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
-
-.PHONY: heap
-heap:
-	go tool pprof -http=localhost:6061 http://localhost:6060/debug/pprof/heap
-
-.PHONY: profile
-profile:
-	go tool pprof -http=localhost:6061 http://localhost:6060/debug/pprof/profile
 
 .PHONY: postgres-cli
 postgres-cli:
