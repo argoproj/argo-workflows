@@ -32,8 +32,9 @@ message DeleteEventSourceRequest {
 }
 
 message UpdateEventSourceRequest {
-    string namespace = 1;
-    github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource evensource = 2;
+    string name = 1;
+    string namespace = 2;
+    github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource evensource = 3;
 }
 
 message EventSourcesLogsRequest {
@@ -70,14 +71,14 @@ message EventSourceDeleteResponse {
 
 service EventSourceService {
 
-    rpc CreateEventSource (CreateEventSourcesRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource) {
+    rpc CreateEventSource (CreateEventSourceRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource) {
         option (google.api.http) = {
 			post: "/api/v1/event-sources/{namespace}"
 			body: "*"
 		};
     }
 
-    rpc GetEventSource (GetEventSourcesRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource) {
+    rpc GetEventSource (GetEventSourceRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource) {
         option (google.api.http).get = "/api/v1/event-sources/{namespace}/{name}";
     }
 
@@ -89,7 +90,7 @@ service EventSourceService {
         option (google.api.http).delete = "/api/v1/event-sources/{namespace}/{name}";
     }
 
-    rpc UpdateEventSource (UpdateEventSource) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource) {
+    rpc UpdateEventSource (UpdateEventSourceRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource) {
         option (google.api.http) = {
             put: "/api/v1/event-sources/{namespace}/{name}"
             body: "*"
