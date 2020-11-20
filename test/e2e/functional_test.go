@@ -462,6 +462,7 @@ spec:
 		}), "pods succeeded")
 }
 
+
 func (s *FunctionalSuite) TestParameterAggregation() {
 	s.Given().
 		Workflow("@functional/param-aggregation.yaml").
@@ -477,6 +478,7 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 			}
 		})
 }
+
 
 func (s *FunctionalSuite) TestGlobalScope() {
 	s.Given().
