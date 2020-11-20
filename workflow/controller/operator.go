@@ -116,7 +116,7 @@ var (
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
-var maxOperationTime = 10 * time.Second
+var maxOperationTime = 30 * time.Second
 var defaultRequeueTime = maxOperationTime
 
 func init() {
