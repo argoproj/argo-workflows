@@ -900,17 +900,13 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 		if _, ok := seenPods[nodeID]; !ok {
 
-			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
-			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() {
-				continue
-			}
-
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "recentlyStarted": recentlyStarted}).Info()
-			if recentlyStarted {
-				woc.log.WithField("nodeName", node.Name).Info("allowing a short grace-period before marking node as error")
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Pending(), "recentlyStarted": recentlyStarted}).Debug("Workflow pod is missing")
+
+			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
+			// again instead of marking it as an error. Check if that's the case.
+			if node.Pending() || recentlyStarted {
 				continue
 			}
 
