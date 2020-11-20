@@ -118,6 +118,7 @@ RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 2>&1 |
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
+ARG IMAGE_OS=linux
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec-${IMAGE_OS}-* /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
@@ -126,6 +127,7 @@ ENTRYPOINT [ "argoexec" ]
 ####################################################################################################
 FROM scratch as workflow-controller
 USER 8737
+ARG IMAGE_OS=linux
 # Add timezone data
 COPY --from=argo-build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-${IMAGE_OS}-* /bin/workflow-controller
@@ -136,6 +138,7 @@ ENTRYPOINT [ "workflow-controller" ]
 ####################################################################################################
 FROM scratch as argocli
 USER 8737
+ARG IMAGE_OS=linux
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/nsswitch.conf /etc/nsswitch.conf
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
