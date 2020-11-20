@@ -34,19 +34,21 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
     }
 
     public render() {
-        if (!this.state.workflow) {
+        const wf = this.state.workflow;
+
+        if (!wf) {
             return <Loading />;
         }
-        const wf = this.state.workflow;
+
         return (
             <div className='workflow-drawer'>
-                {!wf.status.message ? null : (
+                {!wf.status || !wf.status.message ? null : (
                     <div className='workflow-drawer__section workflow-drawer__message'>
                         <div className='workflow-drawer__title workflow-drawer__message--label'>MESSAGE</div>
                         <div className='workflow-drawer__message--content'>{wf.status.message}</div>
                     </div>
                 )}
-                {!wf.status.conditions ? null : (
+                {!wf.status || !wf.status.conditions ? null : (
                     <div className='workflow-drawer__section'>
                         <div className='workflow-drawer__title'>CONDITIONS</div>
                         <div className='workflow-drawer__conditions'>
@@ -54,7 +56,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                         </div>
                     </div>
                 )}
-                {!wf.status.resourcesDuration ? null : (
+                {!wf.status || !wf.status.resourcesDuration ? null : (
                     <div className='workflow-drawer__section'>
                         <div>
                             <InlineTable
@@ -89,7 +91,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                 <div className='workflow-drawer__section'>
                     <div className='workflow-drawer__title'>FROM</div>
                     <div className='workflow-drawer__workflowFrom'>
-                        <WorkflowFrom namespace={wf.metadata.namespace} labels={wf.metadata.labels} />
+                        <WorkflowFrom namespace={wf.metadata.namespace || 'default'} labels={wf.metadata.labels || {}} />
                     </div>
                 </div>
                 <div className='workflow-drawer__section workflow-drawer__labels'>

@@ -99,6 +99,7 @@ func (w *When) CreateWorkflowEventBinding() *When {
 	if err != nil {
 		w.t.Fatal(err)
 	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
@@ -114,6 +115,7 @@ func (w *When) CreateWorkflowTemplates() *When {
 			w.t.Fatal(err)
 		}
 	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
@@ -129,6 +131,7 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 			w.t.Fatal(err)
 		}
 	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
@@ -144,6 +147,7 @@ func (w *When) CreateCronWorkflow() *When {
 	} else {
 		w.cronWf = cronWf
 	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
@@ -222,13 +226,17 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		select {
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
-			print(".")
 			if ok {
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
 					println("Condition met after", time.Since(start).Truncate(time.Second).String())
 					w.wf = wf
 					return w
+				}
+				// once done the workflow is done, the condition can never be met
+				// rather than wait maybe 30s for something that can never happen
+				if ToBeDone(wf) {
+					w.t.Fatalf("condition never and cannot be met because the workflow is done")
 				}
 			} else {
 				w.t.Fatal("not ok")
@@ -360,7 +368,7 @@ func (w *When) DeleteMemoryQuota() *When {
 
 func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
-	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(name, foregroundDelete)
+	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(name, &metav1.DeleteOptions{PropagationPolicy: &foreground})
 	if err != nil {
 		w.t.Fatal(err)
 	}

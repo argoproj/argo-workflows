@@ -20,7 +20,7 @@ func TestPrintWorkflows(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "my-ns", CreationTimestamp: metav1.Time{Time: now}},
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
-					{Name: "my-param", Value: pointer.StringPtr("my-value")},
+					{Name: "my-param", Value: wfv1.AnyStringPtr("my-value")},
 				}},
 				Priority: pointer.Int32Ptr(2),
 				Templates: []wfv1.Template{
@@ -42,6 +42,14 @@ func TestPrintWorkflows(t *testing.T) {
 			},
 		},
 	}
+
+	var emptyWorkflows wfv1.Workflows
+	t.Run("Empty", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(emptyWorkflows, &b, PrintOpts{}))
+		assert.Equal(t, `No workflows found
+`, b.String())
+	})
 	t.Run("Default", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{}))

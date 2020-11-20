@@ -621,6 +621,10 @@ spec:
                         properties:
                           default:
                             type: string
+                          enum:
+                            items:
+                              type: string
+                            type: array
                           globalName:
                             type: string
                           name:
@@ -1779,6 +1783,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:
@@ -2664,6 +2672,10 @@ spec:
                                         properties:
                                           default:
                                             type: string
+                                          enum:
+                                            items:
+                                              type: string
+                                            type: array
                                           globalName:
                                             type: string
                                           name:
@@ -3622,6 +3634,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:
@@ -4066,6 +4082,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:
@@ -6731,6 +6751,10 @@ spec:
             lastScheduledTime:
               format: date-time
               type: string
+          required:
+          - active
+          - conditions
+          - lastScheduledTime
           type: object
       required:
       - metadata

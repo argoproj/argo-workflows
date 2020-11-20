@@ -460,6 +460,11 @@ export interface NodeStatus {
     estimatedDuration?: number;
 
     /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
+
+    /**
      * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};
@@ -565,6 +570,10 @@ export interface WorkflowStatus {
     estimatedDuration?: number;
 
     /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
+    /**
      * A human readable message indicating details about why the workflow is in this condition.
      */
     message: string;
@@ -657,6 +666,10 @@ export interface WorkflowSpec {
     podGC?: {
         strategy?: string;
     };
+    /**
+     * SecurityContext holds pod-level security attributes and common container settings.
+     */
+    securityContext?: kubernetes.SecurityContext;
     /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
@@ -822,5 +835,20 @@ export const NODE_PHASE = {
     ERROR: 'Error',
     OMITTED: 'Omitted'
 };
+
+export function getColorForNodePhase(p: NodePhase) {
+    switch (p) {
+        case NODE_PHASE.ERROR:
+        case NODE_PHASE.FAILED:
+            return '#E96D76';
+        case NODE_PHASE.PENDING:
+        case NODE_PHASE.RUNNING:
+            return '#0DADEA';
+        case NODE_PHASE.SUCCEEDED:
+            return '#18BE94';
+        default:
+            return '#6D7F8B';
+    }
+}
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';

@@ -64,6 +64,7 @@ export const WorkflowNodeSummary = (props: Props) => {
             title: 'DURATION',
             value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
         },
+        {title: 'PROGRESS', value: props.node.progress || '-'},
         {
             title: 'MEMOIZATION',
             value: (
@@ -118,10 +119,10 @@ export const WorkflowNodeSummary = (props: Props) => {
                             <a
                                 className='argo-button argo-button--base-o'
                                 href={link.url
-                                    .replace('${metadata.namespace}', props.workflow.metadata.namespace)
-                                    .replace('${metadata.name}', props.node.id)
-                                    .replace('${status.startedAt}', props.node.startedAt)
-                                    .replace('${status.finishedAt}', props.node.finishedAt)}>
+                                    .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
+                                    .replace(/\${metadata\.name}/g, props.node.id)
+                                    .replace(/\${status\.startedAt}/g, props.node.startedAt)
+                                    .replace(/\${status\.finishedAt}/g, props.node.finishedAt)}>
                                 <i className='fa fa-link' /> {link.name}
                             </a>
                         ))}

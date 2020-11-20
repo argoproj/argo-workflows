@@ -599,29 +599,39 @@ func TestTTLlExpired(t *testing.T) {
 
 func TestGetTTLStrategy(t *testing.T) {
 	var ten int32 = 10
-	wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
-	wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
-		SecondsAfterCompletion: &ten,
-	}
+	var twenty int32 = 20
 
-	ttl := getTTLStrategy(wf)
-	assert.NotNil(t, ttl)
-	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	t.Run("TTLFromWorkflow", func(t *testing.T) {
+		wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
+		wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
+			SecondsAfterCompletion: &ten,
+		}
+		ttl := wf.GetTTLStrategy()
+		assert.NotNil(t, ttl)
+		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	})
 
-	wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
-	ttl = getTTLStrategy(wf1)
-	assert.NotNil(t, ttl)
-	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
-	wf1.Spec.TTLStrategy = nil
-	wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
-	ttl = getTTLStrategy(wf1)
-	assert.Nil(t, ttl)
+	t.Run("TTLInWfwithWorkflowTemplate", func(t *testing.T) {
+		wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
+		ttl := wf1.GetTTLStrategy()
+		assert.NotNil(t, ttl)
+		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 
-	wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
-	ttl = getTTLStrategy(wf2)
-	assert.NotNil(t, ttl)
-	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
-	wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
-	ttl = getTTLStrategy(wf2)
-	assert.Nil(t, ttl)
+		wf1.Spec.TTLStrategy = nil
+		wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
+		ttl = wf1.GetTTLStrategy()
+		assert.Nil(t, ttl)
+	})
+	t.Run("TTLwithWorkflowTemplate", func(t *testing.T) {
+		wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
+		wf2.Spec.TTLSecondsAfterFinished = nil
+		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = &twenty
+		ttl := wf2.GetTTLStrategy()
+		assert.NotNil(t, ttl)
+		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = nil
+		wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
+		ttl = wf2.GetTTLStrategy()
+		assert.Nil(t, ttl)
+	})
 }

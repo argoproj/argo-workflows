@@ -856,7 +856,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"failedJobsHistoryLimit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time",
+							Description: "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -923,6 +923,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 						},
 					},
 				},
+				Required: []string{"active", "lastScheduledTime", "conditions"},
 			},
 		},
 		Dependencies: []string{
@@ -2097,6 +2098,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "int32",
 						},
 					},
+					"progress": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Progress to completion",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"resourcesDuration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
@@ -2433,6 +2441,20 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							Description: "GlobalName exports an output parameter to the global scope, making it available as '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"enum": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enum holds a list of string values to choose from, for the actual value of the parameter",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -4779,6 +4801,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Description: "EstimatedDuration in seconds.",
 							Type:        []string{"integer"},
 							Format:      "int32",
+						},
+					},
+					"progress": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Progress to completion",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"message": {

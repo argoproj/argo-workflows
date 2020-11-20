@@ -88,6 +88,7 @@ func NewGetCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	command.Flags().BoolVar(&noUtf8, "no-utf8", false, "Use plain 7-bits ascii characters")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
@@ -146,6 +147,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 			out += fmt.Sprintf(fmtStr, "EstimatedDuration:", humanize.Duration(wf.Status.EstimatedDuration.ToDuration()))
 		}
 	}
+	out += fmt.Sprintf(fmtStr, "Progress:", wf.Status.Progress)
 	if !wf.Status.ResourcesDuration.IsZero() {
 		out += fmt.Sprintf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
@@ -445,27 +447,53 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 	nodePrefix string, childPrefix string, parentFiltered bool,
 	childIndex int, maxIndex int, childIndent bool, getArgs getFlags) {
 	var part, subp string
-	if parentFiltered && childIndent {
-		if maxIndex == 0 {
-			part = "--"
-			subp = "  "
-		} else if childIndex == 0 {
-			part = "·-"
-			subp = "| "
-		} else if childIndex == maxIndex {
-			part = "└-"
-			subp = "  "
-		} else {
-			part = "├-"
-			subp = "| "
+	if noUtf8 {
+		if parentFiltered && childIndent {
+			if maxIndex == 0 {
+				part = "--"
+				subp = "  "
+			} else if childIndex == 0 {
+				part = "+-"
+				subp = "| "
+			} else if childIndex == maxIndex {
+				part = "`-"
+				subp = "  "
+			} else {
+				part = "|-"
+				subp = "| "
+			}
+		} else if !parentFiltered {
+			if childIndex == maxIndex {
+				part = "`-"
+				subp = "  "
+			} else {
+				part = "|-"
+				subp = "| "
+			}
 		}
-	} else if !parentFiltered {
-		if childIndex == maxIndex {
-			part = "└-"
-			subp = "  "
-		} else {
-			part = "├-"
-			subp = "| "
+	} else {
+		if parentFiltered && childIndent {
+			if maxIndex == 0 {
+				part = "──"
+				subp = "  "
+			} else if childIndex == 0 {
+				part = "┬─"
+				subp = "│ "
+			} else if childIndex == maxIndex {
+				part = "└─"
+				subp = "  "
+			} else {
+				part = "├─"
+				subp = "│ "
+			}
+		} else if !parentFiltered {
+			if childIndex == maxIndex {
+				part = "└─"
+				subp = "  "
+			} else {
+				part = "├─"
+				subp = "│ "
+			}
 		}
 	}
 	var childNodePrefix, childChldPrefix string

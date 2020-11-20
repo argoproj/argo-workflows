@@ -181,6 +181,15 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 				break
 			}
 		} else if branchPhase.FailedOrError() {
+			// If this target task has continueOn set for its current phase, then don't treat it as failed for the purposes
+			// of determining DAG status. This is so that target tasks with said continueOn do not fail the overall DAG.
+			// For non-leaf tasks, this is done by setting all of its dependents to allow for their failure or error in
+			// their "depends" clause during their respective "dependencies" to "depends" conversion. See "expandDependency"
+			// in ancestry.go
+			if task := d.GetTask(depName); task.ContinuesOn(branchPhase) {
+				continue
+			}
+
 			result = branchPhase
 			// If failFast is enabled, don't check to see if other target tasks are complete and fail now instead
 			if failFast {
@@ -322,6 +331,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 			}
 		}
+
+		// Release acquired lock completed task.
+		if tmpl != nil && tmpl.Synchronization != nil {
+			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
+		}
+
 		if node.Completed() {
 			// Run the node's onExit node, if any.
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
@@ -611,10 +626,7 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 
 // expandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
 func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
-	taskBytes, err := json.Marshal(task)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
+	var err error
 	var items []wfv1.Item
 	if len(task.WithItems) > 0 {
 		items = task.WithItems
@@ -631,6 +643,17 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	} else {
 		return []wfv1.DAGTask{task}, nil
 	}
+
+	taskBytes, err := json.Marshal(task)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+
+	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
+	// very poor performance, so we just nil them out
+	task.WithItems = nil
+	task.WithParam = ""
+	task.WithSequence = nil
 
 	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
 	if err != nil {
