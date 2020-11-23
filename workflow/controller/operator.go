@@ -37,6 +37,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	envutil "github.com/argoproj/argo/util/env"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
@@ -116,8 +117,10 @@ var (
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
-const maxOperationTime = 10 * time.Second
-const defaultRequeueTime = maxOperationTime
+var (
+	maxOperationTime   = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
+	defaultRequeueTime = envutil.LookupEnvDurationOr("DEFAULT_REQUEUE_TIME", maxOperationTime/2)
+)
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
