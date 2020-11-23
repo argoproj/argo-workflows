@@ -903,7 +903,7 @@ metadata:
   generateName: exit-handlers-
 spec:
   entrypoint: intentional-fail
-  onExit: exit-handler                  # invoke exit-hander template at end of the workflow
+  onExit: exit-handler                  # invoke exit-handler template at end of the workflow
   templates:
   # primary workflow template
   - name: intentional-fail

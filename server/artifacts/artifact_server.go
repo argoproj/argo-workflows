@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -27,10 +28,15 @@ type ArtifactServer struct {
 	hydrator          hydrator.Interface
 	wfArchive         sqldb.WorkflowArchive
 	instanceIDService instanceid.Service
+	artDriverFactory  artifact.NewDriverFunc
 }
 
 func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
-	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService}
+	return newArtifactServer(authN, hydrator, wfArchive, instanceIDService, artifact.NewDriver)
+}
+
+func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -55,12 +61,15 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		a.serverInternalError(err, w)
 		return
 	}
-	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+
+	data, filename, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
+
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, filename))
 	a.ok(w, data)
 }
 
@@ -87,12 +96,14 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+	data, filename, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
+
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, filename))
 	a.ok(w, data)
 }
 
@@ -125,37 +136,37 @@ func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	_, _ = w.Write([]byte(err.Error()))
 }
 
-func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId, artifactName string) ([]byte, error) {
+func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId, artifactName string) ([]byte, string, error) {
 	kubeClient := auth.GetKubeClient(ctx)
 
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	if art == nil {
-		return nil, fmt.Errorf("artifact not found")
+		return nil, "", fmt.Errorf("artifact not found")
 	}
 
-	driver, err := artifact.NewDriver(art, resources{kubeClient, wf.Namespace})
+	driver, err := a.artDriverFactory(art, resources{kubeClient, wf.Namespace})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	tmp, err := ioutil.TempFile("/tmp", "artifact")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	path := tmp.Name()
-	defer func() { _ = os.Remove(path) }()
+	tmpPath := tmp.Name()
+	defer func() { _ = os.Remove(tmpPath) }()
 
-	err = driver.Load(art, path)
+	err = driver.Load(art, tmpPath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	file, err := ioutil.ReadFile(path)
+	file, err := ioutil.ReadFile(tmpPath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	log.WithFields(log.Fields{"size": len(file)}).Debug("Artifact file size")
 
-	return file, nil
+	return file, path.Base(art.GetKey()), nil
 }
 
 func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {

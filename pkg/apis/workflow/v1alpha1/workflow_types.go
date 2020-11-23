@@ -924,6 +924,22 @@ func (a *ArtifactLocation) GetType() ArtifactLocationType {
 
 }
 
+func (a *ArtifactLocation) GetKey() string {
+	if a.S3 != nil {
+		return a.S3.Key
+	}
+
+	if a.OSS != nil {
+		return a.OSS.Key
+	}
+
+	if a.GCS != nil {
+		return a.GCS.Key
+	}
+
+	return ""
+}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
