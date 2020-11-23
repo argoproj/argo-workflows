@@ -14,8 +14,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
-
 func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string, ttl time.Duration) (persist.OffloadNodeStatusRepo, error) {
 	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
 }

@@ -19,3 +19,5 @@ type OffloadNodeStatusRepo interface {
 	Delete(uid, version string) error
 	IsEnabled() bool
 }
+
+const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
