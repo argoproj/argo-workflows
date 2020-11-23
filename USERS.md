@@ -24,6 +24,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Capital One](https://www.capitalone.com/tech/)
 1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
+1. [CloudSeeds](https://www.cloudseeds.de/)
 1. [Codec](https://www.codec.ai/)
 1. [Commodus Tech](https://www.commodus.tech)
 1. [Concierge Render](https://www.conciergerender.com)
@@ -103,3 +104,4 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [UFirstGroup](https://www.ufirstgroup.com)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
+1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
