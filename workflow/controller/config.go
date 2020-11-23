@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"context"
-
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -10,7 +8,8 @@ import (
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
+	"github.com/argoproj/argo/persist/factory"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
@@ -33,47 +32,16 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
-	wfc.wfArchive = sqldb.NullWorkflowArchive
+	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
+	wfc.wfArchive = persist.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
-	persistence := wfc.Config.Persistence
-	if persistence != nil {
-		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
-		if err != nil {
-			return err
-		}
-		log.Info("Persistence Session created successfully")
-		err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
-		if err != nil {
-			return err
-		}
-
-		wfc.session = session
-		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
-			if err != nil {
-				return err
-			}
-			log.Info("Node status offloading is enabled")
-		} else {
-			log.Info("Node status offloading is disabled")
-		}
-		if persistence.Archive {
-			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
-
-			wfc.archiveLabelSelector, err = persistence.GetArchiveLabelSelector()
-			if err != nil {
-				return err
-			}
-			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
-			log.Info("Workflow archiving is enabled")
-		} else {
-			log.Info("Workflow archiving is disabled")
-		}
-	} else {
-		log.Info("Persistence configuration disabled")
+	p, err := factory.New(wfc.kubeclientset, instanceid.NewService(wfc.Config.InstanceID), wfc.namespace, config.Persistence, true)
+	if err != nil {
+		return err
 	}
+	wfc.session = p
+	wfc.offloadNodeStatusRepo = p.OffloadNodeStatusRepo
+	wfc.wfArchive = p.WorkflowArchive
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory()
 	return nil

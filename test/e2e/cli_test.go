@@ -92,6 +92,11 @@ func (s *CLISuite) NeedsOffloading() {
 	s.needsServer()
 }
 
+func (s *CLISuite) NeedsArchive() {
+	s.E2ESuite.NeedsArchive()
+	s.needsServer()
+}
+
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
@@ -1356,7 +1361,7 @@ func (s *CLISuite) TestAuthToken() {
 }
 
 func (s *CLISuite) TestArchive() {
-	s.NeedsOffloading()
+	s.NeedsArchive()
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").

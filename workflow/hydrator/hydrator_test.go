@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	sqldbmocks "github.com/argoproj/argo/persist/sqldb/mocks"
+	"github.com/argoproj/argo/persist"
+	sqldbmocks "github.com/argoproj/argo/persist/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
 )
@@ -88,7 +88,7 @@ func TestHydrator(t *testing.T) {
 		})
 		t.Run("OffloadingDisabled", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
-			offloadNodeStatusRepo.On("Get", "my-uid", "my-offload-version").Return(nil, sqldb.OffloadNotSupportedError)
+			offloadNodeStatusRepo.On("Get", "my-uid", "my-offload-version").Return(nil, persist.OffloadNotSupportedError)
 			hydrator := New(offloadNodeStatusRepo)
 			wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
 				Status: wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},

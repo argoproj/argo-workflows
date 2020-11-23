@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	sqldbmocks "github.com/argoproj/argo/persist/sqldb/mocks"
+	sqldbmocks "github.com/argoproj/argo/persist/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	testutil "github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/workflow/common"

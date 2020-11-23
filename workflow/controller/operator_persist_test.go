@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
+	"github.com/argoproj/argo/persist/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/packer"

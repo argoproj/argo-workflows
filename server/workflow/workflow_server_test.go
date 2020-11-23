@@ -16,8 +16,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
+	"github.com/argoproj/argo/persist"
+	"github.com/argoproj/argo/persist/mocks"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -581,7 +581,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
+	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[persist.UUIDVersion]v1alpha1.Nodes{}, nil)
 	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)

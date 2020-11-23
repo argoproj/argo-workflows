@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
 )
@@ -23,7 +23,7 @@ type Interface interface {
 	HydrateWithNodes(wf *wfv1.Workflow, nodes wfv1.Nodes)
 }
 
-func New(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Interface {
+func New(offloadNodeStatusRepo persist.OffloadNodeStatusRepo) Interface {
 	return &hydrator{offloadNodeStatusRepo}
 }
 
@@ -34,7 +34,7 @@ func init() {
 }
 
 type hydrator struct {
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	offloadNodeStatusRepo persist.OffloadNodeStatusRepo
 }
 
 func (h hydrator) IsHydrated(wf *wfv1.Workflow) bool {

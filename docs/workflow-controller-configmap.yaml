@@ -162,7 +162,9 @@ data:
       nodeStatusOffLoad: false
       # save completed workloads to the workflow archive
       archive: false
-      # the number of days to keep archived workflows (the default is forever)
+      # The number of days to keep archived workflows (the default is forever).
+      # Archive TTL is ignored for S3 as it cannot be after the bucket is created.
+      # Instead, set the retention policy when you create the bucket.
       archiveTTL: 180d
 
       # LabelSelector determines the workflow that matches with the matchlabels or matchrequirements, will be archived.
@@ -173,6 +175,27 @@ data:
 
       # Optional name of the cluster I'm running in. This must be unique for your cluster.
       clusterName: default
+
+      # Storage: s3, mysql, or postgres maybe configured.
+      #
+      # If mulitple are configured then the following rules are used:
+      #
+      # 1. For node status offloading, S3 is most preference, for archiving, least prefered.
+      # 2. MySQL is prefered to PostgreSQL
+      #
+      # S3 is most prefered (and therefore implicitly recommeded) as it can be expected to be faster,
+      # and relies less on the querying capability of an SQL database.
+      #
+      # S3 is least prefered for workflow archiving. While is is easier to set-up that an SQL database, S3 does not
+      # support (out of the box) indexed backed (i.e. fast) querying capabilities for listing archived workflows.
+      # List operations will be slow when any significant number of workflows are archived.
+
+      # Unlike MySQL or Postgres, S3 enforces TTLs by setting them on the bucket.
+      # You MUST configure different buckets for the archive and offloads if you wish to TTL archived workflows.
+      s3: |
+        nodeStatusOffload: # ... as artifactRepository.s3
+        archive: # ... as artifactRepository.s3
+
       postgresql:
         host: localhost
         port: 5432

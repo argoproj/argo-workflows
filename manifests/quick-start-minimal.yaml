@@ -490,6 +490,30 @@ data:
     enabled: true
     path: /metrics
     port: 9090
+  persistence: |
+    nodeStatusOffLoad: true
+    archive: true
+    s3:
+      archive:
+        bucket: my-workflow-archive
+        endpoint: minio:9000
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
+      nodeStatusOffload:
+        bucket: my-node-status-offloads
+        endpoint: minio:9000
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -670,6 +694,8 @@ spec:
           - mkdir
           - -p
           - /data/my-bucket
+          - /data/my-node-status-offloads
+          - /data/my-workflow-archive
     livenessProbe:
       httpGet:
         path: /minio/health/live

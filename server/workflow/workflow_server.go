@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/persist"
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -31,14 +32,14 @@ import (
 
 type workflowServer struct {
 	instanceIDService     instanceid.Service
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	offloadNodeStatusRepo persist.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 }
 
 const latestAlias = "@latest"
 
 // NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo persist.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
 	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
 }
 
@@ -128,7 +129,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		for i, wf := range wfList.Items {
 			if wf.Status.IsOffloadNodeStatus() {
 				if s.offloadNodeStatusRepo.IsEnabled() {
-					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+					wfList.Items[i].Status.Nodes = offloadedNodes[persist.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
 				} else {
 					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
 				}

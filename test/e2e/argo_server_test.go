@@ -321,6 +321,7 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 		Expect().
 		Status(401)
 }
+
 func (s *ArgoServerSuite) TestCookieAuth() {
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
@@ -508,7 +509,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
-	if s.Persistence.IsEnabled() {
+	if s.Persist.WorkflowArchive.IsEnabled() {
 
 		// Simply wait 10 seconds for the wf to be completed
 		s.Given().
@@ -535,7 +536,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		// we've now deleted the workflow, but it is still in the archive, testing the archive
 		// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
 
-		if s.Persistence.IsEnabled() {
+		if s.Persist.WorkflowArchive.IsEnabled() {
 			// Test list archived WFs with good token
 			s.bearerToken = goodToken
 			s.Run("ListArchivedWFsGoodToken", func() {
@@ -1018,9 +1019,7 @@ spec:
 
 // make sure we can download an artifact
 func (s *ArgoServerSuite) TestArtifactServer() {
-	if !s.Persistence.IsEnabled() {
-		s.T().SkipNow()
-	}
+	s.NeedsArchive()
 	var uid types.UID
 	var name string
 	s.Given().
@@ -1185,9 +1184,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
-	if !s.Persistence.IsEnabled() {
-		s.T().SkipNow()
-	}
+	s.NeedsArchive()
 	var uid types.UID
 	s.Given().
 		Workflow(`

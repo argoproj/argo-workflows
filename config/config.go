@@ -137,7 +137,7 @@ type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
 	Archive bool `json:"archive,omitempty"`
-	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
+	// ArchiveLabelSelector holds LabelSelector to determine workflow persistence.
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
@@ -145,6 +145,7 @@ type PersistConfig struct {
 	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
+	S3             *S3Config         `json:"s3,omitempty"`
 }
 
 func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
@@ -161,10 +162,42 @@ func (c PersistConfig) GetClusterName() string {
 	return "default"
 }
 
+func (c PersistConfig) GetNodeStatusOffloadConfig() interface{} {
+	if c.S3 != nil && c.S3.NodeStatusOffloads != nil {
+		return c.S3.NodeStatusOffloads
+	}
+	return c.SQLConfig()
+}
+
+func (c PersistConfig) GetArchiveConfig() interface{} {
+	sqlConfig := c.SQLConfig()
+	if sqlConfig != nil {
+		return sqlConfig
+	}
+	if c.S3 != nil && c.S3.Archive != nil {
+		return c.S3.Archive
+	}
+	return nil
+}
+
+func (c PersistConfig) SQLConfig() interface{} {
+	if c.MySQL != nil {
+		return c.MySQL
+	} else if c.PostgreSQL != nil {
+		return c.PostgreSQL
+	}
+	return nil
+}
+
 type ConnectionPool struct {
 	MaxIdleConns    int `json:"maxIdleConns,omitempty"`
 	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
 	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
+}
+
+type S3Config struct {
+	NodeStatusOffloads *S3ArtifactRepository `json:"nodeStatusOffLoad,omitempty"`
+	Archive            *S3ArtifactRepository `json:"archive,omitempty"`
 }
 
 type PostgreSQLConfig struct {
@@ -198,6 +231,10 @@ type S3ArtifactRepository struct {
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	// DEPRECATED. Use KeyFormat instead
 	KeyPrefix string `json:"keyPrefix,omitempty"`
+}
+
+func (r S3ArtifactRepository) Secure() bool {
+	return r.Insecure == nil || !*r.Insecure
 }
 
 // OSSArtifactRepository defines the controller configuration for an OSS artifact repository

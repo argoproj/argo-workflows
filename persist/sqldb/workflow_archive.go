@@ -13,6 +13,7 @@ import (
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
+	"github.com/argoproj/argo/persist"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/instanceid"
 )
@@ -44,24 +45,14 @@ type archivedWorkflowLabelRecord struct {
 	Value string `db:"value"`
 }
 
-//go:generate mockery -name WorkflowArchive
-
-type WorkflowArchive interface {
-	ArchiveWorkflow(wf *wfv1.Workflow) error
-	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
-	ListWorkflows(namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
-	GetWorkflow(uid string) (*wfv1.Workflow, error)
-	DeleteWorkflow(uid string) error
-	DeleteExpiredWorkflows(ttl time.Duration) error
-	IsEnabled() bool
-}
-
 type workflowArchive struct {
-	session           sqlbuilder.Database
-	clusterName       string
-	managedNamespace  string
-	instanceIDService instanceid.Service
-	dbType            dbType
+	session                  sqlbuilder.Database
+	clusterName              string
+	managedNamespace         string
+	instanceIDService        instanceid.Service
+	dbType                   dbType
+	ttl                      time.Duration
+	archivedWorkflowGCPeriod time.Duration
 }
 
 func (r *workflowArchive) IsEnabled() bool {
@@ -69,8 +60,8 @@ func (r *workflowArchive) IsEnabled() bool {
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session)}
+func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace string, instanceIDService instanceid.Service, ttl, archivedWorkflowGCPeriod time.Duration) persist.WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session), ttl: ttl, archivedWorkflowGCPeriod: archivedWorkflowGCPeriod}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
@@ -237,11 +228,11 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	return nil
 }
 
-func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
+func (r *workflowArchive) DeleteExpiredWorkflows() error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
+		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(r.ttl.Seconds()))).
 		Exec()
 	if err != nil {
 		return err
@@ -252,4 +243,28 @@ func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	}
 	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
 	return nil
+}
+
+func (r *workflowArchive) Run(stopCh <-chan struct{}) {
+	periodicity := r.archivedWorkflowGCPeriod
+	ttl := r.ttl
+	if ttl == 0 {
+		log.Info("Archive TTL is zero - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
+	log.WithFields(log.Fields{"ttl": ttl, "periodicity": periodicity}).Info("Performing archived workflow GC")
+	ticker := time.NewTicker(periodicity)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-ticker.C:
+			log.Info("Performing archived workflow GC")
+			err := r.DeleteExpiredWorkflows()
+			if err != nil {
+				log.WithField("err", err).Error("Failed to delete archived workflows")
+			}
+		}
+	}
 }

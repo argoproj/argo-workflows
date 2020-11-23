@@ -19,7 +19,7 @@ spec:
       lifecycle:
         postStart:
           exec:
-            command: [mkdir, -p, /data/my-bucket]
+            command: [mkdir, -p, /data/my-bucket, /data/my-node-status-offloads, /data/my-workflow-archive]
       readinessProbe:
         httpGet:
           path: /minio/health/ready

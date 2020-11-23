@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -29,12 +30,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
 	argoErr "github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
@@ -92,10 +92,10 @@ type WorkflowController struct {
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               sqlbuilder.Database
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	session               io.Closer
+	offloadNodeStatusRepo persist.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
-	wfArchive             sqldb.WorkflowArchive
+	wfArchive             persist.WorkflowArchive
 	estimatorFactory      estimation.EstimatorFactory
 	syncManager           *sync.Manager
 	metrics               *metrics.Metrics
@@ -152,7 +152,7 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.Add(key) })
 }
 
-// RunTTLController runs the workflow TTL controller
+// RunTTLController runs the workflow OffloadTTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
 	err := ttlCtrl.Run(ctx.Done())
@@ -196,7 +196,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.workflowGarbageCollector(ctx.Done())
-	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	go wfc.runTTLController(ctx)
 	go wfc.runCronController(ctx)
@@ -466,46 +465,6 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 						}
 					}
 				}
-			}
-		}
-	}
-}
-
-func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
-	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
-	periodicity := 24 * time.Hour
-	if ok {
-		var err error
-		periodicity, err = time.ParseDuration(value)
-		if err != nil {
-			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_GC_PERIOD")
-		}
-	}
-	if wfc.Config.Persistence == nil {
-		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
-		return
-	}
-	if !wfc.Config.Persistence.Archive {
-		log.Info("Archive disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
-		return
-	}
-	ttl := wfc.Config.Persistence.ArchiveTTL
-	if ttl == config.TTL(0) {
-		log.Info("Archived workflows TTL zero - so archived workflow GC disabled - you must restart the controller if you enable this")
-		return
-	}
-	log.WithFields(log.Fields{"ttl": ttl, "periodicity": periodicity}).Info("Performing archived workflow GC")
-	ticker := time.NewTicker(periodicity)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-stopCh:
-			return
-		case <-ticker.C:
-			log.Info("Performing archived workflow GC")
-			err := wfc.wfArchive.DeleteExpiredWorkflows(time.Duration(ttl))
-			if err != nil {
-				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
 		}
 	}

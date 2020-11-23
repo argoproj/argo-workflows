@@ -751,6 +751,8 @@ spec:
           - mkdir
           - -p
           - /data/my-bucket
+          - /data/my-node-status-offloads
+          - /data/my-workflow-archive
     livenessProbe:
       httpGet:
         path: /minio/health/live

@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller/indexes"
@@ -24,12 +24,12 @@ type EstimatorFactory interface {
 type estimatorFactory struct {
 	wfInformer cache.SharedIndexInformer
 	hydrator   hydrator.Interface
-	wfArchive  sqldb.WorkflowArchive
+	wfArchive  persist.WorkflowArchive
 }
 
 var _ EstimatorFactory = &estimatorFactory{}
 
-func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
+func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive persist.WorkflowArchive) EstimatorFactory {
 	return &estimatorFactory{wfInformer, hydrator, wfArchive}
 }
 

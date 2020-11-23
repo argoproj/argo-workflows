@@ -8,6 +8,7 @@ import (
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
+	"github.com/argoproj/argo/persist"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -39,7 +40,7 @@ func (s backfillNodes) apply(session sqlbuilder.Database) error {
 		if err != nil {
 			return err
 		}
-		marshalled, version, err := nodeStatusVersion(wf.Status.Nodes)
+		marshalled, version, err := persist.NodeStatusVersion(wf.Status.Nodes)
 		if err != nil {
 			return err
 		}

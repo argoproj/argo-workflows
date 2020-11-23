@@ -21,7 +21,8 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
+	"github.com/argoproj/argo/persist/factory"
 	clusterwftemplatepkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	eventpkg "github.com/argoproj/argo/pkg/apiclient/event"
@@ -143,24 +144,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	config := v.(*Config)
 	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
-	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
-	var wfArchive = sqldb.NullWorkflowArchive
-	persistence := config.Persistence
-	if persistence != nil {
-		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
-		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
-		// disable the archiving - and still read old records
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
+
+	p, err := factory.New(as.kubeClientset, instanceIDService, as.namespace, config.Persistence, false)
+	if err != nil {
+		log.Fatal(err)
 	}
+	offloadRepo := p.OffloadNodeStatusRepo
+	wfArchive := p.WorkflowArchive
+
 	eventRecorderManager := events.NewEventRecorderManager(as.kubeClientset)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
@@ -208,7 +199,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo persist.OffloadNodeStatusRepo, wfArchive persist.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB

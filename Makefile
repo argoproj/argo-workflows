@@ -67,14 +67,7 @@ K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubect
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
-
-ALWAYS_OFFLOAD_NODE_STATUS := false
-ifeq ($(PROFILE),mysql)
 ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
-ifeq ($(PROFILE),postgres)
-ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
 
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \

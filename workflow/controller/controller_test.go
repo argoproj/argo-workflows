@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
@@ -152,7 +152,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfclientset:          wfclientset,
 		completedPods:        make(chan string, 16),
 		workflowKeyLock:      sync.NewKeyLock(),
-		wfArchive:            sqldb.NullWorkflowArchive,
+		wfArchive:            persist.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
 		estimatorFactory:     estimation.DummyEstimatorFactory,
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
@@ -448,13 +448,6 @@ spec:
 			assert.Empty(t, wf.Status.Phase)
 		}
 	})
-}
-
-func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-
-	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
 }
 
 const wfWithTmplRef = `

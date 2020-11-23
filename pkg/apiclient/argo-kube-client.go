@@ -7,7 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
@@ -24,7 +24,7 @@ import (
 	"github.com/argoproj/argo/util/instanceid"
 )
 
-var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+var argoKubeOffloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 var NoArgoServerErr = fmt.Errorf("this is impossible if you are not using the Argo Server, see " + help.CLI)
 
 type argoKubeClient struct {

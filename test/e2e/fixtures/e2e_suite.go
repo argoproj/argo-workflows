@@ -23,9 +23,11 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/config"
+	"github.com/argoproj/argo/persist/factory"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/kubeconfig"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
@@ -37,7 +39,7 @@ const defaultTimeout = 30 * time.Second
 type E2ESuite struct {
 	suite.Suite
 	Config            *config.Config
-	Persistence       *Persistence
+	Persist           *factory.Persist
 	RestConfig        *rest.Config
 	wfClient          v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
@@ -62,13 +64,15 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(s.KubeClient, s.Config)
-	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
+	s.Persist, err = factory.New(s.KubeClient, instanceid.NewService(""), Namespace, s.Config.Persistence, false)
+	s.CheckError(err)
+	s.hydrator = hydrator.New(s.Persist.OffloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
 func (s *E2ESuite) TearDownSuite() {
-	s.Persistence.Close()
+	err := s.Persist.Close()
+	s.CheckError(err)
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {
@@ -97,8 +101,8 @@ func (s *E2ESuite) DeleteResources() {
 	}
 
 	// delete archived workflows from the archive
-	if s.Persistence.IsEnabled() {
-		archive := s.Persistence.workflowArchive
+	if s.Persist.WorkflowArchive.IsEnabled() {
+		archive := s.Persist.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
@@ -128,8 +132,14 @@ func (s *E2ESuite) NeedsCI() {
 }
 
 func (s *E2ESuite) NeedsOffloading() {
-	if !s.Persistence.IsEnabled() {
+	if !s.Persist.OffloadNodeStatusRepo.IsEnabled() {
 		s.T().Skip("test needs offloading, but persistence not enabled")
+	}
+}
+
+func (s *E2ESuite) NeedsArchive() {
+	if !s.Persist.WorkflowArchive.IsEnabled() {
+		s.T().Skip("test needs archive, but persistence not enabled")
 	}
 }
 

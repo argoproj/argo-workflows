@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -21,11 +21,11 @@ import (
 )
 
 type archivedWorkflowServer struct {
-	wfArchive sqldb.WorkflowArchive
+	wfArchive persist.WorkflowArchive
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepkg.ArchivedWorkflowServiceServer {
+func NewWorkflowArchiveServer(wfArchive persist.WorkflowArchive) workflowarchivepkg.ArchivedWorkflowServiceServer {
 	return &archivedWorkflowServer{wfArchive: wfArchive}
 }
 

@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
@@ -25,11 +25,11 @@ import (
 type ArtifactServer struct {
 	gatekeeper        auth.Gatekeeper
 	hydrator          hydrator.Interface
-	wfArchive         sqldb.WorkflowArchive
+	wfArchive         persist.WorkflowArchive
 	instanceIDService instanceid.Service
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive persist.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
 	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService}
 }
 
