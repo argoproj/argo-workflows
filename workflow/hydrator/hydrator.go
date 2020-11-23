@@ -2,8 +2,10 @@ package hydrator
 
 import (
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -45,13 +47,36 @@ func (h hydrator) HydrateWithNodes(wf *wfv1.Workflow, offloadedNodes wfv1.Nodes)
 	wf.Status.OffloadNodeStatusVersion = ""
 }
 
+// should be <10s
+// Retry	Seconds
+// 1	0.10
+// 2	0.30
+// 3	0.70
+// 4	1.50
+// 5	3.10
+var readRetry = wait.Backoff{Steps: 5, Duration: 100 * time.Millisecond, Factor: 2}
+
+// needs to be long
+// http://backoffcalculator.com/?attempts=5&rate=2&interval=1
+// Retry	Seconds
+// 1	1.00
+// 2	3.00
+// 3	7.00
+// 4	15.00
+// 5	31.00
+var writeRetry = wait.Backoff{Steps: 5, Duration: 1 * time.Second, Factor: 2}
+
 func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		return err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
-		offloadedNodes, err := h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		var offloadedNodes wfv1.Nodes
+		err := wait.ExponentialBackoff(readRetry, func() (bool, error) {
+			offloadedNodes, err = h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			return err == nil, err
+		})
 		if err != nil {
 			return err
 		}
@@ -73,7 +98,11 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		}
 	}
 	if packer.IsTooLargeError(err) || alwaysOffloadNodeStatus {
-		offloadVersion, err := h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+		var offloadVersion string
+		err := wait.ExponentialBackoff(writeRetry, func() (bool, error) {
+			offloadVersion, err = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+			return err == nil, err
+		})
 		if err != nil {
 			return err
 		}
