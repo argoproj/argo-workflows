@@ -80,6 +80,9 @@ func TerminatePodWithContainerID(c KubernetesClientInterface, containerID string
 		log.Infof("Container %s is already terminated: %v", container.ContainerID, container.State.Terminated.String())
 		return nil
 	}
+	if pod.Spec.ShareProcessNamespace != nil && *pod.Spec.ShareProcessNamespace {
+		return fmt.Errorf("cannot terminate a process-namespace-shared Pod %s", pod.Name)
+	}
 	if pod.Spec.HostPID {
 		return fmt.Errorf("cannot terminate a hostPID Pod %s", pod.Name)
 	}
