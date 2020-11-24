@@ -55,10 +55,6 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
-const enoughTimeForInformerSync = 1 * time.Second
-
-const semaphoreConfigIndexName = "bySemaphoreConfigMap"
-
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -110,6 +106,7 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
+	enoughTimeForInformerSync           = 1 * time.Second
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -171,7 +168,8 @@ var indexers = cache.Indexers{
 	indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
 	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
-	semaphoreConfigIndexName:             workflowIndexerBySemaphoreKeys,
+	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
+	indexes.WorkflowPhaseIndex:           indexes.MetaLabelIndexFunc(common.LabelKeyPhase),
 }
 
 // Run starts an Workflow resource controller
@@ -201,7 +199,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	go wfc.runTTLController(ctx)
 	go wfc.runCronController(ctx)
+
 	go wfc.metrics.RunServer(ctx)
+	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 	wfc.waitForCacheSync(ctx)
@@ -219,20 +219,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
-}
-
-func workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
-	un, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		log.Warnf("cannot convert obj into unstructured.Unstructured in Indexer %s", semaphoreConfigIndexName)
-		return []string{}, nil
-	}
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		log.Warnf("failed to convert to workflow from unstructured: %v", err)
-		return []string{}, nil
-	}
-	return wf.GetSemaphoreKeys(), nil
 }
 
 func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
@@ -318,7 +304,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
 func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
-	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(semaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
+	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
 	if err != nil {
 		log.Errorf("failed get the workflow from informer. %v", err)
 	}
@@ -326,7 +312,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 	for _, obj := range wfs {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
-			log.Warnf("received object from indexer %s is not an unstructured", semaphoreConfigIndexName)
+			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
 		wf, err := util.FromUnstructured(un)
@@ -698,21 +684,6 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-func getWfPhase(obj interface{}) wfv1.NodePhase {
-	un, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		return ""
-	}
-	phase, hasPhase, err := unstructured.NestedString(un.Object, "status", "phase")
-	if err != nil {
-		return ""
-	}
-	if !hasPhase {
-		return wfv1.NodePending
-	}
-	return wfv1.NodePhase(phase)
-}
-
 func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
@@ -769,18 +740,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	},
 	)
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			wf := obj.(*unstructured.Unstructured)
-			wfc.metrics.WorkflowAdded(string(wf.GetUID()), getWfPhase(obj))
-		},
-		UpdateFunc: func(old, new interface{}) {
-			wf := new.(*unstructured.Unstructured)
-			wfc.metrics.WorkflowUpdated(string(wf.GetUID()), getWfPhase(old), getWfPhase(new))
-		},
 		DeleteFunc: func(obj interface{}) {
 			wf, ok := obj.(*unstructured.Unstructured)
 			if ok { // maybe cache.DeletedFinalStateUnknown
-				wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+				wfc.metrics.StopRealtimeMetricsForKey(string(wf.GetUID()))
 			}
 		},
 	})
@@ -990,4 +953,15 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 
 func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
+}
+
+func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
+	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
+		objs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.WorkflowPhaseIndex, string(phase))
+		if err != nil {
+			log.WithError(err).Errorf("failed to list workflows by '%s'", phase)
+			continue
+		}
+		wfc.metrics.SetWorkflowPhaseGauge(phase, len(objs))
+	}
 }
