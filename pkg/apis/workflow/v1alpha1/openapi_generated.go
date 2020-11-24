@@ -1032,7 +1032,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"name", "template"},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{

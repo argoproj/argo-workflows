@@ -24,7 +24,7 @@ func NewWaitCommand() *cobra.Command {
 
 func waitContainer() error {
 	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError()
+	defer wfExecutor.HandleError() // Must be placed at the bottom of defers stack.
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
@@ -32,7 +32,7 @@ func waitContainer() error {
 		// Killing sidecar containers
 		err := wfExecutor.KillSidecars()
 		if err != nil {
-			log.Errorf("Failed to kill sidecars: %s", err.Error())
+			wfExecutor.AddError(err)
 		}
 	}()
 
