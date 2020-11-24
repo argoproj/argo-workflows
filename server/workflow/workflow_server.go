@@ -3,6 +3,7 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/util/fields"
 	"sort"
 
 	log "github.com/sirupsen/logrus"
@@ -115,6 +116,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if req.ListOptions != nil {
 		listOption = req.ListOptions
 	}
+	log.Infof("SIMON List option: %v. Fields: %s", req.ListOptions, req.Fields)
 	s.instanceIDService.With(listOption)
 	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(*listOption)
 	if err != nil {
@@ -139,7 +141,24 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	// we make no promises about the overall list sorting, we just sort each page
 	sort.Sort(wfList.Items)
 
-	return &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}, nil
+	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
+	if req.Fields != "" {
+		resBytes, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+		resClean, err := fields.CleanFields(req.Fields, resBytes)
+		if err != nil {
+			return nil, err
+		}
+		var newRes wfv1.WorkflowList
+		err = json.Unmarshal(resClean, &newRes)
+		if err != nil {
+			return nil, err
+		}
+		return &newRes, nil
+	}
+	return res, nil
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
