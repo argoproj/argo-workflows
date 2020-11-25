@@ -1083,8 +1083,10 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 				if ctrStatus.Name == common.MainContainerName {
 					log.Debug(ctrStatus)
 					if ctrStatus.ContainerID != "" {
-						we.mainContainerID = containerID(ctrStatus.ContainerID)
-						return containerID(ctrStatus.ContainerID), nil
+						if ctrStatus.Started != nil && *ctrStatus.Started {
+							we.mainContainerID = containerID(ctrStatus.ContainerID)
+							return containerID(ctrStatus.ContainerID), nil
+						}
 					} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
 						// status still not ready, wait
 					} else if ctrStatus.State.Waiting != nil {
