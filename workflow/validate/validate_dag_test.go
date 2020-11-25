@@ -740,6 +740,6 @@ spec:
 func TestDAGDependsDigit(t *testing.T) {
 	_, err := validate(dagDependsDigit)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using 'depends'")
+		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 	}
 }
