@@ -763,6 +763,18 @@ spec:
           - name: C
             dependencies: [5A]
             template: fail
+          - name: should-execute-1
+            depends: "'5A' && (C.Succeeded || C.Failed)"   # For more information about this depends field, see: docs/enhanced-depends-logic.md
+            template: pass
+          - name: should-execute-2
+            depends: B || C
+            template: pass
+          - name: should-not-execute
+            depends: B && C
+            template: pass
+          - name: should-execute-3
+            depends: should-execute-2.Succeeded || should-not-execute
+            template: pass
     - name: pass
       container:
         image: alpine:3.7
