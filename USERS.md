@@ -92,6 +92,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [SAS](https://www.sas.com/)
+1. [Schlumberger](https://slb.com/)
 1. [SegmentStream](https://segmentstream.com)
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Sohu](https://www.sohu.com/)
