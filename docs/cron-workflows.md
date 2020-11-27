@@ -100,8 +100,6 @@ NextScheduledTime:             Thu Oct 29 13:03:00 +0000 (32 seconds from now)
 Active Workflows:              test-cron-wf-rt4nf
 ```
 
-**Note**: `NextScheduledRun` assumes that the workflow-controller uses UTC as its timezone
-
 ### `kubectl`
 
 Using `kubectl apply -f` and `kubectl get cwf`

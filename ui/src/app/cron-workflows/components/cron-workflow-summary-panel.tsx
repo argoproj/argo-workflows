@@ -37,7 +37,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
         {title: 'Last Scheduled Time', value: props.cronWorkflow.status.lastScheduledTime},
         {
             title: 'Next Scheduled Time',
-            value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone) + ' (assumes workflow-controller is in UTC)'
+            value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone)
         },
         {title: 'Conditions', value: <ConditionsPanel conditions={props.cronWorkflow.status.conditions} />}
     ];
