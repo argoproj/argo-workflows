@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: overwrite-output-parameter-
   labels:
-    argo-e2e: true
+    argo-e2e: 'true'
 spec:
   entrypoint: plan
   templates:
