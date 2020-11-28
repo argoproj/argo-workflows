@@ -86,7 +86,7 @@ def main():
     fixed_schema = walk_transform([], schema)
     
     with open(relative_path('../../api/jsonschema/schema.json'), 'w') as schema_out:
-        json.dump(fixed_schema, schema_out)
+        json.dump(fixed_schema, schema_out, indent=4)
 
 if __name__ == '__main__':
     main()
