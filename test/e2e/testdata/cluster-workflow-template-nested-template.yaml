@@ -3,7 +3,7 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-nested-template
   labels:
-    argo-e2e: true
+    argo-e2e: 'true'
 spec:
   templates:
     - name: whalesay-inner-template

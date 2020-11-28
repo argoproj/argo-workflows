@@ -4,7 +4,7 @@ metadata:
   name: test-cron-wf-basic
   namespace: default
   labels:
-    argo-e2e: true
+    argo-e2e: 'true'
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -13,7 +13,7 @@ spec:
   failedJobsHistoryLimit: 2
   workflowMetadata:
     labels:
-      argo-e2e: true
+      argo-e2e: 'true'
   workflowSpec:
     entrypoint: whalesay
     templates:

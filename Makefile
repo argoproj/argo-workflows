@@ -524,8 +524,8 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
-api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
-	go run ./hack/jsonschema
+api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.py
+	./hack/jsonschema/main.py
 
 go-diagrams/diagram.dot: ./hack/diagram/main.go
 	rm -Rf go-diagrams

@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   name: resource-tmpl-wf
   labels:
-    argo-e2e: true
+    argo-e2e: 'true'
 spec:
   entrypoint: main
   templates:
@@ -21,7 +21,7 @@ spec:
         metadata:
           generateName: hello-world-
           labels:
-            argo-e2e: true
+            argo-e2e: 'true'
         spec:
           entrypoint: whalesay
           templates:

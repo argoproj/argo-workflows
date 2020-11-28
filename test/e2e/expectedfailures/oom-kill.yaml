@@ -6,7 +6,7 @@ spec:
   entrypoint: fork-bomb
   templates:
   - name: fork-bomb
-    script:
+    container:
       image: debian:9.5-slim
       command: [bash, -c]
       args: [":(){ : $@$@;};: :"]
