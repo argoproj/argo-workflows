@@ -29,4 +29,14 @@ func TestMetaNamespaceLabelIndexFunc(t *testing.T) {
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, values, []string{"my-ns/my-value"})
 	})
+	t.Run("Labelled No Namespace", func(t *testing.T) {
+		values, err := MetaLabelIndexFunc("my-label")(&wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "my-ns",
+				Labels:    map[string]string{"my-label": "my-value"},
+			},
+		})
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, values, []string{"my-value"})
+	})
 }
