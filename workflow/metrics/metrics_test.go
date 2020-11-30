@@ -48,56 +48,9 @@ func TestMetrics(t *testing.T) {
 	}
 	m := New(config, config)
 
-	m.WorkflowAdded("wf", v1alpha1.NodeRunning)
 	var metric dto.Metric
-	err := m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(1), *metric.Gauge.Value)
-	}
-
-	// Test that we don't double add
-	m.WorkflowAdded("wf", v1alpha1.NodeRunning)
-	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(1), *metric.Gauge.Value)
-	}
-
-	m.WorkflowUpdated("wf", v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
-	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(0), *metric.Gauge.Value)
-	}
-	err = m.workflowsByPhase[v1alpha1.NodeSucceeded].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(1), *metric.Gauge.Value)
-	}
-
-	m.WorkflowDeleted("wf", v1alpha1.NodeSucceeded)
-	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(0), *metric.Gauge.Value)
-	}
-
-	// Test that we don't double delete
-	m.WorkflowDeleted("wf", v1alpha1.NodeSucceeded)
-	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(0), *metric.Gauge.Value)
-	}
-
-	// Test that we don't update workflows that we're not tracking
-	m.WorkflowUpdated("does-not-exist", v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
-	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(0), *metric.Gauge.Value)
-	}
-	err = m.workflowsByPhase[v1alpha1.NodeSucceeded].Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, float64(0), *metric.Gauge.Value)
-	}
-
 	m.OperationCompleted(0.05)
-	err = m.operationDurations.Write(&metric)
+	err := m.operationDurations.Write(&metric)
 	if assert.NoError(t, err) {
 		assert.Equal(t, uint64(1), *metric.Histogram.Bucket[0].CumulativeCount)
 	}
@@ -190,33 +143,27 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	}
 	m := New(config, config)
 
-	m.WorkflowAdded("123", v1alpha1.NodeRunning)
 	rtMetric, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name", Help: "hello"}, func() float64 { return 0.0 })
 	assert.NoError(t, err)
-	assert.Empty(t, m.workflows["123"])
-	assert.Len(t, m.customMetrics, 0)
 
 	err = m.UpsertCustomMetric("metrickey", "123", rtMetric, true)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, m.workflows["123"])
 	assert.Len(t, m.customMetrics, 1)
 
-	m.WorkflowDeleted("123", v1alpha1.NodeRunning)
+	m.StopRealtimeMetricsForKey("123")
 	assert.Empty(t, m.workflows["123"])
 	assert.Len(t, m.customMetrics, 0)
 
-	m.WorkflowAdded("456", v1alpha1.NodeRunning)
 	metric, err := ConstructOrUpdateMetric(nil, &v1alpha1.Prometheus{Name: "name", Help: "hello", Gauge: &v1alpha1.Gauge{Value: "1"}})
 	assert.NoError(t, err)
-	assert.Empty(t, m.workflows["456"])
-	assert.Len(t, m.customMetrics, 0)
 
 	err = m.UpsertCustomMetric("metrickey", "456", metric, false)
 	assert.NoError(t, err)
 	assert.Empty(t, m.workflows["456"])
 	assert.Len(t, m.customMetrics, 1)
 
-	m.WorkflowDeleted("456", v1alpha1.NodeRunning)
+	m.StopRealtimeMetricsForKey("456")
 	assert.Empty(t, m.workflows["456"])
 	assert.Len(t, m.customMetrics, 1)
 }

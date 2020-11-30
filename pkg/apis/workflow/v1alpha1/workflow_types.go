@@ -924,6 +924,22 @@ func (a *ArtifactLocation) GetType() ArtifactLocationType {
 
 }
 
+func (a *ArtifactLocation) GetKey() string {
+	if a.S3 != nil {
+		return a.S3.Key
+	}
+
+	if a.OSS != nil {
+		return a.OSS.Key
+	}
+
+	if a.GCS != nil {
+		return a.GCS.Key
+	}
+
+	return ""
+}
+
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
 	// The name of the config map. Defaults to "artifact-repositories".
@@ -1999,7 +2015,7 @@ type DAGTask struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
-	Template string `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
