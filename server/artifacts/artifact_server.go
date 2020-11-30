@@ -31,7 +31,7 @@ type ArtifactServer struct {
 	hydrator             hydrator.Interface
 	wfArchive            sqldb.WorkflowArchive
 	instanceIDService    instanceid.Service
-	artDriverFactory  artifact.NewDriverFunc
+	artDriverFactory     artifact.NewDriverFunc
 	artifactRepositories artifactrepositories.Interface
 }
 
