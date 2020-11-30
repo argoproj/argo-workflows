@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -33,6 +34,7 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
+	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()

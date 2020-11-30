@@ -6702,6 +6702,17 @@ spec:
           type: object
         status:
           properties:
+            artifactRepositoryRef:
+              properties:
+                configMap:
+                  type: string
+                default:
+                  type: boolean
+                key:
+                  type: string
+                namespace:
+                  type: string
+              type: object
             compressedNodes:
               type: string
             conditions:
