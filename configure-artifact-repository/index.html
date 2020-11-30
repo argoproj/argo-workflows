@@ -2113,9 +2113,9 @@ Subsequent sections will show how to use it.</p>
 </table>
 <h2 id="configuring-minio">Configuring Minio<a class="headerlink" href="#configuring-minio" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>$ brew install helm # mac, helm 3.x
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # official Helm stable charts
+$ helm repo add minio https://helm.min.io/ # official minio Helm charts
 $ helm repo update
-$ helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
+$ helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 </code></pre></div>
 <p>Login to the Minio UI using a web browser (port 9000) after obtaining the
 external IP using <code>kubectl</code>.</p>
@@ -2124,11 +2124,12 @@ external IP using <code>kubectl</code>.</p>
 <p>On Minikube:</p>
 <div class="highlight"><pre><span></span><code>$ minikube service --url argo-artifacts
 </code></pre></div>
-<p>NOTE: When minio is installed via Helm, it uses the following hard-wired default
-credentials, which you will use to login to the UI:</p>
+<p>NOTE: When minio is installed via Helm, it generates
+credentials, which you will use to login to the UI:
+Use the commands shown below to see the credentials</p>
 <ul>
-<li>AccessKey: AKIAIOSFODNN7EXAMPLE</li>
-<li>SecretKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</li>
+<li>AccessKey: kubectl get secret argo-artifacts -o jsonpath='{.data.accesskey}' | base64 --decode</li>
+<li>SecretKey: kubectl get secret argo-artifacts -o jsonpath='{.data.secretkey}' | base64 --decode</li>
 </ul>
 <p>Create a bucket named <code>my-bucket</code> from the Minio UI.</p>
 <h2 id="configuring-aws-s3">Configuring AWS S3<a class="headerlink" href="#configuring-aws-s3" title="Permanent link">&para;</a></h2>
