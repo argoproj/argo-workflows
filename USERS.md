@@ -17,6 +17,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
 1. [BasisAI](https://basis-ai.com/)
+1. [BEI.RE](https://www.bei.re/)
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [bonprix](https://en.bonprix.de/corporate/our-company/)

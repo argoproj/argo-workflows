@@ -20,9 +20,9 @@ Subsequent sections will show how to use it.
 
 ```
 $ brew install helm # mac, helm 3.x
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # official Helm stable charts
+$ helm repo add minio https://helm.min.io/ # official minio Helm charts
 $ helm repo update
-$ helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
+$ helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 ```
 
 Login to the Minio UI using a web browser (port 9000) after obtaining the
@@ -38,11 +38,12 @@ On Minikube:
 $ minikube service --url argo-artifacts
 ```
 
-NOTE: When minio is installed via Helm, it uses the following hard-wired default
+NOTE: When minio is installed via Helm, it generates
 credentials, which you will use to login to the UI:
+Use the commands shown below to see the credentials
 
-- AccessKey: AKIAIOSFODNN7EXAMPLE
-- SecretKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+- AccessKey: kubectl get secret argo-artifacts -o jsonpath='{.data.accesskey}' | base64 --decode
+- SecretKey: kubectl get secret argo-artifacts -o jsonpath='{.data.secretkey}' | base64 --decode
 
 Create a bucket named `my-bucket` from the Minio UI.
 
