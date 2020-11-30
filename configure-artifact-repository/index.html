@@ -2111,6 +2111,12 @@ Subsequent sections will show how to use it.</p>
 </tr>
 </tbody>
 </table>
+<p>The actual repository used by a workflow is choose by the following rules:</p>
+<ol>
+<li>Anything explicitly configured using <a href="../artifact-repository-ref/">Artifact Repository Ref</a>. This is the most flexible, safe, and secure option.</li>
+<li>From a config map named <code>artifact-repositories</code> if it has the <code>workflows.argoproj.io/default-artifact-repository</code> annotation in the workflow's namespace.                                        </li>
+<li>From a workflow controller configmap.</li>
+</ol>
 <h2 id="configuring-minio">Configuring Minio<a class="headerlink" href="#configuring-minio" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>$ brew install helm # mac, helm 3.x
 $ helm repo add minio https://helm.min.io/ # official minio Helm charts
