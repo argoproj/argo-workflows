@@ -1082,13 +1082,13 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
 				if ctrStatus.Name == common.MainContainerName {
 					log.Debug(ctrStatus)
-					if ctrStatus.ContainerID != "" {
-						we.mainContainerID = containerID(ctrStatus.ContainerID)
-						return containerID(ctrStatus.ContainerID), nil
+					if ctrStatus.State.Waiting != nil {
+						// main container is still in waiting status
 					} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
 						// status still not ready, wait
-					} else if ctrStatus.State.Waiting != nil {
-						// main container is still in waiting status
+					} else if ctrStatus.ContainerID != "" {
+						we.mainContainerID = containerID(ctrStatus.ContainerID)
+						return containerID(ctrStatus.ContainerID), nil
 					} else {
 						// main container in running or terminated state but missing container ID
 						return "", errors.InternalError("Main container ID cannot be found")
