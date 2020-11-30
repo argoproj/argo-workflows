@@ -67,6 +67,7 @@ func newServer() *ArtifactServer {
 								Name: "my-s3-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									S3: &wfv1.S3Artifact{
+										// S3 is a configured artifact repo, so does not need key
 										Key: "my-wf/my-node/my-s3-artifact.tgz",
 									},
 								},
@@ -75,6 +76,10 @@ func newServer() *ArtifactServer {
 								Name: "my-gcs-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									GCS: &wfv1.GCSArtifact{
+										// GCS is not a configured artifact repo, so must have bucket
+										GCSBucket: wfv1.GCSBucket{
+											Bucket: "my-bucket",
+										},
 										Key: "my-wf/my-node/my-gcs-artifact",
 									},
 								},
@@ -82,7 +87,11 @@ func newServer() *ArtifactServer {
 							{
 								Name: "my-oss-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
-									GCS: &wfv1.GCSArtifact{
+									OSS: &wfv1.OSSArtifact{
+										// OSS is not a configured artifact repo, so must have bucket
+										OSSBucket: wfv1.OSSBucket{
+											Bucket: "my-bucket",
+										},
 										Key: "my-wf/my-node/my-oss-artifact.zip",
 									},
 								},
@@ -103,7 +112,16 @@ func newServer() *ArtifactServer {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
 	}
 
-	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, armocks.DummyArtifactRepositories(&config.ArtifactRepository{}))
+	artifactRepositories := armocks.DummyArtifactRepositories(&config.ArtifactRepository{
+		S3: &config.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Endpoint: "my-endpoint",
+				Bucket:   "my-bucket",
+			},
+		},
+	})
+
+	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
 }
 
 func TestArtifactServer_GetArtifact(t *testing.T) {
@@ -133,9 +151,10 @@ func TestArtifactServer_GetArtifact(t *testing.T) {
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
 			w := &testhttp.TestResponseWriter{}
 			s.GetArtifact(w, r)
-			assert.Equal(t, 200, w.StatusCode)
-			assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
-			assert.Equal(t, "my-data", w.Output)
+			if assert.Equal(t, 200, w.StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
+				assert.Equal(t, "my-data", w.Output)
+			}
 		})
 	}
 }

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/signal"
 	"path"
@@ -145,7 +144,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		log.Infof("Downloading artifact: %s", art.Name)
 
-		if !art.HasLocation() {
+		if !art.HasLocationOrKey() {
 			if art.Optional {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
@@ -153,7 +152,11 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				return errors.Errorf("required artifact %s not supplied", art.Name)
 			}
 		}
-		artDriver, err := we.InitDriver(&art)
+		driverArt, err := we.newDriverArt(&art)
+		if err != nil {
+			return err
+		}
+		artDriver, err := we.InitDriver(driverArt)
 		if err != nil {
 			return err
 		}
@@ -179,7 +182,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
-		err = artDriver.Load(&art, tempArtPath)
+		err = artDriver.Load(driverArt, tempArtPath)
 		if err != nil {
 			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
@@ -296,57 +299,35 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 		}
 		return err
 	}
-	if !art.HasLocation() {
-		// If user did not explicitly set an artifact destination location in the template,
-		// use the default archive location (appended with the filename).
-		if we.Template.ArchiveLocation == nil {
-			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
-		}
-		if we.Template.ArchiveLocation.S3 != nil {
-			shallowCopy := *we.Template.ArchiveLocation.S3
-			art.S3 = &shallowCopy
-			art.S3.Key = path.Join(art.S3.Key, fileName)
-		} else if we.Template.ArchiveLocation.Artifactory != nil {
-			shallowCopy := *we.Template.ArchiveLocation.Artifactory
-			art.Artifactory = &shallowCopy
-			artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
-			if urlParseErr != nil {
-				return urlParseErr
-			}
-			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
-			art.Artifactory.URL = artifactoryURL.String()
-		} else if we.Template.ArchiveLocation.HDFS != nil {
-			shallowCopy := *we.Template.ArchiveLocation.HDFS
-			art.HDFS = &shallowCopy
-			art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
-		} else if we.Template.ArchiveLocation.OSS != nil {
-			shallowCopy := *we.Template.ArchiveLocation.OSS
-			art.OSS = &shallowCopy
-			art.OSS.Key = path.Join(art.OSS.Key, fileName)
-		} else if we.Template.ArchiveLocation.GCS != nil {
-			shallowCopy := *we.Template.ArchiveLocation.GCS
-			art.GCS = &shallowCopy
-			art.GCS.Key = path.Join(art.GCS.Key, fileName)
-		} else {
-			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
-		}
-	}
+	return we.saveArtifactFromFile(art, fileName, localArtPath)
+}
 
-	artDriver, err := we.InitDriver(art)
+// fileBase is probably path.Base(filePath), but can be something else
+func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileName, localArtPath string) error {
+	if !art.HasKey() {
+		key, err := we.Template.ArchiveLocation.GetKey()
+		if err != nil {
+			return err
+		}
+		if err = art.SetType(we.Template.ArchiveLocation.Get()); err != nil {
+			return err
+		}
+		if err := art.SetKey(path.Join(key, fileName)); err != nil {
+			return err
+		}
+	}
+	driverArt, err := we.newDriverArt(art)
 	if err != nil {
 		return err
 	}
-	err = artDriver.Save(localArtPath, art)
+	artDriver, err := we.InitDriver(driverArt)
 	if err != nil {
 		return err
 	}
-	// remove is best effort (the container will go away anyways).
-	// we just want reduce peak space usage
-	err = os.Remove(localArtPath)
+	err = artDriver.Save(localArtPath, driverArt)
 	if err != nil {
-		log.Warnf("Failed to remove %s: %v", localArtPath, err)
+		return err
 	}
-	log.Infof("Successfully saved file: %s", localArtPath)
 	return nil
 }
 
@@ -460,8 +441,8 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 		if path == inArt.Path {
 			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
 			// the input artifact volume. Since this function was called, we know that we want to use this path as an
-			// ourput artifact, so we should look for it in the base image path.
-			if inArt.Optional && !inArt.HasLocation() {
+			// output artifact, so we should look for it in the base image path.
+			if inArt.Optional && !inArt.HasLocationOrKey() {
 				return true
 			}
 			return false
@@ -532,7 +513,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 
 // SaveLogs saves logs
 func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
-	if we.Template.ArchiveLocation == nil || we.Template.ArchiveLocation.ArchiveLogs == nil || !*we.Template.ArchiveLocation.ArchiveLogs {
+	if !we.Template.ArchiveLocation.IsArchiveLogs() {
 		return nil, nil
 	}
 	log.Infof("Saving logs")
@@ -551,48 +532,12 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	if err != nil {
 		return nil, err
 	}
-	art := wfv1.Artifact{
-		Name:             "main-logs",
-		ArtifactLocation: *we.Template.ArchiveLocation,
-	}
-	if we.Template.ArchiveLocation.S3 != nil {
-		shallowCopy := *we.Template.ArchiveLocation.S3
-		art.S3 = &shallowCopy
-		art.S3.Key = path.Join(art.S3.Key, fileName)
-	} else if we.Template.ArchiveLocation.Artifactory != nil {
-		shallowCopy := *we.Template.ArchiveLocation.Artifactory
-		art.Artifactory = &shallowCopy
-		artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
-		if urlParseErr != nil {
-			return nil, urlParseErr
-		}
-		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
-		art.Artifactory.URL = artifactoryURL.String()
-	} else if we.Template.ArchiveLocation.HDFS != nil {
-		shallowCopy := *we.Template.ArchiveLocation.HDFS
-		art.HDFS = &shallowCopy
-		art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
-	} else if we.Template.ArchiveLocation.GCS != nil {
-		shallowCopy := *we.Template.ArchiveLocation.GCS
-		art.GCS = &shallowCopy
-		art.GCS.Key = path.Join(art.GCS.Key, fileName)
-	} else if we.Template.ArchiveLocation.OSS != nil {
-		shallowCopy := *we.Template.ArchiveLocation.OSS
-		art.OSS = &shallowCopy
-		art.OSS.Key = path.Join(art.OSS.Key, fileName)
-	} else {
-		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
-	}
-	artDriver, err := we.InitDriver(&art)
+	art := &wfv1.Artifact{Name: "main-logs"}
+	err = we.saveArtifactFromFile(art, fileName, mainLog)
 	if err != nil {
 		return nil, err
 	}
-	err = artDriver.Save(mainLog, &art)
-	if err != nil {
-		return nil, err
-	}
-
-	return &art, nil
+	return art, nil
 }
 
 // GetSecret will retrieve the Secrets from VolumeMount
@@ -621,6 +566,12 @@ func (we *WorkflowExecutor) saveLogToFile(mainCtrID, path string) error {
 		return errors.InternalWrapError(err)
 	}
 	return nil
+}
+
+func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, error) {
+	driverArt := art.DeepCopy()
+	err := driverArt.Relocate(we.Template.ArchiveLocation)
+	return driverArt, err
 }
 
 // InitDriver initializes an instance of an artifact driver
