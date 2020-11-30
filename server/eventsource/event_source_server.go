@@ -19,18 +19,44 @@ import (
 
 type eventSourceServer struct{}
 
-func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsourcepkg.CreateEventSourceRequest) (*esv1.EventSource, error){
-
+func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsourcepkg.CreateEventSourceRequest) (*esv1.EventSource, error) {
+	client := auth.GetEventSourceClient(ctx)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(in.Evensource)
+	if err != nil {
+		return nil, err
+	}
+	return es, nil
 }
-func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcepkg.GetEventSourceRequest) (*esv1.EventSource, error){
 
+func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcepkg.GetEventSourceRequest) (*esv1.EventSource, error) {
+	client := auth.GetEventSourceClient(ctx)
+	getOption := in.GetOptions
+	if getOption != nil {
+		getOption = &metav1.GetOptions{}
+	}
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Get(in.Name, *getOption)
+	if err != nil {
+		return nil, err
+	}
+	return es, nil
 }
 
-func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsourcepkg.DeleteEventSourceRequest) (*EventSourceDeleteResponse, error){
-
+func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsourcepkg.DeleteEventSourceRequest) (*eventsourcepkg.EventSourceDeletedResponse, error) {
+	client := auth.GetEventSourceClient(ctx)
+	err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Delete(in.Name, &metav1.DeleteOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return &eventsourcepkg.EventSourceDeletedResponse{}, nil
 }
-func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsourcepkg.UpdateEventSourceRequest) (*esv1.EventSource, error){
 
+func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsourcepkg.UpdateEventSourceRequest) (*esv1.EventSource, error) {
+	client := auth.GetEventSourceClient(ctx)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Update(in.Evensource)
+	if err != nil {
+		return nil, err
+	}
+	return es, nil
 }
 
 func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourcepkg.ListEventSourcesRequest) (*esv1.EventSourceList, error) {
@@ -40,6 +66,7 @@ func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourc
 		return nil, err
 	}
 	return list, nil
+
 }
 
 func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogsRequest, svr eventsourcepkg.EventSourceService_EventSourcesLogsServer) error {

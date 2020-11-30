@@ -30,6 +30,132 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type CreateEventSourceRequest struct {
+	Namespace            string                `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Evensource           *v1alpha1.EventSource `protobuf:"bytes,2,opt,name=evensource,proto3" json:"evensource,omitempty"`
+	CreateOptions        *v1.CreateOptions     `protobuf:"bytes,3,opt,name=createOptions,proto3" json:"createOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *CreateEventSourceRequest) Reset()         { *m = CreateEventSourceRequest{} }
+func (m *CreateEventSourceRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateEventSourceRequest) ProtoMessage()    {}
+func (*CreateEventSourceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b13fbf03f636aa35, []int{0}
+}
+func (m *CreateEventSourceRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CreateEventSourceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CreateEventSourceRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CreateEventSourceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateEventSourceRequest.Merge(m, src)
+}
+func (m *CreateEventSourceRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *CreateEventSourceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateEventSourceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateEventSourceRequest proto.InternalMessageInfo
+
+func (m *CreateEventSourceRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *CreateEventSourceRequest) GetEvensource() *v1alpha1.EventSource {
+	if m != nil {
+		return m.Evensource
+	}
+	return nil
+}
+
+func (m *CreateEventSourceRequest) GetCreateOptions() *v1.CreateOptions {
+	if m != nil {
+		return m.CreateOptions
+	}
+	return nil
+}
+
+type GetEventSourceRequest struct {
+	Name                 string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	GetOptions           *v1.GetOptions `protobuf:"bytes,3,opt,name=getOptions,proto3" json:"getOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *GetEventSourceRequest) Reset()         { *m = GetEventSourceRequest{} }
+func (m *GetEventSourceRequest) String() string { return proto.CompactTextString(m) }
+func (*GetEventSourceRequest) ProtoMessage()    {}
+func (*GetEventSourceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b13fbf03f636aa35, []int{1}
+}
+func (m *GetEventSourceRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetEventSourceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetEventSourceRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetEventSourceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetEventSourceRequest.Merge(m, src)
+}
+func (m *GetEventSourceRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetEventSourceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetEventSourceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetEventSourceRequest proto.InternalMessageInfo
+
+func (m *GetEventSourceRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *GetEventSourceRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *GetEventSourceRequest) GetGetOptions() *v1.GetOptions {
+	if m != nil {
+		return m.GetOptions
+	}
+	return nil
+}
+
 type ListEventSourcesRequest struct {
 	Namespace            string          `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	ListOptions          *v1.ListOptions `protobuf:"bytes,2,opt,name=listOptions,proto3" json:"listOptions,omitempty"`
@@ -42,7 +168,7 @@ func (m *ListEventSourcesRequest) Reset()         { *m = ListEventSourcesRequest
 func (m *ListEventSourcesRequest) String() string { return proto.CompactTextString(m) }
 func (*ListEventSourcesRequest) ProtoMessage()    {}
 func (*ListEventSourcesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b13fbf03f636aa35, []int{0}
+	return fileDescriptor_b13fbf03f636aa35, []int{2}
 }
 func (m *ListEventSourcesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -85,6 +211,132 @@ func (m *ListEventSourcesRequest) GetListOptions() *v1.ListOptions {
 	return nil
 }
 
+type DeleteEventSourceRequest struct {
+	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string            `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	DeleteOptions        *v1.DeleteOptions `protobuf:"bytes,3,opt,name=deleteOptions,proto3" json:"deleteOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *DeleteEventSourceRequest) Reset()         { *m = DeleteEventSourceRequest{} }
+func (m *DeleteEventSourceRequest) String() string { return proto.CompactTextString(m) }
+func (*DeleteEventSourceRequest) ProtoMessage()    {}
+func (*DeleteEventSourceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b13fbf03f636aa35, []int{3}
+}
+func (m *DeleteEventSourceRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteEventSourceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteEventSourceRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteEventSourceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteEventSourceRequest.Merge(m, src)
+}
+func (m *DeleteEventSourceRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteEventSourceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteEventSourceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteEventSourceRequest proto.InternalMessageInfo
+
+func (m *DeleteEventSourceRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *DeleteEventSourceRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *DeleteEventSourceRequest) GetDeleteOptions() *v1.DeleteOptions {
+	if m != nil {
+		return m.DeleteOptions
+	}
+	return nil
+}
+
+type UpdateEventSourceRequest struct {
+	Name                 string                `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string                `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Evensource           *v1alpha1.EventSource `protobuf:"bytes,3,opt,name=evensource,proto3" json:"evensource,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *UpdateEventSourceRequest) Reset()         { *m = UpdateEventSourceRequest{} }
+func (m *UpdateEventSourceRequest) String() string { return proto.CompactTextString(m) }
+func (*UpdateEventSourceRequest) ProtoMessage()    {}
+func (*UpdateEventSourceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b13fbf03f636aa35, []int{4}
+}
+func (m *UpdateEventSourceRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UpdateEventSourceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UpdateEventSourceRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UpdateEventSourceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateEventSourceRequest.Merge(m, src)
+}
+func (m *UpdateEventSourceRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *UpdateEventSourceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateEventSourceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateEventSourceRequest proto.InternalMessageInfo
+
+func (m *UpdateEventSourceRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *UpdateEventSourceRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *UpdateEventSourceRequest) GetEvensource() *v1alpha1.EventSource {
+	if m != nil {
+		return m.Evensource
+	}
+	return nil
+}
+
 type EventSourcesLogsRequest struct {
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// optional - only return entries for this event source
@@ -105,7 +357,7 @@ func (m *EventSourcesLogsRequest) Reset()         { *m = EventSourcesLogsRequest
 func (m *EventSourcesLogsRequest) String() string { return proto.CompactTextString(m) }
 func (*EventSourcesLogsRequest) ProtoMessage()    {}
 func (*EventSourcesLogsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b13fbf03f636aa35, []int{1}
+	return fileDescriptor_b13fbf03f636aa35, []int{5}
 }
 func (m *EventSourcesLogsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -196,7 +448,7 @@ func (m *LogEntry) Reset()         { *m = LogEntry{} }
 func (m *LogEntry) String() string { return proto.CompactTextString(m) }
 func (*LogEntry) ProtoMessage()    {}
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b13fbf03f636aa35, []int{2}
+	return fileDescriptor_b13fbf03f636aa35, []int{6}
 }
 func (m *LogEntry) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -286,7 +538,7 @@ func (m *EventSourceWatchEvent) Reset()         { *m = EventSourceWatchEvent{} }
 func (m *EventSourceWatchEvent) String() string { return proto.CompactTextString(m) }
 func (*EventSourceWatchEvent) ProtoMessage()    {}
 func (*EventSourceWatchEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b13fbf03f636aa35, []int{3}
+	return fileDescriptor_b13fbf03f636aa35, []int{7}
 }
 func (m *EventSourceWatchEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -329,11 +581,55 @@ func (m *EventSourceWatchEvent) GetObject() *v1alpha1.EventSource {
 	return nil
 }
 
+type EventSourceDeletedResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *EventSourceDeletedResponse) Reset()         { *m = EventSourceDeletedResponse{} }
+func (m *EventSourceDeletedResponse) String() string { return proto.CompactTextString(m) }
+func (*EventSourceDeletedResponse) ProtoMessage()    {}
+func (*EventSourceDeletedResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b13fbf03f636aa35, []int{8}
+}
+func (m *EventSourceDeletedResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EventSourceDeletedResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EventSourceDeletedResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EventSourceDeletedResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventSourceDeletedResponse.Merge(m, src)
+}
+func (m *EventSourceDeletedResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *EventSourceDeletedResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventSourceDeletedResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EventSourceDeletedResponse proto.InternalMessageInfo
+
 func init() {
+	proto.RegisterType((*CreateEventSourceRequest)(nil), "eventsource.CreateEventSourceRequest")
+	proto.RegisterType((*GetEventSourceRequest)(nil), "eventsource.GetEventSourceRequest")
 	proto.RegisterType((*ListEventSourcesRequest)(nil), "eventsource.ListEventSourcesRequest")
+	proto.RegisterType((*DeleteEventSourceRequest)(nil), "eventsource.DeleteEventSourceRequest")
+	proto.RegisterType((*UpdateEventSourceRequest)(nil), "eventsource.UpdateEventSourceRequest")
 	proto.RegisterType((*EventSourcesLogsRequest)(nil), "eventsource.EventSourcesLogsRequest")
 	proto.RegisterType((*LogEntry)(nil), "eventsource.LogEntry")
 	proto.RegisterType((*EventSourceWatchEvent)(nil), "eventsource.EventSourceWatchEvent")
+	proto.RegisterType((*EventSourceDeletedResponse)(nil), "eventsource.EventSourceDeletedResponse")
 }
 
 func init() {
@@ -341,47 +637,62 @@ func init() {
 }
 
 var fileDescriptor_b13fbf03f636aa35 = []byte{
-	// 628 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0x4f, 0x6b, 0x14, 0x31,
-	0x14, 0x27, 0xfd, 0xa7, 0x4d, 0x11, 0x6b, 0xb0, 0x74, 0x59, 0x4a, 0x69, 0x47, 0x0f, 0x6b, 0xa5,
-	0x49, 0xb7, 0x2a, 0x78, 0x12, 0x11, 0x8a, 0x20, 0x6b, 0x95, 0x69, 0x41, 0xf0, 0x22, 0xd9, 0xe9,
-	0x23, 0x3b, 0xdd, 0x99, 0xc9, 0x38, 0xc9, 0x0e, 0x2c, 0xe2, 0xa5, 0x27, 0x0f, 0x82, 0x88, 0x1f,
-	0xc5, 0x2f, 0xe1, 0x51, 0xf0, 0x0b, 0xc8, 0xe2, 0xc5, 0x9b, 0x1f, 0x41, 0x92, 0x99, 0xed, 0x64,
-	0x57, 0x07, 0x57, 0xe8, 0xed, 0xe5, 0x4d, 0xde, 0xef, 0xfd, 0x7e, 0x2f, 0xf9, 0x65, 0xf0, 0xed,
-	0xb4, 0x2f, 0x18, 0x4f, 0xc3, 0x20, 0x0a, 0x21, 0xd1, 0x0c, 0x72, 0x48, 0xb4, 0x92, 0x83, 0x2c,
-	0x00, 0x37, 0xa6, 0x69, 0x26, 0xb5, 0x24, 0x2b, 0x4e, 0xaa, 0xb9, 0x21, 0xa4, 0x14, 0x11, 0x98,
-	0x62, 0xc6, 0x93, 0x44, 0x6a, 0xae, 0x43, 0x99, 0xa8, 0x62, 0x6b, 0xf3, 0x6e, 0xff, 0xbe, 0xa2,
-	0xa1, 0x34, 0x5f, 0x63, 0x1e, 0xf4, 0xc2, 0x04, 0xb2, 0x21, 0x2b, 0x7b, 0x29, 0x16, 0x83, 0xe6,
-	0x2c, 0x6f, 0x33, 0x01, 0x09, 0x64, 0x5c, 0xc3, 0x49, 0x59, 0xe5, 0x55, 0x55, 0x2c, 0x90, 0x19,
-	0xfc, 0x6d, 0xcf, 0x53, 0x11, 0xea, 0xde, 0xa0, 0x4b, 0x03, 0x19, 0x33, 0x9e, 0x09, 0x99, 0x66,
-	0xf2, 0xd4, 0x06, 0xbb, 0x05, 0xbb, 0xaa, 0x8b, 0x2b, 0x26, 0x6f, 0xf3, 0x28, 0xed, 0xf1, 0x3f,
-	0xe0, 0xbc, 0xf7, 0x08, 0xaf, 0x77, 0x42, 0xa5, 0x0f, 0xcc, 0xe6, 0x23, 0xbb, 0x59, 0xf9, 0xf0,
-	0x7a, 0x00, 0x4a, 0x93, 0x0d, 0xbc, 0x9c, 0xf0, 0x18, 0x54, 0xca, 0x03, 0x68, 0xa0, 0x2d, 0xd4,
-	0x5a, 0xf6, 0xab, 0x04, 0x39, 0xc2, 0x2b, 0x51, 0xa8, 0xf4, 0xb3, 0xd4, 0xea, 0x6e, 0xcc, 0x6d,
-	0xa1, 0xd6, 0xca, 0x7e, 0x9b, 0x16, 0x12, 0xa8, 0x2b, 0x9c, 0xa6, 0x7d, 0x61, 0x12, 0x8a, 0x1a,
-	0xe1, 0x34, 0x6f, 0xd3, 0x4e, 0x55, 0xe8, 0xbb, 0x28, 0xde, 0x2f, 0x84, 0xd7, 0x5d, 0x2a, 0x1d,
-	0x29, 0x66, 0xa4, 0x43, 0xf0, 0x82, 0x59, 0x58, 0x1e, 0xcb, 0xbe, 0x8d, 0x49, 0x0b, 0x5f, 0x85,
-	0x0a, 0xec, 0x78, 0x98, 0x42, 0x63, 0xde, 0x7e, 0x9e, 0x4e, 0x1b, 0x6c, 0x9b, 0x3a, 0x34, 0x10,
-	0x0b, 0x05, 0xf6, 0x79, 0xc2, 0x60, 0x8b, 0x0c, 0xd2, 0xc6, 0x62, 0x81, 0x6d, 0x62, 0xf2, 0x18,
-	0x5f, 0x49, 0xe5, 0x49, 0x47, 0x8a, 0xf1, 0x00, 0x96, 0xec, 0x00, 0xb6, 0x9d, 0x01, 0x50, 0x73,
-	0x86, 0x46, 0xee, 0x73, 0x77, 0xa3, 0x3f, 0x59, 0xe7, 0x9d, 0xcd, 0xe1, 0xcb, 0x1d, 0x29, 0x0e,
-	0x12, 0x9d, 0x0d, 0xff, 0xa1, 0x71, 0x52, 0xcf, 0x61, 0x25, 0x77, 0x3a, 0x7d, 0x61, 0xca, 0xaf,
-	0xe3, 0xc5, 0x08, 0x72, 0x88, 0x4a, 0xe9, 0xc5, 0x82, 0x3c, 0xc0, 0x0b, 0x3a, 0x8c, 0xa1, 0x94,
-	0xbc, 0x33, 0xdb, 0x99, 0x1f, 0x87, 0x31, 0xf8, 0xb6, 0x8e, 0xac, 0xe2, 0xf9, 0x58, 0x89, 0xc6,
-	0x25, 0x8b, 0x69, 0x42, 0xef, 0x03, 0xc2, 0x6b, 0xce, 0xb9, 0xbf, 0xe0, 0x3a, 0xe8, 0xd9, 0xb5,
-	0x99, 0xbd, 0x36, 0xf4, 0x8b, 0x61, 0xd8, 0x98, 0x74, 0xf1, 0x92, 0xec, 0x9e, 0x42, 0xa0, 0xcb,
-	0x5b, 0xf7, 0x84, 0x56, 0xa6, 0xa0, 0x63, 0x53, 0xd8, 0xe0, 0x55, 0x61, 0x82, 0x8a, 0x8d, 0xeb,
-	0xea, 0xb1, 0x29, 0xa8, 0xd3, 0xd9, 0x2f, 0x91, 0xf7, 0x7f, 0xce, 0x63, 0xe2, 0xe4, 0x8f, 0x20,
-	0xcb, 0xc3, 0x00, 0xc8, 0x67, 0x84, 0x57, 0xa7, 0xfd, 0x42, 0x6e, 0x4e, 0xc0, 0xd6, 0xd8, 0xa9,
-	0x79, 0x78, 0x71, 0x2c, 0x4d, 0x0b, 0xef, 0xd6, 0xd9, 0xb7, 0x1f, 0x9f, 0xe6, 0x6e, 0x90, 0x6d,
-	0xfb, 0x5e, 0xe4, 0xed, 0xc2, 0xf0, 0xbb, 0x45, 0x99, 0x62, 0x6f, 0xce, 0xef, 0xcd, 0x5b, 0xf2,
-	0x0e, 0xe1, 0xd5, 0x69, 0x5b, 0x4d, 0xb1, 0xae, 0x71, 0x5d, 0x73, 0x6d, 0x52, 0x5b, 0x79, 0x51,
-	0xbd, 0x7b, 0xb6, 0x39, 0x23, 0xbb, 0xe3, 0xe6, 0x4a, 0x67, 0xc0, 0xe3, 0x7a, 0x0e, 0x2c, 0x92,
-	0x42, 0xed, 0x21, 0xf2, 0x11, 0xe1, 0x6b, 0xd5, 0xf1, 0xfe, 0xdf, 0x04, 0xbd, 0x3a, 0xc6, 0x15,
-	0xa0, 0xb7, 0x67, 0x89, 0xed, 0x90, 0xd6, 0xac, 0xc4, 0xf6, 0xd0, 0xa3, 0x87, 0x5f, 0x46, 0x9b,
-	0xe8, 0xeb, 0x68, 0x13, 0x7d, 0x1f, 0x6d, 0xa2, 0x97, 0xfb, 0x75, 0x2f, 0x2c, 0xab, 0xfd, 0x59,
-	0x74, 0x97, 0xec, 0x6b, 0x7a, 0xe7, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0x40, 0xfc, 0xee, 0x5b,
-	0x50, 0x06, 0x00, 0x00,
+	// 877 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x97, 0xcd, 0x6e, 0xe3, 0x54,
+	0x14, 0xc7, 0x75, 0xd3, 0x4e, 0xa1, 0xa7, 0x2a, 0xb4, 0x57, 0x54, 0x63, 0x59, 0x55, 0x35, 0x73,
+	0xf9, 0x2a, 0x85, 0xd8, 0x49, 0x0b, 0x12, 0x62, 0x81, 0x10, 0x33, 0xa3, 0x4a, 0x28, 0x94, 0x91,
+	0x3b, 0x08, 0x0d, 0x1b, 0xe4, 0x38, 0x47, 0x8e, 0x5b, 0xdb, 0xd7, 0xd8, 0xb7, 0x91, 0x2a, 0x34,
+	0x9b, 0x59, 0xb1, 0x40, 0x42, 0x08, 0xb1, 0xe2, 0x01, 0x58, 0xb0, 0x03, 0x16, 0x48, 0xbc, 0x00,
+	0x4b, 0x24, 0x5e, 0x00, 0x55, 0x3c, 0x00, 0x6f, 0x00, 0xba, 0xd7, 0x4e, 0x7c, 0xed, 0xc4, 0x24,
+	0x33, 0x4a, 0x77, 0x27, 0x37, 0xf7, 0xfc, 0xcf, 0xef, 0x7c, 0xc4, 0xc7, 0x81, 0xd7, 0x93, 0x73,
+	0xdf, 0x76, 0x93, 0xc0, 0x0b, 0x03, 0x8c, 0x85, 0x8d, 0x23, 0x8c, 0x45, 0xc6, 0x2f, 0x52, 0x0f,
+	0x75, 0xdb, 0x4a, 0x52, 0x2e, 0x38, 0xdd, 0xd0, 0x8e, 0xcc, 0x5d, 0x9f, 0x73, 0x3f, 0x44, 0xe9,
+	0x6c, 0xbb, 0x71, 0xcc, 0x85, 0x2b, 0x02, 0x1e, 0x67, 0xf9, 0x55, 0xf3, 0xcd, 0xf3, 0xb7, 0x33,
+	0x2b, 0xe0, 0xf2, 0xdb, 0xc8, 0xf5, 0x86, 0x41, 0x8c, 0xe9, 0xa5, 0x5d, 0xc4, 0xca, 0xec, 0x08,
+	0x85, 0x6b, 0x8f, 0xba, 0xb6, 0x8f, 0x31, 0xa6, 0xae, 0xc0, 0x41, 0xe1, 0xc5, 0x4a, 0x2f, 0xdb,
+	0xe3, 0x29, 0xce, 0xba, 0xf3, 0xa1, 0x1f, 0x88, 0xe1, 0x45, 0xdf, 0xf2, 0x78, 0x64, 0xbb, 0xa9,
+	0xcf, 0x93, 0x94, 0x9f, 0x29, 0xa3, 0x9d, 0xd3, 0x95, 0x51, 0xf4, 0x64, 0x46, 0x5d, 0x37, 0x4c,
+	0x86, 0xee, 0x94, 0x1c, 0xfb, 0x97, 0x80, 0x71, 0x27, 0x45, 0x57, 0xe0, 0x3d, 0x79, 0xfd, 0x54,
+	0x5d, 0x77, 0xf0, 0xf3, 0x0b, 0xcc, 0x04, 0xdd, 0x85, 0xf5, 0xd8, 0x8d, 0x30, 0x4b, 0x5c, 0x0f,
+	0x0d, 0x72, 0x8b, 0xec, 0xaf, 0x3b, 0xe5, 0x01, 0x3d, 0x03, 0x90, 0x21, 0xf2, 0x08, 0x46, 0xeb,
+	0x16, 0xd9, 0xdf, 0x38, 0xfc, 0xc0, 0x2a, 0xf1, 0xac, 0x31, 0x9e, 0x32, 0x3e, 0xcb, 0x71, 0xac,
+	0xe4, 0xdc, 0xb7, 0x24, 0x9e, 0xa5, 0xd7, 0x77, 0x8c, 0x67, 0xe9, 0x10, 0x9a, 0x3a, 0x7d, 0x08,
+	0x9b, 0x9e, 0xa2, 0xfc, 0x28, 0x51, 0x65, 0x36, 0x56, 0x54, 0xb8, 0x23, 0x2b, 0xaf, 0x98, 0xa5,
+	0xd7, 0xb9, 0x0c, 0x21, 0xeb, 0x6c, 0x8d, 0xba, 0xd6, 0x1d, 0xdd, 0xd5, 0xa9, 0x2a, 0xb1, 0xef,
+	0x09, 0xec, 0x1c, 0xa3, 0x98, 0x91, 0x3e, 0x85, 0x55, 0x99, 0x6d, 0x91, 0xb9, 0xb2, 0xab, 0x25,
+	0x69, 0xd5, 0x4b, 0x72, 0x1f, 0xc0, 0x47, 0x51, 0x65, 0xec, 0x2c, 0xc6, 0x78, 0x3c, 0xf1, 0x73,
+	0x34, 0x0d, 0xf6, 0x15, 0x81, 0x9b, 0xbd, 0x20, 0xd3, 0xf1, 0xb2, 0xc5, 0xda, 0x73, 0x0a, 0x1b,
+	0x61, 0x90, 0x4d, 0x60, 0xf2, 0xfe, 0x74, 0x17, 0x83, 0xe9, 0x95, 0x8e, 0x8e, 0xae, 0xc2, 0x7e,
+	0x20, 0x60, 0xdc, 0xc5, 0x10, 0x67, 0x8e, 0xcb, 0x93, 0xd7, 0xeb, 0x21, 0x6c, 0x0e, 0x94, 0xda,
+	0x53, 0xb5, 0xf5, 0xae, 0xee, 0xea, 0x54, 0x95, 0xd8, 0xaf, 0x04, 0x8c, 0x8f, 0x93, 0x81, 0xbb,
+	0x24, 0xd2, 0xea, 0xb0, 0xaf, 0x5c, 0xe7, 0xb0, 0xb3, 0x7f, 0x08, 0xdc, 0xd4, 0xfb, 0xdd, 0xe3,
+	0xfe, 0x82, 0x3d, 0x1f, 0xe7, 0xd5, 0xd2, 0xf2, 0xda, 0x87, 0xe7, 0xb1, 0x14, 0x7b, 0x70, 0x99,
+	0xe4, 0xf8, 0xeb, 0x4e, 0xfd, 0x58, 0x6a, 0xab, 0xa3, 0x13, 0x29, 0xb1, 0x9a, 0x6b, 0x4f, 0x0e,
+	0xa4, 0xb6, 0x9f, 0x62, 0x62, 0xdc, 0xc8, 0xb5, 0xa5, 0x4d, 0x8f, 0x61, 0x33, 0xe1, 0x83, 0x1e,
+	0xf7, 0xc7, 0xfd, 0x5b, 0x53, 0x85, 0xb9, 0xad, 0xf5, 0xcf, 0x92, 0x0f, 0x32, 0xd9, 0xad, 0xfb,
+	0xfa, 0x45, 0xa7, 0xea, 0xc7, 0x1e, 0xb7, 0xe0, 0xd9, 0x1e, 0xf7, 0xef, 0xc5, 0x22, 0xbd, 0x9c,
+	0x93, 0x63, 0x35, 0x9f, 0x93, 0x32, 0xdd, 0xfa, 0xf1, 0xd2, 0x32, 0x7f, 0x01, 0x6e, 0x84, 0x38,
+	0xc2, 0xb0, 0x48, 0x3d, 0xff, 0x40, 0xdf, 0x85, 0x55, 0x11, 0x44, 0x58, 0xa4, 0x7c, 0xb0, 0xd8,
+	0xc8, 0x3e, 0x08, 0x22, 0x74, 0x94, 0x1f, 0xdd, 0x82, 0x95, 0x28, 0xf3, 0x8d, 0x67, 0x94, 0xa6,
+	0x34, 0xd9, 0xd7, 0x04, 0x76, 0xb4, 0xbe, 0x7f, 0xe2, 0x0a, 0x6f, 0xa8, 0x3e, 0xcb, 0xda, 0x0b,
+	0x89, 0x5f, 0xcc, 0xab, 0xb4, 0x69, 0x1f, 0xd6, 0x78, 0xff, 0x0c, 0x3d, 0x71, 0x0d, 0x8f, 0xde,
+	0x42, 0x99, 0xed, 0x82, 0xa9, 0x1d, 0xe7, 0xbf, 0xb7, 0x81, 0x83, 0x59, 0xc2, 0xe3, 0x0c, 0x0f,
+	0x7f, 0x5c, 0x07, 0xaa, 0x7d, 0x7d, 0x8a, 0xe9, 0x28, 0xf0, 0x90, 0xfe, 0x42, 0x60, 0x7b, 0x6a,
+	0xa5, 0xd0, 0x97, 0x2b, 0x51, 0x9b, 0x56, 0x8e, 0xb9, 0xc4, 0x2c, 0xd8, 0x1b, 0x8f, 0xff, 0xfc,
+	0xfb, 0xdb, 0xd6, 0x2b, 0xec, 0xb6, 0x5a, 0xa8, 0xa3, 0x6e, 0xbe, 0x11, 0xdb, 0xb9, 0x4b, 0x66,
+	0x7f, 0x31, 0x99, 0xa9, 0x47, 0xef, 0x90, 0x03, 0xfa, 0x13, 0x81, 0xe7, 0xaa, 0x7b, 0x80, 0xb2,
+	0x4a, 0x8c, 0x99, 0x4b, 0x62, 0xa9, 0xc0, 0x1d, 0x05, 0x7c, 0x40, 0xf7, 0xe7, 0x02, 0xe7, 0xf6,
+	0x23, 0xfa, 0x33, 0x81, 0xad, 0xfa, 0x7a, 0xa0, 0x2f, 0x55, 0x22, 0x35, 0x6c, 0x0f, 0xf3, 0x64,
+	0x79, 0xe0, 0x32, 0x04, 0x7b, 0x4d, 0xc1, 0xbf, 0x48, 0xe7, 0x57, 0x9b, 0x7e, 0x47, 0x60, 0x7b,
+	0x6a, 0x8b, 0xd4, 0x26, 0xa4, 0x69, 0xcb, 0x98, 0xaf, 0x56, 0xae, 0x35, 0x8f, 0xe7, 0xb8, 0x9a,
+	0x07, 0x8b, 0x57, 0xf3, 0x37, 0x02, 0xdb, 0x53, 0x3b, 0xa3, 0xc6, 0xd5, 0xb4, 0x53, 0x96, 0x3a,
+	0x08, 0x47, 0x0a, 0xbd, 0x6d, 0x2e, 0x8c, 0x2e, 0x07, 0xf8, 0x4b, 0x02, 0x5b, 0xf5, 0xb5, 0x51,
+	0x9b, 0x85, 0x86, 0xad, 0x62, 0xee, 0x54, 0x27, 0xa6, 0x78, 0x10, 0xb3, 0xb7, 0x14, 0x86, 0x4d,
+	0xdb, 0x63, 0x8c, 0x4c, 0xa4, 0xe8, 0x46, 0xff, 0x43, 0x13, 0x72, 0x3f, 0xeb, 0x10, 0xfa, 0x0d,
+	0x81, 0xed, 0xf2, 0xf1, 0xf5, 0x64, 0x73, 0xc9, 0x9a, 0x88, 0x4b, 0xc1, 0xe9, 0x1f, 0xca, 0x3c,
+	0xb0, 0x0e, 0x79, 0xff, 0xbd, 0xdf, 0xaf, 0xf6, 0xc8, 0x1f, 0x57, 0x7b, 0xe4, 0xaf, 0xab, 0x3d,
+	0xf2, 0xe9, 0x61, 0xd3, 0x6b, 0xb4, 0xdd, 0xf8, 0x8f, 0xa0, 0xbf, 0xa6, 0x5e, 0x99, 0x8f, 0xfe,
+	0x0b, 0x00, 0x00, 0xff, 0xff, 0xf7, 0x6c, 0x42, 0x9d, 0x35, 0x0c, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -396,7 +707,11 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type EventSourceServiceClient interface {
+	CreateEventSource(ctx context.Context, in *CreateEventSourceRequest, opts ...grpc.CallOption) (*v1alpha1.EventSource, error)
+	GetEventSource(ctx context.Context, in *GetEventSourceRequest, opts ...grpc.CallOption) (*v1alpha1.EventSource, error)
 	ListEventSources(ctx context.Context, in *ListEventSourcesRequest, opts ...grpc.CallOption) (*v1alpha1.EventSourceList, error)
+	DeleteEventSource(ctx context.Context, in *DeleteEventSourceRequest, opts ...grpc.CallOption) (*EventSourceDeletedResponse, error)
+	UpdateEventSource(ctx context.Context, in *UpdateEventSourceRequest, opts ...grpc.CallOption) (*v1alpha1.EventSource, error)
 	EventSourcesLogs(ctx context.Context, in *EventSourcesLogsRequest, opts ...grpc.CallOption) (EventSourceService_EventSourcesLogsClient, error)
 	WatchEventSources(ctx context.Context, in *ListEventSourcesRequest, opts ...grpc.CallOption) (EventSourceService_WatchEventSourcesClient, error)
 }
@@ -409,9 +724,45 @@ func NewEventSourceServiceClient(cc *grpc.ClientConn) EventSourceServiceClient {
 	return &eventSourceServiceClient{cc}
 }
 
+func (c *eventSourceServiceClient) CreateEventSource(ctx context.Context, in *CreateEventSourceRequest, opts ...grpc.CallOption) (*v1alpha1.EventSource, error) {
+	out := new(v1alpha1.EventSource)
+	err := c.cc.Invoke(ctx, "/eventsource.EventSourceService/CreateEventSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *eventSourceServiceClient) GetEventSource(ctx context.Context, in *GetEventSourceRequest, opts ...grpc.CallOption) (*v1alpha1.EventSource, error) {
+	out := new(v1alpha1.EventSource)
+	err := c.cc.Invoke(ctx, "/eventsource.EventSourceService/GetEventSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *eventSourceServiceClient) ListEventSources(ctx context.Context, in *ListEventSourcesRequest, opts ...grpc.CallOption) (*v1alpha1.EventSourceList, error) {
 	out := new(v1alpha1.EventSourceList)
 	err := c.cc.Invoke(ctx, "/eventsource.EventSourceService/ListEventSources", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *eventSourceServiceClient) DeleteEventSource(ctx context.Context, in *DeleteEventSourceRequest, opts ...grpc.CallOption) (*EventSourceDeletedResponse, error) {
+	out := new(EventSourceDeletedResponse)
+	err := c.cc.Invoke(ctx, "/eventsource.EventSourceService/DeleteEventSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *eventSourceServiceClient) UpdateEventSource(ctx context.Context, in *UpdateEventSourceRequest, opts ...grpc.CallOption) (*v1alpha1.EventSource, error) {
+	out := new(v1alpha1.EventSource)
+	err := c.cc.Invoke(ctx, "/eventsource.EventSourceService/UpdateEventSource", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -484,7 +835,11 @@ func (x *eventSourceServiceWatchEventSourcesClient) Recv() (*EventSourceWatchEve
 
 // EventSourceServiceServer is the server API for EventSourceService service.
 type EventSourceServiceServer interface {
+	CreateEventSource(context.Context, *CreateEventSourceRequest) (*v1alpha1.EventSource, error)
+	GetEventSource(context.Context, *GetEventSourceRequest) (*v1alpha1.EventSource, error)
 	ListEventSources(context.Context, *ListEventSourcesRequest) (*v1alpha1.EventSourceList, error)
+	DeleteEventSource(context.Context, *DeleteEventSourceRequest) (*EventSourceDeletedResponse, error)
+	UpdateEventSource(context.Context, *UpdateEventSourceRequest) (*v1alpha1.EventSource, error)
 	EventSourcesLogs(*EventSourcesLogsRequest, EventSourceService_EventSourcesLogsServer) error
 	WatchEventSources(*ListEventSourcesRequest, EventSourceService_WatchEventSourcesServer) error
 }
@@ -493,8 +848,20 @@ type EventSourceServiceServer interface {
 type UnimplementedEventSourceServiceServer struct {
 }
 
+func (*UnimplementedEventSourceServiceServer) CreateEventSource(ctx context.Context, req *CreateEventSourceRequest) (*v1alpha1.EventSource, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateEventSource not implemented")
+}
+func (*UnimplementedEventSourceServiceServer) GetEventSource(ctx context.Context, req *GetEventSourceRequest) (*v1alpha1.EventSource, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEventSource not implemented")
+}
 func (*UnimplementedEventSourceServiceServer) ListEventSources(ctx context.Context, req *ListEventSourcesRequest) (*v1alpha1.EventSourceList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListEventSources not implemented")
+}
+func (*UnimplementedEventSourceServiceServer) DeleteEventSource(ctx context.Context, req *DeleteEventSourceRequest) (*EventSourceDeletedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteEventSource not implemented")
+}
+func (*UnimplementedEventSourceServiceServer) UpdateEventSource(ctx context.Context, req *UpdateEventSourceRequest) (*v1alpha1.EventSource, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateEventSource not implemented")
 }
 func (*UnimplementedEventSourceServiceServer) EventSourcesLogs(req *EventSourcesLogsRequest, srv EventSourceService_EventSourcesLogsServer) error {
 	return status.Errorf(codes.Unimplemented, "method EventSourcesLogs not implemented")
@@ -505,6 +872,42 @@ func (*UnimplementedEventSourceServiceServer) WatchEventSources(req *ListEventSo
 
 func RegisterEventSourceServiceServer(s *grpc.Server, srv EventSourceServiceServer) {
 	s.RegisterService(&_EventSourceService_serviceDesc, srv)
+}
+
+func _EventSourceService_CreateEventSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateEventSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventSourceServiceServer).CreateEventSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eventsource.EventSourceService/CreateEventSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventSourceServiceServer).CreateEventSource(ctx, req.(*CreateEventSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EventSourceService_GetEventSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventSourceServiceServer).GetEventSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eventsource.EventSourceService/GetEventSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventSourceServiceServer).GetEventSource(ctx, req.(*GetEventSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _EventSourceService_ListEventSources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -521,6 +924,42 @@ func _EventSourceService_ListEventSources_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EventSourceServiceServer).ListEventSources(ctx, req.(*ListEventSourcesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EventSourceService_DeleteEventSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteEventSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventSourceServiceServer).DeleteEventSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eventsource.EventSourceService/DeleteEventSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventSourceServiceServer).DeleteEventSource(ctx, req.(*DeleteEventSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EventSourceService_UpdateEventSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateEventSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventSourceServiceServer).UpdateEventSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eventsource.EventSourceService/UpdateEventSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventSourceServiceServer).UpdateEventSource(ctx, req.(*UpdateEventSourceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -572,8 +1011,24 @@ var _EventSourceService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*EventSourceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "CreateEventSource",
+			Handler:    _EventSourceService_CreateEventSource_Handler,
+		},
+		{
+			MethodName: "GetEventSource",
+			Handler:    _EventSourceService_GetEventSource_Handler,
+		},
+		{
 			MethodName: "ListEventSources",
 			Handler:    _EventSourceService_ListEventSources_Handler,
+		},
+		{
+			MethodName: "DeleteEventSource",
+			Handler:    _EventSourceService_DeleteEventSource_Handler,
+		},
+		{
+			MethodName: "UpdateEventSource",
+			Handler:    _EventSourceService_UpdateEventSource_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -589,6 +1044,117 @@ var _EventSourceService_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "pkg/apiclient/eventsource/eventsource.proto",
+}
+
+func (m *CreateEventSourceRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateEventSourceRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateEventSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.CreateOptions != nil {
+		{
+			size, err := m.CreateOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEventsource(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Evensource != nil {
+		{
+			size, err := m.Evensource.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEventsource(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetEventSourceRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetEventSourceRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetEventSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.GetOptions != nil {
+		{
+			size, err := m.GetOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEventsource(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ListEventSourcesRequest) Marshal() (dAtA []byte, err error) {
@@ -631,6 +1197,112 @@ func (m *ListEventSourcesRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 		i -= len(m.Namespace)
 		copy(dAtA[i:], m.Namespace)
 		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteEventSourceRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteEventSourceRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteEventSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.DeleteOptions != nil {
+		{
+			size, err := m.DeleteOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEventsource(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateEventSourceRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateEventSourceRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateEventSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Evensource != nil {
+		{
+			size, err := m.Evensource.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEventsource(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Name)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -838,6 +1510,33 @@ func (m *EventSourceWatchEvent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *EventSourceDeletedResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventSourceDeletedResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventSourceDeletedResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintEventsource(dAtA []byte, offset int, v uint64) int {
 	offset -= sovEventsource(v)
 	base := offset
@@ -849,6 +1548,54 @@ func encodeVarintEventsource(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *CreateEventSourceRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.Evensource != nil {
+		l = m.Evensource.Size()
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.CreateOptions != nil {
+		l = m.CreateOptions.Size()
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetEventSourceRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.GetOptions != nil {
+		l = m.GetOptions.Size()
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *ListEventSourcesRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -861,6 +1608,54 @@ func (m *ListEventSourcesRequest) Size() (n int) {
 	}
 	if m.ListOptions != nil {
 		l = m.ListOptions.Size()
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DeleteEventSourceRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.DeleteOptions != nil {
+		l = m.DeleteOptions.Size()
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *UpdateEventSourceRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.Evensource != nil {
+		l = m.Evensource.Size()
 		n += 1 + l + sovEventsource(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -965,11 +1760,335 @@ func (m *EventSourceWatchEvent) Size() (n int) {
 	return n
 }
 
+func (m *EventSourceDeletedResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func sovEventsource(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozEventsource(x uint64) (n int) {
 	return sovEventsource(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *CreateEventSourceRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEventsource
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateEventSourceRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateEventSourceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Evensource", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Evensource == nil {
+				m.Evensource = &v1alpha1.EventSource{}
+			}
+			if err := m.Evensource.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CreateOptions == nil {
+				m.CreateOptions = &v1.CreateOptions{}
+			}
+			if err := m.CreateOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEventsource(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetEventSourceRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEventsource
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetEventSourceRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetEventSourceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GetOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.GetOptions == nil {
+				m.GetOptions = &v1.GetOptions{}
+			}
+			if err := m.GetOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEventsource(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *ListEventSourcesRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -1065,6 +2184,314 @@ func (m *ListEventSourcesRequest) Unmarshal(dAtA []byte) error {
 				m.ListOptions = &v1.ListOptions{}
 			}
 			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEventsource(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteEventSourceRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEventsource
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteEventSourceRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteEventSourceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DeleteOptions == nil {
+				m.DeleteOptions = &v1.DeleteOptions{}
+			}
+			if err := m.DeleteOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEventsource(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateEventSourceRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEventsource
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateEventSourceRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateEventSourceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Evensource", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Evensource == nil {
+				m.Evensource = &v1alpha1.EventSource{}
+			}
+			if err := m.Evensource.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1722,6 +3149,60 @@ func (m *EventSourceWatchEvent) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEventsource(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventSourceDeletedResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEventsource
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventSourceDeletedResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventSourceDeletedResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipEventsource(dAtA[iNdEx:])

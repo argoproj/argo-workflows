@@ -167,7 +167,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/eventsource.EventSourceDeleteResponse"
+              "$ref": "#/definitions/eventsource.EventSourceDeletedResponse"
             }
           }
         },
@@ -396,21 +396,28 @@
           },
           {
             "name": "name",
-            "description": "optional.",
+            "description": "optional - only return entries for this event source.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "eventSourceType",
-            "description": "optional.",
+            "description": "optional - only return entries for this event source type (e.g. `webhook`).",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "eventName",
-            "description": "optional.",
+            "description": "optional - only return entries for this event name (e.g. `example`).",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "grep",
+            "description": "optional - only return entries where `msg` matches this regular expression.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -516,7 +523,7 @@
         }
       }
     },
-    "eventsource.EventSourceDeleteResponse": {
+    "eventsource.EventSourceDeletedResponse": {
       "type": "object"
     },
     "eventsource.EventSourceWatchEvent": {
@@ -541,11 +548,11 @@
         },
         "eventSourceType": {
           "type": "string",
-          "title": "optional"
+          "title": "optional - the event source type (e.g. `webhook`)"
         },
         "eventName": {
           "type": "string",
-          "title": "optional"
+          "title": "optional - the event name (e.g. `example`)"
         },
         "level": {
           "type": "string"

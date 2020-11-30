@@ -68,7 +68,7 @@ message EventSourceWatchEvent {
     github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource object = 2;
 }
 
-message EventSourceDeleteResponse {
+message EventSourceDeletedResponse {
 }
 
 service EventSourceService {
@@ -88,7 +88,7 @@ service EventSourceService {
         option (google.api.http).get = "/api/v1/event-sources/{namespace}";
     }
 
-    rpc DeleteEventSource (DeleteEventSourceRequest) returns (EventSourceDeleteResponse) {
+    rpc DeleteEventSource (DeleteEventSourceRequest) returns (EventSourceDeletedResponse) {
         option (google.api.http).delete = "/api/v1/event-sources/{namespace}/{name}";
     }
 

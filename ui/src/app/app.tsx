@@ -11,6 +11,7 @@ import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import events from './events';
+import eventsource from './event-sources';
 import help from './help';
 import login from './login';
 import reports from './reports';
@@ -26,6 +27,7 @@ import workflows from './workflows';
 
 const eventsUrl = uiUrl('events');
 const workflowsUrl = uiUrl('workflows');
+const eventSourceUrl = uiUrl('event-sources');
 const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
@@ -45,6 +47,11 @@ const navItems = [
         title: 'Events',
         path: eventsUrl,
         iconClassName: 'fa fa-broadcast-tower'
+    },
+    {
+        title: 'EventSources',
+        path: eventSourceUrl,
+        iconClassName: 'fas fa-bolt'
     },
     {
         title: 'Workflows',
@@ -192,6 +199,7 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                 )}
                                 <Route path={eventsUrl} component={events.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />
+                                <Route path={eventSourceUrl} component={eventsource.component} />
                                 <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
                                 <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />

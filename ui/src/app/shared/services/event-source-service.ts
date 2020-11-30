@@ -3,7 +3,9 @@ import requests from './requests';
 
 export class EventSourceService {
     public list(namespace: string) {
-        return requests.get(`api/v1/event-sources/${namespace}`).then(res => res.body as EventSourceList);
+        return requests.get(`api/v1/event-sources/${namespace}`)
+            .then(res => res.body as EventSourceList)
+            .then(list => list.items || []);
     }
 
     public watch(namespace: string, resourceVersion: string) {
