@@ -5,8 +5,6 @@ import (
 	"os"
 )
 
-type obj = map[string]interface{}
-
 func main() {
 	swagger := obj{}
 	{
