@@ -144,20 +144,15 @@ type ArtifactRepositoryType interface {
 func (a *ArtifactRepository) Get() ArtifactRepositoryType {
 	if a == nil {
 		return nil
-	}
-	if a.Artifactory != nil {
+	} else if a.Artifactory != nil {
 		return a.Artifactory
-	}
-	if a.GCS != nil {
+	} else if a.GCS != nil {
 		return a.GCS
-	}
-	if a.HDFS != nil {
+	} else if a.HDFS != nil {
 		return a.HDFS
-	}
-	if a.OSS != nil {
+	} else if a.OSS != nil {
 		return a.OSS
-	}
-	if a.S3 != nil {
+	} else if a.S3 != nil {
 		return a.S3
 	}
 	return nil
