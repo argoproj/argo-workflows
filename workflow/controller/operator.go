@@ -37,6 +37,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	envutil "github.com/argoproj/argo/util/env"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
@@ -116,8 +117,10 @@ var (
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
-const maxOperationTime = 10 * time.Second
-const defaultRequeueTime = maxOperationTime
+var (
+	maxOperationTime   = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
+	defaultRequeueTime = envutil.LookupEnvDurationOr("DEFAULT_REQUEUE_TIME", maxOperationTime/2)
+)
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -147,7 +150,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		artifactRepository:     &wfc.Config.ArtifactRepository,
 		completedPods:          make(map[string]bool),
 		succeededPods:          make(map[string]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
@@ -199,6 +201,23 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err)
 		return
 	}
+
+	if woc.wf.Status.ArtifactRepositoryRef == nil {
+		ref, err := woc.controller.artifactRepositories.Resolve(woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
+		if err != nil {
+			woc.markWorkflowError(fmt.Errorf("failed to resolve artifact repository: %w", err))
+			return
+		}
+		woc.wf.Status.ArtifactRepositoryRef = ref
+		woc.updated = true
+	}
+
+	repo, err := woc.controller.artifactRepositories.Get(woc.wf.Status.ArtifactRepositoryRef)
+	if err != nil {
+		woc.markWorkflowError(fmt.Errorf("failed to get artifact repository: %v", err))
+		return
+	}
+	woc.artifactRepository = repo
 
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
@@ -296,16 +315,6 @@ func (woc *wfOperationCtx) operate() {
 		woc.log.WithError(err).Error("Failed to create a template context")
 		woc.markWorkflowError(err)
 		return
-	}
-
-	if woc.execWf.Spec.ArtifactRepositoryRef != nil {
-		repo, err := woc.getArtifactRepositoryByRef(woc.execWf.Spec.ArtifactRepositoryRef)
-		if err == nil {
-			woc.artifactRepository = repo
-		} else {
-			woc.markWorkflowError(err)
-			return
-		}
 	}
 
 	err = woc.substituteParamsInVolumes(woc.globalParams)
@@ -3054,31 +3063,6 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 		return hasOutputResultRef(name, parentTemplate), nil
 	}
 	return false, nil
-}
-
-func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
-	namespaces := []string{woc.wf.ObjectMeta.Namespace, woc.controller.namespace}
-	for _, namespace := range namespaces {
-		cm, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(namespace).Get(arRef.GetConfigMap(), metav1.GetOptions{})
-		if err != nil {
-			if apierr.IsNotFound(err) {
-				continue
-			}
-			return nil, err
-		}
-		value, ok := cm.Data[arRef.Key]
-		if !ok {
-			continue
-		}
-		woc.log.WithFields(log.Fields{"namespace": namespace, "name": cm.Name}).Debug("Found artifact repository by ref")
-		ar := &config.ArtifactRepository{}
-		err = yaml.Unmarshal([]byte(value), ar)
-		if err != nil {
-			return nil, err
-		}
-		return ar, nil
-	}
-	return nil, fmt.Errorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) {

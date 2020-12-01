@@ -46,8 +46,7 @@ In case you want to follow along with this walkthrough, here's a quick overview 
 argo submit hello-world.yaml    # submit a workflow spec to Kubernetes
 argo list                       # list current workflows
 argo get hello-world-xxx        # get info about a specific workflow
-argo logs -w hello-world-xxx    # get logs from all steps in a workflow
-argo logs hello-world-xxx-yyy   # get logs from a specific step in a workflow
+argo logs hello-world-xxx       # print the logs from a workflow
 argo delete hello-world-xxx     # delete workflow
 ```
 
@@ -66,7 +65,7 @@ kubectl delete wf hello-world-xxx
 
 Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.
 
-You can run this directly from your shell with a simple docker command:
+You can run this directly from your shell with a simple docker command:
 
 ```sh
 $ docker run docker/whalesay cowsay "hello world"
@@ -904,7 +903,7 @@ metadata:
   generateName: exit-handlers-
 spec:
   entrypoint: intentional-fail
-  onExit: exit-handler                  # invoke exit-hander template at end of the workflow
+  onExit: exit-handler                  # invoke exit-handler template at end of the workflow
   templates:
   # primary workflow template
   - name: intentional-fail
