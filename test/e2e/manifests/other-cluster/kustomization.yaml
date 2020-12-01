@@ -8,6 +8,4 @@ resources:
   - ../../../../manifests/quick-start/base/minio/my-minio-cred-secret.yaml
   - minio-svc.yaml
 
-
-
-
+namespace: argo

@@ -104,8 +104,7 @@ jobs:
           # create another cluster and set-up the service account
           # use of host network allows us to connect to minio:9000
           k3d cluster rm other
-          k3d cluster create other --wait --update-default-kubeconfig
-          kubectl config use-context k3d-other
+          k3d cluster create other --wait --update-default-kubeconfig --switch-context
           kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl apply -f-
 
           # switch back and set-up the cluster in the main cluster

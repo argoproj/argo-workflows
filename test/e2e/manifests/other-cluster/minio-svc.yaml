@@ -1,3 +1,5 @@
+# This is some very clever stuffs.
+# We create a service that loops back to the K3D host that is exposing minio so we can do load and artifacts.
 kind: Service
 apiVersion: v1
 metadata:
