@@ -4,21 +4,73 @@ argo is the command line interface to Argo
 
 ### Synopsis
 
-argo is the command line interface to Argo
+
+You can use the CLI in the following modes:
+
+# Kubernetes API Mode (default)
+
+Requests are sent directly to the Kubernetes API. No Argo Server is needs. Large workflows and the workflow archive are not supported.
+
+Use when you have direct access to the Kubernetes API, and don't need large workflow or workflow archive support.
+
+If you're using instance ID (which is very unlikely), you'll need to set it:
+
+	ARGO_INSTANCEID=your-instanceid
+
+# Argo Server GRPC Mode 
+
+Requests are sent to the Argo Server API via GRPC (using HTTP/2). Large workflows and the workflow archive are supported. Network load-balancers that do not support HTTP/2 are not supported. 
+
+Use if you do not have access to the Kubernetes API (e.g. you're in another cluster), and you're running the Argo Server using a network load-balancer that support HTTP/2.
+
+To enable, set ARGO_SERVER:
+
+	ARGO_SERVER=localhost:2746 ;# The format is "host:port" - do not prefix with "http" or "https"
+
+If you're have transport-layer security (TLS) enabled (i.e. you are running "argo server --secure" and therefore has HTTPS):
+
+	ARGO_SECURE=true
+
+If your server is running with self-signed certificates. Do not use in production:
+
+	ARGO_INSECURE_SKIP_VERIFY=true
+
+By default, the CLI uses your KUBECONFIG to determine default for ARGO_TOKEN and ARGO_NAMESPACE. You probably error with "no configuration has been provided". To prevent it:
+
+	KUBECONFIG=/dev/null
+
+You will then need to set:
+ 
+	ARGO_NAMESPACE=argo 
+
+And:
+
+	ARGO_TOKEN='Bearer ******' ;# Should always start with "Bearer " or "Basic ". 
+
+# Argo Server HTTP1 Mode
+
+As per GRPC mode, but uses HTTP. Can be used with ALB that does not support HTTP/2. The command "argo logs --since-time=2020...." will not work (due to time-type).
+
+Use this when your network load-balancer does not support HTTP/2.
+
+Use the same configuration as GRPC mode, but also set:
+
+	ARGO_HTTP1=true
+
+If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):
+
+	ARGO_BASE_HREF=/argo
+
 
 ```
 argo [flags]
 ```
 
-### Examples
-
-```
-If you're using the Argo Server (e.g. because you need large workflow support or workflow archive), please read https://github.com/argoproj/argo/blob/master/docs/cli.md.
-```
-
 ### Options
 
 ```
+      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
@@ -52,6 +104,8 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
 * [argo cron](argo_cron.md)	 - manage cron workflows
+
+NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
 * [argo delete](argo_delete.md)	 - delete workflows
 * [argo get](argo_get.md)	 - display details about a workflow
 * [argo lint](argo_lint.md)	 - validate files or directories of workflow manifests

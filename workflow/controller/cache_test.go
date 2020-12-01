@@ -67,7 +67,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: wfv1.Int64OrStringPtr(MockParamValue),
+		Value: wfv1.AnyStringPtr(MockParamValue),
 	}
 	cancel, controller := newController()
 	defer cancel()

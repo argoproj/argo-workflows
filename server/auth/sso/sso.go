@@ -28,7 +28,6 @@ import (
 const (
 	Prefix                              = "Bearer v2:"
 	issuer                              = "argo-server"                // the JWT issuer
-	expiry                              = 10 * time.Hour               // how long JWT are valid for
 	secretName                          = "sso"                        // where we store SSO secret
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
 )
@@ -52,6 +51,7 @@ type sso struct {
 	privateKey      crypto.PrivateKey
 	encrypter       jose.Encrypter
 	rbacConfig      *rbac.Config
+	expiry          time.Duration
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -65,7 +65,15 @@ type Config struct {
 	RedirectURL  string                  `json:"redirectUrl"`
 	RBAC         *rbac.Config            `json:"rbac,omitempty"`
 	// additional scopes (on top of "openid")
-	Scopes []string `json:"scopes,omitempty"`
+	Scopes        []string        `json:"scopes,omitempty"`
+	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
+}
+
+func (c Config) GetSessionExpiry() time.Duration {
+	if c.SessionExpiry.Duration > 0 {
+		return c.SessionExpiry.Duration
+	}
+	return 10 * time.Hour
 }
 
 // Abstract methods of oidc.Provider that our code uses into an interface. That
@@ -114,7 +122,6 @@ func newSso(
 	if err != nil {
 		return nil, err
 	}
-
 	var clientIDObj *apiv1.Secret
 	if c.ClientID.Name == c.ClientSecret.Name {
 		clientIDObj = clientSecretObj
@@ -174,16 +181,16 @@ func newSso(
 		privateKey:      privateKey,
 		encrypter:       encrypter,
 		rbacConfig:      c.RBAC,
+		expiry:          c.GetSessionExpiry(),
 	}, nil
 }
 
-const stateCookieName = "oauthState"
-
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
+	redirectUrl := r.URL.Query().Get("redirect")
 	state := pkgrand.RandString(10)
 	http.SetCookie(w, &http.Cookie{
-		Name:     stateCookieName,
-		Value:    state,
+		Name:     state,
+		Value:    redirectUrl,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -195,16 +202,11 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	state := r.URL.Query().Get("state")
-	cookie, err := r.Cookie(stateCookieName)
-	http.SetCookie(w, &http.Cookie{Name: stateCookieName, MaxAge: 0})
+	cookie, err := r.Cookie(state)
+	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	if err != nil {
 		w.WriteHeader(400)
 		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %v", err)))
-		return
-	}
-	if state != cookie.Value {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte("invalid state: does not match cookie value"))
 		return
 	}
 	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"))
@@ -231,7 +233,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}, Groups: c.Groups}
+	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(s.expiry))}, Groups: c.Groups}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)
@@ -242,11 +244,15 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Value:    value,
 		Name:     "authorization",
 		Path:     s.baseHRef,
-		Expires:  time.Now().Add(expiry),
+		Expires:  time.Now().Add(s.expiry),
 		SameSite: http.SameSiteStrictMode,
 		Secure:   s.secure,
 	})
-	http.Redirect(w, r, s.baseHRef, 302)
+	redirect := s.baseHRef
+	if cookie.Value != "" {
+		redirect = cookie.Value
+	}
+	http.Redirect(w, r, redirect, 302)
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.

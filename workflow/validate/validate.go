@@ -94,7 +94,7 @@ type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
 	s := placeholderGenerator.NextPlaceholder()
-	return &wfv1.Parameter{Name: name, Value: wfv1.Int64OrStringPtr(s)}
+	return &wfv1.Parameter{Name: name, Value: wfv1.AnyStringPtr(s)}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -449,6 +449,9 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		for _, metric := range newTmpl.Metrics.Prometheus {
 			if !metrics.IsValidMetricName(metric.Name) {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters, '_', or ':'", tmpl.Name, metric.Name)
+			}
+			if err := metrics.ValidateMetricLabels(metric.GetMetricLabels()); err != nil {
+				return err
 			}
 			if metric.Help == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' must contain a help string under 'help: ' field", tmpl.Name, metric.Name)
@@ -1208,8 +1211,8 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
 
-		if usingDepends && '0' <= task.Name[0] && task.Name[0] <= '9' {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using 'depends'", tmpl.Name, task.Name)
+		if '0' <= task.Name[0] && task.Name[0] <= '9' {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.Name)
 		}
 
 		if usingDepends && len(task.Dependencies) > 0 {

@@ -176,6 +176,15 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	return &wf
 }
 
+func unmarshalWFT(yamlStr string) *wfv1.WorkflowTemplate {
+	var wft wfv1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &wft)
+	if err != nil {
+		panic(err)
+	}
+	return &wft
+}
+
 var yamlStr = `
 containers:
   - name: main
@@ -495,7 +504,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: wfv1.Int64OrStringPtr("0")}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: wfv1.AnyStringPtr("0")}},
 				},
 			},
 		}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/go-openapi/jsonreference"
@@ -33,11 +33,13 @@ func secondarySwaggerGen() {
 	swagger := map[string]interface{}{
 		"definitions": definitions,
 	}
-	data, err := json.MarshalIndent(swagger, "", "  ")
+	f, err := os.Create("pkg/apiclient/_.secondary.swagger.json")
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile("pkg/apiclient/_.secondary.swagger.json", data, 0644)
+	e := json.NewEncoder(f)
+	e.SetIndent("", "  ")
+	err = e.Encode(swagger)
 	if err != nil {
 		panic(err)
 	}
