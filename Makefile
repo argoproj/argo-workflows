@@ -266,6 +266,7 @@ codegen: \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests/install.yaml \
 	api/openapi-spec/swagger.json \
+	api/jsonschema/schema.json \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
@@ -368,6 +369,7 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -462,7 +464,7 @@ test-e2e:
 
 .PHONY: test-cli
 test-cli:
-	$(GOTEST) -timeout 10m -count 1 --tags cli -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
@@ -522,6 +524,9 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
+api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
+	go run ./hack/jsonschema
+
 go-diagrams/diagram.dot: ./hack/diagram/main.go
 	rm -Rf go-diagrams
 	go run ./hack/diagram
@@ -533,7 +538,7 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
-docs/cli/argo.go: $(CLI_PKGS) server/static/files.go hack/cli/main.go
+docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
 # pre-push

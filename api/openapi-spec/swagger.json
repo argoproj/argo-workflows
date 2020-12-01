@@ -658,6 +658,82 @@
         }
       }
     },
+    "/api/v1/cron-workflows/{namespace}/{name}/resume": {
+      "put": {
+        "tags": [
+          "CronWorkflowService"
+        ],
+        "operationId": "ResumeCronWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowResumeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cron-workflows/{namespace}/{name}/suspend": {
+      "put": {
+        "tags": [
+          "CronWorkflowService"
+        ],
+        "operationId": "SuspendCronWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowSuspendRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/events/{namespace}/{discriminator}": {
       "post": {
         "tags": [
@@ -2193,9 +2269,32 @@
       "type": "object",
       "properties": {
         "configMap": {
+          "description": "The name of the config map. Defaults to \"artifact-repositories\".",
           "type": "string"
         },
         "key": {
+          "description": "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
+      "type": "object",
+      "properties": {
+        "configMap": {
+          "description": "The name of the config map. Defaults to \"artifact-repositories\".",
+          "type": "string"
+        },
+        "default": {
+          "description": "If this ref represents the default artifact repository, rather than a config map.",
+          "type": "boolean"
+        },
+        "key": {
+          "description": "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).",
           "type": "string"
         }
       }
@@ -2453,6 +2552,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowResumeRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.CronWorkflowSpec": {
       "description": "CronWorkflowSpec is the specification of a CronWorkflow",
       "type": "object",
@@ -2531,12 +2641,22 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowSuspendRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.DAGTask": {
       "description": "DAGTask represents a node in the graph during DAG execution",
       "type": "object",
       "required": [
-        "name",
-        "template"
+        "name"
       ],
       "properties": {
         "arguments": {
@@ -4691,6 +4811,10 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "artifactRepositoryRef": {
+          "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus"
+        },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"

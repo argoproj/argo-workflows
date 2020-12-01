@@ -492,7 +492,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output *wfv1.Int64OrString
+		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
@@ -504,7 +504,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = wfv1.Int64OrStringPtr(fileContents)
+				output = wfv1.AnyStringPtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -518,12 +518,12 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = wfv1.Int64OrStringPtr(string(data))
+				output = wfv1.AnyStringPtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
-		output = wfv1.Int64OrStringPtr(strings.TrimSuffix(output.String(), "\n"))
+		output = wfv1.AnyStringPtr(strings.TrimSuffix(output.String(), "\n"))
 		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
@@ -1082,13 +1082,13 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
 				if ctrStatus.Name == common.MainContainerName {
 					log.Debug(ctrStatus)
-					if ctrStatus.ContainerID != "" {
-						we.mainContainerID = containerID(ctrStatus.ContainerID)
-						return containerID(ctrStatus.ContainerID), nil
+					if ctrStatus.State.Waiting != nil {
+						// main container is still in waiting status
 					} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
 						// status still not ready, wait
-					} else if ctrStatus.State.Waiting != nil {
-						// main container is still in waiting status
+					} else if ctrStatus.ContainerID != "" {
+						we.mainContainerID = containerID(ctrStatus.ContainerID)
+						return containerID(ctrStatus.ContainerID), nil
 					} else {
 						// main container in running or terminated state but missing container ID
 						return "", errors.InternalError("Main container ID cannot be found")

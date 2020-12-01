@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/util"
+	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -36,17 +37,9 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 	} else {
 		wf = &wfs[0]
 	}
-	cancel, controller := newController()
+	cancel, controller := newController(wf)
 	defer cancel()
-	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
-	if err != nil {
-		panic(err)
-	}
 	woc := newWorkflowOperationCtx(wf, controller)
-	_, _, err = woc.loadExecutionSpec()
-	if err != nil {
-		panic(err)
-	}
 	return woc
 }
 
@@ -71,6 +64,42 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 	woc := newWoc()
 	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
 	assert.NoError(t, err)
+}
+
+var scriptTemplateWithArgsAndWithSource = `
+name: script-with-args-and-with-source
+script:
+  image: alpine:latest
+  command: [sh]
+  args: ["hello world"]
+  source: |
+    echo $@
+`
+
+// TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource ensure order of merged args
+// and script path is correct when both args and script source are specified
+func TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithSource)
+	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	assert.Equal(t, []string{"sh"}, mainCtr.Command)
+	assert.Equal(t, []string{common.ExecutorScriptSourcePath, "hello world"}, mainCtr.Args)
+}
+
+var scriptTemplateWithArgsAndWithoutSource = `
+name: script-with-args-and-without-source
+script:
+  image: alpine:latest
+  command: [echo]
+  args: ["hello world"]
+`
+
+// TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource ensure only args are passed
+// to the resulting container when script source is empty
+func TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithoutSource)
+	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	assert.Equal(t, []string{"echo"}, mainCtr.Command)
+	assert.Equal(t, []string{"hello world"}, mainCtr.Args)
 }
 
 var scriptTemplateWithOptionalInputArtifactProvided = `
@@ -448,16 +477,20 @@ func TestMetadata(t *testing.T) {
 // TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
 func TestWorkflowControllerArchiveConfig(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
 		KeyFormat: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
-	}
+	}})
 	woc.operate()
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
+}
+
+func setArtifactRepository(controller *WorkflowController, repo *config.ArtifactRepository) {
+	controller.artifactRepositories = armocks.DummyArtifactRepositories(repo)
 }
 
 // TestWorkflowControllerArchiveConfigUnresolvable verifies workflow fails when archive location has
@@ -473,12 +506,12 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 		},
 	}
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
 		KeyFormat: "{{workflow.unresolvable}}",
-	}
+	}})
 	woc.operate()
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -488,12 +521,12 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
 func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
 		KeyFormat: "path/in/bucket",
-	}
+	}})
 	woc.operate()
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -508,14 +541,17 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do  add archive location if it is needed for logs
 func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
-		S3Bucket: wfv1.S3Bucket{
-			Bucket: "foo",
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{
+		S3: &config.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket: "foo",
+			},
+			KeyFormat: "path/in/bucket",
 		},
-		KeyFormat: "path/in/bucket",
-	}
-	woc.artifactRepository.ArchiveLogs = pointer.BoolPtr(true)
+		ArchiveLogs: pointer.BoolPtr(true),
+	})
 	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
@@ -538,12 +574,12 @@ func TestConditionalArchiveLocation(t *testing.T) {
 		},
 	}
 	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
 		KeyFormat: "path/in/bucket",
-	}
+	}})
 	woc.operate()
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -660,7 +696,7 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	inputParameters := []wfv1.Parameter{
 		{
 			Name:  "volume-name",
-			Value: wfv1.Int64OrStringPtr("test-name"),
+			Value: wfv1.AnyStringPtr("test-name"),
 		},
 	}
 

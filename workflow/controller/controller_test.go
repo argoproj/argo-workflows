@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
+	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -146,7 +147,12 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
 	wfc := &WorkflowController{
-		Config:               config.Config{ExecutorImage: "executor:latest"},
+		Config: config.Config{ExecutorImage: "executor:latest"},
+		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
+			S3: &config.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+			},
+		}),
 		kubeclientset:        kube,
 		dynamicInterface:     dynamicClient,
 		wfclientset:          wfclientset,
@@ -492,7 +498,7 @@ spec:
       args: ["{{inputs.parameters.message}}"]
   volumes:
   - name: data
-    empty: {}
+    emptyDir: {}
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
@@ -502,7 +508,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	defer cancel()
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
-	_, _, err := woc.loadExecutionSpec()
+	err := woc.setExecWorkflow()
 	assert.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
 }
@@ -548,4 +554,54 @@ func TestReleaseAllWorkflowLocks(t *testing.T) {
 		un := &wfv1.Workflow{}
 		controller.releaseAllWorkflowLocks(un)
 	})
+}
+
+var wfWithSema = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: hello-world
+ namespace: default
+spec:
+ entrypoint: whalesay
+ synchronization:
+   semaphore:
+     configMapKeyRef:
+       name: my-config
+       key: workflow
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]
+`
+
+func TestNotifySemaphoreConfigUpdate(t *testing.T) {
+	assert := assert.New(t)
+	wf := unmarshalWF(wfWithSema)
+	wf1 := wf.DeepCopy()
+	wf1.Name = "one"
+	wf2 := wf.DeepCopy()
+	wf2.Name = "two"
+	wf2.Spec.Synchronization = nil
+
+	cancel, controller := newController(wf, wf1, wf2)
+	defer cancel()
+
+	cm := apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		Name:      "my-config",
+		Namespace: "default",
+	}}
+	assert.Equal(3, controller.wfQueue.Len())
+
+	// Remove all Wf from Worker queue
+	for i := 0; i < 3; i++ {
+		key, _ := controller.wfQueue.Get()
+		controller.wfQueue.Done(key)
+	}
+	assert.Equal(0, controller.wfQueue.Len())
+
+	controller.notifySemaphoreConfigUpdate(&cm)
+	assert.Equal(2, controller.wfQueue.Len())
 }
