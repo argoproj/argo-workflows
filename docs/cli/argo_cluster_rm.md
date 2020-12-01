@@ -1,4 +1,4 @@
-## argo cluster
+## argo cluster rm
 
 
 
@@ -7,13 +7,13 @@
 
 
 ```
-argo cluster [flags]
+argo cluster rm CLUSTER_NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for cluster
+  -h, --help   help for rm
 ```
 
 ### Options inherited from parent commands
@@ -48,7 +48,5 @@ argo cluster [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo cluster add](argo_cluster_add.md)	 - 
-* [argo cluster rm](argo_cluster_rm.md)	 - 
+* [argo cluster](argo_cluster.md)	 - 
 
