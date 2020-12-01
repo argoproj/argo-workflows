@@ -1806,6 +1806,8 @@ spec:
                     type: object
                   automountServiceAccountToken:
                     type: boolean
+                  clusterName:
+                    type: string
                   container:
                     properties:
                       args:
@@ -6742,6 +6744,8 @@ spec:
                     items:
                       type: string
                     type: array
+                  clusterName:
+                    type: string
                   daemoned:
                     type: boolean
                   displayName:
@@ -9346,6 +9350,8 @@ spec:
                     type: object
                   automountServiceAccountToken:
                     type: boolean
+                  clusterName:
+                    type: string
                   container:
                     properties:
                       args:
@@ -15259,6 +15265,8 @@ spec:
                         type: object
                       automountServiceAccountToken:
                         type: boolean
+                      clusterName:
+                        type: string
                       container:
                         properties:
                           args:

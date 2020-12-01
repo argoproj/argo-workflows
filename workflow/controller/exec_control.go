@@ -32,7 +32,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
-				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := woc.controller.kubeclientset[pod.Labels[common.LabelKeyClusterName]].CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -51,7 +51,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := woc.controller.kubeclientset[pod.Labels[common.LabelKeyClusterName]].CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -83,7 +83,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 			podExecCtl.Deadline = &time.Time{}
 			woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
-			return woc.updateExecutionControl(pod.Name, podExecCtl, containerName)
+			return woc.updateExecutionControl(pod.Labels[common.LabelKeyClusterName], pod.Name, podExecCtl, containerName)
 		}
 	}
 
@@ -91,7 +91,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		if podExecCtl.Deadline == nil || woc.workflowDeadline.Before(*podExecCtl.Deadline) {
 			podExecCtl.Deadline = woc.workflowDeadline
 			woc.log.Infof("Applying sooner Workflow Deadline for pod %s at: %v", pod.Name, woc.workflowDeadline)
-			return woc.updateExecutionControl(pod.Name, podExecCtl, containerName)
+			return woc.updateExecutionControl(pod.Labels[common.LabelKeyClusterName], pod.Name, podExecCtl, containerName)
 		}
 	}
 
@@ -112,7 +112,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 		if childNode.Daemoned == nil || !*childNode.Daemoned {
 			continue
 		}
-		err := woc.updateExecutionControl(childNode.ID, execCtl, common.WaitContainerName)
+		err := woc.updateExecutionControl(childNode.ClusterName, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {
 			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)
 			if firstErr == nil {
@@ -124,7 +124,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 }
 
 // updateExecutionControl updates the execution control parameters
-func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common.ExecutionControl, containerName string) error {
+func (woc *wfOperationCtx) updateExecutionControl(clusterName, podName string, execCtl common.ExecutionControl, containerName string) error {
 	execCtlBytes, err := json.Marshal(execCtl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -132,7 +132,7 @@ func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common
 
 	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
 	err = common.AddPodAnnotation(
-		woc.controller.kubeclientset,
+		woc.controller.kubeclientset[clusterName],
 		podName,
 		woc.wf.ObjectMeta.Namespace,
 		common.AnnotationKeyExecutionControl,
@@ -149,7 +149,7 @@ func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common
 	// using SIGUSR2 that something changed.
 	woc.log.Infof("Signalling %s of updates", podName)
 	exec, err := common.ExecPodContainer(
-		woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, podName,
+		woc.controller.restConfig[clusterName], woc.wf.ObjectMeta.Namespace, podName,
 		containerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
 	)
 	if err != nil {

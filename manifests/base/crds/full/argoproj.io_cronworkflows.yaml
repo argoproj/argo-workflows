@@ -1817,6 +1817,8 @@ spec:
                         type: object
                       automountServiceAccountToken:
                         type: boolean
+                      clusterName:
+                        type: string
                       container:
                         properties:
                           args:

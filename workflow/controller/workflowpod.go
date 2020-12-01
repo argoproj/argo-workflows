@@ -135,7 +135,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + nodeID))
+	clusterName := tmpl.ClusterName
+	informer, ok := woc.controller.podInformer[clusterName]
+	if !ok {
+		return nil, fmt.Errorf(`no cluster named "%s" has been configured`, clusterName)
+	}
+	obj, exists, err := informer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + nodeID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
@@ -192,6 +197,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
 		},
+	}
+
+	if clusterName != "" {
+		// only annotate if not default cluster, this allows us to change configuration while running
+		pod.Labels[common.LabelKeyClusterName] = clusterName
 	}
 
 	if opts.onExitPod {
@@ -367,7 +377,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
+	created, err := woc.controller.kubeclientset[clusterName].CoreV1().Pods(woc.wf.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
@@ -381,7 +391,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
+	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, created.Labels[common.LabelKeyClusterName], created.Namespace, created.Name)
 	woc.activePods++
 	return created, nil
 }
@@ -1049,7 +1059,7 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset[pod.Labels[common.LabelKeyClusterName]], pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}

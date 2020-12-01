@@ -691,6 +691,8 @@ message NodeStatus {
 
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
+
+  optional string clusterName = 27;
 }
 
 // NodeSynchronizationStatus stores the status of a node
@@ -1167,6 +1169,9 @@ message Template {
   // Timout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
+
+  // Which cluster to run this template on.
+  optional string clusterName = 39;
 }
 
 // TemplateRef is a reference of template resource.

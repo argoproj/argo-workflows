@@ -631,6 +631,9 @@ type Template struct {
 	// Timout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
+
+	// Which cluster to run this template on.
+	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,39,opt,name=clusterName"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -1531,6 +1534,7 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
+	ClusterName           string                     `json:"clusterName,omitempty" protobuf:"bytes,27,opt,name=clusterName"`
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted

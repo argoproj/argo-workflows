@@ -78,9 +78,9 @@ type wfOperationCtx struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *config.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
-	completedPods map[string]bool
+	completedPods map[podKey]bool
 	// map of pods which is identified as succeeded=true
-	succeededPods map[string]bool
+	succeededPods map[podKey]bool
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -573,18 +573,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if woc.execWf.Spec.PodGC != nil {
 		switch woc.execWf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
-			for podName := range woc.succeededPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+			for key := range woc.succeededPods {
+				woc.controller.gcPods <- key
 			}
 		case wfv1.PodGCOnPodCompletion:
-			for podName := range woc.completedPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+			for key := range woc.completedPods {
+				woc.controller.gcPods <- key
 			}
 		}
 	} else {
 		// label pods which will not be deleted
-		for podName := range woc.completedPods {
-			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+		for key := range woc.completedPods {
+			woc.controller.completedPods <- key
 		}
 	}
 }
@@ -865,7 +865,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 						return
 					}
 				}
-				woc.completedPods[pod.ObjectMeta.Name] = true
+				woc.completedPods[newPodKey(pod)] = true
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
@@ -874,7 +874,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				}
 			}
 			if node.Succeeded() {
-				woc.succeededPods[pod.ObjectMeta.Name] = true
+				key := newPodKey(pod)
+				woc.succeededPods[key] = true
 			}
 		}
 	}
@@ -1017,17 +1018,19 @@ func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
 
 // getAllWorkflowPods returns all pods related to the current workflow
 func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
-	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
-	if err != nil {
-		return nil, err
-	}
-	pods := make([]*apiv1.Pod, len(objs))
-	for i, obj := range objs {
-		pod, ok := obj.(*apiv1.Pod)
-		if !ok {
-			return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
+	pods := make([]*apiv1.Pod, 0)
+	for _, i := range woc.controller.podInformer {
+		objs, err := i.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+		if err != nil {
+			return nil, err
 		}
-		pods[i] = pod
+		for _, obj := range objs {
+			pod, ok := obj.(*apiv1.Pod)
+			if !ok {
+				return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
+			}
+			pods = append(pods, pod)
+		}
 	}
 	return pods, nil
 }
@@ -1346,7 +1349,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset[""].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -1423,7 +1426,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset[""].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -1709,7 +1712,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
-		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
+		return woc.initializeNode("", nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
 	}
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
@@ -1917,7 +1920,7 @@ var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase)
+	node := woc.initializeNode(executeTmpl.ClusterName, nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase)
 
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
@@ -1944,7 +1947,7 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 	if node != nil {
 		return woc.markNodeError(nodeName, err)
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
+	return woc.initializeNode("", nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 }
 
 // Creates a node status that is or will be chaced
@@ -1969,7 +1972,7 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl 
 	return node
 }
 
-func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNode(clusterName clusterName, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	nodeID := woc.wf.NodeID(nodeName)
@@ -1989,6 +1992,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
 		EstimatedDuration: woc.estimateNodeDuration(nodeName),
+		ClusterName:       clusterName,
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -2985,7 +2989,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		return nil
 	}
 
-	pdb, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
+	pdb, err := woc.controller.kubeclientset[""].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
@@ -3010,7 +3014,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+	_, err = woc.controller.kubeclientset[""].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
 		return err
 	}
@@ -3024,7 +3028,7 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		return nil
 	}
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		err := woc.controller.kubeclientset[""].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !errorsutil.IsTransientErr(err) {

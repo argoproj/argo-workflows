@@ -62,7 +62,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		{
 			sgNode := woc.wf.GetNodeByName(sgNodeName)
 			if sgNode == nil {
-				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+				_ = woc.initializeNode(tmpl.ClusterName, sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
 			} else if !sgNode.Fulfilled() {
 				_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 			}
@@ -218,7 +218,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
+			woc.initializeNode(stepsCtx.scope.tmpl.ClusterName, childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
 			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err)
@@ -227,7 +227,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			if woc.wf.GetNodeByName(childNodeName) == nil {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(stepsCtx.scope.tmpl.ClusterName, childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 			continue
@@ -424,7 +424,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 				stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 				skipReason := "Skipped, empty params"
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(stepsCtx.scope.tmpl.ClusterName, childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 		}

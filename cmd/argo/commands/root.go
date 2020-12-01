@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/cmd/argo/commands/cluster"
 	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
 
 	"github.com/argoproj/argo/cmd/argo/commands/archive"
@@ -106,6 +107,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.AddCommand(NewNodeCommand())
 	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(archive.NewArchiveCommand())
+	command.AddCommand(cluster.NewClusterCommand())
 	command.AddCommand(NewVersionCommand())
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
