@@ -1172,6 +1172,9 @@
           },
           "type": "array"
         },
+        "clusterName": {
+          "type": "string"
+        },
         "daemoned": {
           "description": "Daemoned tracks whether or not this node was daemoned and need to be terminated",
           "type": "boolean"
@@ -1941,6 +1944,10 @@
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
+        },
+        "clusterName": {
+          "description": "Which cluster to run this template on.",
+          "type": "string"
         },
         "container": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Container",

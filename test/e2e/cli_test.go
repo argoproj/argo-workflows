@@ -70,11 +70,18 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 	_ = os.Setenv("KUBECONFIG", kubeConfig)
 }
 
+func (s *CLISuite) needsKubeConfig() {
+	if os.Getenv("KUBECONFIG") == "" {
+		s.T().Skip("test needs kube config")
+	}
+}
+
 func (s *CLISuite) needsServer() {
 	if os.Getenv("ARGO_SERVER") == "" {
 		s.T().Skip("test needs server")
 	}
 }
+
 func (s *CLISuite) skipIfServer() {
 	if os.Getenv("ARGO_SERVER") != "" {
 		s.T().Skip("test must not run with server")
@@ -143,6 +150,62 @@ func (s *CLISuite) TestGLogLevels() {
 					assert.Contains(t, output, "Config loaded from file", "glog output")
 				}
 			})
+	})
+}
+
+func (s *CLISuite) TestMultiCluster() {
+	s.Run("Failed", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: multi-cluster-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      clusterName: not-found
+      container:
+        image: argoproj/argosay:v2
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow().
+			Then().
+			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				assert.Equal(t, wfv1.NodeError, status.Phase)
+				assert.Equal(t, "", status.Message)
+			})
+	})
+	s.Run("Successful", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: multi-cluster-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      clusterName: other
+      container:
+        image: argoproj/argosay:v2
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow().
+			Then().
+			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+				assert.Equal(t, "other", status.Nodes[metadata.Name])
+			})
+
 	})
 }
 

@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../../../manifests/quick-start/postgres
+  - ../mixins/clusters-secret.yaml
 
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml

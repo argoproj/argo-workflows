@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../../../manifests/quick-start/sso
+  - ../mixins/clusters-secret.yaml
 
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml

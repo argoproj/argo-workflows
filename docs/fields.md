@@ -1877,6 +1877,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
 |~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template.~ DEPRECATED: This field is not used.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
+|`clusterName`|`string`|Which cluster to run this template on.|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
@@ -2003,6 +2004,7 @@ NodeStatus contains status information about an individual node in the workflow
 |:----------:|:----------:|---------------|
 |`boundaryID`|`string`|BoundaryID indicates the node ID of the associated template root node in which this node belongs to|
 |`children`|`Array< string >`|Children is a list of child node IDs|
+|`clusterName`|`string`|_No description available_|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
