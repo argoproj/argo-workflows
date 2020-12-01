@@ -122,53 +122,20 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	return allMetrics
 }
 
-func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	if _, exists := m.workflows[key]; exists {
-		return
-	}
-	m.workflows[key] = []string{}
-	if _, ok := m.workflowsByPhase[phase]; ok {
-		m.workflowsByPhase[phase].Inc()
-	}
-}
-
-func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePhase) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	if _, exists := m.workflows[key]; !exists || fromPhase == toPhase {
-		return
-	}
-	if _, ok := m.workflowsByPhase[fromPhase]; ok {
-		m.workflowsByPhase[fromPhase].Dec()
-	}
-	if _, ok := m.workflowsByPhase[toPhase]; ok {
-		m.workflowsByPhase[toPhase].Inc()
-	}
-}
-
-func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
+func (m *Metrics) StopRealtimeMetricsForKey(key string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
 	if _, exists := m.workflows[key]; !exists {
 		return
 	}
-	m.StopRealtimeMetricsForKey(key)
-	delete(m.workflows, key)
-	if _, ok := m.workflowsByPhase[phase]; ok {
-		m.workflowsByPhase[phase].Dec()
-	}
-}
 
-func (m *Metrics) StopRealtimeMetricsForKey(key string) {
 	realtimeMetrics := m.workflows[key]
 	for _, metric := range realtimeMetrics {
 		delete(m.customMetrics, metric)
 	}
+
+	delete(m.workflows, key)
 }
 
 func (m *Metrics) OperationCompleted(durationSeconds float64) {
@@ -208,6 +175,13 @@ func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prom
 	}
 
 	return nil
+}
+
+func (m *Metrics) SetWorkflowPhaseGauge(phase v1alpha1.NodePhase, num int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.workflowsByPhase[phase].Set(float64(num))
 }
 
 type ErrorCause string

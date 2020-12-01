@@ -266,6 +266,7 @@ codegen: \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests/install.yaml \
 	api/openapi-spec/swagger.json \
+	api/jsonschema/schema.json \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
@@ -522,6 +523,9 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
+
+api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
+	go run ./hack/jsonschema
 
 go-diagrams/diagram.dot: ./hack/diagram/main.go
 	rm -Rf go-diagrams

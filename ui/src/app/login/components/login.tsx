@@ -1,6 +1,6 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
-import {uiUrl} from '../../shared/base';
+import {uiUrl, uiUrlWithParams} from '../../shared/base';
 
 require('./login.scss');
 
@@ -12,6 +12,13 @@ const user = (token: string) => {
     const path = uiUrl('');
     document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
     document.location.href = path;
+};
+const getRedirect = (): string => {
+    const urlParams = new URLSearchParams(new URL(document.location.href).search);
+    if (urlParams.has('redirect')) {
+        return 'redirect=' + urlParams.get('redirect');
+    }
+    return '';
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
@@ -32,7 +39,11 @@ export const Login = () => (
                         If your organisation has configured <b>single sign-on</b>:
                     </p>
                     <div>
-                        <button className='argo-button argo-button--base-o' onClick={() => (document.location.href = uiUrl('oauth2/redirect'))}>
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
+                            }}>
                             <i className='fa fa-sign-in-alt' /> Login
                         </button>
                     </div>

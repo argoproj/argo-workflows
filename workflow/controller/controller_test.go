@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
+	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -146,7 +147,12 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
 	wfc := &WorkflowController{
-		Config:               config.Config{ExecutorImage: "executor:latest"},
+		Config: config.Config{ExecutorImage: "executor:latest"},
+		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
+			S3: &config.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+			},
+		}),
 		kubeclientset:        kube,
 		dynamicInterface:     dynamicClient,
 		wfclientset:          wfclientset,
@@ -492,7 +498,7 @@ spec:
       args: ["{{inputs.parameters.message}}"]
   volumes:
   - name: data
-    empty: {}
+    emptyDir: {}
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
@@ -502,7 +508,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	defer cancel()
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
-	_, _, err := woc.loadExecutionSpec()
+	err := woc.setExecWorkflow()
 	assert.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
 }
