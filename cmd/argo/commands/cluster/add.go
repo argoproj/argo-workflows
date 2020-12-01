@@ -59,7 +59,8 @@ func NewAddCommand() *cobra.Command {
 			errors.CheckError(err)
 			_, err = secrets.Patch("clusters", types.MergePatchType, data)
 			errors.CheckError(err)
-			fmt.Printf("added cluster named %s from context %s\n", contextName, clusterName)
+			fmt.Printf(`added cluster named "%s" from context "%s"
+`, contextName, clusterName)
 		},
 	}
 }

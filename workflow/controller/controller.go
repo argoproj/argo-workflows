@@ -637,20 +637,14 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
 // enqueue workflow for processing
-func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) {
+func (wfc *WorkflowController) enqueueWfFromPodLabel(clusterName clusterName, obj interface{}) {
 	err := func() error {
 		pod, ok := obj.(*apiv1.Pod)
 		if !ok {
 			return fmt.Errorf("key in index is not a pod")
 		}
-		if pod.Labels == nil {
-			return fmt.Errorf("pod did not have labels")
-		}
-		workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
-		if !ok {
-			// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-			return fmt.Errorf("watch returned pod unrelated to any workflow")
-		}
+		workflowName := pod.Labels[common.LabelKeyWorkflow]
+		log.WithFields(log.Fields{"clusterName": clusterName, "namespace": pod.Namespace, "workflow": workflowName}).Info("queuing workflow after pod update")
 		// add this change after 1s - this reduces the number of workflow reconciliations -
 		//with each reconciliation doing more work
 		wfc.wfQueue.AddAfter(pod.Namespace+"/"+workflowName, enoughTimeForInformerSync)
@@ -837,25 +831,23 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 }
 
 func clusterNameRequirement(clusterName clusterName) labels.Requirement {
-	var r *labels.Requirement
-	var err error
 	if clusterName != "" {
-		r, err = labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{clusterName})
+		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{clusterName})
+		return *r
 	} else {
-		r, err = labels.NewRequirement(common.LabelKeyClusterName, selection.DoesNotExist, nil)
+		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.DoesNotExist, nil)
+		return *r
 	}
-	if err != nil {
-		panic(err)
-	}
-	return *r
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch(clusterName clusterName) *cache.ListWatch {
 	c := wfc.kubeclientset[clusterName].CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
+	workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 	labelSelector := labels.NewSelector().
 		Add(*incompleteReq).
+		Add(*workflowReq).
 		Add(clusterNameRequirement(clusterName)).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
@@ -880,26 +872,34 @@ func (wfc *WorkflowController) newPodInformer() map[clusterName]cache.SharedInde
 		informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		})
+		enqueuePodsWorkflow := func(obj interface{}) {
+			wfc.enqueueWfFromPodLabel(clusterName, obj)
+		}
 		informer.AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: wfc.enqueueWfFromPodLabel,
-				UpdateFunc: func(old, new interface{}) {
-					key, err := cache.MetaNamespaceKeyFunc(new)
-					if err != nil {
-						return
-					}
-					oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
-					if oldPod.ResourceVersion == newPod.ResourceVersion {
-						return
-					}
-					if !pod.SignificantPodChange(oldPod, newPod) {
-						log.WithField("key", key).Info("insignificant pod change")
-						pod.LogChanges(oldPod, newPod)
-						return
-					}
-					wfc.enqueueWfFromPodLabel(new)
+			cache.FilteringResourceEventHandler{
+				FilterFunc: func(obj interface{}) bool {
+					return !common.UnstructuredHasCompletedLabel(obj)
 				},
-				DeleteFunc: wfc.enqueueWfFromPodLabel,
+				Handler: cache.ResourceEventHandlerFuncs{
+					AddFunc: enqueuePodsWorkflow,
+					UpdateFunc: func(old, new interface{}) {
+						key, err := cache.MetaNamespaceKeyFunc(new)
+						if err != nil {
+							return
+						}
+						oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
+						if oldPod.ResourceVersion == newPod.ResourceVersion {
+							return
+						}
+						if !pod.SignificantPodChange(oldPod, newPod) {
+							log.WithField("key", key).Info("insignificant pod change")
+							pod.LogChanges(oldPod, newPod)
+							return
+						}
+						enqueuePodsWorkflow(new)
+					},
+					DeleteFunc: enqueuePodsWorkflow,
+				},
 			},
 		)
 		out[clusterName] = informer

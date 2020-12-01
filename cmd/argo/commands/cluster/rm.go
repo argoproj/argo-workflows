@@ -37,7 +37,8 @@ func NewRMCommand() *cobra.Command {
 			errors.CheckError(err)
 			_, err = secrets.Patch("clusters", types.MergePatchType, data)
 			errors.CheckError(err)
-			fmt.Printf("removed cluster named %s\n", clusterName)
+			fmt.Printf(`removed cluster named "%s"
+`, clusterName)
 		},
 	}
 }

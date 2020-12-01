@@ -64,6 +64,7 @@ nav:
           - submit-workflow-via-automation.md
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md
+          - multi-cluster.md
           - async-pattern.md
           - security.md
       - ide-setup.md

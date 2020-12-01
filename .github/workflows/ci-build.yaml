@@ -100,15 +100,23 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
+
+          # create another cluster and set-up the service account
           k3d cluster create other --wait
-          k3d kubeconfig get other >> ~/.kube/config
           kubectl config use-context k3d-other
           kubectl create ns argo
+          kubectl -n argo apply -f manifests/quick-start/base/workflow-role.yaml
+          kubectl -n argo apply -f manifests/quick-start/base/workflow-default-rolebinding.yaml
+          kubectl -n argo apply -f manifests/quick-start/base/minio/my-minio-cred-secret.yaml
+
+          # switch back and set-up the cluster in the main cluster
           kubectl config use-context k3d-k3s-default
           kubectl create ns argo
           kubectl -n argo create secret generic clusters
           make cli
           ./dist/argo -n argo cluster add other k3d-other
+
+          # start argo workflows
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum

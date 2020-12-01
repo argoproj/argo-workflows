@@ -187,9 +187,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
 			},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
-			},
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
@@ -202,6 +199,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if clusterName != "" {
 		// only annotate if not default cluster, this allows us to change configuration while running
 		pod.Labels[common.LabelKeyClusterName] = clusterName
+	} else {
+		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+		}
 	}
 
 	if opts.onExitPod {

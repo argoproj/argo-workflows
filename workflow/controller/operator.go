@@ -192,7 +192,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 	}()
 
-	woc.log.Infof("Processing workflow")
+	woc.log.WithField("clusterNames", woc.clusterNames()).Infof("Processing workflow")
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
@@ -877,8 +877,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				}
 			}
 			if node.Succeeded() {
-				key := newPodKey(pod)
-				woc.succeededPods[key] = true
+				woc.succeededPods[newPodKey(pod)] = true
 			}
 		}
 	}
@@ -1341,10 +1340,22 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	return wfv1.NodeSucceeded, ""
 }
 
+func (woc *wfOperationCtx) clusterNames() []string {
+	x := map[string]bool{}
+	for _, t := range woc.execWf.Spec.Templates {
+		x[t.ClusterName] = true
+	}
+	var out []string
+	for clusterName := range x {
+		out = append(out, clusterName)
+	}
+	return out
+}
+
 func (woc *wfOperationCtx) kubernetesInterfaces() map[string]kubernetes.Interface {
 	out := map[string]kubernetes.Interface{}
-	for _, t := range woc.execWf.Spec.Templates {
-		out[t.ClusterName] = woc.controller.kubeclientset[t.ClusterName]
+	for _, clusterName := range woc.clusterNames() {
+		out[clusterName] = woc.controller.kubeclientset[clusterName]
 	}
 	return out
 }
@@ -3172,4 +3183,3 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	}
 	return nil
 }
-
