@@ -117,7 +117,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: wfv1.Int64OrStringPtr("Default Value"),
+						Default: wfv1.AnyStringPtr("Default Value"),
 						Path:    "/path",
 					},
 				},
@@ -149,7 +149,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: wfv1.Int64OrStringPtr(""),
+						Default: wfv1.AnyStringPtr(""),
 						Path:    "/path",
 					},
 				},
@@ -290,4 +290,43 @@ func TestChmod(t *testing.T) {
 		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
 	}
 
+}
+
+func TestSaveArtifacts(t *testing.T) {
+	fakeClientset := fake.NewSimpleClientset()
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	templateWithOutParam := wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name: "samedir",
+					Path: "/samedir",
+				},
+			},
+		},
+		Outputs: wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name:     "samedir",
+					Path:     "/samedir",
+					Optional: true,
+				},
+			},
+		},
+	}
+	we := WorkflowExecutor{
+		PodName:            fakePodName,
+		Template:           templateWithOutParam,
+		ClientSet:          fakeClientset,
+		Namespace:          fakeNamespace,
+		PodAnnotationsPath: fakeAnnotations,
+		ExecutionControl:   nil,
+		RuntimeExecutor:    &mockRuntimeExecutor,
+		mainContainerID:    fakeContainerID,
+	}
+	err := we.SaveArtifacts()
+	assert.NoError(t, err)
+	we.Template.Outputs.Artifacts[0].Optional = false
+	err = we.SaveArtifacts()
+	assert.Error(t, err)
 }

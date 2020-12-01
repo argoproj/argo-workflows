@@ -251,6 +251,7 @@ rules:
   - secrets
   verbs:
   - get
+  - create
 - apiGroups:
   - ""
   resources:
@@ -273,10 +274,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
   - serviceaccounts
   verbs:
   - get
+  - list
 - apiGroups:
   - argoproj.io
   resources:
@@ -456,7 +457,20 @@ subjects:
 ---
 apiVersion: v1
 data:
-  minio: |
+  default-v1: |
+    archiveLogs: true
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+  my-key: |
+    archiveLogs: true
     s3:
       bucket: my-bucket
       endpoint: minio:9000
@@ -469,6 +483,8 @@ data:
         key: secretkey
 kind: ConfigMap
 metadata:
+  annotations:
+    workflows.argoproj.io/default-artifact-repository: default-v1
   name: artifact-repositories
 ---
 apiVersion: v1
@@ -654,11 +670,17 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo-server
+      volumes:
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment

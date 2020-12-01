@@ -108,6 +108,17 @@ func NewRootCommand() *cobra.Command {
 	return &command
 }
 
+func init() {
+	cobra.OnInitialize(initConfig)
+}
+
+func initConfig() {
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000Z",
+		FullTimestamp:   true,
+	})
+}
+
 func main() {
 	if err := NewRootCommand().Execute(); err != nil {
 		fmt.Println(err)

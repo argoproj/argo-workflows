@@ -34,7 +34,7 @@ export class EventsPanel extends React.Component<Props, State> {
     }
 
     private set showAll(showAll: boolean) {
-        this.setState({showAll, events: null}, () => this.fetchEvents());
+        this.setState({showAll, events: undefined}, () => this.fetchEvents());
     }
 
     private get showAll() {
@@ -42,13 +42,14 @@ export class EventsPanel extends React.Component<Props, State> {
     }
 
     private set hideNormal(hideNormal: boolean) {
-        this.setState({hideNormal, events: null}, () => this.fetchEvents());
+        this.setState({hideNormal, events: undefined}, () => this.fetchEvents());
     }
 
     private get hideNormal() {
         return this.state.hideNormal;
     }
-    private subscription: Subscription;
+
+    private subscription?: Subscription;
 
     constructor(props: Readonly<Props>) {
         super(props);

@@ -53,7 +53,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
 
     private performActionOnSelectedWorkflows(ctx: any, title: string, action: WorkflowOperationAction): Promise<any> {
         if (!confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`)) {
-            return;
+            return Promise.resolve();
         }
         const promises: Promise<any>[] = [];
         this.props.selectedWorkflows.forEach((wf: Workflow) => {

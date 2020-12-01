@@ -2,9 +2,11 @@ package cronworkflow
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -88,6 +90,22 @@ func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 	return &cronworkflowpkg.CronWorkflowDeletedResponse{}, nil
+}
+
+func (c *cronWorkflowServiceServer) ResumeCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowResumeRequest) (*v1alpha1.CronWorkflow, error) {
+	return setCronWorkflowSuspend(false, req.Namespace, req.Name, ctx)
+}
+
+func (c *cronWorkflowServiceServer) SuspendCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowSuspendRequest) (*v1alpha1.CronWorkflow, error) {
+	return setCronWorkflowSuspend(true, req.Namespace, req.Name, ctx)
+}
+
+func setCronWorkflowSuspend(setTo bool, namespace, name string, ctx context.Context) (*v1alpha1.CronWorkflow, error) {
+	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"suspend": setTo}})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshall cron workflow patch data: %w", err)
+	}
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(namespace).Patch(name, types.MergePatchType, data)
 }
 
 func (c *cronWorkflowServiceServer) getCronWorkflowAndValidate(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {

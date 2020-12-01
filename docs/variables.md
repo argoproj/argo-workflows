@@ -1,9 +1,9 @@
 # Workflow Variables
 
-Some fields in a workflow specification allow for variable references which are automatically substituted by Argo. 
+Some fields in a workflow specification allow for variable references which are automatically substituted by Argo.
 
 ??? note "How to use variables"
-    Variables are enclosed in curly braces and **must not** include whitespace.
+    Variables are enclosed in curly braces and **may** include whitespace between the brackets and variable.
 
     ``` yaml
     apiVersion: argoproj.io/v1alpha1
@@ -24,7 +24,7 @@ Some fields in a workflow specification allow for variable references which are 
         container:
           image: docker/whalesay
           command: [cowsay]
-        # args: ["{{ inputs.parameters.message }}"]       <- bad
+        # args: ["{{ inputs.parameters.message }}"]       <- good
           args: ["{{inputs.parameters.message}}"]         #  good
     ```
 
@@ -91,7 +91,7 @@ step.
 | `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
 | `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
 | `outputs.result` | Output result of the metric-emitting template |
-| `resourcesDuration` | Resources duration as a string. Can also be indexed for a selected resource, if available (may be one of `resourcesDuration.cpu` or `resourcesDuration.memory`. For more info, see the [Resource Duration](resource-duration.md) doc.|
+| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
 
 ### Realtime Metrics
 

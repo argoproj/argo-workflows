@@ -119,8 +119,23 @@ func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
 // FromUnstructured converts an unstructured object to a workflow
 func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
+	err := FromUnstructuredObj(un, &wf)
 	return &wf, err
+}
+
+func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
+	if err != nil {
+		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {
+			data, err := json.Marshal(un)
+			if err != nil {
+				return err
+			}
+			return json.Unmarshal(data, v)
+		}
+		return err
+	}
+	return nil
 }
 
 // ToUnstructured converts an workflow to an Unstructured object
@@ -234,7 +249,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			if len(parts) != 2 {
 				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			param := wfv1.Parameter{Name: parts[0], Value: wfv1.Int64OrStringPtr(parts[1])}
+			param := wfv1.Parameter{Name: parts[0], Value: wfv1.AnyStringPtr(parts[1])}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -268,7 +283,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				param := wfv1.Parameter{Name: k, Value: wfv1.Int64OrStringPtr(value)}
+				param := wfv1.Parameter{Name: k, Value: wfv1.AnyStringPtr(value)}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue
@@ -462,7 +477,7 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 									if param.ValueFrom == nil || param.ValueFrom.Supplied == nil {
 										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw or it was already set", param.Name)
 									}
-									node.Outputs.Parameters[i].Value = wfv1.Int64OrStringPtr(val)
+									node.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(val)
 									node.Outputs.Parameters[i].ValueFrom = nil
 									nodeUpdated = true
 									hit = true

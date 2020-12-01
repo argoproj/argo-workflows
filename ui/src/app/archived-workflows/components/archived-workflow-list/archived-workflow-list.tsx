@@ -36,7 +36,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         super(props, context);
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || defaultPaginationLimit},
-            namespace: this.props.match.params.namespace,
+            namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label'),
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
@@ -122,7 +122,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (this.state.pagination.offset) {
             params.append('offset', this.state.pagination.offset);
         }
-        if (this.state.pagination.limit !== defaultPaginationLimit) {
+        if (this.state.pagination.limit && this.state.pagination.limit !== defaultPaginationLimit) {
             params.append('limit', this.state.pagination.limit.toString());
         }
         return params;
