@@ -33,16 +33,23 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                 <small className='fa-pull-right'>
                     <select
                         className='small'
-                        onChange={e =>
-                            this.props.onChange({
-                                offset: this.props.pagination.offset,
-                                limit: parseLimit(e.target.value)
-                            })
-                        }
-                        value={this.props.pagination.limit || 'all'}>
-                        {[5, 10, 20, 50, 100, 500, 'all'].map(limit => (
+                        onChange={e => {
+                            const limit = parseLimit(e.target.value);
+                            const newValue: Pagination = {limit};
+
+                            // Only return the offset if we're actually going to be limiting
+                            // the results we're requesting.  If we're requesting all records,
+                            // we should not skip any by setting an offset.
+                            if (limit) {
+                                newValue.offset = this.props.pagination.offset;
+                            }
+
+                            this.props.onChange(newValue);
+                        }}
+                        value={this.props.pagination.limit || 0}>
+                        {[5, 10, 20, 50, 100, 500, 0].map(limit => (
                             <option key={limit} value={limit}>
-                                {limit}
+                                {limit === 0 ? 'all' : limit}
                             </option>
                         ))}
                     </select>{' '}

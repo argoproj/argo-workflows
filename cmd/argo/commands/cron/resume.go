@@ -20,16 +20,9 @@ func NewResumeCommand() *cobra.Command {
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
-				cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{
+				_, err := serviceClient.ResumeCronWorkflow(ctx, &cronworkflowpkg.CronWorkflowResumeRequest{
 					Name:      name,
 					Namespace: namespace,
-				})
-				errors.CheckError(err)
-				cronWf.Spec.Suspend = false
-				_, err = serviceClient.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{
-					Name:         cronWf.Name,
-					Namespace:    cronWf.Namespace,
-					CronWorkflow: cronWf,
 				})
 				errors.CheckError(err)
 				fmt.Printf("CronWorkflow '%s' resumed\n", name)

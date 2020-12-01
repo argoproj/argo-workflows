@@ -137,12 +137,8 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 
 // GetTTLStrategy return TTLStrategy based on Order of precedence:
 //1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
-func (w *Workflow) GetTTLStrategy(defaultTTLStrategy *TTLStrategy) *TTLStrategy {
+func (w *Workflow) GetTTLStrategy() *TTLStrategy {
 	var ttlStrategy *TTLStrategy
-	// TTLStrategy from Workflow default from Config
-	if defaultTTLStrategy != nil {
-		ttlStrategy = defaultTTLStrategy
-	}
 	// TTLStrategy from WorkflowTemplate
 	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
 		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
@@ -376,6 +372,46 @@ func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 		}
 	}
 	return wfs.TTLStrategy
+}
+
+// GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
+// Example key format namespace/configmapname (argo/my-config)
+// Return []string
+func (wf *Workflow) GetSemaphoreKeys() []string {
+	keyMap := make(map[string]bool)
+	namespace := wf.Namespace
+	var templates []Template
+	if wf.Spec.WorkflowTemplateRef == nil {
+		templates = wf.Spec.Templates
+		if wf.Spec.Synchronization != nil {
+			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	} else if wf.Status.StoredWorkflowSpec != nil {
+		templates = wf.Status.StoredWorkflowSpec.Templates
+		if wf.Status.StoredWorkflowSpec.Synchronization != nil {
+			if configMapRef := wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	}
+
+	for _, tmpl := range templates {
+		if tmpl.Synchronization != nil {
+			if configMapRef := tmpl.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	}
+	var semaphoreKeys []string
+	for key := range keyMap {
+		semaphoreKeys = append(semaphoreKeys, key)
+	}
+	return semaphoreKeys
 }
 
 type ShutdownStrategy string
@@ -665,11 +701,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *AnyString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *Int64OrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *AnyString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -677,6 +713,9 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
+
+	// Enum holds a list of string values to choose from, for the actual value of the parameter
+	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -701,7 +740,7 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -885,16 +924,70 @@ func (a *ArtifactLocation) GetType() ArtifactLocationType {
 
 }
 
-type ArtifactRepositoryRef struct {
-	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
-	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+func (a *ArtifactLocation) GetKey() string {
+	if a.S3 != nil {
+		return a.S3.Key
+	}
+
+	if a.OSS != nil {
+		return a.OSS.Key
+	}
+
+	if a.GCS != nil {
+		return a.GCS.Key
+	}
+
+	return ""
 }
 
-func (r ArtifactRepositoryRef) GetConfigMap() string {
-	if r.ConfigMap == "" {
-		return "artifact-repositories"
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type ArtifactRepositoryRef struct {
+	// The name of the config map. Defaults to "artifact-repositories".
+	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
+	// The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (r *ArtifactRepositoryRef) GetConfigMapOr(configMap string) string {
+	if r == nil || r.ConfigMap == "" {
+		return configMap
 	}
 	return r.ConfigMap
+}
+
+func (r *ArtifactRepositoryRef) GetKeyOr(key string) string {
+	if r == nil || r.Key == "" {
+		return key
+	}
+	return r.Key
+}
+
+func (r *ArtifactRepositoryRef) String() string {
+	if r == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
+}
+
+var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: true}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type ArtifactRepositoryRefStatus struct {
+	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
+	// The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// If this ref represents the default artifact repository, rather than a config map.
+	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
+}
+
+func (r *ArtifactRepositoryRefStatus) String() string {
+	if r == nil {
+		return "nil"
+	}
+	if r.Default {
+		return "default-artifact-repository"
+	}
+	return fmt.Sprintf("%s/%s", r.Namespace, r.ArtifactRepositoryRef.String())
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1002,6 +1095,13 @@ type Synchronization struct {
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 	// Mutex holds the Mutex lock details
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
+	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
+		return s.Semaphore.ConfigMapKeyRef
+	}
+	return nil
 }
 
 type SynchronizationType string
@@ -1155,6 +1255,9 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
+
+	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
+	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1912,7 +2015,7 @@ type DAGTask struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
-	Template string `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
@@ -2095,7 +2198,7 @@ func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, 
 		return nil
 	}
 	if tmpl, ok := wf.Status.StoredTemplates[tmplID]; ok {
-		return &tmpl
+		return tmpl.DeepCopy()
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import {WorkflowTemplate} from '../../../models';
+import {ExampleManifests} from '../../shared/components/example-manifests';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
 import {services} from '../../shared/services';
@@ -38,6 +39,9 @@ export const ClusterWorkflowTemplateSummaryPanel = (props: Props) => {
                             services.clusterWorkflowTemplate.update(value, props.template.metadata.name).then(clusterWorkflowTemplate => props.onChange(clusterWorkflowTemplate))
                         }
                     />
+                    <p>
+                        <ExampleManifests />
+                    </p>
                 </div>
             </div>
         </div>

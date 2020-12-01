@@ -1,9 +1,6 @@
 export SHELL:=/bin/bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
-# This means we only one shell, and therefore you can use `trap` to clean-up
-.ONESHELL:
-
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
@@ -51,6 +48,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 # perform static compilation
 STATIC_BUILD          ?= true
 STATIC_FILES          ?= true
+GOTEST                ?= go test
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
@@ -95,6 +93,7 @@ endif
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | cut -c 26-)
+MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
@@ -112,7 +111,6 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	trap 'rm -Rf vendor' EXIT
 	[ -e vendor ] || go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
@@ -120,7 +118,6 @@ endef
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-	trap 'rm -Rf vendor' EXIT
     [ -e vendor ] || go mod vendor
     protoc \
       -I /usr/local/include \
@@ -269,11 +266,13 @@ codegen: \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests/install.yaml \
 	api/openapi-spec/swagger.json \
+	api/jsonschema/schema.json \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
+	rm -Rf vendor
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
@@ -311,7 +310,6 @@ $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	trap 'rm -Rf vendor' EXIT
 	[ -e vendor ] || go mod vendor
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
@@ -371,6 +369,7 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -383,7 +382,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	env KUBECONFIG=/dev/null go test ./...
+	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -435,11 +434,11 @@ endif
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
-	grep '127.0.0.1 *dex' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
 endif
-	grep '127.0.0.1 *minio' /etc/hosts
-	grep '127.0.0.1 *postgres' /etc/hosts
-	grep '127.0.0.1 *mysql' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
 	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 endif
@@ -461,15 +460,19 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	go test -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
+
+.PHONY: test-cli
+test-cli:
+	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	go test -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
+	$(GOTEST) -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
-	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
+	$(GOTEST) -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
 # clean
 
@@ -521,6 +524,9 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
+api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
+	go run ./hack/jsonschema
+
 go-diagrams/diagram.dot: ./hack/diagram/main.go
 	rm -Rf go-diagrams
 	go run ./hack/diagram
@@ -532,7 +538,7 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
-docs/cli/argo.go: $(CLI_PKGS) server/static/files.go hack/cli/main.go
+docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
 # pre-push

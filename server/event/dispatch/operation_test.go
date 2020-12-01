@@ -6,14 +6,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
+	"gopkg.in/square/go-jose.v2/jwt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-
-	"gopkg.in/square/go-jose.v2/jwt"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/auth/types"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -45,7 +45,7 @@ func TestNewOperation(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
-	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &jwt.Claims{Subject: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	recorder := record.NewFakeRecorder(1)
 
 	// act
@@ -84,7 +84,7 @@ func TestNewOperation(t *testing.T) {
 			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
 			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
 			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
-			assert.Equal(t, []wfv1.Parameter{{Name: "my-param", Value: wfv1.Int64OrStringPtr(`foo`)}}, wf.Spec.Arguments.Parameters)
+			assert.Equal(t, []wfv1.Parameter{{Name: "my-param", Value: wfv1.AnyStringPtr(`foo`)}}, wf.Spec.Arguments.Parameters)
 		}
 	}
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", <-recorder.Events)
