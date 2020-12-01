@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
