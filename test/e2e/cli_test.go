@@ -154,7 +154,7 @@ func (s *CLISuite) TestGLogLevels() {
 }
 
 func (s *CLISuite) TestMultiCluster() {
-	s.Run("Failed", func() {
+	s.Run("ClusterNotFound", func() {
 		s.Given().
 			Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -177,10 +177,10 @@ spec:
 			Then().
 			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				assert.Equal(t, wfv1.NodeError, status.Phase)
-				assert.Equal(t, "", status.Message)
+				assert.Equal(t, "no cluster named \"not-found\" has been configured", status.Message)
 			})
 	})
-	s.Run("Successful", func() {
+	s.Run("Success", func() {
 		s.Given().
 			Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -203,7 +203,7 @@ spec:
 			Then().
 			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-				assert.Equal(t, "other", status.Nodes[metadata.Name])
+				assert.Equal(t, "other", status.Nodes[metadata.Name].ClusterName)
 			})
 
 	})

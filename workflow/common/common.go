@@ -17,6 +17,8 @@ const (
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 
+	FinalizerName = "argo-finalizer.argo.argoproj.io"
+
 	// PodMetadataVolumeName is the volume name defined in a workflow pod spec to expose pod metadata via downward API
 	PodMetadataVolumeName = "podmetadata"
 

@@ -736,8 +736,42 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				wfc.archiveWorkflow(obj)
 			},
 		},
-	},
-	)
+	})
+	finalizeWorkflow := func(obj interface{}) {
+		err := func() error {
+			key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			namespace, name, err := cache.SplitMetaNamespaceKey(key)
+			if err != nil {
+				return fmt.Errorf("failed to split key %s: %w", key, err)
+			}
+			for clusterName, k := range wfc.kubeclientset {
+				err := k.CoreV1().Pods(namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+					LabelSelector: common.LabelKeyClusterName + "=" + clusterName + "," + common.LabelKeyWorkflow + "=" + name,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to delete pods from %s for %s: %w", clusterName, key, err)
+				}
+			}
+			_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Patch(name, types.MergePatchType, []byte(`{"metadata": {"finalizers": []}}`))
+			if err != nil {
+				return fmt.Errorf("failed to remove finalizer from %s: %w", key, err)
+			}
+			return nil
+		}()
+		if err != nil {
+			log.WithError(err).Errorf("failed to finalize workflow")
+		}
+	}
+	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			un, ok := obj.(*unstructured.Unstructured)
+			return ok && un.GetDeletionTimestamp() != nil && len(un.GetFinalizers()) > 0
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    finalizeWorkflow,
+			UpdateFunc: func(_, obj interface{}) { finalizeWorkflow(obj) },
+		},
+	})
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			wf, ok := obj.(*unstructured.Unstructured)

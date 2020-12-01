@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -287,6 +288,8 @@ func (woc *wfOperationCtx) operate() {
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+
+		woc.wf.Finalizers = append(woc.wf.Finalizers, common.FinalizerName)
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -1338,6 +1341,14 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	return wfv1.NodeSucceeded, ""
 }
 
+func (woc *wfOperationCtx) kubernetesInterfaces() map[string]kubernetes.Interface {
+	out := map[string]kubernetes.Interface{}
+	for _, t := range woc.execWf.Spec.Templates {
+		out[t.ClusterName] = woc.controller.kubeclientset[t.ClusterName]
+	}
+	return out
+}
+
 func (woc *wfOperationCtx) createPVCs() error {
 	if !(woc.wf.Status.Phase == wfv1.NodePending || woc.wf.Status.Phase == wfv1.NodeRunning) {
 		// Only attempt to create PVCs if workflow is in Pending or Running state
@@ -1349,59 +1360,61 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset[""].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
-	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
-		if pvcTmpl.ObjectMeta.Name == "" {
-			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
-		}
-		pvcTmpl = *pvcTmpl.DeepCopy()
-		// PVC name will be <workflowname>-<volumeclaimtemplatename>
-		refName := pvcTmpl.ObjectMeta.Name
-		pvcName := fmt.Sprintf("%s-%s", woc.wf.ObjectMeta.Name, pvcTmpl.ObjectMeta.Name)
-		woc.log.Infof("Creating pvc %s", pvcName)
-		pvcTmpl.ObjectMeta.Name = pvcName
-		if pvcTmpl.ObjectMeta.Labels == nil {
-			pvcTmpl.ObjectMeta.Labels = make(map[string]string)
-		}
-		pvcTmpl.ObjectMeta.Labels[common.LabelKeyWorkflow] = woc.wf.ObjectMeta.Name
-		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
-			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
-		}
-		pvc, err := pvcClient.Create(&pvcTmpl)
-		if err != nil && apierr.IsAlreadyExists(err) {
-			woc.log.WithField("pvc", pvcTmpl.Name).Info("pvc already exists. Workflow is re-using it")
-			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
+	for _, k := range woc.kubernetesInterfaces() {
+		pvcClient := k.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+		for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
+			if pvcTmpl.ObjectMeta.Name == "" {
+				return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
+			}
+			pvcTmpl = *pvcTmpl.DeepCopy()
+			// PVC name will be <workflowname>-<volumeclaimtemplatename>
+			refName := pvcTmpl.ObjectMeta.Name
+			pvcName := fmt.Sprintf("%s-%s", woc.wf.ObjectMeta.Name, pvcTmpl.ObjectMeta.Name)
+			woc.log.Infof("Creating pvc %s", pvcName)
+			pvcTmpl.ObjectMeta.Name = pvcName
+			if pvcTmpl.ObjectMeta.Labels == nil {
+				pvcTmpl.ObjectMeta.Labels = make(map[string]string)
+			}
+			pvcTmpl.ObjectMeta.Labels[common.LabelKeyWorkflow] = woc.wf.ObjectMeta.Name
+			pvcTmpl.OwnerReferences = []metav1.OwnerReference{
+				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+			}
+			pvc, err := pvcClient.Create(&pvcTmpl)
+			if err != nil && apierr.IsAlreadyExists(err) {
+				woc.log.WithField("pvc", pvcTmpl.Name).Info("pvc already exists. Workflow is re-using it")
+				pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				hasOwnerReference := false
+				for i := range pvc.OwnerReferences {
+					ownerRef := pvc.OwnerReferences[i]
+					if ownerRef.UID == woc.wf.UID {
+						hasOwnerReference = true
+						break
+					}
+				}
+				if !hasOwnerReference {
+					return errors.Errorf(errors.CodeForbidden, "%s pvc already exists with different ownerreference", pvcTmpl.Name)
+				}
+			}
+
+			//continue
 			if err != nil {
 				return err
 			}
-			hasOwnerReference := false
-			for i := range pvc.OwnerReferences {
-				ownerRef := pvc.OwnerReferences[i]
-				if ownerRef.UID == woc.wf.UID {
-					hasOwnerReference = true
-					break
-				}
-			}
-			if !hasOwnerReference {
-				return errors.Errorf(errors.CodeForbidden, "%s pvc already exists with different ownerreference", pvcTmpl.Name)
-			}
-		}
 
-		//continue
-		if err != nil {
-			return err
-		}
-
-		vol := apiv1.Volume{
-			Name: refName,
-			VolumeSource: apiv1.VolumeSource{
-				PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
-					ClaimName: pvc.ObjectMeta.Name,
+			vol := apiv1.Volume{
+				Name: refName,
+				VolumeSource: apiv1.VolumeSource{
+					PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+						ClaimName: pvc.ObjectMeta.Name,
+					},
 				},
-			},
+			}
+			woc.wf.Status.PersistentVolumeClaims = append(woc.wf.Status.PersistentVolumeClaims, vol)
+			woc.updated = true
 		}
-		woc.wf.Status.PersistentVolumeClaims = append(woc.wf.Status.PersistentVolumeClaims, vol)
-		woc.updated = true
 	}
 	return nil
 }
@@ -1426,28 +1439,30 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset[""].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
-	newPVClist := make([]apiv1.Volume, 0)
-	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
-	for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
-		woc.log.Infof("Deleting PVC %s", pvc.PersistentVolumeClaim.ClaimName)
-		err := pvcClient.Delete(pvc.PersistentVolumeClaim.ClaimName, nil)
-		if err != nil {
-			if !apierr.IsNotFound(err) {
-				woc.log.Errorf("Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
-				newPVClist = append(newPVClist, pvc)
-				if firstErr == nil {
-					firstErr = err
+	for _, k := range woc.kubernetesInterfaces() {
+		pvcClient := k.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+		newPVClist := make([]apiv1.Volume, 0)
+		// Attempt to delete all PVCs. Record first error encountered
+		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
+			woc.log.Infof("Deleting PVC %s", pvc.PersistentVolumeClaim.ClaimName)
+			err := pvcClient.Delete(pvc.PersistentVolumeClaim.ClaimName, nil)
+			if err != nil {
+				if !apierr.IsNotFound(err) {
+					woc.log.Errorf("Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
+					newPVClist = append(newPVClist, pvc)
+					if firstErr == nil {
+						firstErr = err
+					}
 				}
 			}
 		}
-	}
-	if len(newPVClist) != totalPVCs {
-		// we were successful in deleting one ore more PVCs
-		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
-		woc.wf.Status.PersistentVolumeClaims = newPVClist
-		woc.updated = true
+		if len(newPVClist) != totalPVCs {
+			// we were successful in deleting one ore more PVCs
+			woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
+			woc.wf.Status.PersistentVolumeClaims = newPVClist
+			woc.updated = true
+		}
 	}
 	return firstErr
 }
@@ -2988,38 +3003,40 @@ func (woc *wfOperationCtx) createPDBResource() error {
 	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
-
-	pdb, err := woc.controller.kubeclientset[""].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
-	if err != nil && !apierr.IsNotFound(err) {
-		return err
-	}
-	if pdb != nil && pdb.Name != "" {
-		return nil
-	}
-
-	pdbSpec := *woc.execWf.Spec.PodDisruptionBudget
-	if pdbSpec.Selector == nil {
-		pdbSpec.Selector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+	for _, k := range woc.kubernetesInterfaces() {
+		pdb, err := k.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
+			return err
 		}
-	}
+		if pdb != nil && pdb.Name != "" {
+			return nil
+		}
 
-	newPDB := policyv1beta.PodDisruptionBudget{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   woc.wf.Name,
-			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+		pdbSpec := *woc.execWf.Spec.PodDisruptionBudget
+		if pdbSpec.Selector == nil {
+			pdbSpec.Selector = &metav1.LabelSelector{
+				MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+			}
+		}
+
+		newPDB := policyv1beta.PodDisruptionBudget{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   woc.wf.Name,
+				Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+				OwnerReferences: []metav1.OwnerReference{
+					*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+				},
 			},
-		},
-		Spec: pdbSpec,
+			Spec: pdbSpec,
+		}
+		_, err = k.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+		if err != nil {
+			return err
+		}
+		woc.log.Infof("Created PDB resource for workflow.")
+		woc.updated = true
+
 	}
-	_, err = woc.controller.kubeclientset[""].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
-	if err != nil {
-		return err
-	}
-	woc.log.Infof("Created PDB resource for workflow.")
-	woc.updated = true
 	return nil
 }
 
@@ -3027,20 +3044,22 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.kubeclientset[""].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
-		if err != nil && !apierr.IsNotFound(err) {
-			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !errorsutil.IsTransientErr(err) {
-				return false, err
+	for _, k := range woc.kubernetesInterfaces() {
+		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+			err := k.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+			if err != nil && !apierr.IsNotFound(err) {
+				woc.log.WithField("err", err).Warn("Failed to delete PDB.")
+				if !errorsutil.IsTransientErr(err) {
+					return false, err
+				}
+				return false, nil
 			}
-			return false, nil
+			return true, nil
+		})
+		if err != nil {
+			woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
+			return err
 		}
-		return true, nil
-	})
-	if err != nil {
-		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
-		return err
 	}
 	woc.log.Infof("Deleted PDB resource for workflow.")
 	return nil
@@ -3153,3 +3172,4 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	}
 	return nil
 }
+
