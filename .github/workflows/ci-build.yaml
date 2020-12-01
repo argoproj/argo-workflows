@@ -75,46 +75,45 @@ jobs:
         run: |
           echo /home/runner/go/bin >> $GITHUB_PATH
           echo /usr/local/bin >> $GITHUB_PATH
-      - name: Install and start K3S v1.18.8+k3s1
-        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go
         run: make pull-build-images test-images &
+      - name: Install K3D
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Create cluster
+        run: k3d cluster create --wait --update-default-kubeconfig --switch-context
       - name: Create Kubeconfig
         run: |
-          mkdir -p ~/.kube
-          until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
-          cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
           echo "- name: fake_token_user" >> ~/.kube/config
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
-      - name: Start Argo
-        env:
-          GOPATH: /home/runner/go
-          PROFILE: mysql
+      - name: Fetch tags
+        run: git fetch --tags
+      - name: Add hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          mkdir -p /tmp/log/argo-e2e
-          git fetch --tags
-
-          # create another cluster and set-up the service account
-          # use of host network allows us to connect to minio:9000
+      - name: Create other cluster
+        run: |
           k3d cluster rm other
           k3d cluster create other --wait --update-default-kubeconfig --switch-context
           kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl apply -f-
-
-          # switch back and set-up the cluster in the main cluster
+      - name: Configure clusters
+        run: |
           kubectl config use-context k3d-k3s-default
           kubectl create ns argo
           kubectl -n argo create secret generic clusters
           make cli
           ./dist/argo -n argo cluster add other k3d-other
-
-          # start argo workflows
+      - name: Start Argo
+        env:
+          GOPATH: /home/runner/go
+          PROFILE: mysql
+        run: |
+          mkdir -p /tmp/log/argo-e2e
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
