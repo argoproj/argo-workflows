@@ -21,24 +21,26 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type ArtifactServer struct {
-	gatekeeper        auth.Gatekeeper
-	hydrator          hydrator.Interface
-	wfArchive         sqldb.WorkflowArchive
-	instanceIDService instanceid.Service
-	artDriverFactory  artifact.NewDriverFunc
+	gatekeeper           auth.Gatekeeper
+	hydrator             hydrator.Interface
+	wfArchive            sqldb.WorkflowArchive
+	instanceIDService    instanceid.Service
+	artDriverFactory     artifact.NewDriverFunc
+	artifactRepositories artifactrepositories.Interface
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
-	return newArtifactServer(authN, hydrator, wfArchive, instanceIDService, artifact.NewDriver)
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
+	return newArtifactServer(authN, hydrator, wfArchive, instanceIDService, artifact.NewDriver, artifactRepositories)
 }
 
-func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc) *ArtifactServer {
-	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory}
+func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
