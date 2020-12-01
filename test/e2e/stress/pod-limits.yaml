@@ -8,7 +8,7 @@ spec:
   arguments:
     parameters:
     - name: limit
-      value: 1000
+      value: '1000'
 
   podGC:
     strategy: OnPodCompletion

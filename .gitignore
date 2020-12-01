@@ -32,4 +32,3 @@ git-ask-pass.sh
 /site/
 /.brew_home
 /go-diagrams/
-__pycache__/
