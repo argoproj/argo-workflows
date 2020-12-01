@@ -2,10 +2,12 @@ package fields
 
 import (
 	"encoding/json"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"testing"
+
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	"testing"
+
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 var sampleWorkflow = `
