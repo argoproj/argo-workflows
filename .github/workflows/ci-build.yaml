@@ -102,12 +102,11 @@ jobs:
           git fetch --tags
 
           # create another cluster and set-up the service account
-          k3d cluster create other --wait
+          # use of host network allows us to connect to minio:9000
+          k3d cluster rm other
+          k3d cluster create other --wait --update-default-kubeconfig
           kubectl config use-context k3d-other
-          kubectl create ns argo
-          kubectl -n argo apply -f manifests/quick-start/base/workflow-role.yaml
-          kubectl -n argo apply -f manifests/quick-start/base/workflow-default-rolebinding.yaml
-          kubectl -n argo apply -f manifests/quick-start/base/minio/my-minio-cred-secret.yaml
+          kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl apply -f-
 
           # switch back and set-up the cluster in the main cluster
           kubectl config use-context k3d-k3s-default
