@@ -32,11 +32,26 @@ func kubeifySwagger(in, out string) {
 			definitions[n] = kd
 		}
 	}
+
+	//loop again to handle any new bad definitions
+	for _, d := range definitions {
+		if d.(obj)["properties"] != nil {
+			props := d.(obj)["properties"].(obj)
+			for _, content := range props {
+				if content.(obj)["format"] == "int32" || content.(obj)["format"] == "int64" {
+					delete(content.(obj), "format")
+				}
+			}
+		}
+	}
+
+	definitions["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = obj{"type": array{"string", "integer"}}
 	// "omitempty" does not work for non-nil structs, so we must change it here
 	definitions["io.argoproj.workflow.v1alpha1.CronWorkflow"].(obj)["required"] = array{"metadata", "spec"}
 	definitions["io.argoproj.workflow.v1alpha1.Workflow"].(obj)["required"] = array{"metadata", "spec"}
 	definitions["io.argoproj.workflow.v1alpha1.ScriptTemplate"].(obj)["required"] = array{"image", "source"}
 	definitions["io.k8s.api.core.v1.Container"].(obj)["required"] = array{"image"}
+
 	f, err = os.Create(out)
 	if err != nil {
 		panic(err)
