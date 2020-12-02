@@ -13,9 +13,9 @@ spec:
             arguments:
               parameters:
                 - name: counter
-                  value: 0
+                  value: '0'
                 - name: limit
-                  value: 10
+                  value: '10'
     - name: loop
       inputs:
         parameters:
