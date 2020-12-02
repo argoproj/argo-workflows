@@ -167,20 +167,22 @@ function hasEnv(container: models.kubernetes.Container | models.Sidecar | models
 const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
     const {env} = props;
     const secret = env.valueFrom?.secretKeyRef;
-    const secretValue = secret
-        ? (
-              <>
-                  <Tooltip
-                      content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'}
-                      arrow={false}>
-                          <i className='fa fa-key' />
-                  </Tooltip>
-                  {secret.name}/{secret.key}
-              </>
-        )
-        : undefined;
+    const secretValue = secret ? (
+        <>
+            <Tooltip content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'} arrow={false}>
+                <i className='fa fa-key' />
+            </Tooltip>
+            {secret.name}/{secret.key}
+        </>
+    ) : (
+        undefined
+    );
 
-    return <pre>{env.name}={env.value || secretValue}</pre>;
+    return (
+        <pre>
+            {env.name}={env.value || secretValue}
+        </pre>
+    );
 };
 
 export const WorkflowNodeContainer = (props: {
@@ -206,7 +208,13 @@ export const WorkflowNodeContainer = (props: {
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => <EnvVar env={e} />)}</pre>
+                  value: (
+                      <pre className='workflow-node-info__multi-line'>
+                          {(container.env || []).map(e => (
+                              <EnvVar env={e} />
+                          ))}
+                      </pre>
+                  )
               }
             : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];
