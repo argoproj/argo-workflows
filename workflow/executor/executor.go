@@ -494,6 +494,12 @@ func (we *WorkflowExecutor) SaveParameters() error {
 
 		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
+			executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
+			if executorType == common.ContainerRuntimeExecutorK8sAPI || executorType == common.ContainerRuntimeExecutorKubelet {
+				log.Infof("Copying output parameter %s from base image layer %s is not supported for k8sapi and kubelet executors. "+
+					"Consider using an emptyDir volume: https://argoproj.github.io/argo/empty-dir/.", param.Name, param.ValueFrom.Path)
+				continue
+			}
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
