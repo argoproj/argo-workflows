@@ -5405,7 +5405,7 @@
 <tbody>
 <tr>
 <td align="center"><code>activeDeadlineSeconds</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow</td>
 </tr>
 <tr>
@@ -5480,7 +5480,7 @@
 </tr>
 <tr>
 <td align="center"><code>parallelism</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>Parallelism limits the max total parallel pods that can execute at the same time in a workflow</td>
 </tr>
 <tr>
@@ -5495,7 +5495,7 @@
 </tr>
 <tr>
 <td align="center"><code>podPriority</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Priority to apply to workflow pods.</td>
 </tr>
 <tr>
@@ -5510,7 +5510,7 @@
 </tr>
 <tr>
 <td align="center"><code>priority</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.</td>
 </tr>
 <tr>
@@ -5560,7 +5560,7 @@
 </tr>
 <tr>
 <td align="center">~<code>ttlSecondsAfterFinished</code>~</td>
-<td align="center">~<code>int32</code>~</td>
+<td align="center">~<code>integer</code>~</td>
 <td>~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.</td>
 </tr>
 <tr>
@@ -5619,7 +5619,7 @@
 </tr>
 <tr>
 <td align="center"><code>estimatedDuration</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>EstimatedDuration in seconds.</td>
 </tr>
 <tr>
@@ -5991,7 +5991,7 @@
 </tr>
 <tr>
 <td align="center"><code>failedJobsHistoryLimit</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>FailedJobsHistoryLimit is the number of failed jobs to be kept at a time</td>
 </tr>
 <tr>
@@ -6001,12 +6001,12 @@
 </tr>
 <tr>
 <td align="center"><code>startingDeadlineSeconds</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.</td>
 </tr>
 <tr>
 <td align="center"><code>successfulJobsHistoryLimit</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time</td>
 </tr>
 <tr>
@@ -6357,7 +6357,7 @@
 <tbody>
 <tr>
 <td align="center"><code>activeDeadlineSeconds</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow</td>
 </tr>
 <tr>
@@ -6432,7 +6432,7 @@
 </tr>
 <tr>
 <td align="center"><code>parallelism</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>Parallelism limits the max total parallel pods that can execute at the same time in a workflow</td>
 </tr>
 <tr>
@@ -6447,7 +6447,7 @@
 </tr>
 <tr>
 <td align="center"><code>podPriority</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Priority to apply to workflow pods.</td>
 </tr>
 <tr>
@@ -6462,7 +6462,7 @@
 </tr>
 <tr>
 <td align="center"><code>priority</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.</td>
 </tr>
 <tr>
@@ -6512,7 +6512,7 @@
 </tr>
 <tr>
 <td align="center">~<code>ttlSecondsAfterFinished</code>~</td>
-<td align="center">~<code>int32</code>~</td>
+<td align="center">~<code>integer</code>~</td>
 <td>~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.</td>
 </tr>
 <tr>
@@ -7304,7 +7304,7 @@
 </tr>
 <tr>
 <td align="center"><code>parallelism</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.</td>
 </tr>
 <tr>
@@ -7314,7 +7314,7 @@
 </tr>
 <tr>
 <td align="center"><code>priority</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Priority to apply to workflow pods.</td>
 </tr>
 <tr>
@@ -7422,17 +7422,17 @@
 <tbody>
 <tr>
 <td align="center"><code>secondsAfterCompletion</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>SecondsAfterCompletion is the number of seconds to live after completion</td>
 </tr>
 <tr>
 <td align="center"><code>secondsAfterFailure</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>SecondsAfterFailure is the number of seconds to live after failure</td>
 </tr>
 <tr>
 <td align="center"><code>secondsAfterSuccess</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>SecondsAfterSuccess is the number of seconds to live after success</td>
 </tr>
 </tbody>
@@ -7605,7 +7605,7 @@
 </tr>
 <tr>
 <td align="center"><code>estimatedDuration</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>EstimatedDuration in seconds.</td>
 </tr>
 <tr>
@@ -7965,7 +7965,7 @@
 </tr>
 <tr>
 <td align="center"><code>mode</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.</td>
 </tr>
 <tr>
@@ -9974,7 +9974,7 @@
 <tbody>
 <tr>
 <td align="center"><code>depth</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip</td>
 </tr>
 <tr>
@@ -10868,7 +10868,7 @@
 <tbody>
 <tr>
 <td align="center"><code>compressionLevel</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.</td>
 </tr>
 </tbody>
@@ -11234,7 +11234,7 @@
 </tr>
 <tr>
 <td align="center"><code>deletionGracePeriodSeconds</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only.</td>
 </tr>
 <tr>
@@ -11254,7 +11254,7 @@
 </tr>
 <tr>
 <td align="center"><code>generation</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.</td>
 </tr>
 <tr>
@@ -11479,12 +11479,12 @@
 <tbody>
 <tr>
 <td align="center"><code>fsGroup</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----If unset, the Kubelet will not modify the ownership and permissions of any volume.</td>
 </tr>
 <tr>
 <td align="center"><code>runAsGroup</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.</td>
 </tr>
 <tr>
@@ -11494,7 +11494,7 @@
 </tr>
 <tr>
 <td align="center"><code>runAsUser</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.</td>
 </tr>
 <tr>
@@ -11548,7 +11548,7 @@
 </tr>
 <tr>
 <td align="center"><code>tolerationSeconds</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</td>
 </tr>
 <tr>
@@ -11853,7 +11853,7 @@
 </tbody>
 </table>
 <h2 id="intorstring">IntOrString<a class="headerlink" href="#intorstring" title="Permanent link">&para;</a></h2>
-<p>IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.</p>
+<p><em>No description available</em></p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -12392,7 +12392,7 @@
 </tr>
 <tr>
 <td align="center"><code>failureThreshold</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.</td>
 </tr>
 <tr>
@@ -12402,17 +12402,17 @@
 </tr>
 <tr>
 <td align="center"><code>initialDelaySeconds</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
 </tr>
 <tr>
 <td align="center"><code>periodSeconds</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.</td>
 </tr>
 <tr>
 <td align="center"><code>successThreshold</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.</td>
 </tr>
 <tr>
@@ -12422,7 +12422,7 @@
 </tr>
 <tr>
 <td align="center"><code>timeoutSeconds</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
 </tr>
 </tbody>
@@ -12450,7 +12450,7 @@
 <tbody>
 <tr>
 <td align="center"><code>containerPort</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Number of port to expose on the pod's IP address. This must be a valid port number, 0 &lt; x &lt; 65536.</td>
 </tr>
 <tr>
@@ -12460,7 +12460,7 @@
 </tr>
 <tr>
 <td align="center"><code>hostPort</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Number of port to expose on the host. If specified, this must be a valid port number, 0 &lt; x &lt; 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.</td>
 </tr>
 <tr>
@@ -12576,7 +12576,7 @@
 </tr>
 <tr>
 <td align="center"><code>runAsGroup</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
 </tr>
 <tr>
@@ -12586,7 +12586,7 @@
 </tr>
 <tr>
 <td align="center"><code>runAsUser</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
 </tr>
 <tr>
@@ -13443,7 +13443,7 @@
 </tr>
 <tr>
 <td align="center"><code>partition</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as "1". Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).</td>
 </tr>
 <tr>
@@ -13632,7 +13632,7 @@
 <tbody>
 <tr>
 <td align="center"><code>defaultMode</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
 </tr>
 <tr>
@@ -13705,7 +13705,7 @@
 <tbody>
 <tr>
 <td align="center"><code>defaultMode</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
 </tr>
 <tr>
@@ -13769,7 +13769,7 @@
 </tr>
 <tr>
 <td align="center"><code>lun</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional: FC target lun number</td>
 </tr>
 <tr>
@@ -13871,7 +13871,7 @@
 </tr>
 <tr>
 <td align="center"><code>partition</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as "1". Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty). More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk</td>
 </tr>
 <tr>
@@ -14012,7 +14012,7 @@
 </tr>
 <tr>
 <td align="center"><code>lun</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>iSCSI Target Lun number.</td>
 </tr>
 <tr>
@@ -14166,7 +14166,7 @@
 <tbody>
 <tr>
 <td align="center"><code>defaultMode</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
 </tr>
 <tr>
@@ -14363,7 +14363,7 @@
 <tbody>
 <tr>
 <td align="center"><code>defaultMode</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
 </tr>
 <tr>
@@ -14763,7 +14763,7 @@
 </tr>
 <tr>
 <td align="center"><code>weight</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.</td>
 </tr>
 </tbody>
@@ -14806,7 +14806,7 @@
 </tr>
 <tr>
 <td align="center"><code>weight</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>weight associated with matching the corresponding podAffinityTerm, in the range 1-100.</td>
 </tr>
 </tbody>
@@ -14961,7 +14961,7 @@
 </tr>
 <tr>
 <td align="center"><code>mode</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
 </tr>
 <tr>
@@ -14990,7 +14990,7 @@
 </tr>
 <tr>
 <td align="center"><code>mode</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><code>integer</code></td>
 <td>Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
 </tr>
 <tr>
@@ -15256,7 +15256,7 @@
 </tr>
 <tr>
 <td align="center"><code>expirationSeconds</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><code>integer</code></td>
 <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
 </tr>
 <tr>
