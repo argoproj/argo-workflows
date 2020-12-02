@@ -165,6 +165,10 @@ jobs:
         env:
           GOPATH: /home/runner/go
         run: make lint STATIC_FILES=false
+      - name: Make validate-examples
+        env:
+          GOPATH: /home/runner/go
+        run: make validate-examples STATIC_FILES=false
       - name: Ensure nothing changed
         run: git diff --exit-code
 
