@@ -115,7 +115,7 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 				})
 				if err != nil {
 					log.Warnf("Failed to create bucket: %v", outputArtifact.S3.Bucket)
-					return false, err
+					return false, nil
 				}
 			}
 
