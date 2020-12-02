@@ -240,6 +240,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 				go wfc.runTTLController(ctx)
 				go wfc.runCronController(ctx)
 				go wfc.metrics.RunServer(ctx)
+				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 
 				for i := 0; i < wfWorkers; i++ {
 					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
