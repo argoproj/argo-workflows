@@ -23,11 +23,9 @@
           "type": "array"
         },
         "grpc_code": {
-          "format": "int32",
           "type": "integer"
         },
         "http_code": {
-          "format": "int32",
           "type": "integer"
         },
         "http_status": {
@@ -126,7 +124,6 @@
         },
         "mode": {
           "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
-          "format": "int32",
           "type": "integer"
         },
         "name": {
@@ -520,7 +517,6 @@
         },
         "failedJobsHistoryLimit": {
           "description": "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
-          "format": "int32",
           "type": "integer"
         },
         "schedule": {
@@ -529,12 +525,10 @@
         },
         "startingDeadlineSeconds": {
           "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
-          "format": "int64",
           "type": "integer"
         },
         "successfulJobsHistoryLimit": {
           "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
-          "format": "int32",
           "type": "integer"
         },
         "suspend": {
@@ -776,7 +770,6 @@
       "properties": {
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
-          "format": "int64",
           "type": "integer"
         },
         "fetch": {
@@ -1185,7 +1178,6 @@
         },
         "estimatedDuration": {
           "description": "EstimatedDuration in seconds.",
-          "format": "int32",
           "type": "integer"
         },
         "finishedAt": {
@@ -1895,17 +1887,14 @@
       "properties": {
         "secondsAfterCompletion": {
           "description": "SecondsAfterCompletion is the number of seconds to live after completion",
-          "format": "int32",
           "type": "integer"
         },
         "secondsAfterFailure": {
           "description": "SecondsAfterFailure is the number of seconds to live after failure",
-          "format": "int32",
           "type": "integer"
         },
         "secondsAfterSuccess": {
           "description": "SecondsAfterSuccess is the number of seconds to live after success",
-          "format": "int32",
           "type": "integer"
         }
       },
@@ -1916,7 +1905,6 @@
       "properties": {
         "compressionLevel": {
           "description": "CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.",
-          "format": "int32",
           "type": "integer"
         }
       },
@@ -2016,7 +2004,6 @@
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
-          "format": "int64",
           "type": "integer"
         },
         "podSpecPatch": {
@@ -2025,7 +2012,6 @@
         },
         "priority": {
           "description": "Priority to apply to workflow pods.",
-          "format": "int32",
           "type": "integer"
         },
         "priorityClassName": {
@@ -2580,7 +2566,6 @@
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
-          "format": "int64",
           "type": "integer"
         },
         "affinity": {
@@ -2653,7 +2638,6 @@
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "format": "int64",
           "type": "integer"
         },
         "podDisruptionBudget": {
@@ -2666,7 +2650,6 @@
         },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
-          "format": "int32",
           "type": "integer"
         },
         "podPriorityClassName": {
@@ -2679,7 +2662,6 @@
         },
         "priority": {
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
-          "format": "int32",
           "type": "integer"
         },
         "retryStrategy": {
@@ -2730,7 +2712,6 @@
         },
         "ttlSecondsAfterFinished": {
           "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "format": "int32",
           "type": "integer"
         },
         "ttlStrategy": {
@@ -2786,7 +2767,6 @@
         },
         "estimatedDuration": {
           "description": "EstimatedDuration in seconds.",
-          "format": "int32",
           "type": "integer"
         },
         "finishedAt": {
@@ -3054,7 +3034,6 @@
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
-          "format": "int64",
           "type": "integer"
         },
         "affinity": {
@@ -3127,7 +3106,6 @@
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "format": "int64",
           "type": "integer"
         },
         "podDisruptionBudget": {
@@ -3140,7 +3118,6 @@
         },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
-          "format": "int32",
           "type": "integer"
         },
         "podPriorityClassName": {
@@ -3153,7 +3130,6 @@
         },
         "priority": {
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
-          "format": "int32",
           "type": "integer"
         },
         "retryStrategy": {
@@ -3204,7 +3180,6 @@
         },
         "ttlSecondsAfterFinished": {
           "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "format": "int32",
           "type": "integer"
         },
         "ttlStrategy": {
@@ -3296,7 +3271,6 @@
         },
         "partition": {
           "description": "The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as \"1\". Similarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty).",
-          "format": "int32",
           "type": "integer"
         },
         "readOnly": {
@@ -3561,7 +3535,6 @@
       "properties": {
         "defaultMode": {
           "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "format": "int32",
           "type": "integer"
         },
         "items": {
@@ -3718,7 +3691,6 @@
       "properties": {
         "containerPort": {
           "description": "Number of port to expose on the pod's IP address. This must be a valid port number, 0 \u003c x \u003c 65536.",
-          "format": "int32",
           "type": "integer"
         },
         "hostIP": {
@@ -3727,7 +3699,6 @@
         },
         "hostPort": {
           "description": "Number of port to expose on the host. If specified, this must be a valid port number, 0 \u003c x \u003c 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.",
-          "format": "int32",
           "type": "integer"
         },
         "name": {
@@ -3766,7 +3737,6 @@
         },
         "mode": {
           "description": "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "format": "int32",
           "type": "integer"
         },
         "path": {
@@ -3788,7 +3758,6 @@
       "properties": {
         "defaultMode": {
           "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "format": "int32",
           "type": "integer"
         },
         "items": {
@@ -3889,7 +3858,6 @@
         },
         "count": {
           "description": "The number of times this event has occurred.",
-          "format": "int32",
           "type": "integer"
         },
         "eventTime": {
@@ -3967,7 +3935,6 @@
       "properties": {
         "count": {
           "description": "Number of occurrences in this series up to the last heartbeat time",
-          "format": "int32",
           "type": "integer"
         },
         "lastObservedTime": {
@@ -4017,7 +3984,6 @@
         },
         "lun": {
           "description": "Optional: FC target lun number",
-          "format": "int32",
           "type": "integer"
         },
         "readOnly": {
@@ -4096,7 +4062,6 @@
         },
         "partition": {
           "description": "The partition in the volume that you want to mount. If omitted, the default is to mount by volume name. Examples: For volume /dev/sda1, you specify the partition as \"1\". Similarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty). More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk",
-          "format": "int32",
           "type": "integer"
         },
         "pdName": {
@@ -4287,7 +4252,6 @@
         },
         "lun": {
           "description": "iSCSI Target Lun number.",
-          "format": "int32",
           "type": "integer"
         },
         "portals": {
@@ -4326,7 +4290,6 @@
         },
         "mode": {
           "description": "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "format": "int32",
           "type": "integer"
         },
         "path": {
@@ -4793,12 +4756,10 @@
       "properties": {
         "fsGroup": {
           "description": "A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:\n\n1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----\n\nIf unset, the Kubelet will not modify the ownership and permissions of any volume.",
-          "format": "int64",
           "type": "integer"
         },
         "runAsGroup": {
           "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
-          "format": "int64",
           "type": "integer"
         },
         "runAsNonRoot": {
@@ -4807,7 +4768,6 @@
         },
         "runAsUser": {
           "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
-          "format": "int64",
           "type": "integer"
         },
         "seLinuxOptions": {
@@ -4866,7 +4826,6 @@
         },
         "weight": {
           "description": "Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.",
-          "format": "int32",
           "type": "integer"
         }
       },
@@ -4885,7 +4844,6 @@
         },
         "failureThreshold": {
           "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
-          "format": "int32",
           "type": "integer"
         },
         "httpGet": {
@@ -4894,17 +4852,14 @@
         },
         "initialDelaySeconds": {
           "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
-          "format": "int32",
           "type": "integer"
         },
         "periodSeconds": {
           "description": "How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.",
-          "format": "int32",
           "type": "integer"
         },
         "successThreshold": {
           "description": "Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.",
-          "format": "int32",
           "type": "integer"
         },
         "tcpSocket": {
@@ -4913,7 +4868,6 @@
         },
         "timeoutSeconds": {
           "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
-          "format": "int32",
           "type": "integer"
         }
       },
@@ -4924,7 +4878,6 @@
       "properties": {
         "defaultMode": {
           "description": "Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "format": "int32",
           "type": "integer"
         },
         "sources": {
@@ -5194,7 +5147,6 @@
       "properties": {
         "defaultMode": {
           "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-          "format": "int32",
           "type": "integer"
         },
         "items": {
@@ -5240,7 +5192,6 @@
         },
         "runAsGroup": {
           "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
-          "format": "int64",
           "type": "integer"
         },
         "runAsNonRoot": {
@@ -5249,7 +5200,6 @@
         },
         "runAsUser": {
           "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
-          "format": "int64",
           "type": "integer"
         },
         "seLinuxOptions": {
@@ -5272,7 +5222,6 @@
         },
         "expirationSeconds": {
           "description": "ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.",
-          "format": "int64",
           "type": "integer"
         },
         "path": {
@@ -5363,7 +5312,6 @@
         },
         "tolerationSeconds": {
           "description": "TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.",
-          "format": "int64",
           "type": "integer"
         },
         "value": {
@@ -5628,7 +5576,6 @@
         },
         "weight": {
           "description": "weight associated with matching the corresponding podAffinityTerm, in the range 1-100.",
-          "format": "int32",
           "type": "integer"
         }
       },
@@ -5755,7 +5702,6 @@
         },
         "remainingItemCount": {
           "description": "remainingItemCount is the number of subsequent items in the list which are not included in this list response. If the list request contained label or field selectors, then the number of remaining items is unknown and the field will be left unset and omitted during serialization. If the list is complete (either because it is not chunking or because this is the last chunk), then there are no more remaining items and this field will be left unset and omitted during serialization. Servers older than v1.15 do not set this field. The intended use of the remainingItemCount is *estimating* the size of a collection. Clients should not rely on the remainingItemCount to be set or to be exact.",
-          "format": "int64",
           "type": "integer"
         },
         "resourceVersion": {
@@ -5824,7 +5770,6 @@
         },
         "deletionGracePeriodSeconds": {
           "description": "Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only.",
-          "format": "int64",
           "type": "integer"
         },
         "deletionTimestamp": {
@@ -5845,7 +5790,6 @@
         },
         "generation": {
           "description": "A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.",
-          "format": "int64",
           "type": "integer"
         },
         "labels": {
@@ -5972,7 +5916,6 @@
         },
         "retryAfterSeconds": {
           "description": "If specified, the time in seconds before the operation should be retried. Some errors may indicate the client must take an alternate action - for those errors this field may indicate how long to wait before taking the alternate action.",
-          "format": "int32",
           "type": "integer"
         },
         "uid": {
@@ -5988,9 +5931,10 @@
       "type": "string"
     },
     "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
-      "description": "IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.",
-      "format": "int-or-string",
-      "type": "string"
+      "type": [
+        "string",
+        "integer"
+      ]
     }
   },
   "oneOf": [
