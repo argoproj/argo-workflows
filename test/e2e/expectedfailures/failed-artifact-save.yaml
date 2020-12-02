@@ -15,7 +15,6 @@ spec:
         path: /etc/alpine-release
         s3:
           bucket: my-bucket
-          key: some-key
           endpoint: non-existent-endpoint:9000
           insecure: true
           accessKeySecret:

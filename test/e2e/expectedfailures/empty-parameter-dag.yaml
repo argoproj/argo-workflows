@@ -12,7 +12,7 @@ spec:
           - name: a
             template: whalesay
             arguments:
-              parameters: []
+              parameters:
           - name: b
             template: whalesay
             arguments:

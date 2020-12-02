@@ -13,7 +13,7 @@ spec:
         arguments:
           parameters:
           - name: seconds
-            value: '1'
+            value: 1
       - name: generate1
         template: gen-number-list1
         dependencies:
@@ -50,7 +50,7 @@ spec:
         arguments:
           parameters:
           - name: seconds
-            value: '3'
+            value: 3
         dependencies:
           - generate3
       - name: sleep3

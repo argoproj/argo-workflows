@@ -3,11 +3,11 @@ kind: Workflow
 metadata:
   name: artifact-repository-ref
   labels:
-    argo-e2e: 'true'
+    argo-e2e: true
 spec:
   entrypoint: main
   artifactRepositoryRef:
-    key: my-key
+    key: minio
   templates:
     - name: main
       container:

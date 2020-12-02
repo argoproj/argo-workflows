@@ -1,4 +1,4 @@
-package util
+package validation
 
 import (
 	"io/ioutil"
@@ -21,7 +21,7 @@ func contains(s []string, e string) bool {
 
 func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[string][]string, error) {
 
-	schemaBytes, err := ioutil.ReadFile("../../api/jsonschema/schema.json")
+	schemaBytes, err := ioutil.ReadFile("../api/jsonschema/schema.json")
 	if err != nil {
 		return nil, err
 	}
