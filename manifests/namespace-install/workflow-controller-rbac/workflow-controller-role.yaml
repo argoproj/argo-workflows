@@ -8,7 +8,7 @@ rules:
     resources:
       - leases
     resourceNames:
-      - workflow-controller
+      - workflow-controller-lease
     verbs:
       - '*'
   - apiGroups:
