@@ -2,7 +2,6 @@ package fields
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
@@ -24,10 +23,7 @@ func CleanFields(fieldsQuery string, dataBytes []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = processItem([]string{}, data, exclude, fields)
-	if err != nil {
-		return nil, err
-	}
+	processItem([]string{}, data, exclude, fields)
 	clean, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -35,7 +31,7 @@ func CleanFields(fieldsQuery string, dataBytes []byte) ([]byte, error) {
 	return clean, nil
 }
 
-func processItem(path []string, item interface{}, exclude bool, fields map[string]interface{}) error {
+func processItem(path []string, item interface{}, exclude bool, fields map[string]interface{}) {
 	if mapItem, ok := item.(map[string]interface{}); ok {
 		for k, v := range mapItem {
 
@@ -53,22 +49,15 @@ func processItem(path []string, item interface{}, exclude bool, fields map[strin
 
 			if exclude && !pathIn || !exclude && parentPathIn {
 				if !pathIn {
-					if err := processItem(append(path, k), v, exclude, fields); err != nil {
-						return err
-					}
+					processItem(append(path, k), v, exclude, fields)
 				}
 			} else {
 				delete(mapItem, k)
 			}
 		}
-		return nil
 	} else if arrayItem, ok := item.([]interface{}); ok {
 		for i := range arrayItem {
-			if err := processItem(path, arrayItem[i], exclude, fields); err != nil {
-				return err
-			}
+			processItem(path, arrayItem[i], exclude, fields)
 		}
-		return nil
 	}
-	return fmt.Errorf("cannot process item for fields, unknown format")
 }
