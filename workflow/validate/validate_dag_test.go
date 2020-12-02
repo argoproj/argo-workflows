@@ -189,6 +189,68 @@ spec:
             value: "{{tasks.B.outputs.parameters.unresolvable}}"
 `
 
+var dagResolvedGlobalVar = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-global-var-
+spec:
+  entrypoint: unresolved
+  templates:
+  - name: first
+    container:
+      image: alpine:3.7
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+        globalName: global
+  - name: second
+    container:
+      image: alpine:3.7
+      command: [echo, "{{workflow.outputs.parameters.global}}"]
+  - name: unresolved
+    dag:
+      tasks:
+      - name: A
+        template: first
+      - name: B
+        dependencies: [A]
+        template: second
+`
+
+var dagResolvedGlobalVarReversed = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-global-var-
+spec:
+  entrypoint: unresolved
+  templates:
+  - name: first
+    container:
+      image: alpine:3.7
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+        globalName: global
+  - name: second
+    container:
+      image: alpine:3.7
+      command: [echo, "{{workflow.outputs.parameters.global}}"]
+  - name: unresolved
+    dag:
+      tasks:
+      - name: B
+        dependencies: [A]
+        template: second
+      - name: A
+        template: first
+`
+
 func TestDAGVariableResolution(t *testing.T) {
 	_, err := validate(dagUnresolvedVar)
 	if assert.NotNil(t, err) {
@@ -201,6 +263,11 @@ func TestDAGVariableResolution(t *testing.T) {
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.outputs.parameters.unresolvable}}")
 	}
+
+	_, err = validate(dagResolvedGlobalVar)
+	assert.NoError(t, err)
+	_, err = validate(dagResolvedGlobalVarReversed)
+	assert.NoError(t, err)
 }
 
 var dagResolvedArt = `
