@@ -541,6 +541,10 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
+.PHONY: validate-examples
+validate-examples: api/jsonschema/schema.json
+	cd examples && go test
+
 # pre-push
 
 .PHONY: pre-commit
