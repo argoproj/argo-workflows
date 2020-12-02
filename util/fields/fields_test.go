@@ -89,9 +89,9 @@ func TestCleanFieldsExclude(t *testing.T) {
 	err = json.Unmarshal(cleanJsonWf, &cleanWf)
 	assert.NoError(t, err)
 
-	assert.Nil(t, string(cleanWf.Status.Phase))
-	assert.Nil(t, cleanWf.Spec.Entrypoint)
-	assert.Nil(t, cleanWf.Name)
+	assert.Empty(t, string(cleanWf.Status.Phase))
+	assert.Empty(t, cleanWf.Spec.Entrypoint)
+	assert.Empty(t, cleanWf.Name)
 
 	assert.NotNil(t, cleanWf.Status.Nodes)
 }
