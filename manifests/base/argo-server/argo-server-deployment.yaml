@@ -38,7 +38,5 @@ spec:
           emptyDir: { }
       securityContext:
         runAsNonRoot: true
-
-
       nodeSelector:
         kubernetes.io/os: linux
