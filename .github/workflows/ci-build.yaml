@@ -73,35 +73,16 @@ jobs:
         env:
           GOPATH: /home/runner/go
         run: make pull-build-images test-images &
-      - name: Install K3D
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-      - name: Create cluster
-        run: k3d cluster create --wait --update-default-kubeconfig --switch-context
-      - name: Create Kubeconfig
-        run: |
-          echo "- name: fake_token_user" >> ~/.kube/config
-          echo "  user:" >> ~/.kube/config
-          echo "    token: xxxxxx" >> ~/.kube/config
       - name: Fetch tags
         run: git fetch --tags
+      - name: Install K3D
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Add hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-      - name: Create other cluster
-        run: |
-          k3d cluster rm other
-          k3d cluster create other --wait --update-default-kubeconfig --switch-context
-          kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl apply -f-
-      - name: Configure clusters
-        run: |
-          kubectl config use-context k3d-k3s-default
-          kubectl create ns argo
-          kubectl -n argo create secret generic clusters
-          make cli
-          ./dist/argo -n argo cluster add other k3d-other
       - name: Start Argo
         env:
           GOPATH: /home/runner/go

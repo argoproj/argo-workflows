@@ -384,15 +384,20 @@ endif
 test: server/static/files.go
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
-	mkdir -p dist
-	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
-
 .PHONY: install
-install: dist/$(PROFILE).yaml
-	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
-	kubectl apply -f dist/argo-ns.yaml
-	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
+install: /usr/local/bin/kustomize dist/argo
+	# create other cluster (if not exists)
+	k3d cluster get other || k3d cluster create other --wait --update-default-kubeconfig
+	kubectl config use-context k3d-other
+	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl -n $(KUBE_NAMESPACE) apply -f-
+	# create main cluster (if not exists)
+	k3d cluster get k3s-default || k3d cluster create --wait --update-default-kubeconfig
+	kubectl config use-context k3d-k3s-default
+	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f -
+	kubectl -n $(KUBE_NAMESPACE) create secret generic clusters --dry-run=client -o yaml | kubectl apply -f -
+	./dist/argo -n $(KUBE_NAMESPACE) cluster add other k3d-other
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -460,6 +465,8 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
+	# set-up bad user for e2e tests
+	kubectl config set-credentials fake_token_user --token=xxxxxx
 	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-cli
