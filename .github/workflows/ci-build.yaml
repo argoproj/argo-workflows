@@ -91,8 +91,6 @@ jobs:
         run: |
           mkdir -p /tmp/log/argo-e2e
           make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
-      - name: Install gotestsum
-        run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go
@@ -100,7 +98,7 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
+        run: make ${{ matrix.test }}
       - name: Upload logs
         if: ${{ always() }}
         uses: actions/upload-artifact@v1
