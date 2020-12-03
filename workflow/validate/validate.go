@@ -1151,7 +1151,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 
 type dagValidationContext struct {
 	tasks        map[string]wfv1.DAGTask
-	dependencies map[string][]string
+	dependencies map[string]map[string]common.DependencyType //map of DAG tasks, each one containing a map of [task it's dependent on] -> [dependency type]
 }
 
 func (d *dagValidationContext) GetTask(taskName string) *wfv1.DAGTask {
@@ -1160,6 +1160,17 @@ func (d *dagValidationContext) GetTask(taskName string) *wfv1.DAGTask {
 }
 
 func (d *dagValidationContext) GetTaskDependencies(taskName string) []string {
+	dependencies := d.GetTaskDependenciesWithDependencyTypes(taskName)
+
+	var dependencyTasks []string
+	for task := range dependencies {
+		dependencyTasks = append(dependencyTasks, task)
+	}
+
+	return dependencyTasks
+}
+
+func (d *dagValidationContext) GetTaskDependenciesWithDependencyTypes(taskName string) map[string]common.DependencyType {
 	if dependencies, ok := d.dependencies[taskName]; ok {
 		return dependencies
 	}
@@ -1203,7 +1214,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 	dagValidationCtx := &dagValidationContext{
 		tasks:        nameToTask,
-		dependencies: make(map[string][]string),
+		dependencies: make(map[string]map[string]common.DependencyType),
 	}
 
 	resolvedTemplates := make(map[string]*wfv1.Template)
@@ -1238,11 +1249,17 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 
-		for j, depName := range dagValidationCtx.GetTaskDependencies(task.Name) {
-			if _, ok := dagValidationCtx.tasks[depName]; !ok {
+		for depName, depType := range dagValidationCtx.GetTaskDependenciesWithDependencyTypes(task.Name) {
+			task, ok := dagValidationCtx.tasks[depName]
+			if !ok {
 				return errors.Errorf(errors.CodeBadRequest,
-					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' not defined",
-					tmpl.Name, task.Name, j, depName)
+					"templates.%s.tasks.%s dependency '%s' not defined",
+					tmpl.Name, task.Name, depName)
+
+			} else if depType == common.DependencyTypeItems && len(task.WithItems) == 0 && task.WithParam == "" && task.WithSequence == nil {
+				return errors.Errorf(errors.CodeBadRequest,
+					"templates.%s.tasks.%s dependency '%s' uses an items-based condition such as .AnySucceeded or .AllFailed but does not contain any items",
+					tmpl.Name, task.Name, depName)
 			}
 		}
 	}
