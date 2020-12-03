@@ -426,11 +426,17 @@ stop:
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
+.PHONY: pre-start
+ifeq ($(RUN_MODE),kubernetes)
+pre-start: stop install controller cli executor-image $(GOPATH)/bin/goreman
+else
+pre-start: stop install controller-image cli-image executor-image $(GOPATH)/bin/goreman
+endif
+
 .PHONY: start
-start: stop install controller cli executor-image $(GOPATH)/bin/goreman
+start: pre-start
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 ifeq ($(RUN_MODE),kubernetes)
-	$(MAKE) controller-image cli-image
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
