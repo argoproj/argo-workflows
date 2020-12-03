@@ -69,14 +69,14 @@ jobs:
         run: |
           echo /home/runner/go/bin >> $GITHUB_PATH
           echo /usr/local/bin >> $GITHUB_PATH
-      - name: Pre-pull images
-        env:
-          GOPATH: /home/runner/go
-        run: make pull-build-images test-images &
       - name: Fetch tags
         run: git fetch --tags
       - name: Install K3D
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Pre-pull images
+        env:
+          GOPATH: /home/runner/go
+        run: make pull-build-images test-images &
       - name: Add hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -104,7 +104,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-argo.log
           path: /tmp/log/argo-e2e/argo.log
 
   codegen:
