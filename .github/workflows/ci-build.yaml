@@ -71,6 +71,8 @@ jobs:
           echo /usr/local/bin >> $GITHUB_PATH
       - name: Fetch tags
         run: git fetch --tags
+      - name: Download Go modules
+        run: go mod download
       - name: Install K3D
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
