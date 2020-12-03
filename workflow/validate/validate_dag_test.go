@@ -39,6 +39,35 @@ func TestDAGCycle(t *testing.T) {
 	}
 }
 
+var dagAnyWithoutExpandingTask = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-cycle-
+spec:
+  entrypoint: entry
+  templates:
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, hello]
+  - name: entry
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        depends: A.AnySucceeded
+        template: echo
+`
+
+func TestAnyWithoutExpandingTask(t *testing.T) {
+	_, err := validate(dagAnyWithoutExpandingTask)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "does not contain any items")
+	}
+}
+
 var dagUndefinedTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
