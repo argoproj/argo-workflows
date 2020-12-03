@@ -13,7 +13,7 @@ pf() {
   kubectl -n argo port-forward "$resource" "$port:$port" > /dev/null &
   # wait until port forward is established
 	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
-  info "$name on http://localhost:$port"
+  info "$name on http://127.0.0.1:$port"
 }
 
 info() {

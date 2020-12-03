@@ -53,6 +53,13 @@ const (
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 
+	// LabelKeyClusterName is used to label pods in other clusters created by this controller.
+	// It is similar to instance ID.
+	// * If a pod is unlabelled in my cluster, it is mine.
+	// * If a pod is labelled in my cluster, it is someone else's (I should ignore it).
+	// * If a pod is unlabelled in another cluster, it is theirs.
+	// * If a pod is labelled in another cluster AND it has my label, it is mine.
+	// Cluster names therefore must be unique amongst the group of clusters.
 	LabelKeyClusterName = workflow.WorkflowFullName + "/cluster-name"
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation

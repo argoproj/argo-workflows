@@ -1039,8 +1039,10 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
-	} else if woc.execWf.Spec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = woc.execWf.Spec.ServiceAccountName
+	} else if x := woc.execWf.Spec.GetClusterWorkflowSpec(tmpl.ClusterName).ServiceAccountName; x != "" {
+		pod.Spec.ServiceAccountName = x
+	} else if x := woc.execWf.Spec.ServiceAccountName; x != "" {
+		pod.Spec.ServiceAccountName = x
 	}
 
 	var automountServiceAccountToken *bool

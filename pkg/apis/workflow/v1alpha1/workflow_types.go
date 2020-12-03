@@ -349,6 +349,9 @@ type WorkflowSpec struct {
 
 	// RetryStrategy for all templates in the workflow.
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
+
+	// ClusterWorkflowSpecs is cluster specific options
+	ClusterWorkflowSpecs ClusterWorkflowSpecs `json:"clusterWorkflowSpecs,omitempty" protobuf:"bytes,38,rep,name=clusterWorkflowSpecs"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -412,6 +415,15 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 		semaphoreKeys = append(semaphoreKeys, key)
 	}
 	return semaphoreKeys
+}
+
+type ClusterWorkflowSpecs []ClusterWorkflowSpec
+
+// ClusterWorkflowSpec lists workflow specific settings for clusters.
+// This allows you to choose (for example) a different namespace or service account.
+type ClusterWorkflowSpec struct {
+	Name               string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,2,opt,name=serviceAccountName"`
 }
 
 type ShutdownStrategy string
@@ -486,6 +498,15 @@ func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
+}
+
+func (wfs WorkflowSpec) GetClusterWorkflowSpec(clusterName string) ClusterWorkflowSpec {
+	for _, s := range wfs.ClusterWorkflowSpecs {
+		if s.Name == clusterName {
+			return s
+		}
+	}
+	return ClusterWorkflowSpec{}
 }
 
 // Template is a reusable and composable unit of execution in a workflow

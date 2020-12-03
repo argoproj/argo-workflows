@@ -22,57 +22,6 @@ type FunctionalSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *FunctionalSuite) TestMultiCluster() {
-	s.Run("ClusterNotFound", func() {
-		s.Given().
-			Workflow(`
-metadata:
-  generateName: multi-cluster-not-found-
-  labels:
-    argo-e2e: true
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      clusterName: not-found
-      container:
-        image: argoproj/argosay:v2
-`).
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow().
-			Then().
-			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Equal(t, wfv1.NodeError, status.Phase)
-				assert.Equal(t, "no cluster named \"not-found\" has been configured", status.Message)
-			})
-	})
-	s.Run("Success", func() {
-		s.Given().
-			Workflow(`
-metadata:
-  generateName: multi-cluster-success-
-  labels:
-    argo-e2e: true
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      clusterName: other
-      container:
-        image: argoproj/argosay:v2
-`).
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow().
-			Then().
-			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-				assert.Equal(t, "other", status.Nodes[metadata.Name].ClusterName)
-			})
-
-	})
-}
 func (s *FunctionalSuite) TestArchiveStrategies() {
 	s.Given().
 		Workflow(`@testdata/archive-strategies.yaml`).

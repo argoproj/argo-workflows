@@ -166,6 +166,14 @@ message Cache {
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
 }
 
+// ClusterWorkflowSpec lists workflow specific settings for clusters.
+// This allows you to choose (for example) a different namespace or service account.
+message ClusterWorkflowSpec {
+  optional string name = 1;
+
+  optional string serviceAccountName = 2;
+}
+
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
 // +genclient
 // +genclient:noStatus
@@ -1463,6 +1471,9 @@ message WorkflowSpec {
 
   // RetryStrategy for all templates in the workflow.
   optional RetryStrategy retryStrategy = 37;
+
+  // ClusterWorkflowSpecs is cluster specific options
+  repeated ClusterWorkflowSpec clusterWorkflowSpecs = 38;
 }
 
 // WorkflowStatus contains overall status information about a workflow

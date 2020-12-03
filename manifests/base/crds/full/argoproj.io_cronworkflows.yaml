@@ -662,6 +662,17 @@ spec:
                   type: object
                 automountServiceAccountToken:
                   type: boolean
+                clusterWorkflowSpecs:
+                  items:
+                    properties:
+                      name:
+                        type: string
+                      serviceAccountName:
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type: array
                 dnsConfig:
                   properties:
                     nameservers:
