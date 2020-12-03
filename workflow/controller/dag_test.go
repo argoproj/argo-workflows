@@ -297,6 +297,109 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.True(t, execute)
 }
 
+func TestEvaluateAnyAllDependsLogic(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name: "A-1",
+		},
+		{
+			Name: "A-2",
+		},
+		{
+			Name:    "B",
+			Depends: "A.AnySucceeded",
+		},
+		{
+			Name: "B-1",
+		},
+		{
+			Name: "B-2",
+		},
+		{
+			Name:    "C",
+			Depends: "B.AllFailed",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is still running, A-1 succeeded but A-2 failed
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {
+					Phase:    wfv1.NodeRunning,
+					Type:     wfv1.NodeTypeTaskGroup,
+					Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
+				},
+				d.taskNodeID("A-1"): {Phase: wfv1.NodeRunning},
+				d.taskNodeID("A-2"): {Phase: wfv1.NodeRunning},
+			},
+		},
+	}
+
+	// Task B should not proceed as task A is still running
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.False(t, execute)
+
+	// Task A succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{
+		Phase:    wfv1.NodeSucceeded,
+		Type:     wfv1.NodeTypeTaskGroup,
+		Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
+	}
+
+	// Task B should proceed, but not execute as none of the children have succeeded yet
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	// Task A-2 succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+
+	// Task B should now proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// Task B succeeds and B-1 fails
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{
+		Phase:    wfv1.NodeSucceeded,
+		Type:     wfv1.NodeTypeTaskGroup,
+		Children: []string{d.taskNodeID("B-1"), d.taskNodeID("B-2")},
+	}
+	d.wf.Status.Nodes[d.taskNodeID("B-1")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task C should proceed, but not execute as not all of B's children have failed yet
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	d.wf.Status.Nodes[d.taskNodeID("B-2")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task C should now proceed and execute as all of B's children have failed
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+}
+
 func TestAllEvaluateDependsLogic(t *testing.T) {
 	statusMap := map[common.TaskResult]wfv1.NodePhase{
 		common.TaskResultSucceeded: wfv1.NodeSucceeded,
