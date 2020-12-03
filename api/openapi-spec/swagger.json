@@ -2348,6 +2348,21 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ClusterWorkflowSpec": {
+      "description": "ClusterWorkflowSpec lists workflow specific settings for clusters. This allows you to choose (for example) a different namespace or service account.",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "serviceAccountName": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
       "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
       "type": "object",
@@ -4633,6 +4648,13 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
+        "clusterWorkflowSpecs": {
+          "description": "ClusterWorkflowSpecs is cluster specific options",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowSpec"
+          }
+        },
         "dnsConfig": {
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig"
@@ -5098,6 +5120,13 @@
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
+        },
+        "clusterWorkflowSpecs": {
+          "description": "ClusterWorkflowSpecs is cluster specific options",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowSpec"
+          }
         },
         "dnsConfig": {
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
