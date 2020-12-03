@@ -9,7 +9,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/antonmedv/expr v1.8.2
-	github.com/argoproj/pkg v0.2.0
+	github.com/argoproj/pkg v0.3.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
@@ -37,6 +37,7 @@ require (
 	github.com/klauspost/compress v1.9.7 // indirect
 	github.com/lib/pq v1.3.0 // indirect
 	github.com/mattn/goreman v0.3.5
+	github.com/minio/minio-go/v7 v7.0.2
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
