@@ -2053,6 +2053,10 @@ available task results is as follows:</p>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code>depends: &quot;(task-2.Succeeded || task-2.Skipped) &amp;&amp; !task-3.Failed&quot;
 </code></pre></div>
+<p>In the case that you're depending on a task that uses withItems, you can depend on
+whether any of the item tasks are successful or all have failed using .AnySucceeded and .AllFailed, for example:</p>
+<div class="highlight"><pre><span></span><code>depends: &quot;task-1.AnySucceeded || task-2.AllFailed&quot;
+</code></pre></div>
 <h2 id="compatibility-with-dependencies-and-dagtaskcontinueon">Compatibility with <code>dependencies</code> and <code>dag.task.continueOn</code><a class="headerlink" href="#compatibility-with-dependencies-and-dagtaskcontinueon" title="Permanent link">&para;</a></h2>
 <p>This feature is fully compatible with <code>dependencies</code> and conversion is easy.</p>
 <p>To convert simply join your <code>dependencies</code> with <code>&amp;&amp;</code>:</p>
