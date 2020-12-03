@@ -213,6 +213,12 @@ message Counter {
   optional string value = 1;
 }
 
+// CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
+message CreateS3BucketOptions {
+  // ObjectLocking Enable object locking
+  optional bool objectLocking = 3;
+}
+
 // CronWorkflow is the definition of a scheduled workflow resource
 // +genclient
 // +genclient:noStatus
@@ -888,6 +894,9 @@ message S3Bucket {
 
   // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
   optional bool useSDKCreds = 8;
+
+  // CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+  optional CreateS3BucketOptions createBucketIfNotPresent = 9;
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps

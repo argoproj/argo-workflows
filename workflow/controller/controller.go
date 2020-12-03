@@ -172,7 +172,7 @@ var indexers = cache.Indexers{
 	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
 	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
-	indexes.WorkflowPhaseIndex:           indexes.MetaLabelIndexFunc(common.LabelKeyPhase),
+	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
 }
 
 // Run starts an Workflow resource controller
