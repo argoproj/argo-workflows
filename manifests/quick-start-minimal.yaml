@@ -591,7 +591,7 @@ spec:
         - server
         - --auth-mode
         - client
-        image: argoproj/argocli:v2.12.0-rc2
+        image: argoproj/argocli:v2.12.0-rc4
         name: argo-server
         ports:
         - containerPort: 2746
@@ -612,7 +612,8 @@ spec:
         runAsNonRoot: true
       serviceAccountName: argo-server
       volumes:
-      - name: tmp
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -632,11 +633,11 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.12.0-rc2
+        - argoproj/argoexec:v2.12.0-rc4
         - --namespaced
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.12.0-rc2
+        image: argoproj/workflow-controller:v2.12.0-rc4
         name: workflow-controller
       nodeSelector:
         kubernetes.io/os: linux

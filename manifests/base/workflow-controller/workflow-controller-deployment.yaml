@@ -14,14 +14,14 @@ spec:
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: argoproj/workflow-controller:v2.12.0-rc2
+          image: argoproj/workflow-controller:v2.12.0-rc4
           command:
             - workflow-controller
           args:
             - --configmap
             - workflow-controller-configmap
             - --executor-image
-            - argoproj/argoexec:v2.12.0-rc2
+            - argoproj/argoexec:v2.12.0-rc4
       securityContext:
         runAsNonRoot: true
       nodeSelector:
