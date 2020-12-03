@@ -75,7 +75,6 @@ func (s *CLISuite) needsServer() {
 		s.T().Skip("test needs server")
 	}
 }
-
 func (s *CLISuite) skipIfServer() {
 	if os.Getenv("ARGO_SERVER") != "" {
 		s.T().Skip("test must not run with server")
