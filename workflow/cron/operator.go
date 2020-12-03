@@ -52,6 +52,10 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 }
 
 func (woc *cronWfOperationCtx) Run() {
+	woc.run(inferScheduledRuntime())
+}
+
+func (woc *cronWfOperationCtx) run(scheduledRuntime time.Time) {
 	defer woc.persistUpdate()
 
 	woc.log.Infof("Running %s", woc.name)
@@ -69,7 +73,7 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
+	wf := common.ConvertCronWorkflowToWorkflowWithName(woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime))
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
@@ -169,18 +173,18 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows() error {
 }
 
 func (woc *cronWfOperationCtx) runOutstandingWorkflows() (bool, error) {
-	proceed, err := woc.shouldOutstandingWorkflowsBeRun()
+	proceed, missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	if err != nil {
 		return false, err
 	}
 	if proceed {
-		woc.Run()
+		woc.run(missedExecutionTime)
 		return true, nil
 	}
 	return false, nil
 }
 
-func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
+func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, time.Time, error) {
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
 		var now time.Time
@@ -188,21 +192,21 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
 		if woc.cronWf.Spec.Timezone != "" {
 			loc, err := time.LoadLocation(woc.cronWf.Spec.Timezone)
 			if err != nil {
-				return false, fmt.Errorf("invalid timezone '%s': %s", woc.cronWf.Spec.Timezone, err)
+				return false, time.Time{}, fmt.Errorf("invalid timezone '%s': %s", woc.cronWf.Spec.Timezone, err)
 			}
 			now = time.Now().In(loc)
 
 			cronScheduleString := "CRON_TZ=" + woc.cronWf.Spec.Timezone + " " + woc.cronWf.Spec.Schedule
 			cronSchedule, err = cron.ParseStandard(cronScheduleString)
 			if err != nil {
-				return false, fmt.Errorf("unable to form timezone schedule '%s': %s", cronScheduleString, err)
+				return false, time.Time{}, fmt.Errorf("unable to form timezone schedule '%s': %s", cronScheduleString, err)
 			}
 		} else {
 			var err error
 			now = time.Now()
 			cronSchedule, err = cron.ParseStandard(woc.cronWf.Spec.Schedule)
 			if err != nil {
-				return false, err
+				return false, time.Time{}, err
 			}
 		}
 
@@ -219,11 +223,11 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
 			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
 			if woc.cronWf.Spec.StartingDeadlineSeconds == nil || *woc.cronWf.Spec.StartingDeadlineSeconds == 0 || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
 				woc.log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
-				return true, nil
+				return true, missedExecutionTime, nil
 			}
 		}
 	}
-	return false, nil
+	return false, time.Time{}, nil
 }
 
 func (woc *cronWfOperationCtx) reconcileActiveWfs(workflows []v1alpha1.Workflow) error {
@@ -320,4 +324,15 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 		Status:  v1.ConditionTrue,
 	})
 	woc.metrics.CronWorkflowSubmissionError()
+}
+
+func inferScheduledRuntime() time.Time {
+	// Infer scheduled runtime by getting current time and zeroing out current seconds and nanoseconds
+	// This works because the finest possible scheduled runtime is a minute
+	now := time.Now().UTC()
+	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
+}
+
+func getChildWorkflowName(cronWorkflowName string, scheduledRuntime time.Time) string {
+	return fmt.Sprintf("%s-%d", cronWorkflowName, scheduledRuntime.Unix())
 }
