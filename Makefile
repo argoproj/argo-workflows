@@ -390,8 +390,10 @@ install: /usr/local/bin/kustomize dist/argo
 	kubectl config use-context k3d-other
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl -n $(KUBE_NAMESPACE) apply -f-
+ifeq ($(CI),false)
 	# create main cluster (if not exists)
 	k3d cluster get k3s-default || k3d cluster create --wait --update-default-kubeconfig
+endif
 	kubectl config use-context k3d-k3s-default
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f -
