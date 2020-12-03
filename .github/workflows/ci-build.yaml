@@ -72,7 +72,8 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags
       - name: Install K3D
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go
@@ -89,7 +90,7 @@ jobs:
           PROFILE: mysql
         run: |
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
