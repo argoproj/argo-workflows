@@ -39,6 +39,8 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                                 <p>Issuer: {this.state.userInfo.issuer || '-'}</p>
                                 <p>Subject: {this.state.userInfo.subject || '-'}</p>
                                 <p>Groups: {(this.state.userInfo.groups && this.state.userInfo.groups.length > 0 && this.state.userInfo.groups.join(', ')) || '-'}</p>
+                                <p>Groups: {this.state.userInfo.email || '-'}</p>
+                                <p>Groups: {this.state.userInfo.emailVerified || '-'}</p>
                             </>
                         )}
                         <a className='argo-button argo-button--base-o' href={uiUrl('login')}>
