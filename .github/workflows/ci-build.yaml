@@ -99,6 +99,7 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
       - name: Start Argo
         env:
+          KUBECONFIG: /home/runner/.kube/config
           GOPATH: /home/runner/go
           PROFILE: mysql
         run: |
