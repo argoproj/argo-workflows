@@ -2143,6 +2143,20 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"clusterName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the workflow.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the workflow.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"startedAt": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Time at which this node started",
