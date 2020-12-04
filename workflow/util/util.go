@@ -1037,3 +1037,100 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 	}
 	return ""
 }
+
+func removeDuplicates(strSlice []string) []string {
+	keys := make(map[string]bool)
+	outputList := []string{}
+	for _, strEntry := range strSlice {
+		if _, value := keys[strEntry]; !value {
+			keys[strEntry] = true
+			outputList = append(outputList, strEntry)
+		}
+	}
+	return outputList
+}
+
+// AddNostnamesToAffinity will add unique hostNames to existing matchExpressions in targetAffinity with
+// key hostSelector or insert new matchExpressions with operator NotIn.
+func AddNostnamesToAffinity(hostSelector string, hostNames []string, targetAffinity *apiv1.Affinity) error {
+	if len(hostNames) == 0 {
+		return nil
+	}
+
+	nodeSelectorRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   hostNames,
+	}
+
+	sourceAffinity := apiv1.Affinity{
+		NodeAffinity: &apiv1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
+				NodeSelectorTerms: []apiv1.NodeSelectorTerm{
+					{
+						MatchExpressions: []apiv1.NodeSelectorRequirement{
+							nodeSelectorRequirement,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if targetAffinity == nil {
+		targetAffinity = &sourceAffinity
+		return nil
+	}
+
+	targetNodeAffinity := targetAffinity.NodeAffinity
+	sourceNodeAffinity := sourceAffinity.NodeAffinity
+
+	if targetNodeAffinity == nil {
+		targetNodeAffinity = sourceNodeAffinity
+		return nil
+	}
+
+	targetExecution := targetNodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+	sourceExecution := sourceNodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+
+	if targetExecution == nil {
+		targetExecution = sourceExecution
+		return nil
+	}
+
+	if len(targetExecution.NodeSelectorTerms) == 0 {
+		targetExecution.NodeSelectorTerms = sourceExecution.NodeSelectorTerms
+		return nil
+	}
+
+	// find if specific NodeSelectorTerm exists and append
+	for i := range targetExecution.NodeSelectorTerms {
+		if len(targetExecution.NodeSelectorTerms[i].MatchExpressions) == 0 {
+			targetExecution.NodeSelectorTerms[i].MatchExpressions =
+				append(targetExecution.NodeSelectorTerms[i].MatchExpressions, sourceExecution.NodeSelectorTerms[0].MatchExpressions[0])
+			return nil
+		}
+
+		// found := false
+		for j := range targetExecution.NodeSelectorTerms[i].MatchExpressions {
+			if targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Key == hostSelector &&
+				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Operator == apiv1.NodeSelectorOpNotIn {
+				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values =
+					append(targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values, hostNames...)
+				//found = true
+				// break
+				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values =
+					removeDuplicates(targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values)
+				return nil
+			}
+		}
+
+		// if !found {
+		// }
+	}
+
+	targetExecution.NodeSelectorTerms[0].MatchExpressions =
+		append(targetExecution.NodeSelectorTerms[0].MatchExpressions, nodeSelectorRequirement)
+
+	return nil
+}

@@ -95,6 +95,9 @@ export const WorkflowNodeSummary = (props: Props) => {
     if (props.node.type === 'Pod') {
         attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'HOST NODE NAME', value: props.node.hostNodeName});
     }
+    if (props.node.type === 'Retry') {
+      attributes.push({title: 'FAIL HOST NODES', value: <pre className='workflow-node-info__multi-line'>{props.node.failHostNodeNames.join('\n')}</pre>});
+    }
     if (props.node.resourcesDuration) {
         attributes.push({
             title: 'RESOURCES DURATION',

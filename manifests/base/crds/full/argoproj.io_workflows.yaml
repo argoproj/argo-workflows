@@ -846,6 +846,8 @@ spec:
                   x-kubernetes-int-or-string: true
                 retryPolicy:
                   type: string
+                scheduleOnDifferentHostNodesLabel:
+                  type: string
               type: object
             schedulerName:
               type: string
@@ -4186,6 +4188,8 @@ spec:
                         x-kubernetes-int-or-string: true
                       retryPolicy:
                         type: string
+                      scheduleOnDifferentHostNodesLabel:
+                        type: string
                     type: object
                   schedulerName:
                     type: string
@@ -6778,6 +6782,10 @@ spec:
                     type: string
                   estimatedDuration:
                     type: integer
+                  failHostNodeNames:
+                    items:
+                      type: string
+                    type: array
                   finishedAt:
                     format: date-time
                     type: string
@@ -11766,6 +11774,8 @@ spec:
                         x-kubernetes-int-or-string: true
                       retryPolicy:
                         type: string
+                      scheduleOnDifferentHostNodesLabel:
+                        type: string
                     type: object
                   schedulerName:
                     type: string
@@ -14368,6 +14378,8 @@ spec:
                       - type: string
                       x-kubernetes-int-or-string: true
                     retryPolicy:
+                      type: string
+                    scheduleOnDifferentHostNodesLabel:
                       type: string
                   type: object
                 schedulerName:
@@ -17708,6 +17720,8 @@ spec:
                             - type: string
                             x-kubernetes-int-or-string: true
                           retryPolicy:
+                            type: string
+                          scheduleOnDifferentHostNodesLabel:
                             type: string
                         type: object
                       schedulerName:

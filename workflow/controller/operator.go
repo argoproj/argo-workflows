@@ -1689,6 +1689,16 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 
+			if lastChildNode != nil {
+				hostNames := woc.addFailHost(retryNodeName, lastChildNode.Name)
+				hostLabel := woc.retryStrategy(processedTmpl).ScheduleOnDifferentHostNodesLabel
+				if hostLabel != nil {
+					if err := wfutil.AddNostnamesToAffinity(*hostLabel, hostNames, processedTmpl.Affinity); err != nil {
+						return node, err
+					}
+				}
+			}
+
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
 			if processedTmpl.IsPodType() {
@@ -2595,6 +2605,28 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	node.Children = append(node.Children, childID)
 	woc.wf.Status.Nodes[parentID] = node
 	woc.updated = true
+}
+
+func (woc *wfOperationCtx) addFailHost(parent string, child string) []string {
+	childNode := woc.wf.GetNodeByName(child)
+	if childNode == nil || childNode.HostNodeName == "" {
+		return []string{}
+	}
+	parentID := woc.wf.NodeID(parent)
+	node, ok := woc.wf.Status.Nodes[parentID]
+	if !ok {
+		panic(fmt.Sprintf("parent node %s not initialized", parent))
+	}
+	for _, hostName := range node.FailHostNodeNames {
+		if childNode.HostNodeName == hostName {
+			// host already exists
+			return []string{}
+		}
+	}
+	node.FailHostNodeNames = append(node.FailHostNodeNames, childNode.HostNodeName)
+	woc.wf.Status.Nodes[parentID] = node
+	woc.updated = true
+	return node.FailHostNodeNames
 }
 
 // executeResource is runs a kubectl command against a manifest

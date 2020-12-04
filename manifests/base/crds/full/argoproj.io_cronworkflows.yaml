@@ -857,6 +857,8 @@ spec:
                       x-kubernetes-int-or-string: true
                     retryPolicy:
                       type: string
+                    scheduleOnDifferentHostNodesLabel:
+                      type: string
                   type: object
                 schedulerName:
                   type: string
@@ -4196,6 +4198,8 @@ spec:
                             - type: string
                             x-kubernetes-int-or-string: true
                           retryPolicy:
+                            type: string
+                          scheduleOnDifferentHostNodesLabel:
                             type: string
                         type: object
                       schedulerName:

@@ -1215,6 +1215,11 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(NodeSynchronizationStatus)
 		**out = **in
 	}
+	if in.FailHostNodeNames != nil {
+		in, out := &in.FailHostNodeNames, &out.FailHostNodeNames
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
@@ -1545,6 +1550,11 @@ func (in *RetryStrategy) DeepCopyInto(out *RetryStrategy) {
 		in, out := &in.Backoff, &out.Backoff
 		*out = new(Backoff)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ScheduleOnDifferentHostNodesLabel != nil {
+		in, out := &in.ScheduleOnDifferentHostNodesLabel, &out.ScheduleOnDifferentHostNodesLabel
+		*out = new(string)
+		**out = **in
 	}
 	return
 }

@@ -2257,6 +2257,20 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
 						},
 					},
+					"failHostNodeNames": {
+						SchemaProps: spec.SchemaProps{
+							Description: "HostNodeNames name of the Kubernetes node on which the Pod failed, if applicable",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},
@@ -2733,6 +2747,13 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "Backoff is a backoff strategy",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff"),
+						},
+					},
+					"scheduleOnDifferentHostNodesLabel": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If exists, ScheduleOnDifferentHostNodes prevents of running step on the same host Step won't run on the host with this hostname label, e.g. kubernetes.io/hostname or k3s.io/hostname",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
