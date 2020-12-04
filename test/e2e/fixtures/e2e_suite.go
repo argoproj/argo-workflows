@@ -2,7 +2,6 @@ package fixtures
 
 import (
 	"encoding/base64"
-	"os"
 	"strings"
 	"time"
 
@@ -118,12 +117,6 @@ func (s *E2ESuite) DeleteResources() {
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-	}
-}
-
-func (s *E2ESuite) NeedsCI() {
-	if os.Getenv("CI") != "true" {
-		s.T().Skip("test needs CI")
 	}
 }
 

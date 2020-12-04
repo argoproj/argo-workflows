@@ -28,6 +28,7 @@ var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 var NoArgoServerErr = fmt.Errorf("this is impossible if you are not using the Argo Server, see " + help.CLI)
 
 type argoKubeClient struct {
+	namespace         string
 	instanceIDService instanceid.Service
 }
 
@@ -52,11 +53,15 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 	if err != nil {
 		return nil, nil, err
 	}
-	return ctx, &argoKubeClient{instanceIDService}, nil
+	namespace, _, err := clientConfig.Namespace()
+	if err != nil {
+		return nil, nil, err
+	}
+	return ctx, &argoKubeClient{namespace, instanceIDService}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo)}}
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.namespace, a.instanceIDService, argoKubeOffloadNodeStatusRepo)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {

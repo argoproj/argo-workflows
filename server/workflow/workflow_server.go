@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/util/fields"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/logs"
+	"github.com/argoproj/argo/workflow/clusters"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/creator"
 	"github.com/argoproj/argo/workflow/hydrator"
@@ -31,6 +32,7 @@ import (
 )
 
 type workflowServer struct {
+	namespace             string
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
@@ -39,8 +41,8 @@ type workflowServer struct {
 const latestAlias = "@latest"
 
 // NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
+func NewWorkflowServer(namespace string, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
+	return &workflowServer{namespace, instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {
@@ -524,7 +526,11 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 		return err
 	}
 	req.Name = wf.Name
-	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
+	_, kubeClients, err := clusters.GetConfigs(nil, kubeClient, s.namespace)
+	if err != nil {
+		return err
+	}
+	return logs.WorkflowLogs(ctx, wfClient, kubeClients, s.hydrator, req, ws)
 }
 
 func (s *workflowServer) WorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_WorkflowLogsServer) error {

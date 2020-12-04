@@ -32,7 +32,6 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/config/clusters"
 	argoErr "github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -41,6 +40,7 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/artifactrepositories"
+	"github.com/argoproj/argo/workflow/clusters"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -88,8 +88,8 @@ type WorkflowController struct {
 	podInformer           map[wfv1.ClusterName]cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
-	completedPods         chan podKey
-	gcPods                chan podKey // pods to be deleted depend on GC strategy
+	completedPods         chan wfv1.PodKey
+	gcPods                chan wfv1.PodKey // pods to be deleted depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
@@ -118,35 +118,13 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	if err != nil {
 		return nil, err
 	}
-
-	restConfigs := map[string]*rest.Config{wfv1.DefaultClusterName: restConfig}
-	kubeclientsets := map[wfv1.ClusterName]kubernetes.Interface{wfv1.DefaultClusterName: kubeclientset}
-	secret, err := kubeclientset.CoreV1().Secrets(managedNamespace).Get("clusters", metav1.GetOptions{})
-	if apierr.IsNotFound(err) {
-		log.Info(`"clusters" secret not found - single-cluster mode`)
-	} else if err != nil {
+	restConfigs, kubeclientsets, err := clusters.GetConfigs(restConfig, kubeclientset, namespace)
+	if err != nil {
 		return nil, err
-	} else {
-		log.Info(`"clusters" secret found - multi-cluster mode`)
-		for clusterName, data := range secret.Data {
-			c := &clusters.RestConfig{}
-			err := json.Unmarshal(data, c)
-			if err != nil {
-				return nil, err
-			}
-			restConfigs[clusterName] = c.RestConfig()
-			clientset, err := kubernetes.NewForConfig(restConfigs[clusterName])
-			if err != nil {
-				return nil, err
-			}
-			kubeclientsets[clusterName] = clientset
-		}
 	}
-
 	for clusterName := range restConfigs {
 		log.WithField("clusterName", clusterName).Info()
 	}
-
 	wfc := WorkflowController{
 		restConfig:                 restConfigs,
 		kubeclientset:              kubeclientsets,
@@ -394,7 +372,7 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case key := <-wfc.completedPods:
-			clusterName, namespace, podName := splitPodKey(key)
+			clusterName, namespace, podName := wfv1.SplitPodKey(key)
 			err := common.AddPodLabel(wfc.kubeclientset[clusterName], podName, namespace, common.LabelKeyCompleted, "true")
 			if err != nil {
 				if !apierr.IsNotFound(err) {
@@ -414,7 +392,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case key := <-wfc.gcPods:
-			clusterName, namespace, podName := splitPodKey(key)
+			clusterName, namespace, podName := wfv1.SplitPodKey(key)
 			err := common.DeletePod(wfc.kubeclientset[clusterName], podName, namespace)
 			if err != nil {
 				log.WithFields(log.Fields{"clusterName": clusterName, "namespace": namespace, "pod": podName, "err": err}).Error("Failed to delete pod for gc")
@@ -740,9 +718,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					},
 					metav1.ListOptions{
 						LabelSelector: labels.NewSelector().
-							Add(clusterNameRequirement(clusterName)).
+							Add(util.ClusterNameRequirement(clusterName)).
 							Add(wfc.instanceIdRequirement()).
-							Add(workflowNameRequirement(name)).
+							Add(util.WorkflowNameRequirement(name)).
 							String(),
 					},
 				)
@@ -833,29 +811,13 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 	}
 	return nil
 }
-
-func clusterNameRequirement(clusterName wfv1.ClusterName) labels.Requirement {
-	if clusterName != wfv1.DefaultClusterName {
-		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{clusterName})
-		return *r
-	} else {
-		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.DoesNotExist, nil)
-		return *r
-	}
-}
-
-func workflowNameRequirement(workflowName string) labels.Requirement {
-	r, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Equals, []string{workflowName})
-	return *r
-}
-
 func (wfc *WorkflowController) newWorkflowPodWatch(clusterName wfv1.ClusterName) *cache.ListWatch {
 	c := wfc.kubeclientset[clusterName].CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 	labelSelector := labels.NewSelector().
-		Add(clusterNameRequirement(clusterName)).
+		Add(util.ClusterNameRequirement(clusterName)).
 		Add(wfc.instanceIdRequirement()).
 		Add(*incompleteReq).
 		Add(*workflowReq)

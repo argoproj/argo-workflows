@@ -79,9 +79,9 @@ type wfOperationCtx struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *config.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
-	completedPods map[podKey]bool
+	completedPods map[wfv1.PodKey]bool
 	// map of pods which is identified as succeeded=true
-	succeededPods map[podKey]bool
+	succeededPods map[wfv1.PodKey]bool
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -861,13 +861,14 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
+			podKey := wfv1.NewPodKey(pod.Labels[common.LabelKeyClusterName], pod.Namespace, pod.Name)
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
 						return
 					}
 				}
-				woc.completedPods[newPodKey(pod)] = true
+				woc.completedPods[podKey] = true
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
@@ -876,7 +877,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				}
 			}
 			if node.Succeeded() {
-				woc.succeededPods[newPodKey(pod)] = true
+				woc.succeededPods[podKey] = true
 			}
 		}
 	}
