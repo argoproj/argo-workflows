@@ -1341,11 +1341,11 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 }
 
 func (woc *wfOperationCtx) clusterNames() []clusterName {
-	x := map[string]bool{}
+	x := map[clusterName]bool{}
 	for _, t := range woc.execWf.Spec.Templates {
-		x[t.ClusterName] = true
+		x[clusterNameOrDefault(t.ClusterName)] = true
 	}
-	var out []string
+	var out []clusterName
 	for clusterName := range x {
 		out = append(out, clusterName)
 	}

@@ -434,7 +434,7 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: pre-start
 ifeq ($(RUN_MODE),kubernetes)
-pre-start: stop install controller-image cli-image executor-image $(GOPATH)/bin/goreman
+pre-start: stop install executor-image controller-image cli-image
 else
 pre-start: stop install executor-image $(GOPATH)/bin/goreman
 endif

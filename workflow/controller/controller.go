@@ -732,10 +732,20 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			if err != nil {
 				return fmt.Errorf("failed to split key %s: %w", key, err)
 			}
+			propagationBackground := metav1.DeletePropagationBackground
 			for clusterName, k := range wfc.kubeclientset {
-				err := k.CoreV1().Pods(namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
-					LabelSelector: common.LabelKeyClusterName + "=" + clusterName + "," + common.LabelKeyWorkflow + "=" + name,
-				})
+				err := k.CoreV1().Pods(namespace).DeleteCollection(
+					&metav1.DeleteOptions{
+						PropagationPolicy: &propagationBackground,
+					},
+					metav1.ListOptions{
+						LabelSelector: labels.NewSelector().
+							Add(clusterNameRequirement(clusterName)).
+							Add(wfc.instanceIdRequirement()).
+							Add(workflowNameRequirement(name)).
+							String(),
+					},
+				)
 				if err != nil {
 					return fmt.Errorf("failed to delete pods from %s for %s: %w", clusterName, key, err)
 				}
@@ -834,17 +844,21 @@ func clusterNameRequirement(clusterName clusterName) labels.Requirement {
 	}
 }
 
+func workflowNameRequirement(workflowName string) labels.Requirement {
+	r, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Equals, []string{workflowName})
+	return *r
+}
+
 func (wfc *WorkflowController) newWorkflowPodWatch(clusterName clusterName) *cache.ListWatch {
 	c := wfc.kubeclientset[clusterName].CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 	labelSelector := labels.NewSelector().
-		Add(*incompleteReq).
-		Add(*workflowReq).
 		Add(clusterNameRequirement(clusterName)).
-		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
-
+		Add(wfc.instanceIdRequirement()).
+		Add(*incompleteReq).
+		Add(*workflowReq)
 	log.WithField("labelSelector", labelSelector).Info()
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
@@ -857,6 +871,10 @@ func (wfc *WorkflowController) newWorkflowPodWatch(clusterName clusterName) *cac
 		return c.Watch(options)
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+}
+
+func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {
+	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
 func (wfc *WorkflowController) newPodInformer() map[clusterName]cache.SharedIndexInformer {

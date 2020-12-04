@@ -392,7 +392,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, created.Labels[common.LabelKeyClusterName], created.Namespace, created.Name)
+	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, clusterNameOrDefault(created.Labels[common.LabelKeyClusterName]), created.Namespace, created.Name)
 	woc.activePods++
 	return created, nil
 }
@@ -1062,7 +1062,8 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset[pod.Labels[common.LabelKeyClusterName]], pod.Namespace, executorServiceAccountName)
+		clusterName := clusterNameOrDefault(pod.Labels[common.LabelKeyClusterName])
+		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset[clusterName], pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}
