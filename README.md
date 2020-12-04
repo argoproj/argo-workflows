@@ -1,5 +1,6 @@
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
 [![CI](https://github.com/argoproj/argo/workflows/CI/badge.svg)](https://github.com/argoproj/argo/actions?query=event%3Apush+branch%3Amaster)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
 
 ![Argo Image](docs/assets/argo.png)
 
