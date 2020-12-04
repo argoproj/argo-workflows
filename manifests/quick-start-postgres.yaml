@@ -670,6 +670,10 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
         volumeMounts:
         - mountPath: /tmp
           name: tmp
@@ -749,6 +753,10 @@ spec:
               fieldPath: metadata.name
         image: argoproj/workflow-controller:latest
         name: workflow-controller
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:

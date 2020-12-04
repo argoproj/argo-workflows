@@ -46,7 +46,7 @@ RUN if [ "${IMAGE_OS}" = "linux" ]; then \
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
 ####################################################################################################
-FROM debian:10.3-slim as argoexec-base
+FROM debian:10.6-slim as argoexec-base
 
 ARG IMAGE_OS=linux
 

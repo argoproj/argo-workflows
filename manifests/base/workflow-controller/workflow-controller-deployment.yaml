@@ -15,6 +15,10 @@ spec:
       containers:
         - name: workflow-controller
           image: argoproj/workflow-controller:latest
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
           command:
             - workflow-controller
           args:

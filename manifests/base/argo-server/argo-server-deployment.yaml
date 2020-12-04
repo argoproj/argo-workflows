@@ -15,6 +15,10 @@ spec:
       containers:
         - name: argo-server
           image: argoproj/argocli:latest
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
           args: [ server ]
           ports:
             - name: web
