@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {createRef, useState} from 'react';
 
 export const CliHelp = () => {
     const argoSecure = document.location.protocol === 'https';
@@ -25,6 +25,7 @@ export KUBECONFIG=/dev/null ;# recommended
 argo list`;
 
     const [copied, setCopied] = useState(false);
+    const hiddenText = createRef<HTMLTextAreaElement>();
     return (
         <div className='white-box'>
             <h4>Using Your Login With The CLI</h4>
@@ -36,9 +37,9 @@ argo list`;
                     className='argo-button argo-button--base-o'
                     disabled={copied}
                     onClick={() => {
-                        const copyText = document.getElementById('cliHelp');
-                        copyText.select();
-                        copyText.setSelectionRange(0, 99999);
+                        const x = hiddenText.current;
+                        x.select();
+                        x.setSelectionRange(0, 99999);
                         document.execCommand('copy');
                         setCopied(true);
                     }}>
@@ -53,7 +54,7 @@ argo list`;
                     )}
                 </button>
             </div>
-            <textarea id='cliHelp' style={{width: 0, height: 0, opacity: 0}}>
+            <textarea ref={hiddenText} style={{width: 0, height: 0, opacity: 0}}>
                 {text}
             </textarea>
         </div>
