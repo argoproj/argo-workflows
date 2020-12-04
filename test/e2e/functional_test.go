@@ -114,7 +114,6 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: workflow-ignore
-  parallelism: 2
   templates:
   - name: workflow-ignore
     steps:
@@ -136,13 +135,11 @@ spec:
   - name: whalesay
     container:
       image: argoproj/argosay:v2
-      imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
       image: argoproj/argosay:v2
-      imagePullPolicy: IfNotPresent
-      command: ["sh", "-c", "sleep 5 ; exit 1"]
+      command: ["exit", "1"]
 `).
 		When().
 		SubmitWorkflow().
@@ -171,7 +168,6 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: workflow-ignore
-  parallelism: 2
   templates:
     - name: workflow-ignore
       dag:
@@ -203,14 +199,12 @@ spec:
 
     - name: whalesay
       container:
-        imagePullPolicy: IfNotPresent
         image: argoproj/argosay:v2
 
     - name: whalesplosion
       container:
-        imagePullPolicy: IfNotPresent
         image: argoproj/argosay:v2
-        command: ["sh", "-c", "sleep 10; exit 1"]
+        command: ["exit", "1"]
 `).
 		When().
 		SubmitWorkflow().
