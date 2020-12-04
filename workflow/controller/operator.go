@@ -1126,6 +1126,10 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
+
+	node.ClusterName = pod.Labels[common.LabelKeyClusterName]
+	node.Namespace = woc.namespaceOrEmpty(pod.Namespace)
+
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
 		updated = true
@@ -1737,7 +1741,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
-		return woc.initializeNode("", nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
+		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
 	}
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
@@ -1945,7 +1949,7 @@ var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeNode(executeTmpl.ClusterName, nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase)
+	node := woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase)
 
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
@@ -1972,7 +1976,7 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 	if node != nil {
 		return woc.markNodeError(nodeName, err)
 	}
-	return woc.initializeNode("", nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
+	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 }
 
 // Creates a node status that is or will be chaced
@@ -1997,7 +2001,7 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl 
 	return node
 }
 
-func (woc *wfOperationCtx) initializeNode(clusterName clusterName, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	nodeID := woc.wf.NodeID(nodeName)
@@ -3147,6 +3151,13 @@ func (woc *wfOperationCtx) orWorkflowNamespace(namespace string) string {
 		return namespace
 	}
 	return woc.wf.Namespace
+}
+
+func (woc *wfOperationCtx) namespaceOrEmpty(namespace string) string {
+	if namespace == woc.wf.Namespace {
+		return ""
+	}
+	return namespace
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec() error {

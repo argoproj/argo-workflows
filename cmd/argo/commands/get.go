@@ -537,6 +537,7 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 		args[len(args)-1] = msg
 		args = append(args, node.ResourcesDuration, "")
 		if node.Type == wfv1.NodeTypePod {
+			// TODO - cluster and namespace
 			args[len(args)-1] = node.HostNodeName
 		}
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)

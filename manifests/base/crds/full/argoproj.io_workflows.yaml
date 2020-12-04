@@ -6776,6 +6776,8 @@ spec:
                     items:
                       type: string
                     type: array
+                  clusterName:
+                    type: string
                   daemoned:
                     type: boolean
                   displayName:
@@ -7152,6 +7154,8 @@ spec:
                   message:
                     type: string
                   name:
+                    type: string
+                  namespace:
                     type: string
                   outboundNodes:
                     items:

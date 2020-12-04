@@ -1485,6 +1485,12 @@ type NodeStatus struct {
 	// A human readable message indicating details about why the node is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,9,opt,name=message"`
 
+	// Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the workflow.
+	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,27,opt,name=clusterName"`
+
+	// Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the workflow.
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,28,opt,name=namespace"`
+
 	// Time at which this node started
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,10,opt,name=startedAt"`
 
