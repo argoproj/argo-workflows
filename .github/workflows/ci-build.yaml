@@ -82,6 +82,7 @@ jobs:
           mkdir -p ~/.kube
           cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
           kubectl config rename-context default k3d-k3s-default
+          kubectl cluster-info
       - name: Install K3D
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Fetch tags
