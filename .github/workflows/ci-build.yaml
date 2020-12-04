@@ -81,7 +81,6 @@ jobs:
           until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
           mkdir -p ~/.kube
           cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-          cat ~/.kube/config
       - name: Install K3D
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Fetch tags
