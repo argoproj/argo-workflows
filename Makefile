@@ -485,7 +485,7 @@ test-cli:
 	go test -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-mc
-test-cli:
+test-e2e-mc:
 	go test -timeout 15m -count 1 --tags e2e-mc -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
