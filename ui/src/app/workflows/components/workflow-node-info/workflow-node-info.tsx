@@ -113,11 +113,15 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {props.node.type === 'Pod' && (
-                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
-                        LOGS
-                    </button>
-                )}
+                {props.node.type === 'Pod' &&
+                    ['main', 'wait', 'init'].map(container => (
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, container)}
+                            title='Examine the "wait" or "init" containers ("init" is only used with artifacts) if there is a problem unrelated to you main process.'>
+                            <i className='fa fa-file-alt' /> {container} logs
+                        </button>
+                    ))}
                 {props.links &&
                     props.links
                         .filter(link => link.scope === 'pod')
