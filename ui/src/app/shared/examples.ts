@@ -1,4 +1,4 @@
-import {ClusterWorkflowTemplate, CronWorkflow, Template, Workflow, WorkflowTemplate} from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, Template, Workflow, WorkflowTemplate, EventSource} from '../../models';
 
 export const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely', 'sparkly', 'omniscient'];
@@ -13,6 +13,11 @@ const entrypoint = 'argosay';
 const labels = {example: 'true'};
 const ttlStrategy = {secondsAfterCompletion: 5 * 60};
 const podGC = {strategy: 'OnPodCompletion'};
+const calendarEvent = {
+    calendar:[{interval: {interval: '10s'}}]
+
+
+}
 
 export const exampleTemplate = (name: string): Template => ({
     name,
@@ -90,5 +95,15 @@ export const exampleCronWorkflow = (): CronWorkflow => ({
             ttlStrategy,
             podGC
         }
+    }
+});
+
+export const exampleEventSource = (): EventSource => ({
+    metadata: {
+        name: randomSillyName(),
+        labels
+    },
+    spec: {
+        calendarEvent
     }
 });

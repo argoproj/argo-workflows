@@ -68,7 +68,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
     // when namespace changes, we must reload
     useEffect(() => {
         const listWatch = new ListWatch<EventSource>(
-            () => services.eventSource.list(namespace),
+            () => {metadata: kubernetes.ListMeta, items: services.eventSource.list(namespace)},
             resourceVersion => services.eventSource.watch(namespace, resourceVersion),
             () => setError(null),
             () => setError(null),

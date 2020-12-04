@@ -31,7 +31,7 @@ func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsour
 func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcepkg.GetEventSourceRequest) (*esv1.EventSource, error) {
 	client := auth.GetEventSourceClient(ctx)
 	getOption := in.GetOptions
-	if getOption != nil {
+	if getOption == nil {
 		getOption = &metav1.GetOptions{}
 	}
 	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Get(in.Name, *getOption)

@@ -8,17 +8,19 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
+import {exampleEventSource} from "../../../shared/examples";
+import {ResourceEditor} from "../../../shared/components/resource-editor/resource-editor";
 
 require('./event-source-list.scss');
 
 interface State {
     namespace: string;
+    // @ts-ignore
     eventSources?: models.EventSource[];
     error?: Error;
 }
@@ -72,19 +74,19 @@ export class EventSourceList extends BasePage<RouteComponentProps<any>, State> {
                             <div className='columns small-12'>{this.renderEventSources()}</div>
                         </div>
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            {/*<ResourceEditor*/}
-                            {/*    title={'New Event Source'}*/}
-                            {/*    namespace={this.namespace}*/}
-                            {/*    // value={exampleCronWorkflow()}*/}
-                            {/*    // onSubmit={cronWf =>*/}
-                            {/*    //     services.cronWorkflows*/}
-                            {/*    //         .create(cronWf, cronWf.metadata.namespace || this.namespace)*/}
-                            {/*    //         .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))*/}
-                            {/*    // }*/}
-                            {/*    upload={true}*/}
-                            {/*    editing={true}*/}
-                            {/*    kind='CronWorkflow'*/}
-                            {/*/>*/}
+                            <ResourceEditor
+                                kind='EventSource'
+                                title={'New Event Source'}
+                                namespace={this.namespace}
+                                value={exampleEventSource()}
+                                onSubmit={es =>
+                                    services.eventSource
+                                        .create(es, es.metadata.namespace || this.namespace)
+                                        .then(res => ctx.navigation.goto(uiUrl(`event-sources/${res.metadata.namespace}/${res.metadata.name}`)))
+                                }
+                                upload={true}
+                                editing={true}
+                            />
                             <p>
                                 <ExampleManifests />.
                             </p>
@@ -114,14 +116,13 @@ export class EventSourceList extends BasePage<RouteComponentProps<any>, State> {
         if (!this.state.eventSources) {
             return <Loading />;
         }
-        // TO-DO bala
-        // const learnMore = <a href='https://argoproj.github.io/argo/cron-workflows/'>Learn more</a>;
+        const learnMore = <a href='https://github.com/argoproj/argo-events/tree/master/docs/eventsources'>Learn more</a>;
         if (this.state.eventSources.length === 0) {
             return (
-                <ZeroState title='No cron workflows'>
+                <ZeroState title='No event sources'>
                     <p>You can create new event source here or using the CLI.</p>
                     <p>
-                        {/*<ExampleManifests />. {learnMore}.*/}
+                        <ExampleManifests />. {learnMore}.
                     </p>
                 </ZeroState>
             );
