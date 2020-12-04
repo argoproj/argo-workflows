@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -51,13 +50,8 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 
 func (s *SmokeSuite) TestArtifactPassing() {
 
-	switch s.Config.ContainerRuntimeExecutor {
-	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI:
-		s.T().Skip("non-docker not supported")
-	case common.ContainerRuntimeExecutorPNS:
-		if os.Getenv("CI") == "true" {
-			s.T().Skip("non-docker not supported")
-		}
+	if s.Config.ContainerRuntimeExecutor != common.ContainerRuntimeExecutorDocker {
+		s.T().Skip("only docker not supported")
 	}
 
 	s.Given().
