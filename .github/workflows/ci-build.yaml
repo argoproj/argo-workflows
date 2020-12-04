@@ -103,6 +103,7 @@ jobs:
           PROFILE: mysql
         run: |
           mkdir -p /tmp/log/argo-e2e
+          touch /tmp/log/argo-e2e/argo.log
           make pre-start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false
           make start     PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready

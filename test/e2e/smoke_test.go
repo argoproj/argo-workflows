@@ -56,8 +56,8 @@ func (s *SmokeSuite) TestArtifactPassing() {
 		s.T().Skip("non-docker not supported")
 	case common.ContainerRuntimeExecutorPNS:
 		if os.Getenv("CI") == "true" {
-		s.T().Skip("non-docker not supported")
-	}
+			s.T().Skip("non-docker not supported")
+		}
 	}
 
 	s.Given().
