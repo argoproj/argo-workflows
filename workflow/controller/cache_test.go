@@ -39,9 +39,9 @@ var sampleConfigMapEmptyCacheEntry = apiv1.ConfigMap{
 func TestConfigMapCacheLoadHit(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	_, err := controller.kubeclientset[defaultClusterName].CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
+	_, err := controller.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
 	assert.NoError(t, err)
-	c := cache.NewConfigMapCache("default", controller.kubeclientset[defaultClusterName], "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.kubeclientset[DefaultClusterName], "whalesay-cache")
 	entry, err := c.Load("hi-there-world")
 	assert.NoError(t, err)
 	outputs := entry.Outputs
@@ -55,9 +55,9 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 func TestConfigMapCacheLoadMiss(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	_, err := controller.kubeclientset[defaultClusterName].CoreV1().ConfigMaps("default").Create(&sampleConfigMapEmptyCacheEntry)
+	_, err := controller.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps("default").Create(&sampleConfigMapEmptyCacheEntry)
 	assert.NoError(t, err)
-	c := cache.NewConfigMapCache("default", controller.kubeclientset[defaultClusterName], "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.kubeclientset[DefaultClusterName], "whalesay-cache")
 	entry, err := c.Load("hi-there-world")
 	assert.NoError(t, err)
 	assert.Nil(t, entry)
@@ -71,12 +71,12 @@ func TestConfigMapCacheSave(t *testing.T) {
 	}
 	cancel, controller := newController()
 	defer cancel()
-	c := cache.NewConfigMapCache("default", controller.kubeclientset[defaultClusterName], "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.kubeclientset[DefaultClusterName], "whalesay-cache")
 	outputs := wfv1.Outputs{}
 	outputs.Parameters = append(outputs.Parameters, MockParam)
 	err := c.Save("hi-there-world", "", &outputs)
 	assert.NoError(t, err)
-	cm, err := controller.kubeclientset[defaultClusterName].CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
+	cm, err := controller.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
 }

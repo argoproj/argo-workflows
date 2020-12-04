@@ -34,14 +34,14 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset[defaultClusterName], wfc.namespace, &wfc.Config.ArtifactRepository)
+	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset[DefaultClusterName], wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset[defaultClusterName], wfc.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset[DefaultClusterName], wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}

@@ -1,18 +1,18 @@
 package controller
 
-type clusterName = string
+type ClusterName = string
 
 const (
 	// Represent all clusters, much like corev1.NamespaceAll.
-	//  clusterAll     clusterName = ""
-	defaultClusterName clusterName = "default"
+	//  ClusterAll     ClusterName = ""
+	DefaultClusterName ClusterName = "default"
 )
 
-// Return the clusterName, or defaultClusterName if the clusterName was empty
+// Return the clusterName, or DefaultClusterName if the clusterName was empty
 // This will never return an empty name.
-func clusterNameOrDefault(n clusterName) clusterName {
+func ClusterNameOrDefault(n ClusterName) ClusterName {
 	if n != "" {
 		return n
 	}
-	return defaultClusterName
+	return DefaultClusterName
 }
