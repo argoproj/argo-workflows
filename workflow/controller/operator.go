@@ -1343,19 +1343,19 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	return wfv1.NodeSucceeded, ""
 }
 
-func (woc *wfOperationCtx) clusterNames() []ClusterName {
-	x := map[ClusterName]bool{}
+func (woc *wfOperationCtx) clusterNames() []wfv1.ClusterName {
+	x := map[wfv1.ClusterName]bool{}
 	for _, t := range woc.execWf.Spec.Templates {
-		x[ClusterNameOrDefault(t.ClusterName)] = true
+		x[wfv1.ClusterNameOrDefault(t.ClusterName)] = true
 	}
-	var out []ClusterName
+	var out []wfv1.ClusterName
 	for clusterName := range x {
 		out = append(out, clusterName)
 	}
 	return out
 }
 
-func (woc *wfOperationCtx) kubernetesInterfaces() map[ClusterName]kubernetes.Interface {
+func (woc *wfOperationCtx) kubernetesInterfaces() map[wfv1.ClusterName]kubernetes.Interface {
 	out := map[string]kubernetes.Interface{}
 	for _, clusterName := range woc.clusterNames() {
 		out[clusterName] = woc.controller.kubeclientset[clusterName]

@@ -125,12 +125,12 @@ func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
 func TestSemaphoreTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[DefaultClusterName]), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[wfv1.DefaultClusterName]), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps("default").Create(&cm)
+	_, err = controller.kubeclientset[wfv1.DefaultClusterName].CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
 
 	t.Run("TmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -187,12 +187,12 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[DefaultClusterName]), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[wfv1.DefaultClusterName]), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps("default").Create(&cm)
+	_, err = controller.kubeclientset[wfv1.DefaultClusterName].CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
 
 	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -248,12 +248,12 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[DefaultClusterName]), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[wfv1.DefaultClusterName]), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps("default").Create(&cm)
+	_, err = controller.kubeclientset[wfv1.DefaultClusterName].CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
 
 	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -310,7 +310,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[DefaultClusterName]), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[wfv1.DefaultClusterName]), func(key string) {
 	})
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
@@ -366,7 +366,7 @@ func TestMutexInDAG(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[DefaultClusterName]), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset[wfv1.DefaultClusterName]), func(key string) {
 	})
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := unmarshalWF(DAGWithMutex)

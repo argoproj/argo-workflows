@@ -76,8 +76,8 @@ type WorkflowController struct {
 	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig       map[ClusterName]*rest.Config
-	kubeclientset    map[ClusterName]kubernetes.Interface
+	restConfig       map[wfv1.ClusterName]*rest.Config
+	kubeclientset    map[wfv1.ClusterName]kubernetes.Interface
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
 
@@ -85,7 +85,7 @@ type WorkflowController struct {
 	wfInformer            cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	podInformer           map[ClusterName]cache.SharedIndexInformer
+	podInformer           map[wfv1.ClusterName]cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	completedPods         chan podKey
@@ -119,8 +119,8 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		return nil, err
 	}
 
-	restConfigs := map[string]*rest.Config{DefaultClusterName: restConfig}
-	kubeclientsets := map[ClusterName]kubernetes.Interface{DefaultClusterName: kubeclientset}
+	restConfigs := map[string]*rest.Config{wfv1.DefaultClusterName: restConfig}
+	kubeclientsets := map[wfv1.ClusterName]kubernetes.Interface{wfv1.DefaultClusterName: kubeclientset}
 	secret, err := kubeclientset.CoreV1().Secrets(managedNamespace).Get("clusters", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 		log.Info(`"clusters" secret not found - single-cluster mode`)
@@ -275,7 +275,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.kubeclientset[wfv1.DefaultClusterName].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -312,7 +312,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset[DefaultClusterName].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
+			return wfc.kubeclientset[wfv1.DefaultClusterName].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
 		},
 	})
 	if err != nil {
@@ -361,11 +361,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[DefaultClusterName], "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.DefaultClusterName], "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[DefaultClusterName], "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.DefaultClusterName], "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[DefaultClusterName], "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.DefaultClusterName], "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -631,7 +631,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
 // enqueue workflow for processing
-func (wfc *WorkflowController) enqueueWfFromPodLabel(clusterName ClusterName, obj interface{}) {
+func (wfc *WorkflowController) enqueueWfFromPodLabel(clusterName wfv1.ClusterName, obj interface{}) {
 	err := func() error {
 		pod, ok := obj.(*apiv1.Pod)
 		if !ok {
@@ -834,8 +834,8 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 	return nil
 }
 
-func clusterNameRequirement(clusterName ClusterName) labels.Requirement {
-	if clusterName != DefaultClusterName {
+func clusterNameRequirement(clusterName wfv1.ClusterName) labels.Requirement {
+	if clusterName != wfv1.DefaultClusterName {
 		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{clusterName})
 		return *r
 	} else {
@@ -849,7 +849,7 @@ func workflowNameRequirement(workflowName string) labels.Requirement {
 	return *r
 }
 
-func (wfc *WorkflowController) newWorkflowPodWatch(clusterName ClusterName) *cache.ListWatch {
+func (wfc *WorkflowController) newWorkflowPodWatch(clusterName wfv1.ClusterName) *cache.ListWatch {
 	c := wfc.kubeclientset[clusterName].CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
@@ -877,8 +877,8 @@ func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newPodInformer() map[ClusterName]cache.SharedIndexInformer {
-	out := make(map[ClusterName]cache.SharedIndexInformer)
+func (wfc *WorkflowController) newPodInformer() map[wfv1.ClusterName]cache.SharedIndexInformer {
+	out := make(map[wfv1.ClusterName]cache.SharedIndexInformer)
 	for clusterName := range wfc.kubeclientset {
 		source := wfc.newWorkflowPodWatch(clusterName)
 		informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{

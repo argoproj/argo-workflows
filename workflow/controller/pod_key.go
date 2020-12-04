@@ -6,16 +6,17 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 )
 
 type podKey = string
 
 func newPodKey(pod *apiv1.Pod) podKey {
-	return fmt.Sprintf("%s/%s/%s", ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
+	return fmt.Sprintf("%s/%s/%s", v1alpha1.ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
 }
 
-func splitPodKey(key podKey) (clusterName ClusterName, namespace string, name string) {
+func splitPodKey(key podKey) (clusterName v1alpha1.ClusterName, namespace string, name string) {
 	parts := strings.Split(key, "/")
 	if len(parts) != 3 {
 		return "", "", ""

@@ -22,7 +22,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	}
 	clusterName, ok := pod.Labels[common.LabelKeyClusterName]
 	if !ok {
-		clusterName = DefaultClusterName
+		clusterName = wfv1.DefaultClusterName
 	}
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
@@ -117,7 +117,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 			continue
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
-		clusterName := ClusterNameOrDefault(tmpl.ClusterName)
+		clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
 		namespace := woc.orWorkflowNamespace(tmpl.Namespace)
 		err := woc.updateExecutionControl(clusterName, namespace, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {
@@ -131,7 +131,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 }
 
 // updateExecutionControl updates the execution control parameters
-func (woc *wfOperationCtx) updateExecutionControl(clusterName ClusterName, namespace, podName string, execCtl common.ExecutionControl, containerName string) error {
+func (woc *wfOperationCtx) updateExecutionControl(clusterName wfv1.ClusterName, namespace, podName string, execCtl common.ExecutionControl, containerName string) error {
 	execCtlBytes, err := json.Marshal(execCtl)
 	if err != nil {
 		return errors.InternalWrapError(err)

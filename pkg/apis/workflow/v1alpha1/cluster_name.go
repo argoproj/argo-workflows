@@ -1,4 +1,4 @@
-package controller
+package v1alpha1
 
 type ClusterName = string
 
