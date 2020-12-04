@@ -292,21 +292,6 @@
       ],
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.ClusterWorkflowSpec": {
-      "description": "ClusterWorkflowSpec lists workflow specific settings for clusters. This allows you to choose (for example) a different namespace or service account.",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "serviceAccountName": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "name"
-      ],
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
       "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
       "properties": {
@@ -1190,9 +1175,6 @@
           },
           "type": "array"
         },
-        "clusterName": {
-          "type": "string"
-        },
         "daemoned": {
           "description": "Daemoned tracks whether or not this node was daemoned and need to be terminated",
           "type": "boolean"
@@ -1963,7 +1945,7 @@
           "type": "boolean"
         },
         "clusterName": {
-          "description": "Which cluster to run this template on.",
+          "description": "Cluster to run this template on. If empty/omitted it'll run in the same cluster as the io.argoproj.workflow.v1alpha1.",
           "type": "string"
         },
         "container": {
@@ -2018,6 +2000,10 @@
         },
         "name": {
           "description": "Name is the name of the template",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace run the template in. If empty/omitted it'll run in the same namespace as the io.argoproj.workflow.v1alpha1.",
           "type": "string"
         },
         "nodeSelector": {
@@ -2613,13 +2599,6 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
-        "clusterWorkflowSpecs": {
-          "description": "ClusterWorkflowSpecs is cluster specific options",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowSpec"
-          },
-          "type": "array"
-        },
         "dnsConfig": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy."
@@ -3087,13 +3066,6 @@
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
-        },
-        "clusterWorkflowSpecs": {
-          "description": "ClusterWorkflowSpecs is cluster specific options",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowSpec"
-          },
-          "type": "array"
         },
         "dnsConfig": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
