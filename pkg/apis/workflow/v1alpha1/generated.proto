@@ -166,14 +166,6 @@ message Cache {
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
 }
 
-// ClusterWorkflowSpec lists workflow specific settings for clusters.
-// This allows you to choose (for example) a different namespace or service account.
-message ClusterWorkflowSpec {
-  optional string name = 1;
-
-  optional string serviceAccountName = 2;
-}
-
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
 // +genclient
 // +genclient:noStatus
@@ -705,10 +697,6 @@ message NodeStatus {
 
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
-
-  // ClusterName is the name of the cluster this node should run it. This only applies to pod type nodes.
-  // For historical and compactness reasons it will be empty if the pod ran in the "default" cluster.
-  optional string clusterName = 27;
 }
 
 // NodeSynchronizationStatus stores the status of a node
@@ -1152,6 +1140,12 @@ message Template {
   // Priority to apply to workflow pods.
   optional int32 priority = 27;
 
+  // Cluster to run this template on. If empty/omitted it'll run in the same cluster as the workflow.
+  optional string clusterName = 39;
+
+  // Namespace run the template in. If empty/omitted it'll run in the same namespace as the workflow.
+  optional string namespaces = 40;
+
   // ServiceAccountName to apply to workflow pods
   optional string serviceAccountName = 28;
 
@@ -1188,9 +1182,6 @@ message Template {
   // Timout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
-
-  // Which cluster to run this template on.
-  optional string clusterName = 39;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1482,9 +1473,6 @@ message WorkflowSpec {
 
   // RetryStrategy for all templates in the workflow.
   optional RetryStrategy retryStrategy = 37;
-
-  // ClusterWorkflowSpecs is cluster specific options
-  repeated ClusterWorkflowSpec clusterWorkflowSpecs = 38;
 }
 
 // WorkflowStatus contains overall status information about a workflow

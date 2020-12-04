@@ -349,9 +349,6 @@ type WorkflowSpec struct {
 
 	// RetryStrategy for all templates in the workflow.
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
-
-	// ClusterWorkflowSpecs is cluster specific options
-	ClusterWorkflowSpecs ClusterWorkflowSpecs `json:"clusterWorkflowSpecs,omitempty" protobuf:"bytes,38,rep,name=clusterWorkflowSpecs"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -415,15 +412,6 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 		semaphoreKeys = append(semaphoreKeys, key)
 	}
 	return semaphoreKeys
-}
-
-type ClusterWorkflowSpecs []ClusterWorkflowSpec
-
-// ClusterWorkflowSpec lists workflow specific settings for clusters.
-// This allows you to choose (for example) a different namespace or service account.
-type ClusterWorkflowSpec struct {
-	Name               string `json:"name" protobuf:"bytes,1,opt,name=name"`
-	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,2,opt,name=serviceAccountName"`
 }
 
 type ShutdownStrategy string
@@ -498,15 +486,6 @@ func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
-}
-
-func (wfs WorkflowSpec) GetClusterWorkflowSpec(clusterName string) ClusterWorkflowSpec {
-	for _, s := range wfs.ClusterWorkflowSpecs {
-		if s.Name == clusterName {
-			return s
-		}
-	}
-	return ClusterWorkflowSpec{}
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -616,6 +595,12 @@ type Template struct {
 	// Priority to apply to workflow pods.
 	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,27,opt,name=priority"`
 
+	// Cluster to run this template on. If empty/omitted it'll run in the same cluster as the workflow.
+	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,39,opt,name=clusterName"`
+
+	// Namespace run the template in. If empty/omitted it'll run in the same namespace as the workflow.
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,40,opt,name=namespaces"`
+
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,28,opt,name=serviceAccountName"`
 
@@ -652,9 +637,6 @@ type Template struct {
 	// Timout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
-
-	// Which cluster to run this template on.
-	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,39,opt,name=clusterName"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -1555,10 +1537,6 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
-
-	// ClusterName is the name of the cluster this node should run it. This only applies to pod type nodes.
-	// For historical and compactness reasons it will be empty if the pod ran in the "default" cluster.
-	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,27,opt,name=clusterName"`
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted

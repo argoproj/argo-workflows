@@ -53,6 +53,9 @@ const (
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 
+	// LabelKeyNamespaceName is used to identify the namespace of the workflow that created a pod.
+	// If this is absent, then it is the same as the workflow.
+	LabelKeyWorkflowNamespace = workflow.WorkflowFullName + "/workflow-namespace"
 	// LabelKeyClusterName is used to label pods in other clusters created by this controller.
 	// It is similar to instance ID.
 	// * If a pod is unlabelled in my cluster, it is mine.
@@ -66,6 +69,7 @@ const (
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
+
 	// Who created this workflow.
 	LabelKeyCreator = workflow.WorkflowFullName + "/creator"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed

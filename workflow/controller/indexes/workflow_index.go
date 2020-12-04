@@ -17,11 +17,15 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	if err != nil {
 		return []string{}, fmt.Errorf("object has no meta: %v", err)
 	}
+	namespace, ok := m.GetLabels()[common.LabelKeyWorkflowNamespace]
+	if !ok {
+		namespace = m.GetNamespace()
+	}
 	name, ok := m.GetLabels()[common.LabelKeyWorkflow]
 	if !ok {
 		return []string{}, fmt.Errorf("object has no workflow label")
 	}
-	return []string{WorkflowIndexValue(m.GetNamespace(), name)}, nil
+	return []string{WorkflowIndexValue(namespace, name)}, nil
 }
 
 func WorkflowIndexValue(namespace, name string) string {

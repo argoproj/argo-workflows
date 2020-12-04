@@ -667,17 +667,6 @@ spec:
                   type: object
                 automountServiceAccountToken:
                   type: boolean
-                clusterWorkflowSpecs:
-                  items:
-                    properties:
-                      name:
-                        type: string
-                      serviceAccountName:
-                        type: string
-                    required:
-                    - name
-                    type: object
-                  type: array
                 dnsConfig:
                   properties:
                     nameservers:
@@ -3802,6 +3791,8 @@ spec:
                         - prometheus
                         type: object
                       name:
+                        type: string
+                      namespace:
                         type: string
                       nodeSelector:
                         additionalProperties:

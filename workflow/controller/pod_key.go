@@ -12,7 +12,7 @@ import (
 type podKey = string
 
 func newPodKey(pod *apiv1.Pod) podKey {
-	return fmt.Sprintf("%s/%s/%s", pod.Labels[common.LabelKeyClusterName], pod.Namespace, pod.Name)
+	return fmt.Sprintf("%s/%s/%s", clusterNameOrDefault(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
 }
 
 func splitPodKey(key podKey) (clusterName clusterName, namespace string, name string) {

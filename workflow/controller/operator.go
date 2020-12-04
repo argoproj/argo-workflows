@@ -347,13 +347,12 @@ func (woc *wfOperationCtx) operate() {
 
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
-		// the error are handled in the callee so just log it.
-		msg := "error in entry template execution"
-		woc.log.WithError(err).Error(msg)
-		msg = fmt.Sprintf("%s %s: %+v", woc.wf.Name, msg, err)
 		switch err {
 		case ErrDeadlineExceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", msg)
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err))
+		}
+		if !woc.wf.Status.Phase.Completed() {
+			woc.markWorkflowError(err)
 		}
 		return
 	}
@@ -2020,11 +2019,6 @@ func (woc *wfOperationCtx) initializeNode(clusterName clusterName, nodeName stri
 		EstimatedDuration: woc.estimateNodeDuration(nodeName),
 	}
 
-	// ClusterName only makes sense for the pod.
-	if nodeType == wfv1.NodeTypePod {
-		node.ClusterName = clusterNameDefaultAsEmpty(clusterName)
-	}
-
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
 		node.DisplayName = strings.TrimPrefix(node.Name, boundaryNode.Name)
 		if stepsOrDagSeparator.MatchString(node.DisplayName) {
@@ -3146,6 +3140,13 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) orWorkflowNamespace(namespace string) string {
+	if namespace != "" {
+		return namespace
+	}
+	return woc.wf.Namespace
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec() error {

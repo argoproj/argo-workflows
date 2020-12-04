@@ -688,7 +688,15 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 		v := *tmpl.Priority
 		newTmpl.Priority = &v
 	}
-
+	if tmpl.ClusterName != "" {
+		newTmpl.ClusterName = tmpl.ClusterName
+	}
+	if tmpl.Namespace != "" {
+		newTmpl.Namespace = tmpl.Namespace
+	}
+	if tmpl.ServiceAccountName != "" {
+		newTmpl.ServiceAccountName = tmpl.ServiceAccountName
+	}
 	return newTmpl, nil
 }
 

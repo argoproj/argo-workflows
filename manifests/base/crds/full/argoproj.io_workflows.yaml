@@ -656,17 +656,6 @@ spec:
               type: object
             automountServiceAccountToken:
               type: boolean
-            clusterWorkflowSpecs:
-              items:
-                properties:
-                  name:
-                    type: string
-                  serviceAccountName:
-                    type: string
-                required:
-                - name
-                type: object
-              type: array
             dnsConfig:
               properties:
                 nameservers:
@@ -3792,6 +3781,8 @@ spec:
                     type: object
                   name:
                     type: string
+                  namespace:
+                    type: string
                   nodeSelector:
                     additionalProperties:
                       type: string
@@ -6785,8 +6776,6 @@ spec:
                     items:
                       type: string
                     type: array
-                  clusterName:
-                    type: string
                   daemoned:
                     type: boolean
                   displayName:
@@ -11376,6 +11365,8 @@ spec:
                     type: object
                   name:
                     type: string
+                  namespace:
+                    type: string
                   nodeSelector:
                     additionalProperties:
                       type: string
@@ -14196,17 +14187,6 @@ spec:
                   type: object
                 automountServiceAccountToken:
                   type: boolean
-                clusterWorkflowSpecs:
-                  items:
-                    properties:
-                      name:
-                        type: string
-                      serviceAccountName:
-                        type: string
-                    required:
-                    - name
-                    type: object
-                  type: array
                 dnsConfig:
                   properties:
                     nameservers:
@@ -17331,6 +17311,8 @@ spec:
                         - prometheus
                         type: object
                       name:
+                        type: string
+                      namespace:
                         type: string
                       nodeSelector:
                         additionalProperties:

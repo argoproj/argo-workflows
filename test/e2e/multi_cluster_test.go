@@ -18,6 +18,31 @@ type MultiClusterSuite struct {
 	fixtures.E2ESuite
 }
 
+func (s *MultiClusterSuite) TestNamespaceNotFound() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: namespace-not-found-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      namespace: not-found
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, "namespaces \"not-found\" not found", status.Message)
+		})
+}
+
 func (s *MultiClusterSuite) TestClusterNotFound() {
 	s.Given().
 		Workflow(`
@@ -55,6 +80,7 @@ spec:
   templates:
     - name: main
       clusterName: other
+      namespace: argo
       container:
         image: argoproj/argosay:v2
 `).
@@ -64,7 +90,6 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			assert.Equal(t, "other", status.Nodes[metadata.Name].ClusterName)
 		})
 }
 
@@ -90,6 +115,7 @@ spec:
         image: argoproj/argosay:v2
     - name: other
       clusterName: other
+      namespace: argo
       container:
         image: argoproj/argosay:v2
 `).

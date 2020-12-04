@@ -136,11 +136,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
 	clusterName := clusterNameOrDefault(tmpl.ClusterName)
+	namespace := woc.orWorkflowNamespace(tmpl.Namespace)
 	informer, ok := woc.controller.podInformer[clusterName]
 	if !ok {
 		return nil, fmt.Errorf(`no cluster named "%s" has been configured`, clusterName)
 	}
-	obj, exists, err := informer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + nodeID))
+	obj, exists, err := informer.GetStore().Get(cache.ExplicitKey(namespace + "/" + nodeID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
@@ -178,8 +179,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      nodeID,
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Name: nodeID,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
@@ -196,10 +196,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		},
 	}
 
-	if clusterName != defaultClusterName {
-		// Only annotate if not default cluster. This is important for both historical reasons.
-		pod.Labels[common.LabelKeyClusterName] = clusterName
-	} else {
+	if clusterName == defaultClusterName {
 		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		}
@@ -232,6 +229,16 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	err = woc.addArchiveLocation(tmpl)
 	if err != nil {
 		return nil, err
+	}
+
+	if clusterName != defaultClusterName {
+		// Only annotate if not default cluster. This is important for historical reasons.
+		pod.Labels[common.LabelKeyClusterName] = clusterName
+	}
+
+	if namespace != woc.wf.Namespace {
+		// Only annotate if not the same as the workflow. This is important for historical reasons.
+		pod.Labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
 	}
 
 	err = woc.setupServiceAccount(pod, tmpl)
@@ -378,7 +385,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	created, err := woc.controller.kubeclientset[clusterName].CoreV1().Pods(woc.wf.Namespace).Create(pod)
+	created, err := woc.controller.kubeclientset[clusterName].CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
@@ -1039,10 +1046,8 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
-	} else if x := woc.execWf.Spec.GetClusterWorkflowSpec(tmpl.ClusterName).ServiceAccountName; x != "" {
-		pod.Spec.ServiceAccountName = x
-	} else if x := woc.execWf.Spec.ServiceAccountName; x != "" {
-		pod.Spec.ServiceAccountName = x
+	} else if woc.execWf.Spec.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = woc.execWf.Spec.ServiceAccountName
 	}
 
 	var automountServiceAccountToken *bool
