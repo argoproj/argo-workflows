@@ -706,6 +706,8 @@ message NodeStatus {
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
 
+  // ClusterName is the name of the cluster this node should run it. This only applies to pod type nodes.
+  // For historical and compactness reasons it will be empty if the pod ran in the "default" cluster.
   optional string clusterName = 27;
 }
 

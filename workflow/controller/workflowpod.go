@@ -135,7 +135,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	clusterName := tmpl.ClusterName
+	clusterName := clusterNameOrDefault(tmpl.ClusterName)
 	informer, ok := woc.controller.podInformer[clusterName]
 	if !ok {
 		return nil, fmt.Errorf(`no cluster named "%s" has been configured`, clusterName)
@@ -196,8 +196,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		},
 	}
 
-	if clusterName != "" {
-		// only annotate if not default cluster, this allows us to change configuration while running
+	if clusterName != defaultClusterName {
+		// Only annotate if not default cluster. This is important for both historical reasons.
 		pod.Labels[common.LabelKeyClusterName] = clusterName
 	} else {
 		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{

@@ -1340,7 +1340,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	return wfv1.NodeSucceeded, ""
 }
 
-func (woc *wfOperationCtx) clusterNames() []string {
+func (woc *wfOperationCtx) clusterNames() []clusterName {
 	x := map[string]bool{}
 	for _, t := range woc.execWf.Spec.Templates {
 		x[t.ClusterName] = true
@@ -1352,7 +1352,7 @@ func (woc *wfOperationCtx) clusterNames() []string {
 	return out
 }
 
-func (woc *wfOperationCtx) kubernetesInterfaces() map[string]kubernetes.Interface {
+func (woc *wfOperationCtx) kubernetesInterfaces() map[clusterName]kubernetes.Interface {
 	out := map[string]kubernetes.Interface{}
 	for _, clusterName := range woc.clusterNames() {
 		out[clusterName] = woc.controller.kubeclientset[clusterName]
@@ -2018,7 +2018,11 @@ func (woc *wfOperationCtx) initializeNode(clusterName clusterName, nodeName stri
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
 		EstimatedDuration: woc.estimateNodeDuration(nodeName),
-		ClusterName:       clusterName,
+	}
+
+	// ClusterName only makes sense for the pod.
+	if nodeType == wfv1.NodeTypePod {
+		node.ClusterName = clusterNameDefaultAsEmpty(clusterName)
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -3046,7 +3050,6 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		}
 		woc.log.Infof("Created PDB resource for workflow.")
 		woc.updated = true
-
 	}
 	return nil
 }

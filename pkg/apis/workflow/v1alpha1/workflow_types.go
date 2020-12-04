@@ -1555,7 +1555,10 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
-	ClusterName           string                     `json:"clusterName,omitempty" protobuf:"bytes,27,opt,name=clusterName"`
+
+	// ClusterName is the name of the cluster this node should run it. This only applies to pod type nodes.
+	// For historical and compactness reasons it will be empty if the pod ran in the "default" cluster.
+	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,27,opt,name=clusterName"`
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted

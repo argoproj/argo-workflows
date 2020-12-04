@@ -56,8 +56,6 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
-type clusterName = string
-
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -121,12 +119,8 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		return nil, err
 	}
 
-	restConfigs := map[string]*rest.Config{
-		"": restConfig,
-	}
-	kubeclientsets := map[clusterName]kubernetes.Interface{
-		"": kubeclientset,
-	}
+	restConfigs := map[string]*rest.Config{defaultClusterName: restConfig}
+	kubeclientsets := map[clusterName]kubernetes.Interface{defaultClusterName: kubeclientset}
 	secret, err := kubeclientset.CoreV1().Secrets(managedNamespace).Get("clusters", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 		log.Info(`"clusters" secret not found - single-cluster mode`)
@@ -281,7 +275,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset[""].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.kubeclientset[defaultClusterName].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -318,7 +312,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset[""].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
+			return wfc.kubeclientset[defaultClusterName].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
 		},
 	})
 	if err != nil {
@@ -367,11 +361,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[""], "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[defaultClusterName], "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[""], "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[defaultClusterName], "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[""], "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[defaultClusterName], "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -831,7 +825,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 }
 
 func clusterNameRequirement(clusterName clusterName) labels.Requirement {
-	if clusterName != "" {
+	if clusterName != defaultClusterName {
 		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{clusterName})
 		return *r
 	} else {
