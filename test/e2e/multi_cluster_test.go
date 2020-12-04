@@ -1,4 +1,4 @@
-// +build e2e-mc
+// +build e2emc
 
 package e2e
 
