@@ -388,8 +388,6 @@ install: /usr/local/bin/kustomize dist/argo
 ifeq ($(CI),false)
 	# create main cluster (if not exists)
 	k3d cluster get k3s-default || k3d cluster create --wait --update-default-kubeconfig
-else
-	kubectl config rename-context k3d-k3s-default
 endif
 	# create other cluster (if not exists)
 	k3d cluster get other || k3d cluster create other --wait --update-default-kubeconfig
