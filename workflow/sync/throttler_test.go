@@ -5,82 +5,45 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"k8s.io/client-go/util/workqueue"
 )
 
 func TestNoParallelismSamePriority(t *testing.T) {
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	throttler := NewThrottler(0, queue)
+	throttler := NewThrottler(0, nil)
 
 	throttler.Add("c", 0, time.Now().Add(2*time.Hour))
 	throttler.Add("b", 0, time.Now().Add(1*time.Hour))
 	throttler.Add("a", 0, time.Now())
 
-	next, ok := throttler.Next("b")
-	assert.True(t, ok)
-	assert.Equal(t, "a", next)
-
-	next, ok = throttler.Next("c")
-	assert.True(t, ok)
-	assert.Equal(t, "b", next)
+	assert.True(t, throttler.Admit("a"))
+	assert.True(t, throttler.Admit("b"))
+	assert.True(t, throttler.Admit("c"))
 }
 
 func TestWithParallelismLimitAndPriority(t *testing.T) {
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	throttler := NewThrottler(2, queue)
+	queuedKey := ""
+	throttler := NewThrottler(2, func(key string) { queuedKey = key })
 
 	throttler.Add("a", 1, time.Now())
 	throttler.Add("b", 2, time.Now())
 	throttler.Add("c", 3, time.Now())
 	throttler.Add("d", 4, time.Now())
 
-	next, ok := throttler.Next("a")
-	assert.True(t, ok)
-	assert.Equal(t, "d", next)
+	assert.True(t, throttler.Admit("a"), "is started, even though low priority")
+	assert.True(t, throttler.Admit("b"), "is started, even though low priority")
+	assert.False(t, throttler.Admit("c"), "cannot start")
+	assert.False(t, throttler.Admit("d"), "cannot start")
+	assert.Equal(t, "b", queuedKey)
+	queuedKey = ""
 
-	next, ok = throttler.Next("a")
-	assert.True(t, ok)
-	assert.Equal(t, "c", next)
+	throttler.Remove("a")
+	assert.True(t, throttler.Admit("b"), "stays running")
+	assert.True(t, throttler.Admit("d"), "top priority")
+	assert.False(t, throttler.Admit("c"))
+	assert.Equal(t, "d", queuedKey)
+	queuedKey = ""
 
-	_, ok = throttler.Next("a")
-	assert.False(t, ok)
-
-	next, ok = throttler.Next("c")
-	assert.True(t, ok)
-	assert.Equal(t, "c", next)
-
-	throttler.Remove("c")
-
-	assert.Equal(t, 1, queue.Len())
-	queued, _ := queue.Get()
-	assert.Equal(t, "b", queued)
-}
-
-func TestChangeParallelism(t *testing.T) {
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	throttler := NewThrottler(1, queue)
-
-	throttler.Add("a", 1, time.Now())
-	throttler.Add("b", 2, time.Now())
-	throttler.Add("c", 3, time.Now())
-	throttler.Add("d", 4, time.Now())
-
-	next, ok := throttler.Next("a")
-	assert.True(t, ok)
-	assert.Equal(t, "d", next)
-
-	_, ok = throttler.Next("b")
-	assert.False(t, ok)
-
-	_, ok = throttler.Next("c")
-	assert.False(t, ok)
-
-	throttler.SetParallelism(3)
-
-	assert.Equal(t, 2, queue.Len())
-	queued, _ := queue.Get()
-	assert.Equal(t, "c", queued)
-	queued, _ = queue.Get()
-	assert.Equal(t, "b", queued)
+	throttler.Remove("b")
+	assert.True(t, throttler.Admit("d"), "top priority")
+	assert.True(t, throttler.Admit("c"), "now running too")
+	assert.Equal(t, "c", queuedKey)
 }

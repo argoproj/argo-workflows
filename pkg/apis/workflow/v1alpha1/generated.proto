@@ -111,10 +111,24 @@ message ArtifactLocation {
   optional GCSArtifact gcs = 9;
 }
 
+// +protobuf.options.(gogoproto.goproto_stringer)=false
 message ArtifactRepositoryRef {
+  // The name of the config map. Defaults to "artifact-repositories".
   optional string configMap = 1;
 
+  // The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
   optional string key = 2;
+}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+message ArtifactRepositoryRefStatus {
+  optional ArtifactRepositoryRef artifactRepositoryRef = 1;
+
+  // The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
+  optional string namespace = 2;
+
+  // If this ref represents the default artifact repository, rather than a config map.
+  optional bool default = 3;
 }
 
 // ArtifactoryArtifact is the location of an artifactory artifact
@@ -197,6 +211,12 @@ message ContinueOn {
 message Counter {
   // Value is the value of the metric
   optional string value = 1;
+}
+
+// CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
+message CreateS3BucketOptions {
+  // ObjectLocking Enable object locking
+  optional bool objectLocking = 3;
 }
 
 // CronWorkflow is the definition of a scheduled workflow resource
@@ -874,6 +894,9 @@ message S3Bucket {
 
   // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
   optional bool useSDKCreds = 8;
+
+  // CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+  optional CreateS3BucketOptions createBucketIfNotPresent = 9;
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps
@@ -1497,6 +1520,9 @@ message WorkflowStatus {
 
   // Synchronization stores the status of synchronization locks
   optional SynchronizationStatus synchronization = 15;
+
+  // ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
+  optional ArtifactRepositoryRefStatus artifactRepositoryRef = 18;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

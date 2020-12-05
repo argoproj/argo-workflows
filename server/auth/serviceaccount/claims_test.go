@@ -1,4 +1,4 @@
-package sso
+package serviceaccount
 
 import (
 	"io/ioutil"

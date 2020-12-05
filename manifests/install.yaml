@@ -331,6 +331,7 @@ rules:
   - secrets
   verbs:
   - get
+  - create
 - apiGroups:
   - ""
   resources:
@@ -353,10 +354,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
   - serviceaccounts
   verbs:
   - get
+  - list
 - apiGroups:
   - argoproj.io
   resources:
@@ -470,6 +471,10 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
         volumeMounts:
         - mountPath: /tmp
           name: tmp
@@ -505,6 +510,10 @@ spec:
         - workflow-controller
         image: argoproj/workflow-controller:latest
         name: workflow-controller
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:

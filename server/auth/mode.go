@@ -30,15 +30,12 @@ func (m Modes) Add(value string) error {
 	return nil
 }
 
-func GetMode(authorisation string) (Mode, error) {
-	if authorisation == "" {
-		return Server, nil
-	}
+func (m Modes) GetMode(authorisation string) (Mode, bool) {
 	if strings.HasPrefix(authorisation, sso.Prefix) {
-		return SSO, nil
+		return SSO, m[SSO]
 	}
 	if strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ") {
-		return Client, nil
+		return Client, m[Client]
 	}
-	return "", errors.New("unrecognized token")
+	return Server, m[Server]
 }

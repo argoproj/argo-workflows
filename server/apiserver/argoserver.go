@@ -46,6 +46,7 @@ import (
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/json"
+	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
@@ -64,12 +65,13 @@ type argoServer struct {
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	wfClientSet      *versioned.Clientset
-	authenticator    auth.Gatekeeper
+	gatekeeper       auth.Gatekeeper
 	oAuth2Service    sso.Interface
 	configController config.Controller
 	stopCh           chan struct{}
 	eventQueueSize   int
 	eventWorkerCount int
+	xframeOptions    string
 }
 
 type ArgoServerOpts struct {
@@ -86,6 +88,7 @@ type ArgoServerOpts struct {
 	HSTS                    bool
 	EventOperationQueueSize int
 	EventWorkerCount        int
+	XFrameOptions           string
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
@@ -104,7 +107,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -116,12 +119,13 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		managedNamespace: opts.ManagedNamespace,
 		wfClientSet:      opts.WfClientSet,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    gatekeeper,
+		gatekeeper:       gatekeeper,
 		oAuth2Service:    ssoIf,
 		configController: configController,
 		stopCh:           make(chan struct{}),
 		eventQueueSize:   opts.EventOperationQueueSize,
 		eventWorkerCount: opts.EventWorkerCount,
+		xframeOptions:    opts.XFrameOptions,
 	}, nil
 }
 
@@ -159,7 +163,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.kubeClientset)
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
+	artifactRepositories := artifactrepositories.New(as.kubeClientset, as.managedNamespace, &config.ArtifactRepository)
+	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
@@ -218,13 +223,13 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
-			as.authenticator.UnaryServerInterceptor(),
+			as.gatekeeper.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
-			as.authenticator.StreamServerInterceptor(),
+			as.gatekeeper.StreamServerInterceptor(),
 		)),
 	}
 
@@ -288,7 +293,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles)
 	return &httpServer
 }
 

@@ -297,6 +297,109 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.True(t, execute)
 }
 
+func TestEvaluateAnyAllDependsLogic(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name: "A-1",
+		},
+		{
+			Name: "A-2",
+		},
+		{
+			Name:    "B",
+			Depends: "A.AnySucceeded",
+		},
+		{
+			Name: "B-1",
+		},
+		{
+			Name: "B-2",
+		},
+		{
+			Name:    "C",
+			Depends: "B.AllFailed",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is still running, A-1 succeeded but A-2 failed
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {
+					Phase:    wfv1.NodeRunning,
+					Type:     wfv1.NodeTypeTaskGroup,
+					Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
+				},
+				d.taskNodeID("A-1"): {Phase: wfv1.NodeRunning},
+				d.taskNodeID("A-2"): {Phase: wfv1.NodeRunning},
+			},
+		},
+	}
+
+	// Task B should not proceed as task A is still running
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.False(t, execute)
+
+	// Task A succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{
+		Phase:    wfv1.NodeSucceeded,
+		Type:     wfv1.NodeTypeTaskGroup,
+		Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
+	}
+
+	// Task B should proceed, but not execute as none of the children have succeeded yet
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	// Task A-2 succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+
+	// Task B should now proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// Task B succeeds and B-1 fails
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{
+		Phase:    wfv1.NodeSucceeded,
+		Type:     wfv1.NodeTypeTaskGroup,
+		Children: []string{d.taskNodeID("B-1"), d.taskNodeID("B-2")},
+	}
+	d.wf.Status.Nodes[d.taskNodeID("B-1")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task C should proceed, but not execute as not all of B's children have failed yet
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	d.wf.Status.Nodes[d.taskNodeID("B-2")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task C should now proceed and execute as all of B's children have failed
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+}
+
 func TestAllEvaluateDependsLogic(t *testing.T) {
 	statusMap := map[common.TaskResult]wfv1.NodePhase{
 		common.TaskResultSucceeded: wfv1.NodeSucceeded,
@@ -1867,16 +1970,12 @@ status:
 `
 
 func TestDagOptionalInputArtifacts(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
 	wf := unmarshalWF(testDagOptionalInputArtifacts)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-
 	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	optionalInputArtifactsNode := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
 	if assert.NotNil(t, optionalInputArtifactsNode) {
 		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
@@ -2860,4 +2959,128 @@ func TestFailsWithParamDAG(t *testing.T) {
 
 	woc.operate()
 	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+}
+
+var testLeafContinueOn = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: build-wf-kpxvm
+spec:
+  arguments: {}
+  entrypoint: test-workflow
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        template: ok
+      - arguments: {}
+        continueOn:
+          failed: true
+        dependencies:
+        - A
+        name: B
+        template: fail
+    inputs: {}
+    metadata: {}
+    name: test-workflow
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - |
+        exit 0
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: ok
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - |
+        exit 1
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+status:
+  finishedAt: "2020-11-04T16:17:59Z"
+  nodes:
+    build-wf-kpxvm:
+      children:
+      - build-wf-kpxvm-2225940411
+      displayName: build-wf-kpxvm
+      finishedAt: "2020-11-04T16:17:59Z"
+      id: build-wf-kpxvm
+      name: build-wf-kpxvm
+      outboundNodes:
+      - build-wf-kpxvm-2242718030
+      phase: Running
+      progress: 3/3
+      resourcesDuration:
+        cpu: 13
+        memory: 6
+      startedAt: "2020-11-04T16:17:43Z"
+      templateName: test-workflow
+      templateScope: local/build-wf-kpxvm
+      type: DAG
+    build-wf-kpxvm-2225940411:
+      boundaryID: build-wf-kpxvm
+      children:
+      - build-wf-kpxvm-2242718030
+      displayName: A
+      finishedAt: "2020-11-04T16:17:51Z"
+      hostNodeName: minikube
+      id: build-wf-kpxvm-2225940411
+      name: build-wf-kpxvm.A
+      phase: Succeeded
+      startedAt: "2020-11-04T16:17:43Z"
+      templateName: ok
+      templateScope: local/build-wf-kpxvm
+      type: Pod
+    build-wf-kpxvm-2242718030:
+      boundaryID: build-wf-kpxvm
+      displayName: B
+      finishedAt: "2020-11-04T16:17:57Z"
+      hostNodeName: minikube
+      id: build-wf-kpxvm-2242718030
+      message: failed with exit code 1
+      name: build-wf-kpxvm.B
+      phase: Failed
+      startedAt: "2020-11-04T16:17:53Z"
+      templateName: fail
+      templateScope: local/build-wf-kpxvm
+      type: Pod
+  phase: Running
+  progress: 3/3
+  resourcesDuration:
+    cpu: 13
+    memory: 6
+  startedAt: "2020-11-04T16:17:43Z"
+
+`
+
+func TestLeafContinueOn(t *testing.T) {
+	wf := unmarshalWF(testLeafContinueOn)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }

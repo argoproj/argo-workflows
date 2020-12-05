@@ -29,23 +29,21 @@ const (
 type ConfigSupplier func() *config.Config
 
 type Controller struct {
-	wfclientset    wfclientset.Interface
-	wfInformer     cache.SharedIndexInformer
-	workqueue      workqueue.DelayingInterface
-	resyncPeriod   time.Duration
-	clock          clock.Clock
-	configSupplier ConfigSupplier
+	wfclientset  wfclientset.Interface
+	wfInformer   cache.SharedIndexInformer
+	workqueue    workqueue.DelayingInterface
+	resyncPeriod time.Duration
+	clock        clock.Clock
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, configSupplier ConfigSupplier) *Controller {
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
 	controller := &Controller{
-		wfclientset:    wfClientset,
-		wfInformer:     wfInformer,
-		workqueue:      workqueue.NewDelayingQueue(),
-		resyncPeriod:   workflowTTLResyncPeriod,
-		clock:          clock.RealClock{},
-		configSupplier: configSupplier,
+		wfclientset:  wfClientset,
+		wfInformer:   wfInformer,
+		workqueue:    workqueue.NewDelayingQueue(),
+		resyncPeriod: workflowTTLResyncPeriod,
+		clock:        clock.RealClock{},
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -137,7 +135,7 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		return
 	}
 	now := c.clock.Now()
-	remaining, expiration := timeLeft(wf, &now, c.getDefaultTTLStrategy())
+	remaining, expiration := timeLeft(wf, &now)
 	if remaining == nil || *remaining > c.resyncPeriod {
 		return
 	}
@@ -192,16 +190,9 @@ func (c *Controller) deleteWorkflow(key string) error {
 	}
 	return nil
 }
-func (c *Controller) getDefaultTTLStrategy() *wfv1.TTLStrategy {
-	wfDefault := c.configSupplier().WorkflowDefaults
-	if wfDefault != nil {
-		return wfDefault.Spec.GetTTLStrategy()
-	}
-	return nil
-}
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
-	ttlStrategy := wf.GetTTLStrategy(c.getDefaultTTLStrategy())
+	ttlStrategy := wf.GetTTLStrategy()
 
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
@@ -221,8 +212,8 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	}
 }
 
-func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLStrategy) (*time.Duration, *time.Time) {
-	ttlStrategy := wf.GetTTLStrategy(defaultTTLStrategy)
+func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
+	ttlStrategy := wf.GetTTLStrategy()
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}

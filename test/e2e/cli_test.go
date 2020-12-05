@@ -1,4 +1,4 @@
-// +build e2e
+// +build cli
 
 package e2e
 
@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -23,29 +24,72 @@ import (
 
 type CLISuite struct {
 	fixtures.E2ESuite
-	kubeConfig string
 }
+
+var kubeConfig = os.Getenv("KUBECONFIG")
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	_ = os.Unsetenv("ARGO_SERVER")
-	_ = os.Unsetenv("ARGO_TOKEN")
-	s.kubeConfig = os.Getenv("KUBECONFIG")
+	mode := os.Getenv("E2E_MODE")
+	println("mode:", mode)
+	token, err := s.GetServiceAccountToken()
+	s.CheckError(err)
+	switch mode {
+	default:
+		_ = os.Unsetenv("ARGO_INSTANCEID")
+		_ = os.Unsetenv("ARGO_SERVER")
+		_ = os.Unsetenv("ARGO_BASE_HREF")
+		_ = os.Unsetenv("ARGO_HTTP1")
+		_ = os.Unsetenv("ARGO_TOKEN")
+		_ = os.Unsetenv("ARGO_NAMESPACE")
+		_ = os.Setenv("KUBECONFIG", kubeConfig)
+	case "GRPC":
+		_ = os.Unsetenv("ARGO_INSTANCEID")
+		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+		_ = os.Unsetenv("ARGO_BASE_HREF")
+		_ = os.Unsetenv("ARGO_SECURE")
+		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
+		_ = os.Unsetenv("ARGO_HTTP1")
+		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
+		_ = os.Setenv("ARGO_NAMESPACE", "argo")
+		_ = os.Setenv("KUBECONFIG", "/dev/null")
+	case "HTTP1":
+		_ = os.Unsetenv("ARGO_INSTANCEID")
+		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+		_ = os.Unsetenv("ARGO_BASE_HREF")
+		_ = os.Unsetenv("ARGO_SECURE")
+		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
+		_ = os.Setenv("ARGO_HTTP1", "true")
+		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
+		_ = os.Setenv("ARGO_NAMESPACE", "argo")
+		_ = os.Setenv("KUBECONFIG", "/dev/null")
+	}
 }
 
 func (s *CLISuite) AfterTest(suiteName, testName string) {
-	_ = os.Setenv("KUBECONFIG", s.kubeConfig)
-	s.E2ESuite.AfterTest(suiteName, testName)
+	_ = os.Setenv("KUBECONFIG", kubeConfig)
 }
 
-func (s *CLISuite) testNeedsOffloading() {
-	serverUnavailable := os.Getenv("ARGO_SERVER") == ""
-	if s.Persistence.IsEnabled() && serverUnavailable {
-		if !serverUnavailable {
-			s.T().Skip("test needs offloading, but the Argo Server is unavailable - if `testNeedsOffloading()` is the first line of your test test, you should move your test to `CliWithServerSuite`?")
-		}
-		s.T().Skip("test needs offloading, but offloading not enabled")
+func (s *CLISuite) needsServer() {
+	if os.Getenv("ARGO_SERVER") == "" {
+		s.T().Skip("test needs server")
 	}
+}
+func (s *CLISuite) skipIfServer() {
+	if os.Getenv("ARGO_SERVER") != "" {
+		s.T().Skip("test must not run with server")
+	}
+}
+
+func (s *CLISuite) skipIfHTTP() {
+	if os.Getenv("ARGO_HTTP1") != "" {
+		s.T().Skip("test must not run with HTTP")
+	}
+}
+
+func (s *CLISuite) NeedsOffloading() {
+	s.E2ESuite.NeedsOffloading()
+	s.needsServer()
 }
 
 func (s *CLISuite) TestCompletion() {
@@ -61,7 +105,6 @@ func (s *CLISuite) TestLogLevels() {
 			RunCli([]string{"-v", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "CLI version", "comment version header")
-					assert.Contains(t, output, "Config loaded from file", "glog output")
 				}
 			})
 	})
@@ -70,6 +113,25 @@ func (s *CLISuite) TestLogLevels() {
 			RunCli([]string{"--loglevel=debug", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "CLI version", "comment version header")
+				}
+			})
+	})
+}
+
+func (s *CLISuite) TestGLogLevels() {
+	s.skipIfServer()
+	s.Run("Verbose", func() {
+		s.Given().
+			RunCli([]string{"-v", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Config loaded from file", "glog output")
+				}
+			})
+	})
+	s.Run("LogLevel", func() {
+		s.Given().
+			RunCli([]string{"--loglevel=debug", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
 					assert.NotContains(t, output, "Config loaded from file", "glog output")
 				}
 			})
@@ -83,13 +145,59 @@ func (s *CLISuite) TestLogLevels() {
 			})
 	})
 }
+
 func (s *CLISuite) TestVersion() {
-	_ = os.Setenv("KUBECONFIG", "/dev/null")
 	// check we can run this without error
-	s.Given().
-		RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-		})
+	s.Run("NoError", func() {
+		s.Given().
+			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+
+	})
+	s.Run("Default", func() {
+		s.needsServer()
+		s.Given().
+			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					if assert.Len(t, lines, 17) {
+						assert.Contains(t, lines[0], "argo:")
+						assert.Contains(t, lines[1], "BuildDate:")
+						assert.Contains(t, lines[2], "GitCommit:")
+						assert.Contains(t, lines[3], "GitTreeState:")
+						assert.Contains(t, lines[4], "GitTag:")
+						assert.Contains(t, lines[5], "GoVersion:")
+						assert.Contains(t, lines[6], "Compiler:")
+						assert.Contains(t, lines[7], "Platform:")
+						assert.Contains(t, lines[8], "argo-server:")
+						assert.Contains(t, lines[9], "BuildDate:")
+						assert.Contains(t, lines[10], "GitCommit:")
+						assert.Contains(t, lines[11], "GitTreeState:")
+						assert.Contains(t, lines[12], "GitTag:")
+						assert.Contains(t, lines[13], "GoVersion:")
+						assert.Contains(t, lines[14], "Compiler:")
+						assert.Contains(t, lines[15], "Platform:")
+					}
+					// these are the defaults - we should never see these
+					assert.NotContains(t, output, "argo: v0.0.0+unknown")
+					assert.NotContains(t, output, "  BuildDate: 1970-01-01T00:00:00Z")
+				}
+			})
+	})
+	s.Run("Short", func() {
+		s.needsServer()
+		s.Given().
+			RunCli([]string{"version", "--short"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					if assert.Len(t, lines, 3) {
+						assert.Contains(t, lines[0], "argo:")
+						assert.Contains(t, lines[1], "argo-server:")
+					}
+				}
+			})
+	})
 }
 
 func (s *CLISuite) TestSubmitDryRun() {
@@ -115,9 +223,8 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
-	if os.Getenv("CI") != "true" {
-		s.T().SkipNow()
-	}
+	s.skipIfServer()
+	s.NeedsCI()
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
@@ -185,6 +292,7 @@ func (s *CLISuite) TestLogs() {
 			})
 	})
 	s.Run("SinceTime", func() {
+		s.skipIfHTTP() // this test errors with `field type *v1.Time is not supported in query parameters`
 		s.Given().
 			RunCli([]string{"logs", name, "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -266,7 +374,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
-		s.testNeedsOffloading()
+		s.NeedsOffloading()
 		for i := 0; i < 3; i++ {
 			s.Given().
 				Workflow("@smoke/basic-generate-name.yaml").
@@ -285,7 +393,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("Get", func() {
-		s.testNeedsOffloading()
+		s.NeedsOffloading()
 		s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -320,8 +428,8 @@ func (s *CLISuite) TestRoot() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowSuspendResume() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestWorkflowSuspendResume() {
+	s.NeedsOffloading()
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
@@ -344,8 +452,8 @@ func (s *CLIWithServerSuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestNodeSuspendResume() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestNodeSuspendResume() {
+	s.NeedsOffloading()
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -634,8 +742,8 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowRetry() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestWorkflowRetry() {
+	s.NeedsOffloading()
 	var retryTime corev1.Time
 
 	s.Given().
@@ -692,8 +800,44 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowWait() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestWorkflowTerminateDryRun() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated \\(dry-run\\)", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowTerminateBySelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--selector", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowTerminateByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--field-selector", "metadata.name=basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowWait() {
+	s.needsServer()
 	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -710,8 +854,8 @@ func (s *CLIWithServerSuite) TestWorkflowWait() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowWatch() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestWorkflowWatch() {
+	s.needsServer()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -777,7 +921,7 @@ func (s *CLISuite) TestTemplate() {
 		})
 	})
 	s.Run("Submittable-Template", func() {
-		s.testNeedsOffloading()
+		s.NeedsOffloading()
 		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -1023,11 +1167,11 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
+func (s *CLISuite) TestWorkflowLevelSemaphore() {
 	semaphoreData := map[string]string{
 		"workflow": "1",
 	}
-	s.testNeedsOffloading()
+	s.NeedsOffloading()
 	s.Given().
 		Workflow("@testdata/semaphore-wf-level.yaml").
 		When().
@@ -1049,12 +1193,12 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
+func (s *CLISuite) TestTemplateLevelSemaphore() {
 	semaphoreData := map[string]string{
 		"template": "1",
 	}
 
-	s.testNeedsOffloading()
+	s.NeedsOffloading()
 	s.Given().
 		Workflow("@testdata/semaphore-tmpl-level.yaml").
 		When().
@@ -1070,7 +1214,7 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 }
 
 func (s *CLISuite) TestRetryOmit() {
-	s.testNeedsOffloading()
+	s.NeedsOffloading()
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
 		When().
@@ -1096,7 +1240,7 @@ func (s *CLISuite) TestRetryOmit() {
 }
 
 func (s *CLISuite) TestSynchronizationWfLevelMutex() {
-	s.testNeedsOffloading()
+	s.NeedsOffloading()
 	s.Given().
 		Workflow("@functional/synchronization-mutex-wf-level.yaml").
 		When().
@@ -1118,7 +1262,7 @@ func (s *CLISuite) TestSynchronizationWfLevelMutex() {
 }
 
 func (s *CLISuite) TestTemplateLevelMutex() {
-	s.testNeedsOffloading()
+	s.NeedsOffloading()
 	s.Given().
 		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
 		When().
@@ -1134,8 +1278,8 @@ func (s *CLISuite) TestTemplateLevelMutex() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
+	s.NeedsOffloading()
 	s.Run("ResourceTemplateStop", func() {
 		s.Given().
 			WorkflowName("resource-tmpl-wf").
@@ -1180,7 +1324,8 @@ func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestMetaDataNamespace() {
+func (s *CLISuite) TestMetaDataNamespace() {
+	s.needsServer()
 	s.Given().
 		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.Error(t, err) {
@@ -1202,6 +1347,165 @@ func (s *CLIWithServerSuite) TestMetaDataNamespace() {
 		})
 }
 
+func (s *CLISuite) TestAuthToken() {
+	s.NeedsOffloading()
+	s.Given().RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.NotEmpty(t, output)
+	})
+}
+
+func (s *CLISuite) TestArchive() {
+	s.NeedsOffloading()
+	var uid types.UID
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived, "to be archived").
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		})
+	s.Run("List", func() {
+		s.Given().
+			RunCli([]string{"archive", "list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					assert.Contains(t, lines[0], "NAMESPACE")
+					assert.Contains(t, lines[0], "NAME")
+					assert.Contains(t, lines[0], "STATUS")
+					assert.Contains(t, lines[1], "argo")
+					assert.Contains(t, lines[1], "basic")
+					assert.Contains(t, lines[1], "Succeeded")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().
+			RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Name:")
+					assert.Contains(t, output, "Namespace:")
+					assert.Contains(t, output, "ServiceAccount:")
+					assert.Contains(t, output, "Status:")
+					assert.Contains(t, output, "Created:")
+					assert.Contains(t, output, "Started:")
+					assert.Contains(t, output, "Finished:")
+					assert.Contains(t, output, "Duration:")
+				}
+			})
+	})
+	s.Run("Delete", func() {
+		s.Given().
+			RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Archived workflow")
+					assert.Contains(t, output, "deleted")
+				}
+			})
+	})
+}
+
+func (s *CLISuite) TestArgoSetOutputs() {
+	s.NeedsOffloading()
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+      - name: approve-no-vars
+        template: approve-no-vars
+    - - name: release
+        template: whalesay
+        arguments:
+          parameters:
+            - name: message
+              value: "{{steps.approve.outputs.parameters.message}}"
+
+  - name: approve
+    suspend: {}
+    outputs:
+      parameters:
+        - name: message
+          valueFrom:
+            supplied: {}
+
+  - name: approve-no-vars
+    suspend: {}
+
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "{{inputs.parameters.message}}"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
+			assert.Error(t, err)
+			assert.Contains(t, output, "has not been set and does not have a default value")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow values set")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+			// Cannot double-set the same parameter
+			assert.Error(t, err)
+			assert.Contains(t, output, "it was already set")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve-no-vars"}, func(t *testing.T, output string, err error) {
+			assert.Error(t, err)
+			assert.Contains(t, output, "cannot set output parameters because node is not expecting any raw parameters")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--message", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow values set")
+		}).
+		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow suspend-template resumed")
+		}).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("release")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("approve")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, "Test message", nodeStatus.Message)
+			}
+		})
+}
+
 func TestCLISuite(t *testing.T) {
+	_ = os.Setenv("E2E_MODE", "KUBE")
+	suite.Run(t, new(CLISuite))
+}
+
+func TestCLIWithServerOverGRPCSuite(t *testing.T) {
+	_ = os.Setenv("E2E_MODE", "GRPC")
+	suite.Run(t, new(CLISuite))
+}
+
+func TestCLIWithServerOverHTTP1Suite(t *testing.T) {
+	_ = os.Setenv("E2E_MODE", "HTTP1")
 	suite.Run(t, new(CLISuite))
 }

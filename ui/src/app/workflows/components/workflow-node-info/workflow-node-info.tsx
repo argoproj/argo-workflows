@@ -1,4 +1,4 @@
-import {Tabs, Ticker} from 'argo-ui';
+import {Tabs, Ticker, Tooltip} from 'argo-ui';
 import * as moment from 'moment';
 import * as React from 'react';
 
@@ -31,7 +31,7 @@ interface Props {
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
         <div className='columns small-4'>{attr.title}</div>
-        <div className='columns small-8'>{attr.value}</div>
+        <div className='columns columns--narrower-height small-8'>{attr.value}</div>
     </div>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -107,11 +107,15 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {props.node.type === 'Pod' && (
-                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
-                        LOGS
-                    </button>
-                )}
+                {props.node.type === 'Pod' &&
+                    ['main', 'wait', 'init'].map(container => (
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, container)}
+                            title='Examine the "wait" or "init" containers ("init" is only used with artifacts) if there is a problem unrelated to you main process.'>
+                            <i className='fa fa-file-alt' /> {container} logs
+                        </button>
+                    ))}
                 {props.links &&
                     props.links
                         .filter(link => link.scope === 'pod')
@@ -119,10 +123,10 @@ export const WorkflowNodeSummary = (props: Props) => {
                             <a
                                 className='argo-button argo-button--base-o'
                                 href={link.url
-                                    .replace('${metadata.namespace}', props.workflow.metadata.namespace)
-                                    .replace('${metadata.name}', props.node.id)
-                                    .replace('${status.startedAt}', props.node.startedAt)
-                                    .replace('${status.finishedAt}', props.node.finishedAt)}>
+                                    .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
+                                    .replace(/\${metadata\.name}/g, props.node.id)
+                                    .replace(/\${status\.startedAt}/g, props.node.startedAt)
+                                    .replace(/\${status\.finishedAt}/g, props.node.finishedAt)}>
                                 <i className='fa fa-link' /> {link.name}
                             </a>
                         ))}
@@ -164,6 +168,27 @@ function hasEnv(container: models.kubernetes.Container | models.Sidecar | models
     return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
 }
 
+const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
+    const {env} = props;
+    const secret = env.valueFrom?.secretKeyRef;
+    const secretValue = secret ? (
+        <>
+            <Tooltip content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'} arrow={false}>
+                <i className='fa fa-key' />
+            </Tooltip>
+            {secret.name}/{secret.key}
+        </>
+    ) : (
+        undefined
+    );
+
+    return (
+        <pre>
+            {env.name}={env.value || secretValue}
+        </pre>
+    );
+};
+
 export const WorkflowNodeContainer = (props: {
     nodeId: string;
     container: models.kubernetes.Container | models.Sidecar | models.Script;
@@ -187,7 +212,13 @@ export const WorkflowNodeContainer = (props: {
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</pre>
+                  value: (
+                      <pre className='workflow-node-info__multi-line'>
+                          {(container.env || []).map(e => (
+                              <EnvVar env={e} />
+                          ))}
+                      </pre>
+                  )
               }
             : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];

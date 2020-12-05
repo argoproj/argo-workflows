@@ -19,6 +19,7 @@ import * as Actions from '../../../shared/workflow-operations-map';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Pagination, parseLimit} from '../../../shared/pagination';
@@ -192,6 +193,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
                                 }
                             />
+                            <p>
+                                <ExampleManifests />.
+                            </p>
                         </SlidingPanel>
                     </Page>
                 )}
@@ -293,6 +297,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             return (
                 <ZeroState title='No workflows'>
                     <p>To create a new workflow, use the button above.</p>
+                    <p>
+                        <ExampleManifests />.
+                    </p>
                 </ZeroState>
             );
         }

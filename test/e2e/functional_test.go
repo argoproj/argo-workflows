@@ -668,12 +668,25 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 		})
 }
 
+func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
+	s.Given().
+		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
 		When().
 		CreateWorkflowTemplates().
+		Wait(1 * time.Second). // allow the template to reach the informer
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
@@ -909,6 +922,38 @@ spec:
 			return wf.Status.Phase == wfv1.NodeFailed
 		}), "Waiting for timeout", 30*time.Second).
 		DeleteMemoryQuota()
+}
+
+func (s *FunctionalSuite) TestExitCodePNSSleep() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cond
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: conditional-example
+  templates:
+  - name: conditional-example
+    steps:
+    - - name: print-hello
+        template: whalesay
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 5s]
+`).
+		When().
+		SubmitWorkflow().
+		Wait(10 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			node := status.Nodes.FindByDisplayName("print-hello")
+			if assert.NotNil(t, node) && assert.NotNil(t, node.Outputs) && assert.NotNil(t, node.Outputs.ExitCode) {
+				assert.Equal(t, "0", *node.Outputs.ExitCode)
+			}
+		})
 }
 
 func TestFunctionalSuite(t *testing.T) {

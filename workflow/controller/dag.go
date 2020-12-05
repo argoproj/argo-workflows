@@ -92,7 +92,12 @@ func (d *dagContext) GetTaskDependsLogic(taskName string) string {
 
 func (d *dagContext) resolveDependencies(taskName string) {
 	dependencies, resolvedDependsLogic := common.GetTaskDependencies(d.GetTask(taskName), d)
-	d.dependencies[taskName] = dependencies
+	var dependencyTasks []string
+	for dep := range dependencies {
+		dependencyTasks = append(dependencyTasks, dep)
+	}
+
+	d.dependencies[taskName] = dependencyTasks
 	d.dependsLogic[taskName] = resolvedDependsLogic
 }
 
@@ -181,6 +186,15 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 				break
 			}
 		} else if branchPhase.FailedOrError() {
+			// If this target task has continueOn set for its current phase, then don't treat it as failed for the purposes
+			// of determining DAG status. This is so that target tasks with said continueOn do not fail the overall DAG.
+			// For non-leaf tasks, this is done by setting all of its dependents to allow for their failure or error in
+			// their "depends" clause during their respective "dependencies" to "depends" conversion. See "expandDependency"
+			// in ancestry.go
+			if task := d.GetTask(depName); task.ContinuesOn(branchPhase) {
+				continue
+			}
+
 			result = branchPhase
 			// If failFast is enabled, don't check to see if other target tasks are complete and fail now instead
 			if failFast {
@@ -428,7 +442,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		node = dagCtx.getTaskNode(t.Name)
 		if node == nil {
-			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, taskDependencies)
+			woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
 
@@ -665,11 +679,13 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 }
 
 type TaskResults struct {
-	Succeeded bool `json:"Succeeded"`
-	Failed    bool `json:"Failed"`
-	Errored   bool `json:"Errored"`
-	Skipped   bool `json:"Skipped"`
-	Daemoned  bool `json:"Daemoned"`
+	Succeeded    bool `json:"Succeeded"`
+	Failed       bool `json:"Failed"`
+	Errored      bool `json:"Errored"`
+	Skipped      bool `json:"Skipped"`
+	Daemoned     bool `json:"Daemoned"`
+	AnySucceeded bool `json:"AnySucceeded"`
+	AllFailed    bool `json:"AllFailed"`
 }
 
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
@@ -697,12 +713,28 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			continue
 		}
 
+		anySucceeded := false
+		allFailed := false
+
+		if depNode.Type == wfv1.NodeTypeTaskGroup {
+
+			allFailed = len(depNode.Children) > 0
+
+			for _, childNodeID := range depNode.Children {
+				childNode := d.wf.Status.Nodes[childNodeID]
+				anySucceeded = anySucceeded || childNode.Phase == wfv1.NodeSucceeded
+				allFailed = allFailed && childNode.Phase == wfv1.NodeFailed
+			}
+		}
+
 		evalScope[evalTaskName] = TaskResults{
-			Succeeded: depNode.Phase == wfv1.NodeSucceeded,
-			Failed:    depNode.Phase == wfv1.NodeFailed,
-			Errored:   depNode.Phase == wfv1.NodeError,
-			Skipped:   depNode.Phase == wfv1.NodeSkipped,
-			Daemoned:  depNode.IsDaemoned() && depNode.Phase != wfv1.NodePending,
+			Succeeded:    depNode.Phase == wfv1.NodeSucceeded,
+			Failed:       depNode.Phase == wfv1.NodeFailed,
+			Errored:      depNode.Phase == wfv1.NodeError,
+			Skipped:      depNode.Phase == wfv1.NodeSkipped,
+			Daemoned:     depNode.IsDaemoned() && depNode.Phase != wfv1.NodePending,
+			AnySucceeded: anySucceeded,
+			AllFailed:    allFailed,
 		}
 	}
 

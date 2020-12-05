@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make test
+        run: make test STATIC_FILES=false
 
   e2e-tests:
     name: E2E Tests
@@ -43,13 +43,17 @@ jobs:
       fail-fast: false
       matrix:
         # kubelet is not included because it'd take ages to get it working methinks
-        test: [ "smoke", "test-e2e", "test-e2e-cron" ]
+        test: [ "smoke", "test-e2e", "test-cli", "test-e2e-cron" ]
         containerRuntimeExecutor: [ "docker", "k8sapi", "pns" ]
         # ok, so we're only running `smoke` for all CREs,
         exclude:
           - test: test-e2e
             containerRuntimeExecutor: k8sapi
           - test: test-e2e
+            containerRuntimeExecutor: pns
+          - test: test-cli
+            containerRuntimeExecutor: k8sapi
+          - test: test-cli
             containerRuntimeExecutor: pns
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi
@@ -97,6 +101,8 @@ jobs:
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go
@@ -104,7 +110,7 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make ${{ matrix.test }}
+        run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
       - name: Upload logs
         if: ${{ always() }}
         uses: actions/upload-artifact@v1
@@ -159,6 +165,10 @@ jobs:
         env:
           GOPATH: /home/runner/go
         run: make lint STATIC_FILES=false
+      - name: Make validate-examples
+        env:
+          GOPATH: /home/runner/go
+        run: make validate-examples STATIC_FILES=false
       - name: Ensure nothing changed
         run: git diff --exit-code
 

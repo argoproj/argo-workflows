@@ -36,6 +36,7 @@ func NewServerCommand() *cobra.Command {
 		enableOpenBrowser       bool
 		eventOperationQueueSize int
 		eventWorkerCount        int
+		frameOptions            string
 	)
 
 	var command = cobra.Command{
@@ -108,6 +109,7 @@ See %s`, help.ArgoSever),
 				ConfigName:              configMap,
 				EventOperationQueueSize: eventOperationQueueSize,
 				EventWorkerCount:        eventWorkerCount,
+				XFrameOptions:           frameOptions,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -141,5 +143,6 @@ See %s`, help.ArgoSever),
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
 	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
+	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	return &command
 }
