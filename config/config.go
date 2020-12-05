@@ -5,6 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/argoproj/argo/config/namespace"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -90,6 +91,11 @@ type Config struct {
 
 	//Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+
+	// Declares what namespaces in this or other clusters are allowed.
+	// If omitted, then workflows may only create pods in their own cluster and namespace.
+	// If supplied, their own cluster and namespace should be added if needed.
+	NamespaceRoles namespace.Roles `json:"namespaceRoles,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

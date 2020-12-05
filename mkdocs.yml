@@ -43,6 +43,7 @@ nav:
           - artifact-repository-ref.md
           - resource-duration.md
           - estimated-duration.md
+          - security.md
           - workflow-pod-security-context.md
           - progress.md
           - workflow-creator.md
@@ -66,7 +67,6 @@ nav:
           - resuming-workflow-via-automation.md
           - multi-cluster.md
           - async-pattern.md
-          - security.md
       - ide-setup.md
       - Examples: examples/README.md
       - Field Reference: fields.md
@@ -78,6 +78,9 @@ nav:
           - argo archive list: cli/argo_archive_list.md
           - argo auth: cli/argo_auth.md
           - argo auth token: cli/argo_auth_token.md
+          - argo cluster: cli/argo_cluster.md
+          - argo cluster add: cli/argo_cluster_add.md
+          - argo cluster rm: cli/argo_cluster_rm.md
           - argo cluster-template: cli/argo_cluster-template.md
           - argo cluster-template create: cli/argo_cluster-template_create.md
           - argo cluster-template delete: cli/argo_cluster-template_delete.md

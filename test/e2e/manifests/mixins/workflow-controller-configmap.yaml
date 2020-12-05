@@ -13,3 +13,20 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
+  namespaceRoles: |
+    - namespace: argo
+      rules:
+        - clusterNames:
+            - default
+          namespaces:
+            - argo
+            # tests run in managed-namespace mode, so this will not be allowed
+            - unmanaged
+        - clusterNames:
+            - other
+          namespaces:
+            - argo
+        - clusterNames:
+            - not-found
+          namespaces:
+            - argo

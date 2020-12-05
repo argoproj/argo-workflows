@@ -91,6 +91,6 @@ Much like you already do for the controller's cluster, create any service accoun
 
 If you're using artifacts, e.g. you have a default artifact repository configured, create any secrets you need for it. 
 
-## Setting A Cluster For All Workflows By  Default
+## Setting A Cluster For All Workflows By Default
 
 Workflows run by default in the same cluster as the controller. You can change this by changing [default workflow spec](default-workflow-specs.md)

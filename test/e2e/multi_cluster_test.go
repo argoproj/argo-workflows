@@ -18,18 +18,18 @@ type MultiClusterSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *MultiClusterSuite) TestNamespaceNotFound() {
+func (s *MultiClusterSuite) TestNamespaceUnmanaged() {
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: namespace-not-found-
+  generateName: namespace-unmanaged-
   labels:
     argo-e2e: true
 spec:
   entrypoint: main
   templates:
     - name: main
-      namespace: not-found
+      namespace: unmanaged
       container:
         image: argoproj/argosay:v2
 `).
@@ -39,7 +39,58 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "namespaces \"not-found\" not found", status.Message)
+			assert.Equal(t, "namespace \"argo\" is denied access to un-managed namespace \"unmanaged\"", status.Message)
+		})
+}
+
+func (s *MultiClusterSuite) TestNamespaceDenied() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: namespace-denied-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      namespace: default
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, "namespace \"argo\" is denied access to cluster-namespace \"default/default\"", status.Message)
+		})
+}
+
+
+func (s *MultiClusterSuite) TestClusterDenied() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: cluster-denied-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      clusterName: denied
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, "namespace \"argo\" is denied access to cluster-namespace \"denied/argo\"", status.Message)
 		})
 }
 

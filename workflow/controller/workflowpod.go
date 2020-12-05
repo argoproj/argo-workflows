@@ -132,11 +132,24 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
+	clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
+	namespace := woc.orWorkflowNamespace(tmpl.Namespace)
+
+	// check to see if roles allow this
+	role := woc.controller.Config.NamespaceRoles.Find(woc.wf.Namespace)
+	log.WithFields(log.Fields{"role": role, "clusterName": clusterName, "namespace": namespace}).Info("Checking namespace roles allow pod creation")
+	if !role.IsEmpty() && !role.Rules.Allow(clusterName, namespace) {
+		return nil, fmt.Errorf(`namespace "%s" is denied access to cluster-namespace "%s/%s"`, woc.wf.Namespace, clusterName, namespace)
+	}
+
+	// this is a check both for miss-configuration and a permission denied,
+	if woc.controller.managedNamespace != "" && woc.controller.managedNamespace != namespace {
+		return nil, fmt.Errorf(`namespace "%s" is denied access to un-managed namespace "%s"`, woc.wf.Namespace, namespace)
+	}
+
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
-	namespace := woc.orWorkflowNamespace(tmpl.Namespace)
 	informer, ok := woc.controller.podInformer[clusterName]
 	if !ok {
 		return nil, fmt.Errorf(`no cluster named "%s" has been configured`, clusterName)

@@ -4,7 +4,7 @@ type ClusterName = string
 
 const (
 	// Represent all clusters, much like corev1.NamespaceAll.
-	//  ClusterAll     ClusterName = ""
+	ClusterAll         ClusterName = ""
 	DefaultClusterName ClusterName = "default"
 )
 

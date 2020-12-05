@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -23,7 +24,10 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Info("Configuration:\n" + string(bytes))
+	log.Infoln("Configuration:")
+	for _, l := range strings.Split(string(bytes), "\n") {
+		log.Println(l)
+	}
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}
