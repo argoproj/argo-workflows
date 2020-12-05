@@ -384,12 +384,11 @@ endif
 test: server/static/files.go
 	env KUBECONFIG=/dev/null go test ./...
 
+dist/main-context:
+	kubectl config current-context > dist/main-context
+
 .PHONY: install
-install: /usr/local/bin/kustomize dist/argo
-ifneq ($(CI),true)
-	# create main cluster (if not exists)
-	k3d cluster get k3s-default || k3d cluster create --wait --update-default-kubeconfig
-endif
+install: /usr/local/bin/kustomize dist/argo dist/main-context
 	# create other cluster (if not exists)
 	k3d cluster get other || k3d cluster create other --no-lb --wait --update-default-kubeconfig
 	# configure other cluster
@@ -397,7 +396,7 @@ endif
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl -n $(KUBE_NAMESPACE) apply -f-
 	# configure main cluster
-	kubectl config use-context k3d-k3s-default
+	kubectl config use-context `cat dist/main-context`
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f -
 	kubectl -n $(KUBE_NAMESPACE) create secret generic clusters --dry-run=client -o yaml | kubectl apply -f -
