@@ -63,8 +63,8 @@ endif
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
 CI                    := false
-K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
-LOG_LEVEL             := debug
+K3D                   := $(shell [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3d-*" ] && echo true || echo false)
+LOG_LEVEL             := info
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
@@ -137,12 +137,12 @@ define docker_build
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
-	if [ $(K3D) = true ] && [ $(CI) != true ] ; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
+	if [ $(K3D) = true ] ; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
 endef
 define docker_pull
 	docker pull $(1)
-	if [ $(K3D) = true ] && [ $(CI) = false ] ; then k3d image import $(1); fi
+	if [ $(K3D) = true ] ; then k3d image import $(1); fi
 endef
 
 ifndef $(GOPATH)
@@ -410,9 +410,7 @@ pull-build-images:
 argosay: test/e2e/images/argosay/v2/argosay
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
-ifneq ($(CI),true)
 	k3d image import argoproj/argosay:v2
-endif
 endif
 	docker push argoproj/argosay:v2
 
