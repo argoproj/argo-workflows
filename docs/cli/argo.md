@@ -116,11 +116,11 @@ NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
 * [argo resume](argo_resume.md)	 - resume zero or more workflows
 * [argo retry](argo_retry.md)	 - retry zero or more workflows
 * [argo server](argo_server.md)	 - Start the Argo Server
-* [argo stop](argo_stop.md)	 - stop zero or more workflows
+* [argo stop](argo_stop.md)	 - stop zero or more workflows allowing all exit handlers to run
 * [argo submit](argo_submit.md)	 - submit a workflow
 * [argo suspend](argo_suspend.md)	 - suspend zero or more workflow
 * [argo template](argo_template.md)	 - manipulate workflow templates
-* [argo terminate](argo_terminate.md)	 - terminate zero or more workflows
+* [argo terminate](argo_terminate.md)	 - terminate zero or more workflows immediately
 * [argo version](argo_version.md)	 - Print version information
 * [argo wait](argo_wait.md)	 - waits for workflows to complete
 * [argo watch](argo_watch.md)	 - watch a workflow until it completes
