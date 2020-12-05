@@ -1,5 +1,6 @@
 import * as moment from 'moment';
 import * as React from 'react';
+import Moment from 'react-moment';
 import {NODE_PHASE, NodePhase} from '../../../models';
 import {formatDuration} from '../duration';
 import {ProgressLine} from './progress-line';
@@ -32,7 +33,5 @@ export const DurationFromNow = ({getDate, frequency = 1000}: {getDate: () => str
         };
     }, []);
 
-    const duration = moment.duration(moment(date).diff(now)).asSeconds();
-
-    return <>{formatDuration(duration)}</>;
+    return <Moment duration={now} date={date} format='dd:hh:mm:ss' />;
 };
