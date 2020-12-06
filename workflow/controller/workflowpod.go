@@ -135,16 +135,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
 	namespace := wfv1.NamespaceOrDefault(tmpl.Namespace, woc.wf.Namespace)
 
-	// check to see if roles allow this
-	role := woc.controller.Config.NamespaceRoles.Find(woc.wf.Namespace)
-	log.WithFields(log.Fields{"role": role, "clusterName": clusterName, "namespace": namespace}).Info("Checking namespace roles allow pod creation")
-	if !role.IsEmpty() && !role.Rules.Allow(clusterName, namespace) {
-		return nil, fmt.Errorf(`namespace "%s" is denied access to cluster-namespace "%s/%s"`, woc.wf.Namespace, clusterName, namespace)
-	}
-
-	// this is a check both for miss-configuration and a permission denied,
-	if woc.controller.managedNamespace != "" && woc.controller.managedNamespace != namespace {
-		return nil, fmt.Errorf(`namespace "%s" is denied access to un-managed namespace "%s"`, woc.wf.Namespace, namespace)
+	err := woc.enforceClusterNamespaceAccessControl(clusterName, namespace)
+	if err != nil {
+		return nil, err
 	}
 
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
@@ -415,6 +408,21 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, wfv1.ClusterNameOrDefault(created.Labels[common.LabelKeyClusterName]), created.Namespace, created.Name)
 	woc.activePods++
 	return created, nil
+}
+
+func (woc *wfOperationCtx) enforceClusterNamespaceAccessControl(clusterName wfv1.ClusterName, namespace string) error {
+	// check to see if roles allow this
+	role := woc.controller.Config.NamespaceRoles.Find(woc.wf.Namespace)
+	log.WithFields(log.Fields{"role": role, "clusterName": clusterName, "namespace": namespace}).Info("Checking namespace roles allow pod creation")
+	if !role.IsEmpty() && !role.Rules.Allow(clusterName, namespace) {
+		return fmt.Errorf(`access denied for namespace "%s" to cluster-namespace "%s/%s"`, woc.wf.Namespace, clusterName, namespace)
+	}
+
+	// this is a check both for miss-configuration and a permission denied,
+	if woc.controller.managedNamespace != "" && woc.controller.managedNamespace != namespace {
+		return fmt.Errorf(`access denied for namespace "%s" to un-managed namespace "%s"`, woc.wf.Namespace, namespace)
+	}
+	return nil
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name

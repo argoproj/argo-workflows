@@ -39,7 +39,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "namespace \"argo\" is denied access to un-managed namespace \"unmanaged\"", status.Message)
+			assert.Equal(t, "access denied for namespace \"argo\" to un-managed namespace \"unmanaged\"", status.Message)
 		})
 }
 
@@ -64,7 +64,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "namespace \"argo\" is denied access to cluster-namespace \"default/default\"", status.Message)
+			assert.Equal(t, "access denied for namespace \"argo\" to cluster-namespace \"default/default\"", status.Message)
 		})
 }
 
@@ -89,7 +89,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "namespace \"argo\" is denied access to cluster-namespace \"denied/argo\"", status.Message)
+			assert.Equal(t, "access denied for namespace \"argo\" to cluster-namespace \"denied/argo\"", status.Message)
 		})
 }
 
