@@ -9,6 +9,7 @@ run:
   build-tags:
     - e2e
     - cli
+    - e2emc
 linters:
   enable:
     - goimports

@@ -26,6 +26,9 @@ require('./workflow-details.scss');
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
+    if (type === 'workflow-logs') {
+        return {type};
+    }
     if (type === 'logs' || type === 'yaml') {
         return {type, nodeId, container: container || 'main'};
     }
@@ -221,6 +224,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             };
         });
 
+        items.push({
+            action: () => this.openContainerLogsPanel(),
+            disabled: false,
+            iconClassName: 'fa fa-file',
+            title: 'Logs'
+        });
+
         if (this.state.links) {
             this.state.links
                 .filter(link => link.scope === 'workflow')
@@ -242,9 +252,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
     }
 
-    private openContainerLogsPanel(nodeId: string, container: string) {
+    private openContainerLogsPanel(nodeId?: string, container?: string) {
         const params = new URLSearchParams(this.appContext.router.route.location.search);
-        params.set('sidePanel', `logs:${nodeId}:${container}`);
+        params.set('sidePanel', `logs:${nodeId || ''}:${container || 'main'}`);
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
     }
 

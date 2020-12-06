@@ -118,7 +118,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
 		clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
-		namespace := woc.orWorkflowNamespace(tmpl.Namespace)
+		namespace := wfv1.NamespaceOrDefault(tmpl.Namespace, woc.wf.Namespace)
 		err := woc.updateExecutionControl(clusterName, namespace, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {
 			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)

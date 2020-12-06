@@ -10,7 +10,7 @@ require('./workflow-logs-viewer.scss');
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
-    nodeId: string;
+    nodeId?: string;
     container: string;
     archived: boolean;
 }
@@ -77,7 +77,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                         </div>
                     )}
                 </div>
-                {this.state.lineCount === 0 && (
+                {this.state.lineCount === 0 && this.props.nodeId && (
                     <p>
                         Still waiting for data or an error? Try getting{' '}
                         <a href={services.workflows.getArtifactLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}>
@@ -102,7 +102,9 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
 
         this.setState({lineCount: 0, loaded: false, error: undefined});
 
-        const source = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).map(line => line + '\n');
+        const source = services.workflows
+            .getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)
+            .map(e => (!this.props.nodeId ? e.podName + ': ' : '') + e.content + '\n');
 
         this.logsObservable = source.publishReplay().refCount();
         this.subscription = this.logsObservable.subscribe(
@@ -126,6 +128,6 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     }
 
     private isCurrentNodeRunningOrPending(): boolean {
-        return this.props.workflow.status.nodes[this.props.nodeId].phase === 'Running' || this.props.workflow.status.nodes[this.props.nodeId].phase === 'Pending';
+        return [null, undefined, 'Running', 'Pending'].includes(this.props.nodeId ? this.props.workflow.status.nodes[this.props.nodeId].phase : this.props.workflow.status.phase);
     }
 }

@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import * as models from '../../../models';
-import {Event, NodeStatus, Workflow, WorkflowList} from '../../../models';
+import {Event, LogEntry, NodeStatus, Workflow, WorkflowList} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {Pagination} from '../pagination';
 import requests from './requests';
@@ -129,12 +129,14 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public getContainerLogsFromCluster(workflow: Workflow, nodeId: string, container: string): Observable<string> {
-        const podLogsURL = `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log?logOptions.container=${container}&logOptions.follow=true`;
+    public getContainerLogsFromCluster(workflow: Workflow, nodeId: string, container: string): Observable<LogEntry> {
+        const namespace = workflow.metadata.namespace;
+        const name = workflow.metadata.name;
+        const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&logOptions.follow=true${nodeId ? `&podName=${nodeId}` : ''}`;
         return requests
             .loadEventSource(podLogsURL)
-            .map(line => JSON.parse(line).result.content)
-            .filter(isString)
+            .map(line => JSON.parse(line).result as LogEntry)
+            .filter(e => isString(e.content))
             .catch(() => {
                 // When an error occurs on an observable, RxJS is hard-coded to unsubscribe from the stream.  In the case
                 // that the connection to the server was interrupted while the node is still pending or running, this is not
@@ -152,11 +154,15 @@ export class WorkflowsService {
             });
     }
 
-    public async isWorkflowNodePendingOrRunning(workflow: Workflow, nodeId: string) {
+    public async isWorkflowNodePendingOrRunning(workflow: Workflow, nodeId?: string) {
         // We always refresh the workflow rather than inspecting the state locally since it doubles
         // as a check to determine whether or not the API is currently reachable
         const updatedWorkflow = await this.get(workflow.metadata.namespace, workflow.metadata.name);
-        return this.isNodePendingOrRunning(updatedWorkflow.status.nodes[nodeId]);
+        const node = updatedWorkflow.status.nodes[nodeId];
+        if (!node) {
+            return !updatedWorkflow.status || ['Pending', 'Running'].includes(updatedWorkflow.status.phase);
+        }
+        return this.isNodePendingOrRunning(node);
     }
 
     public getContainerLogsFromArtifact(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
@@ -168,10 +174,11 @@ export class WorkflowsService {
 
                 return Observable.fromPromise(requests.get(this.getArtifactLogsUrl(workflow, nodeId, container, archived)));
             })
-            .mergeMap(r => r.text.split('\n'));
+            .mergeMap(r => r.text.split('\n'))
+            .map(content => ({content} as LogEntry));
     }
 
-    public getContainerLogs(workflow: Workflow, nodeId: string, container: string, archived: boolean): Observable<string> {
+    public getContainerLogs(workflow: Workflow, nodeId: string, container: string, archived: boolean): Observable<LogEntry> {
         const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, archived);
 
         // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely

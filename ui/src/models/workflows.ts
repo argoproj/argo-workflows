@@ -855,3 +855,8 @@ export function getColorForNodePhase(p: NodePhase) {
 }
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';
+
+export interface LogEntry {
+    content: string;
+    podName?: string;
+}

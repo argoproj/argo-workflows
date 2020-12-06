@@ -133,7 +133,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
 	clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
-	namespace := woc.orWorkflowNamespace(tmpl.Namespace)
+	namespace := wfv1.NamespaceOrDefault(tmpl.Namespace, woc.wf.Namespace)
 
 	// check to see if roles allow this
 	role := woc.controller.Config.NamespaceRoles.Find(woc.wf.Namespace)

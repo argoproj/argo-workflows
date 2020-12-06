@@ -43,7 +43,7 @@ type sender interface {
 
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient map[wfv1.ClusterName]kubernetes.Interface, hydrator hydrator.Interface, req request, sender sender) error {
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
-	_, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
+	wf, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -52,9 +52,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	// Keep a track of those we are logging, we also have a mutex to guard reads. Even if we stop streaming, we
 	// keep a marker here so we don't start again.
-	clusterNamespaces := make(map[wfv1.ClusterNamespaceKey]bool)
-	pods := make(map[wfv1.PodKey]bool)
-	var mu sync.Mutex
+	clusterNamespaces := sync.Map{} // make(map[wfv1.ClusterNamespaceKey]bool)
+	pods := sync.Map{}              // make(map[wfv1.PodKey]bool)
 	var wg sync.WaitGroup
 	// A non-blocking channel for log entries to go down.
 	unsortedEntries := make(chan logEntry, 128)
@@ -69,138 +68,128 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	podLogStreamOptions.Timestamps = true
 
 	// this func start a stream if one is not already running
-	logPod := func(pod *corev1.Pod) {
-		wg.Add(1)
-		defer wg.Done()
-		clusterName := wfv1.ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName])
-		podKey := wfv1.NewPodKey(clusterName, pod.Namespace, pod.Name)
+	logPod := func(clusterName wfv1.ClusterName, namespace, podName string) {
+		podKey := wfv1.NewPodKey(clusterName, namespace, podName)
 		logCtx := log.WithField("podKey", podKey)
-		logCtx.Debug()
-		if pod.Status.Phase == corev1.PodPending {
-			logCtx.Debug("pod pending")
+		_, alreadyLogging := pods.LoadOrStore(podKey, true)
+		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging pod")
+		if alreadyLogging {
 			return
 		}
-		// return if already streaming
-		if !func() bool {
-			mu.Lock()
-			defer mu.Unlock()
-			if pods[podKey] {
-				return false
-			}
-			pods[podKey] = true
-			return true
-		}() {
-			logCtx.Debug("pod already streaming")
-			return
-		}
-		err := func() error {
-			stream, err := kubeClient[clusterName].CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogStreamOptions).Stream()
-			if err != nil {
-				return err
-			}
-			scanner := bufio.NewScanner(stream)
-			for scanner.Scan() {
-				select {
-				case <-ctx.Done():
-					return nil
-				default:
-					line := scanner.Text()
-					parts := strings.SplitN(line, " ", 2)
-					content := parts[1]
-					timestamp, err := time.Parse(time.RFC3339, parts[0])
-					if err != nil {
-						logCtx.Errorf("unable to decode or infer timestamp from log line: %s", err)
-						// The current timestamp is the next best substitute. This won't be shown, but will be used
-						// for sorting
-						timestamp = time.Now()
-						content = line
-					}
-					// You might ask - why don't we let the client do this? Well, it is because
-					// this is the same as how this works for `kubectl logs`
-					if req.GetLogOptions().Timestamps {
-						content = line
-					}
-					logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
-					unsortedEntries <- logEntry{podName: pod.Name, content: content, timestamp: timestamp}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer logCtx.Debug("pod logging done")
+			err := func() error {
+				stream, err := kubeClient[clusterName].CoreV1().Pods(namespace).GetLogs(podName, &podLogStreamOptions).Stream()
+				if err != nil {
+					return err
 				}
+				scanner := bufio.NewScanner(stream)
+				for {
+					select {
+					case <-ctx.Done():
+						return nil
+					default:
+						if !scanner.Scan() {
+							return nil
+						}
+						line := scanner.Text()
+						parts := strings.SplitN(line, " ", 2)
+						content := parts[1]
+						timestamp, err := time.Parse(time.RFC3339, parts[0])
+						if err != nil {
+							logCtx.Errorf("unable to decode or infer timestamp from log line: %s", err)
+							// The current timestamp is the next best substitute. This won't be shown, but will be used
+							// for sorting
+							timestamp = time.Now()
+							content = line
+						}
+						// You might ask - why don't we let the client do this? Well, it is because
+						// this is the same as how this works for `kubectl logs`
+						if req.GetLogOptions().Timestamps {
+							content = line
+						}
+						logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
+						unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
+					}
+				}
+			}()
+			if err != nil {
+				logCtx.WithError(err).Error("failed to stream pod")
 			}
-			return nil
 		}()
-		if err != nil {
-			logCtx.WithError(err).Error("failed to stream pod")
-		}
 	}
 
-	// We never send anything on this channel apart from closing it to indicate we should stop waiting for new pods.
+	stopLoggingClusterNamespace := make(chan struct{})
 	logClusterNamespace := func(clusterName wfv1.ClusterName, instanceID, namespace string) {
-		wg.Add(1)
-		defer wg.Done()
 		clusterNamespaceKey := wfv1.NewClusterNamespaceKey(clusterName, namespace)
 		logCtx := log.WithField("clusterNamespaceKey", clusterNamespaceKey)
-		logCtx.Debug()
-		if !func() bool {
-			mu.Lock()
-			defer mu.Unlock()
-			if clusterNamespaces[clusterNamespaceKey] {
-				return false
-			}
-			clusterNamespaces[clusterNamespaceKey] = true
-			return true
-		}() {
-			logCtx.Debug("cluster-namespace already streaming")
+		_, alreadyLogging := clusterNamespaces.LoadOrStore(clusterNamespaceKey, true)
+		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging cluster-namespace")
+		if alreadyLogging {
 			return
 		}
-		err := func() error {
-			listOptions := metav1.ListOptions{
-				LabelSelector: labels.NewSelector().
-					Add(util.ClusterNameRequirement(clusterName)).
-					Add(util.InstanceIDRequirement(instanceID)).
-					Add(util.WorkflowNameRequirement(req.GetName())).
-					String(),
-			}
-			if req.GetPodName() != "" {
-				listOptions.FieldSelector = "metadata.name=" + req.GetPodName()
-			}
-			list, err := kubeClient[clusterName].CoreV1().Pods(namespace).List(listOptions)
-			if err != nil {
-				return err
-			}
-			// start watches by start-time
-			sort.Slice(list.Items, func(i, j int) bool {
-				return list.Items[i].Status.StartTime.Before(list.Items[j].Status.StartTime)
-			})
-			for _, pod := range list.Items {
-				go logPod(&pod)
-			}
-			retryWatcher, err := retrywatch.NewRetryWatcher(list.ResourceVersion, &cache.ListWatch{
-				WatchFunc: func(x metav1.ListOptions) (watch.Interface, error) {
-					x.LabelSelector = listOptions.LabelSelector
-					return kubeClient[clusterName].CoreV1().Pods(namespace).Watch(x)
-				},
-			})
-			if err != nil {
-				return err
-			}
-			for event := range retryWatcher.ResultChan() {
-				select {
-				case <-ctx.Done():
-					return nil
-				default:
-					pod, ok := event.Object.(*corev1.Pod)
-					if !ok {
-						return apierr.FromObject(event.Object)
-					}
-					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
-					if pod.Status.Phase == corev1.PodRunning {
-						logPod(pod)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer logCtx.Debug("cluster-namespace logging done")
+			err := func() error {
+				listOptions := metav1.ListOptions{
+					LabelSelector: labels.NewSelector().
+						Add(util.ClusterNameRequirement(clusterName)).
+						Add(util.InstanceIDRequirement(instanceID)).
+						Add(util.WorkflowNameRequirement(req.GetName())).
+						String(),
+				}
+				if req.GetPodName() != "" {
+					listOptions.FieldSelector = "metadata.name=" + req.GetPodName()
+				}
+				list, err := kubeClient[clusterName].CoreV1().Pods(namespace).List(listOptions)
+				if err != nil {
+					return err
+				}
+				// start watches by start-time
+				sort.Slice(list.Items, func(i, j int) bool {
+					return list.Items[i].Status.StartTime.Before(list.Items[j].Status.StartTime)
+				})
+				for _, pod := range list.Items {
+					if pod.Status.Phase != corev1.PodPending {
+						logPod(wfv1.ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
 					}
 				}
+				retryWatcher, err := retrywatch.NewRetryWatcher(list.ResourceVersion, &cache.ListWatch{
+					WatchFunc: func(x metav1.ListOptions) (watch.Interface, error) {
+						x.LabelSelector = listOptions.LabelSelector
+						return kubeClient[clusterName].CoreV1().Pods(namespace).Watch(x)
+					},
+				})
+				if err != nil {
+					return err
+				}
+				for {
+					select {
+					case <-stopLoggingClusterNamespace:
+						return nil
+					case <-ctx.Done():
+						return nil
+					case <-retryWatcher.Done():
+						return nil
+					case event := <-retryWatcher.ResultChan():
+						pod, ok := event.Object.(*corev1.Pod)
+						if !ok {
+							return apierr.FromObject(event.Object)
+						}
+						if pod.Status.Phase != corev1.PodPending {
+							logPod(wfv1.ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
+						}
+					}
+				}
+			}()
+			if err != nil {
+				logCtx.WithError(err).Error("failed to log cluster-namespace")
 			}
-			return nil
 		}()
-		if err != nil {
-			logCtx.WithError(err).Error("failed to log cluster-namespace")
-		}
 	}
 
 	logWorkflow := func(wf *wfv1.Workflow) error {
@@ -210,7 +199,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		}
 		for clusterName, namespaces := range wf.Status.Nodes.GetClusterNamespaces() {
 			for namespace := range namespaces {
-				go logClusterNamespace(wfv1.ClusterNameOrDefault(clusterName), wf.Labels[common.LabelKeyControllerInstanceID], namespaceOr(namespace, wf.Namespace))
+				logClusterNamespace(wfv1.ClusterNameOrDefault(clusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOrDefault(namespace, wf.Namespace))
 			}
 		}
 		return nil
@@ -220,34 +209,41 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	// When that happens, it signals we are done by closing the stop channel.
 	wg.Add(1)
 	go func() {
+		defer close(stopLoggingClusterNamespace)
 		defer wg.Done()
+		defer log.Debug("workflow watch done")
 		err := func() error {
-			wf, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			err = logWorkflow(wf)
+			err := logWorkflow(wf)
 			if err != nil {
 				return err
 			}
 			if !req.GetLogOptions().Follow {
 				return nil
 			}
-			retryWatcher, err := retrywatch.NewRetryWatcher(wf.ResourceVersion, &cache.ListWatch{
-				WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-					options.FieldSelector = "metadata.name=" + req.GetName()
-					return kubeClient[wfv1.DefaultClusterName].CoreV1().Pods(req.GetNamespace()).Watch(options)
-				},
-			})
+			wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()}
+			wfWatch, err := wfInterface.Watch(wfListOptions)
 			if err != nil {
 				return err
 			}
-			defer retryWatcher.Stop()
-			for event := range retryWatcher.ResultChan() {
+			defer wfWatch.Stop()
+			// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
+			// When that happens, it signals we are done by closing the stop channel.
+			if err != nil {
+				return err
+			}
+			for {
 				select {
 				case <-ctx.Done():
 					return nil
-				default:
+				case event, open := <-wfWatch.ResultChan():
+					if !open {
+						wfWatch.Stop()
+						wfWatch, err = wfInterface.Watch(wfListOptions)
+						if err != nil {
+							return err
+						}
+						continue
+					}
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {
 						return apierr.FromObject(event.Object)
@@ -260,18 +256,20 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					if err != nil {
 						return err
 					}
+					wfListOptions.ResourceVersion = wf.ResourceVersion
 				}
 			}
-			return nil
 		}()
 		if err != nil {
 			logCtx.WithError(err).Error("failed to watch workflow")
 		}
 	}()
 
-	wg.Add(1)
+	doneSorting := make(chan struct{})
 	go func() {
-		defer wg.Done()
+		defer close(doneSorting)
+		defer logCtx.Debug("Done sorting entries")
+		logCtx.Debug("Sorting entries")
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		entries := logEntries{}
@@ -319,12 +317,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	logCtx.Debug("Waiting for work-group")
 	wg.Wait()
 	logCtx.Debug("Work-group done")
+	close(unsortedEntries)
+	<-doneSorting
+	logCtx.Debug("Done-done")
 	return nil
-}
-
-func namespaceOr(namespace string, otherNamespace string) string {
-	if namespace != "" {
-		return namespace
-	}
-	return otherNamespace
 }

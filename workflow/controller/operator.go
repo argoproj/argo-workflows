@@ -1128,7 +1128,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 
 	node.ClusterName = pod.Labels[common.LabelKeyClusterName]
-	node.Namespace = woc.namespaceOrEmpty(pod.Namespace)
+	node.Namespace = wfv1.NamespaceDefaultToEmpty(pod.Namespace, woc.wf.Namespace)
 
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
@@ -3117,20 +3117,6 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
 	}
 	return nil
-}
-
-func (woc *wfOperationCtx) orWorkflowNamespace(namespace string) string {
-	if namespace != "" {
-		return namespace
-	}
-	return woc.wf.Namespace
-}
-
-func (woc *wfOperationCtx) namespaceOrEmpty(namespace string) string {
-	if namespace == woc.wf.Namespace {
-		return ""
-	}
-	return namespace
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec() error {
