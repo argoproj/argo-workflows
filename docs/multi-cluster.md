@@ -1,6 +1,6 @@
 # Multi-Cluster
 
-You can execute workflows that runs some or all of its pods in clusters other than the cluster the controller is installed in.
+You can execute workflows where some pods run in clusters other than the cluster the controller is installed in.
 
 ## Considerations 
 
@@ -30,13 +30,15 @@ This may not be allowed in some organisations.
 
 ## Usage
 
+### Configured The Workflow Controller 
+
 To make the workflow controller aware of other clusters and able to connect to them:
 
 ```bash
 kubectl -n argo create secret generic clusters
 ```
 
-This need to be populate with one entry per cluster, e.g.:
+This needs to be populated with one entry per cluster, e.g.:
 
 ```yaml
 apiVersion: v1
@@ -49,7 +51,7 @@ metadata:
 type: Opaque
 ```
 
-To manually configure the base, take the following example JSON, enter your values, and base-64 encode it:
+To manually configure a cluster, take the following example JSON, enter your values, and base-64 encode it:
 
 ```json
 {
@@ -77,17 +79,75 @@ To manually configure the base, take the following example JSON, enter your valu
 }
 ```
 
-Another option. Download the KUBECONFIG into your local `~/.kube/config` and add it as follows:
+Alternatively, download the KUBECONFIG into your local `~/.kube/config` and add it as follows:
 
 ```bash
 argo cluster add my-other-cluster-name my-context-name 
 ```
 
-Restart the workflow controller.
+Next, we only run pods in cluster-namespaces that have been explicitly allowed by configuration:
 
-Much like you already do for the controller's cluster, create any service accounts, roles and role bindings you need to run workflow pods in your other cluster. E.g.
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  namespaceRoles: |
+    # This example declares which cluster-namespaces for workflows created in the "argo" 
+    # namespace the controller is allowed to run workflow pods in.
+    - namespace: argo
+      rules:
+        # You must include one entry for the default cluster if you wish to continue
+        # running pods there.
+        - clusterNames:
+            - default
+          namespaces:
+            # Use "" for all namespaces, e.g. if you have a cluster-install.
+            - argo            
+        # List other clusters-namespaces that this namespace will be able to declare
+        # workflow pods in.
+        - clusterNames:
+            - other
+          namespaces:
+            - other-ns
+```
+
+Finally, restart the workflow controller.
+
+### Configure Your Other Cluster
+
+Much like you already do for the controller's cluster, in the other cluster, create any service accounts, roles and role bindings you need to run workflow pods in your other cluster. E.g.
 
 * [workflow-role.yaml](manifests/quick-start/base/workflow-role.yaml)
 * [workflow-default-rolebinding.yaml](manifests/quick-start/base/workflow-default-rolebinding.yaml)
 
 If you're using artifacts, e.g. you have a default artifact repository configured, create any secrets you need for it. 
+
+### Run Your Multi-Cluster Workflow
+
+Example:
+
+```yaml
+metadata:
+  generateName: multi-cluster-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+         - name: this
+           template: this
+         - name: other
+           template: other
+    - name: this
+      container:
+        image: argoproj/argosay:v2
+    - name: other
+      clusterName: other
+      namespace: argo
+      serviceAccount: workflow
+      container:
+        image: argoproj/argosay:v2
+```

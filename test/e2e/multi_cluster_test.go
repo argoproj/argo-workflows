@@ -68,7 +68,6 @@ spec:
 		})
 }
 
-
 func (s *MultiClusterSuite) TestClusterDenied() {
 	s.Given().
 		Workflow(`
