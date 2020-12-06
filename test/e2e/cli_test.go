@@ -325,6 +325,7 @@ func (s *CLISuite) TestLogs() {
 // this test probably should be in the ArgoServerSuite, but it's just much easier to write the test
 // for the CLI
 func (s *CLISuite) TestLogProblems() {
+	s.needsServer()
 	s.Given().
 		Workflow(`@testdata/log-problems.yaml`).
 		When().
