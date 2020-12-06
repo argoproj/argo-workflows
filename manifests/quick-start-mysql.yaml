@@ -461,6 +461,7 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  empty: ""
   my-key: |
     archiveLogs: true
     s3:
