@@ -5,4 +5,3 @@ resources:
   - ../../../../manifests/quick-start/base/workflow-role.yaml
   - ../../../../manifests/quick-start/base/workflow-default-rolebinding.yaml
   - ../../../../manifests/quick-start/base/minio/my-minio-cred-secret.yaml
-  - minio-svc.yaml

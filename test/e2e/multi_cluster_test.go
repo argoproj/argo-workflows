@@ -118,31 +118,6 @@ spec:
 		})
 }
 
-func (s *MultiClusterSuite) TestOtherCluster() {
-	s.Given().
-		Workflow(`
-metadata:
-  generateName: other-cluster-
-  labels:
-    argo-e2e: true
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      clusterName: other
-      namespace: argo
-      container:
-        image: argoproj/argosay:v2
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *MultiClusterSuite) TestTwoClusters() {
 	s.Given().
 		Workflow(`
@@ -151,6 +126,8 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  artifactRepositoryRef:
+    key: empty
   entrypoint: main
   templates:
     - name: main
@@ -175,6 +152,16 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			thisNode := status.Nodes.FindByDisplayName("this")
+			if assert.NotNil(t, thisNode) {
+				assert.Empty(t, thisNode.ClusterName)
+				assert.Empty(t, thisNode.Namespace)
+			}
+			otherNode := status.Nodes.FindByDisplayName("other")
+			if assert.NotNil(t, otherNode) {
+				assert.NotEmpty(t, otherNode.ClusterName)
+				assert.Empty(t, otherNode.Namespace)
+			}
 		})
 }
 
