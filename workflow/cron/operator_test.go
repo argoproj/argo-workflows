@@ -176,12 +176,13 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	cs := fake.NewSimpleClientset()
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
-		wfClientset: cs,
-		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
-		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
-		cronWf:      &cronWf,
-		log:         logrus.WithFields(logrus.Fields{}),
-		metrics:     testMetrics,
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logrus.WithFields(logrus.Fields{}),
+		metrics:           testMetrics,
+		scheduledTimeFunc: inferScheduledTime,
 	}
 	woc.Run()
 
