@@ -93,10 +93,10 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  namespaceRoles: |
+  namespaces: |
     # This example declares which cluster-namespaces for workflows created in the "argo" 
     # namespace the controller is allowed to run workflow pods in.
-    - namespace: argo
+    - name: argo
       rules:
         # You must include one entry for the default cluster if you wish to continue
         # running pods there.

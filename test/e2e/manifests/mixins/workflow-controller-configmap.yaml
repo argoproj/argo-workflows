@@ -13,8 +13,8 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
-  namespaceRoles: |
-    - namespace: argo
+  namespaces: |
+    - name: argo
       rules:
         - clusterNames:
             - default

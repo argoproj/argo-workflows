@@ -7,25 +7,25 @@ import (
 	"github.com/argoproj/argo/util/slice"
 )
 
-type Roles []Role
+type Namespaces []Namespace
 
-func (c Roles) Find(namespace string) Role {
+func (c Namespaces) Find(namespace string) Namespace {
 	for _, x := range c {
-		if x.Namespace == namespace {
+		if x.Name == namespace {
 			return x
 		}
 	}
-	return Role{}
+	return Namespace{}
 }
 
-type Role struct {
+type Namespace struct {
 	// Which namespace the rules apply to.
-	Namespace string `json:"namespace"`
-	Rules     Rules  `json:"rules"`
+	Name  string `json:"name"`
+	Rules Rules  `json:"rules"`
 }
 
-func (r Role) IsEmpty() bool {
-	return r.Namespace == ""
+func (r Namespace) IsEmpty() bool {
+	return r.Name == ""
 }
 
 type Rules []Rule

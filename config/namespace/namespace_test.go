@@ -8,9 +8,9 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func TestRole_IsEmpty(t *testing.T) {
-	assert.True(t, Role{}.IsEmpty())
-	assert.False(t, Role{Namespace: "my-ns"}.IsEmpty())
+func TestNamespace_IsEmpty(t *testing.T) {
+	assert.True(t, Namespace{}.IsEmpty())
+	assert.False(t, Namespace{Name: "my-ns"}.IsEmpty())
 }
 
 func TestRules_Allow(t *testing.T) {

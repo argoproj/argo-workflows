@@ -412,7 +412,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 func (woc *wfOperationCtx) enforceClusterNamespaceAccessControl(clusterName wfv1.ClusterName, namespace string) error {
 	// check to see if roles allow this
-	role := woc.controller.Config.NamespaceRoles.Find(woc.wf.Namespace)
+	role := woc.controller.Config.Namespaces.Find(woc.wf.Namespace)
 	log.WithFields(log.Fields{"role": role, "clusterName": clusterName, "namespace": namespace}).Info("Checking namespace roles allow pod creation")
 	if !role.IsEmpty() && !role.Rules.Allow(clusterName, namespace) {
 		return fmt.Errorf(`access denied for namespace "%s" to cluster-namespace "%s/%s"`, woc.wf.Namespace, clusterName, namespace)
