@@ -13,7 +13,7 @@ argo template list [flags]
 ### Options
 
 ```
-      --all-namespaces   Show workflows from all namespaces
+  -A, --all-namespaces   Show workflows from all namespaces
   -h, --help             help for list
   -o, --output string    Output format. One of: wide|name
 ```
