@@ -45,7 +45,7 @@ func NewTerminateCommand() *cobra.Command {
 
 	var command = &cobra.Command{
 		Use:   "terminate WORKFLOW WORKFLOW2...",
-		Short: "terminate zero or more workflows",
+		Short: "terminate zero or more workflows immediately",
 		Example: `# Terminate a workflow:
 
   argo terminate my-wf
