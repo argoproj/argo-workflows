@@ -113,9 +113,27 @@ func (woc *cronWfOperationCtx) persistUpdate() {
 		woc.log.WithError(err).Error("failed to marshall cron workflow status data")
 		return
 	}
-	err = wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
+
+	woc.persist(data)
+}
+
+func (woc *cronWfOperationCtx) persistUpdateActiveWorkflows() {
+	data, err := json.Marshal(map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active}})
+	if err != nil {
+		woc.log.WithError(err).Error("failed to marshall cron workflow status.active data")
+		return
+	}
+
+	woc.persist(data)
+}
+
+func (woc *cronWfOperationCtx) persist(data []byte) {
+	err := wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(woc.cronWf.Name, types.MergePatchType, data)
 		if err != nil {
+			if errors.IsTimeout(err) {
+				return false, nil
+			}
 			return false, err
 		}
 		woc.cronWf = cronWf
@@ -227,15 +245,26 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
 }
 
 func (woc *cronWfOperationCtx) reconcileActiveWfs(workflows []v1alpha1.Workflow) error {
+	updated := false
 	currentWfsFulfilled := make(map[types.UID]bool)
 	for _, wf := range workflows {
 		currentWfsFulfilled[wf.UID] = wf.Status.Fulfilled()
+
+		if !woc.containsActiveWorkflow(wf.UID) && !wf.Status.Fulfilled() {
+			updated = true
+			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(&wf, &wf))
+		}
 	}
 
 	for _, objectRef := range woc.cronWf.Status.Active {
 		if fulfilled, found := currentWfsFulfilled[objectRef.UID]; !found || fulfilled {
+			updated = true
 			woc.removeFromActiveList(objectRef.UID)
 		}
+	}
+
+	if updated {
+		woc.persistUpdateActiveWorkflows()
 	}
 
 	return nil
@@ -249,6 +278,15 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 		}
 	}
 	woc.cronWf.Status.Active = newActive
+}
+
+func (woc *cronWfOperationCtx) containsActiveWorkflow(uid types.UID) bool {
+	for _, ref := range woc.cronWf.Status.Active {
+		if uid == ref.UID {
+			return true
+		}
+	}
+	return false
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit(workflows []v1alpha1.Workflow) error {
