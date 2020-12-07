@@ -11,16 +11,19 @@ export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {respo
     const reloadAfterSeconds = props.reloadAfterSeconds || 120;
     const reload = props.onReload || document.location.reload;
     const [timeLeft, setTimeLeft] = useState(reloadAfterSeconds);
-    useEffect(() => {
-        if (!timeLeft) {
-            reload();
-            setTimeLeft(reloadAfterSeconds);
-        }
-        const intervalId = setInterval(() => {
-            setTimeLeft(timeLeft - 1);
-        }, 1000);
-        return () => clearInterval(intervalId);
-    }, [timeLeft]);
+    const canAutoReload = reload !== document.location.reload; // we cannot automatically call `document.location.reload`
+    if (canAutoReload) {
+        useEffect(() => {
+            if (!timeLeft) {
+                reload();
+                setTimeLeft(reloadAfterSeconds);
+            }
+            const intervalId = setInterval(() => {
+                setTimeLeft(timeLeft - 1);
+            }, 1000);
+            return () => clearInterval(intervalId);
+        }, [timeLeft]);
+    }
     return (
         <Notice style={props.style}>
             <PhaseIcon value='Error' /> {props.error.message || 'Unknown error. Open your browser error console for more information.'}
@@ -28,7 +31,7 @@ export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {respo
             <a onClick={() => reload()}>
                 <i className='fa fa-redo' /> Reload
             </a>{' '}
-            {timeLeft}s
+            {canAutoReload && `${timeLeft}s`}
         </Notice>
     );
 };

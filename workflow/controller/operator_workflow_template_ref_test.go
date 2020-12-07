@@ -31,7 +31,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: wfv1.Int64OrStringPtr("test"),
+				Value: wfv1.AnyStringPtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -51,7 +51,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: wfv1.Int64OrStringPtr("test"),
+				Value: wfv1.AnyStringPtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -100,76 +100,6 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	})
 }
 
-const wfWithStatus = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-whalesay-template-
-  namespace: argo
-spec:
-  arguments:
-    parameters:
-    - name: param1
-      value: test
-  entrypoint: whalesay-template
-  workflowTemplateRef:
-    name: workflow-template-whalesay-template
-status:
-  startedAt: "2020-05-01T01:04:41Z"
-  storedTemplates:
-    namespaced/workflow-template-whalesay-template/whalesay-template:
-      arguments: {}
-      container:
-        args:
-        - '{{inputs.parameters.message}}'
-        command:
-        - cowsay
-        image: docker/whalesay
-        name: ""
-        resources: {}
-      inputs:
-        parameters:
-        - name: message
-      metadata: {}
-      name: whalesay-template
-      outputs: {}
-  storedWorkflowTemplateSpec:
-    arguments:
-      parameters:
-      - name: param2
-        value: hello
-    templates:
-    - arguments: {}
-      container:
-        args:
-        - '{{inputs.parameters.message}}'
-        command:
-        - cowsay
-        image: docker/whalesay
-        name: ""
-        resources: {}
-      inputs:
-        parameters:
-        - name: message
-      metadata: {}
-      name: whalesay-template
-      outputs: {}
-`
-
-func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
-	wf := unmarshalWF(wfWithStatus)
-	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
-		cancel, controller := newController(wf)
-		defer cancel()
-		woc := newWorkflowOperationCtx(wf, controller)
-		_, execArgs, err := woc.loadExecutionSpec()
-		assert.NoError(t, err)
-
-		assert.Equal(t, "test", execArgs.Parameters[0].Value.String())
-		assert.Equal(t, "hello", execArgs.Parameters[1].Value.String())
-	})
-}
-
 const invalidWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -188,8 +118,6 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 		cancel, controller := newController(wf)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
-		_, _, err := woc.loadExecutionSpec()
-		assert.Error(t, err)
 		woc.operate()
 		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	})
@@ -271,8 +199,7 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
-		_, _, err := woc.loadExecutionSpec()
-		assert.NoError(t, err)
+		woc.operate()
 		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
 	})
 
@@ -340,13 +267,11 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
-		_, execArgs, err := woc.loadExecutionSpec()
-		assert.NoError(t, err)
-		assert.Equal(t, wf.Spec.Arguments.Artifacts, woc.wf.Spec.Arguments.Artifacts)
-		assert.Len(t, execArgs.Artifacts, 3)
+		woc.operate()
+		assert.Len(t, woc.execWf.Spec.Arguments.Artifacts, 3)
 
-		assert.Equal(t, "own-file", execArgs.Artifacts[0].Name)
-		assert.Equal(t, "binary-file", execArgs.Artifacts[1].Name)
-		assert.Equal(t, "data-file", execArgs.Artifacts[2].Name)
+		assert.Equal(t, "own-file", woc.execWf.Spec.Arguments.Artifacts[0].Name)
+		assert.Equal(t, "binary-file", woc.execWf.Spec.Arguments.Artifacts[1].Name)
+		assert.Equal(t, "data-file", woc.execWf.Spec.Arguments.Artifacts[2].Name)
 	})
 }

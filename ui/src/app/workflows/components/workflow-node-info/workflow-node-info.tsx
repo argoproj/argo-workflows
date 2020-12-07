@@ -1,8 +1,9 @@
-import {Tabs, Ticker} from 'argo-ui';
+import {Tabs, Ticker, Tooltip} from 'argo-ui';
 import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {DropDownButton} from '../../../shared/components/drop-down-button';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Phase} from '../../../shared/components/phase';
@@ -31,7 +32,7 @@ interface Props {
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
         <div className='columns small-4'>{attr.title}</div>
-        <div className='columns small-8'>{attr.value}</div>
+        <div className='columns columns--narrower-height small-8'>{attr.value}</div>
     </div>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -100,31 +101,39 @@ export const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
+    const showLogs = (container = 'main') => props.onShowContainerLogs(props.node.id, container);
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
+                <button className='argo-button argo-button--base' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {props.node.type === 'Pod' && (
-                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
-                        LOGS
-                    </button>
-                )}
+                {props.node.type === 'Pod' && props.onShowContainerLogs && (
+                    <DropDownButton
+                        onClick={() => showLogs()}
+                        items={[
+                            {onClick: () => showLogs('init'), value: 'init logs'},
+                            {onClick: () => showLogs('wait'), value: 'wait logs'}
+                        ]}>
+                        main logs
+                    </DropDownButton>
+                )}{' '}
                 {props.links &&
                     props.links
                         .filter(link => link.scope === 'pod')
                         .map(link => (
-                            <a
-                                className='argo-button argo-button--base-o'
-                                href={link.url
-                                    .replace('${metadata.namespace}', props.workflow.metadata.namespace)
-                                    .replace('${metadata.name}', props.node.id)
-                                    .replace('${status.startedAt}', props.node.startedAt)
-                                    .replace('${status.finishedAt}', props.node.finishedAt)}>
+                            <button
+                                className='argo-button argo-button--base'
+                                onClick={() => {
+                                    document.location.href = link.url
+                                        .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
+                                        .replace(/\${metadata\.name}/g, props.node.id)
+                                        .replace(/\${status\.startedAt}/g, props.node.startedAt)
+                                        .replace(/\${status\.finishedAt}/g, props.node.finishedAt);
+                                }}>
                                 <i className='fa fa-link' /> {link.name}
-                            </a>
+                            </button>
                         ))}
             </div>
         </div>
@@ -164,6 +173,27 @@ function hasEnv(container: models.kubernetes.Container | models.Sidecar | models
     return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
 }
 
+const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
+    const {env} = props;
+    const secret = env.valueFrom?.secretKeyRef;
+    const secretValue = secret ? (
+        <>
+            <Tooltip content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'} arrow={false}>
+                <i className='fa fa-key' />
+            </Tooltip>
+            {secret.name}/{secret.key}
+        </>
+    ) : (
+        undefined
+    );
+
+    return (
+        <pre>
+            {env.name}={env.value || secretValue}
+        </pre>
+    );
+};
+
 export const WorkflowNodeContainer = (props: {
     nodeId: string;
     container: models.kubernetes.Container | models.Sidecar | models.Script;
@@ -187,7 +217,13 @@ export const WorkflowNodeContainer = (props: {
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</pre>
+                  value: (
+                      <pre className='workflow-node-info__multi-line'>
+                          {(container.env || []).map(e => (
+                              <EnvVar env={e} />
+                          ))}
+                      </pre>
+                  )
               }
             : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];

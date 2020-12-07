@@ -32,15 +32,7 @@ echo $ARGO_TOKEN
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
 
-!!!NOTE
-    The `ARGO_TOKEN` should always start with "Bearer ".
-
-Use that token with the CLI (you need to set `ARGO_SERVER` too):
-
-```sh
-ARGO_SERVER=http://localhost:2746 
-argo list
-```
+To that token with the CLI you need to set `ARGO_SERVER` (see `argo --help`).
 
 Use that token in your API requests, e.g. to list workflows:
 

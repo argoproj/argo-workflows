@@ -117,7 +117,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: wfv1.Int64OrStringPtr("Default Value"),
+						Default: wfv1.AnyStringPtr("Default Value"),
 						Path:    "/path",
 					},
 				},
@@ -149,7 +149,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: wfv1.Int64OrStringPtr(""),
+						Default: wfv1.AnyStringPtr(""),
 						Path:    "/path",
 					},
 				},

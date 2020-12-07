@@ -569,6 +569,11 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            properties:
+                              objectLocking:
+                                type: boolean
+                            type: object
                           endpoint:
                             type: string
                           insecure:
@@ -1442,6 +1447,11 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            properties:
+                              objectLocking:
+                                type: boolean
+                            type: object
                           endpoint:
                             type: string
                           insecure:
@@ -1742,6 +1752,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -2642,6 +2657,11 @@ spec:
                                             type: object
                                           bucket:
                                             type: string
+                                          createBucketIfNotPresent:
+                                            properties:
+                                              objectLocking:
+                                                type: boolean
+                                            type: object
                                           endpoint:
                                             type: string
                                           insecure:
@@ -2786,7 +2806,6 @@ spec:
                               type: object
                           required:
                           - name
-                          - template
                           type: object
                         type: array
                     required:
@@ -3615,6 +3634,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -4072,6 +4096,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -6758,6 +6787,17 @@ spec:
           type: object
         status:
           properties:
+            artifactRepositoryRef:
+              properties:
+                configMap:
+                  type: string
+                default:
+                  type: boolean
+                key:
+                  type: string
+                namespace:
+                  type: string
+              type: object
             compressedNodes:
               type: string
             conditions:
@@ -7069,6 +7109,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -7443,6 +7488,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -7848,6 +7898,11 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            properties:
+                              objectLocking:
+                                type: boolean
+                            type: object
                           endpoint:
                             type: string
                           insecure:
@@ -9049,6 +9104,11 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            properties:
+                              objectLocking:
+                                type: boolean
+                            type: object
                           endpoint:
                             type: string
                           insecure:
@@ -9349,6 +9409,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -10249,6 +10314,11 @@ spec:
                                             type: object
                                           bucket:
                                             type: string
+                                          createBucketIfNotPresent:
+                                            properties:
+                                              objectLocking:
+                                                type: boolean
+                                            type: object
                                           endpoint:
                                             type: string
                                           insecure:
@@ -10393,7 +10463,6 @@ spec:
                               type: object
                           required:
                           - name
-                          - template
                           type: object
                         type: array
                     required:
@@ -11222,6 +11291,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -11679,6 +11753,11 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  properties:
+                                    objectLocking:
+                                      type: boolean
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -14145,6 +14224,11 @@ spec:
                                 type: object
                               bucket:
                                 type: string
+                              createBucketIfNotPresent:
+                                properties:
+                                  objectLocking:
+                                    type: boolean
+                                type: object
                               endpoint:
                                 type: string
                               insecure:
@@ -15018,6 +15102,11 @@ spec:
                                 type: object
                               bucket:
                                 type: string
+                              createBucketIfNotPresent:
+                                properties:
+                                  objectLocking:
+                                    type: boolean
+                                type: object
                               endpoint:
                                 type: string
                               insecure:
@@ -15318,6 +15407,11 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    createBucketIfNotPresent:
+                                      properties:
+                                        objectLocking:
+                                          type: boolean
+                                      type: object
                                     endpoint:
                                       type: string
                                     insecure:
@@ -16218,6 +16312,11 @@ spec:
                                                 type: object
                                               bucket:
                                                 type: string
+                                              createBucketIfNotPresent:
+                                                properties:
+                                                  objectLocking:
+                                                    type: boolean
+                                                type: object
                                               endpoint:
                                                 type: string
                                               insecure:
@@ -16362,7 +16461,6 @@ spec:
                                   type: object
                               required:
                               - name
-                              - template
                               type: object
                             type: array
                         required:
@@ -17191,6 +17289,11 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    createBucketIfNotPresent:
+                                      properties:
+                                        objectLocking:
+                                          type: boolean
+                                      type: object
                                     endpoint:
                                       type: string
                                     insecure:
@@ -17648,6 +17751,11 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    createBucketIfNotPresent:
+                                      properties:
+                                        objectLocking:
+                                          type: boolean
+                                      type: object
                                     endpoint:
                                       type: string
                                     insecure:

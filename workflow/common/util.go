@@ -265,13 +265,13 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 
 		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
-			inParam.Value = wfv1.Int64OrStringPtr("Generated from configMap")
+			inParam.Value = wfv1.AnyStringPtr("Generated from configMap")
 			if clientset != nil {
 				configMapValue, err := util.GetConfigMaps(*clientset, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
 				if err != nil {
 					return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s malformed. %s", inParam.Name, err)
 				}
-				inParam.Value = wfv1.Int64OrStringPtr(configMapValue)
+				inParam.Value = wfv1.AnyStringPtr(configMapValue)
 			}
 		}
 

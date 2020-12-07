@@ -1,5 +1,6 @@
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
 [![CI](https://github.com/argoproj/argo/workflows/CI/badge.svg)](https://github.com/argoproj/argo/actions?query=event%3Apush+branch%3Amaster)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
 
 ![Argo Image](docs/assets/argo.png)
 
@@ -12,6 +13,8 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * Run CI/CD pipelines natively on Kubernetes without configuring complex software development products.
 
 Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
+
+[![Argo Workflows in 5 minutes](https://img.youtube.com/vi/TZgLkCFQ2tk/0.jpg)](https://www.youtube.com/watch?v=TZgLkCFQ2tk)
 
 ## Why Argo Workflows?
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
