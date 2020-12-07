@@ -34,6 +34,8 @@ type cronWfOperationCtx struct {
 	cronWfIf    typed.CronWorkflowInterface
 	log         *log.Entry
 	metrics     *metrics.Metrics
+	// scheduledTimeFunc returns the nearest scheduled time when it is called
+	scheduledTimeFunc ScheduledTimeFunc
 }
 
 func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, metrics *metrics.Metrics) *cronWfOperationCtx {
@@ -48,11 +50,17 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 			"namespace": cronWorkflow.ObjectMeta.Namespace,
 		}),
 		metrics: metrics,
+		// inferScheduledTime returns an inferred scheduled time based on the current time and only works if it is called
+		// within 59 seconds of the scheduled time. Here it acts as a placeholder until it is replaced by a similar
+		// function that returns the last scheduled time deterministically from the cron engine. Since we are only able
+		// to generate the latter function after the job is scheduled, there is a tiny chance that the job is run before
+		// the deterministic function is supplanted. If that happens, we use the infer function as the next-best thing
+		scheduledTimeFunc: inferScheduledTime,
 	}
 }
 
 func (woc *cronWfOperationCtx) Run() {
-	woc.run(inferScheduledRuntime())
+	woc.run(woc.scheduledTimeFunc())
 }
 
 func (woc *cronWfOperationCtx) run(scheduledRuntime time.Time) {
@@ -82,7 +90,7 @@ func (woc *cronWfOperationCtx) run(scheduledRuntime time.Time) {
 	}
 
 	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
-	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now()}
+	woc.cronWf.Status.LastScheduledTime = &runWf.CreationTimestamp
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 }
 
@@ -326,9 +334,11 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 	woc.metrics.CronWorkflowSubmissionError()
 }
 
-func inferScheduledRuntime() time.Time {
+func inferScheduledTime() time.Time {
 	// Infer scheduled runtime by getting current time and zeroing out current seconds and nanoseconds
-	// This works because the finest possible scheduled runtime is a minute
+	// This works because the finest possible scheduled runtime is a minute. It is unlikely to ever be used, since this
+	// function is quickly supplanted by a deterministic function from the cron engine.
+	log.Infof("inferred scheduled time")
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
 }
