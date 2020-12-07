@@ -61,7 +61,7 @@ func NewListCommand() *cobra.Command {
 			errors.CheckError(err)
 		},
 	}
-	command.Flags().BoolVar(&allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
+	command.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
 	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
 	command.Flags().StringVar(&listArgs.finishedAfter, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
