@@ -37,6 +37,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
+
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
 			assert.Equal(t, "access denied for namespace \"argo\" to un-managed namespace \"unmanaged\"", status.Message)
@@ -118,11 +119,15 @@ spec:
 		})
 }
 
-func (s *MultiClusterSuite) TestTwoClusters() {
+func (s *MultiClusterSuite) TestOtherClusters() {
+	defer func() {
+		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "logs", "multi-cluster", "-c", "main"}, fixtures.NoError)
+		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "logs", "multi-cluster", "-c", "wait"}, fixtures.NoError)
+	}()
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: multi-cluster-
+  name: multi-cluster
   labels:
     argo-e2e: true
 spec:
@@ -131,16 +136,6 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      dag:
-        tasks:
-         - name: this
-           template: this
-         - name: other
-           template: other
-    - name: this
-      container:
-        image: argoproj/argosay:v2
-    - name: other
       clusterName: other
       namespace: argo
       container:
