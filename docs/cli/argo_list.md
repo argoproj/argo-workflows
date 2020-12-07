@@ -13,7 +13,7 @@ argo list [flags]
 ### Options
 
 ```
-      --all-namespaces          Show workflows from all namespaces
+  -A, --all-namespaces          Show workflows from all namespaces
       --chunk-size int          Return large lists in chunks rather than all at once. Pass 0 to disable.
       --completed               Show completed workflows. Mutually exclusive with --running.
       --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
