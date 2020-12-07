@@ -94,22 +94,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cron.Stop()
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
-	go func() {
-		// To minimize syncAll and scheduled crons stepping over each other, ensure that syncAll runs every 10 seconds
-		// starting on a x5 second mark (e.g., 15, 35, etc.). Since crons are guaranteed to run on a 00 second mark, this
-		// makes sure that there is always a 5 second time separation between syncAll opeartions and any scheduled cron
-		_, _, sec := time.Now().Clock()
-		singleSec := sec % 10
-		var toWait time.Duration
-		if singleSec <= 5 {
-			toWait = time.Duration(5-singleSec) * time.Second
-		} else {
-			toWait = time.Duration(15-singleSec) * time.Second
-		}
-		time.Sleep(toWait)
-
-		go wait.NonSlidingUntil(cc.syncAll, 10*time.Second, ctx.Done())
-	}()
+	go wait.Until(cc.syncAll, 10*time.Second, ctx.Done())
 
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
