@@ -1,4 +1,6 @@
+import * as moment from 'moment';
 import * as React from 'react';
+import Moment from 'react-moment';
 import {NODE_PHASE, NodePhase} from '../../../models';
 import {formatDuration} from '../duration';
 import {ProgressLine} from './progress-line';
@@ -16,4 +18,20 @@ export const DurationPanel = (props: {phase: NodePhase; duration: number; estima
         );
     }
     return <>{formatDuration(props.duration)}</>;
+};
+
+export const DurationFromNow = ({getDate, frequency = 1000}: {getDate: () => string; frequency?: number}) => {
+    const [now, setNow] = React.useState(moment());
+    const [date, setDate] = React.useState(getDate);
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            setNow(moment());
+            setDate(getDate);
+        }, frequency);
+        return () => {
+            clearInterval(interval);
+        };
+    }, []);
+
+    return <Moment duration={now} date={date} format='dd:hh:mm:ss' />;
 };
