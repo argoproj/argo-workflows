@@ -268,14 +268,14 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Workflow Template</p>
                         <DataLoaderDropdown
-                            load={services.workflowTemplate.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
+                            load={() => services.workflowTemplate.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
                             onChange={value => (this.workflowTemplate = value)}
                         />
                     </div>
                     <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Cron Workflow</p>
                         <DataLoaderDropdown
-                            load={services.cronWorkflows.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
+                            load={() => services.cronWorkflows.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
                             onChange={value => (this.cronWorkflow = value)}
                         />
                     </div>
