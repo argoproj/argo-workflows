@@ -151,8 +151,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
-	if woc.controller.Config.MainContainerResources != nil {
-		mainCtr.Resources = *woc.controller.Config.MainContainerResources
+	if isResourcesSpecified(woc.controller.Config.MainContainer) {
+		mainCtr.Resources = woc.controller.Config.MainContainer.Resources
 	}
 
 	var activeDeadlineSeconds *int64

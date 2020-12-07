@@ -31,8 +31,8 @@ type Config struct {
 	// DEPRECATED: use `executor.resources` in configmap instead
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
-	// MainContainerResources specifies the default resource requirements that will be used for the main container
-	MainContainerResources *apiv1.ResourceRequirements `json:"mainContainerResources,omitempty"`
+	// MainContainer holds container customization for the main container
+	MainContainer *apiv1.Container `json:"mainContainer,omitempty"`
 
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
