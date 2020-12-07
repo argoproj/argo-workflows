@@ -5,11 +5,11 @@ import {CronWorkflow} from '../../../models';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
+import {getNextScheduledTime} from '../../shared/cron';
 import {services} from '../../shared/services';
 import {WorkflowLink} from '../../workflows/components/workflow-link';
 
 const jsonMergePatch = require('json-merge-patch');
-const parser = require('cron-parser');
 
 interface Props {
     cronWorkflow: CronWorkflow;
@@ -89,17 +89,4 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
 
 function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]) {
     return active.reverse().map(activeWf => <WorkflowLink key={activeWf.uid} namespace={activeWf.namespace} name={activeWf.name} />);
-}
-
-function getNextScheduledTime(schedule: string, tz: string): string {
-    let out = '';
-    try {
-        out = parser
-            .parseExpression(schedule, {utc: !tz, tz})
-            .next()
-            .toISOString();
-    } catch (e) {
-        // Do nothing
-    }
-    return out;
 }
