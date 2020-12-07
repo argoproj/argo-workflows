@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -108,30 +109,23 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate() {
-	data, err := json.Marshal(map[string]interface{}{"status": woc.cronWf.Status})
-	if err != nil {
-		woc.log.WithError(err).Error("failed to marshall cron workflow status data")
-		return
-	}
-
-	woc.persist(data)
+	woc.patch(map[string]interface{}{"status": woc.cronWf.Status})
 }
 
 func (woc *cronWfOperationCtx) persistUpdateActiveWorkflows() {
-	data, err := json.Marshal(map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active}})
+	woc.patch(map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active}})
+}
+
+func (woc *cronWfOperationCtx) patch(patch map[string]interface{}) {
+	data, err := json.Marshal(patch)
 	if err != nil {
 		woc.log.WithError(err).Error("failed to marshall cron workflow status.active data")
 		return
 	}
-
-	woc.persist(data)
-}
-
-func (woc *cronWfOperationCtx) persist(data []byte) {
-	err := wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
+	err = wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(woc.cronWf.Name, types.MergePatchType, data)
 		if err != nil {
-			if errors.IsTimeout(err) {
+			if argoerr.IsTransientErr(err) {
 				return false, nil
 			}
 			return false, err
