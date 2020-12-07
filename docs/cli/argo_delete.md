@@ -27,7 +27,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
 
 ```
       --all                     Delete all workflows
-      --all-namespaces          Delete workflows from all namespaces
+  -A, --all-namespaces          Delete workflows from all namespaces
       --completed               Delete completed workflows
       --dry-run                 Do not delete the workflow, only print what would happen
       --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.

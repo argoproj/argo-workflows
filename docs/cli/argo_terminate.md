@@ -1,10 +1,10 @@
 ## argo terminate
 
-terminate zero or more workflows
+terminate zero or more workflows immediately
 
 ### Synopsis
 
-terminate zero or more workflows
+terminate zero or more workflows immediately
 
 ```
 argo terminate WORKFLOW WORKFLOW2... [flags]
