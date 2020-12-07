@@ -57,14 +57,14 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                     <div className='columns small-3 xlarge-12'>
                         <p className='wf-filters-container__title'>Workflow Template</p>
                         <DataLoaderDropdown
-                            load={services.workflowTemplate.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
+                            load={() => services.workflowTemplate.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
                             onChange={value => (this.workflowTemplate = value)}
                         />
                     </div>
                     <div className='columns small-3 xlarge-12'>
                         <p className='wf-filters-container__title'>Cron Workflow</p>
                         <DataLoaderDropdown
-                            load={services.cronWorkflows.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
+                            load={() => services.cronWorkflows.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
                             onChange={value => (this.cronWorkflow = value)}
                         />
                     </div>
