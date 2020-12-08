@@ -6,6 +6,7 @@ import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
+import {CliHelp} from './cli-help';
 
 interface State {
     error?: Error;
@@ -45,6 +46,7 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                             <i className='fa fa-shield-alt' /> Login / Logout
                         </a>
                     </div>
+                    <CliHelp />
                 </div>
             </Page>
         );

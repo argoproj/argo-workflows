@@ -4,6 +4,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {DurationFromNow} from '../../../shared/components/duration-panel';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
@@ -12,6 +13,7 @@ import {ResourceEditor} from '../../../shared/components/resource-editor/resourc
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
+import {getNextScheduledTime} from '../../../shared/cron';
 import {exampleCronWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
@@ -132,9 +134,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
                         <div className='columns small-3'>NAME</div>
-                        <div className='columns small-3'>NAMESPACE</div>
+                        <div className='columns small-2'>NAMESPACE</div>
                         <div className='columns small-2'>SCHEDULE</div>
-                        <div className='columns small-3'>CREATED</div>
+                        <div className='columns small-2'>CREATED</div>
+                        <div className='columns small-2'>NEXT RUN</div>
                     </div>
                     {this.state.cronWorkflows.map(w => (
                         <Link
@@ -143,16 +146,20 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             to={uiUrl(`cron-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
                             <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
                             <div className='columns small-3'>{w.metadata.name}</div>
-                            <div className='columns small-3'>{w.metadata.namespace}</div>
+                            <div className='columns small-2'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>{w.spec.schedule}</div>
-                            <div className='columns small-3'>
+                            <div className='columns small-2'>
                                 <Timestamp date={w.metadata.creationTimestamp} />
+                            </div>
+                            <div className='columns small-2'>
+                                {w.spec.suspend ? '' : <DurationFromNow getDate={() => getNextScheduledTime(w.spec.schedule, w.spec.timezone)} />}
                             </div>
                         </Link>
                     ))}
                 </div>
                 <p>
-                    <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. <ExampleManifests />. {learnMore}.
+                    <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. Next scheduled run assumes workflow-controller is in UTC.{' '}
+                    <ExampleManifests />. {learnMore}.
                 </p>
             </>
         );
