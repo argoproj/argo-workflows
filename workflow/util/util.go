@@ -1038,7 +1038,8 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 	return ""
 }
 
-func removeDuplicates(strSlice []string) []string {
+// RemoveDuplicates removes duplicate strings from slice
+func RemoveDuplicates(strSlice []string) []string {
 	keys := make(map[string]bool)
 	outputList := []string{}
 	for _, strEntry := range strSlice {
@@ -1050,11 +1051,11 @@ func removeDuplicates(strSlice []string) []string {
 	return outputList
 }
 
-// AddNostnamesToAffinity will add unique hostNames to existing matchExpressions in targetAffinity with
+// AddHostnamesToAffinity will add unique hostNames to existing matchExpressions in targetAffinity with
 // key hostSelector or insert new matchExpressions with operator NotIn.
-func AddNostnamesToAffinity(hostSelector string, hostNames []string, targetAffinity *apiv1.Affinity) error {
+func AddHostnamesToAffinity(hostSelector string, hostNames []string, targetAffinity *apiv1.Affinity) *apiv1.Affinity {
 	if len(hostNames) == 0 {
-		return nil
+		return targetAffinity
 	}
 
 	nodeSelectorRequirement := apiv1.NodeSelectorRequirement{
@@ -1063,7 +1064,7 @@ func AddNostnamesToAffinity(hostSelector string, hostNames []string, targetAffin
 		Values:   hostNames,
 	}
 
-	sourceAffinity := apiv1.Affinity{
+	sourceAffinity := &apiv1.Affinity{
 		NodeAffinity: &apiv1.NodeAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
 				NodeSelectorTerms: []apiv1.NodeSelectorTerm{
@@ -1078,29 +1079,28 @@ func AddNostnamesToAffinity(hostSelector string, hostNames []string, targetAffin
 	}
 
 	if targetAffinity == nil {
-		targetAffinity = &sourceAffinity
-		return nil
+		targetAffinity = sourceAffinity
+		return targetAffinity
 	}
 
-	targetNodeAffinity := targetAffinity.NodeAffinity
-	sourceNodeAffinity := sourceAffinity.NodeAffinity
-
-	if targetNodeAffinity == nil {
-		targetNodeAffinity = sourceNodeAffinity
-		return nil
+	if targetAffinity.NodeAffinity == nil {
+		targetAffinity.NodeAffinity = sourceAffinity.NodeAffinity
+		return targetAffinity
 	}
 
-	targetExecution := targetNodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
-	sourceExecution := sourceNodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+	targetExecution := targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+	sourceExecution := sourceAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
 
 	if targetExecution == nil {
-		targetExecution = sourceExecution
-		return nil
+		targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution =
+			sourceAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+		return targetAffinity
 	}
 
 	if len(targetExecution.NodeSelectorTerms) == 0 {
-		targetExecution.NodeSelectorTerms = sourceExecution.NodeSelectorTerms
-		return nil
+		targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms =
+			sourceAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+		return targetAffinity
 	}
 
 	// find if specific NodeSelectorTerm exists and append
@@ -1108,29 +1108,23 @@ func AddNostnamesToAffinity(hostSelector string, hostNames []string, targetAffin
 		if len(targetExecution.NodeSelectorTerms[i].MatchExpressions) == 0 {
 			targetExecution.NodeSelectorTerms[i].MatchExpressions =
 				append(targetExecution.NodeSelectorTerms[i].MatchExpressions, sourceExecution.NodeSelectorTerms[0].MatchExpressions[0])
-			return nil
+			return targetAffinity
 		}
 
-		// found := false
 		for j := range targetExecution.NodeSelectorTerms[i].MatchExpressions {
 			if targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Key == hostSelector &&
 				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Operator == apiv1.NodeSelectorOpNotIn {
 				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values =
 					append(targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values, hostNames...)
-				//found = true
-				// break
 				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values =
-					removeDuplicates(targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values)
-				return nil
+					RemoveDuplicates(targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values)
+				return targetAffinity
 			}
 		}
-
-		// if !found {
-		// }
 	}
 
 	targetExecution.NodeSelectorTerms[0].MatchExpressions =
 		append(targetExecution.NodeSelectorTerms[0].MatchExpressions, nodeSelectorRequirement)
 
-	return nil
+	return targetAffinity
 }

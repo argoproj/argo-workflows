@@ -1690,13 +1690,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			node = nil
 
 			if lastChildNode != nil {
-				hostNames := woc.addFailHost(retryNodeName, lastChildNode.Name)
-				hostLabel := woc.retryStrategy(processedTmpl).ScheduleOnDifferentHostNodesLabel
-				if hostLabel != nil {
-					if err := wfutil.AddNostnamesToAffinity(*hostLabel, hostNames, processedTmpl.Affinity); err != nil {
-						return node, err
-					}
-				}
+				processedTmpl = woc.appendFailHostsToAffinity(processedTmpl, retryNodeName, lastChildNode.Name)
 			}
 
 			localParams := make(map[string]string)
@@ -1786,6 +1780,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	return node, nil
+}
+
+func (woc *wfOperationCtx) appendFailHostsToAffinity(tmpl *wfv1.Template, retryNodeName, lastChildNodeName string) *wfv1.Template {
+	hostNames := woc.addFailHost(retryNodeName, lastChildNodeName)
+	hostLabel := woc.retryStrategy(tmpl).ScheduleOnDifferentHostNodesLabel
+	if hostLabel != nil && len(hostNames) > 0 {
+		tmpl.Affinity = wfutil.AddHostnamesToAffinity(*hostLabel, hostNames, tmpl.Affinity)
+	}
+	return tmpl
 }
 
 // Checks if the template has exceeded its deadline
@@ -2607,6 +2610,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
+// addFailHost appends a nodeID from child node to FailHostNodeNames parent node
 func (woc *wfOperationCtx) addFailHost(parent string, child string) []string {
 	childNode := woc.wf.GetNodeByName(child)
 	if childNode == nil || childNode.HostNodeName == "" {
