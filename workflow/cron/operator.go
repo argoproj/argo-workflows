@@ -99,7 +99,7 @@ func (woc *cronWfOperationCtx) run(scheduledRuntime time.Time) {
 	}
 
 	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
-	woc.cronWf.Status.LastScheduledTime = &runWf.CreationTimestamp
+	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: scheduledRuntime}
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 }
 
