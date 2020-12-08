@@ -183,6 +183,16 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				log.Infof("%s released a lock from %s", resourceKey, holding.Semaphore)
 			}
 		}
+
+		// Remove the pending Workflow level semaphore keys
+		for _, waiting := range wf.Status.Synchronization.Semaphore.Waiting {
+			syncLockHolder := cm.syncLockMap[waiting.Semaphore]
+			if syncLockHolder == nil {
+				continue
+			}
+			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
+			syncLockHolder.removeFromQueue(resourceKey)
+		}
 		wf.Status.Synchronization.Semaphore = nil
 	}
 
@@ -197,6 +207,16 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			syncLockHolder.release(resourceKey)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
 			log.Infof("%s released a lock from %s", resourceKey, holding.Mutex)
+		}
+
+		// Remove the pending Workflow level mutex keys
+		for _, waiting := range wf.Status.Synchronization.Mutex.Waiting {
+			syncLockHolder := cm.syncLockMap[waiting.Mutex]
+			if syncLockHolder == nil {
+				continue
+			}
+			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
+			syncLockHolder.removeFromQueue(resourceKey)
 		}
 		wf.Status.Synchronization.Mutex = nil
 	}
