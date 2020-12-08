@@ -58,33 +58,6 @@ func GetSecrets(clientSet kubernetes.Interface, namespace, name, key string) ([]
 	return val, nil
 }
 
-// GetConfigMaps retrieves a configmap value and memoizes the result
-func GetConfigMaps(clientSet kubernetes.Interface, namespace, name, key string) (string, error) {
-
-	configMapsIf := clientSet.CoreV1().ConfigMaps(namespace)
-	var configMap *apiv1.ConfigMap
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		configMap, err = configMapsIf.Get(name, metav1.GetOptions{})
-		if err != nil {
-			log.Warnf("Failed to get config map '%s': %v", name, err)
-			if !errorsutil.IsTransientErr(err) {
-				return false, err
-			}
-			return false, nil
-		}
-		return true, nil
-	})
-	if err != nil {
-		return "", errors.InternalWrapError(err)
-	}
-	val, ok := configMap.Data[key]
-	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "config map '%s' does not have the key '%s'", name, key)
-	}
-	return val, nil
-}
-
 // Write the Terminate message in pod spec
 func WriteTeriminateMessage(message string) {
 	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0644)
