@@ -2259,7 +2259,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"failHostNodeNames": {
 						SchemaProps: spec.SchemaProps{
-							Description: "HostNodeNames name of the Kubernetes node on which the Pod failed, if applicable",
+							Description: "FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2751,7 +2751,7 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 					},
 					"scheduleOnDifferentHostNodesLabel": {
 						SchemaProps: spec.SchemaProps{
-							Description: "If exists, ScheduleOnDifferentHostNodes prevents of running step on the same host Step won't run on the host with this hostname label, e.g. kubernetes.io/hostname or k3s.io/hostname",
+							Description: "If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. \"kubernetes.io/hostname\" or \"k3s.io/hostname\"",
 							Type:        []string{"string"},
 							Format:      "",
 						},

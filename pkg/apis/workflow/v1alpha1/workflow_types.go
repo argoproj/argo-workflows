@@ -1312,7 +1312,7 @@ type RetryStrategy struct {
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 
-	// If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same hosta
+	// If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host
 	// Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. "kubernetes.io/hostname" or "k3s.io/hostname"
 	ScheduleOnDifferentHostNodesLabel *string `json:"scheduleOnDifferentHostNodesLabel,omitempty" protobuf:"bytes,4,opt,name=scheduleOnDifferentHostNodesLabel"`
 }
@@ -1547,7 +1547,7 @@ type NodeStatus struct {
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
 
-	// HostNodeNames name of the Kubernetes node on which the Pod failed, if applicable
+	// FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable
 	FailHostNodeNames []string `json:"failHostNodeNames,omitempty" protobuf:"bytes,27,rep,name=failHostNodeNames"`
 }
 

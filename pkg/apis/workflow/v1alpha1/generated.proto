@@ -698,7 +698,7 @@ message NodeStatus {
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
 
-  // HostNodeNames name of the Kubernetes node on which the Pod failed, if applicable
+  // FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable
   repeated string failHostNodeNames = 27;
 }
 
@@ -863,7 +863,7 @@ message RetryStrategy {
   // Backoff is a backoff strategy
   optional Backoff backoff = 3;
 
-  // If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same hosta
+  // If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host
   // Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. "kubernetes.io/hostname" or "k3s.io/hostname"
   optional string scheduleOnDifferentHostNodesLabel = 4;
 }

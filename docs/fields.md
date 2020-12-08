@@ -1570,7 +1570,7 @@ RetryStrategy provides controls on how to retry a workflow step
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
 |`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
-|`scheduleOnDifferentHostNodesLabel`|`string`|If exists, ScheduleOnDifferentHostNodes prevents of running step on the same host Step won't run on the host with this hostname label, e.g. kubernetes.io/hostname or k3s.io/hostname|
+|`scheduleOnDifferentHostNodesLabel`|`string`|If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. "kubernetes.io/hostname" or "k3s.io/hostname"|
 
 ## Synchronization
 
@@ -2007,7 +2007,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
-|`failHostNodeNames`|`Array< string >`|HostNodeNames name of the Kubernetes node on which the Pod failed, if applicable|
+|`failHostNodeNames`|`Array< string >`|FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|

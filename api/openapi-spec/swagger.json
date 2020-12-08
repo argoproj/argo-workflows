@@ -3253,7 +3253,7 @@
           "type": "integer"
         },
         "failHostNodeNames": {
-          "description": "HostNodeNames name of the Kubernetes node on which the Pod failed, if applicable",
+          "description": "FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable",
           "type": "array",
           "items": {
             "type": "string"
@@ -3594,7 +3594,7 @@
           "type": "string"
         },
         "scheduleOnDifferentHostNodesLabel": {
-          "description": "If exists, ScheduleOnDifferentHostNodes prevents of running step on the same host Step won't run on the host with this hostname label, e.g. kubernetes.io/hostname or k3s.io/hostname",
+          "description": "If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. \"kubernetes.io/hostname\" or \"k3s.io/hostname\"",
           "type": "string"
         }
       }
