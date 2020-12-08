@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,8 +20,10 @@ type MultiClusterSuite struct {
 
 func (s *MultiClusterSuite) SetupSuite() {
 	s.E2ESuite.SetupSuite()
-	s.Given().
-		Exec("k3d", []string{"image", "import", "--cluster=other", "argoproj/argoexec:latest", "argoproj/argosay:v2"}, fixtures.NoError)
+	if os.Getenv("CI") == "true" {
+		s.Given().
+			Exec("k3d", []string{"image", "import", "--cluster=other", "argoproj/argoexec:latest", "argoproj/argosay:v2"}, fixtures.NoError)
+	}
 }
 
 func (s *MultiClusterSuite) TestNamespaceUnmanaged() {
@@ -69,7 +72,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "access denied for namespace \"argo\" to cluster-namespace \"default/default\"", status.Message)
+			assert.Equal(t, "access denied for namespace \"argo\" to cluster-namespace \"./default\"", status.Message)
 		})
 }
 
