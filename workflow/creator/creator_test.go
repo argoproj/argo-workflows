@@ -29,4 +29,11 @@ func TestLabel(t *testing.T) {
 			assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyCreatorEmail], "'@' is replaced by '.at.'")
 		}
 	})
+	t.Run("TooLongHyphen", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("-", 63) + "y"}}), wf)
+		if assert.NotEmpty(t, wf.Labels) {
+			assert.Equal(t, "y", wf.Labels[common.LabelKeyCreator])
+		}
+	})
 }
