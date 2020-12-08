@@ -100,7 +100,7 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config DEFAULT_REQUEUE_TIME=5s make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
