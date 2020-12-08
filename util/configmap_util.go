@@ -1,13 +1,14 @@
 package util
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/errors"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/retry"
 )
@@ -32,12 +33,12 @@ func GetConfigMaps(clientSet kubernetes.Interface, namespace, name, key string) 
 	})
 
 	if err != nil {
-		return "", errors.Errorf(errors.CodeBadRequest, "Config map not found: %w", err)
+		return "", fmt.Errorf("Config map not found: %w", err)
 	}
 
 	val, ok := configMap.Data[key]
 	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "Config map '%s' does not have the key '%s'", name, key)
+		return "", fmt.Errorf("Config map '%s' does not have the key '%s'", name, key)
 	}
 	return val, nil
 }
