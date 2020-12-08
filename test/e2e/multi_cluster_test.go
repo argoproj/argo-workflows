@@ -159,6 +159,6 @@ spec:
 		})
 }
 
-func  TestMultiClusterSuite(t *testing.T) {
+func TestMultiClusterSuite(t *testing.T) {
 	suite.Run(t, new(MultiClusterSuite))
 }
