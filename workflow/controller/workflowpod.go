@@ -9,12 +9,15 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+
+	"github.com/argoproj/argo/workflow/util"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
@@ -24,7 +27,6 @@ import (
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
 )
 
 // Reusable k8s pod spec portions used in workflow pods
@@ -151,7 +153,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
-	if isResourcesSpecified(woc.controller.Config.MainContainer) {
+	// Allow customization of main container resources. Note that podSpecPatch in workflow spec
+	// takes precedence over the main container's configuration in controller.
+	if isResourcesSpecified(woc.controller.Config.MainContainer) && !woc.hasPodSpecPatch(tmpl) {
 		mainCtr.Resources = woc.controller.Config.MainContainer.Resources
 	}
 
