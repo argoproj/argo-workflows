@@ -142,7 +142,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
 	workqueue.SetProvider(wfc.metrics)
-	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(&throughputLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 
@@ -696,7 +696,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.AddRateLimited(key)
+						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
+						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
