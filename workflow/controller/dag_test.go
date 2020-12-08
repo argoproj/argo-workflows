@@ -294,6 +294,55 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.True(t, execute)
 }
 
+func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name:    "B",
+			Depends: "A",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is running
+	daemon := true
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {Phase: wfv1.NodeRunning, Daemoned: &daemon},
+			},
+		},
+	}
+
+	// Task B should proceed and execute
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// Task B running
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Phase: wfv1.NodeRunning}
+
+	// Task A failed or error
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task B should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+}
+
 func TestAllEvaluateDependsLogic(t *testing.T) {
 	statusMap := map[common.TaskResult]wfv1.NodePhase{
 		common.TaskResultSucceeded: wfv1.NodeSucceeded,

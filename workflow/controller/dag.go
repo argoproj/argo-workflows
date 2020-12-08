@@ -661,6 +661,11 @@ type TaskResults struct {
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
 // completed and execute means that given the results of its dependencies, this node should execute.
 func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
+	node := d.getTaskNode(taskName)
+	if node != nil {
+		return true, true, nil
+	}
+
 	evalScope := make(map[string]TaskResults)
 
 	for _, taskName := range d.GetTaskDependencies(taskName) {
