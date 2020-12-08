@@ -243,7 +243,11 @@ func (woc *wfOperationCtx) operate() {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
-	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
+	err = woc.setGlobalParameters(woc.execWf.Spec.Arguments)
+	if err != nil {
+		woc.markWorkflowError(fmt.Errorf("failed to set global parameters: %v", err))
+		return
+	}
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
@@ -462,7 +466,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
-func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) {
+func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) error {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
@@ -480,7 +484,17 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		if param.Value != nil {
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
+			configMapValue, err := util.GetConfigMaps(woc.controller.kubeclientset, woc.wf.GetNamespace(), param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+			if err != nil {
+				return err
+			}
+			woc.globalParams["workflow.parameters."+param.Name] = configMapValue
+		} else {
+			return fmt.Errorf("failed to set global parameter: %s", param.Name)
+		}
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
@@ -493,6 +507,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			woc.globalParams["workflow.outputs.parameters."+param.Name] = param.Value.String()
 		}
 	}
+	return nil
 }
 
 // persistUpdates will update a workflow with any updates made during workflow operation.
