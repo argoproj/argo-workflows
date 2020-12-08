@@ -127,6 +127,7 @@ spec:
 }
 
 func (s *MultiClusterSuite) TestOtherClusters() {
+	s.Assert().Equal("pns", s.Config.ContainerRuntimeExecutor)
 	defer func() {
 		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "get", "pod", "-o", "yaml"}, fixtures.NoError)
 		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "get", "events"}, fixtures.NoError)
@@ -141,6 +142,7 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  # disable artifacts as we don't want to confuse the test
   artifactRepositoryRef:
     key: empty
   entrypoint: main

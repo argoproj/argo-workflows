@@ -55,10 +55,11 @@ jobs:
             containerRuntimeExecutor: k8sapi
           - test: test-cli
             containerRuntimeExecutor: pns
+          # counter-intuitively, this suite will work on pns, won't work on docker
+          - test: test-e2e-mc
+            containerRuntimeExecutor: docker
           - test: test-e2e-mc
             containerRuntimeExecutor: k8sapi
-          - test: test-e2e-mc
-            containerRuntimeExecutor: pns
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi
           - test: test-e2e-cron
