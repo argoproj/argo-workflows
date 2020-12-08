@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	envutil "github.com/argoproj/argo/util/env"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -23,6 +24,9 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
+
+// resourceStateCheckInterval is the poll interval used to check the resource state.
+var resourceStateCheckInterval = envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5)
 
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) (string, string, error) {
@@ -165,8 +169,8 @@ func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName 
 	}
 
 	// Start the condition result reader using PollImmediateInfinite
-	// Poll intervall of 5 seconds serves as a backoff intervall in case of immediate result reader failure
-	err := wait.PollImmediateInfinite(time.Second*5,
+	// Poll interval serves as a backoff interval in case of immediate result reader failure
+	err := wait.PollImmediateInfinite(resourceStateCheckInterval,
 		func() (bool, error) {
 			isErrRetry, err := checkResourceState(resourceNamespace, resourceName, successReqs, failReqs)
 
