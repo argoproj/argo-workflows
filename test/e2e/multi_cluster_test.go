@@ -129,6 +129,7 @@ spec:
 func (s *MultiClusterSuite) TestOtherClusters() {
 	defer func() {
 		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "get", "pod", "-o", "yaml"}, fixtures.NoError)
+		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "get", "events"}, fixtures.NoError)
 		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "logs", "multi-cluster"}, fixtures.NoError)
 		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "logs", "multi-cluster", "-c", "main"}, fixtures.NoError)
 		s.Given().Exec("kubectl", []string{"--context=k3d-other", "-nargo", "logs", "multi-cluster", "-c", "wait"}, fixtures.NoError)
