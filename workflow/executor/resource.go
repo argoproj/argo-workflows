@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	envutil "github.com/argoproj/argo/util/env"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	envutil "github.com/argoproj/argo/util/env"
 	"github.com/argoproj/argo/workflow/common"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
