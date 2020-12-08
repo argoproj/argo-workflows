@@ -16,9 +16,9 @@ import (
 func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, namespace string) (map[string]*rest.Config, map[wfv1.ClusterName]kubernetes.Interface, error) {
 	restConfigs := map[string]*rest.Config{}
 	if restConfig != nil {
-		restConfigs[wfv1.DefaultClusterName] = restConfig
+		restConfigs[wfv1.ThisCluster] = restConfig
 	}
-	kubernetesInterfaces := map[wfv1.ClusterName]kubernetes.Interface{wfv1.DefaultClusterName: kubeclientset}
+	kubernetesInterfaces := map[wfv1.ClusterName]kubernetes.Interface{wfv1.ThisCluster: kubeclientset}
 	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get("clusters", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 	} else if err != nil {

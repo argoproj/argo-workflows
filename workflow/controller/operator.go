@@ -1128,7 +1128,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 
 	node.ClusterName = pod.Labels[common.LabelKeyClusterName]
-	node.Namespace = wfv1.NamespaceDefaultToEmpty(pod.Namespace, woc.wf.Namespace)
+	node.Namespace = wfv1.NamespaceOtherAsEmpty(pod.Namespace, woc.wf.Namespace)
 
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
@@ -1354,7 +1354,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset[wfv1.DefaultClusterName].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset[wfv1.ThisCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -1431,7 +1431,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset[wfv1.DefaultClusterName].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset[wfv1.ThisCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -2993,7 +2993,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		return nil
 	}
 
-	pdb, err := woc.controller.kubeclientset[wfv1.DefaultClusterName].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
+	pdb, err := woc.controller.kubeclientset[wfv1.ThisCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
@@ -3018,7 +3018,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.kubeclientset[wfv1.DefaultClusterName].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+	_, err = woc.controller.kubeclientset[wfv1.ThisCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
 		return err
 	}
@@ -3032,7 +3032,7 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		return nil
 	}
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.kubeclientset[wfv1.DefaultClusterName].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		err := woc.controller.kubeclientset[wfv1.ThisCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !errorsutil.IsTransientErr(err) {

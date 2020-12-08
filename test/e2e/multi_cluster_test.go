@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -16,6 +15,12 @@ import (
 
 type MultiClusterSuite struct {
 	fixtures.E2ESuite
+}
+
+func (s *MultiClusterSuite) SetupSuite() {
+	s.E2ESuite.SetupSuite()
+	s.Given().
+		Exec("k3d", []string{"image", "import", "--cluster=other", "argoproj/argoexec:latest", "argoproj/argosay:v2"}, fixtures.NoError)
 }
 
 func (s *MultiClusterSuite) TestNamespaceUnmanaged() {
@@ -37,7 +42,6 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
-
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
 			assert.Equal(t, "access denied for namespace \"argo\" to un-managed namespace \"unmanaged\"", status.Message)
@@ -143,23 +147,18 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			thisNode := status.Nodes.FindByDisplayName("this")
+			thisNode := status.Nodes.FindByDisplayName("multi-cluster")
 			if assert.NotNil(t, thisNode) {
-				assert.Empty(t, thisNode.ClusterName)
+				assert.NotEmpty(t, thisNode.ClusterName)
 				assert.Empty(t, thisNode.Namespace)
-			}
-			otherNode := status.Nodes.FindByDisplayName("other")
-			if assert.NotNil(t, otherNode) {
-				assert.NotEmpty(t, otherNode.ClusterName)
-				assert.Empty(t, otherNode.Namespace)
 			}
 		})
 }
 
-func TestMultiClusterSuite(t *testing.T) {
+func  TestMultiClusterSuite(t *testing.T) {
 	suite.Run(t, new(MultiClusterSuite))
 }

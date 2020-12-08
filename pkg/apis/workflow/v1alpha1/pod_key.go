@@ -9,7 +9,7 @@ import (
 type PodKey = string
 
 func NewPodKey(clusterName ClusterName, namespace, podName string) PodKey {
-	return fmt.Sprintf("%s/%s/%s", ClusterNameOrDefault(clusterName), namespace, podName)
+	return fmt.Sprintf("%s/%s/%s", ClusterNameOrThis(clusterName), namespace, podName)
 }
 
 func SplitPodKey(key PodKey) (clusterName ClusterName, namespace string, name string) {

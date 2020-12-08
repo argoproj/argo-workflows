@@ -17,7 +17,8 @@ data:
     - name: argo
       rules:
         - clusterNames:
-            - default
+            # "." is a special name which mean's the controller's cluster
+            - .
           namespaces:
             - argo
             # tests run in managed-namespace mode, so this will not be allowed

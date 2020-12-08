@@ -1,15 +1,15 @@
 package v1alpha1
 
-func NamespaceOrDefault(namespace, defaultNamespace string) string {
-	if namespace != "" {
-		return namespace
+func NamespaceOrOther(a, b string) string {
+	if a != "" {
+		return a
 	}
-	return defaultNamespace
+	return b
 }
 
-func NamespaceDefaultToEmpty(namespace, defaultNamespace string) string {
-	if namespace == defaultNamespace {
+func NamespaceOtherAsEmpty(a, b string) string {
+	if a == b {
 		return ""
 	}
-	return namespace
+	return a
 }

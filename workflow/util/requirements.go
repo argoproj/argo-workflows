@@ -9,7 +9,7 @@ import (
 )
 
 func ClusterNameRequirement(clusterName wfv1.ClusterName) labels.Requirement {
-	if clusterName != wfv1.DefaultClusterName {
+	if clusterName != wfv1.ThisCluster {
 		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{clusterName})
 		return *r
 	} else {

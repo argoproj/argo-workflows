@@ -50,13 +50,16 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	logCtx := log.WithFields(log.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()})
 
-	// Keep a track of those we are logging, we also have a mutex to guard reads. Even if we stop streaming, we
-	// keep a marker here so we don't start again.
-	clusterNamespaces := sync.Map{} // make(map[wfv1.ClusterNamespaceKey]bool)
-	pods := sync.Map{}              // make(map[wfv1.PodKey]bool)
+	// make sure we don't start logging twice
+	clusterNamespaces := sync.Map{} // map[wfv1.ClusterNamespaceKey]bool
+	pods := sync.Map{}              // map[wfv1.PodKey]bool
+
+	// wait for everything to finish
 	var wg sync.WaitGroup
+
 	// A non-blocking channel for log entries to go down.
 	unsortedEntries := make(chan logEntry, 128)
+
 	logOptions := req.GetLogOptions()
 	if logOptions == nil {
 		logOptions = &corev1.PodLogOptions{}
@@ -155,9 +158,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				})
 				for _, pod := range list.Items {
 					if pod.Status.Phase != corev1.PodPending {
-						logPod(wfv1.ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
+						logPod(wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
 					}
 				}
+				// TODO - retry watcher? resource version too old?
 				retryWatcher, err := retrywatch.NewRetryWatcher(list.ResourceVersion, &cache.ListWatch{
 					WatchFunc: func(x metav1.ListOptions) (watch.Interface, error) {
 						x.LabelSelector = listOptions.LabelSelector
@@ -181,7 +185,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							return apierr.FromObject(event.Object)
 						}
 						if pod.Status.Phase != corev1.PodPending {
-							logPod(wfv1.ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
+							logPod(wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
 						}
 					}
 				}
@@ -199,7 +203,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		}
 		for clusterName, namespaces := range wf.Status.Nodes.GetClusterNamespaces() {
 			for namespace := range namespaces {
-				logClusterNamespace(wfv1.ClusterNameOrDefault(clusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOrDefault(namespace, wf.Namespace))
+				logClusterNamespace(wfv1.ClusterNameOrThis(clusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOrOther(namespace, wf.Namespace))
 			}
 		}
 		return nil

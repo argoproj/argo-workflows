@@ -22,7 +22,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	}
 	clusterName, ok := pod.Labels[common.LabelKeyClusterName]
 	if !ok {
-		clusterName = wfv1.DefaultClusterName
+		clusterName = wfv1.ThisCluster
 	}
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
@@ -117,8 +117,8 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 			continue
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
-		clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
-		namespace := wfv1.NamespaceOrDefault(tmpl.Namespace, woc.wf.Namespace)
+		clusterName := wfv1.ClusterNameOrThis(tmpl.ClusterName)
+		namespace := wfv1.NamespaceOrOther(tmpl.Namespace, woc.wf.Namespace)
 		err := woc.updateExecutionControl(clusterName, namespace, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {
 			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)

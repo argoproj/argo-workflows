@@ -253,7 +253,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset[wfv1.DefaultClusterName].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.kubeclientset[wfv1.ThisCluster].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -290,7 +290,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset[wfv1.DefaultClusterName].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
+			return wfc.kubeclientset[wfv1.ThisCluster].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
 		},
 	})
 	if err != nil {
@@ -339,11 +339,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.DefaultClusterName], "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.ThisCluster], "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.DefaultClusterName], "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.ThisCluster], "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.DefaultClusterName], "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.ThisCluster], "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {

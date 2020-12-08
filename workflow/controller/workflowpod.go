@@ -132,8 +132,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
-	clusterName := wfv1.ClusterNameOrDefault(tmpl.ClusterName)
-	namespace := wfv1.NamespaceOrDefault(tmpl.Namespace, woc.wf.Namespace)
+	clusterName := wfv1.ClusterNameOrThis(tmpl.ClusterName)
+	namespace := wfv1.NamespaceOrOther(tmpl.Namespace, woc.wf.Namespace)
 
 	err := woc.enforceClusterNamespaceAccessControl(clusterName, namespace)
 	if err != nil {
@@ -202,7 +202,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		},
 	}
 
-	if clusterName == wfv1.DefaultClusterName {
+	if clusterName == wfv1.ThisCluster {
 		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		}
@@ -237,7 +237,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	if clusterName != wfv1.DefaultClusterName {
+	if clusterName != wfv1.ThisCluster {
 		// Only annotate if not default cluster. This is important for historical reasons.
 		pod.Labels[common.LabelKeyClusterName] = clusterName
 	}
@@ -405,7 +405,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, wfv1.ClusterNameOrDefault(created.Labels[common.LabelKeyClusterName]), created.Namespace, created.Name)
+	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, wfv1.ClusterNameOrThis(created.Labels[common.LabelKeyClusterName]), created.Namespace, created.Name)
 	woc.activePods++
 	return created, nil
 }
@@ -1088,7 +1088,7 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		clusterName := wfv1.ClusterNameOrDefault(pod.Labels[common.LabelKeyClusterName])
+		clusterName := wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName])
 		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset[clusterName], pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
