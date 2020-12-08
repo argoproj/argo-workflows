@@ -759,7 +759,7 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 // validateArgumentsValues ensures that all arguments have parameter values or artifact locations
 func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, param := range arguments.Parameters {
-		if param.Value == nil {
+		if param.ValueFrom == nil && param.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 		}
 		if param.Enum != nil {
