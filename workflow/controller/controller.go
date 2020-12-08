@@ -150,7 +150,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.Add(key) })
+	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.AddRateLimited(key) })
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -256,7 +256,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
+		wfc.wfQueue.AddRateLimited(key)
 	}
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
@@ -323,6 +323,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Errorf("failed to convert to workflow from unstructured: %v", err)
 			continue
 		}
+		// should this use AddRateLimited?
 		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
 	}
 }
@@ -659,9 +660,7 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) error {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return fmt.Errorf("Watch returned pod unrelated to any workflow")
 	}
-	// add this change after 1s - this reduces the number of workflow reconciliations -
-	//with each reconciliation doing more work
-	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, enoughTimeForInformerSync)
+	wfc.wfQueue.AddRateLimited(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return nil
 }
 
@@ -697,7 +696,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
+						wfc.wfQueue.AddRateLimited(key)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
@@ -710,7 +709,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
 					if err == nil {
-						wfc.wfQueue.Add(key)
+						wfc.wfQueue.AddRateLimited(key)
 						priority, creation := getWfPriority(new)
 						wfc.throttler.Add(key, priority, creation)
 					}
@@ -721,7 +720,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
-						wfc.wfQueue.Add(key)
+						wfc.wfQueue.AddRateLimited(key)
 						wfc.throttler.Remove(key)
 					}
 				},

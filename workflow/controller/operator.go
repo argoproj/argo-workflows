@@ -119,7 +119,6 @@ var (
 // for before requeuing the workflow onto the workqueue.
 var (
 	maxOperationTime   = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
-	defaultRequeueTime = envutil.LookupEnvDurationOr("DEFAULT_REQUEUE_TIME", maxOperationTime/2)
 )
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
@@ -277,7 +276,7 @@ func (woc *wfOperationCtx) operate() {
 		// Workflow will not be requeued if workflow steps are in pending state.
 		// Workflow needs to requeue on its deadline,
 		if woc.workflowDeadline != nil {
-			woc.requeue(time.Until(*woc.workflowDeadline))
+			woc.requeue()
 		}
 
 		if woc.execWf.Spec.Metrics != nil {
@@ -330,7 +329,7 @@ func (woc *wfOperationCtx) operate() {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(defaultRequeueTime)
+			woc.requeue()
 			return
 		}
 		err = fmt.Errorf("pvc create error: %w", err)
@@ -681,13 +680,13 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 }
 
 // requeue this workflow onto the workqueue for later processing
-func (woc *wfOperationCtx) requeue(afterDuration time.Duration) {
+func (woc *wfOperationCtx) requeue() {
 	key, err := cache.MetaNamespaceKeyFunc(woc.wf)
 	if err != nil {
 		woc.log.Errorf("Failed to requeue workflow %s: %v", woc.wf.ObjectMeta.Name, err)
 		return
 	}
-	woc.controller.wfQueue.AddAfter(key, afterDuration)
+	woc.controller.wfQueue.AddRateLimited(key)
 }
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
@@ -769,7 +768,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 		// See if we have waited past the deadline
 		if time.Now().Before(waitingDeadline) {
-			woc.requeue(timeToWait)
+			woc.requeue()
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
@@ -1590,7 +1589,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Check if we took too long operating on this workflow and immediately return if we did
 	if time.Now().UTC().After(woc.deadline) {
 		woc.log.Warnf("Deadline exceeded")
-		woc.requeue(defaultRequeueTime)
+		woc.requeue()
 		return node, ErrDeadlineExceeded
 	}
 
@@ -2335,7 +2334,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
 	if errorsutil.IsTransientErr(err) {
 		// Our error was most likely caused by a lack of resources.
-		woc.requeue(defaultRequeueTime)
+		woc.requeue()
 		return woc.markNodePending(nodeName, err), nil
 	}
 	return nil, err
@@ -2651,7 +2650,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	}
 
 	if requeueTime != nil {
-		woc.requeue(time.Until(*requeueTime))
+		woc.requeue()
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
