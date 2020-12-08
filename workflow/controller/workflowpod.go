@@ -151,9 +151,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
-	// Allow customization of main container resources. Note that podSpecPatch in workflow spec
-	// takes precedence over the main container's configuration in controller.
-	if isResourcesSpecified(woc.controller.Config.MainContainer) && !woc.hasPodSpecPatch(tmpl) {
+	// Allow customization of main container resources.
+	if isResourcesSpecified(woc.controller.Config.MainContainer) &&
+		// Container resources in workflow spec takes precedence over the main container's configuration in controller.
+		!(isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == "main") {
 		mainCtr.Resources = woc.controller.Config.MainContainer.Resources
 	}
 
