@@ -1229,3 +1229,26 @@ func TestPropagateMaxDuration(t *testing.T) {
 		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
 	}
 }
+
+var podSpecPatch = `
+        containers:
+        - name: main
+          volumeMounts:
+          - name: home
+            mountPath: /home/me
+`
+
+func TestAddPodPatchVolRef(t *testing.T) {
+	assert := assert.New(t)
+	var patchSpec apiv1.PodSpec
+	err := yaml.Unmarshal([]byte(podSpecPatch), &patchSpec)
+	assert.NoError(err)
+	pod := apiv1.Pod{Spec: apiv1.PodSpec{Containers: []apiv1.Container{apiv1.Container{Name: "main"}}}}
+	vols := []apiv1.Volume{apiv1.Volume{Name: "home"}}
+	assert.Len(pod.Spec.Volumes, 0)
+	err = addPodPatchVolRef(patchSpec, &pod, vols, &wfv1.Template{Container: &apiv1.Container{Name: "test"}}, []apiv1.Volume{})
+	assert.NoError(err)
+	assert.Len(pod.Spec.Containers, 1)
+	assert.Len(pod.Spec.Volumes, 1)
+	assert.Equal("home", pod.Spec.Volumes[0].Name)
+}
