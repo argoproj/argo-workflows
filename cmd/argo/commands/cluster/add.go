@@ -25,6 +25,7 @@ func NewAddCommand() *cobra.Command {
 			}
 			clusterName := args[0]
 			startingConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()
+			errors.CheckError(err)
 			contextName := startingConfig.CurrentContext
 			if len(args) == 2 {
 				contextName = args[1]

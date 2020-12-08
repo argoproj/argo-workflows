@@ -20,7 +20,9 @@ info() {
     echo '[INFO] ' "$@"
 }
 
-pf MinIO pod/minio 9000
+if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
+  pf MinIO pod/minio 9000
+fi
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
@@ -43,4 +45,8 @@ fi
 
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
   pf "Workflow Controller" deploy/workflow-controller 9090
+fi
+
+if [[ "$(kubectl -n argo get pod -l app=agent -o name)" != "" ]]; then
+  pf "Agent" deploy/agent 24368
 fi

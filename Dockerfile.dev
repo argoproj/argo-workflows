@@ -97,3 +97,10 @@ COPY argo-server.crt argo-server.crt
 COPY argo-server.key argo-server.key
 COPY argo /bin/
 ENTRYPOINT [ "argo" ]
+
+FROM scratch as agent
+USER 8737
+COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
+COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY agent /bin/
+ENTRYPOINT [ "agent" ]

@@ -44,6 +44,7 @@ endif
 CLI_IMAGE_FILE         := dist/cli-image.marker
 EXECUTOR_IMAGE_FILE    := dist/executor-image.marker
 CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
+AGENT_IMAGE_FILE       := dist/agent-image.marker
 
 # perform static compilation
 STATIC_BUILD          ?= true
@@ -91,6 +92,7 @@ override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
+AGENT_PKGS       := $(shell echo cmd/agent               && go list -f '{{ join .Deps "\n" }}' ./cmd/agent/               | grep 'argoproj/argo' | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | cut -c 26-)
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
@@ -230,6 +232,26 @@ controller-image: $(CONTROLLER_IMAGE_FILE)
 
 $(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
+
+# argoagent
+
+.PHONY: agent-image
+agent-image: $(AGENT_IMAGE_FILE)
+
+$(AGENT_IMAGE_FILE): $(AGENT_PKGS)
+	$(call docker_build,agent,agent,$(AGENT_IMAGE_FILE))
+
+dist/agent: GOARGS = GOOS= GOARCH=
+dist/agent-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/agent-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/agent-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/agent-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
+
+dist/agent: $(AGENT_PKGS)
+	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/agent
+
+dist/agent-%: $(AGENT_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/agent
 
 # argoexec
 
@@ -388,19 +410,22 @@ dist/main-context:
 	kubectl config current-context > dist/main-context
 
 .PHONY: install
-install: /usr/local/bin/kustomize dist/argo dist/main-context
+install: /usr/local/bin/kustomize dist/argo dist/main-context agent-image
 	# create other cluster (if not exists)
-	k3d cluster get other || k3d cluster create other --no-lb --wait --update-default-kubeconfig
+	k3d cluster get other || k3d cluster create other -p "24368:80@loadbalancer" --wait --update-default-kubeconfig
 	# configure other cluster
 	kubectl config use-context k3d-other
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl -n $(KUBE_NAMESPACE) apply -f-
+	k3d image import argoproj/agent:latest -c other
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
 	# configure main cluster
 	kubectl config use-context `cat dist/main-context`
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f -
 	kubectl -n $(KUBE_NAMESPACE) create secret generic clusters --dry-run=client -o yaml | kubectl apply -f -
 	./dist/argo -n $(KUBE_NAMESPACE) cluster add other k3d-other
+	./dist/argo --kubeconfig=cmd/agent/testdata/kubeconfig cluster add agent
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -432,9 +457,9 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: pre-start
 ifeq ($(RUN_MODE),kubernetes)
-pre-start: stop install executor-image controller-image cli-image
+pre-start: stop install agent-image executor-image controller-image cli-image
 else
-pre-start: stop install executor-image controller cli $(GOPATH)/bin/goreman
+pre-start: stop install agent-image executor-image controller cli $(GOPATH)/bin/goreman
 endif
 
 .PHONY: start
