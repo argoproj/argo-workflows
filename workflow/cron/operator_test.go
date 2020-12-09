@@ -78,11 +78,10 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
-	assert.True(t, proceed)
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
 	startingDeadlineSeconds = int64(25)
@@ -91,10 +90,9 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
-	assert.Equal(t, time.Time{}, missedExecutionTime)
-	assert.False(t, proceed)
+	assert.True(t, missedExecutionTime.IsZero())
 
 	// Run the same test in a different timezone
 
@@ -113,11 +111,10 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
-	assert.True(t, proceed)
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
 	startingDeadlineSeconds = int64(25)
@@ -126,10 +123,9 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
-	assert.Equal(t, time.Time{}, missedExecutionTime)
-	assert.False(t, proceed)
+	assert.True(t, missedExecutionTime.IsZero())
 }
 
 type fakeLister struct {
