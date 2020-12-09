@@ -60,7 +60,7 @@ spec:
       - name: num
     container:
       image: alpine:latest
-      command: [sh, -xc]
+      command: [sh, -c]
       args:
       - |
         sleep 1 &&
@@ -84,12 +84,11 @@ spec:
     inputs:
       parameters:
       - name: num
-    script:
+    container:
       image: alpine:latest
-      command: [sh, -x]
-      source: |
-        #!/bin/sh
-        echo $(({{inputs.parameters.num}}/2))
+      command: [sh, -c]
+      args:
+        - echo $(({{inputs.parameters.num}}/2))
 
   # whalesay prints a number using whalesay
   - name: whalesay
