@@ -2442,6 +2442,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 	// need to sort the child node list so that the order of outputs are preserved
 	sort.Sort(loopNodes(childNodes))
 	paramList := make([]map[string]string, 0)
+	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
 	for _, node := range childNodes {
 		if node.Outputs == nil {
@@ -2451,6 +2452,9 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 			param := make(map[string]string)
 			for _, p := range node.Outputs.Parameters {
 				param[p.Name] = p.Value.String()
+				outputParamValueList := outputParamValueLists[p.Name]
+				outputParamValueList = append(outputParamValueList, p.Value.String())
+				outputParamValueLists[p.Name] = outputParamValueList
 			}
 			paramList = append(paramList, param)
 		}
@@ -2478,6 +2482,15 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 	}
 	key := fmt.Sprintf("%s.outputs.parameters", prefix)
 	scope.addParamToScope(key, string(outputsJSON))
+	// Adding per-output aggregated value placeholders
+	for outputName, valueList := range outputParamValueLists {
+		key = fmt.Sprintf("%s.outputs.parameters.%s", prefix, outputName)
+		valueListJSON, err := json.Marshal(valueList)
+		if err != nil {
+			return err
+		}
+		scope.addParamToScope(key, string(valueListJSON))
+	}
 	return nil
 }
 
