@@ -34,6 +34,14 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	}
 	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-2.Succeeded) && !task-3.Succeeded", logic)
 
+	task = &wfv1.DAGTask{Depends: "(task-1 || task-2.AnySucceeded) && !task-3.Succeeded"}
+	deps, logic = GetTaskDependencies(task, ctx)
+	assert.Len(t, deps, 3)
+	for _, dep := range []string{"task-1", "task-2", "task-3"} {
+		assert.Contains(t, deps, dep)
+	}
+	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-2.AnySucceeded) && !task-3.Succeeded", logic)
+
 	task = &wfv1.DAGTask{Depends: "(task-1||(task-2.Succeeded || task-2.Failed))&&!task-3.Failed"}
 	deps, logic = GetTaskDependencies(task, ctx)
 	assert.Len(t, deps, 3)
@@ -44,26 +52,32 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 
 	task = &wfv1.DAGTask{Depends: "(task-1 || task-1.Succeeded) && !task-1.Failed"}
 	deps, logic = GetTaskDependencies(task, ctx)
-	assert.Equal(t, []string{"task-1"}, deps)
+	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-1.Succeeded) && !task-1.Failed", logic)
+
+	task = &wfv1.DAGTask{Depends: "task-1.Succeeded && task-1.AnySucceeded"}
+	deps, logic = GetTaskDependencies(task, ctx)
+	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeItems}, deps)
+	assert.Equal(t, "task-1.Succeeded && task-1.AnySucceeded", logic)
 
 	ctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true}
 	task = &wfv1.DAGTask{Depends: "task-1"}
 	deps, logic = GetTaskDependencies(task, ctx)
-	assert.Equal(t, []string{"task-1"}, deps)
+	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Failed)", logic)
 
 	ctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Error: true}
 	task = &wfv1.DAGTask{Depends: "task-1"}
 	deps, logic = GetTaskDependencies(task, ctx)
-	assert.Equal(t, []string{"task-1"}, deps)
+	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored)", logic)
 
 	ctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true, Error: true}
 	task = &wfv1.DAGTask{Depends: "task-1"}
 	deps, logic = GetTaskDependencies(task, ctx)
-	assert.Equal(t, []string{"task-1"}, deps)
+	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored || task-1.Failed)", logic)
+
 }
 
 func TestValidateTaskResults(t *testing.T) {

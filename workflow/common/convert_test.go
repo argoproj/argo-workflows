@@ -107,6 +107,11 @@ spec:
 	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
 		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
 	}
+
+	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
+	assert.NoError(t, err)
+	wf = ConvertCronWorkflowToWorkflowWithName(&cronWf, "test-name")
+	assert.Equal(t, "test-name", wf.Name)
 }
 
 const workflowTmpl = `

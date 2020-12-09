@@ -284,6 +284,24 @@ status:
   phase: Running
   startedAt: "2020-06-04T19:55:11Z"
 `
+const wfWithMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: hello-world
+ namespace: default
+spec:
+ entrypoint: whalesay
+ synchronization:
+   mutex:
+     name: my-mutex
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]
+`
 
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	var wf wfv1.Workflow
@@ -423,6 +441,14 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
+
+		sema := concurrenyMgr.syncLockMap["default/ConfigMap/my-config/workflow"].(*PrioritySemaphore)
+		assert.NotNil(t, sema)
+		assert.Len(t, sema.pending.items, 2)
+		concurrenyMgr.ReleaseAll(wf1)
+		assert.Len(t, sema.pending.items, 1)
+		concurrenyMgr.ReleaseAll(wf3)
+		assert.Len(t, sema.pending.items, 0)
 	})
 }
 
@@ -588,4 +614,51 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 		concurrenyMgr.Release(&wfs[1], "", wfs[1].Spec.Synchronization)
 		assert.Equal(2, triggerCount)
 	})
+}
+
+func TestMutexWfLevel(t *testing.T) {
+	kube := fake.NewSimpleClientset()
+	syncLimitFunc := GetSyncLimitFunc(kube)
+	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
+		//var nextKey string
+		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+			//nextKey = key
+		})
+		wf := unmarshalWF(wfWithMutex)
+		wf1 := wf.DeepCopy()
+		wf2 := wf.DeepCopy()
+
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wf.Status.Synchronization)
+		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		assert.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
+
+		wf1.Name = "two"
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+
+		wf2.Name = "three"
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+
+		mutex := concurrenyMgr.syncLockMap["default/Mutex/my-mutex"].(*PriorityMutex)
+		assert.NotNil(t, mutex)
+		assert.Len(t, mutex.mutex.pending.items, 2)
+		concurrenyMgr.ReleaseAll(wf1)
+		assert.Len(t, mutex.mutex.pending.items, 1)
+		concurrenyMgr.ReleaseAll(wf2)
+		assert.Len(t, mutex.mutex.pending.items, 0)
+
+	})
+
 }

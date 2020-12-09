@@ -15,6 +15,10 @@ spec:
       containers:
         - name: workflow-controller
           image: argoproj/workflow-controller:latest
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
           command:
             - workflow-controller
           args:
@@ -22,6 +26,12 @@ spec:
             - workflow-controller-configmap
             - --executor-image
             - argoproj/argoexec:latest
+          env:
+            - name: LEADER_ELECTION_IDENTITY
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
       securityContext:
         runAsNonRoot: true
       nodeSelector:

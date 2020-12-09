@@ -113,7 +113,11 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 				if err != nil {
 					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
 				}
-				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: wfv1.AnyStringPtr(result)})
+				data, err := json.Marshal(result)
+				if err != nil {
+					return nil, fmt.Errorf("failed to convert result to JSON \"%s\" expression: %w", p.Name, err)
+				}
+				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: wfv1.AnyStringPtr(wfv1.Item{Value: data})})
 			}
 		}
 		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(wf)
