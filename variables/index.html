@@ -2176,11 +2176,11 @@
 </tr>
 <tr>
 <td><code>steps.&lt;STEPNAME&gt;.outputs.parameters</code></td>
-<td>When the previous step uses 'withItems', this contains a JSON array of the output parameters of each invocation</td>
+<td>When the previous step uses 'withItems' or 'withParams', this contains a JSON array of the output parameter maps of each invocation</td>
 </tr>
 <tr>
 <td><code>steps.&lt;STEPNAME&gt;.outputs.parameters.&lt;NAME&gt;</code></td>
-<td>Output parameter of any previous step</td>
+<td>Output parameter of any previous step. When the previous step uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation</td>
 </tr>
 <tr>
 <td><code>steps.&lt;STEPNAME&gt;.outputs.artifacts.&lt;NAME&gt;</code></td>
@@ -2227,11 +2227,11 @@
 </tr>
 <tr>
 <td><code>tasks.&lt;TASKNAME&gt;.outputs.parameters</code></td>
-<td>When the previous task uses 'withItems', this contains a JSON array of the output parameters of each invocation</td>
+<td>When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter maps of each invocation</td>
 </tr>
 <tr>
 <td><code>tasks.&lt;TASKNAME&gt;.outputs.parameters.&lt;NAME&gt;</code></td>
-<td>Output parameter of any previous task</td>
+<td>Output parameter of any previous task. When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation</td>
 </tr>
 <tr>
 <td><code>tasks.&lt;TASKNAME&gt;.outputs.artifacts.&lt;NAME&gt;</code></td>
