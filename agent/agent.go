@@ -16,6 +16,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/argoproj/argo"
 )
 
 type Agent interface {
@@ -28,7 +30,7 @@ type agent struct {
 	requiredAuthorization string
 }
 
-func NewAgent(kube kubernetes.Interface, namespace string, secure bool) (Agent, error) {
+func New(kube kubernetes.Interface, namespace string, secure bool) (Agent, error) {
 	secret, err := kube.CoreV1().Secrets(namespace).Get("agent", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -61,6 +63,8 @@ func (a *agent) listPods(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer podList.Stop()
+		w.Header().Add("Connection", "keep-alive")
+		w.Header().Add("Transfer-Encoding", "chunked")
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		encoder := json.NewEncoder(w)
@@ -91,6 +95,7 @@ func (a *agent) listPods(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
 func (a *agent) createPod(w http.ResponseWriter, r *http.Request) {
 	pod := &corev1.Pod{}
 	err := json.NewDecoder(r.Body).Decode(pod)
@@ -106,6 +111,7 @@ func (a *agent) createPod(w http.ResponseWriter, r *http.Request) {
 		send(w, http.StatusCreated, pod)
 	}
 }
+
 func (a *agent) deletePods(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	q := r.URL.Query()
@@ -114,9 +120,10 @@ func (a *agent) deletePods(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		sendErr(w, err)
 	} else {
-		send(w, http.StatusCreated, nil)
+		send(w, http.StatusOK, nil)
 	}
 }
+
 func (a *agent) getPod(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pod, err := a.kube.CoreV1().Pods(vars["namespace"]).Get(vars["name"], metav1.GetOptions{})
@@ -126,6 +133,7 @@ func (a *agent) getPod(w http.ResponseWriter, r *http.Request) {
 		send(w, http.StatusOK, pod)
 	}
 }
+
 func (a *agent) updatePod(w http.ResponseWriter, r *http.Request) {
 	pod := &corev1.Pod{}
 	err := json.NewDecoder(r.Body).Decode(pod)
@@ -141,6 +149,7 @@ func (a *agent) updatePod(w http.ResponseWriter, r *http.Request) {
 		send(w, http.StatusOK, pod)
 	}
 }
+
 func (a *agent) patchPod(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -180,9 +189,9 @@ func (a *agent) authenticationMiddleware(next http.HandlerFunc) http.HandlerFunc
 }
 
 func (a *agent) listenAndServe(handlerFunc http.Handler) error {
-	// 24368 = "agent" on an old phone keypad
-	addr := ":24368"
-	log.Infof("starting to listen on %v", addr)
+	// 2468 = "agent" on an old phone keypad
+	addr := ":2468"
+	log.WithFields(log.Fields{"version": argo.GetVersion().Version}).Infof("starting to listen on %v", addr)
 	if a.secure {
 		return http.ListenAndServeTLS(addr, "agent.crt", "agent.key", handlerFunc)
 	} else {
@@ -204,5 +213,7 @@ func (a *agent) Run() error {
 	router.HandleFunc("/api/v1/namespaces/{namespace}/pods/{name}", a.patchPod).Methods("PATCH")
 	router.HandleFunc("/api/v1/namespaces/{namespace}/pods/{name}", a.deletePod).Methods("DELETE")
 
-	return a.listenAndServe(handlers.RecoveryHandler()(handlers.CompressHandler(handlers.LoggingHandler(os.Stdout, a.authenticationMiddleware(router.ServeHTTP)))))
+	// TODO handlers.Compress...
+	// Compress interferes with Traefik ingress controller
+	return a.listenAndServe(handlers.RecoveryHandler()(handlers.LoggingHandler(os.Stdout, a.authenticationMiddleware(router.ServeHTTP))))
 }

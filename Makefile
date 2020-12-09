@@ -136,9 +136,9 @@ endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
-	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
+	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) .; fi
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
+	if [ $(DEV_IMAGE) = true ]; then mv $(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) dist/; fi
 	if [ $(K3D) = true ] ; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
 endef
@@ -406,11 +406,11 @@ dist/main-context:
 .PHONY: install
 install: /usr/local/bin/kustomize dist/argo dist/main-context agent-image
 	# create other cluster (if not exists)
-	k3d cluster get other || k3d cluster create other -p "24368:80@loadbalancer" --wait --update-default-kubeconfig
+	k3d cluster get other || k3d cluster create other -p "2468:80@loadbalancer" --wait --update-default-kubeconfig
 	# configure other cluster
 	kubectl config use-context k3d-other
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
-	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl -n $(KUBE_NAMESPACE) apply -f-
+	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl -n $(KUBE_NAMESPACE) apply --force -f-
 	k3d image import argoproj/agent:latest -c other
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
 	# configure main cluster

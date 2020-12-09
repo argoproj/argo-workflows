@@ -3,9 +3,7 @@
 package e2e
 
 import (
-	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -14,18 +12,17 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
 type AgentSuite struct {
-	fixtures.E2ESuite
+	suite.Suite
 }
 
 func (s *AgentSuite) TestAgent() {
 
 	config := &rest.Config{
-		Host:        "http://127.0.0.1:24368",
+		Host: "http://127.0.0.1:2468",
+		// VnRDaElZVzBsYjJnUDFDOGZDNVE4bGFBZjdoZ1BCQzQ=
 		BearerToken: "VnRDaElZVzBsYjJnUDFDOGZDNVE4bGFBZjdoZ1BCQzQ=",
 	}
 
@@ -34,12 +31,10 @@ func (s *AgentSuite) TestAgent() {
 
 	pods := clientset.CoreV1().Pods("argo")
 
-	testUID := "test." + strconv.FormatInt(time.Now().Unix(), 10)
-
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-pod",
-			Labels:       map[string]string{"testUID": testUID},
+			GenerateName: "test-pod-",
+			Labels:       map[string]string{"test": "true"},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
@@ -51,17 +46,21 @@ func (s *AgentSuite) TestAgent() {
 
 	var name string
 
-	listOptions := metav1.ListOptions{LabelSelector: "testUID=" + testUID}
+	listOptions := metav1.ListOptions{LabelSelector: "test"}
 
+	s.Run("DeleteCollection", func() {
+		err := pods.DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: "test"})
+		s.Assert().NoError(err)
+	})
+	if s.T().Failed() {
+		s.T().FailNow()
+	}
 	s.Run("Create", func() {
 		pod, err := pods.Create(pod)
 		if s.Assert().NoError(err) {
 			s.Assert().NotNil(pod)
 		}
 	})
-	if s.T().Failed() {
-		s.T().FailNow()
-	}
 	s.Run("List", func() {
 		podList, err := pods.List(listOptions)
 		if s.Assert().NoError(err) {
@@ -88,6 +87,7 @@ func (s *AgentSuite) TestAgent() {
 			defer w.Stop()
 		loop:
 			for event := range w.ResultChan() {
+				println(event.Type)
 				switch event.Type {
 				case watch.Modified:
 					break loop
@@ -110,10 +110,6 @@ func (s *AgentSuite) TestAgent() {
 	})
 	s.Run("Delete", func() {
 		err := pods.Delete(name, &metav1.DeleteOptions{})
-		s.Assert().NoError(err)
-	})
-	s.Run("DeleteCollection", func() {
-		err := pods.DeleteCollection(&metav1.DeleteOptions{}, listOptions)
 		s.Assert().NoError(err)
 	})
 }

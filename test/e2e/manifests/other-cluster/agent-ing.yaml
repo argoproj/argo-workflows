@@ -14,4 +14,4 @@ spec:
               service:
                 name: agent
                 port:
-                  number: 24368
+                  number: 2468

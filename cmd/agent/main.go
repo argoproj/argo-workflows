@@ -29,7 +29,7 @@ func main() {
 			errors.CheckError(err)
 			namespace, _, err := clientConfig.Namespace()
 			errors.CheckError(err)
-			a, err := agent.NewAgent(clientset, namespace, secure)
+			a, err := agent.New(clientset, namespace, secure)
 			errors.CheckError(err)
 			err = a.Run()
 			errors.CheckError(err)

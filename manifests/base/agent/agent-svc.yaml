@@ -7,5 +7,5 @@ spec:
     app: agent
   ports:
     - name: web
-      port: 24368
-      targetPort: 24368
+      port: 2468
+      targetPort: 2468

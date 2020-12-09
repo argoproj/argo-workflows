@@ -73,7 +73,7 @@ COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
-COPY argoexec /usr/local/bin/
+COPY argoexec-linux-amd64 /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
@@ -83,7 +83,7 @@ FROM scratch as workflow-controller
 USER 8737
 # Add timezone data
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY workflow-controller /bin/
+COPY workflow-controller-linux-amd64 /bin/workflow-controller
 ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
@@ -95,7 +95,7 @@ COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY argo-server.crt argo-server.crt
 COPY argo-server.key argo-server.key
-COPY argo /bin/
+COPY argo-linux-amd64 /bin/argo
 ENTRYPOINT [ "argo" ]
 
 FROM scratch as agent
@@ -104,5 +104,5 @@ COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY agent.crt agent.crt
 COPY agent.key agent.key
-COPY agent /bin/
+COPY agent-linux-amd64 /bin/agent
 ENTRYPOINT [ "agent" ]

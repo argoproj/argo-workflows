@@ -17,7 +17,7 @@ spec:
           image: argoproj/agent:latest
           ports:
             - name: web
-              containerPort: 24368
+              containerPort: 2468
           securityContext:
             capabilities:
               drop:
@@ -25,7 +25,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /health
-              port: 24368
+              port: 2468
               scheme: HTTPS
             initialDelaySeconds: 10
             periodSeconds: 20

@@ -48,5 +48,9 @@ if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; 
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=agent -o name)" != "" ]]; then
-  pf "Agent" deploy/agent 24368
+  pf "Agent" deploy/agent 2468
+fi
+
+if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
+  pf "Prometheus" deploy/prometheus 9091
 fi
