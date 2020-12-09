@@ -16,17 +16,26 @@ This feature is orthogonal to managed namespaces. If you install in namespace-mo
 
 ### Networking
 
-As we need to communicate cross-cluster - you'll be connecting across security groups. Consider how you set this up. 
+To start pods in another cluster you have two options:
 
-This may not be allowed in some organisations. 
+1. Enable access to the **Kubernetes API** from your main cluster to your target cluster (simple, but less secure).
+2. Deploy the **Argo Agent** into your target cluster and expose it via a service and ingress to your main cluster (harder, but more secure).
 
-### Security
-
-You'll may want to run in a cluster-wide installation. As a result you'll end up with a controller than can create pods in any cluster it is aware of.
-
-Use the principal of least-privilege when configuring your RBAC.
+As you need to communicate cross-cluster - you'll be connecting across security groups. Consider how you set this up. 
 
 This may not be allowed in some organisations.
+
+#### Kubernetes API
+
+TODO
+
+#### Argo Agent
+
+The agent is specifically a solution where it is not allowed in your organisation to connect to the target cluster Kubernetes API. It is a service that provides the capability to and create/read/update/delete pods by implementing a small subset of the Kubernetes API. 
+
+Configure its service account with the minimal necessary permissions using Kubernetes RBAC to do this.
+
+It only supports HTTP with transport-layer security (TLS) enabled.
 
 ## Usage
 

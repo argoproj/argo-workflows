@@ -1,11 +1,14 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
+	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -22,8 +25,24 @@ import (
 func main() {
 	var (
 		clientConfig clientcmd.ClientConfig
+		secure       bool
+		logLevel     string
 	)
+	listenAndServe := func(handlerFunc http.Handler) error {
+		// 24368 = "agent" on an old phone keypad
+		addr := ":24368"
+		log.Infof("starting to listen on %v", addr)
+		if secure {
+			return http.ListenAndServeTLS(addr, "agent.crt", "agent.key", handlerFunc)
+		} else {
+			log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo/agent/")
+			return http.ListenAndServe(addr, handlerFunc)
+		}
+	}
 	cmd := cobra.Command{
+		PreRun: func(cmd *cobra.Command, args []string) {
+			cli.SetLogLevel(logLevel)
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			r, err := clientConfig.ClientConfig()
 			if err != nil {
@@ -33,7 +52,12 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			router := mux.NewRouter().StrictSlash(true)
+			secret, err := clientset.CoreV1().Secrets(os.Getenv("NAMESPACE")).Get("agent", metav1.GetOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			requiredToken := secret.Data["token"]
+			getHealth := func(w http.ResponseWriter, r *http.Request) { send(w, http.StatusOK, nil) }
 			listPods := func(w http.ResponseWriter, r *http.Request) {
 				vars := mux.Vars(r)
 				q := r.URL.Query()
@@ -160,6 +184,8 @@ func main() {
 					send(w, http.StatusOK, nil)
 				}
 			}
+			router := mux.NewRouter().StrictSlash(true)
+			router.HandleFunc("/health", getHealth)
 			// kubectl get --raw /openapi/v2
 			router.HandleFunc("/api/v1/namespaces/{namespace}/pods", listPods).Methods("GET")
 			router.HandleFunc("/api/v1/namespaces/{namespace}/pods", createPod).Methods("POST")
@@ -168,18 +194,22 @@ func main() {
 			router.HandleFunc("/api/v1/namespaces/{namespace}/pods/{name}", updatePod).Methods("PUT")
 			router.HandleFunc("/api/v1/namespaces/{namespace}/pods/{name}", patchPod).Methods("PATCH")
 			router.HandleFunc("/api/v1/namespaces/{namespace}/pods/{name}", deletePod).Methods("DELETE")
-			// 24368 = "agent" on an old phone keypad
-			addr := ":24368"
-			log.Infof("starting to listen on %v", addr)
-			log.Fatal(http.ListenAndServe(addr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				log.Infof("%s %s", r.Method, r.URL.String())
-				// token := r.Header.Get("Authorization")
-				router.ServeHTTP(w, r)
-				log.Info("end")
-			})))
 
+			log.Fatal(listenAndServe(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				log.Infof("%s %s", r.Method, r.URL.String())
+				authorization := r.Header.Get("Authorization")
+				requiredAuthorization := "Bearer " + base64.StdEncoding.EncodeToString(requiredToken)
+				if r.URL.Path != "/health" && authorization != requiredAuthorization {
+					log.WithFields(log.Fields{"authorization": authorization, "requiredAuthorization": requiredAuthorization}).Debug()
+					sendErr(w, errors.NewUnauthorized("wrong authorization token"))
+					return
+				}
+				router.ServeHTTP(w, r)
+			})))
 		}}
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&cmd)
+	cmd.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	cmd.PersistentFlags().BoolVarP(&secure, "secure", "e", true, "Serve using TLS")
 	err := cmd.Execute()
 	if err != nil {
 		log.Fatal(err)
@@ -189,7 +219,6 @@ func main() {
 func sendErr(w http.ResponseWriter, err error) {
 	switch v := err.(type) {
 	case *errors.StatusError:
-		log.Warnf("%v: %s", v.Status().Code, v.Status().Message)
 		send(w, int(v.Status().Code), v.Status())
 	default:
 		send(w, http.StatusInternalServerError, errors.NewInternalError(err))
@@ -197,7 +226,11 @@ func sendErr(w http.ResponseWriter, err error) {
 }
 
 func send(w http.ResponseWriter, code int, v interface{}) {
-	log.Info(code)
+	if s, ok := v.(metav1.Status); ok {
+		log.Warnf("%v: %s", code, s.Message)
+	} else {
+		log.Info(code)
+	}
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)

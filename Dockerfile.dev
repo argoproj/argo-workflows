@@ -83,6 +83,7 @@ FROM scratch as workflow-controller
 USER 8737
 # Add timezone data
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=agent agent.pub agent.pub
 COPY workflow-controller /bin/
 ENTRYPOINT [ "workflow-controller" ]
 
@@ -102,5 +103,7 @@ FROM scratch as agent
 USER 8737
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY agent.crt agent.crt
+COPY agent.key agent.key
 COPY agent /bin/
 ENTRYPOINT [ "agent" ]

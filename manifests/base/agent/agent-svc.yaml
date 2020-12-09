@@ -6,6 +6,6 @@ spec:
   selector:
     app: agent
   ports:
-    - name: main
+    - name: web
       port: 24368
       targetPort: 24368

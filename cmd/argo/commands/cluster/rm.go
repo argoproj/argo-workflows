@@ -33,8 +33,7 @@ func NewRMCommand() *cobra.Command {
 			_, err = kubernetes.NewForConfigOrDie(restConfig).CoreV1().Secrets(client.Namespace()).
 				Patch("clusters", types.MergePatchType, data)
 			errors.CheckError(err)
-			fmt.Printf(`removed cluster named "%s"
-`, clusterName)
+			fmt.Printf("removed cluster named \"%s\"\n", clusterName)
 		},
 	}
 }

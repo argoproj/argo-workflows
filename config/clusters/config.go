@@ -6,9 +6,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type Clusters map[string]RestConfig
-
-type RestConfig struct {
+type Config struct {
 	Host               string
 	APIPath            string
 	Username           string
@@ -22,7 +20,7 @@ type RestConfig struct {
 	Timeout            time.Duration
 }
 
-func (c RestConfig) RestConfig() *rest.Config {
+func (c Config) RestConfig() *rest.Config {
 	return &rest.Config{
 		Host:               c.Host,
 		APIPath:            c.APIPath,

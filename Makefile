@@ -198,10 +198,11 @@ dist/argo-%.gz: dist/argo-%
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
-argo-server.crt: argo-server.key
-
-argo-server.key:
-	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
+%.crt: $*.key
+%.key:
+	openssl req -x509 -newkey rsa:4096 -keyout $*.key -out $*.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
+# %.pub: $*.key
+# 	openssl rsa -in $*.key -pubout -out $*.pub
 
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
@@ -238,17 +239,13 @@ $(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 .PHONY: agent-image
 agent-image: $(AGENT_IMAGE_FILE)
 
-$(AGENT_IMAGE_FILE): $(AGENT_PKGS)
+$(AGENT_IMAGE_FILE): $(AGENT_PKGS) agent.crt agent.key
 	$(call docker_build,agent,agent,$(AGENT_IMAGE_FILE))
 
-dist/agent: GOARGS = GOOS= GOARCH=
 dist/agent-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/agent-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/agent-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/agent-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
-
-dist/agent: $(AGENT_PKGS)
-	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/agent
 
 dist/agent-%: $(AGENT_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/agent
@@ -424,9 +421,11 @@ install: /usr/local/bin/kustomize dist/argo dist/main-context agent-image
 	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f -
 	kubectl -n $(KUBE_NAMESPACE) create secret generic clusters --dry-run=client -o yaml | kubectl apply -f -
-	./dist/argo -n $(KUBE_NAMESPACE) cluster add other k3d-other
-	KUBECONFIG=$(HOME)/.kube/config:cmd/agent/testdata/kubeconfig ./dist/argo -n $(KUBE_NAMESPACE) cluster add agent agent
+	./dist/argo -n $(KUBE_NAMESPACE) cluster add other k3d-other -v
+	KUBECONFIG=$(HOME)/.kube/config:test/e2e/testdata/agent.kubeconfig ./dist/argo -n $(KUBE_NAMESPACE) cluster add agent agent -v
 
+
+KUBECONFIG=~/.kube/config:test/e2e/testdata/agent.kubeconfig ./dist/argo -n argo cluster add agent agent -v
 .PHONY: pull-build-images
 pull-build-images:
 	./hack/pull-build-images.sh

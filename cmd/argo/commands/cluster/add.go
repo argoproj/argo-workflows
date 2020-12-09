@@ -18,14 +18,7 @@ import (
 
 func NewAddCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "add CLUSTER_NAME CONTEXT_NAME",
-		Example: `# Add from the current KUBECONFIG
-argo cluster add agent agent
-
-# Add from another file:
-
-KUBECONFIG=~/.kube/config:cmd/agent/testdata/kubeconfig argo cluster add my-cluster-name my-context-name
-`,
+		Use: "add CLUSTER_NAME KUBECONFIG",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				cmd.HelpFunc()(cmd, args)
@@ -39,14 +32,17 @@ KUBECONFIG=~/.kube/config:cmd/agent/testdata/kubeconfig argo cluster add my-clus
 			if !ok {
 				log.Fatalf("context named \"%s\" not found, you can list contexts with: `kubectl config get-contexts`", contextName)
 			}
+			user := startingConfig.AuthInfos[context.AuthInfo]
+			log.Debug(user)
 			c, err := clientcmd.NewDefaultClientConfig(*startingConfig, &clientcmd.ConfigOverrides{Context: *context}).ClientConfig()
 			errors.CheckError(err)
-			marshal, err := json.Marshal(&clusters.RestConfig{
+			log.Debug(c.String())
+			data, err := json.Marshal(&clusters.Config{
 				Host:               c.Host,
 				APIPath:            c.APIPath,
-				Username:           c.Username,
-				Password:           c.Password,
-				BearerToken:        c.BearerToken,
+				Username:           user.Username,
+				Password:           user.Password,
+				BearerToken:        user.Token,
 				TLSClientConfig:    c.TLSClientConfig,
 				UserAgent:          c.UserAgent,
 				DisableCompression: c.DisableCompression,
@@ -55,9 +51,10 @@ KUBECONFIG=~/.kube/config:cmd/agent/testdata/kubeconfig argo cluster add my-clus
 				Timeout:            c.Timeout,
 			})
 			errors.CheckError(err)
-			data, err := json.Marshal(map[string]map[string]string{
+			log.Debug(string(data))
+			data, err = json.Marshal(map[string]map[string]string{
 				"stringData": {
-					clusterName: string(marshal),
+					clusterName: string(data),
 				},
 			})
 			errors.CheckError(err)
@@ -66,8 +63,7 @@ KUBECONFIG=~/.kube/config:cmd/agent/testdata/kubeconfig argo cluster add my-clus
 			_, err = kubernetes.NewForConfigOrDie(restConfig).CoreV1().Secrets(client.Namespace()).
 				Patch("clusters", types.MergePatchType, data)
 			errors.CheckError(err)
-			fmt.Printf(`added cluster named "%s" from context "%s"
-`, clusterName, contextName)
+			fmt.Printf("added cluster named \"%s\" from context \"%s\"\n", clusterName, contextName)
 		},
 	}
 }

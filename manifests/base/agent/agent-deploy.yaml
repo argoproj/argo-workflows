@@ -15,10 +15,25 @@ spec:
       containers:
         - name: main
           image: argoproj/agent:latest
+          ports:
+            - name: web
+              containerPort: 24368
           securityContext:
             capabilities:
               drop:
                 - ALL
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 24368
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
       securityContext:
         runAsNonRoot: true
       nodeSelector:

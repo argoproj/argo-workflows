@@ -7,7 +7,19 @@
 
 
 ```
-argo cluster add CLUSTER_NAME [CONTEXT_NAME] [flags]
+argo cluster add CLUSTER_NAME CONTEXT_NAME [flags]
+```
+
+### Examples
+
+```
+# Add from the current KUBECONFIG
+argo cluster add agent agent
+
+# Add from another file:
+
+KUBECONFIG=~/.kube/config:cmd/agent/testdata/kubeconfig argo cluster add my-cluster-name my-context-name
+
 ```
 
 ### Options

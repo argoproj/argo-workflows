@@ -25,7 +25,7 @@ func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, nam
 		return nil, nil, fmt.Errorf("failed to get secret/clusters: %w", err)
 	} else {
 		for clusterName, data := range secret.Data {
-			c := &clusters.RestConfig{}
+			c := &clusters.Config{}
 			err := json.Unmarshal(data, c)
 			if err != nil {
 				return nil, nil, fmt.Errorf("failed unmarshall JSON for cluster %s: %w", clusterName, err)

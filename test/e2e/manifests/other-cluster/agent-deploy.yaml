@@ -7,4 +7,10 @@ spec:
     spec:
       containers:
         - name: main
+          args:
+            - --secure=false
+            - --loglevel=debug
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
           imagePullPolicy: Never

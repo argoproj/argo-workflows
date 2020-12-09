@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
@@ -24,8 +24,10 @@ type AgentSuite struct {
 
 func (s *AgentSuite) TestAgent() {
 
-	config, err := clientcmd.BuildConfigFromFlags("", "../../cmd/agent/testdata/kubeconfig")
-	s.Assert().NoError(err)
+	config := &rest.Config{
+		Host:        "http://127.0.0.1:24368",
+		BearerToken: "VnRDaElZVzBsYjJnUDFDOGZDNVE4bGFBZjdoZ1BCQzQ=",
+	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	s.Assert().NoError(err)
