@@ -3,8 +3,10 @@
 package e2e
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -126,12 +128,13 @@ spec:
 		})
 }
 
-func (s *MultiClusterSuite) TestOtherClusters() {
+func (s *MultiClusterSuite) TestOtherCluster() {
 	s.Assert().Equal("pns", s.Config.ContainerRuntimeExecutor)
-	s.Given().
-		Workflow(`
+	for _, clusterName := range []wfv1.ClusterName{"other", "agent"} {
+		s.Given().
+			Workflow(fmt.Sprintf(`
 metadata:
-  name: multi-cluster
+  generateName: multi-cluster-
   labels:
     argo-e2e: true
 spec:
@@ -141,23 +144,24 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      clusterName: other
+      clusterName: %s
       namespace: argo
       container:
         image: argoproj/argosay:v2
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			thisNode := status.Nodes.FindByDisplayName("multi-cluster")
-			if assert.NotNil(t, thisNode) {
-				assert.NotEmpty(t, thisNode.ClusterName)
-				assert.Empty(t, thisNode.Namespace)
-			}
-		})
+`, clusterName)).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(1 * time.Minute).
+			Then().
+			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+				x := status.Nodes.FindByDisplayName(metadata.Name)
+				if assert.NotNil(t, x) {
+					assert.Equal(t, clusterName, x.ClusterName)
+					assert.Empty(t, x.Namespace)
+				}
+			})
+	}
 }
 
 func TestMultiClusterSuite(t *testing.T) {

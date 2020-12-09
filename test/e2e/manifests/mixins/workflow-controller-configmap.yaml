@@ -25,6 +25,7 @@ data:
             - unmanaged
         - clusterNames:
             - other
+            - agent
           namespaces:
             - argo
         - clusterNames:

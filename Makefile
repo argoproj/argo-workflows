@@ -425,7 +425,7 @@ install: /usr/local/bin/kustomize dist/argo dist/main-context agent-image
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f -
 	kubectl -n $(KUBE_NAMESPACE) create secret generic clusters --dry-run=client -o yaml | kubectl apply -f -
 	./dist/argo -n $(KUBE_NAMESPACE) cluster add other k3d-other
-	./dist/argo --kubeconfig=cmd/agent/testdata/kubeconfig cluster add agent
+	KUBECONFIG=$(HOME)/.kube/config:cmd/agent/testdata/kubeconfig ./dist/argo -n $(KUBE_NAMESPACE) cluster add agent agent
 
 .PHONY: pull-build-images
 pull-build-images:

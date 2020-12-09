@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,12 +23,12 @@ type AgentSuite struct {
 }
 
 func (s *AgentSuite) TestAgent() {
-	t := s.T()
+
 	config, err := clientcmd.BuildConfigFromFlags("", "../../cmd/agent/testdata/kubeconfig")
-	assert.NoError(t, err)
+	s.Assert().NoError(err)
 
 	clientset, err := kubernetes.NewForConfig(config)
-	assert.NoError(t, err)
+	s.Assert().NoError(err)
 
 	pods := clientset.CoreV1().Pods("argo")
 
@@ -52,41 +51,38 @@ func (s *AgentSuite) TestAgent() {
 
 	listOptions := metav1.ListOptions{LabelSelector: "testUID=" + testUID}
 
-	t.Run("Create", func(t *testing.T) {
+	s.Run("Create", func() {
 		pod, err := pods.Create(pod)
-		if assert.NoError(t, err) {
-			assert.NotNil(t, pod)
+		if s.Assert().NoError(err) {
+			s.Assert().NotNil(pod)
 		}
 	})
-	t.Run("List", func(t *testing.T) {
+	if s.T().Failed() {
+		s.T().FailNow()
+	}
+	s.Run("List", func() {
 		podList, err := pods.List(listOptions)
-		if assert.NoError(t, err) {
-			assert.Len(t, podList.Items, 1)
+		if s.Assert().NoError(err) {
+			s.Assert().Len(podList.Items, 1)
 			name = podList.Items[0].Name
-			assert.NotEmpty(t, name)
+			s.Assert().NotEmpty(name)
 		}
 	})
-	t.Run("Get", func(t *testing.T) {
+	s.Run("Get", func() {
 		pod, err = pods.Get(name, metav1.GetOptions{})
-		if assert.NoError(t, err) && assert.NotNil(t, pod) {
-			assert.Equal(t, name, pod.Name)
+		if s.Assert().NoError(err) && s.Assert().NotNil(pod) {
+			s.Assert().Equal(name, pod.Name)
 		}
 	})
-	t.Run("Update", func(t *testing.T) {
-		pod, err := pods.Update(pod)
-		if assert.NoError(t, err) && assert.NotNil(t, pod) {
-			assert.Equal(t, name, pod.Name)
-		}
-	})
-	t.Run("Patch", func(t *testing.T) {
+	s.Run("Patch", func() {
 		pod, err := pods.Patch(pod.Name, types.MergePatchType, []byte(`{"metadata": {"annotations": {"patched": "true"}}}`))
-		if assert.NoError(t, err) && assert.NotNil(t, pod) {
-			assert.NotEmpty(t, pod.Annotations["patched"])
+		if s.Assert().NoError(err) && s.Assert().NotNil(pod) {
+			s.Assert().NotEmpty(pod.Annotations["patched"])
 		}
 	})
-	t.Run("Watch", func(t *testing.T) {
+	s.Run("Watch", func() {
 		w, err := pods.Watch(listOptions)
-		if assert.NoError(t, err) && assert.NotNil(t, w) {
+		if s.Assert().NoError(err) && s.Assert().NotNil(w) {
 			defer w.Stop()
 		loop:
 			for event := range w.ResultChan() {
@@ -94,7 +90,7 @@ func (s *AgentSuite) TestAgent() {
 				case watch.Modified:
 					break loop
 				default:
-					if !assert.NotEqual(t, watch.Error, event.Type) {
+					if !s.Assert().NotEqual(watch.Error, event.Type) {
 						break loop
 					}
 				}
@@ -102,13 +98,21 @@ func (s *AgentSuite) TestAgent() {
 			println("done")
 		}
 	})
-	t.Run("Delete", func(t *testing.T) {
-		err := pods.Delete(name, &metav1.DeleteOptions{})
-		assert.NoError(t, err)
+	s.Run("Update", func() {
+		pod, err = pods.Get(name, metav1.GetOptions{})
+		s.Assert().NoError(err)
+		pod, err := pods.Update(pod)
+		if s.Assert().NoError(err) && s.Assert().NotNil(pod) {
+			s.Assert().Equal(name, pod.Name)
+		}
 	})
-	t.Run("DeleteCollection", func(t *testing.T) {
+	s.Run("Delete", func() {
+		err := pods.Delete(name, &metav1.DeleteOptions{})
+		s.Assert().NoError(err)
+	})
+	s.Run("DeleteCollection", func() {
 		err := pods.DeleteCollection(&metav1.DeleteOptions{}, listOptions)
-		assert.NoError(t, err)
+		s.Assert().NoError(err)
 	})
 }
 
