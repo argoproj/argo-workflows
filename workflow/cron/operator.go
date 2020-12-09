@@ -244,7 +244,7 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(workflows []v1alpha1.Workflow)
 	for _, wf := range workflows {
 		currentWfsFulfilled[wf.UID] = wf.Status.Fulfilled()
 
-		if !woc.containsActiveWorkflow(wf.UID) && !wf.Status.Fulfilled() {
+		if !woc.cronWf.Status.HasActiveUID(wf.UID) && !wf.Status.Fulfilled() {
 			updated = true
 			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(&wf, &wf))
 		}
@@ -272,15 +272,6 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 		}
 	}
 	woc.cronWf.Status.Active = newActive
-}
-
-func (woc *cronWfOperationCtx) containsActiveWorkflow(uid types.UID) bool {
-	for _, ref := range woc.cronWf.Status.Active {
-		if uid == ref.UID {
-			return true
-		}
-	}
-	return false
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit(workflows []v1alpha1.Workflow) error {
