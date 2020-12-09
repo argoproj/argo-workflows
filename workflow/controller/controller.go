@@ -207,7 +207,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers int) {
 	}
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
+	informerSynceds := []cache.InformerSynced{wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced}
+	for _, x := range wfc.podInformer {
+		informerSynceds = append(informerSynceds, x.HasSynced)
+	}
+	if !cache.WaitForCacheSync(ctx.Done(), informerSynceds...) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
@@ -228,7 +232,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers int) {
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller-lease", Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller-lease", Namespace: wfc.namespace}, Client: wfc.kubeclientset[wfv1.ThisCluster].CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID},
 		},
 		ReleaseOnCancel: true,
