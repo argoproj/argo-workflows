@@ -109,6 +109,7 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
+	// DEPRECATED - there is really no need for this anymore because we rate limit reconciliations
 	enoughTimeForInformerSync           = 1 * time.Second
 )
 
@@ -324,7 +325,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			continue
 		}
 		// should this use AddRateLimited?
-		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
+		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
 	}
 }
 
