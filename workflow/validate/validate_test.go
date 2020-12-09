@@ -72,7 +72,7 @@ const unknownField = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -94,7 +94,7 @@ var dupTemplateNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -110,7 +110,7 @@ var dupInputNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -129,7 +129,7 @@ var emptyName = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -161,7 +161,7 @@ var unresolvedInput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -174,7 +174,7 @@ var unresolvedStepInput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: entry-step
   arguments:
@@ -203,7 +203,7 @@ var unresolvedOutput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: unresolved-output-steps
   templates:
@@ -240,7 +240,7 @@ var ioArtifactPaths = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-path-placeholders-
+  generateName: artifact-path-placeholders
 spec:
   entrypoint: head-lines
   arguments:
@@ -286,7 +286,7 @@ var outputParameterPath = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: get-current-date-
+  generateName: get-current-date
 spec:
   entrypoint: get-current-date
   templates:
@@ -310,7 +310,7 @@ var stepOutputReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: step-output-ref-
+  generateName: step-output-ref
 spec:
   entrypoint: whalesay
   templates:
@@ -347,7 +347,7 @@ var stepStatusReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: status-ref-
+  generateName: status-ref
 spec:
   entrypoint: statusref
   templates:
@@ -385,7 +385,7 @@ var stepStatusReferencesNoFutureReference = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: status-ref-
+  generateName: status-ref
 spec:
   entrypoint: statusref
   templates:
@@ -426,7 +426,7 @@ var stepArtReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: step-art-ref-
+  generateName: step-art-ref
 spec:
   entrypoint: stepref
   templates:
@@ -482,7 +482,7 @@ var unsatisfiedParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -505,7 +505,7 @@ var globalParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-parameters-complex-
+  generateName: global-parameters-complex
 spec:
   priority: 100
   entrypoint: test-workflow
@@ -560,7 +560,7 @@ var invalidTemplateNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay_d
   templates:
@@ -583,7 +583,7 @@ var invalidArgParamNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   arguments:
@@ -608,7 +608,7 @@ var invalidArgArtNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: arguments-artifacts-
+  generateName: arguments-artifacts
 spec:
   entrypoint: kubectl-input-artifact
   arguments:
@@ -641,7 +641,7 @@ var invalidStepNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-
+  generateName: steps
 spec:
   entrypoint: hello-hello-hello
 
@@ -688,7 +688,7 @@ var invalidInputParamNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-
+  generateName: steps
 spec:
   entrypoint: whalesay
   templates:
@@ -714,7 +714,7 @@ var invalidInputArtNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-
+  generateName: steps
 spec:
   entrypoint: hello-hello-hello
 
@@ -766,7 +766,7 @@ var invalidOutputArtNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-
+  generateName: output-artifact
 spec:
   entrypoint: whalesay
   templates:
@@ -792,7 +792,7 @@ var invalidOutputParamNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-
+  generateName: output-artifact
 spec:
   entrypoint: whalesay
   templates:
@@ -812,7 +812,7 @@ var invalidOutputMissingValueFrom = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-param-
+  generateName: output-param
 spec:
   entrypoint: whalesay
   templates:
@@ -829,7 +829,7 @@ var invalidOutputMultipleValueFrom = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-param-
+  generateName: output-param
 spec:
   entrypoint: whalesay
   templates:
@@ -850,7 +850,7 @@ var invalidOutputIncompatibleValueFromPath = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-param-
+  generateName: output-param
 spec:
   entrypoint: whalesay
   templates:
@@ -870,7 +870,7 @@ var invalidOutputIncompatibleValueFromParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-param-
+  generateName: output-param
 spec:
   entrypoint: my-steps
   templates:
@@ -922,7 +922,7 @@ var multipleTemplateTypes = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: multiple-template-types-
+  generateName: multiple-template-types
 spec:
   entrypoint: whalesay
   templates:
@@ -951,7 +951,7 @@ var exitHandlerWorkflowStatusOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: exit-handlers-
+  generateName: exit-handlers
 spec:
   entrypoint: pass
   onExit: fail
@@ -972,7 +972,7 @@ var workflowStatusNotOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: exit-handlers-
+  generateName: exit-handlers
 spec:
   entrypoint: pass
   templates:
@@ -997,7 +997,7 @@ var workflowWithPriority = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: with-priority-
+  generateName: with-priority
 spec:
   entrypoint: whalesay
   priority: 100
@@ -1018,7 +1018,7 @@ var volumeMountArtifactPathCollision = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: path-collision-
+  generateName: path-collision
 spec:
   volumeClaimTemplates:
   - metadata:
@@ -1067,7 +1067,7 @@ var activeDeadlineSeconds = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: active-deadline-seconds-
+  generateName: active-deadline-seconds
 spec:
   entrypoint: pass
   templates:
@@ -1113,7 +1113,7 @@ var invalidStepsArgumentNoFromOrLocation = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-
+  generateName: output-artifact
 spec:
   entrypoint: no-location-or-from
   templates:
@@ -1140,7 +1140,7 @@ var invalidDAGArgumentNoFromOrLocation = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-
+  generateName: output-artifact
 spec:
   entrypoint: no-location-or-from
   templates:
@@ -1179,7 +1179,7 @@ var invalidArgumentNoValue = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-
+  generateName: output-artifact
 spec:
   entrypoint: no-location-or-from
   templates:
@@ -1212,7 +1212,7 @@ var validWithItems = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-
+  generateName: loops
 spec:
   entrypoint: loop-example
   templates:
@@ -1291,7 +1291,7 @@ var specArgumentNoValue = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: spec-arg-no-value-
+  generateName: spec-arg-no-value
 spec:
   entrypoint: whalesay
   arguments:
@@ -1320,7 +1320,7 @@ var specArgumentSnakeCase = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: spec-arg-snake-case-
+  generateName: spec-arg-snake-case
 spec:
   entrypoint: whalesay
   arguments:
@@ -1357,7 +1357,7 @@ var specBadSequenceCountAndEnd = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-sequence-
+  generateName: loops-sequence
 spec:
   entrypoint: loops-sequence
   templates:
@@ -1394,7 +1394,7 @@ var customVariableInput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -1416,7 +1416,7 @@ var baseImageOutputArtifact = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: base-image-out-art-
+  generateName: base-image-out-art
 spec:
   entrypoint: base-image-out-art
   templates:
@@ -1434,7 +1434,7 @@ var baseImageOutputParameter = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: base-image-out-art-
+  generateName: base-image-out-art
 spec:
   entrypoint: base-image-out-art
   templates:
@@ -1453,7 +1453,7 @@ var volumeMountOutputArtifact = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: base-image-out-art-
+  generateName: base-image-out-art
 spec:
   entrypoint: base-image-out-art
   volumes:
@@ -1477,7 +1477,7 @@ var baseImageDirWithEmptyDirOutputArtifact = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: base-image-out-art-
+  generateName: base-image-out-art
 spec:
   entrypoint: base-image-out-art
   volumes:
@@ -1501,7 +1501,7 @@ var nonPathOutputParameter = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: non-path-out-param-
+  generateName: non-path-out-param
 spec:
   entrypoint: non-path-out-param
   templates:
@@ -1577,7 +1577,7 @@ var localTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: local-template-ref-
+  generateName: local-template-ref
 spec:
   entrypoint: A
   templates:
@@ -1598,7 +1598,7 @@ var undefinedLocalTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: undefined-local-template-ref-
+  generateName: undefined-local-template-ref
 spec:
   entrypoint: A
   templates:
@@ -1630,7 +1630,7 @@ var templateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: template-ref-
+  generateName: template-ref
 spec:
   entrypoint: A
   templates:
@@ -1646,7 +1646,7 @@ var deprecatedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: template-ref-
+  generateName: template-ref
 spec:
   entrypoint: A
   templates:
@@ -1703,7 +1703,7 @@ var nestedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: template-ref-
+  generateName: template-ref
 spec:
   entrypoint: A
   templates:
@@ -1742,7 +1742,7 @@ var deprecatedNestedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: template-ref-
+  generateName: template-ref
 spec:
   entrypoint: A
   templates:
@@ -1791,7 +1791,7 @@ var deprecatedNestedLocalTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: template-ref-
+  generateName: template-ref
 spec:
   entrypoint: A
   templates:
@@ -1823,7 +1823,7 @@ var undefinedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: undefined-template-ref-
+  generateName: undefined-template-ref
 spec:
   entrypoint: A
   templates:
@@ -1846,7 +1846,7 @@ var validResourceWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: valid-resource-
+  generateName: valid-resource
 spec:
   entrypoint: whalesay
   templates:
@@ -1873,7 +1873,7 @@ var invalidResourceWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: invalid-resource-
+  generateName: invalid-resource
 spec:
   entrypoint: whalesay
   templates:
@@ -1891,7 +1891,7 @@ var invalidActionResourceWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: invalid-resource-
+  generateName: invalid-resource
 spec:
   entrypoint: whalesay
   templates:
@@ -1920,7 +1920,7 @@ var invalidPodGC = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pod-gc-strategy-unknown-
+  generateName: pod-gc-strategy-unknown
 spec:
   podGC:
     strategy: Foo
@@ -1951,7 +1951,7 @@ var validAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: valid-automount-service-account-token-use-wf-level-
+  generateName: valid-automount-service-account-token-use-wf-level
 spec:
   entrypoint: whalesay
   templates:
@@ -1973,7 +1973,7 @@ var validAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: valid-automount-service-account-token-use-tmpl-level-
+  generateName: valid-automount-service-account-token-use-tmpl-level
 spec:
   entrypoint: whalesay
   templates:
@@ -1989,7 +1989,7 @@ var invalidAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: invalid-automount-service-account-token-use-wf-level-
+  generateName: invalid-automount-service-account-token-use-wf-level
 spec:
   entrypoint: whalesay
   templates:
@@ -2003,7 +2003,7 @@ var invalidAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: invalid-automount-service-account-token-use-tmpl-level-
+  generateName: invalid-automount-service-account-token-use-tmpl-level
 spec:
   entrypoint: whalesay
   templates:
@@ -2045,7 +2045,7 @@ var templateResolutionWithPlaceholderWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: template-resolution-with-placeholder-
+  generateName: template-resolution-with-placeholder
 spec:
   entrypoint: template-resolution
   arguments:
@@ -2088,7 +2088,7 @@ var allowPlaceholderInVariableTakenFromInputs = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: argo-datadog-agent-
+  generateName: argo-datadog-agent
 spec:
   entrypoint: main
   arguments:
@@ -2192,7 +2192,7 @@ var runtimeResolutionOfVariableNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-parameter-passing-
+  generateName: global-parameter-passing
 spec:
   entrypoint: plan
   templates:
@@ -2250,7 +2250,7 @@ var stepWithItemParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-maps-
+  generateName: loops-maps
 spec:
   entrypoint: loop-map-example
   templates:
@@ -2298,7 +2298,7 @@ var invalidMetricName = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -2322,7 +2322,7 @@ var invalidMetricLabelName = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -2349,7 +2349,7 @@ var invalidMetricHelp = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -2372,7 +2372,7 @@ var globalVariables = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-variables-
+  generateName: global-variables
 spec:
   priority: 100
   entrypoint: test-workflow
@@ -2441,7 +2441,7 @@ var wfWithWFTRefNoEntrypoint = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
   namespace: default
 spec:
   workflowTemplateRef:
@@ -2474,7 +2474,7 @@ const wfWithWFTRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: A
   serviceAccountName: argo
@@ -2505,7 +2505,7 @@ const invalidWFWithWFTRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: A
   arguments:
@@ -2589,7 +2589,7 @@ var wfWithWFTRefOverrideParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
   namespace: default
 spec:
   arguments:
@@ -2611,7 +2611,7 @@ var dagAndStepLevelOutputArtifacts = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target
 spec:
   entrypoint: main
   templates:
@@ -2680,7 +2680,7 @@ var testWorkflowTemplateLabels = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  generateName: test-foobar-
+  generateName: test-foobar
   labels:
     testLabel: foobar
 spec:
@@ -2734,7 +2734,7 @@ const wfWithWFTRefAndNoOwnArtifact = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
   namespace: default
 spec:
   workflowTemplateRef:
@@ -2752,7 +2752,7 @@ const wfWithWFTRefAndOwnArtifactArgument = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
   namespace: default
 spec:
   arguments:
@@ -2775,7 +2775,7 @@ var workflowTeamplateWithEnumValues = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  generateName: test-enum-1-
+  generateName: test-enum-1
   labels:
     testLabel: foobar
 spec:
@@ -2808,7 +2808,7 @@ var workflowTemplateWithEmptyEnumList = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  generateName: test-enum-1-
+  generateName: test-enum-1
   labels:
     testLabel: foobar
 spec:
@@ -2838,7 +2838,7 @@ var workflowTemplateWithArgumentValueNotFromEnumList = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  generateName: test-enum-1-
+  generateName: test-enum-1
   labels:
     testLabel: foobar
 spec:
@@ -2886,7 +2886,7 @@ var validActiveDeadlineSecondsArgoVariable = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: timeout-bug-
+  generateName: timeout-bug
 spec:
   entrypoint: main
 

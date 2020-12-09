@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: ci-output-artifact-
+  generateName: ci-output-artifact
 spec:
   entrypoint: ci-example
   # a temporary volume, named workdir, will be used as a working

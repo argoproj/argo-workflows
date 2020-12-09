@@ -39,7 +39,7 @@ More examples []()
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -87,7 +87,7 @@ Here is an example for creating `ClusterWorkflowTemplate` as Workflow with passi
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: cluster-workflow-template-hello-world-
+  generateName: cluster-workflow-template-hello-world
 spec:
   entrypoint: whalesay-template
   arguments:
@@ -104,7 +104,7 @@ Here is an example of a creating `WorkflowTemplate` as Workflow and using `Workf
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: cluster-workflow-template-hello-world-
+  generateName: cluster-workflow-template-hello-world
 spec:
   workflowTemplateRef:
     name: cluster-workflow-template-submittable

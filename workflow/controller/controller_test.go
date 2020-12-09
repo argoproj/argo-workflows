@@ -467,7 +467,7 @@ const wfWithTmplRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
   namespace: default
 spec:
   entrypoint: whalesay-template

@@ -5,7 +5,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: daemoned-stateful-set-with-service-
+  generateName: daemoned-stateful-set-with-service
 spec:
   entrypoint: create-wait-and-test
   onExit: delete

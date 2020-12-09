@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: ci-example-
+  generateName: ci-example
 spec:
   # entrypoint is the name of the template used as the starting point of the workflow
   entrypoint: ci-example

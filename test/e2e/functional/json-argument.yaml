@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pass-json-
+  generateName: pass-json
 spec:
   entrypoint: parsejson
   arguments:

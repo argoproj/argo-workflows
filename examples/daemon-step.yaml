@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: daemon-step-
+  generateName: daemon-step
 spec:
   entrypoint: daemon-example
   templates:

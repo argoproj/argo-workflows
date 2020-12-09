@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-hang-failFast-
+  generateName: dag-hang-failFast
 spec:
   entrypoint: retry-with-dags
   templates:

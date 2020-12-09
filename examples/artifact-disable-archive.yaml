@@ -6,7 +6,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-disable-archive-
+  generateName: artifact-disable-archive
 spec:
   entrypoint: artifact-disable-archive
   templates:

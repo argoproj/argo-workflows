@@ -11,7 +11,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: timeouts-workflow-
+  generateName: timeouts-workflow
 spec:
   activeDeadlineSeconds: 30
   entrypoint: bunch-of-sleeps

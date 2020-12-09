@@ -10,7 +10,7 @@ var dagCycle = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-cycle-
+  generateName: dag-cycle
 spec:
   entrypoint: cycle
   templates:
@@ -43,7 +43,7 @@ var dagAnyWithoutExpandingTask = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-cycle-
+  generateName: dag-cycle
 spec:
   entrypoint: entry
   templates:
@@ -72,7 +72,7 @@ var dagUndefinedTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-undefined-
+  generateName: dag-undefined
 spec:
   entrypoint: undef
   templates:
@@ -94,7 +94,7 @@ var dagUnresolvedVar = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-cycle-
+  generateName: dag-cycle
 spec:
   entrypoint: unresolved
   templates:
@@ -132,7 +132,7 @@ var dagResolvedVar = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-cycle-
+  generateName: dag-cycle
 spec:
   entrypoint: unresolved
   templates:
@@ -177,7 +177,7 @@ var dagResolvedVarNotAncestor = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-cycle-
+  generateName: dag-cycle
 spec:
   entrypoint: unresolved
   templates:
@@ -222,7 +222,7 @@ var dagResolvedGlobalVar = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-global-var-
+  generateName: dag-global-var
 spec:
   entrypoint: unresolved
   templates:
@@ -253,7 +253,7 @@ var dagResolvedGlobalVarReversed = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-global-var-
+  generateName: dag-global-var
 spec:
   entrypoint: unresolved
   templates:
@@ -303,7 +303,7 @@ var dagResolvedArt = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-arg-passing-
+  generateName: dag-arg-passing
 spec:
   entrypoint: dag-arg-passing
   templates:
@@ -361,7 +361,7 @@ var dagStatusReference = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-arg-passing-
+  generateName: dag-arg-passing
 spec:
   entrypoint: dag-arg-passing
   templates:
@@ -397,7 +397,7 @@ var dagStatusNoFutureReferenceSimple = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-arg-passing-
+  generateName: dag-arg-passing
 spec:
   entrypoint: dag-arg-passing
   templates:
@@ -433,7 +433,7 @@ var dagStatusNoFutureReferenceWhenFutureReferenceHasChild = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-arg-passing-
+  generateName: dag-arg-passing
 spec:
   entrypoint: dag-arg-passing
   templates:
@@ -476,7 +476,7 @@ var dagStatusPastReferenceChain = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-arg-passing-
+  generateName: dag-arg-passing
 spec:
   entrypoint: dag-arg-passing
   templates:
@@ -533,7 +533,7 @@ var dagStatusOnlyDirectAncestors = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-arg-passing-
+  generateName: dag-arg-passing
 spec:
   entrypoint: dag-arg-passing
   templates:
@@ -617,7 +617,7 @@ var dagNonexistantTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target
 spec:
   entrypoint: dag-target
   templates:
@@ -654,7 +654,7 @@ var dagTargetSubstitution = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target
 spec:
   entrypoint: dag-target
   arguments:
@@ -693,7 +693,7 @@ var dagTargetMissingInputParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target
 spec:
   entrypoint: dag-target
   arguments:
@@ -727,7 +727,7 @@ var dagDependsAndDependencies = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target
 spec:
   entrypoint: dag-target
   templates:
@@ -758,7 +758,7 @@ var dagDependsAndContinueOn = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target
 spec:
   entrypoint: dag-target
   templates:
@@ -790,7 +790,7 @@ var dagDependsDigit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-diamond-
+  generateName: dag-diamond
 spec:
   entrypoint: diamond
   templates:
@@ -844,7 +844,7 @@ var dagDependenciesDigit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-diamond-
+  generateName: dag-diamond
 spec:
   entrypoint: diamond
   templates:

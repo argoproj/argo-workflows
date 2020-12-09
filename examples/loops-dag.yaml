@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-dag-
+  generateName: loops-dag
 spec:
   entrypoint: loops-dag
   templates:

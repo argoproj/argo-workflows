@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-retry-with-steps-
+  generateName: workflow-template-retry-with-steps
 spec:
   entrypoint: retry-with-steps
   templates:

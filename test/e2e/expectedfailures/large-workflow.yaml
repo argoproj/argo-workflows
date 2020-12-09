@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: large-workflow-
+  generateName: large-workflow
 spec:
   entrypoint: large-workflow
   templates:

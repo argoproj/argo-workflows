@@ -24,7 +24,7 @@ You must also specify a name for the ConfigMap cache.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
- generateName: memoized-workflow-
+ generateName: memoized-workflow
 spec:
  entrypoint: whalesay
  templates:

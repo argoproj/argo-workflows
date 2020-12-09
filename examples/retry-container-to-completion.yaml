@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: retry-to-completion-
+  generateName: retry-to-completion
 spec:
   entrypoint: retry-to-completion
   templates:

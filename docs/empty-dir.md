@@ -13,7 +13,7 @@ This example shows how to mount an output volume:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: empty-dir-
+  generateName: empty-dir
 spec:
   entrypoint: main
   templates:

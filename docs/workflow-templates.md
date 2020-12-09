@@ -25,7 +25,7 @@ Here is an example of a `Workflow` with two `templates`:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-
+  generateName: steps
 spec:
   entrypoint: hello           # We reference our first "template" here
 
@@ -120,7 +120,7 @@ Here is an example from a `steps` template:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -141,7 +141,7 @@ You can also do so similarly with a `dag` template:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -167,7 +167,7 @@ Here is an example of a **deprecated** reference that **should not be used**:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   entrypoint: whalesay
   templates:
@@ -196,7 +196,7 @@ Here is an example for referring `WorkflowTemplate` as Workflow with passing `en
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   entrypoint: whalesay-template
   arguments:
@@ -212,7 +212,7 @@ Here is an example of a referring `WorkflowTemplate` as Workflow and using `Work
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   workflowTemplateRef:
     name: workflow-template-submittable

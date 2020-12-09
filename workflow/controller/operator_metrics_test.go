@@ -16,7 +16,7 @@ var basicMetric = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
 spec:
   entrypoint: random-int
   templates:

@@ -49,7 +49,7 @@ var simpleWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: hello-world
   labels:
     workflows.argoproj.io/archive-strategy: "false"
 spec:
@@ -67,7 +67,7 @@ kind: Workflow
 metadata: 
   annotations: 
     testAnnotation: test
-  generateName: hello-world-
+  generateName: hello-world
   labels: 
     testLabel: test
     workflows.argoproj.io/archive-strategy: "false"

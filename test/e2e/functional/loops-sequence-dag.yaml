@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-sequence-
+  generateName: loops-sequence
 spec:
   entrypoint: loops-sequence
   arguments:

@@ -23,7 +23,7 @@ kind: Workflow
 metadata:
   clusterName: ""
   creationTimestamp: 2018-08-27T20:41:38Z
-  generateName: hello-world-
+  generateName: hello-world
   generation: 1
   labels:
     workflows.argoproj.io/completed: "true"
@@ -54,7 +54,7 @@ kind: Workflow
 metadata:
   clusterName: ""
   creationTimestamp: 2018-08-27T20:41:38Z
-  generateName: hello-world-
+  generateName: hello-world
   generation: 1
   labels:
     workflows.argoproj.io/completed: "true"
@@ -85,7 +85,7 @@ kind: Workflow
 metadata:
   clusterName: ""
   creationTimestamp: 2018-08-27T20:41:38Z
-  generateName: hello-world-
+  generateName: hello-world
   generation: 1
   labels:
     workflows.argoproj.io/completed: "true"
@@ -115,7 +115,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-16T00:57:45Z"
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
   generation: 6
   labels:
     workflows.argoproj.io/completed: "true"
@@ -228,7 +228,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-16T01:00:14Z"
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
   generation: 6
   labels:
     workflows.argoproj.io/completed: "true"

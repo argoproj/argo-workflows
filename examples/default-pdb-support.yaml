@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: default-pdb-support-
+  generateName: default-pdb-support
 
 spec:
   entrypoint: pdbcreate

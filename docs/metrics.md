@@ -123,7 +123,7 @@ level Gauge metric that will report the Workflow duration time:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: model-training-
+  generateName: model-training
 spec:
   entrypoint: steps
   metrics:

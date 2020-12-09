@@ -3,7 +3,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: input-artifact-git-
+  generateName: input-artifact-git
 spec:
   entrypoint: git-clone
   templates:

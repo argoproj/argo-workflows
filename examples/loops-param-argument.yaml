@@ -3,7 +3,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-param-arg-
+  generateName: loops-param-arg
 spec:
   entrypoint: loop-param-arg-example
   arguments:

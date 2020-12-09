@@ -1,6 +1,6 @@
 metadata:
   creationTimestamp: "2018-12-28T19:21:20Z"
-  generateName: failed-retries-
+  generateName: failed-retries
   generation: 1
   labels:
     workflows.argoproj.io/phase: Running

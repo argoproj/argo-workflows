@@ -3,7 +3,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-optional-
+  generateName: output-artifact-optional
 spec:
   entrypoint: artifact-example
   templates:

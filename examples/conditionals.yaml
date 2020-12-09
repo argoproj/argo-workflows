@@ -10,7 +10,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: conditional-
+  generateName: conditional
 spec:
   entrypoint: conditional-example
   arguments:

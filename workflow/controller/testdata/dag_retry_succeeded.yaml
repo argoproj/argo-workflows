@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   clusterName: ""
   creationTimestamp: 2018-08-01T10:22:43Z
-  generateName: dag-with-retries-
+  generateName: dag-with-retries
   generation: 1
   labels:
     workflows.argoproj.io/completed: "true"

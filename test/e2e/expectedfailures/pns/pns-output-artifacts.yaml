@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pns-output-artifacts-
+  generateName: pns-output-artifacts
 spec:
   entrypoint: pns-output-artifacts
   templates:

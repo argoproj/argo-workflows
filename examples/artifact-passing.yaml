@@ -3,7 +3,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-passing-
+  generateName: artifact-passing
 spec:
   entrypoint: artifact-example
   templates:

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-parameters-complex-
+  generateName: global-parameters-complex
 spec:
   entrypoint: test-workflow
   # Parameters can be passed/overridden via the argo CLI.

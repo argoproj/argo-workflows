@@ -5,7 +5,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: status-reference-
+  generateName: status-reference
 spec:
   entrypoint: status-reference
   templates:

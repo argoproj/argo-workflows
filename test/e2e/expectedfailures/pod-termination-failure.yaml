@@ -4,7 +4,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: sleeptest-
+  generateName: sleeptest
   labels:
     argo-e2e: true
 spec:

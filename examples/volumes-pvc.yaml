@@ -5,7 +5,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: volumes-pvc-
+  generateName: volumes-pvc
 spec:
   entrypoint: volumes-pvc-example
   volumeClaimTemplates:

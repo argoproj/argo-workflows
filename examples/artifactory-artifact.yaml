@@ -7,7 +7,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifactory-artifact-
+  generateName: artifactory-artifact
 spec:
   entrypoint: artifact-example
   templates:

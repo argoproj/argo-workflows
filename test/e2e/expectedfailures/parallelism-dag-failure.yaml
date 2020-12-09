@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: parallelism-failed-dag-
+  generateName: parallelism-failed-dag
 spec:
   entrypoint: parallelism-failed-dag
   templates:

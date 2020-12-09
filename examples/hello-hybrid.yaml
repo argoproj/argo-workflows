@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-hybrid-
+  generateName: hello-hybrid
 spec:
   entrypoint: mytemplate
   templates:

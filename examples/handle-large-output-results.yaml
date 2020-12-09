@@ -7,7 +7,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: handle-large-output-results-
+  generateName: handle-large-output-results
 spec:
   entrypoint: handle-large-output-results
   templates:

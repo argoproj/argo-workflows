@@ -23,7 +23,7 @@ var artifactResolutionWhenSkipped = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: conditional-artifact-passing-
+  generateName: conditional-artifact-passing
 spec:
   entrypoint: artifact-example
   templates:
@@ -81,7 +81,7 @@ var stepsWithParamAndGlobalParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-with-param-and-global-param-
+  generateName: steps-with-param-and-global-param
 spec:
   entrypoint: main
   arguments:

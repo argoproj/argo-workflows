@@ -24,7 +24,7 @@ Here is an example of a simple `Workflow` spec with a single `template`:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-  # Name of this Workflow
+  generateName: hello-world   # Name of this Workflow
 spec:
   entrypoint: whalesay        # Defines "whalesay" as the "main" template
   templates:
@@ -86,7 +86,7 @@ This example creates a `ConfigMap` resource on the cluster:
         apiVersion: v1
         kind: ConfigMap
         metadata:
-          generateName: owned-eg-
+          generateName: owned-eg
         data:
           some: value
 ```

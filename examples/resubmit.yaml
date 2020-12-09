@@ -5,7 +5,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: resubmit-
+  generateName: resubmit
 spec:
   entrypoint: rand-fail-dag
   templates:

@@ -377,7 +377,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pending-retry-workflow-
+  generateName: pending-retry-workflow
   labels:
     argo-e2e: true
 spec:
@@ -422,7 +422,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflowWithRetryStrategy() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pending-retry-workflow-with-retry-strategy-
+  generateName: pending-retry-workflow-with-retry-strategy
   labels:
     argo-e2e: true
 spec:

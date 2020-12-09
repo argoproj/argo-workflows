@@ -6,7 +6,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: parallelism-nested-workflow-
+  generateName: parallelism-nested-workflow
 spec:
   arguments:
     parameters:

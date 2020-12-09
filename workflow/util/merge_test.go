@@ -11,7 +11,7 @@ var origWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   arguments:
     parameters:
@@ -27,7 +27,7 @@ var patchWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: workflow-template-hello-world
 spec:
   arguments:
     parameters:
@@ -144,7 +144,7 @@ var wf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata: 
-  generateName: hello-world-
+  generateName: hello-world
 spec: 
   entrypoint: whalesay
   templates: 
@@ -162,7 +162,7 @@ var resultSpec = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata: 
-  generateName: hello-world-
+  generateName: hello-world
 spec: 
   activeDeadlineSeconds: 7200
   arguments: 

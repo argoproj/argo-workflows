@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: ui-dag-retries-
+  generateName: ui-dag-retries
 spec:
   entrypoint: diamond
   templates:

@@ -7,7 +7,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: node-selector-
+  generateName: node-selector
 spec:
   entrypoint: print-arch
   arguments:

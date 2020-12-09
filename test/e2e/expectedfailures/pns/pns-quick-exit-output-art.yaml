@@ -4,7 +4,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pns-quick-exit-output-art-
+  generateName: pns-quick-exit-output-art
 spec:
   entrypoint: pns-quick-exit-output-art
   templates:

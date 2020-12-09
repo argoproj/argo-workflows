@@ -5,7 +5,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-gcs-
+  generateName: output-artifact-gcs
 spec:
   entrypoint: whalesay
   templates:

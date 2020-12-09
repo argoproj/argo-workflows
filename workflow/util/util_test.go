@@ -578,7 +578,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-09-16T16:07:54Z"
-  generateName: steps-
+  generateName: steps
   generation: 13
   labels:
     workflows.argoproj.io/completed: "true"

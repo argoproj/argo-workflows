@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: daemon-nginx-
+  generateName: daemon-nginx
 spec:
   entrypoint: daemon-nginx-example
 

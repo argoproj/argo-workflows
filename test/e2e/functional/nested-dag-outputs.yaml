@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: nested-dag-outputs-
+  generateName: nested-dag-outputs
 spec:
   entrypoint: nested-dag-outputs
   templates:

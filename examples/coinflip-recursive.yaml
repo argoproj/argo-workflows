@@ -6,7 +6,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: coinflip-recursive-
+  generateName: coinflip-recursive
 spec:
   entrypoint: coinflip
   templates:

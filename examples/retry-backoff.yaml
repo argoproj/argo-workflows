@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: retry-backoff-
+  generateName: retry-backoff
 spec:
   entrypoint: retry-backoff
   templates:

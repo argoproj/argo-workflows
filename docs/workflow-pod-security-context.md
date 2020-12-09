@@ -10,7 +10,7 @@ This is likely to be necessary if you have a [pod security policy](https://kuber
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: security-context-
+  generateName: security-context
 spec:
   securityContext:
     runAsNonRoot: true

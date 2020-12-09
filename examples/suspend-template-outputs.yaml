@@ -10,7 +10,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: simon
-  #generateName: suspend-template-
+  #generateName: suspend-template
 spec:
   entrypoint: suspend
   templates:

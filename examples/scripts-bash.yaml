@@ -8,7 +8,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: scripts-bash-
+  generateName: scripts-bash
 spec:
   entrypoint: bash-script-example
   templates:

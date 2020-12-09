@@ -52,7 +52,7 @@ var dynamicSingleDag = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
- generateName: dag-diamond-
+ generateName: dag-diamond
 spec:
  entrypoint: diamond
  templates:
@@ -134,7 +134,7 @@ var artifactResolutionWhenSkippedDAG = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: conditional-artifact-passing-
+  generateName: conditional-artifact-passing
 spec:
   entrypoint: artifact-example
   templates:
@@ -951,7 +951,7 @@ var dagWithParamAndGlobalParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-with-param-and-global-param-
+  generateName: dag-with-param-and-global-param
 spec:
   entrypoint: main
   arguments:

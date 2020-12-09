@@ -9,7 +9,7 @@ Some fields in a workflow specification allow for variable references which are 
     apiVersion: argoproj.io/v1alpha1
     kind: Workflow
     metadata:
-      generateName: hello-world-parameters-
+      generateName: hello-world-parameters
     spec:
       entrypoint: whalesay
       arguments:

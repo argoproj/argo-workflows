@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: retry-script-
+  generateName: retry-script
 spec:
   entrypoint: retry-script
   templates:

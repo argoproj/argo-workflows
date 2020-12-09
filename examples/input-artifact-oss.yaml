@@ -7,7 +7,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: input-artifact-oss-
+  generateName: input-artifact-oss
 spec:
   entrypoint: input-artifact-oss-example
   templates:

@@ -10,7 +10,7 @@ If you want one workflow to create another, you can do this using `curl`. You'll
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: demo-
+  generateName: demo
 spec:
   entrypoint: main
   templates:

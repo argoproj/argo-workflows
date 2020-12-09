@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pns-output-parameter-different-user-
+  generateName: pns-output-parameter-different-user
 spec:
   entrypoint: multi-whalesay
   templates:

@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-wait-wf-
+  generateName: k8s-wait-wf
 spec:
   entrypoint: k8s-wait-wf
   templates:
@@ -24,7 +24,7 @@ spec:
         apiVersion: argoproj.io/v1alpha1
         kind: Workflow
         metadata:
-          generateName: sleep-
+          generateName: sleep
         spec:
           entrypoint: sleep
           templates:

@@ -10,7 +10,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-    generateName: fun-with-gifs-
+    generateName: fun-with-gifs
 spec:
   entrypoint: run-workflow
   volumeClaimTemplates:

@@ -33,7 +33,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-19T17:37:05Z"
-  generateName: hello-world-
+  generateName: hello-world
   generation: 4
   labels:
     workflows.argoproj.io/phase: Running

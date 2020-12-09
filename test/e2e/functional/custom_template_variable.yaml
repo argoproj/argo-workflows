@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: custom-template-variable-
+  generateName: custom-template-variable
 spec:
   entrypoint: hello-hello-hello
 

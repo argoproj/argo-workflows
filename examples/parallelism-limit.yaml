@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: parallelism-limit-
+  generateName: parallelism-limit
 spec:
   entrypoint: parallelism-limit
   parallelism: 2

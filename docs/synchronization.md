@@ -33,7 +33,7 @@ example:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: synchronization-wf-level-
+  generateName: synchronization-wf-level
 spec:
   entrypoint: whalesay
   synchronization:
@@ -60,7 +60,7 @@ example:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: synchronization-tmpl-level-
+  generateName: synchronization-tmpl-level
 spec:
   entrypoint: synchronization-tmpl-level-example
   templates:

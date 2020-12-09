@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-tmpl-timeout-
+  generateName: steps-tmpl-timeout
 spec:
   entrypoint: hello-hello-hello
   templates:

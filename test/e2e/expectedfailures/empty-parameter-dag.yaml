@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: arguments-dag-
+  generateName: arguments-dag
 spec:
   entrypoint: abc
   arguments:

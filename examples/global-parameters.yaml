@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-parameters-
+  generateName: global-parameters
 spec:
   entrypoint: whalesay1
   # Parameters can be passed/overridden via the argo CLI.

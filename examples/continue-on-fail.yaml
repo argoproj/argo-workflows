@@ -3,7 +3,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: continue-on-fail-
+  generateName: continue-on-fail
 spec:
   entrypoint: workflow-ignore
   parallelism: 1

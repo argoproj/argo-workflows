@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-outputs-
+  generateName: global-outputs
 spec:
   entrypoint: generate-globals
   onExit: consume-globals

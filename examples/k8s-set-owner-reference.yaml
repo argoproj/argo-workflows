@@ -8,7 +8,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-set-owner-reference-
+  generateName: k8s-set-owner-reference
 spec:
   entrypoint: k8s-set-owner-reference
   templates:
@@ -20,6 +20,6 @@ spec:
         apiVersion: v1
         kind: ConfigMap
         metadata:
-          generateName: owned-eg-
+          generateName: owned-eg
         data:
           some: value

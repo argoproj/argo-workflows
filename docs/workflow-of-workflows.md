@@ -38,7 +38,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-of-workflows-
+  generateName: workflow-of-workflows
 spec:
   entrypoint: main
   templates:
@@ -69,7 +69,7 @@ spec:
           apiVersion: argoproj.io/v1alpha1
           kind: Workflow
           metadata:
-            generateName: workflow-of-workflows-1-
+            generateName: workflow-of-workflows-1
           spec:
             workflowTemplateRef:
               name: {{inputs.parameters.workflowtemplate}}
@@ -87,7 +87,7 @@ spec:
           apiVersion: argoproj.io/v1alpha1
           kind: Workflow
           metadata:
-            generateName: workflow-of-workflows-2-
+            generateName: workflow-of-workflows-2
           spec:
             arguments:
               parameters:

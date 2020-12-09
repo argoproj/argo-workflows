@@ -35,7 +35,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-07-31T20:35:41Z"
-  generateName: synchronization-wf-level-
+  generateName: synchronization-wf-level
   generation: 5
   labels:
     workflows.argoproj.io/phase: Running

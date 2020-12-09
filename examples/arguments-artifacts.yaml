@@ -7,7 +7,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: arguments-artifacts-
+  generateName: arguments-artifacts
 spec:
   entrypoint: kubectl-input-artifact
   arguments:

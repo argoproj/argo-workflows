@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: retry-container-
+  generateName: retry-container
 spec:
   entrypoint: retry-container
   templates:

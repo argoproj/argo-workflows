@@ -20,7 +20,7 @@ For example, to specify default values that would partially produce the followin
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: gc-ttl-
+  generateName: gc-ttl
   annotations:
     argo: workflows
   labels:

@@ -247,7 +247,7 @@ const wfWithTemplateWithArtifact = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-from-artifact-test-1-
+  generateName: workflow-from-artifact-test-1
   namespace: test-namespace
 spec:
   arguments:

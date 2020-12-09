@@ -44,7 +44,7 @@ func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-nested-
+  generateName: workflow-template-nested
   labels:
     argo-e2e: true
 spec:

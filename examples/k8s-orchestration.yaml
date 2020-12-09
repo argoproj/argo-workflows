@@ -4,7 +4,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-orchestrate-
+  generateName: k8s-orchestrate
 spec:
   entrypoint: k8s-orchestrate
   templates:
@@ -39,7 +39,7 @@ spec:
         apiVersion: batch/v1
         kind: Job
         metadata:
-          generateName: rand-num-
+          generateName: rand-num
         spec:
           completions: 10
           parallelism: 10

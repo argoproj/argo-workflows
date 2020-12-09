@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: exit-code-output-variable-
+  generateName: exit-code-output-variable
 spec:
   entrypoint: exit-code-output-variable
   templates:

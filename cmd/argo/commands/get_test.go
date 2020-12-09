@@ -135,7 +135,7 @@ status:
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-02T16:04:21Z"
-  generateName: many-items-
+  generateName: many-items
   generation: 32
   labels:
     workflows.argoproj.io/completed: "true"

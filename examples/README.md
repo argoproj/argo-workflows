@@ -96,7 +96,7 @@ Be sure to read the comments as they provide useful explanations.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow                  # new type of k8s spec
 metadata:
-  generateName: hello-world-    # name of the workflow spec
+  generateName: hello-world     # name of the workflow spec
 spec:
   entrypoint: whalesay          # invoke the whalesay template
   templates:
@@ -121,7 +121,7 @@ Let's look at a slightly more complex workflow spec with parameters.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-parameters-
+  generateName: hello-world-parameters
 spec:
   # invoke the whalesay template with
   # "hello world" as the argument
@@ -178,7 +178,7 @@ The values set in the `spec.arguments.parameters` are globally scoped and can be
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-parameters-
+  generateName: global-parameters
 spec:
   entrypoint: A
   arguments:
@@ -213,7 +213,7 @@ In this example, we'll see how to create multi-step workflows, how to define mor
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-
+  generateName: steps
 spec:
   entrypoint: hello-hello-hello
 
@@ -273,7 +273,7 @@ In the following workflow, step `A` runs first, as it has no dependencies. Once 
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-diamond-
+  generateName: dag-diamond
 spec:
   entrypoint: diamond
   templates:
@@ -326,7 +326,7 @@ The below workflow spec consists of two steps that run in sequence. The first st
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-passing-
+  generateName: artifact-passing
 spec:
   entrypoint: artifact-example
   templates:
@@ -431,7 +431,7 @@ Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, wh
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: secret-example-
+  generateName: secret-example
 spec:
   entrypoint: whalesay
   # To access secrets as files, add a volume entry in spec.volumes[] and
@@ -470,7 +470,7 @@ Often, we just want a template that executes a script specified as a here-script
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: scripts-bash-
+  generateName: scripts-bash
 spec:
   entrypoint: bash-script-example
   templates:
@@ -531,7 +531,7 @@ Output parameters provide a general mechanism to use the result of a step as a p
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-parameter-
+  generateName: output-parameter
 spec:
   entrypoint: output-parameter
   templates:
@@ -578,7 +578,7 @@ When writing workflows, it is often very useful to be able to iterate over a set
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-
+  generateName: loops
 spec:
   entrypoint: loop-example
   templates:
@@ -610,7 +610,7 @@ We can also iterate over sets of items:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-maps-
+  generateName: loops-maps
 spec:
   entrypoint: loop-map-example
   templates:
@@ -647,7 +647,7 @@ We can pass lists of items as parameters:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-param-arg-
+  generateName: loops-param-arg
 spec:
   entrypoint: loop-param-arg-example
   arguments:
@@ -695,7 +695,7 @@ We can even dynamically generate the list of items to iterate over!
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-param-result-
+  generateName: loops-param-result
 spec:
   entrypoint: loop-param-result-example
   templates:
@@ -740,7 +740,7 @@ We also support conditional execution as shown in this example:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: coinflip-
+  generateName: coinflip
 spec:
   entrypoint: coinflip
   templates:
@@ -789,7 +789,7 @@ You can specify a `retryStrategy` that will dictate how failed or errored steps 
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: retry-backoff-
+  generateName: retry-backoff
 spec:
   entrypoint: retry-backoff
   templates:
@@ -823,7 +823,7 @@ Templates can recursively invoke each other! In this variation of the above coin
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: coinflip-recursive-
+  generateName: coinflip-recursive
 spec:
   entrypoint: coinflip
   templates:
@@ -900,7 +900,7 @@ Some common use cases of exit handlers are:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: exit-handlers-
+  generateName: exit-handlers
 spec:
   entrypoint: intentional-fail
   onExit: exit-handler                  # invoke exit-handler template at end of the workflow
@@ -952,7 +952,7 @@ To limit the elapsed time for a workflow, you can set the variable `activeDeadli
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: timeouts-
+  generateName: timeouts
 spec:
   entrypoint: sleep
   templates:
@@ -972,7 +972,7 @@ The following example dynamically creates a volume and then uses the volume in a
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: volumes-pvc-
+  generateName: volumes-pvc
 spec:
   entrypoint: volumes-pvc-example
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
@@ -1034,7 +1034,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: volumes-existing-
+  generateName: volumes-existing
 spec:
   entrypoint: volumes-existing-example
   volumes:
@@ -1078,7 +1078,7 @@ This can be useful workflows that generate volumes using a `resource` step.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: template-level-volume-
+  generateName: template-level-volume
 spec:
   entrypoint: generate-and-use-volume
   templates:
@@ -1115,7 +1115,7 @@ spec:
         apiVersion: v1
         kind: PersistentVolumeClaim
         metadata:
-          generateName: pvc-example-
+          generateName: pvc-example
         spec:
           accessModes: ['ReadWriteOnce', 'ReadOnlyMany']
           resources:
@@ -1175,7 +1175,7 @@ Or by specifying a `suspend` step on the workflow:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: suspend-template-
+  generateName: suspend-template
 spec:
   entrypoint: suspend
   templates:
@@ -1218,7 +1218,7 @@ Argo workflows can start containers that run in the background (also known as `d
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: daemon-step-
+  generateName: daemon-step
 spec:
   entrypoint: daemon-example
   templates:
@@ -1295,7 +1295,7 @@ A sidecar is another container that executes concurrently in the same pod as the
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: sidecar-nginx-
+  generateName: sidecar-nginx
 spec:
   entrypoint: sidecar-nginx-example
   templates:
@@ -1321,7 +1321,7 @@ With Argo, you can use any container image that you like to generate any kind of
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hardwired-artifact-
+  generateName: hardwired-artifact
 spec:
   entrypoint: hardwired-artifact
   templates:
@@ -1371,7 +1371,7 @@ In many cases, you will want to manage Kubernetes resources from Argo workflows.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-jobs-
+  generateName: k8s-jobs
 spec:
   entrypoint: pi-tmpl
   templates:
@@ -1391,7 +1391,7 @@ spec:
         apiVersion: batch/v1
         kind: Job
         metadata:
-          generateName: pi-job-
+          generateName: pi-job
         spec:
           template:
             metadata:
@@ -1424,7 +1424,7 @@ This Crontab can be modified using the following Argo Workflow:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-patch-
+  generateName: k8s-patch
 spec:
   entrypoint: cront-tmpl
   templates:
@@ -1448,7 +1448,7 @@ An application of sidecars is to implement Docker-in-Docker (DinD). DinD is usef
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: sidecar-dind-
+  generateName: sidecar-dind
 spec:
   entrypoint: dind-sidecar-example
   templates:
@@ -1485,7 +1485,7 @@ Argo will validate and resolve only the variable that starts with Argo allowed p
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: custom-template-variable-
+  generateName: custom-template-variable
 spec:
   entrypoint: hello-hello-hello
 

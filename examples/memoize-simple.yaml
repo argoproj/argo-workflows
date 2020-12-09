@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: memoized-simple-workflow-
+  generateName: memoized-simple-workflow
 spec:
   entrypoint: whalesay
   arguments:

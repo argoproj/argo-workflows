@@ -737,7 +737,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-05-05T15:18:40Z"
-  generateName: retry-backoff-
+  generateName: retry-backoff
   generation: 21
   labels:
     workflows.argoproj.io/completed: "true"
@@ -1351,7 +1351,7 @@ var nestedParallelism = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: parallelism-nested-
+  generateName: parallelism-nested
 spec:
   arguments:
     parameters:
@@ -2299,7 +2299,7 @@ var ioPathPlaceholders = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-path-placeholders-
+  generateName: artifact-path-placeholders
 spec:
   entrypoint: head-lines
   arguments:
@@ -2424,7 +2424,7 @@ var outputStatuses = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: scripts-bash-
+  generateName: scripts-bash
 spec:
   entrypoint: bash-script-example
   templates:
@@ -2634,7 +2634,7 @@ var stepScriptTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: scripts-bash-
+  generateName: scripts-bash
 spec:
   entrypoint: bash-script-example
   templates:
@@ -2670,7 +2670,7 @@ var dagScriptTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target
 spec:
   entrypoint: dag-target
   arguments:
@@ -3071,7 +3071,7 @@ var nestedOptionalOutputArtifacts = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-passing-
+  generateName: artifact-passing
 spec:
   entrypoint: artifact-example
   templates:
@@ -3369,7 +3369,7 @@ var containerOutputsResult = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-
+  generateName: steps
 spec:
   entrypoint: hello-hello-hello
   templates:
@@ -3613,7 +3613,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-05-07T17:40:57Z"
-  generateName: echo-
+  generateName: echo
   generation: 4
   labels:
     workflows.argoproj.io/phase: Running

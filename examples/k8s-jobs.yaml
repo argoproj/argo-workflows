@@ -6,7 +6,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-jobs-
+  generateName: k8s-jobs
 spec:
   entrypoint: pi-tmpl
   templates:
@@ -27,7 +27,7 @@ spec:
         apiVersion: batch/v1
         kind: Job
         metadata:
-          generateName: pi-job-
+          generateName: pi-job
         spec:
           template:
             metadata:

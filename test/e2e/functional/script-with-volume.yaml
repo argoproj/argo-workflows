@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: script-with-vol-
+  generateName: script-with-vol
 spec:
   entrypoint: script-with-vol
   volumes:

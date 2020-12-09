@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-param-result-
+  generateName: loops-param-result
 spec:
   entrypoint: loop-param-result-example
   templates:

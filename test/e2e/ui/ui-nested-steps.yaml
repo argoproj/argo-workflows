@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: ui-nested-steps-
+  generateName: ui-nested-steps
 spec:
   entrypoint: ui-nested-steps
   volumes:

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pod-spec-patch-
+  generateName: pod-spec-patch
 spec:
   entrypoint: whalesay
   arguments:

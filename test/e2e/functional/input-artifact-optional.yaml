@@ -3,7 +3,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: input-artifact-optional-
+  generateName: input-artifact-optional
 spec:
   entrypoint: http-artifact-example
   templates:

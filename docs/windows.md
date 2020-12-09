@@ -15,7 +15,7 @@ If you're running workflows in your hybrid Kubernetes cluster, always make sure 
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-windows-
+  generateName: hello-windows
 spec:
   entrypoint: hello-win
   templates:
@@ -44,7 +44,7 @@ An example workflow can look like the following:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-hybrid-
+  generateName: hello-hybrid
 spec:
   entrypoint: mytemplate
   templates:

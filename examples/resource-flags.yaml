@@ -6,7 +6,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: resource-validate-
+  generateName: resource-validate
 spec:
   entrypoint: resource-validate-example
 

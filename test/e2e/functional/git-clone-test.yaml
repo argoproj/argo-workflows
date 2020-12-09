@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: git-clone-test-
+  generateName: git-clone-test
 spec:
   entrypoint: try-clones
   templates:

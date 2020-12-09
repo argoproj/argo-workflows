@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: parameter-aggregation-script-
+  generateName: parameter-aggregation-script
 spec:
   entrypoint: parameter-aggregation
   templates:

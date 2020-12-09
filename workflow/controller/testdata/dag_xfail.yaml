@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   clusterName: ""
   creationTimestamp: 2018-08-01T09:57:43Z
-  generateName: dag-fail-
+  generateName: dag-fail
   generation: 1
   labels:
     workflows.argoproj.io/phase: Running

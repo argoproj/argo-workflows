@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: 2019-06-26T09:11:58Z
-  generateName: dag-disable-fail-fast-
+  generateName: dag-disable-fail-fast
   generation: 1
   labels:
     workflows.argoproj.io/completed: "true"

@@ -6,7 +6,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: coinflip-
+  generateName: coinflip
 spec:
   entrypoint: coinflip
   templates:

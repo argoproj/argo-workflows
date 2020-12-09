@@ -4,7 +4,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: failed-artifact-save-
+  generateName: failed-artifact-save
 spec:
   entrypoint: failed-artifact-save
   templates:

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-param-sub-with-artifacts-
+  generateName: global-param-sub-with-artifacts
 spec:
   entrypoint: foo
   arguments:

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: unschedulable-
+  generateName: unschedulable
 spec:
   entrypoint: unschedulable
   templates:

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pod-spec-from-previous-step-
+  generateName: pod-spec-from-previous-step
 spec:
   entrypoint: workflow
   templates:

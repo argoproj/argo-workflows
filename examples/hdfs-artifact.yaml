@@ -7,7 +7,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hdfs-artifact-
+  generateName: hdfs-artifact
 spec:
   entrypoint: artifact-example
   templates:

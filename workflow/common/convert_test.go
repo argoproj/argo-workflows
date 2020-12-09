@@ -37,7 +37,7 @@ metadata:
   annotations:
     annotation2: value2
   creationTimestamp: null
-  generateName: hello-world-
+  generateName: hello-world
   labels:
     label1: value1
     workflows.argoproj.io/cron-workflow: hello-world
