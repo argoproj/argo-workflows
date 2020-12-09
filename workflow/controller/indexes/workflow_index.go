@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -17,14 +18,11 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	if err != nil {
 		return []string{}, fmt.Errorf("object has no meta: %v", err)
 	}
-	namespace, ok := m.GetLabels()[common.LabelKeyWorkflowNamespace]
-	if !ok {
-		namespace = m.GetNamespace()
-	}
 	name, ok := m.GetLabels()[common.LabelKeyWorkflow]
 	if !ok {
 		return []string{}, fmt.Errorf("object has no workflow label")
 	}
+	namespace := wfv1.NamespaceOrOther(m.GetLabels()[common.LabelKeyWorkflowNamespace], m.GetNamespace())
 	return []string{WorkflowIndexValue(namespace, name)}, nil
 }
 

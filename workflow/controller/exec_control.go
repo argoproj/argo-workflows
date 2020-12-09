@@ -20,10 +20,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	if pod == nil {
 		return nil
 	}
-	clusterName, ok := pod.Labels[common.LabelKeyClusterName]
-	if !ok {
-		clusterName = wfv1.ThisCluster
-	}
+	clusterName := wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName])
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
