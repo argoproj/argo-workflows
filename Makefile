@@ -161,7 +161,7 @@ images: cli-image executor-image controller-image
 # cli
 
 .PHONY: cli
-cli: dist/argo argo-server.crt argo-server.key
+cli: dist/argo argo-server.key
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 	# Build UI
@@ -198,11 +198,8 @@ dist/argo-%.gz: dist/argo-%
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
-%.crt: $*.key
 %.key:
 	openssl req -x509 -newkey rsa:4096 -keyout $*.key -out $*.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
-# %.pub: $*.key
-# 	openssl rsa -in $*.key -pubout -out $*.pub
 
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
@@ -234,12 +231,12 @@ controller-image: $(CONTROLLER_IMAGE_FILE)
 $(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
 
-# argoagent
+# agent
 
 .PHONY: agent-image
 agent-image: $(AGENT_IMAGE_FILE)
 
-$(AGENT_IMAGE_FILE): $(AGENT_PKGS) agent.crt agent.key
+$(AGENT_IMAGE_FILE): $(AGENT_PKGS) agent.key
 	$(call docker_build,agent,agent,$(AGENT_IMAGE_FILE))
 
 dist/agent-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
@@ -523,7 +520,7 @@ smoke:
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor dist/* ui/dist
+	rm -Rf test-results node_modules vendor dist/* ui/dist go-diagrams
 
 # swagger
 

@@ -83,7 +83,6 @@ FROM scratch as workflow-controller
 USER 8737
 # Add timezone data
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=agent agent.pub agent.pub
 COPY workflow-controller /bin/
 ENTRYPOINT [ "workflow-controller" ]
 
