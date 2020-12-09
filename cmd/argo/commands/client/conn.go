@@ -17,18 +17,18 @@ var instanceID string
 
 var overrides = clientcmd.ConfigOverrides{}
 
-var ExplicitPath string
+var explicitPath string
 
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	cmd.PersistentFlags().StringVar(&ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	cmd.PersistentFlags().StringVar(&explicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
 	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 }
 
 func GetConfig() clientcmd.ClientConfig {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	loadingRules.ExplicitPath = ExplicitPath
+	loadingRules.ExplicitPath = explicitPath
 	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
 
@@ -84,7 +84,7 @@ func GetAuthString() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	authString, err := kubeconfig.GetAuthString(restConfig, ExplicitPath)
+	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
 	if err != nil {
 		log.Fatal(err)
 	}
