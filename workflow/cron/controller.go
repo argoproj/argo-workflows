@@ -252,7 +252,6 @@ func (cc *Controller) syncCronWorkflow(cronWf *v1alpha1.CronWorkflow, workflows 
 		return err
 	}
 
-	cwoc.persistUpdate()
 	return nil
 }
 

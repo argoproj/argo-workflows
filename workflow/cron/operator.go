@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -120,14 +121,25 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate() {
-	data, err := json.Marshal(map[string]interface{}{"status": woc.cronWf.Status})
+	woc.patch(map[string]interface{}{"status": woc.cronWf.Status})
+}
+
+func (woc *cronWfOperationCtx) persistUpdateActiveWorkflows() {
+	woc.patch(map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active}})
+}
+
+func (woc *cronWfOperationCtx) patch(patch map[string]interface{}) {
+	data, err := json.Marshal(patch)
 	if err != nil {
-		woc.log.WithError(err).Error("failed to marshall cron workflow status data")
+		woc.log.WithError(err).Error("failed to marshall cron workflow status.active data")
 		return
 	}
 	err = wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(woc.cronWf.Name, types.MergePatchType, data)
 		if err != nil {
+			if argoerr.IsTransientErr(err) {
+				return false, nil
+			}
 			return false, err
 		}
 		woc.cronWf = cronWf
@@ -239,15 +251,26 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, err
 }
 
 func (woc *cronWfOperationCtx) reconcileActiveWfs(workflows []v1alpha1.Workflow) error {
+	updated := false
 	currentWfsFulfilled := make(map[types.UID]bool)
 	for _, wf := range workflows {
 		currentWfsFulfilled[wf.UID] = wf.Status.Fulfilled()
+
+		if !woc.cronWf.Status.HasActiveUID(wf.UID) && !wf.Status.Fulfilled() {
+			updated = true
+			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(&wf, &wf))
+		}
 	}
 
 	for _, objectRef := range woc.cronWf.Status.Active {
 		if fulfilled, found := currentWfsFulfilled[objectRef.UID]; !found || fulfilled {
+			updated = true
 			woc.removeFromActiveList(objectRef.UID)
 		}
+	}
+
+	if updated {
+		woc.persistUpdateActiveWorkflows()
 	}
 
 	return nil

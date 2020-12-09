@@ -668,6 +668,18 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 		})
 }
 
+func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
+	s.Given().
+		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").

@@ -438,6 +438,16 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.CreateS3BucketOptions": {
+      "description": "CreateS3BucketOptions options used to determine automatic automatic bucket-creation process",
+      "properties": {
+        "objectLocking": {
+          "description": "ObjectLocking Enable object locking",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.CronWorkflow": {
       "description": "CronWorkflow is the definition of a scheduled workflow resource",
       "properties": {
@@ -1529,6 +1539,10 @@
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
+        },
+        "createBucketIfNotPresent": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
