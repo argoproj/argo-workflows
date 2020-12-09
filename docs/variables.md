@@ -47,8 +47,8 @@ The following variables are made available to reference various metadata of a wo
 | `steps.<STEPNAME>.startedAt` | Timestamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Timestamp when the step finished |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
-| `steps.<STEPNAME>.outputs.parameters` | When the previous step uses 'withItems', this contains a JSON array of the output parameters of each invocation |
-| `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
+| `steps.<STEPNAME>.outputs.parameters` | When the previous step uses 'withItems' or 'withParams', this contains a JSON array of the output parameter maps of each invocation |
+| `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
 ## DAG Templates
@@ -61,8 +61,8 @@ The following variables are made available to reference various metadata of a wo
 | `tasks.<TASKNAME>.startedAt` | Timestamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Timestamp when the task finished |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
-| `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses 'withItems', this contains a JSON array of the output parameters of each invocation |
-| `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
+| `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter maps of each invocation |
+| `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
 ## Container/Script Templates
