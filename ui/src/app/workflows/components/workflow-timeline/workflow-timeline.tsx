@@ -55,6 +55,9 @@ export class WorkflowTimeline extends React.Component<WorkflowTimelineProps, Wor
     }
 
     public render() {
+        if (!this.props.workflow.status.nodes) {
+            return <p>No nodes</p>;
+        }
         const nodes = Object.keys(this.props.workflow.status.nodes)
             .map(id => {
                 const node = this.props.workflow.status.nodes[id];
