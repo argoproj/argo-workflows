@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 )
@@ -23,19 +22,16 @@ func NewRMCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			clusterName := args[0]
-			restConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(clientcmd.NewDefaultClientConfigLoadingRules(), &clientcmd.ConfigOverrides{}).ClientConfig()
-			errors.CheckError(err)
-			kube, err := kubernetes.NewForConfig(restConfig)
-			errors.CheckError(err)
-			secrets := kube.CoreV1().Secrets(client.Namespace())
-			errors.CheckError(err)
 			data, err := json.Marshal(map[string]map[string]interface{}{
 				"data": {
 					clusterName: nil,
 				},
 			})
 			errors.CheckError(err)
-			_, err = secrets.Patch("clusters", types.MergePatchType, data)
+			restConfig, err := client.GetConfig().ClientConfig()
+			errors.CheckError(err)
+			_, err = kubernetes.NewForConfigOrDie(restConfig).CoreV1().Secrets(client.Namespace()).
+				Patch("clusters", types.MergePatchType, data)
 			errors.CheckError(err)
 			fmt.Printf(`removed cluster named "%s"
 `, clusterName)

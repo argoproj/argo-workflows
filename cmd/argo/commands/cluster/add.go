@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -17,26 +18,28 @@ import (
 
 func NewAddCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "add CLUSTER_NAME [CONTEXT_NAME]",
+		Use: "add CLUSTER_NAME CONTEXT_NAME",
+		Example: `# Add from the current KUBECONFIG
+argo cluster add agent agent
+
+# Add from another file:
+
+KUBECONFIG=~/.kube/config:cmd/agent/testdata/kubeconfig argo cluster add my-cluster-name my-context-name
+`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 1 && len(args) > 2 {
+			if len(args) != 2 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
 			clusterName := args[0]
+			contextName := args[1]
 			startingConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()
 			errors.CheckError(err)
-			contextName := startingConfig.CurrentContext
-			if len(args) == 2 {
-				contextName = args[1]
+			context, ok := startingConfig.Contexts[contextName]
+			if !ok {
+				log.Fatalf("context named \"%s\" not found, you can list contexts with: `kubectl config get-contexts`", contextName)
 			}
-			errors.CheckError(err)
-			restConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(clientcmd.NewDefaultClientConfigLoadingRules(), &clientcmd.ConfigOverrides{}).ClientConfig()
-			errors.CheckError(err)
-			kube, err := kubernetes.NewForConfig(restConfig)
-			errors.CheckError(err)
-			secrets := kube.CoreV1().Secrets(client.Namespace())
-			c, err := clientcmd.NewDefaultClientConfig(*startingConfig, &clientcmd.ConfigOverrides{Context: *startingConfig.Contexts[contextName]}).ClientConfig()
+			c, err := clientcmd.NewDefaultClientConfig(*startingConfig, &clientcmd.ConfigOverrides{Context: *context}).ClientConfig()
 			errors.CheckError(err)
 			marshal, err := json.Marshal(&clusters.RestConfig{
 				Host:               c.Host,
@@ -58,10 +61,13 @@ func NewAddCommand() *cobra.Command {
 				},
 			})
 			errors.CheckError(err)
-			_, err = secrets.Patch("clusters", types.MergePatchType, data)
+			restConfig, err := client.GetConfig().ClientConfig()
+			errors.CheckError(err)
+			_, err = kubernetes.NewForConfigOrDie(restConfig).CoreV1().Secrets(client.Namespace()).
+				Patch("clusters", types.MergePatchType, data)
 			errors.CheckError(err)
 			fmt.Printf(`added cluster named "%s" from context "%s"
-`, contextName, clusterName)
+`, clusterName, contextName)
 		},
 	}
 }

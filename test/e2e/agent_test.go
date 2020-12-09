@@ -1,26 +1,31 @@
-package main
+// +build e2emc
+
+package e2e
 
 import (
-	"os"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
-func TestAgent(t *testing.T) {
-	if os.Getenv("CI") == "true" {
-		t.Skip()
-	}
+type AgentSuite struct {
+	fixtures.E2ESuite
+}
 
-	config, err := clientcmd.BuildConfigFromFlags("", "testdata/kubeconfig")
+func (s *AgentSuite) TestAgent() {
+	t := s.T()
+	config, err := clientcmd.BuildConfigFromFlags("", "../../cmd/agent/testdata/kubeconfig")
 	assert.NoError(t, err)
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -105,4 +110,8 @@ func TestAgent(t *testing.T) {
 		err := pods.DeleteCollection(&metav1.DeleteOptions{}, listOptions)
 		assert.NoError(t, err)
 	})
+}
+
+func TestAgentSuite(t *testing.T) {
+	suite.Run(t, new(AgentSuite))
 }
