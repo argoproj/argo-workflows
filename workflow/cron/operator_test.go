@@ -78,9 +78,10 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, err := woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
-	assert.True(t, proceed)
+	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
+	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
 	startingDeadlineSeconds = int64(25)
@@ -89,9 +90,9 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
-	assert.False(t, proceed)
+	assert.True(t, missedExecutionTime.IsZero())
 
 	// Run the same test in a different timezone
 
@@ -110,9 +111,10 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
-	assert.True(t, proceed)
+	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
+	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
 	startingDeadlineSeconds = int64(25)
@@ -121,9 +123,9 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
-	assert.False(t, proceed)
+	assert.True(t, missedExecutionTime.IsZero())
 }
 
 type fakeLister struct {
@@ -170,12 +172,13 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	cs := fake.NewSimpleClientset()
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
-		wfClientset: cs,
-		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
-		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
-		cronWf:      &cronWf,
-		log:         logrus.WithFields(logrus.Fields{}),
-		metrics:     testMetrics,
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logrus.WithFields(logrus.Fields{}),
+		metrics:           testMetrics,
+		scheduledTimeFunc: inferScheduledTime,
 	}
 	woc.Run()
 
