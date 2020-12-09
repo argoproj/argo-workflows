@@ -85,15 +85,6 @@ func (woc *cronWfOperationCtx) run(scheduledRuntime time.Time) {
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
-		if errors.IsAlreadyExists(err) {
-			// The scheduled workflow already exists, likely indicating that there is a corrupted LastScheduledTime field.
-			// If the intended scheduledRuntime is later than the present value in LastScheduledTime, then replace it
-			if scheduledRuntime.After(woc.cronWf.Status.LastScheduledTime.Time) {
-				woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: scheduledRuntime}
-			}
-			woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Workflow scheduled for %s already exists", scheduledRuntime))
-			return
-		}
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
 		return
 	}
