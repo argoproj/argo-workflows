@@ -8,22 +8,21 @@ import (
 )
 
 func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
-	wf := toWorkflow(cronWf.TypeMeta, cronWf.ObjectMeta, cronWf.Spec.WorkflowSpec)
-	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
-	if cronWf.Spec.WorkflowMetadata != nil {
-		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
-			wf.Labels[key] = label
-		}
-
-		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
-			wf.Annotations = make(map[string]string)
-			for key, annotation := range cronWf.Spec.WorkflowMetadata.Annotations {
-				wf.Annotations[key] = annotation
-			}
-		}
+	meta := metav1.ObjectMeta{
+		GenerateName: cronWf.Name + "-",
+		Labels:       make(map[string]string),
+		Annotations:  make(map[string]string),
 	}
-	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
-	return wf
+	return toWorkflow(*cronWf, meta)
+}
+
+func ConvertCronWorkflowToWorkflowWithName(cronWf *wfv1.CronWorkflow, name string) *wfv1.Workflow {
+	meta := metav1.ObjectMeta{
+		Name:        name,
+		Labels:      make(map[string]string),
+		Annotations: make(map[string]string),
+	}
+	return toWorkflow(*cronWf, meta)
 }
 
 func NewWorkflowFromWorkflowTemplate(templateName string, workflowMetadata *metav1.ObjectMeta, clusterScope bool) *wfv1.Workflow {
@@ -58,23 +57,34 @@ func NewWorkflowFromWorkflowTemplate(templateName string, workflowMetadata *meta
 	return wf
 }
 
-func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv1.WorkflowSpec) *wfv1.Workflow {
+func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Workflow {
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowKind,
-			APIVersion: typeMeta.APIVersion,
+			APIVersion: cronWf.TypeMeta.APIVersion,
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: objectMeta.GetName() + "-",
-			Labels:       make(map[string]string),
-			Annotations:  make(map[string]string),
-		},
-		Spec: spec,
+		ObjectMeta: objectMeta,
+		Spec:       cronWf.Spec.WorkflowSpec,
 	}
 
-	if instanceId, ok := objectMeta.GetLabels()[LabelKeyControllerInstanceID]; ok {
+	if instanceId, ok := cronWf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID]; ok {
 		wf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID] = instanceId
 	}
+
+	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
+	if cronWf.Spec.WorkflowMetadata != nil {
+		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
+			wf.Labels[key] = label
+		}
+
+		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
+			wf.Annotations = make(map[string]string)
+			for key, annotation := range cronWf.Spec.WorkflowMetadata.Annotations {
+				wf.Annotations[key] = annotation
+			}
+		}
+	}
+	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(&cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 
 	return wf
 }

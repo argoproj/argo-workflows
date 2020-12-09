@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/robfig/cron/v3"
 )
@@ -15,6 +16,8 @@ type cronFacade struct {
 	cron     *cron.Cron
 	entryIDs map[string]cron.EntryID
 }
+
+type ScheduledTimeFunc func() time.Time
 
 func newCronFacade() *cronFacade {
 	return &cronFacade{
@@ -42,15 +45,19 @@ func (f *cronFacade) Delete(key string) {
 	delete(f.entryIDs, key)
 }
 
-func (f *cronFacade) AddJob(key, schedule string, cwoc *cronWfOperationCtx) error {
+func (f *cronFacade) AddJob(key, schedule string, cwoc *cronWfOperationCtx) (ScheduledTimeFunc, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	entryID, err := f.cron.AddJob(schedule, cwoc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	f.entryIDs[key] = entryID
-	return nil
+
+	// Return a function to return the last scheduled time
+	return func() time.Time {
+		return f.cron.Entry(entryID).Prev
+	}, nil
 }
 
 func (f *cronFacade) Load(key string) (*cronWfOperationCtx, error) {
