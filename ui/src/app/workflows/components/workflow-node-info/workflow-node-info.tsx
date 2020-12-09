@@ -3,6 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {DropDownButton} from '../../../shared/components/drop-down-button';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Phase} from '../../../shared/components/phase';
@@ -100,31 +101,39 @@ export const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
+    const showLogs = (container = 'main') => props.onShowContainerLogs(props.node.id, container);
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
+                <button className='argo-button argo-button--base' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {props.node.type === 'Pod' && (
-                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
-                        LOGS
-                    </button>
-                )}
+                {props.node.type === 'Pod' && props.onShowContainerLogs && (
+                    <DropDownButton
+                        onClick={() => showLogs()}
+                        items={[
+                            {onClick: () => showLogs('init'), value: 'init logs'},
+                            {onClick: () => showLogs('wait'), value: 'wait logs'}
+                        ]}>
+                        main logs
+                    </DropDownButton>
+                )}{' '}
                 {props.links &&
                     props.links
                         .filter(link => link.scope === 'pod')
                         .map(link => (
-                            <a
-                                className='argo-button argo-button--base-o'
-                                href={link.url
-                                    .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
-                                    .replace(/\${metadata\.name}/g, props.node.id)
-                                    .replace(/\${status\.startedAt}/g, props.node.startedAt)
-                                    .replace(/\${status\.finishedAt}/g, props.node.finishedAt)}>
+                            <button
+                                className='argo-button argo-button--base'
+                                onClick={() => {
+                                    document.location.href = link.url
+                                        .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
+                                        .replace(/\${metadata\.name}/g, props.node.id)
+                                        .replace(/\${status\.startedAt}/g, props.node.startedAt)
+                                        .replace(/\${status\.finishedAt}/g, props.node.finishedAt);
+                                }}>
                                 <i className='fa fa-link' /> {link.name}
-                            </a>
+                            </button>
                         ))}
             </div>
         </div>
