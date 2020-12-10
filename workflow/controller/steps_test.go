@@ -165,3 +165,130 @@ func TestResourceDurationMetric(t *testing.T) {
 		assert.Equal(t, "24", localScope["resourcesDuration.memory"])
 	}
 }
+
+var optionalArgumentAndParameter = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: optional-input-artifact-ctc82
+spec:
+  arguments: {}
+  entrypoint: plan
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: plan
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: create-artifact
+        template: artifact-creation
+        when: "false"
+    - - arguments:
+          artifacts:
+          - from: '{{steps.create-artifact.outputs.artifacts.hello}}'
+            name: artifact
+            optional: true
+        name: print-artifact
+        template: artifact-printing
+  - arguments: {}
+    container:
+      args:
+      - echo 'hello' > /tmp/hello.txt
+      command:
+      - sh
+      - -c
+      image: alpine:3.11
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: artifact-creation
+    outputs:
+      artifacts:
+      - name: hello
+        path: /tmp/hello.txt
+  - arguments: {}
+    container:
+      args:
+      - echo 'goodbye'
+      command:
+      - sh
+      - -c
+      image: alpine:3.11
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: artifact
+        optional: true
+        path: /tmp/file
+    metadata: {}
+    name: artifact-printing
+    outputs: {}
+status:
+  nodes:
+    optional-input-artifact-ctc82:
+      children:
+      - optional-input-artifact-ctc82-4087665160
+      displayName: optional-input-artifact-ctc82
+      finishedAt: "2020-12-08T18:40:26Z"
+      id: optional-input-artifact-ctc82
+      name: optional-input-artifact-ctc82
+      outboundNodes:
+      - optional-input-artifact-ctc82-1701987189
+      phase: Running
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-12-08T18:40:21Z"
+      templateName: plan
+      templateScope: local/optional-input-artifact-ctc82
+      type: Steps
+    optional-input-artifact-ctc82-3164000327:
+      boundaryID: optional-input-artifact-ctc82
+      children:
+      - optional-input-artifact-ctc82-933325693
+      displayName: create-artifact
+      finishedAt: "2020-12-08T18:40:21Z"
+      id: optional-input-artifact-ctc82-3164000327
+      message: when 'false' evaluated false
+      name: optional-input-artifact-ctc82[0].create-artifact
+      phase: Skipped
+      progress: 1/1
+      startedAt: "2020-12-08T18:40:21Z"
+      templateName: artifact-creation
+      templateScope: local/optional-input-artifact-ctc82
+      type: Skipped
+    optional-input-artifact-ctc82-4087665160:
+      boundaryID: optional-input-artifact-ctc82
+      children:
+      - optional-input-artifact-ctc82-3164000327
+      displayName: '[0]'
+      finishedAt: "2020-12-08T18:40:21Z"
+      id: optional-input-artifact-ctc82-4087665160
+      name: optional-input-artifact-ctc82[0]
+      phase: Running
+      progress: 1/1
+      startedAt: "2020-12-08T18:40:21Z"
+      templateName: plan
+      templateScope: local/optional-input-artifact-ctc82
+      type: StepGroup
+  phase: Running
+`
+
+func TestOptionalArgumentAndParameter(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(optionalArgumentAndParameter)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}

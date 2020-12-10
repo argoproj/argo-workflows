@@ -28,7 +28,7 @@ nav:
           - workflow-concepts.md
           - cli.md
           - variables.md
-      # topics that don't require kubctl or re-configuration
+      # topics that don't require kubectl or re-configuration
       - Intermediate:
           - service-accounts.md
           - workflow-rbac.md
@@ -132,6 +132,8 @@ nav:
           - argo-server-auth-mode.md
           - tls.md
           - argo-server-sso.md
+      - high-availability.md
+      - disaster-recovery.md
       - scaling.md
       - cost-optimisation.md
       - windows.md
