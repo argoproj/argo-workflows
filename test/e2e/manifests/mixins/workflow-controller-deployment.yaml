@@ -9,3 +9,16 @@ spec:
       containers:
         - name: workflow-controller
           imagePullPolicy: Never
+          args:
+            - --loglevel
+            - debug
+            - --namespaced
+            - --configmap
+            - workflow-controller-configmap
+            - --executor-image
+            - argoproj/argoexec:latest
+          env:
+            - name: INLINE_POD_GC
+              value: "false"
+            - name: RECENTLY_STARTED_POD_DURATION
+              value: "10s"
