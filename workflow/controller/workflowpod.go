@@ -260,7 +260,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl, opts)
 
-	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
+	err = woc.addVolumeReferences(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +360,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to unmarshal the PodSpecPatch string")
 		}
-		err = addPodPatchVolRef(spec, pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
+		err = woc.addPodPatchVolRef(spec, pod, tmpl)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to add volume to pod")
 		}
@@ -704,9 +704,9 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	}
 }
 
-func addVolumeRef(volMounts []apiv1.VolumeMount, pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
+func (woc *wfOperationCtx) addVolumeRef(volMounts []apiv1.VolumeMount, pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
-	getVolByName := func(name string, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) *apiv1.Volume {
+	getVolByName := func(name string, tmpl *wfv1.Template) *apiv1.Volume {
 		// Find a volume from template-local volumes.
 		for _, vol := range tmpl.Volumes {
 			if vol.Name == name {
@@ -714,13 +714,13 @@ func addVolumeRef(volMounts []apiv1.VolumeMount, pod *apiv1.Pod, vols []apiv1.Vo
 			}
 		}
 		// Find a volume from global volumes.
-		for _, vol := range vols {
+		for _, vol := range woc.volumes {
 			if vol.Name == name {
 				return &vol
 			}
 		}
 		// Find a volume from pvcs.
-		for _, pvc := range pvcs {
+		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
 			if pvc.Name == name {
 				return &pvc
 			}
@@ -729,7 +729,7 @@ func addVolumeRef(volMounts []apiv1.VolumeMount, pod *apiv1.Pod, vols []apiv1.Vo
 	}
 
 	for _, volMnt := range volMounts {
-		vol := getVolByName(volMnt.Name, vols, tmpl, pvcs)
+		vol := getVolByName(volMnt.Name, tmpl)
 		if vol == nil {
 			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
 		}
@@ -751,14 +751,14 @@ func addVolumeRef(volMounts []apiv1.VolumeMount, pod *apiv1.Pod, vols []apiv1.Vo
 }
 
 // addPodPatchVolRef adds any volumeMounts that PodSpecPatch referencing, to the pod.spec.volumes
-func addPodPatchVolRef(patchPodSpec apiv1.PodSpec, pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
+func (woc *wfOperationCtx) addPodPatchVolRef(patchPodSpec apiv1.PodSpec, pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
 	default:
 		return nil
 	}
 	for _, container := range patchPodSpec.Containers {
-		err := addVolumeRef(container.VolumeMounts, pod, vols, tmpl, pvcs)
+		err := woc.addVolumeRef(container.VolumeMounts, pod, tmpl)
 		if err != nil {
 			return err
 		}
@@ -768,34 +768,34 @@ func addPodPatchVolRef(patchPodSpec apiv1.PodSpec, pod *apiv1.Pod, vols []apiv1.
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
-func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
+func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
 	default:
 		return nil
 	}
 	if tmpl.Container != nil {
-		err := addVolumeRef(tmpl.Container.VolumeMounts, pod, vols, tmpl, pvcs)
+		err := woc.addVolumeRef(tmpl.Container.VolumeMounts, pod, tmpl)
 		if err != nil {
 			return err
 		}
 	}
 	if tmpl.Script != nil {
-		err := addVolumeRef(tmpl.Script.VolumeMounts, pod, vols, tmpl, pvcs)
+		err := woc.addVolumeRef(tmpl.Script.VolumeMounts, pod, tmpl)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, container := range tmpl.InitContainers {
-		err := addVolumeRef(container.VolumeMounts, pod, vols, tmpl, pvcs)
+		err := woc.addVolumeRef(container.VolumeMounts, pod, tmpl)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, sidecar := range tmpl.Sidecars {
-		err := addVolumeRef(sidecar.VolumeMounts, pod, vols, tmpl, pvcs)
+		err := woc.addVolumeRef(sidecar.VolumeMounts, pod, tmpl)
 		if err != nil {
 			return err
 		}
