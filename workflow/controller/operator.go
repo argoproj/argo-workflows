@@ -487,7 +487,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		if param.Value != nil {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
-			configMapValue, err := util.GetConfigMaps(woc.controller.kubeclientset, woc.wf.GetNamespace(), param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+			configMapValue, err := util.GetConfigMapValue(woc.controller.kubeclientset, woc.wf.GetNamespace(), param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				return err
 			}
