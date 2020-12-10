@@ -3,13 +3,13 @@ kind: Kustomization
 
 resources:
   - ../../../../manifests/quick-start/minimal
+  - ../../stress/many-massive-workflows.yaml
 
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml
   - ../mixins/workflow-controller-configmap.yaml
   - ../mixins/workflow-controller-deployment.yaml
   - ../mixins/cluster-workflow-template-rbac.yaml
-  - ../../stress/many-massive-workflows.yaml
 
 commonLabels:
   "app.kubernetes.io/part-of": "argo"

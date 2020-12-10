@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../../../manifests/quick-start/sso
+  - ../../stress/many-massive-workflows.yaml
 
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml

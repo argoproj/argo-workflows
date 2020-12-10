@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
-
-	_ "net/http/pprof"
 
 	"github.com/argoproj/pkg/cli"
 	"github.com/argoproj/pkg/errors"
 	kubecli "github.com/argoproj/pkg/kube/cli"
+	"github.com/argoproj/pkg/kubeclientmetrics"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -24,6 +24,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/controller"
+	"github.com/argoproj/argo/workflow/metrics"
 )
 
 const (
@@ -64,6 +65,8 @@ func NewRootCommand() *cobra.Command {
 			}
 			config.Burst = burst
 			config.QPS = qps
+
+			kubeclientmetrics.AddMetricsTransportWrapper(config, metrics.IncKubernetesRequest)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
