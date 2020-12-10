@@ -21,6 +21,7 @@ info() {
 }
 
 pf MinIO pod/minio 9000
+pf Prometheus svc/prometheus 9091
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
@@ -42,5 +43,6 @@ if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
-  pf "Workflow Controller" deploy/workflow-controller 9090
+  pf "Workflow Controller" svc/workflow-controller-metric 9090
 fi
+
