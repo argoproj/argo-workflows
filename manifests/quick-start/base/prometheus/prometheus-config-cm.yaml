@@ -10,4 +10,3 @@ data:
         static_configs:
           - targets:
               - workflow-controller-metrics:9090
-              - localhost:9090
