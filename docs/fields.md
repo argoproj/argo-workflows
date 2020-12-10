@@ -3082,8 +3082,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
-
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
