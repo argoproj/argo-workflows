@@ -277,8 +277,7 @@ func (woc *wfOperationCtx) operate() {
 		// Workflow will not be requeued if workflow steps are in pending state.
 		// Workflow needs to requeue on its deadline,
 		if woc.workflowDeadline != nil {
-			key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
-			woc.controller.wfQueue.AddAfter(key, time.Until(*woc.workflowDeadline))
+			woc.requeueAfter(time.Until(*woc.workflowDeadline))
 		}
 
 		if woc.execWf.Spec.Metrics != nil {
@@ -683,12 +682,13 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 }
 
 // requeue this workflow onto the workqueue for later processing
+func (woc *wfOperationCtx) requeueAfter(afterDuration time.Duration) {
+	key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
+	woc.controller.wfQueue.AddAfter(key, afterDuration)
+}
+
 func (woc *wfOperationCtx) requeue() {
-	key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-	if err != nil {
-		woc.log.Errorf("Failed to requeue workflow %s: %v", woc.wf.ObjectMeta.Name, err)
-		return
-	}
+	key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
 	woc.controller.wfQueue.AddRateLimited(key)
 }
 
@@ -771,7 +771,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 		// See if we have waited past the deadline
 		if time.Now().Before(waitingDeadline) {
-			woc.requeue()
+			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
@@ -2666,7 +2666,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	}
 
 	if requeueTime != nil {
-		woc.requeue()
+		woc.requeueAfter(time.Until(*requeueTime))
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
