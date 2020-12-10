@@ -23,6 +23,7 @@ import (
 
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/controller"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -67,6 +68,7 @@ func NewRootCommand() *cobra.Command {
 			config.QPS = qps
 
 			kubeclientmetrics.AddMetricsTransportWrapper(config, metrics.IncKubernetesRequest)
+			logs.AddLoggingTransportWrapper(config)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
