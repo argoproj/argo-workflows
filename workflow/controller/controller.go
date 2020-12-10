@@ -110,7 +110,7 @@ const (
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 	// DEPRECATED - there is really no need for this anymore because we rate limit reconciliations
-	enoughTimeForInformerSync           = 1 * time.Second
+	enoughTimeForInformerSync = 1 * time.Second
 )
 
 // NewWorkflowController instantiates a new WorkflowController

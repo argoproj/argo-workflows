@@ -277,7 +277,8 @@ func (woc *wfOperationCtx) operate() {
 		// Workflow will not be requeued if workflow steps are in pending state.
 		// Workflow needs to requeue on its deadline,
 		if woc.workflowDeadline != nil {
-			woc.requeue()
+			key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
+			woc.controller.wfQueue.AddAfter(key, time.Until(*woc.workflowDeadline))
 		}
 
 		if woc.execWf.Spec.Metrics != nil {
