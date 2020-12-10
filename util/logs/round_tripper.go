@@ -12,8 +12,11 @@ type loggingRoundTripper struct {
 }
 
 func (l *loggingRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	log.Debugf("%s %s", r.Method, r.URL)
-	return l.roundTripper.RoundTrip(r)
+	x, err := l.roundTripper.RoundTrip(r)
+	if x != nil {
+		log.Debugf("%s %s %v", r.Method, r.URL, x.StatusCode)
+	}
+	return x, err
 }
 
 func AddLoggingTransportWrapper(config *rest.Config) *rest.Config {
