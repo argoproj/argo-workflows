@@ -430,6 +430,7 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
+	sleep 5s
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
