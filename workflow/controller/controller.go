@@ -41,6 +41,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
+	envutil "github.com/argoproj/argo/util/env"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/common"
@@ -133,8 +134,8 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
-		completedPods:              make(chan string, 512),
-		gcPods:                     make(chan string, 512),
+		completedPods:              make(chan string, envutil.LookupEnvIntOr("COMPLETED_PODS_QUEUE", 512)),
+		gcPods:                     make(chan string, envutil.LookupEnvIntOr("GC_PODS_QUEUE", 512)),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
