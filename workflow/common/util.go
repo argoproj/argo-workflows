@@ -490,8 +490,9 @@ const deleteRetries = 3
 // DeletePod deletes a pod. Ignores NotFound error
 func DeletePod(c kubernetes.Interface, podName, namespace string) error {
 	var err error
+	propagation := metav1.DeletePropagationBackground
 	for attempt := 0; attempt < deleteRetries; attempt++ {
-		err = c.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{})
+		err = c.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{PropagationPolicy: &propagation})
 		if err == nil || apierr.IsNotFound(err) {
 			return nil
 		}
