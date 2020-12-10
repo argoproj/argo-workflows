@@ -6,6 +6,9 @@ data:
   containerRuntimeExecutor: pns
   executor: |
     imagePullPolicy: IfNotPresent
+    args:
+      - --loglevel
+      - debug
     resources:
       requests:
         cpu: 0.1
