@@ -5,6 +5,7 @@ metadata:
 data:
   prometheus.yaml: |
     global:
+      scrape_interval: 15s
     scrape_configs:
       - job_name: 'argo'
         static_configs:
