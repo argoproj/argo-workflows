@@ -245,7 +245,7 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 	if err != nil {
-		woc.markWorkflowError(fmt.Errorf("failed to set global parameters: %v", err))
+		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 		return
 	}
 
