@@ -743,7 +743,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				UpdateFunc: func(old, new interface{}) {
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
-					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
+					if os.Getenv("WORKFLOW_RESOURCE_VERSION_CHECK") != "false" && oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						return
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
@@ -884,7 +884,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 					return
 				}
 				oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
-				if oldPod.ResourceVersion == newPod.ResourceVersion {
+				if os.Getenv("POD_RESOURCE_VERSION_CHECK") != "false" && oldPod.ResourceVersion == newPod.ResourceVersion {
 					return
 				}
 				if !pod.SignificantPodChange(oldPod, newPod) {
