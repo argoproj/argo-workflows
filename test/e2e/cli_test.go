@@ -1254,7 +1254,7 @@ func (s *CLISuite) TestSynchronizationWfLevelMutex() {
 		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Pending")
 		}).
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted, 120*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -1287,6 +1287,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
+			WaitForWorkflow(fixtures.ToBeRunning).
 			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Running")
 			}).
