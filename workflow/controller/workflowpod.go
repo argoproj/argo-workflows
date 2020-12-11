@@ -152,10 +152,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	mainCtr.Name = common.MainContainerName
 	// Allow customization of main container resources.
-	if isResourcesSpecified(woc.controller.Config.MainContainer) &&
-		// Container resources in workflow spec takes precedence over the main container's configuration in controller.
-		!(isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == "main") {
+	if isResourcesSpecified(woc.controller.Config.MainContainer) {
 		mainCtr.Resources = woc.controller.Config.MainContainer.Resources
+	}
+	// Container resources in workflow spec takes precedence over the main container's configuration in controller.
+	if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
+		mainCtr.Resources = tmpl.Container.Resources
 	}
 
 	var activeDeadlineSeconds *int64
@@ -607,7 +609,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 }
 
 func isResourcesSpecified(ctr *apiv1.Container) bool {
-	return ctr != nil && (ctr.Resources.Limits.Cpu() != nil || ctr.Resources.Limits.Memory() != nil)
+	return ctr != nil && len(ctr.Resources.Limits) != 0
 }
 
 // addMetadata applies metadata specified in the template
