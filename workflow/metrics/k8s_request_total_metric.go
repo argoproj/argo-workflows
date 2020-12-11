@@ -52,11 +52,13 @@ func parseRequest(r *http.Request) (verb string, kind string) {
 		verb = "Watch"
 	} else if verb == "List" && n%2 == 1 {
 		verb = "Get"
+	} else if verb == "Delete" && n%2 == 0 {
+		verb = "DeleteCollection"
 	}
 
 	kind = "Unknown"
 	switch verb {
-	case "List", "Watch", "Create":
+	case "List", "Watch", "Create", "DeleteCollection":
 		kind = path[n-1]
 	case "Get", "Delete", "Patch", "Update":
 		kind = path[n-2]

@@ -22,7 +22,7 @@ func Test_parseRequest(t *testing.T) {
 		{"get", "GET", "https://0.0.0.0:65009/apis/coordination.k8s.io/v1/namespaces/argo/leases/my-lease", "Get", "leases"},
 		{"update", "PUT", "https://0.0.0.0:65009/apis/coordination.k8s.io/v1/namespaces/argo/leases/my-lease", "Update", "leases"},
 		{"delete", "DELETE", "https://0.0.0.0:65009/apis/coordination.k8s.io/v1/namespaces/argo/leases/my-lease", "Delete", "leases"},
-		{"cluster", "GET", "https://0.0.0.0:65009/apis/coordination.k8s.io/v1/leases/my-lease", "Get", "leases"},
+		{"deletecollection", "DELETE", "https://0.0.0.0:65009/apis/coordination.k8s.io/v1/namespaces/argo/leases", "DeleteCollection", "leases"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			x, _ := url.Parse(tt.url)
