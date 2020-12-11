@@ -24,7 +24,7 @@ pf MinIO pod/minio 9000
 
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
   pf Prometheus svc/prometheus 9091
-  fi
+fi
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
