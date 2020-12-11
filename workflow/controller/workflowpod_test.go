@@ -1271,13 +1271,22 @@ func TestAddPodPatchVolRef(t *testing.T) {
 	var patchSpec apiv1.PodSpec
 	err := yaml.Unmarshal([]byte(podSpecPatch), &patchSpec)
 	assert.NoError(err)
-	woc := newWoc()
-	pod := apiv1.Pod{Spec: apiv1.PodSpec{Containers: []apiv1.Container{apiv1.Container{Name: "main"}}}}
-	woc.volumes = []apiv1.Volume{apiv1.Volume{Name: "home"}}
-	assert.Len(pod.Spec.Volumes, 0)
-	err = woc.addPodPatchVolRef(patchSpec, &pod, &wfv1.Template{Container: &apiv1.Container{Name: "test"}})
-	assert.NoError(err)
-	assert.Len(pod.Spec.Containers, 1)
-	assert.Len(pod.Spec.Volumes, 1)
-	assert.Equal("home", pod.Spec.Volumes[0].Name)
+	t.Run("MissingVolume", func(t *testing.T) {
+		woc := newWoc()
+		pod := apiv1.Pod{Spec: apiv1.PodSpec{Containers: []apiv1.Container{{Name: "main"}}}}
+		assert.Len(pod.Spec.Volumes, 0)
+		err = woc.addPodPatchVolRef(patchSpec, &pod, &wfv1.Template{Container: &apiv1.Container{Name: "test"}})
+		assert.Error(err)
+	})
+	t.Run("AddingVolumeRef", func(t *testing.T) {
+		woc := newWoc()
+		pod := apiv1.Pod{Spec: apiv1.PodSpec{Containers: []apiv1.Container{{Name: "main"}}}}
+		woc.volumes = []apiv1.Volume{apiv1.Volume{Name: "home"}}
+		assert.Len(pod.Spec.Volumes, 0)
+		err = woc.addPodPatchVolRef(patchSpec, &pod, &wfv1.Template{Container: &apiv1.Container{Name: "test"}})
+		assert.NoError(err)
+		assert.Len(pod.Spec.Containers, 1)
+		assert.Len(pod.Spec.Volumes, 1)
+		assert.Equal("home", pod.Spec.Volumes[0].Name)
+	})
 }
