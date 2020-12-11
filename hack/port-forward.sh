@@ -43,6 +43,5 @@ if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
-  pf "Workflow Controller" svc/workflow-controller-metrics 9090
+  pf "Workflow Controller" deploy/workflow-controller 9090
 fi
-

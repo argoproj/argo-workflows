@@ -362,7 +362,6 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Errorf("failed to convert to workflow from unstructured: %v", err)
 			continue
 		}
-		// should this use AddRateLimited?
 		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
 	}
 }
