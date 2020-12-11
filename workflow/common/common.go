@@ -55,7 +55,8 @@ const (
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
 	// Who created this workflow.
-	LabelKeyCreator = workflow.WorkflowFullName + "/creator"
+	LabelKeyCreator      = workflow.WorkflowFullName + "/creator"
+	LabelKeyCreatorEmail = workflow.WorkflowFullName + "/creator-email"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.

@@ -2812,6 +2812,13 @@
     "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
       "type": "object",
       "properties": {
+        "email": {
+          "type": "string"
+        },
+        "emailVerified": {
+          "type": "boolean",
+          "format": "boolean"
+        },
         "groups": {
           "type": "array",
           "items": {
