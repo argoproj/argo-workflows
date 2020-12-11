@@ -51,7 +51,7 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 func (s *SmokeSuite) TestArtifactPassing() {
 
 	if s.Config.ContainerRuntimeExecutor != common.ContainerRuntimeExecutorDocker {
-		s.T().Skip("only docker not supported")
+		s.T().Skip("only docker supported")
 	}
 
 	s.Given().
