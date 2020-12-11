@@ -1149,7 +1149,7 @@ func TestPodSpecPatch(t *testing.T) {
 
 func TestMainContainerCustomization(t *testing.T) {
 	mainCtrSpec := &apiv1.Container{
-		Name: "main",
+		Name: common.MainContainerName,
 		Resources: apiv1.ResourceRequirements{
 			Limits: apiv1.ResourceList{
 				apiv1.ResourceCPU:    resource.MustParse("0.200"),
@@ -1166,12 +1166,68 @@ func TestMainContainerCustomization(t *testing.T) {
 	pod, _ := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
+	// The main container's resources should be changed since the existing
+	// container's resources are not specified.
 	wf = unmarshalWF(helloWorldWf)
 	woc = newWoc(*wf)
 	woc.controller.Config.MainContainer = mainCtrSpec
 	mainCtr = woc.execWf.Spec.Templates[0].Container
+	mainCtr.Resources = apiv1.ResourceRequirements{Limits: apiv1.ResourceList{}}
 	pod, _ = woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.200", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+
+	// Workflow spec's main container takes precedence over config in controller
+	// so here the main container resources remain unchanged.
+	wf = unmarshalWF(helloWorldWf)
+	woc = newWoc(*wf)
+	woc.controller.Config.MainContainer = mainCtrSpec
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	wf.Spec.Templates[0].Container.Name = common.MainContainerName
+	wf.Spec.Templates[0].Container.Resources = apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.900"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+	}
+	pod, _ = woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "0.900", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+
+	// If the name of the container in the workflow spec is not "main",
+	// the main container resources should remain unchanged.
+	wf = unmarshalWF(helloWorldWf)
+	woc = newWoc(*wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	mainCtr.Resources = apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.100"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+	}
+	wf.Spec.Templates[0].Container.Name = "non-main"
+	wf.Spec.Templates[0].Container.Resources = apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.900"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+	}
+	pod, _ = woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "0.100", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+}
+
+func TestIsResourcesSpecified(t *testing.T) {
+	wf := unmarshalWF(helloWorldWf)
+	woc := newWoc(*wf)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	mainCtr.Resources = apiv1.ResourceRequirements{Limits: apiv1.ResourceList{}}
+	assert.False(t, isResourcesSpecified(mainCtr))
+
+	mainCtr.Resources = apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.900"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+	}
+	assert.True(t, isResourcesSpecified(mainCtr))
 }
 
 var helloWindowsWf = `
