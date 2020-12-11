@@ -239,6 +239,7 @@ data:
       # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
       scopes:
        - groups
+       - email
       # RBAC Config. >= v2.12
       rbac:
         enabled: false
