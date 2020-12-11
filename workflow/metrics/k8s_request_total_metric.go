@@ -5,7 +5,6 @@ import (
 
 	"github.com/argoproj/pkg/kubeclientmetrics"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -20,7 +19,6 @@ var (
 )
 
 func IncKubernetesRequest(r kubeclientmetrics.ResourceInfo) error {
-	log.WithFields(log.Fields{"kind": r.Kind, "namespace": r.Namespace, "name": r.Name, "verb": r.Verb}).Debug("IncKubernetesRequest")
 	K8sRequestsTotal.WithLabelValues(r.Kind, string(r.Verb), strconv.Itoa(r.StatusCode)).Inc()
 	return nil
 }
