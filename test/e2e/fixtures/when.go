@@ -224,6 +224,8 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}()
 	for {
 		select {
+		case <-timeoutCh:
+			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, message)
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
@@ -241,8 +243,6 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 			} else {
 				w.t.Fatal("not ok")
 			}
-		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, message)
 		}
 	}
 }

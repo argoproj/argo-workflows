@@ -468,7 +468,7 @@ test-cli:
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	$(GOTEST) -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
