@@ -11,7 +11,6 @@ import (
 	"github.com/argoproj/pkg/cli"
 	"github.com/argoproj/pkg/errors"
 	kubecli "github.com/argoproj/pkg/kube/cli"
-	"github.com/argoproj/pkg/kubeclientmetrics"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -67,7 +66,7 @@ func NewRootCommand() *cobra.Command {
 			config.Burst = burst
 			config.QPS = qps
 
-			kubeclientmetrics.AddMetricsTransportWrapper(config, metrics.IncKubernetesRequest)
+			metrics.AddMetricsTransportWrapper(config)
 			logs.AddLoggingTransportWrapper(config)
 
 			namespace, _, err := clientConfig.Namespace()

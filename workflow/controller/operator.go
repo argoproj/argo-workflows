@@ -964,7 +964,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 0)
+	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 10*time.Second)
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
