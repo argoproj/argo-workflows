@@ -11,6 +11,7 @@ data:
     redirectUrl: http://localhost:2746/oauth2/callback
     scopes:
     - groups
+    - email
     rbac:
       enabled: true
 kind: ConfigMap
