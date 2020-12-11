@@ -10,7 +10,9 @@ rules:
     resourceNames:
       - workflow-controller
     verbs:
-      - '*'
+      - create
+      - get
+      - update
   - apiGroups:
       - ""
     resources:
