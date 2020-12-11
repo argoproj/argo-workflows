@@ -401,6 +401,7 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case pod := <-wfc.completedPods:
+			metrics.ChanMetric.WithLabelValues("completedPods").Set(float64(len(wfc.completedPods)))
 			parts := strings.Split(pod, "/")
 			if len(parts) != 2 {
 				log.WithFields(log.Fields{"pod": pod}).Warn("Unexpected item on completed pod channel")
@@ -427,6 +428,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case pod := <-wfc.gcPods:
+			metrics.ChanMetric.WithLabelValues("gcPods").Set(float64(len(wfc.gcPods)))
 			parts := strings.Split(pod, "/")
 			if len(parts) != 2 {
 				log.WithFields(log.Fields{"pod": pod}).Warn("Unexpected item on gcPods channel")
