@@ -436,6 +436,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 			}
 			namespace := parts[0]
 			podName := parts[1]
+			metrics.PodGCMetric.WithLabelValues("delete").Inc()
 			err := common.DeletePod(wfc.kubeclientset, podName, namespace)
 			if err != nil {
 				log.WithFields(log.Fields{"namespace": namespace, "pod": podName, "err": err}).Error("Failed to delete pod for gc")

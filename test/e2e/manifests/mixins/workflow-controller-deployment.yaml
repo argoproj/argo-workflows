@@ -21,4 +21,4 @@ spec:
             - name: INLINE_POD_GC
               value: "false"
             - name: RECENTLY_STARTED_POD_DURATION
-              value: "10s"
+              value: "5m"

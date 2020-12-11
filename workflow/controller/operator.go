@@ -602,6 +602,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 }
 
 func (woc *wfOperationCtx) deletePodsByPhase(podPhase apiv1.PodPhase) {
+	metrics.PodGCMetric.WithLabelValues("delete-collection").Inc()
 	deletePropagationBackground := metav1.DeletePropagationBackground
 	listOptions := metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("status.phase=%v", podPhase),
@@ -942,7 +943,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Pending(), "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
@@ -965,7 +967,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 0)
+	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("F", 0)
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec

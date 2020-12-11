@@ -70,8 +70,10 @@ func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 		ch <- metric.Desc()
 	}
 	m.logMetric.Describe(ch)
-	K8sRequestsCount.Describe(ch)
+	K8sRequestsTotal.Describe(ch)
 	ChanMetric.Describe(ch)
+	PodMissingMetric.Describe(ch)
+	PodGCMetric.Describe(ch)
 }
 
 func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
@@ -79,8 +81,10 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 		ch <- metric
 	}
 	m.logMetric.Collect(ch)
-	K8sRequestsCount.Collect(ch)
+	K8sRequestsTotal.Collect(ch)
 	ChanMetric.Collect(ch)
+	PodMissingMetric.Collect(ch)
+	PodGCMetric.Collect(ch)
 }
 
 func (m *Metrics) garbageCollector(ctx context.Context) {
