@@ -25,7 +25,7 @@ spec:
             template: create-pod
             withSequence:
               count: "{{workflow.parameters.y}}"
-    - name: create-pod
+    - name: sleep
       container:
         image: argoproj/argosay:v2
         args:
