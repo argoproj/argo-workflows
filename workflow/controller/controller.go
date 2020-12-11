@@ -142,6 +142,8 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.UpdateConfig()
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
+	wfc.updateCompletedPodsMetrics() // update now so always available
+	wfc.updateGCPodsMetric() // update now so always available
 
 	workqueue.SetProvider(wfc.metrics)
 	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
@@ -399,6 +401,7 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case pod := <-wfc.completedPods:
+			wfc.updateCompletedPodsMetrics()
 			parts := strings.Split(pod, "/")
 			if len(parts) != 2 {
 				log.WithFields(log.Fields{"pod": pod}).Warn("Unexpected item on completed pod channel")
@@ -418,6 +421,10 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 	}
 }
 
+func (wfc *WorkflowController) updateCompletedPodsMetrics() {
+	metrics.ChanMetric.WithLabelValues("completedPods").Set(float64(len(wfc.completedPods)))
+}
+
 // podGarbageCollector will delete all pods on the controllers gcPods channel as completed
 func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 	for {
@@ -425,6 +432,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case pod := <-wfc.gcPods:
+			wfc.updateGCPodsMetric()
 			parts := strings.Split(pod, "/")
 			if len(parts) != 2 {
 				log.WithFields(log.Fields{"pod": pod}).Warn("Unexpected item on gcPods channel")
@@ -440,6 +448,10 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 			}
 		}
 	}
+}
+
+func (wfc *WorkflowController) updateGCPodsMetric() {
+	metrics.ChanMetric.WithLabelValues("gcPods").Set(float64(len(wfc.gcPods)))
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {

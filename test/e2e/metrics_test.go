@@ -41,6 +41,8 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 			Expect().
 			Status(200).
 			Body().
+			Contains(`argo_channel_length{chan_name="completedPods"}`).
+			Contains(`argo_channel_length{chan_name="goPods"}`).
 			Contains(`log_messages{level="info"}`).
 			Contains(`log_messages{level="warning"}`).
 			Contains(`log_messages{level="error"}`)
