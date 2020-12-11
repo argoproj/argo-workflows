@@ -13,6 +13,8 @@ spec:
         value: "1"
       - name: "sleep"
         value: "1s"
+  artifactRepositoryRef:
+    key: empty
   ttlStrategy:
     secondsAfterCompletion: 60
   podGC:
@@ -21,8 +23,8 @@ spec:
     - name: main
       dag:
         tasks:
-          - name: create-pod
-            template: create-pod
+          - name: sleep
+            template: sleep
             withSequence:
               count: "{{workflow.parameters.y}}"
     - name: sleep
@@ -39,6 +41,8 @@ metadata:
   labels:
     stress: "true"
 spec:
+  artifactRepositoryRef:
+    key: empty
   ttlStrategy:
     secondsAfterCompletion: 60
   podGC:
