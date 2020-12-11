@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -92,13 +90,6 @@ func NewRootCommand() *cobra.Command {
 			defer cancel()
 
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
-
-			go func() {
-				err := http.ListenAndServe(":6060", nil)
-				if err != nil {
-					log.Fatalf("failed to start pprof on 6060: %v", err)
-				}
-			}()
 
 			// Wait forever
 			select {}

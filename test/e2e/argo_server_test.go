@@ -718,25 +718,20 @@ func (s *ArgoServerSuite) TestWorkflowService() {
   "workflow": {
     "metadata": {
       "generateName": "test-",
-      "namespace": "argo",
       "labels": {
-        "argo-e2e": "subject"
+         "argo-e2e": "subject"
       }
     },
     "spec": {
       "templates": [
         {
-          "name": "main",
+          "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "args": [
-              "sleep",
-              "30s"
-            ]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
-      "entrypoint": "main"
+      "entrypoint": "run-workflow"
     }
   }
 }`)).
@@ -751,7 +746,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Given().
 		When().
-		WaitForWorkflow(fixtures.ToStart, "to start")
+		WaitForWorkflow(fixtures.ToStart)
 
 	s.Run("List", func() {
 		j := s.e().GET("/api/v1/workflows/argo").
