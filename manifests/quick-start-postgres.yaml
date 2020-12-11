@@ -139,7 +139,9 @@ rules:
   resources:
   - leases
   verbs:
-  - '*'
+  - create
+  - get
+  - update
 - apiGroups:
   - ""
   resources:
