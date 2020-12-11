@@ -23,16 +23,10 @@ func TestLabel(t *testing.T) {
 	})
 	t.Run("NotEmpty", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}), wf)
+		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email"}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
-			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-		}
-	})
-	t.Run("TooLong", func(t *testing.T) {
-		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}}), wf)
-		if assert.NotEmpty(t, wf.Labels) {
-			assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator])
+			assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator], "creator is truncated")
+			assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyCreatorEmail], "'@' is replaced by '.at.'")
 		}
 	})
 	t.Run("TooLongHyphen", func(t *testing.T) {

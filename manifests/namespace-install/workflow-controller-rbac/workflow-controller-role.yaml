@@ -7,8 +7,6 @@ rules:
       - coordination.k8s.io
     resources:
       - leases
-    resourceNames:
-      - workflow-controller
     verbs:
       - create
       - get
