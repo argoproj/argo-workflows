@@ -3252,13 +3252,6 @@
           "description": "EstimatedDuration in seconds.",
           "type": "integer"
         },
-        "failHostNodeNames": {
-          "description": "FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "finishedAt": {
           "description": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"

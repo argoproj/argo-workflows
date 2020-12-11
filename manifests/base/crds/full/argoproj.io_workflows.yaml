@@ -6782,10 +6782,6 @@ spec:
                     type: string
                   estimatedDuration:
                     type: integer
-                  failHostNodeNames:
-                    items:
-                      type: string
-                    type: array
                   finishedAt:
                     format: date-time
                     type: string

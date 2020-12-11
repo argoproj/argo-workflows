@@ -477,6 +477,9 @@ func TestGetNodeType(t *testing.T) {
 }
 
 func TestRemoveDuplicates(t *testing.T) {
+	t.Run("EmptySlice", func(t *testing.T) {
+		assert.Equal(t, []string{}, RemoveDuplicates([]string{}))
+	})
 	t.Run("RemoveDuplicates", func(t *testing.T) {
 		assert.Equal(t, []string{"a", "c", "d"}, RemoveDuplicates([]string{"a", "c", "c", "d"}))
 	})

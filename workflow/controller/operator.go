@@ -1689,8 +1689,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 
+			// It has to be one child at least
 			if lastChildNode != nil {
-				processedTmpl = woc.appendFailHostsToAffinity(processedTmpl, retryNodeName, lastChildNode.Name)
+				processedTmpl = woc.appendFailHostsToAffinity(processedTmpl, retryNodeName)
 			}
 
 			localParams := make(map[string]string)
@@ -1782,8 +1783,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	return node, nil
 }
 
-func (woc *wfOperationCtx) appendFailHostsToAffinity(tmpl *wfv1.Template, retryNodeName, lastChildNodeName string) *wfv1.Template {
-	hostNames := woc.addFailHost(retryNodeName, lastChildNodeName)
+func (woc *wfOperationCtx) appendFailHostsToAffinity(tmpl *wfv1.Template, retryNodeName string) *wfv1.Template {
+	hostNames := woc.getFailHosts(retryNodeName)
 	hostLabel := woc.retryStrategy(tmpl).ScheduleOnDifferentHostNodesLabel
 	if hostLabel != nil && len(hostNames) > 0 {
 		tmpl.Affinity = wfutil.AddHostnamesToAffinity(*hostLabel, hostNames, tmpl.Affinity)
@@ -2610,27 +2611,22 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
-// addFailHost appends a nodeID from child node to FailHostNodeNames parent node
-func (woc *wfOperationCtx) addFailHost(parent string, child string) []string {
-	childNode := woc.wf.GetNodeByName(child)
-	if childNode == nil || childNode.HostNodeName == "" {
-		return []string{}
-	}
+// getFailHosts returns slice of all child nodes with fail or error status
+func (woc *wfOperationCtx) getFailHosts(parent string) []string {
 	parentID := woc.wf.NodeID(parent)
-	node, ok := woc.wf.Status.Nodes[parentID]
+	parentNode, ok := woc.wf.Status.Nodes[parentID]
 	if !ok {
 		panic(fmt.Sprintf("parent node %s not initialized", parent))
 	}
-	for _, hostName := range node.FailHostNodeNames {
-		if childNode.HostNodeName == hostName {
-			// host already exists
-			return []string{}
+	failHosts := []string{}
+	for _, childID := range parentNode.Children {
+		childNode, ok := woc.wf.Status.Nodes[childID]
+		// one of the child node is not started yet
+		if ok && (childNode.Phase == wfv1.NodeFailed || childNode.Phase == wfv1.NodeError) {
+			failHosts = append(failHosts, childNode.HostNodeName)
 		}
 	}
-	node.FailHostNodeNames = append(node.FailHostNodeNames, childNode.HostNodeName)
-	woc.wf.Status.Nodes[parentID] = node
-	woc.updated = true
-	return node.FailHostNodeNames
+	return failHosts
 }
 
 // executeResource is runs a kubectl command against a manifest

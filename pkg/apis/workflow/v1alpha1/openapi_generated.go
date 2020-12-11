@@ -2257,20 +2257,6 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
 						},
 					},
-					"failHostNodeNames": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
-									},
-								},
-							},
-						},
-					},
 				},
 				Required: []string{"id", "name", "type"},
 			},

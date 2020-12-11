@@ -1546,9 +1546,6 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
-
-	// FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable
-	FailHostNodeNames []string `json:"failHostNodeNames,omitempty" protobuf:"bytes,27,rep,name=failHostNodeNames"`
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted

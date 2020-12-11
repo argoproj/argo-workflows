@@ -5541,7 +5541,6 @@ func TestAppendFailHostsToAffinity(t *testing.T) {
 
 	// Ensure related fields are not set
 	assert.Equal(t, lastChild.HostNodeName, "")
-	assert.Equal(t, len(node.FailHostNodeNames), 0)
 
 	// Set host name
 	n = woc.wf.GetNodeByName(nodeName)
@@ -5551,7 +5550,7 @@ func TestAppendFailHostsToAffinity(t *testing.T) {
 
 	tmpl := &wfv1.Template{}
 	tmpl.RetryStrategy = &retries
-	tmpl = woc.appendFailHostsToAffinity(tmpl, nodeName, lastChild.Name)
+	tmpl = woc.appendFailHostsToAffinity(tmpl, nodeName)
 
 	// Verify if template's Affinity has the right value
 	targetNodeSelectorRequirement :=

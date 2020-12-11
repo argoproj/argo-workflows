@@ -20,6 +20,17 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
     return endTime.diff(moment(node.startedAt)) / 1000;
 }
 
+function failHosts(node: models.NodeStatus, workflow: models.Workflow) {
+    const hosts = [];
+    for (const childNodeID of node.children) {
+        const childNode = workflow.status.nodes[childNodeID];
+        if (childNode.phase === models.NODE_PHASE.FAILED || childNode.phase === models.NODE_PHASE.ERROR) {
+            hosts.push(childNode.hostNodeName);
+        }
+    }
+    return hosts.join('\n');
+}
+
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
@@ -95,8 +106,8 @@ export const WorkflowNodeSummary = (props: Props) => {
     if (props.node.type === 'Pod') {
         attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'HOST NODE NAME', value: props.node.hostNodeName});
     }
-    if (props.node.type === 'Retry' && Array.isArray(props.node.failHostNodeNames)) {
-        attributes.push({title: 'FAIL HOST NODES', value: <pre className='workflow-node-info__multi-line'>{props.node.failHostNodeNames.join('\n')}</pre>});
+    if (props.node.type === 'Retry') {
+        attributes.push({title: 'FAIL HOSTS', value: <pre className='workflow-node-info__multi-line'>{failHosts(props.node, props.workflow)}</pre>});
     }
     if (props.node.resourcesDuration) {
         attributes.push({

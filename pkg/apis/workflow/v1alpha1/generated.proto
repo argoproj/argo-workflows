@@ -697,9 +697,6 @@ message NodeStatus {
 
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
-
-  // FailHostNodeNames are names of the Kubernetes node on which the Pod failed, if applicable
-  repeated string failHostNodeNames = 27;
 }
 
 // NodeSynchronizationStatus stores the status of a node

@@ -1215,11 +1215,6 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(NodeSynchronizationStatus)
 		**out = **in
 	}
-	if in.FailHostNodeNames != nil {
-		in, out := &in.FailHostNodeNames, &out.FailHostNodeNames
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 

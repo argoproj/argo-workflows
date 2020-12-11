@@ -539,11 +539,6 @@ export interface NodeStatus {
      * Memoization
      */
     memoizationStatus: MemoizationStatus;
-
-    /**
-     * FailHostNodeNames names of the Kubernetes node on which the Pod failed, if applicable.
-     */
-    failHostNodeNames: string[];
 }
 
 export interface TemplateRef {
