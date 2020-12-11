@@ -9,7 +9,7 @@ spec:
   entrypoint: main
   arguments:
     parameters:
-      - name: "y"
+      - name: "nodes"
         value: "1"
       - name: "sleep"
         value: "1s"
@@ -26,7 +26,7 @@ spec:
           - name: sleep
             template: sleep
             withSequence:
-              count: "{{workflow.parameters.y}}"
+              count: "{{workflow.parameters.nodes}}"
     - name: sleep
       container:
         image: argoproj/argosay:v2
