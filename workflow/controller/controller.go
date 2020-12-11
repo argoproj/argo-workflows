@@ -143,7 +143,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	wfc.updateCompletedPodsMetrics() // update now so always available
-	wfc.updateGCPodsMetric() // update now so always available
+	wfc.updateGCPodsMetric()         // update now so always available
 
 	workqueue.SetProvider(wfc.metrics)
 	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
