@@ -559,7 +559,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 	case "false":
-		time.Sleep(enoughTimeForInformerSync)
+		time.Sleep(1 * time.Second)
 	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow

@@ -112,8 +112,6 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
-	// DEPRECATED - there is really no need for this anymore because we rate limit reconciliations
-	enoughTimeForInformerSync = 1 * time.Second
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -295,7 +293,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.AddRateLimited(key)
+		wfc.wfQueue.Add(key)
 	}
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
@@ -362,7 +360,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Errorf("failed to convert to workflow from unstructured: %v", err)
 			continue
 		}
-		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
+		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
 	}
 }
 
