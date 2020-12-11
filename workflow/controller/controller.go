@@ -27,6 +27,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -195,32 +197,67 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.podLabeler(ctx.Done())
-	go wfc.podGarbageCollector(ctx.Done())
-	go wfc.workflowGarbageCollector(ctx.Done())
-	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
-	go wfc.runTTLController(ctx)
-	go wfc.runCronController(ctx)
-
-	go wfc.metrics.RunServer(ctx)
-	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
+	// Wait for all involved caches to be synced, before processing items from the queue is started
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
+		log.Fatal("Timed out waiting for caches to sync")
+	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
-	wfc.waitForCacheSync(ctx)
 
 	// Create Synchronization Manager
 	err := wfc.createSynchronizationManager()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	for i := 0; i < wfWorkers; i++ {
-		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+	nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
+	if !ok {
+		log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
 	}
-	for i := 0; i < podWorkers; i++ {
-		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
-	}
+	logCtx := log.WithField("id", nodeID)
+
+	var cancel context.CancelFunc
+	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+		Lock: &resourcelock.LeaseLock{
+			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID},
+		},
+		ReleaseOnCancel: true,
+		LeaseDuration:   15 * time.Second,
+		RenewDeadline:   10 * time.Second,
+		RetryPeriod:     2 * time.Second,
+		Callbacks: leaderelection.LeaderCallbacks{
+			OnStartedLeading: func(ctx context.Context) {
+				logCtx.Info("started leading")
+				ctx, cancel = context.WithCancel(ctx)
+
+				go wfc.podLabeler(ctx.Done())
+				go wfc.podGarbageCollector(ctx.Done())
+				go wfc.workflowGarbageCollector(ctx.Done())
+				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
+				go wfc.runTTLController(ctx)
+				go wfc.runCronController(ctx)
+				go wfc.metrics.RunServer(ctx)
+				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
+
+				for i := 0; i < wfWorkers; i++ {
+					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+				}
+				for i := 0; i < podWorkers; i++ {
+					go wait.Until(wfc.podWorker, time.Second, ctx.Done())
+				}
+			},
+			OnStoppedLeading: func() {
+				logCtx.Info("stopped leading")
+				cancel()
+			},
+			OnNewLeader: func(identity string) {
+				logCtx.WithField("leader", identity).Info("new leader")
+			},
+		},
+	})
 	<-ctx.Done()
 }
 

@@ -349,7 +349,7 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
-	./dist/install_kustomize.sh
+	./dist/install_kustomize.sh 3.8.8
 	sudo mv kustomize /usr/local/bin/
 	kustomize version
 

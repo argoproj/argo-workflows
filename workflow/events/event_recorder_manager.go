@@ -11,6 +11,9 @@ import (
 	"k8s.io/client-go/tools/record"
 )
 
+// by default, allow a source to send 10000 events about an object
+const defaultSpamBurst = 10000
+
 type EventRecorderManager interface {
 	Get(namespace string) record.EventRecorder
 }
@@ -28,7 +31,8 @@ func (m *eventRecorderManager) Get(namespace string) record.EventRecorder {
 	if ok {
 		return eventRecorder
 	}
-	eventBroadcaster := record.NewBroadcaster()
+	eventCorrelationOption := record.CorrelatorOptions{BurstSize: defaultSpamBurst}
+	eventBroadcaster := record.NewBroadcasterWithCorrelatorOptions(eventCorrelationOption)
 	eventBroadcaster.StartLogging(log.Debugf)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: m.kubernetes.CoreV1().Events(namespace)})
 	m.eventRecorders[namespace] = eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: "workflow-controller"})

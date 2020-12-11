@@ -170,11 +170,13 @@ func (cc *Controller) processNextCronItem() bool {
 		cronSchedule = "CRON_TZ=" + cronWf.Spec.Timezone + " " + cronSchedule
 	}
 
-	err = cc.cron.AddJob(key.(string), cronSchedule, cronWorkflowOperationCtx)
+	lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), cronSchedule, cronWorkflowOperationCtx)
 	if err != nil {
 		logCtx.WithError(err).Error("could not schedule CronWorkflow")
 		return true
 	}
+
+	cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 
 	logCtx.Infof("CronWorkflow %s added", key.(string))
 
@@ -250,7 +252,6 @@ func (cc *Controller) syncCronWorkflow(cronWf *v1alpha1.CronWorkflow, workflows 
 		return err
 	}
 
-	cwoc.persistUpdate()
 	return nil
 }
 

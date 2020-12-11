@@ -128,6 +128,16 @@ metadata:
   name: argo-role
 rules:
 - apiGroups:
+  - coordination.k8s.io
+  resourceNames:
+  - workflow-controller
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - ""
   resources:
   - pods
@@ -403,6 +413,12 @@ spec:
         - --namespaced
         command:
         - workflow-controller
+        env:
+        - name: LEADER_ELECTION_IDENTITY
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
         image: argoproj/workflow-controller:latest
         name: workflow-controller
         securityContext:
