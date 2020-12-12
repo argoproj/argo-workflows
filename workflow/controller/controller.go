@@ -91,7 +91,7 @@ type WorkflowController struct {
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	completedPods         chan string
-	gcPods                chan string // pods to be deleted depend on GC strategy
+	gcPods                workqueue.RateLimitingInterface // pods to be deleted depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
@@ -133,7 +133,6 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
 		completedPods:              make(chan string, 512),
-		gcPods:                     make(chan string, 512),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
@@ -143,10 +142,11 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
-	workqueue.SetProvider(wfc.metrics)
+	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
 	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
+	wfc.gcPods = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "gc_pods_queue")
 
 	return &wfc, nil
 }
@@ -178,12 +178,13 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers, podGCWorkers int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
+	defer wfc.gcPods.ShutDown()
 
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
-	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
+	log.Infof("Workers: workflow: %d, pod: %d, pod GC: %d", wfWorkers, podWorkers, podGCWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -233,7 +234,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 				ctx, cancel = context.WithCancel(ctx)
 
 				go wfc.podLabeler(ctx.Done())
-				go wfc.podGarbageCollector(ctx.Done())
+				for i := 0; i < podGCWorkers; i++ {
+					go wait.Until(wfc.podGarbageCollector, time.Second, ctx.Done())
+				}
 				go wfc.workflowGarbageCollector(ctx.Done())
 				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
@@ -418,28 +421,35 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 	}
 }
 
+func (wfc *WorkflowController) queuePodForDeletion(namespace string, podName string) {
+	wfc.gcPods.AddRateLimited(fmt.Sprintf("%s/%s", namespace, podName))
+}
+
 // podGarbageCollector will delete all pods on the controllers gcPods channel as completed
-func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
-	for {
-		select {
-		case <-stopCh:
-			return
-		case pod := <-wfc.gcPods:
-			parts := strings.Split(pod, "/")
-			if len(parts) != 2 {
-				log.WithFields(log.Fields{"pod": pod}).Warn("Unexpected item on gcPods channel")
-				continue
-			}
-			namespace := parts[0]
-			podName := parts[1]
-			err := common.DeletePod(wfc.kubeclientset, podName, namespace)
-			if err != nil {
-				log.WithFields(log.Fields{"namespace": namespace, "pod": podName, "err": err}).Error("Failed to delete pod for gc")
-			} else {
-				log.WithFields(log.Fields{"namespace": namespace, "pod": podName}).Info("Delete pod for gc successfully")
-			}
-		}
+func (wfc *WorkflowController) podGarbageCollector() {
+	for wfc.processNextPodGCItem() {
 	}
+}
+
+func (wfc *WorkflowController) processNextPodGCItem() bool {
+	key, quit := wfc.gcPods.Get()
+	if quit {
+		return false
+	}
+	defer wfc.gcPods.Done(key)
+
+	log.WithField("key", key).Info("deleting pod for GC")
+
+	namespace, podName, _ := cache.SplitMetaNamespaceKey(key.(string)) // we can ignore an error here - can never happen
+
+	propagation := metav1.DeletePropagationBackground
+	err := wfc.kubeclientset.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{PropagationPolicy: &propagation})
+	if err != nil && !apierr.IsNotFound(err) {
+		log.WithField("key", key).WithError(err).Warn("failed to delete pod for GC")
+		wfc.gcPods.AddRateLimited(key)
+	}
+
+	return true
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
@@ -634,8 +644,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		}
 		if doPodGC {
 			for podName := range woc.completedPods {
-				pod := fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
-				woc.controller.gcPods <- pod
+				woc.controller.queuePodForDeletion(woc.wf.Namespace, podName)
 			}
 		}
 	}
