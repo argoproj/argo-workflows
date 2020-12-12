@@ -574,7 +574,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 		switch woc.execWf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
 			for podName := range woc.succeededPods {
-				woc.controller.queuePodForDeletion( woc.wf.Namespace, podName)
+				woc.controller.queuePodForDeletion(woc.wf.Namespace, podName)
 			}
 		case wfv1.PodGCOnPodCompletion:
 			for podName := range woc.completedPods {
