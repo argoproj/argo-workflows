@@ -133,6 +133,7 @@ What this might look like in your chart configuration:
                key: client-secret
      server:
        config:
+         dex.config: |
            staticClients:
            - id: argo-workflows-sso
              name: Argo Workflow
