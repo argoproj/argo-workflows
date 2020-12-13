@@ -21,6 +21,7 @@ require (
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
+	github.com/felixge/httpsnoop v1.0.1
 	github.com/gavv/httpexpect/v2 v2.0.3
 	github.com/go-openapi/jsonreference v0.19.5
 	github.com/go-openapi/spec v0.20.0
