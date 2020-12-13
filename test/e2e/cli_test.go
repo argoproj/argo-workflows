@@ -1250,7 +1250,7 @@ func (s *CLISuite) TestSynchronizationWfLevelMutex() {
 			}
 		}).
 		SubmitWorkflow().
-		Wait(1*time.Second).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Pending")
 		}).
@@ -1267,7 +1267,7 @@ func (s *CLISuite) TestTemplateLevelMutex() {
 		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
 		When().
 		SubmitWorkflow().
-		Wait(3*time.Second).
+		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
 		RunCli([]string{"get", "synchronization-tmpl-level-mutex"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
