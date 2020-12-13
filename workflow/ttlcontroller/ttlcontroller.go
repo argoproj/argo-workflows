@@ -129,9 +129,6 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		log.Warnf("'%v' is not an unstructured", obj)
 		return
 	}
-	if un.GetDeletionTimestamp() != nil {
-		return
-	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Failed to unmarshal workflow %v object: %v", obj, err)
