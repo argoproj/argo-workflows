@@ -2,18 +2,19 @@ import * as React from 'react';
 import {createRef, useState} from 'react';
 
 export const CliHelp = () => {
-    const argoSecure = document.location.protocol === 'https';
+    const argoSecure = document.location.protocol === 'https:';
     const argoBaseHref = document
         .getElementsByTagName('base')[0]
         .href.toString()
         .replace(document.location.protocol + '//' + document.location.host + '/', '');
-    const argoToken = decodeURIComponent(document.cookie)
-        .split(';')
-        .map(x => x.trim())
-        .find(x => x.startsWith('authorization='))
-        .replace('authorization=', '');
+    const argoToken = (
+        decodeURIComponent(document.cookie)
+            .split(';')
+            .map(x => x.trim())
+            .find(x => x.startsWith('authorization=')) || ''
+    ).replace('authorization=', '');
 
-    const text = `export ARGO_SERVER='${document.location.host}' 
+    const text = `export ARGO_SERVER='${document.location.hostname}:${document.location.port || (argoSecure ? 443 : 80)}' 
 export ARGO_HTTP1=true  
 export ARGO_SECURE=${argoSecure ? 'true' : 'false'}
 export ARGO_BASE_HREF=${argoBaseHref}
@@ -30,7 +31,7 @@ argo list`;
         <div className='white-box'>
             <h4>Using Your Login With The CLI</h4>
             <p>Download the latest CLI before you start.</p>
-            <div style={{fontFamily: 'monospace', whiteSpace: 'pre', margin: 20}}>{text.replace(argoToken, '[REDACTED]')}</div>
+            <div style={{fontFamily: 'monospace', whiteSpace: 'pre', margin: 20}}>{argoToken ? text.replace(argoToken, '[REDACTED]') : text}</div>
             <p>For help with options such as ARGO_INSECURE_SKIP_VERIFY, ARGO_NAMESPACE and ARGO_INSTANCEID, run: `argo --help`.</p>
             <div>
                 <button
