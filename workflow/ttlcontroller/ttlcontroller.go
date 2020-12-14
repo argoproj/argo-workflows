@@ -49,28 +49,29 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
-			return ok && un.GetLabels()[common.LabelKeyCompleted] == "true" && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] != "Pending"
+			return ok && un.GetDeletionTimestamp() == nil && un.GetLabels()[common.LabelKeyCompleted] == "true" && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] != "Pending"
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: controller.enqueueWF,
 			UpdateFunc: func(old, new interface{}) {
 				controller.enqueueWF(new)
 			},
-			DeleteFunc: controller.enqueueWF,
 		},
 	})
 	return controller
 }
 
-func (c *Controller) Run(stopCh <-chan struct{}) error {
+func (c *Controller) Run(stopCh <-chan struct{}, workflowTTLWorkers int) error {
 	defer runtimeutil.HandleCrash()
 	defer c.workqueue.ShutDown()
-	log.Infof("Starting workflow TTL controller (resync %v)", c.resyncPeriod)
+	log.Infof("Starting workflow TTL controller (resync %v, workflowTTLWorkers %d)", c.resyncPeriod, workflowTTLWorkers)
 	go c.wfInformer.Run(stopCh)
 	if ok := cache.WaitForCacheSync(stopCh, c.wfInformer.HasSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
-	go wait.Until(c.runWorker, time.Second, stopCh)
+	for i := 0; i < workflowTTLWorkers; i++ {
+		go wait.Until(c.runWorker, time.Second, stopCh)
+	}
 	log.Info("Started workflow TTL worker")
 	<-stopCh
 	log.Info("Shutting workflow TTL worker")
@@ -129,9 +130,6 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		log.Warnf("'%v' is not an unstructured", obj)
 		return
 	}
-	if un.GetDeletionTimestamp() != nil {
-		return
-	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Failed to unmarshal workflow %v object: %v", obj, err)
@@ -152,7 +150,11 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		runtimeutil.HandleError(err)
 		return
 	}
-	//c.workqueue.Add(key)
+	// if we try and delete in the next second, it is possible that the informer is out of sync, our double-check that
+	// sees if the workflow in the informer is already deleted and we'll make 2 API requests when one is enough
+	if addAfter < time.Second {
+		addAfter = time.Second
+	}
 	log.Infof("Queueing workflow %s/%s for delete in %v", wf.Namespace, wf.Name, addAfter)
 	c.workqueue.AddAfter(key, addAfter)
 }
@@ -177,6 +179,9 @@ func (c *Controller) deleteWorkflow(key string) error {
 		log.Warnf("Key '%s' in index is not an unstructured", key)
 		return nil
 	}
+	if un.GetDeletionTimestamp() != nil {
+		return nil
+	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
@@ -187,9 +192,14 @@ func (c *Controller) deleteWorkflow(key string) error {
 
 		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 		if err != nil {
-			return err
+			if apierr.IsNotFound(err) {
+				log.Infof("workflow already deleted '%s'", key)
+			} else {
+				return err
+			}
+		} else {
+			log.Infof("Successfully deleted '%s'", key)
 		}
-		log.Infof("Successfully deleted '%s'", key)
 	}
 	return nil
 }
