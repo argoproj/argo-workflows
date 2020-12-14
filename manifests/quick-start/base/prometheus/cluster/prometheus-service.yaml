@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: prometheus
+  name: prometheus
+spec:
+  ports:
+    - name: prometheus
+      port: 9091
+      protocol: TCP
+      targetPort: 9090
+  selector:
+    app: prometheus

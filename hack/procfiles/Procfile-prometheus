@@ -1,0 +1,1 @@
+port-forward: kubectl port-forward svc/prometheus 9091:9091

@@ -5,6 +5,7 @@ resources:
   - ../../namespace-install
   - minio
   - webhooks
+  - prometheus
   - argo-server-sso-secret.yaml
   - workflow-role.yaml
   - workflow-default-rolebinding.yaml
