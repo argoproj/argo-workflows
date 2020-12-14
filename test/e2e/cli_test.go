@@ -1240,21 +1240,19 @@ func (s *CLISuite) TestRetryOmit() {
 }
 
 func (s *CLISuite) TestSynchronizationWfLevelMutex() {
-	s.NeedsOffloading()
 	s.Given().
+		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
 		Workflow("@functional/synchronization-mutex-wf-level.yaml").
 		When().
-		RunCli([]string{"submit", "functional/synchronization-mutex-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "synchronization-wf-level-mutex")
-			}
-		}).
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart, "to start").
-		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Pending")
-		}).
-		WaitForWorkflow(fixtures.ToBeCompleted, 120*time.Second).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			// wait until we lock on the mutex
+			return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil
+		})).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
