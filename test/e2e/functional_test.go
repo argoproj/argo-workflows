@@ -88,6 +88,36 @@ func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
 		})
 }
 
+func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
+		Workflow("@functional/synchronization-mutex-wf-level.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestTemplateLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
 // because we run them in parallel, the first node will run to completion, and then the second one
 func (s *FunctionalSuite) TestResourceQuota() {

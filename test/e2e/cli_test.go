@@ -1239,36 +1239,6 @@ func (s *CLISuite) TestRetryOmit() {
 		WaitForWorkflow()
 }
 
-func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
-	s.Given().
-		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
-		When().
-		SubmitWorkflow().
-		Given().
-		Workflow("@functional/synchronization-mutex-wf-level.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *FunctionalSuite) TestTemplateLevelMutex() {
-	s.Given().
-		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 	s.NeedsOffloading()
 	s.Run("ResourceTemplateStop", func() {
