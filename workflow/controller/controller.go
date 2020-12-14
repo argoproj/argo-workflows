@@ -143,7 +143,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
 	workqueue.SetProvider(wfc.metrics)
-	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(&throughputLimiter{}, "workflow_queue")
+	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(&fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 
