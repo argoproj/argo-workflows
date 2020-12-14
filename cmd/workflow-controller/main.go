@@ -40,7 +40,7 @@ func NewRootCommand() *cobra.Command {
 		glogLevel                int    // --gloglevel
 		workflowWorkers          int    // --workflow-workers
 		podWorkers               int    // --pod-workers
-		podGCWorkers             int    // --pod-gc-workers
+		podCleanupWorkers        int    // --pod-cleanup-workers
 		burst                    int
 		qps                      float32
 		namespaced               bool   // --namespaced
@@ -85,7 +85,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			go wfController.Run(ctx, workflowWorkers, podWorkers, podGCWorkers)
+			go wfController.Run(ctx, workflowWorkers, podWorkers, podCleanupWorkers)
 
 			// Wait forever
 			select {}
@@ -102,7 +102,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
 	command.Flags().IntVar(&podWorkers, "pod-workers", 32, "Number of pod workers")
-	command.Flags().IntVar(&podGCWorkers, "pod-gc-workers", 4, "Number of pod GC workers")
+	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod clean-up workers")
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")

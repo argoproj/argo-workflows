@@ -175,13 +175,13 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers, podGCWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers, podCleanupWorkers int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 	defer wfc.podCleanupQueue.ShutDown()
 
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
-	log.Infof("Workers: workflow: %d, pod: %d, pod GC: %d", wfWorkers, podWorkers, podGCWorkers)
+	log.Infof("Workers: workflow: %d, pod: %d, pod clean-up: %d", wfWorkers, podWorkers, podCleanupWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -230,7 +230,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers, p
 				logCtx.Info("started leading")
 				ctx, cancel = context.WithCancel(ctx)
 
-				for i := 0; i < podGCWorkers; i++ {
+				for i := 0; i < podCleanupWorkers; i++ {
 					go wait.Until(wfc.runPodCleanup, time.Second, ctx.Done())
 				}
 				go wfc.workflowGarbageCollector(ctx.Done())
