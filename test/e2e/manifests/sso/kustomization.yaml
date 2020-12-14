@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../../../manifests/quick-start/sso
+  - ../../../../manifests/quick-start/base/prometheus
 
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml
