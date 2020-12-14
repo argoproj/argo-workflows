@@ -41,7 +41,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	controller := &Controller{
 		wfclientset:  wfClientset,
 		wfInformer:   wfInformer,
-		workqueue:    workqueue.NewDelayingQueue(),
+		workqueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock.RealClock{},
 	}
@@ -127,6 +127,9 @@ func (c *Controller) enqueueWF(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		log.Warnf("'%v' is not an unstructured", obj)
+		return
+	}
+	if un.GetDeletionTimestamp() != nil {
 		return
 	}
 	wf, err := util.FromUnstructured(un)
