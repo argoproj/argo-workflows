@@ -704,52 +704,6 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	}
 }
 
-func (woc *wfOperationCtx) addVolumeRef(volMounts []apiv1.VolumeMount, pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
-	getVolByName := func(name string, tmpl *wfv1.Template) *apiv1.Volume {
-		// Find a volume from template-local volumes.
-		for _, vol := range tmpl.Volumes {
-			if vol.Name == name {
-				return &vol
-			}
-		}
-		// Find a volume from global volumes.
-		for _, vol := range woc.volumes {
-			if vol.Name == name {
-				return &vol
-			}
-		}
-		// Find a volume from pvcs.
-		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
-			if pvc.Name == name {
-				return &pvc
-			}
-		}
-		return nil
-	}
-
-	for _, volMnt := range volMounts {
-		vol := getVolByName(volMnt.Name, tmpl)
-		if vol == nil {
-			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
-		}
-		found := false
-		for _, v := range pod.Spec.Volumes {
-			if v.Name == vol.Name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			if pod.Spec.Volumes == nil {
-				pod.Spec.Volumes = make([]apiv1.Volume, 0)
-			}
-			pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
-		}
-	}
-	return nil
-}
-
 // addPodPatchVolRef adds any volumeMounts that PodSpecPatch referencing, to the pod.spec.volumes
 func (woc *wfOperationCtx) addPodPatchVolRef(patchPodSpec apiv1.PodSpec, pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	switch tmpl.GetType() {
@@ -817,6 +771,49 @@ func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Templa
 		}
 	}
 
+	return nil
+}
+
+func (woc *wfOperationCtx) addVolumeRef(volMounts []apiv1.VolumeMount, pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
+	getVolByName := func(name string, tmpl *wfv1.Template) *apiv1.Volume {
+		// Find a volume from template-local volumes.
+		for _, vol := range tmpl.Volumes {
+			if vol.Name == name {
+				return &vol
+			}
+		}
+		// Find a volume from global volumes.
+		for _, vol := range woc.volumes {
+			if vol.Name == name {
+				return &vol
+			}
+		}
+		// Find a volume from pvcs.
+		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
+			if pvc.Name == name {
+				return &pvc
+			}
+		}
+		return nil
+	}
+
+	for _, volMnt := range volMounts {
+		vol := getVolByName(volMnt.Name, tmpl)
+		if vol == nil {
+			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
+		}
+		found := false
+		for _, v := range pod.Spec.Volumes {
+			if v.Name == vol.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
+		}
+	}
 	return nil
 }
 
