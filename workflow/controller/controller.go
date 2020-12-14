@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
@@ -90,8 +89,7 @@ type WorkflowController struct {
 	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
-	completedPods         chan string
-	gcPods                workqueue.RateLimitingInterface // pods to be deleted depend on GC strategy
+	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
@@ -132,7 +130,6 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
-		completedPods:              make(chan string, 512),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
@@ -146,7 +143,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
-	wfc.gcPods = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "gc_pods_queue")
+	wfc.podCleanupQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
 }
@@ -181,7 +178,7 @@ var indexers = cache.Indexers{
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers, podGCWorkers int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
-	defer wfc.gcPods.ShutDown()
+	defer wfc.podCleanupQueue.ShutDown()
 
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d, pod GC: %d", wfWorkers, podWorkers, podGCWorkers)
@@ -233,9 +230,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers, p
 				logCtx.Info("started leading")
 				ctx, cancel = context.WithCancel(ctx)
 
-				go wfc.podLabeler(ctx.Done())
 				for i := 0; i < podGCWorkers; i++ {
-					go wait.Until(wfc.podGarbageCollector, time.Second, ctx.Done())
+					go wait.Until(wfc.runPodCleanup, time.Second, ctx.Done())
 				}
 				go wfc.workflowGarbageCollector(ctx.Done())
 				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
@@ -395,60 +391,48 @@ func (wfc *WorkflowController) UpdateConfig() {
 	}
 }
 
-// podLabeler will label all pods on the controllers completedPod channel as completed
-func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
-	for {
-		select {
-		case <-stopCh:
-			return
-		case pod := <-wfc.completedPods:
-			parts := strings.Split(pod, "/")
-			if len(parts) != 2 {
-				log.WithFields(log.Fields{"pod": pod}).Warn("Unexpected item on completed pod channel")
-				continue
-			}
-			namespace := parts[0]
-			podName := parts[1]
-			err := common.AddPodLabel(wfc.kubeclientset, podName, namespace, common.LabelKeyCompleted, "true")
-			if err != nil {
-				if !apierr.IsNotFound(err) {
-					log.WithFields(log.Fields{"namespace": namespace, "pod": podName, "err": err}).Error("Failed to labeled pod completed")
-				}
-			} else {
-				log.WithFields(log.Fields{"namespace": namespace, "pod": podName}).Info("Labeled pod completed")
-			}
-		}
+func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName string, action podCleanupAction) {
+	wfc.podCleanupQueue.AddRateLimited(joinPodCleanupKey(namespace, podName, action))
+}
+
+func (wfc *WorkflowController) runPodCleanup() {
+	for wfc.processNextPodCleanupItem() {
 	}
 }
 
-func (wfc *WorkflowController) queuePodForDeletion(namespace string, podName string) {
-	wfc.gcPods.AddRateLimited(fmt.Sprintf("%s/%s", namespace, podName))
-}
-
-// podGarbageCollector will delete all pods on the controllers gcPods channel as completed
-func (wfc *WorkflowController) podGarbageCollector() {
-	for wfc.processNextPodGCItem() {
-	}
-}
-
-func (wfc *WorkflowController) processNextPodGCItem() bool {
-	key, quit := wfc.gcPods.Get()
+// all pods will ultimately be cleaned up by either deleting them, or labelling them
+func (wfc *WorkflowController) processNextPodCleanupItem() bool {
+	key, quit := wfc.podCleanupQueue.Get()
 	if quit {
 		return false
 	}
-	defer wfc.gcPods.Done(key)
-
-	log.WithField("key", key).Info("deleting pod for GC")
-
-	namespace, podName, _ := cache.SplitMetaNamespaceKey(key.(string)) // we can ignore an error here - can never happen
-
-	propagation := metav1.DeletePropagationBackground
-	err := wfc.kubeclientset.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{PropagationPolicy: &propagation})
-	if err != nil && !apierr.IsNotFound(err) {
-		log.WithField("key", key).WithError(err).Warn("failed to delete pod for GC")
-		wfc.gcPods.AddRateLimited(key)
+	defer wfc.podCleanupQueue.Done(key)
+	namespace, podName, action := splitPodCleanupKey(key.(podCleanupKey))
+	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
+	logCtx.Info("cleaning up pod")
+	err := func() error {
+		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+		switch action {
+		case deletePod:
+			propagation := metav1.DeletePropagationBackground
+			err := pods.Delete(podName, &metav1.DeleteOptions{PropagationPolicy: &propagation})
+			if err != nil && !apierr.IsNotFound(err) {
+				return err
+			}
+		case labelPodCompleted:
+			_, err := pods.Patch(podName, types.MergePatchType, []byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}()
+	if err != nil {
+		logCtx.WithError(err).Warn("failed to clean-up pod")
+		if errorsutil.IsTransientErr(err) {
+			wfc.podCleanupQueue.AddRateLimited(key)
+		}
 	}
-
 	return true
 }
 
@@ -644,7 +628,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		}
 		if doPodGC {
 			for podName := range woc.completedPods {
-				woc.controller.queuePodForDeletion(woc.wf.Namespace, podName)
+				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 			}
 		}
 	}

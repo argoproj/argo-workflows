@@ -1175,23 +1175,27 @@ var _ ArgumentsProvider = &Arguments{}
 
 type Nodes map[string]NodeStatus
 
-func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	for _, i := range n {
-		if i.DisplayName == name {
+		if f(i) {
 			return &i
 		}
 	}
 	return nil
 }
 
-func (in Nodes) Any(f func(node NodeStatus) bool) bool {
-	for _, i := range in {
-		if f(i) {
-			return true
-		}
-	}
-	return false
+var AnyNode = func(n NodeStatus) bool { return true }
+var RootNode = AnyNode // we make a massive assumption that the iteration order of Find has the root node first
+
+func NodeWithDisplayName(name string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
+
+func FailedNode(n NodeStatus) bool    { return n.Phase == NodeFailed }
+func SucceededNode(n NodeStatus) bool { return n.Phase == NodeSucceeded }
+
+func (n Nodes) FindByDisplayName(name string) *NodeStatus { return n.Find(NodeWithDisplayName(name)) }
+func (in Nodes) Any(f func(NodeStatus) bool) bool         { return in.Find(f) != nil }
 
 // UserContainer is a container specified by a user.
 type UserContainer struct {
