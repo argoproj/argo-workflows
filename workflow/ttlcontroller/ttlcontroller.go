@@ -24,6 +24,8 @@ import (
 
 const (
 	workflowTTLResyncPeriod = 20 * time.Minute
+	// 1s is usually enough time for the informer to get synced and be up-to-date
+	enoughTimeForInformerSync = time.Second
 )
 
 type ConfigSupplier func() *config.Config
@@ -152,8 +154,8 @@ func (c *Controller) enqueueWF(obj interface{}) {
 	}
 	// if we try and delete in the next second, it is possible that the informer is out of sync, our double-check that
 	// sees if the workflow in the informer is already deleted and we'll make 2 API requests when one is enough
-	if addAfter < time.Second {
-		addAfter = time.Second
+	if addAfter < enoughTimeForInformerSync {
+		addAfter = enoughTimeForInformerSync
 	}
 	log.Infof("Queueing workflow %s/%s for delete in %v", wf.Namespace, wf.Name, addAfter)
 	c.workqueue.AddAfter(key, addAfter)
