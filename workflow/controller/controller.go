@@ -181,7 +181,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers, p
 	defer wfc.podCleanupQueue.ShutDown()
 
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
-	log.Infof("Workers: workflow: %d, pod: %d, pod clean-up: %d", wfWorkers, podWorkers, podCleanupWorkers)
+	log.Infof("Workers: workflow: %d, pod: %d, pod cleanup: %d", wfWorkers, podWorkers, podCleanupWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -428,7 +428,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem() bool {
 		return nil
 	}()
 	if err != nil {
-		logCtx.WithError(err).Warn("failed to cleanup pod")
+		logCtx.WithError(err).Warn("failed to clean-up pod")
 		if errorsutil.IsTransientErr(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
 		}

@@ -1175,6 +1175,14 @@ var _ ArgumentsProvider = &Arguments{}
 
 type Nodes map[string]NodeStatus
 
+func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	return n.Find(NodeWithDisplayName(name))
+}
+
+func (in Nodes) Any(f func(NodeStatus) bool) bool {
+	return in.Find(f) != nil
+}
+
 func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	for _, i := range n {
 		if f(i) {
@@ -1194,14 +1202,6 @@ func FailedNode(n NodeStatus) bool {
 
 func SucceededNode(n NodeStatus) bool {
 	return n.Phase == NodeSucceeded
-}
-
-func (n Nodes) FindByDisplayName(name string) *NodeStatus {
-	return n.Find(NodeWithDisplayName(name))
-}
-
-func (in Nodes) Any(f func(NodeStatus) bool) bool {
-	return in.Find(f) != nil
 }
 
 // UserContainer is a container specified by a user.

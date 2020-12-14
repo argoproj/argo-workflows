@@ -5,7 +5,11 @@ import (
 	"strings"
 )
 
-type podCleanupKey = string // describes the pod to clean-up + the clean-up action to take
+// Should I use "clean-up" or "cleanup"?
+// * cleanup is a noun - e.g "The cleanup"
+// * clean-up is a verb - e.g. "I clean-up"
+
+type podCleanupKey = string // describes the pod to cleanup + the cleanup action to take
 type podCleanupAction = string
 
 const (
