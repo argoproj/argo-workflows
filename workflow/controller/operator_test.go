@@ -5496,16 +5496,13 @@ func TestParamAggregation(t *testing.T) {
 		}
 	}
 }
-func TestAppendFailHostsToAffinity(t *testing.T) {
+func TestRetryOnDiffHost(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	assert.NotNil(t, controller)
 	wf := unmarshalWF(helloWorldWf)
-	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
-	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -5550,7 +5547,9 @@ func TestAppendFailHostsToAffinity(t *testing.T) {
 
 	tmpl := &wfv1.Template{}
 	tmpl.RetryStrategy = &retries
-	tmpl = woc.appendFailHostsToAffinity(tmpl, nodeName)
+	retryOnDiffHost := &RetryOnDifferentHost{retryNodeName: nodeID}
+	retryOnDiffHost.RetryTweak(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, tmpl)
+	assert.NotNil(t, tmpl.Affinity)
 
 	// Verify if template's Affinity has the right value
 	targetNodeSelectorRequirement :=

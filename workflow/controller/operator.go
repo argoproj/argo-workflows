@@ -1691,7 +1691,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 			// It has to be one child at least
 			if lastChildNode != nil {
-				processedTmpl = woc.appendFailHostsToAffinity(processedTmpl, retryNodeName)
+				retryOnDiffHost := &RetryOnDifferentHost{retryNodeName: retryNodeName}
+				retryOnDiffHost.RetryTweak(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
 			}
 
 			localParams := make(map[string]string)
@@ -1781,15 +1782,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	return node, nil
-}
-
-func (woc *wfOperationCtx) appendFailHostsToAffinity(tmpl *wfv1.Template, retryNodeName string) *wfv1.Template {
-	hostNames := woc.getFailHosts(retryNodeName)
-	hostLabel := woc.retryStrategy(tmpl).ScheduleOnDifferentHostNodesLabel
-	if hostLabel != nil && len(hostNames) > 0 {
-		tmpl.Affinity = wfutil.AddHostnamesToAffinity(*hostLabel, hostNames, tmpl.Affinity)
-	}
-	return tmpl
 }
 
 // Checks if the template has exceeded its deadline
@@ -2609,24 +2601,6 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	node.Children = append(node.Children, childID)
 	woc.wf.Status.Nodes[parentID] = node
 	woc.updated = true
-}
-
-// getFailHosts returns slice of all child nodes with fail or error status
-func (woc *wfOperationCtx) getFailHosts(parent string) []string {
-	parentID := woc.wf.NodeID(parent)
-	parentNode, ok := woc.wf.Status.Nodes[parentID]
-	if !ok {
-		panic(fmt.Sprintf("parent node %s not initialized", parent))
-	}
-	failHosts := []string{}
-	for _, childID := range parentNode.Children {
-		childNode, ok := woc.wf.Status.Nodes[childID]
-		// one of the child node is not started yet
-		if ok && (childNode.Phase == wfv1.NodeFailed || childNode.Phase == wfv1.NodeError) {
-			failHosts = append(failHosts, childNode.HostNodeName)
-		}
-	}
-	return failHosts
 }
 
 // executeResource is runs a kubectl command against a manifest
