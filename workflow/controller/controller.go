@@ -89,7 +89,7 @@ type WorkflowController struct {
 	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
-	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted depend on GC strategy
+	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
@@ -392,7 +392,7 @@ func (wfc *WorkflowController) UpdateConfig() {
 }
 
 func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName string, action podCleanupAction) {
-	wfc.podCleanupQueue.AddRateLimited(joinPodCleanupKey(namespace, podName, action))
+	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
 func (wfc *WorkflowController) runPodCleanup() {
@@ -407,28 +407,28 @@ func (wfc *WorkflowController) processNextPodCleanupItem() bool {
 		return false
 	}
 	defer wfc.podCleanupQueue.Done(key)
-	namespace, podName, action := splitPodCleanupKey(key.(podCleanupKey))
+	namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case labelPodCompleted:
+			_, err := pods.Patch(podName, types.MergePatchType, []byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`))
+			if err != nil {
+				return err
+			}
 		case deletePod:
 			propagation := metav1.DeletePropagationBackground
 			err := pods.Delete(podName, &metav1.DeleteOptions{PropagationPolicy: &propagation})
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
-		case labelPodCompleted:
-			_, err := pods.Patch(podName, types.MergePatchType, []byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`))
-			if err != nil {
-				return err
-			}
 		}
 		return nil
 	}()
 	if err != nil {
-		logCtx.WithError(err).Warn("failed to clean-up pod")
+		logCtx.WithError(err).Warn("failed to cleanup pod")
 		if errorsutil.IsTransientErr(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
 		}

@@ -59,7 +59,9 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 
 }
 
-// check on a specific
+// Check on a specific node in the workflow.
+// If the node does not exist, then the NodeStatus and Pod will be nil.
+// If the pod does not exist (e.g. because it was deleted) then the Pod will be nil too.
 func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f func(t *testing.T, status *wfv1.NodeStatus, pod *apiv1.Pod)) *Then {
 	return t.expectWorkflow(t.wf.Name, func(tt *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 		n := status.Nodes.Find(selector)

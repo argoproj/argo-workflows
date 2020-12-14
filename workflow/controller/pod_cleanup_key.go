@@ -13,11 +13,11 @@ const (
 	labelPodCompleted podCleanupAction = "labelPodCompleted"
 )
 
-func joinPodCleanupKey(namespace string, podName string, action podCleanupAction) podCleanupKey {
+func newPodCleanupKey(namespace string, podName string, action podCleanupAction) podCleanupKey {
 	return fmt.Sprintf("%s/%s/%v", namespace, podName, action)
 }
 
-func splitPodCleanupKey(k podCleanupKey) (namespace string, podName string, action podCleanupAction) {
+func parsePodCleanupKey(k podCleanupKey) (namespace string, podName string, action podCleanupAction) {
 	parts := strings.Split(k, "/")
 	if len(parts) != 3 {
 		return "", "", ""

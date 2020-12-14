@@ -15,13 +15,13 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
-type PodGCSuite struct {
+type PodCleanupSuite struct {
 	fixtures.E2ESuite
 }
 
 const enoughTimeForPodCleanup = 3 * time.Second
 
-func (s *PodGCSuite) TestNone() {
+func (s *PodCleanupSuite) TestNone() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -40,7 +40,7 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.RootNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+		ExpectWorkflowNode(wfv1.SucceededNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			assert.NotNil(t, n)
 			if assert.NotNil(t, p) {
 				assert.Equal(t, "true", p.Labels[common.LabelKeyCompleted])
@@ -48,7 +48,7 @@ spec:
 		})
 }
 
-func (s *PodGCSuite) TestOnPodCompletion() {
+func (s *PodCleanupSuite) TestOnPodCompletion() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -89,7 +89,7 @@ spec:
 		})
 }
 
-func (s *PodGCSuite) TestOnPodSuccess() {
+func (s *PodCleanupSuite) TestOnPodSuccess() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -129,7 +129,7 @@ spec:
 			assert.Nil(t, p, "successful pod is deleted")
 		})
 }
-func (s *PodGCSuite) TestOnWorkflowCompletion() {
+func (s *PodCleanupSuite) TestOnWorkflowCompletion() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -151,13 +151,13 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.RootNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+		ExpectWorkflowNode(wfv1.FailedNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			assert.NotNil(t, n)
 			assert.Nil(t, p, "failed pod is deleted")
 		})
 }
 
-func (s *PodGCSuite) TestOnWorkflowSuccess() {
+func (s *PodCleanupSuite) TestOnWorkflowSuccess() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -178,12 +178,12 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.RootNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+		ExpectWorkflowNode(wfv1.SucceededNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			assert.NotNil(t, n)
 			assert.Nil(t, p, "successful pod is deleted")
 		})
 }
 
 func TestPodGCSuite(t *testing.T) {
-	suite.Run(t, new(PodGCSuite))
+	suite.Run(t, new(PodCleanupSuite))
 }
