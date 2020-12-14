@@ -60,4 +60,16 @@ func TestModes_GetMode(t *testing.T) {
 			assert.Equal(t, SSO, mode)
 		}
 	})
+
+	m = Modes{
+		Client: false,
+		SSO:    false,
+		Server: true,
+	}
+	t.Run("Server and Auth", func(t *testing.T) {
+		mode, valid := m.GetMode("Bearer ")
+		if assert.True(t, valid) {
+			assert.Equal(t, Server, mode)
+		}
+	})
 }
