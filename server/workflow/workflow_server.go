@@ -255,7 +255,10 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 		select {
 		case <-ctx.Done():
 			return nil
-		case event := <-watch.ResultChan():
+		case event, open := <-watch.ResultChan():
+			if !open {
+				return io.EOF
+			}
 			log.Debug("Received event")
 			e, ok := event.Object.(*corev1.Event)
 			if !ok {
