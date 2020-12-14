@@ -16,7 +16,7 @@ export function getResolvedTemplates(workflow: models.Workflow, node: models.Nod
         if (templRef.StorageNeeded) {
             tmpl = workflow.status.storedTemplates[templRef.StoredTemplateName];
         } else if (tmpTemplate.template) {
-            tmpl = workflow.spec.templates.find(item => item.name === tmpTemplate.template);
+            tmpl = (workflow.status.storedWorkflowTemplateSpec || workflow.spec).templates.find(item => item.name === tmpTemplate.template);
         }
         if (!tmpl) {
             const name = templRef.StoredTemplateName || tmpTemplate.template;
