@@ -1239,7 +1239,7 @@ func (s *CLISuite) TestRetryOmit() {
 		WaitForWorkflow()
 }
 
-func (s *CLISuite) TestSynchronizationWfLevelMutex() {
+func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
 	s.Given().
 		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
 		When().
@@ -1256,7 +1256,7 @@ func (s *CLISuite) TestSynchronizationWfLevelMutex() {
 		})
 }
 
-func (s *CLISuite) TestTemplateLevelMutex() {
+func (s *FunctionalSuite) TestTemplateLevelMutex() {
 	s.Given().
 		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
 		When().
