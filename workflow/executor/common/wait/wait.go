@@ -27,8 +27,8 @@ func UntilTerminated(kubernetesInterface kubernetes.Interface, namespace, podNam
 
 func untilTerminatedAux(podInterface v1.PodInterface, containerID string, listOptions metav1.ListOptions) (bool, error) {
 	for {
-		complete, done, err := doWatch(podInterface, containerID, listOptions)
-		if complete {
+		timedOut, done, err := doWatch(podInterface, containerID, listOptions)
+		if !timedOut {
 			return done, err
 		}
 		log.Infof("Pod watch timed out, restarting watch on %s", containerID)
@@ -38,20 +38,20 @@ func untilTerminatedAux(podInterface v1.PodInterface, containerID string, listOp
 func doWatch(podInterface v1.PodInterface, containerID string, listOptions metav1.ListOptions) (bool, bool, error) {
 	w, err := podInterface.Watch(listOptions)
 	if err != nil {
-		return true, true, fmt.Errorf("could not watch pod: %w", err)
+		return false, true, fmt.Errorf("could not watch pod: %w", err)
 	}
 	defer w.Stop()
 	for event := range w.ResultChan() {
 		pod, ok := event.Object.(*corev1.Pod)
 		if !ok {
-			return true, false, apierrors.FromObject(event.Object)
+			return false, false, apierrors.FromObject(event.Object)
 		}
 		for _, s := range pod.Status.ContainerStatuses {
 			if common.GetContainerID(&s) == containerID && s.State.Terminated != nil {
-				return true, true, nil
+				return false, true, nil
 			}
 		}
 		listOptions.ResourceVersion = pod.ResourceVersion
 	}
-	return false, false, nil
+	return true, false, nil
 }
