@@ -118,6 +118,30 @@ func (s *FunctionalSuite) TestTemplateLevelMutex() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowTTL() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: workflow-ttl-
+  labels:
+    argo-e2e: true
+spec:
+  ttlStrategy:
+    secondsAfterCompletion: 0
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Wait(3 * time.Second). // enough time for TTL controller to delete the workflow
+		Then().
+		ExpectWorkflowDeleted()
+}
+
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
 // because we run them in parallel, the first node will run to completion, and then the second one
 func (s *FunctionalSuite) TestResourceQuota() {

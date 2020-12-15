@@ -6,6 +6,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -55,7 +56,14 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 		t.t.FailNow()
 	}
 	return t
+}
 
+func (t *Then) ExpectWorkflowDeleted() *Then {
+	_, err := t.client.Get(t.wf.Name, metav1.GetOptions{})
+	if err == nil || !apierr.IsNotFound(err) {
+		t.t.Fatalf("expected workflow to be deleted: %v", err)
+	}
+	return t
 }
 
 func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {

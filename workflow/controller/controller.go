@@ -155,9 +155,9 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 }
 
 // RunTTLController runs the workflow TTL controller
-func (wfc *WorkflowController) runTTLController(ctx context.Context) {
+func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTLWorkers int) {
 	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
-	err := ttlCtrl.Run(ctx.Done())
+	err := ttlCtrl.Run(ctx.Done(), workflowTTLWorkers)
 	if err != nil {
 		panic(err)
 	}
@@ -177,7 +177,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 
@@ -236,7 +236,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 				go wfc.workflowGarbageCollector(ctx.Done())
 				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
-				go wfc.runTTLController(ctx)
+				go wfc.runTTLController(ctx, workflowTTLWorkers)
 				go wfc.runCronController(ctx)
 				go wfc.metrics.RunServer(ctx)
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
