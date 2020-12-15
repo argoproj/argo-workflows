@@ -112,6 +112,7 @@ spec:
       containers:
       - args:
         - server
+        - --secure
         - --namespaced
         image: argoproj/argocli:latest
         name: argo-server

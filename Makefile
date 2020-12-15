@@ -40,16 +40,8 @@ CLI_IMAGE_FILE         := dist/cli-image.marker
 STATIC_BUILD          ?= true
 STATIC_FILES          ?= true
 GOTEST                ?= go test
-PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
-AUTH_MODE             := hybrid
-ifeq ($(PROFILE),sso)
-AUTH_MODE             := sso
-endif
-ifeq ($(STATIC_FILES),false)
-AUTH_MODE             := client
-endif
 # Which mode to run in:
 # * `local` run the argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the argo-server on the Kubernetes cluster
@@ -298,7 +290,7 @@ test: server/static/files.go
 
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
-	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | kubectl -n $(KUBE_NAMESPACE) apply --force -f-
+	kustomize build --load_restrictor=none test/e2e/manifests/minimal | sed 's/:latest/:$(VERSION)/' | kubectl -n $(KUBE_NAMESPACE) apply --force -f-
 
 .PHONY: test-images
 test-images:
@@ -314,15 +306,14 @@ $(GOPATH)/bin/goreman:
 .PHONY: start
 start: stop install cli $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller
 ifeq ($(RUN_MODE),kubernetes)
 	$(MAKE) cli-image
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server
 endif
-ifeq ($(PROFILE),sso)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=dev
-endif
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=dex
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=mysql
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)

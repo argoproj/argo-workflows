@@ -3,12 +3,19 @@ kind: Kustomization
 
 resources:
   - https://github.com/argoproj/argo/manifests/base/workflow-controller
+  - https://github.com/argoproj/argo/manifests/namespace-install/workflow-controller-rbac
   - https://github.com/argoproj/argo/manifests/quick-start/base/minio
   - https://raw.githubusercontent.com/argoproj/argo/master/manifests/quick-start/base/workflow-role.yaml
   - https://raw.githubusercontent.com/argoproj/argo/master/manifests/quick-start/base/workflow-default-rolebinding.yaml
   - https://raw.githubusercontent.com/argoproj/argo/master/manifests/quick-start/base/cluster-workflow-template-rbac.yaml
   - https://raw.githubusercontent.com/argoproj/argo/master/manifests/quick-start/base/artifact-repositories-configmap.yaml
+  - https://raw.githubusercontent.com/argoproj/argo/master/manifests/quick-start/mysql/argo-mysql-config-secret.yaml
+  - https://raw.githubusercontent.com/argoproj/argo/master/manifests/quick-start/mysql/mysql-deployment.yaml
+  - https://raw.githubusercontent.com/argoproj/argo/master/manifests/quick-start/mysql/mysql-service.yaml
   - ../../../../manifests/quick-start/minimal
 
 patchesStrategicMerge:
+  - ../mixins/workflow-controller-configmap.yaml
+  - ../mixins/workflow-controller-deployment.yaml
   - ../mixins/argo-server-deployment.yaml
+

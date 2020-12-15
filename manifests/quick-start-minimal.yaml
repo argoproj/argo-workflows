@@ -2,7 +2,17 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  annotations:
+    workflows.argoproj.io/rbac-rule: '''authors'' in groups && email == ''kilgore@kilgore.trout'''
+    workflows.argoproj.io/rbac-rule-precedence: "1"
   name: argo-server
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/part-of: dex
+  name: dex
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -75,6 +85,23 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  labels:
+    app.kubernetes.io/part-of: dex
+  name: dex
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
   name: submit-workflow-template
 rules:
 - apiGroups:
@@ -111,6 +138,20 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/part-of: dex
+  name: dex
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dex
+subjects:
+- kind: ServiceAccount
+  name: dex
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
   name: github.com
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -141,9 +182,57 @@ data:
     - name: Example Pod Link
       scope: pod
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+  sso: |
+    issuer: http://dex:5556/dex
+    clientId:
+      name: argo-server-sso
+      key: clientID
+    clientSecret:
+      name: argo-server-sso
+      key: clientSecret
+    redirectUrl: http://localhost:2746/oauth2/callback
+    scopes:
+    - groups
+    - email
+    rbac:
+      enabled: true
 kind: ConfigMap
 metadata:
   name: argo-server-configmap
+---
+apiVersion: v1
+data:
+  config.yaml: |
+    issuer: http://dex:5556/dex
+    storage:
+      type: sqlite3
+      config:
+        file: ":memory:"
+    web:
+      http: 0.0.0.0:5556
+    logger:
+      level: debug
+    staticClients:
+      - id: argo-server
+        redirectURIs:
+          - http://localhost:2746/oauth2/callback
+        name: Argo Server
+        secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+    connectors:
+      - type: mockCallback
+        id: mock
+        name: Example
+    enablePasswordDB: true
+    staticPasswords:
+      - email: admin@example.com
+        hash: $2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W
+        username: admin
+        userID: 08a8684b-db88-4b73-90a9-3cd1661f5466
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/part-of: dex
+  name: dex
 ---
 apiVersion: v1
 kind: Secret
@@ -182,6 +271,20 @@ spec:
     targetPort: 2746
   selector:
     app: argo-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/part-of: dex
+  name: dex
+spec:
+  ports:
+  - name: http
+    port: 5556
+  selector:
+    app: dex
+    app.kubernetes.io/part-of: dex
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -231,3 +334,39 @@ spec:
       volumes:
       - emptyDir: {}
         name: tmp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dex
+    app.kubernetes.io/part-of: dex
+  name: dex
+spec:
+  selector:
+    matchLabels:
+      app: dex
+      app.kubernetes.io/part-of: dex
+  template:
+    metadata:
+      labels:
+        app: dex
+        app.kubernetes.io/part-of: dex
+    spec:
+      containers:
+      - args:
+        - serve
+        - /data/config.yaml
+        image: quay.io/dexidp/dex:v2.23.0
+        name: dex
+        ports:
+        - containerPort: 5556
+          name: http
+        volumeMounts:
+        - mountPath: /data
+          name: config
+      serviceAccountName: dex
+      volumes:
+      - configMap:
+          name: dex
+        name: config

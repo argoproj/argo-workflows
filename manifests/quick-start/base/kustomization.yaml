@@ -4,8 +4,10 @@ kind: Kustomization
 resources:
   - ../../namespace-install
   - webhooks
+  - dex
   - argo-server-sso-secret.yaml
 
 patchesStrategicMerge:
   - overlays/argo-server-configmap.yaml
   - overlays/argo-server-deployment.yaml
+  - overlays/argo-server-sa.yaml

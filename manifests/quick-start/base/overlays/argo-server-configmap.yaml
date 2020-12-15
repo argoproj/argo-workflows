@@ -18,6 +18,20 @@ data:
     - name: Example Pod Link
       scope: pod
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+  sso: |
+    issuer: http://dex:5556/dex
+    clientId:
+      name: argo-server-sso
+      key: clientID
+    clientSecret:
+      name: argo-server-sso
+      key: clientSecret
+    redirectUrl: http://localhost:2746/oauth2/callback
+    scopes:
+    - groups
+    - email
+    rbac:
+      enabled: true
 kind: ConfigMap
 metadata:
   name: argo-server-configmap

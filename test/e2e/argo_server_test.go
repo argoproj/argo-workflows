@@ -727,7 +727,8 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2"
+            "image": "argoproj/argosay:v2",
+            "args": ["sleep", "10s"]
           }
         }
       ],
@@ -837,13 +838,6 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			WorkflowName(name).
 			When().
 			WaitForWorkflow()
-
-		s.e().GET("/api/v1/workflows/argo/" + name).
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.status.message").
-			Equal("Stopped with strategy 'Terminate'")
 	})
 
 	s.Run("Resubmit", func() {

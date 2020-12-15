@@ -25,6 +25,11 @@ if [[ "$dex" != "" ]]; then
   pf DEX svc/dex 5556
 fi
 
+mysql=$(kubectl -n argo get pod -l app=mysql -o name)
+if [[ "$mysql" != "" ]]; then
+  pf MySQL "$mysql" 3306
+fi
+
 if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
   pf "Argo Server" deploy/argo-server 2746
 fi
