@@ -11,9 +11,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowmocks "github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
+	"github.com/argoproj/argo-server/v3/pkg/apiclient/workflow"
+	workflowmocks "github.com/argoproj/argo-server/v3/pkg/apiclient/workflow/mocks"
 )
 
 func Test_listWorkflows(t *testing.T) {

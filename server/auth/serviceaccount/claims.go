@@ -11,7 +11,7 @@ import (
 
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	"github.com/argoproj/argo/server/auth/types"
+	"github.com/argoproj/argo-server/v3/server/auth/types"
 )
 
 func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {

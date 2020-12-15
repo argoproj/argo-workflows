@@ -8,20 +8,21 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth"
-	clusterworkflowtmplserver "github.com/argoproj/argo/server/clusterworkflowtemplate"
-	cronworkflowserver "github.com/argoproj/argo/server/cronworkflow"
-	workflowserver "github.com/argoproj/argo/server/workflow"
-	workflowtemplateserver "github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/util/help"
 	"github.com/argoproj/argo/util/instanceid"
+
+	"github.com/argoproj/argo-server/v3/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-server/v3/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo-server/v3/pkg/apiclient/info"
+	workflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-server/v3/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-server/v3/server/auth"
+	clusterworkflowtmplserver "github.com/argoproj/argo-server/v3/server/clusterworkflowtemplate"
+	cronworkflowserver "github.com/argoproj/argo-server/v3/server/cronworkflow"
+	workflowserver "github.com/argoproj/argo-server/v3/server/workflow"
+	workflowtemplateserver "github.com/argoproj/argo-server/v3/server/workflowtemplate"
 )
 
 var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo

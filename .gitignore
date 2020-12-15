@@ -7,7 +7,6 @@ dist/
 cmd/**/debug
 hack/**/debug
 /argo
-/argoexec
 debug.test
 git-ask-pass.sh
 *.iml
@@ -15,7 +14,6 @@ git-ask-pass.sh
 .envrc
 /.vendor-new
 /kustomize
-/workflow-controller
 /.scannerwork/
 /test-results/
 /argo-server.crt

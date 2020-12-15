@@ -6,5 +6,5 @@ resources:
   - dex
 
 patchesStrategicMerge:
-  - overlays/workflow-controller-configmap.yaml
+  - overlays/argo-server-configmap.yaml
   - overlays/argo-server-sa.yaml

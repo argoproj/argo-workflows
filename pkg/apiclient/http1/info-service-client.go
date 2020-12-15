@@ -5,8 +5,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
+	infopkg "github.com/argoproj/argo-server/v3/pkg/apiclient/info"
 )
 
 type InfoServiceClient = Facade

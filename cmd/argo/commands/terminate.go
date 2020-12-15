@@ -8,9 +8,10 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
+	"github.com/argoproj/argo-server/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflow"
 )
 
 type terminateOption struct {

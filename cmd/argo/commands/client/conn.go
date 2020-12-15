@@ -8,8 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/util/kubeconfig"
+
+	"github.com/argoproj/argo-server/v3/pkg/apiclient"
 )
 
 var argoServerOpts = apiclient.ArgoServerOpts{}

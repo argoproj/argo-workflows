@@ -8,13 +8,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/creator"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
+
+	"github.com/argoproj/argo-server/v3/workflow/creator"
+
+	cronworkflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-server/v3/server/auth"
 )
 
 type cronWorkflowServiceServer struct {

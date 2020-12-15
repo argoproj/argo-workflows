@@ -21,8 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo/server/auth/rbac"
-	"github.com/argoproj/argo/server/auth/types"
+	"github.com/argoproj/argo-server/v3/server/auth/rbac"
+	"github.com/argoproj/argo-server/v3/server/auth/types"
 )
 
 const (

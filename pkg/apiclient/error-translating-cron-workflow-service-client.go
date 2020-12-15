@@ -5,9 +5,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	grpcutil "github.com/argoproj/argo/util/grpc"
+
+	cronworkflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/cronworkflow"
 )
 
 type errorTranslatingCronWorkflowServiceClient struct {

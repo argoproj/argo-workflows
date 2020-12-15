@@ -21,12 +21,13 @@ import (
 	sqldbmocks "github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	authmocks "github.com/argoproj/argo/server/auth/mocks"
 	"github.com/argoproj/argo/util/instanceid"
 	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
+
+	"github.com/argoproj/argo-server/v3/server/auth"
+	authmocks "github.com/argoproj/argo-server/v3/server/auth/mocks"
 )
 
 func mustParse(text string) *url.URL {

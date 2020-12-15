@@ -19,9 +19,10 @@ import (
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	ssomocks "github.com/argoproj/argo/server/auth/sso/mocks"
-	"github.com/argoproj/argo/server/auth/types"
 	"github.com/argoproj/argo/workflow/common"
+
+	ssomocks "github.com/argoproj/argo-server/v3/server/auth/sso/mocks"
+	"github.com/argoproj/argo-server/v3/server/auth/types"
 )
 
 func TestServer_GetWFClient(t *testing.T) {

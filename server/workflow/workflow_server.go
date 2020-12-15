@@ -13,21 +13,23 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth"
 	argoutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/fields"
 	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/creator"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+
+	"github.com/argoproj/argo-server/v3/workflow/creator"
+
+	workflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-server/v3/server/auth"
+	"github.com/argoproj/argo-server/v3/util/logs"
 )
 
 type workflowServer struct {

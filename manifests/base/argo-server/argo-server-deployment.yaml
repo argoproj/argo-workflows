@@ -19,7 +19,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          args: [ server ]
+          args: [ server, --secure ]
           ports:
             - name: web
               containerPort: 2746

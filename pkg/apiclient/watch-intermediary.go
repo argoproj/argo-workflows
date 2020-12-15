@@ -3,7 +3,7 @@ package apiclient
 import (
 	"context"
 
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	workflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflow"
 )
 
 type watchIntermediary struct {

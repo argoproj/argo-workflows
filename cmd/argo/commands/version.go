@@ -7,9 +7,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+
+	"github.com/argoproj/argo-server/v3/cmd/argo/commands/client"
+	infopkg "github.com/argoproj/argo-server/v3/pkg/apiclient/info"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root

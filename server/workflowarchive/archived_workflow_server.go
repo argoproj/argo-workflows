@@ -14,10 +14,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/argoproj/argo/persist/sqldb"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
+
+	workflowarchivepkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-server/v3/server/auth"
 )
 
 type archivedWorkflowServer struct {

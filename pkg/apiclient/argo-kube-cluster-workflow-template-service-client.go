@@ -5,8 +5,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
+	clusterworkflowtmplpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/clusterworkflowtemplate"
 )
 
 type argoKubeWorkflowClusterTemplateServiceClient struct {

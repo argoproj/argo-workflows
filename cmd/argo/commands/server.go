@@ -16,11 +16,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/apiserver"
-	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/help"
+
+	"github.com/argoproj/argo-server/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-server/v3/server/apiserver"
+	"github.com/argoproj/argo-server/v3/server/auth"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -137,7 +138,7 @@ See %s`, help.ArgoSever),
 	command.Flags().BoolVarP(&secure, "secure", "e", false, "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
-	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
+	command.Flags().StringVar(&configMap, "configmap", "argo-server-configmap", "Name of K8s configmap to retrieve configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")

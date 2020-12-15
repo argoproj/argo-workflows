@@ -21,11 +21,12 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth/serviceaccount"
-	"github.com/argoproj/argo/server/auth/sso"
-	"github.com/argoproj/argo/server/auth/types"
 	"github.com/argoproj/argo/util/kubeconfig"
 	"github.com/argoproj/argo/workflow/common"
+
+	"github.com/argoproj/argo-server/v3/server/auth/serviceaccount"
+	"github.com/argoproj/argo-server/v3/server/auth/sso"
+	"github.com/argoproj/argo-server/v3/server/auth/types"
 )
 
 type ContextKey string

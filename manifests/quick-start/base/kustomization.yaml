@@ -3,14 +3,9 @@ kind: Kustomization
 
 resources:
   - ../../namespace-install
-  - minio
   - webhooks
   - argo-server-sso-secret.yaml
-  - workflow-role.yaml
-  - workflow-default-rolebinding.yaml
-  - cluster-workflow-template-rbac.yaml
-  - artifact-repositories-configmap.yaml
 
 patchesStrategicMerge:
-  - overlays/workflow-controller-configmap.yaml
+  - overlays/argo-server-configmap.yaml
   - overlays/argo-server-deployment.yaml

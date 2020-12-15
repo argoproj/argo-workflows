@@ -3,13 +3,13 @@ package apiclient
 import (
 	"context"
 
-	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo/pkg/apiclient/http1"
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-server/v3/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-server/v3/pkg/apiclient/http1"
+	infopkg "github.com/argoproj/argo-server/v3/pkg/apiclient/info"
+	workflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflowtemplate"
 )
 
 type httpClient http1.Facade

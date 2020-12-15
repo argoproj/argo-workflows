@@ -8,14 +8,15 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 	"k8s.io/client-go/kubernetes/fake"
 
-	clusterwftmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/types"
 	testutil "github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
+
+	clusterwftmplpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-server/v3/server/auth"
+	"github.com/argoproj/argo-server/v3/server/auth/types"
 )
 
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate

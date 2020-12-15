@@ -18,16 +18,17 @@ import (
 
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/types"
 	testutil "github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
+
+	workflowpkg "github.com/argoproj/argo-server/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-server/v3/server/auth"
+	"github.com/argoproj/argo-server/v3/server/auth/types"
 )
 
 const unlabelled = `{

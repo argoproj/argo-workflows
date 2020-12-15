@@ -18,11 +18,13 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/labels"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/creator"
+
+	"github.com/argoproj/argo-server/v3/workflow/creator"
+
+	"github.com/argoproj/argo-server/v3/server/auth"
 )
 
 type Operation struct {

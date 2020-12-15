@@ -19,11 +19,12 @@ import (
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/hydrator"
+
+	"github.com/argoproj/argo-server/v3/server/auth"
 )
 
 type ArtifactServer struct {

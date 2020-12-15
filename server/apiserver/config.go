@@ -2,7 +2,8 @@ package apiserver
 
 import (
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/server/auth/sso"
+
+	"github.com/argoproj/argo-server/v3/server/auth/sso"
 )
 
 var emptyConfigFunc = func() interface{} { return &Config{} }
