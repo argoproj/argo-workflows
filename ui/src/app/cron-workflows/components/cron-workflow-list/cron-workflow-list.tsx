@@ -9,14 +9,13 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {getNextScheduledTime} from '../../../shared/cron';
-import {exampleCronWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
+import {CronWorkflowCreator} from '../cron-workflow-creator';
 
 require('./cron-workflow-list.scss');
 
@@ -59,7 +58,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                     <Page
                         title='Cron Workflows'
                         toolbar={{
-                            breadcrumbs: [{title: 'Cron Workflows', path: uiUrl('cron-workflows')}],
+                            breadcrumbs: [
+                                {title: 'Cron Workflows', path: uiUrl('cron-workflows')},
+                                {title: this.namespace, path: uiUrl('cron-workflows/' + this.namespace)}
+                            ],
                             actionMenu: {
                                 items: [
                                     {
@@ -75,22 +77,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-12'>{this.renderCronWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <ResourceEditor
-                                title={'New Cron Workflow'}
+                            <CronWorkflowCreator
                                 namespace={this.namespace}
-                                value={exampleCronWorkflow()}
-                                onSubmit={cronWf =>
-                                    services.cronWorkflows
-                                        .create(cronWf, cronWf.metadata.namespace || this.namespace)
-                                        .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))
-                                }
-                                upload={true}
-                                editing={true}
-                                kind='CronWorkflow'
+                                onCreate={cronWorkflow => ctx.navigation.goto(uiUrl('cron-workflows/' + cronWorkflow.metadata.namespace + '/' + cronWorkflow.metadata.name))}
                             />
-                            <p>
-                                <ExampleManifests />.
-                            </p>
                         </SlidingPanel>
                     </Page>
                 )}
@@ -112,7 +102,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
 
     private renderCronWorkflows() {
         if (this.state.error) {
-            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+            return <ErrorNotice error={this.state.error} />;
         }
         if (!this.state.cronWorkflows) {
             return <Loading />;

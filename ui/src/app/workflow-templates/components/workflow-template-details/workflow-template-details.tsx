@@ -1,127 +1,121 @@
 import {NotificationType, Page} from 'argo-ui';
 import {SlidingPanel} from 'argo-ui/src/index';
 import * as React from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import * as models from '../../../../models';
+import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
-import {Consumer} from '../../../shared/context';
+import {Context} from '../../../shared/context';
+import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
-import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
+import {WorkflowTemplateEditor} from '../workflow-template-editor';
 
-require('../../../workflows/components/workflow-details/workflow-details.scss');
+export const WorkflowTemplateDetails = ({history, location, match}: RouteComponentProps<any>) => {
+    // boiler-plate
+    const {notifications, navigation} = useContext(Context);
+    const queryParams = new URLSearchParams(location.search);
 
-interface State {
-    template?: models.WorkflowTemplate;
-    error?: Error;
-}
+    // state for URL and query parameters
+    const namespace = match.params.namespace;
+    const name = match.params.name;
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
+    const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, State> {
-    private get namespace() {
-        return this.props.match.params.namespace || '';
-    }
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('workflow-templates/{namespace}/{name}', {
+                    namespace,
+                    name,
+                    sidePanel,
+                    tab
+                })
+            ),
+        [namespace, name, sidePanel, tab]
+    );
 
-    private get name() {
-        return this.props.match.params.name;
-    }
+    const [error, setError] = useState<Error>();
+    const [template, setTemplate] = useState<WorkflowTemplate>();
+    const [edited, setEdited] = useState(false);
 
-    private get sidePanel() {
-        return this.queryParam('sidePanel');
-    }
+    useEffect(() => setEdited(true), [template]);
 
-    private set sidePanel(sidePanel) {
-        this.setQueryParams({sidePanel});
-    }
-
-    constructor(props: RouteComponentProps<any>, context: any) {
-        super(props, context);
-        this.state = {};
-    }
-
-    public componentDidMount(): void {
+    useEffect(() => {
         services.workflowTemplate
-            .get(this.name, this.namespace)
-            .then(template => this.setState({error: null, template}))
-            .catch(error => this.setState({error}));
-    }
+            .get(name, namespace)
+            .then(setTemplate)
+            .then(() => setEdited(false)) // set back to false
+            .then(() => setError(null))
+            .catch(setError);
+    }, [name, namespace]);
 
-    public render() {
-        return (
-            <Consumer>
-                {ctx => (
-                    <Page
-                        title='Workflow Template Details'
-                        toolbar={{
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Submit',
-                                        iconClassName: 'fa fa-plus',
-                                        action: () => (this.sidePanel = 'new')
-                                    },
-                                    {
-                                        title: 'Delete',
-                                        iconClassName: 'fa fa-trash',
-                                        action: () => this.deleteWorkflowTemplate()
-                                    }
-                                ]
-                            },
-                            breadcrumbs: [
-                                {
-                                    title: 'Workflow Template',
-                                    path: uiUrl('workflow-templates')
-                                },
-                                {title: this.namespace + '/' + this.name}
-                            ]
-                        }}>
-                        <div className='argo-container'>
-                            <div className='workflow-details__content'>{this.renderWorkflowTemplate()}</div>
-                        </div>
-                        {this.state.template && (
-                            <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                                <SubmitWorkflowPanel
-                                    kind='WorkflowTemplate'
-                                    namespace={this.state.template.metadata.namespace}
-                                    name={this.state.template.metadata.name}
-                                    entrypoint={this.state.template.spec.entrypoint}
-                                    entrypoints={(this.state.template.spec.templates || []).map(t => t.name)}
-                                    parameters={this.state.template.spec.arguments.parameters || []}
-                                />
-                            </SlidingPanel>
-                        )}
-                    </Page>
-                )}
-            </Consumer>
-        );
-    }
-
-    private renderWorkflowTemplate() {
-        if (this.state.error) {
-            return <ErrorNotice error={this.state.error} />;
-        }
-        if (!this.state.template) {
-            return <Loading />;
-        }
-        return <WorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} />;
-    }
-
-    private deleteWorkflowTemplate() {
-        if (!confirm('Are you sure you want to delete this workflow template?\nThere is no undo.')) {
-            return;
-        }
-        services.workflowTemplate
-            .delete(this.name, this.namespace)
-            .catch(e => {
-                this.appContext.apis.notifications.show({
-                    content: 'Failed to delete workflow template ' + e,
-                    type: NotificationType.Error
-                });
-            })
-            .then(() => {
-                document.location.href = uiUrl('workflow-templates');
-            });
-    }
-}
+    return (
+        <Page
+            title='Workflow Template Details'
+            toolbar={{
+                breadcrumbs: [
+                    {title: 'Workflow Templates', path: uiUrl('workflow-templates')},
+                    {title: namespace, path: uiUrl('workflow-templates/' + namespace)},
+                    {title: name, path: uiUrl('workflow-templates/' + namespace + '/' + name)}
+                ],
+                actionMenu: {
+                    items: [
+                        {
+                            title: 'Submit',
+                            iconClassName: 'fa fa-plus',
+                            disabled: edited,
+                            action: () => setSidePanel(true)
+                        },
+                        {
+                            title: 'Update',
+                            iconClassName: 'fa fa-save',
+                            disabled: !edited,
+                            action: () =>
+                                services.workflowTemplate
+                                    .update(template, name, namespace)
+                                    .then(setTemplate)
+                                    .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
+                                    .then(() => setEdited(false))
+                                    .then(() => setError(null))
+                                    .catch(setError)
+                        },
+                        {
+                            title: 'Delete',
+                            iconClassName: 'fa fa-trash',
+                            disabled: edited,
+                            action: () => {
+                                if (!confirm('Are you sure you want to delete this workflow template?\nThere is no undo.')) {
+                                    return;
+                                }
+                                services.workflowTemplate
+                                    .delete(name, namespace)
+                                    .then(() => navigation.goto(uiUrl('workflow-templates/' + namespace)))
+                                    .then(() => setError(null))
+                                    .catch(setError);
+                            }
+                        }
+                    ]
+                }
+            }}>
+            <>
+                <ErrorNotice error={error} />
+                {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />}
+            </>
+            {template && (
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isNarrow={true}>
+                    <SubmitWorkflowPanel
+                        kind='WorkflowTemplate'
+                        namespace={namespace}
+                        name={name}
+                        entrypoint={template.spec.entrypoint}
+                        entrypoints={(template.spec.templates || []).map(t => t.name)}
+                        parameters={template.spec.arguments.parameters || []}
+                    />
+                </SlidingPanel>
+            )}
+        </Page>
+    );
+};

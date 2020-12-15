@@ -24,6 +24,9 @@ data:
     - name: Example Pod Link
       scope: pod
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Get help
+      scope: chat
+      url: https://argoproj.github.io/argo/
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

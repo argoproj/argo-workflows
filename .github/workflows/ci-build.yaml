@@ -193,6 +193,7 @@ jobs:
         run: |
           yarn --cwd ui install
           yarn --cwd ui build
+          yarn --cwd ui test
           yarn --cwd ui lint
       - name: Ensure nothing changed
         run: git diff --exit-code

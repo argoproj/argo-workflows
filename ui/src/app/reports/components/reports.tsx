@@ -69,7 +69,14 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         return (
             <Consumer>
                 {ctx => (
-                    <Page title='Reports' toolbar={{breadcrumbs: [{title: 'Reports', path: uiUrl('/reports/' + this.state.namespace)}]}}>
+                    <Page
+                        title='Reports'
+                        toolbar={{
+                            breadcrumbs: [
+                                {title: 'Reports', path: uiUrl('reports')},
+                                {title: this.state.namespace, path: uiUrl('reports/' + this.state.namespace)}
+                            ]
+                        }}>
                         {this.renderFilters()}
                         {this.renderReport(ctx)}
                     </Page>
@@ -295,7 +302,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private renderReport(ctx: ContextApis) {
         if (this.state.error) {
-            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+            return <ErrorNotice error={this.state.error} />;
         }
         if (!this.state.charts) {
             return (

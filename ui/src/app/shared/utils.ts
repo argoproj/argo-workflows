@@ -75,7 +75,7 @@ export const Utils = {
     },
 
     setCurrentNamespace(value: string): void {
-        if (value) {
+        if (value != null) {
             localStorage.setItem('current_namespace', value);
             this.onNamespaceChange(value);
         }
@@ -83,5 +83,10 @@ export const Utils = {
 
     getCurrentNamespace(): string {
         return localStorage.getItem('current_namespace');
+    },
+
+    // return a namespace, never return null/undefined, defaults to "deafult"
+    getNamespace(namespace: string): string {
+        return namespace || localStorage.getItem('current_namespace') || 'default';
     }
 };

@@ -1,6 +1,6 @@
 import {ClusterWorkflowTemplate, CronWorkflow, Template, Workflow, WorkflowTemplate} from '../../models';
 
-const randomSillyName = () => {
+export const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely', 'sparkly', 'omniscient'];
     const nouns = ['rhino', 'python', 'bear', 'dragon', 'octopus', 'tiger', 'whale', 'poochenheimer'];
     const random = (array: string[]) => array[Math.floor(Math.random() * array.length)];
@@ -14,25 +14,26 @@ const labels = {example: 'true'};
 const ttlStrategy = {secondsAfterCompletion: 5 * 60};
 const podGC = {strategy: 'OnPodCompletion'};
 
-const templates: Template[] = [
-    {
-        name: entrypoint,
-        inputs: {
-            parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
-        },
-        container: {
-            name: 'main',
-            image: 'argoproj/argosay:v2',
-            command: ['/argosay'],
-            args: ['echo', '{{inputs.parameters.message}}']
-        }
+export const exampleTemplate = (name: string): Template => ({
+    name,
+    inputs: {
+        parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
+    },
+    container: {
+        name: 'main',
+        image: 'argoproj/argosay:v2',
+        command: ['/argosay'],
+        args: ['echo', '{{inputs.parameters.message}}']
     }
-];
+});
 
-export const exampleWorkflow = (): Workflow => {
+const templates: Template[] = [exampleTemplate(entrypoint)];
+
+export const exampleWorkflow = (namespace: string): Workflow => {
     return {
         metadata: {
             name: randomSillyName(),
+            namespace,
             labels
         },
         spec: {
@@ -59,9 +60,10 @@ export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
     }
 });
 
-export const exampleWorkflowTemplate = (): WorkflowTemplate => ({
+export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => ({
     metadata: {
         name: randomSillyName(),
+        namespace,
         labels
     },
     spec: {
@@ -74,9 +76,10 @@ export const exampleWorkflowTemplate = (): WorkflowTemplate => ({
     }
 });
 
-export const exampleCronWorkflow = (): CronWorkflow => ({
+export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     metadata: {
         name: randomSillyName(),
+        namespace,
         labels
     },
     spec: {

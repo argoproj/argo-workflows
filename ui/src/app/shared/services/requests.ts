@@ -42,6 +42,9 @@ export default {
     loadEventSource(url: string): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
             const eventSource = new EventSource(url);
+            // an null event is the best way I could find to get an event whenever we open the event source
+            // otherwise, you'd have to wait for your first message (which maybe some time)
+            eventSource.onopen = () => observer.next(null);
             eventSource.onmessage = x => observer.next(x.data);
             eventSource.onerror = x => observer.error(x);
             return () => {

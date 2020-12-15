@@ -1,0 +1,57 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo/pkg/apiclient/eventsource";
+
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "k8s.io/api/core/v1/generated.proto";
+import "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1/generated.proto";
+
+package eventsource;
+
+message ListEventSourcesRequest {
+    string namespace = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+}
+
+message EventSourcesLogsRequest {
+    string namespace = 1;
+    // optional - only return entries for this event source
+    string name = 2;
+    // optional - only return entries for this event source type (e.g. `webhook`)
+    string eventSourceType = 3;
+    // optional - only return entries for this event name (e.g. `example`)
+    string eventName = 4;
+    // optional - only return entries where `msg` matches this regular expression
+    string grep = 5;
+    k8s.io.api.core.v1.PodLogOptions podLogOptions = 6;
+}
+
+// structured log entry
+message LogEntry {
+    string namespace = 1;
+    string eventSourceName = 2;
+    // optional - the event source type (e.g. `webhook`)
+    string eventSourceType = 3;
+    // optional - the event name (e.g. `example`)
+    string eventName = 4;
+    string level = 5;
+    k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 6;
+    string msg = 7;
+}
+
+message EventSourceWatchEvent {
+    string type = 1;
+    github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource object = 2;
+}
+
+service EventSourceService {
+    rpc ListEventSources (ListEventSourcesRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSourceList) {
+        option (google.api.http).get = "/api/v1/event-sources/{namespace}";
+    }
+    rpc EventSourcesLogs (EventSourcesLogsRequest) returns (stream LogEntry) {
+        option (google.api.http).get = "/api/v1/stream/event-sources/{namespace}/logs";
+    }
+    rpc WatchEventSources (ListEventSourcesRequest) returns (stream EventSourceWatchEvent) {
+        option (google.api.http).get = "/api/v1/stream/event-sources/{namespace}";
+    }
+}

@@ -40,12 +40,18 @@ data:
     #   volumeName: kube-config-volume
 
     links:
+      # Adds a button to the workflow page. E.g. linking to you logging facility.
       - name: Example Workflow Link
         scope: workflow
         url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+      # Adds a button next to the pod.  E.g. linking to you logging facility but for the pod only.
       - name: Example Pod Link
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+      # Adds a button to the bottom right of every page to link to your organisation help or chat.
+      - name: Get help
+        scope: chat
+        url: http://my-chat
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.

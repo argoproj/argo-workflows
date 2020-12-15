@@ -1,0 +1,23 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.object-palette {
+  margin: 10px;
+  padding: 10px;
+  display: inline-block;
+  background-color: white;
+  box-shadow: 1px 1px 3px $argo-color-gray-5;
+  text-align: center;
+
+  a {
+    padding: 10px;
+    color: $argo-color-gray-6;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-size: 150%;
+
+    &.active {
+      background-color: $argo-color-gray-3;
+      border: 1px solid $argo-color-gray-4;
+    }
+  }
+}
