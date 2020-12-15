@@ -5511,7 +5511,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	hostSelector := "kubernetes.io/hostname"
 	retries := wfv1.RetryStrategy{}
-	retries.ScheduleOnDifferentHostNodesLabel = &hostSelector
+	retries.ScheduleOnDifferentHostNodesLabel = hostSelector
 
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -5547,8 +5547,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	tmpl := &wfv1.Template{}
 	tmpl.RetryStrategy = &retries
-	retryOnDiffHost := &RetryOnDifferentHost{retryNodeName: nodeID}
-	retryOnDiffHost.RetryTweak(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, tmpl)
+	RetryOnDifferentHost(nodeID)(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, tmpl)
 	assert.NotNil(t, tmpl.Affinity)
 
 	// Verify if template's Affinity has the right value

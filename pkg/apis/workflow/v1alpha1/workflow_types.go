@@ -1224,7 +1224,7 @@ func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 	var filteredNodes = make(Nodes)
 	for _, node := range s {
 		if predicate(node) {
-			filteredNodes[node.Name] = node
+			filteredNodes[node.ID] = node
 		}
 	}
 	return filteredNodes
@@ -1234,7 +1234,7 @@ func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
 	var values = make(map[string]interface{})
 	for _, node := range s {
-		values[node.Name] = f(node)
+		values[node.ID] = f(node)
 	}
 	return values
 }
@@ -1349,7 +1349,7 @@ type RetryStrategy struct {
 
 	// If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host
 	// Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. "kubernetes.io/hostname" or "k3s.io/hostname"
-	ScheduleOnDifferentHostNodesLabel *string `json:"scheduleOnDifferentHostNodesLabel,omitempty" protobuf:"bytes,4,opt,name=scheduleOnDifferentHostNodesLabel"`
+	ScheduleOnDifferentHostNodesLabel string `json:"scheduleOnDifferentHostNodesLabel,omitempty" protobuf:"bytes,4,opt,name=scheduleOnDifferentHostNodesLabel"`
 }
 
 // The amount of requested resource * the duration that request was used.

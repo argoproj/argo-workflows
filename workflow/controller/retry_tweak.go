@@ -2,22 +2,22 @@ package controller
 
 import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfutil "github.com/argoproj/argo/workflow/util"
+	wfretry "github.com/argoproj/argo/workflow/util/retry"
 )
 
-type RetryTweak interface {
-	RetryTweak(wfv1.RetryStrategy, wfv1.Nodes, *wfv1.Template)
-}
-
-type RetryOnDifferentHost struct {
-	retryNodeName string
-}
+// RetryTweak is a 2nd order function interface for tweaking the retry
+type RetryTweak = func(retryStrategy wfv1.RetryStrategy, nodes wfv1.Nodes, tmpl *wfv1.Template)
 
 // RetryOnDifferentHost append affinity with fail host to template
-func (r *RetryOnDifferentHost) RetryTweak(retryStrategy wfv1.RetryStrategy, allNodes wfv1.Nodes, tmpl *wfv1.Template) {
-	hostNames := wfutil.GetFailHosts(allNodes, r.retryNodeName)
-	hostLabel := retryStrategy.ScheduleOnDifferentHostNodesLabel
-	if hostLabel != nil && len(hostNames) > 0 {
-		tmpl.Affinity = wfutil.AddHostnamesToAffinity(*hostLabel, hostNames, tmpl.Affinity)
+func RetryOnDifferentHost(retryNodeName string) RetryTweak {
+	return func(retryStrategy wfv1.RetryStrategy, nodes wfv1.Nodes, tmpl *wfv1.Template) {
+		if retryStrategy.ScheduleOnDifferentHostNodesLabel == "" {
+			return
+		}
+		hostNames := wfretry.GetFailHosts(nodes, retryNodeName)
+		hostLabel := retryStrategy.ScheduleOnDifferentHostNodesLabel
+		if hostLabel != "" && len(hostNames) > 0 {
+			tmpl.Affinity = wfretry.AddHostnamesToAffinity(hostLabel, hostNames, tmpl.Affinity)
+		}
 	}
 }

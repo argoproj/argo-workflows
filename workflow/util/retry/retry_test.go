@@ -1,4 +1,4 @@
-package util
+package retry
 
 import (
 	"testing"
@@ -22,13 +22,13 @@ func TestRemoveDuplicates(t *testing.T) {
 func TestGetFailHosts(t *testing.T) {
 	var nodes = wfv1.Nodes{
 		"retry_node": wfv1.NodeStatus{
-			Name:     "retry_node",
+			ID:       "retry_node",
 			Phase:    wfv1.NodeFailed,
 			Children: []string{"retry_node(0)", "retry_node(1)", "retry_node(2)"},
 		},
-		"retry_node(0)": wfv1.NodeStatus{Name: "retry_node(0)", Phase: wfv1.NodeFailed, Children: []string{}, HostNodeName: "host_1"},
-		"retry_node(1)": wfv1.NodeStatus{Name: "retry_node(1)", Phase: wfv1.NodeError, Children: []string{}, HostNodeName: "host_2"},
-		"retry_node(2)": wfv1.NodeStatus{Name: "retry_node(2)", Phase: wfv1.NodeRunning, Children: []string{}, HostNodeName: ""},
+		"retry_node(0)": wfv1.NodeStatus{ID: "retry_node(0)", Phase: wfv1.NodeFailed, Children: []string{}, HostNodeName: "host_1"},
+		"retry_node(1)": wfv1.NodeStatus{ID: "retry_node(1)", Phase: wfv1.NodeError, Children: []string{}, HostNodeName: "host_2"},
+		"retry_node(2)": wfv1.NodeStatus{ID: "retry_node(2)", Phase: wfv1.NodeRunning, Children: []string{}, HostNodeName: ""},
 	}
 	t.Run("NotExistParent", func(t *testing.T) {
 		assert.Equal(t, GetFailHosts(nodes, "not-exist-node"), []string{})

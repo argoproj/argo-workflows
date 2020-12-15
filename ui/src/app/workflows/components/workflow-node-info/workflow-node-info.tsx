@@ -24,7 +24,7 @@ function failHosts(node: models.NodeStatus, workflow: models.Workflow) {
     const hosts = [];
     for (const childNodeID of node.children) {
         const childNode = workflow.status.nodes[childNodeID];
-        if (childNode.phase === models.NODE_PHASE.FAILED || childNode.phase === models.NODE_PHASE.ERROR) {
+        if ((childNode.phase === models.NODE_PHASE.FAILED || childNode.phase === models.NODE_PHASE.ERROR) && hosts.indexOf(childNode.hostNodeName) === -1) {
             hosts.push(childNode.hostNodeName);
         }
     }

@@ -135,9 +135,9 @@ func TestNodes_Children(t *testing.T) {
 
 func TestNodes_Filter(t *testing.T) {
 	var nodes = Nodes{
-		"node_1": NodeStatus{Name: "node_1", Phase: NodeFailed},
-		"node_2": NodeStatus{Name: "node_2", Phase: NodeRunning},
-		"node_3": NodeStatus{Name: "node_3", Phase: NodeFailed},
+		"node_1": NodeStatus{ID: "node_1", Phase: NodeFailed},
+		"node_2": NodeStatus{ID: "node_2", Phase: NodeRunning},
+		"node_3": NodeStatus{ID: "node_3", Phase: NodeFailed},
 	}
 	t.Run("Empty", func(t *testing.T) {
 		assert.Empty(t, Nodes{}.Filter(func(x NodeStatus) bool { return x.Phase == NodeError }))
@@ -148,16 +148,16 @@ func TestNodes_Filter(t *testing.T) {
 	t.Run("Found", func(t *testing.T) {
 		n := nodes.Filter(func(x NodeStatus) bool { return x.Phase == NodeFailed })
 		assert.Equal(t, len(n), 2)
-		assert.Equal(t, n["node_1"].Name, "node_1")
-		assert.Equal(t, n["node_3"].Name, "node_3")
+		assert.Equal(t, n["node_1"].ID, "node_1")
+		assert.Equal(t, n["node_3"].ID, "node_3")
 	})
 }
 
 //Map(f func(x NodeStatus) interface{}) map[string]interface{} {
 func TestNodes_Map(t *testing.T) {
 	var nodes = Nodes{
-		"node_1": NodeStatus{Name: "node_1", HostNodeName: "host_1"},
-		"node_2": NodeStatus{Name: "node_2", HostNodeName: "host_2"},
+		"node_1": NodeStatus{ID: "node_1", HostNodeName: "host_1"},
+		"node_2": NodeStatus{ID: "node_2", HostNodeName: "host_2"},
 	}
 	t.Run("Empty", func(t *testing.T) {
 		assert.Empty(t, Nodes{}.Map(func(x NodeStatus) interface{} { return x.HostNodeName }))

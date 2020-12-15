@@ -1546,11 +1546,6 @@ func (in *RetryStrategy) DeepCopyInto(out *RetryStrategy) {
 		*out = new(Backoff)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ScheduleOnDifferentHostNodesLabel != nil {
-		in, out := &in.ScheduleOnDifferentHostNodesLabel, &out.ScheduleOnDifferentHostNodesLabel
-		*out = new(string)
-		**out = **in
-	}
 	return
 }
 

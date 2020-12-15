@@ -1691,8 +1691,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 			// It has to be one child at least
 			if lastChildNode != nil {
-				retryOnDiffHost := &RetryOnDifferentHost{retryNodeName: retryNodeName}
-				retryOnDiffHost.RetryTweak(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
+				RetryOnDifferentHost(retryNodeName)(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
 			}
 
 			localParams := make(map[string]string)

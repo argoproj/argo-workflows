@@ -1,4 +1,4 @@
-package util
+package retry
 
 import (
 	apiv1 "k8s.io/api/core/v1"
