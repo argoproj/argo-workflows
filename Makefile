@@ -303,7 +303,7 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
-start: stop install $(GOPATH)/bin/goreman
+start: stop install $(GOPATH)/bin/goreman server/static/files.go
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 ifeq ($(RUN_MODE),kubernetes)
 	$(MAKE) cli-image
