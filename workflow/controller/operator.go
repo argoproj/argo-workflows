@@ -924,7 +924,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
 				// workflow will not update for 20m. Requeuing here prevents that happening.
-				woc.requeue(defaultRequeueTime)
+				woc.requeue()
 				continue
 			}
 
