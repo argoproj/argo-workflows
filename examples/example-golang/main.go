@@ -70,10 +70,7 @@ func main() {
 			continue
 		}
 		if !wf.Status.FinishedAt.IsZero() {
-			fmt.Printf("Workflow %s %s at %v\n", wf.Name, wf.Status.Phase, wf.Status.FinishedAt)
-			if wf.Status.Phase == wfv1.NodeFailed || wf.Status.Phase == wfv1.NodeError {
-				fmt.Printf("Workflow %s failed due to: %s", wf.Name, wf.Status.Message)
-			}
+			fmt.Printf("Workflow %s %s at %v. Message: %s.\n", wf.Name, wf.Status.Phase, wf.Status.FinishedAt, wf.Status.Message)
 			break
 		}
 	}
