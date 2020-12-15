@@ -153,11 +153,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	mainCtr.Name = common.MainContainerName
 	// Allow customization of main container resources.
 	if isResourcesSpecified(woc.controller.Config.MainContainer) {
-		mainCtr.Resources = woc.controller.Config.MainContainer.Resources
+		mainCtr.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
 	}
 	// Container resources in workflow spec takes precedence over the main container's configuration in controller.
 	if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
-		mainCtr.Resources = tmpl.Container.Resources
+		mainCtr.Resources = *tmpl.Container.Resources.DeepCopy()
 	}
 
 	var activeDeadlineSeconds *int64
@@ -571,9 +571,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		}
 	}
 	if isResourcesSpecified(woc.controller.Config.Executor) {
-		exec.Resources = woc.controller.Config.Executor.Resources
+		exec.Resources = *woc.controller.Config.Executor.Resources.DeepCopy()
 	} else if woc.controller.Config.ExecutorResources != nil {
-		exec.Resources = *woc.controller.Config.ExecutorResources
+		exec.Resources = *woc.controller.Config.ExecutorResources.DeepCopy()
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
