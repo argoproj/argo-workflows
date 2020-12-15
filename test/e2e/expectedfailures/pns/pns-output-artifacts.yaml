@@ -1,0 +1,39 @@
+# Workflow specifically designed for testing process namespace sharing with output artifacts
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pns-output-artifacts-
+spec:
+  entrypoint: pns-output-artifacts
+  templates:
+  - name: pns-output-artifacts
+    archiveLocation:
+      archiveLogs: true
+    container:
+      image: debian:9.2
+      command: [sh, -c]
+      args: ["
+        echo hello world > /mnt/workdir/foo && 
+        echo stdout &&
+        echo '' &&
+        echo stderr >&2 &&
+        sleep 1
+      "]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/workdir
+    outputs:
+      artifacts:
+      - name: etc
+        path: /etc
+      - name: mnt
+        path: /mnt
+      - name: workdir
+        path: /mnt/workdir
+    sidecars:
+    - name: nginx
+      image: nginx:latest
+
+  volumes:
+  - name: workdir
+    emptyDir: {}

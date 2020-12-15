@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-exhausted-retries-
+spec:
+  entrypoint: retry-with-dags
+  templates:
+  - name: retry-with-dags
+    dag:
+      tasks:
+      - name: success1
+        template: success
+      - name: sub-dag1
+        template: sub-dag
+        dependencies:
+        - success1
+      - name: success2
+        dependencies:
+        - sub-dag1
+        template: success
+
+  - name: sub-dag
+    dag:
+      tasks:
+      - name: fail
+        template: fail
+
+  - name: fail
+    container:
+      command: [sh, -c, exit 1]
+      image: alpine
+    retryStrategy:
+      limit: 1
+    
+  - name: success
+    container:
+      command: [sh, -c, exit 0]
+      image: alpine
+    retryStrategy:
+      limit: 1

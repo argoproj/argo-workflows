@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: failed-retries-
+spec:
+  entrypoint: failed-retries
+
+  templates:
+  - name: failed-retries
+    steps:
+    - - name: fail
+        template: fail
+      - name: delayed-fail
+        template: delayed-fail
+
+  - name: fail
+    retryStrategy:
+      limit: 1
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 1"]
+
+  - name: delayed-fail
+    retryStrategy:
+      limit: 1
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["sleep 1; exit 1"]
