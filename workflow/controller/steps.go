@@ -93,7 +93,11 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
 
-		if !sgNode.Fulfilled() {
+		if sgNode.Fulfilled() {
+			if tmpl.Synchronization != nil {
+				woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
+			}
+		} else {
 			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
 			return node, nil
 		}
