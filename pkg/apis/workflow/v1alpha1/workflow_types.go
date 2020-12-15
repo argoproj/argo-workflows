@@ -2612,8 +2612,10 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 }
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
-	i, _ := ms.GetHolding(lockKey)
-	if i >= 0 {
+	i, holder := ms.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	holdingName := items[len(items)-1]
+	if i >= 0 && holder.Holder == holdingName {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true
 	}
