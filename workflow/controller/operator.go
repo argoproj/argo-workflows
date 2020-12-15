@@ -916,7 +916,14 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() || recentlyStarted {
+			if node.Pending() {
+				continue
+			}
+			if recentlyStarted {
+				// If the pod was deleted, then we it is possible that never get another informer message about it.
+				// This can mean the workflow in only requeue after the resync period (20m). This would mean the
+				// workflow will not change for 20m. Requeuing here prevents that happening.
+				woc.requeue(defaultRequeueTime)
 				continue
 			}
 
