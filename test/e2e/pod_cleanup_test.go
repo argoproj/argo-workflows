@@ -19,7 +19,7 @@ type PodCleanupSuite struct {
 	fixtures.E2ESuite
 }
 
-const enoughTimeForPodCleanup = 3 * time.Second
+const enoughTimeForPodCleanup = 5 * time.Second
 
 func (s *PodCleanupSuite) TestNone() {
 	s.Given().
@@ -184,6 +184,6 @@ spec:
 		})
 }
 
-func TestPodGCSuite(t *testing.T) {
+func TestPodCleanupSuite(t *testing.T) {
 	suite.Run(t, new(PodCleanupSuite))
 }

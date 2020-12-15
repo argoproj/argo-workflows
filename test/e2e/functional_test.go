@@ -59,6 +59,7 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
+		Wait(3*time.Second).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
 		WaitForWorkflow().
 		Then().
