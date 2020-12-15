@@ -113,7 +113,6 @@ spec:
       containers:
       - args:
         - server
-        - --secure
         image: argoproj/argocli:latest
         name: argo-server
         ports:

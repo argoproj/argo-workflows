@@ -164,17 +164,6 @@ subjects:
 ---
 apiVersion: v1
 data:
-  artifactRepository: |
-    s3:
-      bucket: my-bucket
-      endpoint: minio:9000
-      insecure: true
-      accessKeySecret:
-        name: my-minio-cred
-        key: accesskey
-      secretKeySecret:
-        name: my-minio-cred
-        key: secretkey
   links: |
     - name: Example Workflow Link
       scope: workflow
@@ -304,7 +293,7 @@ spec:
         - server
         - --namespaced
         - --auth-mode
-        - server
+        - sso
         - --auth-mode
         - client
         image: argoproj/argocli:latest
