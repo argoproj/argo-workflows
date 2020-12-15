@@ -352,6 +352,11 @@ func newTTLController() *Controller {
 	}
 }
 
+func enqueueWF(controller *Controller, un *unstructured.Unstructured) {
+	controller.enqueueWF(un)
+	time.Sleep(100*time.Millisecond + enoughTimeForInformerSync)
+}
+
 func TestEnqueueWF(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
@@ -380,7 +385,6 @@ func TestEnqueueWF(t *testing.T) {
 	un, err = util.ToUnstructured(wf)
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
-	time.Sleep(2 * time.Second)
 	assert.Equal(t, 1, controller.workqueue.Len())
 }
 
@@ -397,7 +401,6 @@ func TestTTLStrategySucceded(t *testing.T) {
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
 	un, err = util.ToUnstructured(wf)
 	assert.NoError(t, err)
-	time.Sleep(2 * time.Second)
 	enqueueWF(controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 
@@ -406,7 +409,6 @@ func TestTTLStrategySucceded(t *testing.T) {
 	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf1)
 	assert.NoError(t, err)
-	time.Sleep(2 * time.Second)
 	enqueueWF(controller, un)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
@@ -457,12 +459,6 @@ func TestTTLStrategyFailed(t *testing.T) {
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 }
-
-func enqueueWF(controller *Controller, un *unstructured.Unstructured) {
-	controller.enqueueWF(un)
-	time.Sleep(100*time.Millisecond + enoughTimeForInformerSync)
-}
-
 func TestNoTTLStrategyFailed(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured

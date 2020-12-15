@@ -61,7 +61,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 func (t *Then) ExpectWorkflowDeleted() *Then {
 	_, err := t.client.Get(t.wf.Name, metav1.GetOptions{})
 	if err == nil || !apierr.IsNotFound(err) {
-		t.t.Fatal("expected not found error")
+		t.t.Fatalf("expected workflow to be deleted: %v", err)
 	}
 	return t
 }

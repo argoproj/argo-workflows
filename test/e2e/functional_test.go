@@ -107,7 +107,7 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
-		Wait(3 * time.Second). // enought time for TTl controller to delete the workflow
+		Wait(3 * time.Second). // enough time for TTL controller to delete the workflow
 		Then().
 		ExpectWorkflowDeleted()
 }

@@ -152,8 +152,9 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		runtimeutil.HandleError(err)
 		return
 	}
-	// if we try and delete in the next second, it is possible that the informer is out of sync, our double-check that
-	// sees if the workflow in the informer is already deleted and we'll make 2 API requests when one is enough
+	// if we try and delete in the next second, it is almost certain that the informer is out of sync. Because we
+	// double-check that sees if the workflow in the informer is already deleted and we'll make 2 API requests when
+	// one is enough.
 	if addAfter < enoughTimeForInformerSync {
 		addAfter = enoughTimeForInformerSync
 	}
