@@ -437,7 +437,13 @@ endif
 ifeq ($(PROFILE),prometheus)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/prometheus --replicas 1
 endif
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 1m || true
+ifeq ($(RUN_MODE),kubernetes)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app=argo-server --timeout 1m || true
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app=workflow-controller --timeout 1m || true
+endif
+ifeq ($(PROFILE),prometheus)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app=prometheus --timeout 1m || true
+endif
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
