@@ -43,7 +43,22 @@ export default {
         return Observable.create((observer: Observer<any>) => {
             const eventSource = new EventSource(url);
             eventSource.onmessage = x => observer.next(x.data);
-            eventSource.onerror = x => observer.error(x);
+            eventSource.onerror = x => {
+                switch (eventSource.readyState) {
+                    case EventSource.CONNECTING:
+                        observer.error(new Error('Failed to connect to ' + url));
+                        break;
+                    case EventSource.OPEN:
+                        observer.error(new Error('Error in open connection to ' + url));
+                        break;
+                    case EventSource.CLOSED:
+                        observer.error(new Error('Connection closed to ' + url));
+                        break;
+                    default:
+                        observer.error(new Error('Unknown error with ' + url));
+                }
+            };
+
             return () => {
                 eventSource.close();
             };
