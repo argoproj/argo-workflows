@@ -916,7 +916,11 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() || recentlyStarted {
+			if node.Pending() {
+				continue
+			}
+			if recentlyStarted {
+				woc.requeue(defaultRequeueTime) // we must explicitly requeue to make sure we check again shortly
 				continue
 			}
 
