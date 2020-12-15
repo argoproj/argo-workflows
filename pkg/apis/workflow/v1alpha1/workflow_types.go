@@ -2510,10 +2510,10 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
 	items := strings.Split(holderKey, "/")
-	holdingName := items[len(items)-1]
 	if len(items) == 0 {
 		return false
 	}
+	holdingName := items[len(items)-1]
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
