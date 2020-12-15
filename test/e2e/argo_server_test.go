@@ -304,12 +304,12 @@ func (s *ArgoServerSuite) TestOauth() {
 	s.Run("Redirect", func() {
 		s.e().GET("/oauth2/redirect").
 			Expect().
-			Status(501)
+			Status(302)
 	})
 	s.Run("Callback", func() {
 		s.e().GET("/oauth2/callback").
 			Expect().
-			Status(501)
+			Status(302)
 	})
 }
 

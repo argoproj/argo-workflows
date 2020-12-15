@@ -17,5 +17,6 @@ resources:
 patchesStrategicMerge:
   - ../mixins/workflow-controller-configmap.yaml
   - ../mixins/workflow-controller-deployment.yaml
+  - ../mixins/argo-server-configmap.yaml
   - ../mixins/argo-server-deployment.yaml
 

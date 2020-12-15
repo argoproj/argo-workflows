@@ -51,20 +51,18 @@ LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
-ALWAYS_OFFLOAD_NODE_STATUS := true
-
 override LDFLAGS += \
-  -X github.com/argoproj/argo-server/v3.version=$(VERSION) \
-  -X github.com/argoproj/argo-server/v3.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo-server/v3.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo-server/v3.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo-server.version=$(VERSION) \
+  -X github.com/argoproj/argo-server.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo-server.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo-server.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo-server/v3.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo-server.gitTag=${GIT_TAG}
 endif
 
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-server/v3/' | cut -c 36-)
@@ -304,7 +302,7 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
-start: stop install cli $(GOPATH)/bin/goreman
+start: stop install $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 ifeq ($(RUN_MODE),kubernetes)
 	$(MAKE) cli-image
@@ -315,15 +313,12 @@ endif
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=dex
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=mysql
 	./hack/port-forward.sh
-	# Check dex, minio, postgres and mysql are in hosts file
-ifeq ($(AUTH_MODE),sso)
+	# Check dex, minio and mysql are in hosts file
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
-endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
-	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+	env SECURE=$(SECURE) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 endif
 
 .PHONY: wait
@@ -332,7 +327,7 @@ wait:
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 
 .PHONY: test-cli
-test-cli:
+test-cli: dist/argo
 	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
 
 # clean
