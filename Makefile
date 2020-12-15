@@ -288,6 +288,7 @@ test: server/static/files.go
 
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
+	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kustomize build --load_restrictor=none test/e2e/manifests/minimal | sed 's/:latest/:$(VERSION)/' | kubectl -n $(KUBE_NAMESPACE) apply --force -f-
 
 .PHONY: test-images

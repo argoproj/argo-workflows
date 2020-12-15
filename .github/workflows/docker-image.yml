@@ -152,7 +152,7 @@ jobs:
   push-images:
     name: Push manifest with all images
     runs-on: ubuntu-latest
-    needs: [build-linux-arm64, build-windows, push-linux-amd64-images]
+    needs: [build-linux-arm64, push-linux-amd64-images]
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
