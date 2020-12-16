@@ -140,11 +140,11 @@ var NoError = func(t *testing.T, output string, err error) {
 	assert.NoError(t, err, output)
 }
 
-var OutputContains = func(contains string) func(t *testing.T, output string, err error) {
+var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
 		t.Helper()
 		if assert.NoError(t, err, output) {
-			assert.Contains(t, output, contains)
+			assert.Regexp(t, rx, output)
 		}
 	}
 }
