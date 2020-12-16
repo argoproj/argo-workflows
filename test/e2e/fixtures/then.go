@@ -73,15 +73,20 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 	return t.expectWorkflow(t.wf.Name, func(tt *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 		n := status.Nodes.Find(selector)
 		var p *apiv1.Pod
-		if n != nil && n.Type == wfv1.NodeTypePod {
-			var err error
-			p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(n.ID, metav1.GetOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				t.t.Fatal(err)
+		if n != nil {
+			println("Found node", "id="+n.ID, "type="+n.Type)
+			if n.Type == wfv1.NodeTypePod {
+				var err error
+				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(n.ID, metav1.GetOptions{})
+				if err != nil {
+					if !apierr.IsNotFound(err) {
+						t.t.Fatal(err)
+					}
+					p = nil // i did not expect to need to nil the pod, but here we are
+				}
 			}
-			if err != nil {
-				p = nil // i did not expect to need to nil the pod, but here we are
-			}
+		} else {
+			println("Did not find node")
 		}
 		f(tt, n, p)
 	})

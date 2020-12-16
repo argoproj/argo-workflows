@@ -40,9 +40,8 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.SucceededNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
-			assert.NotNil(t, n)
-			if assert.NotNil(t, p) {
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) && assert.NotNil(t, p) {
 				assert.Equal(t, "true", p.Labels[common.LabelKeyCompleted])
 			}
 		})
@@ -79,13 +78,15 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.FailedNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
-			assert.NotNil(t, n)
-			assert.Nil(t, p, "failed pod is deleted")
+		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.Nil(t, p, "failed pod is deleted")
+			}
 		}).
-		ExpectWorkflowNode(wfv1.SucceededNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
-			assert.NotNil(t, n)
-			assert.Nil(t, p, "successful pod is deleted")
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.Nil(t, p, "successful pod is deleted")
+			}
 		})
 }
 
@@ -120,15 +121,18 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.FailedNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
-			assert.NotNil(t, n)
-			assert.NotNil(t, p, "failed pod is NOT deleted")
+		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.NotNil(t, p, "failed pod is NOT deleted")
+			}
 		}).
-		ExpectWorkflowNode(wfv1.SucceededNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
-			assert.NotNil(t, n)
-			assert.Nil(t, p, "successful pod is deleted")
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.Nil(t, p, "successful pod is deleted")
+			}
 		})
 }
+
 func (s *PodCleanupSuite) TestOnWorkflowCompletion() {
 	s.Given().
 		Workflow(`
@@ -151,9 +155,10 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.FailedNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
-			assert.NotNil(t, n)
-			assert.Nil(t, p, "failed pod is deleted")
+		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.Nil(t, p, "failed pod is deleted")
+			}
 		})
 }
 
@@ -178,9 +183,10 @@ spec:
 		WaitForWorkflow().
 		Wait(enoughTimeForPodCleanup).
 		Then().
-		ExpectWorkflowNode(wfv1.SucceededNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
-			assert.NotNil(t, n)
-			assert.Nil(t, p, "successful pod is deleted")
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.Nil(t, p, "successful pod is deleted")
+			}
 		})
 }
 

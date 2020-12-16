@@ -1196,12 +1196,12 @@ func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
 
-func FailedNode(n NodeStatus) bool {
-	return n.Phase == NodeFailed
+func FailedPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeFailed
 }
 
-func SucceededNode(n NodeStatus) bool {
-	return n.Phase == NodeSucceeded
+func SucceededPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeSucceeded
 }
 
 // UserContainer is a container specified by a user.
