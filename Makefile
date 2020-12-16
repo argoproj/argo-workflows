@@ -187,6 +187,7 @@ codegen: \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	manifests/install.yaml \
 	api/openapi-spec/swagger.json \
+	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./server/auth ./server/auth/sso
@@ -287,23 +288,13 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kustomize build --load_restrictor=none test/e2e/manifests/minimal | sed 's/:latest/:$(VERSION)/' | kubectl -n $(KUBE_NAMESPACE) apply --force -f-
 
-.PHONY: test-images
-test-images:
-	$(call docker_pull,argoproj/argosay:v2)
-
-.PHONY: stop
-stop:
-	killall argo kubectl || true
-
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
 start: stop install $(GOPATH)/bin/goreman server/static/files.go
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=mysql
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=dex
+	kubectl wait --for=condition=Ready pod -l 'app in (dex,minio,mysql,workflow-controller)' --timeout 1m
 	./hack/port-forward.sh
 	# Check dex, minio and mysql are in hosts file
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
@@ -359,11 +350,6 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
-# pre-push
-
-.PHONY: pre-commit
-pre-commit: codegen lint test start
-
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)
 
@@ -378,12 +364,9 @@ prepare-release: check-version-warning clean codegen manifests
 publish-release: check-version-warning clis
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
-endif
 
 .PHONY: check-version-warning
 check-version-warning:
 	@if [[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then echo -n "It looks like you're trying to use a SemVer version, but have not prepended it with a "v" (such as "v$(VERSION)"). The "v" is required for our releases. Do you wish to continue anyway? [y/N]" && read ans && [ $${ans:-N} = y ]; fi
 
-.PHONY: parse-examples
-parse-examples:
-	go run -tags fields ./hack parseexamples
+endif

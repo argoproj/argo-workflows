@@ -9,7 +9,7 @@ on:
       - dev
 
 defaults:
-  run:
+  run:c
     shell: bash
 
 jobs:
