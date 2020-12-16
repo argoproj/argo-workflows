@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: suspend-dag-
+spec:
+  entrypoint: suspend-dag
+  templates:
+  - name: suspend-dag
+    dag:
+      tasks:
+      - name: build
+        template: pass
+      - name: test
+        dependencies: [build]
+        template: pass
+      - name: approve
+        dependencies: [build]
+        template: approve
+      - name: release
+        dependencies: [approve, test]
+        template: pass
+
+  - name: pass
+    container:
+      image: alpine:3.7
+      command: [sh, -c, exit 0]
+
+  - name: approve
+    suspend: {}

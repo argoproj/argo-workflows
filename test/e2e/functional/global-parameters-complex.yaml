@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-parameters-complex-
+spec:
+  entrypoint: test-workflow
+  # Parameters can be passed/overridden via the argo CLI.
+  # To override the printed message, run `argo submit` with the -p option:
+  # $ argo submit examples/arguments-parameters.yaml -p message="goodbye world"
+  arguments:
+    parameters:
+    - name: message1
+      value: hello world
+    - name: message2
+      value: foo bar
+
+  templates:
+  - name: test-workflow
+    inputs:
+      parameters:
+      - name: message1
+      - name: message-internal
+        value: "{{workflow.parameters.message1}}"
+    steps:
+    - - name: step1
+        template: whalesay2
+        arguments:
+          parameters:
+          - name: message1
+            value: world hello
+          - name: message2
+            value: "{{inputs.parameters.message1}}"
+          - name: message3
+            value: "{{workflow.parameters.message2}}"
+          - name: message4
+            value: "{{inputs.parameters.message-internal}}"
+
+
+  - name: whalesay2
+    inputs:
+      parameters:
+      - name: message1
+      - name: message2
+      - name: message3
+      - name: message4
+    container:
+      image: argoproj/argosay:v1
+      command: [cowsay]
+      args: ["Global 1: {{workflow.parameters.message1}} Input 1: {{inputs.parameters.message1}} Input 2/Steps Input 1/Global 1: {{inputs.parameters.message2}} Input 3/Global 2: {{inputs.parameters.message3}} Input4/Steps Input 2 internal/Global 1: {{inputs.parameters.message4}}"]

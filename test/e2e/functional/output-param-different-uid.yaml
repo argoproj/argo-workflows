@@ -1,0 +1,27 @@
+# Tests PNS ability to capture output artifact when user id is different
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pns-output-parameter-different-user-
+spec:
+  entrypoint: multi-whalesay
+  templates:
+  - name: multi-whalesay
+    steps:
+    - - name: whalesay
+        template: whalesay
+        withSequence:
+          count: "10"
+
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -c]
+      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+      securityContext:
+        runAsUser: 1234
+    outputs:
+      parameters:
+      - name: hello-art
+        valueFrom:
+          path: /tmp/hello_world.txt

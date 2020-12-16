@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-sequence-empty-
+spec:
+  entrypoint: loops-sequence-empty
+  templates:
+  - name: loops-sequence-empty
+    steps:
+    - - name: sequence-count
+        template: echo
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item}}"
+        withSequence:
+          count: "0"
+
+      - name: sequence-start-end
+        template: echo
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item}}"
+        withSequence:
+          start: "0"
+          end: "0"
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: num
+    container:
+      image: alpine:latest
+      command: [echo, "{{inputs.parameters.num}}"]

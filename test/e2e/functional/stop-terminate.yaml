@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: stop-terminate
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: diamond
+  onExit: exit
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: A
+            template: echo
+            onExit: exit
+            arguments:
+              parameters: [{name: message, value: A}]
+
+    - name: echo
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+        args: [sleep, "10s"]
+
+    - name: exit
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, "one exit"]

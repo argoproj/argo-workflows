@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-level-host-aliases-
+spec:
+  entrypoint: nslookup
+
+  templates:
+  - name: nslookup
+    hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+          - "argo.io"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: [" nslookup argo.io"]

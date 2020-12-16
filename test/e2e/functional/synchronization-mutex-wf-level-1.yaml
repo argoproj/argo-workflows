@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: synchronization-wf-level-mutex-1
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: whalesay
+  synchronization:
+    mutex:
+      name:  test
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "5s"]

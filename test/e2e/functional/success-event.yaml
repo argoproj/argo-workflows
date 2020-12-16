@@ -1,0 +1,15 @@
+# e2e test to ensure the controller publishes
+# an audit event marking the success
+# in case of workflow success
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: success-event-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: exit
+  templates:
+    - name: exit
+      container:
+        image: argoproj/argosay:v2

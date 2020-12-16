@@ -1,0 +1,40 @@
+# This example demonstrates the output and input artifacts are optionals
+# from one step to the next.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-input-artifact-optional-
+spec:
+  entrypoint: artifact-example
+  templates:
+    - name: artifact-example
+      steps:
+        - - name: generate-artifact
+            template: whalesay
+        - - name: consume-artifact
+            template: print-message
+            arguments:
+              artifacts:
+                - name: message
+                  from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["sleep 1; cowsay hello world | tee /tmp/hello_world123.txt"]
+      outputs:
+        artifacts:
+          - name: hello-art
+            optional: true
+            path: /tmp/hello_world.txt
+
+    - name: print-message
+      inputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+            optional: true
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo /tmp/message"]
