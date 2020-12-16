@@ -149,7 +149,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	}
 
 	if req.GetLogOptions().Follow {
-		wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()}
+		wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName(), ResourceVersion: "0"}
 		wfWatch, err := wfInterface.Watch(wfListOptions)
 		if err != nil {
 			return err
@@ -190,8 +190,6 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
 						return
 					}
-					// in case we re-establish the watch, make sure we start at the same place
-					wfListOptions.ResourceVersion = wf.ResourceVersion
 				}
 			}
 		}()
