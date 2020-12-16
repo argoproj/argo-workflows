@@ -32,6 +32,9 @@ VERSION               := latest
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
 endif
+ifeq ($(GIT_BRANCH),dev)
+VERSION               := dev
+endif
 
 # version change, so does the file location
 CLI_IMAGE_FILE         := dist/cli-image.marker
@@ -42,10 +45,6 @@ STATIC_FILES          ?= true
 GOTEST                ?= go test
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
-# Which mode to run in:
-# * `local` run the argo-server as single replicas on the local machine (default)
-# * `kubernetes` run the argo-server on the Kubernetes cluster
-RUN_MODE              := local
 K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
@@ -305,22 +304,15 @@ $(GOPATH)/bin/goreman:
 .PHONY: start
 start: stop install $(GOPATH)/bin/goreman server/static/files.go
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-ifeq ($(RUN_MODE),kubernetes)
-	$(MAKE) cli-image
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server
-endif
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=mysql
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=dex
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=mysql
 	./hack/port-forward.sh
 	# Check dex, minio and mysql are in hosts file
-	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
-ifeq ($(RUN_MODE),local)
 	env SECURE=$(SECURE) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
-endif
 
 .PHONY: wait
 wait:
