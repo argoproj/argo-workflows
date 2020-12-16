@@ -6,10 +6,8 @@ export class EventSourceService {
         return requests.get(`api/v1/event-sources/${namespace}`).then(res => res.body as EventSourceList);
     }
 
-    public watch(namespace: string, resourceVersion: string) {
-        return requests
-            .loadEventSource(`api/v1/stream/event-sources/${namespace}?listOptions.resourceVersion=${resourceVersion}`)
-            .map(line => line && (JSON.parse(line).result as EventSourceWatchEvent));
+    public watch(namespace: string) {
+        return requests.loadEventSource(`api/v1/stream/event-sources/${namespace}`).map(line => line && (JSON.parse(line).result as EventSourceWatchEvent));
     }
 
     public eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', grep = '', tailLines = -1) {

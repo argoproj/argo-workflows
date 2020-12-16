@@ -63,7 +63,7 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
     useEffect(() => {
         const listWatch = new ListWatch<EventSource>(
             () => services.eventSource.list(namespace),
-            resourceVersion => services.eventSource.watch(namespace, resourceVersion),
+            () => services.eventSource.watch(namespace),
             () => setError(null),
             () => setError(null),
             items => setEventSources([...items]),
@@ -75,7 +75,7 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
     useEffect(() => {
         const listWatch = new ListWatch<Sensor>(
             () => services.sensor.list(namespace),
-            resourceVersion => services.sensor.watch(namespace, resourceVersion),
+            () => services.sensor.watch(namespace),
             () => setError(null),
             () => setError(null),
             items => setSensors([...items]),
@@ -119,7 +119,7 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
     }, [namespace, showWorkflows]);
     // follow logs and mark flow
     const markFlowing = (id: Node) => {
-        if (!flow) {
+        if (!showFlow) {
             return;
         }
         setError(null);

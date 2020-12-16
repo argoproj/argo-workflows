@@ -3,27 +3,26 @@ package logs
 import (
 	"bufio"
 	"context"
-	"fmt"
+	"io"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/watch"
 
 	"github.com/argoproj/argo/server/auth"
 )
 
 type Callback func(pod *corev1.Pod, data []byte) error
 
-func LogPods(ctx context.Context, namespace string, listOptions metav1.ListOptions, podLogOptions *corev1.PodLogOptions, callback Callback) error {
+func LogPods(ctx context.Context, namespace, labelSelector string, podLogOptions *corev1.PodLogOptions, callback Callback) error {
 	coreV1 := auth.GetKubeClient(ctx).CoreV1()
 	if podLogOptions == nil {
 		podLogOptions = &corev1.PodLogOptions{}
 	}
 	podInterface := coreV1.Pods(namespace)
-	list, err := podInterface.List(listOptions)
+	list, err := podInterface.List(metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
 	}
@@ -69,23 +68,31 @@ func LogPods(ctx context.Context, namespace string, listOptions metav1.ListOptio
 	for _, p := range list.Items {
 		streamPod(p.DeepCopy())
 	}
-	watcher, err := watch.NewRetryWatcher(list.ResourceVersion, podInterface)
-	if err != nil {
-		return err
-	}
 	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				return fmt.Errorf("failed to read event")
+		done, err := func() (bool, error) {
+			watcher, err := podInterface.Watch(metav1.ListOptions{LabelSelector: labelSelector})
+			if err != nil {
+				return true, err
 			}
-			p, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return apierr.FromObject(event.Object)
+			defer watcher.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return true, nil
+				case event, open := <-watcher.ResultChan():
+					if !open {
+						return false, io.EOF
+					}
+					p, ok := event.Object.(*corev1.Pod)
+					if !ok {
+						return true, apierr.FromObject(event.Object)
+					}
+					streamPod(p.DeepCopy()) // deep-copy needed as we use the same pointer in each loop
+				}
 			}
-			streamPod(p.DeepCopy()) // deep-copy needed as we use the same pointer in each loop
+		}()
+		if done {
+			return err
 		}
 	}
 }
