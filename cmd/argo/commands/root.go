@@ -5,10 +5,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo"
-
 	"github.com/argoproj/argo-server/v3/cmd/argo/commands/clustertemplate"
 
+	"github.com/argoproj/argo-server/v3"
 	"github.com/argoproj/argo-server/v3/cmd/argo/commands/archive"
 	"github.com/argoproj/argo-server/v3/cmd/argo/commands/auth"
 	"github.com/argoproj/argo-server/v3/cmd/argo/commands/client"

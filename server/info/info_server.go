@@ -3,9 +3,9 @@ package info
 import (
 	"context"
 
-	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
+	"github.com/argoproj/argo-server/v3"
 	infopkg "github.com/argoproj/argo-server/v3/pkg/apiclient/info"
 	"github.com/argoproj/argo-server/v3/server/auth"
 )

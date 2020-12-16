@@ -48,17 +48,17 @@ UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo-server.version=$(VERSION) \
-  -X github.com/argoproj/argo-server.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo-server.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo-server.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo-server/v3.version=$(VERSION) \
+  -X github.com/argoproj/argo-server/v3.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo-server/v3.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo-server/v3.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo-server.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo-server/v3.gitTag=${GIT_TAG}
 endif
 
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-server/v3/' | cut -c 36-)
