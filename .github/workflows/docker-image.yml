@@ -173,7 +173,7 @@ jobs:
             tag="latest"
           fi
 
-          targets="rgocli"
+          targets="argocli"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
 

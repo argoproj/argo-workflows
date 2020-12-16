@@ -32,9 +32,6 @@ VERSION               := latest
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
 endif
-ifeq ($(GIT_BRANCH),dev)
-VERSION               := dev
-endif
 
 # version change, so does the file location
 CLI_IMAGE_FILE         := dist/cli-image.marker
