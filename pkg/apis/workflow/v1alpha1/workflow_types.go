@@ -1176,21 +1176,32 @@ var _ ArgumentsProvider = &Arguments{}
 type Nodes map[string]NodeStatus
 
 func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	return n.Find(NodeWithDisplayName(name))
+}
+
+func (in Nodes) Any(f func(NodeStatus) bool) bool {
+	return in.Find(f) != nil
+}
+
+func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	for _, i := range n {
-		if i.DisplayName == name {
+		if f(i) {
 			return &i
 		}
 	}
 	return nil
 }
 
-func (in Nodes) Any(f func(node NodeStatus) bool) bool {
-	for _, i := range in {
-		if f(i) {
-			return true
-		}
-	}
-	return false
+func NodeWithDisplayName(name string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool { return n.DisplayName == name }
+}
+
+func FailedPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeFailed
+}
+
+func SucceededPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeSucceeded
 }
 
 // UserContainer is a container specified by a user.
