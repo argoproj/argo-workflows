@@ -309,7 +309,7 @@ func (s *ArgoServerSuite) TestOauth() {
 	s.Run("Callback", func() {
 		s.e().GET("/oauth2/callback").
 			Expect().
-			Status(302)
+			Status(400)
 	})
 }
 
