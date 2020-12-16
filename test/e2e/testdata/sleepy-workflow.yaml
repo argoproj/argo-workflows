@@ -1,7 +1,7 @@
 kind: Workflow
 apiVersion: argoproj.io/v1alpha1
 metadata:
-  name: sleepy
+  generateName: sleepy-
   labels:
     argo-e2e: "true"
 spec:
