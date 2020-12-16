@@ -63,7 +63,6 @@ endif
 
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-server/v3/' | cut -c 36-)
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
-E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
@@ -255,7 +254,7 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 	kustomize version
 
 # generates several installation files
-manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
+manifests/install.yaml: $(CRDS) $(MANIFESTS) /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -284,9 +283,13 @@ test: server/static/files.go
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
+install: /usr/local/bin/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kustomize build --load_restrictor=none test/e2e/manifests/minimal | sed 's/:latest/:$(VERSION)/' | kubectl -n $(KUBE_NAMESPACE) apply --force -f-
+
+.PHONY: stop
+stop:
+	killall argo workflow-controller kubectl || true
 
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
@@ -297,8 +300,8 @@ start: stop install $(GOPATH)/bin/goreman server/static/files.go
 	kubectl wait --for=condition=Ready pod -l 'app in (dex,minio,mysql,workflow-controller)' --timeout 1m
 	./hack/port-forward.sh
 	# Check dex, minio and mysql are in hosts file
-	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	env SECURE=$(SECURE) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
