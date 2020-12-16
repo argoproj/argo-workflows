@@ -3,6 +3,7 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 
 	log "github.com/sirupsen/logrus"
@@ -210,13 +211,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return nil
 		case event, open := <-watch.ResultChan():
 			if !open {
-				log.Debug("Re-establishing workflow watch")
-				watch.Stop()
-				watch, err = wfIf.Watch(*opts)
-				if err != nil {
-					return err
-				}
-				continue
+				return io.EOF
 			}
 			log.Debug("Received workflow event")
 			wf, ok := event.Object.(*wfv1.Workflow)
@@ -234,8 +229,6 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			if err != nil {
 				return err
 			}
-			// when we re-establish, we want to start at the same place
-			opts.ResourceVersion = wf.ResourceVersion
 		}
 	}
 }
@@ -264,13 +257,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 			return nil
 		case event, open := <-watch.ResultChan():
 			if !open {
-				log.Debug("Re-establishing event watch")
-				watch.Stop()
-				watch, err = eventInterface.Watch(*opts)
-				if err != nil {
-					return err
-				}
-				continue
+				return io.EOF
 			}
 			log.Debug("Received event")
 			e, ok := event.Object.(*corev1.Event)
@@ -283,8 +270,6 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 			if err != nil {
 				return err
 			}
-			// when we re-establish, we want to start at the same place
-			opts.ResourceVersion = e.ResourceVersion
 		}
 	}
 }

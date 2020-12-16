@@ -72,6 +72,10 @@ LOG_LEVEL             := info
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
+ifeq ($(PROFILE),prometheus)
+RUN_MODE              := kubernetes
+endif
+
 ALWAYS_OFFLOAD_NODE_STATUS := false
 ifeq ($(PROFILE),mysql)
 ALWAYS_OFFLOAD_NODE_STATUS := true
@@ -444,8 +448,13 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
-	sleep 5s ;# time to allow pod that get deleted to go away
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
+ifeq ($(RUN_MODE),kubernetes)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller --timeout 1m
+endif
+ifeq ($(PROFILE),prometheus)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
+endif
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
