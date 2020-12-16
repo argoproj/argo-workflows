@@ -295,7 +295,7 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
-start: stop install $(GOPATH)/bin/goreman server/static/files.go
+start: stop install $(GOPATH)/bin/goreman dist/argo
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	kubectl wait --for=condition=Ready pod -l 'app in (dex,minio,mysql,workflow-controller)' --timeout 1m
 	./hack/port-forward.sh
