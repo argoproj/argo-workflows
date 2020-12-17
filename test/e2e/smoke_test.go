@@ -49,6 +49,14 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
+
+	switch s.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorPNS:
+		if os.Getenv("CI") == "true" {
+			s.T().Skip("pns not supported on CI")
+		}
+	}
+
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
