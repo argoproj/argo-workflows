@@ -36,10 +36,6 @@ type ValidateOpts struct {
 	// skip some validations which is permissible during linting but not submission (e.g. missing
 	// input parameters to the workflow)
 	Lint bool
-	// ContainerRuntimeExecutor will trigger additional validation checks specific to different
-	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
-	// out of the base image layer. If unspecified, will use docker executor validation
-	ContainerRuntimeExecutor string
 
 	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
 	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
@@ -431,10 +427,6 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		return err
 	}
 	err = validateOutputs(scope, newTmpl)
-	if err != nil {
-		return err
-	}
-	err = ctx.validateBaseImageOutputs(newTmpl)
 	if err != nil {
 		return err
 	}
@@ -1006,60 +998,6 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 			errs := isValidParamOrArtifactName(param.GlobalName)
 			if len(errs) > 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s.globalName: %s", paramRef, errs[0])
-			}
-		}
-	}
-	return nil
-}
-
-// validateBaseImageOutputs detects if the template contains an valid output from base image layer
-func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error {
-	// This validation is not applicable for DAG and Step Template types
-	if tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps {
-		return nil
-	}
-	switch ctx.ContainerRuntimeExecutor {
-	case "", common.ContainerRuntimeExecutorDocker:
-		// docker executor supports all modes of artifact outputs
-	case common.ContainerRuntimeExecutorPNS:
-		// pns supports copying from the base image, but only if there is no volume mount underneath it
-		errMsg := "pns executor does not support outputs from base image layer with volume mounts. Use an emptyDir: https://argoproj.github.io/argo/empty-dir/"
-		for _, out := range tmpl.Outputs.Artifacts {
-			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
-				// output is in the base image layer. need to verify there are no volume mounts under it
-				if tmpl.Container != nil {
-					for _, volMnt := range tmpl.Container.VolumeMounts {
-						if strings.HasPrefix(volMnt.MountPath, out.Path+"/") {
-							return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
-						}
-					}
-
-				}
-				if tmpl.Script != nil {
-					for _, volMnt := range tmpl.Script.VolumeMounts {
-						if strings.HasPrefix(volMnt.MountPath, out.Path+"/") {
-							return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
-						}
-					}
-				}
-			}
-		}
-	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
-		// for kubelet/k8s fail validation if we detect artifact is copied from base image layer
-		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer.  Use an emptyDir: https://argoproj.github.io/argo/empty-dir/", ctx.ContainerRuntimeExecutor)
-		for _, out := range tmpl.Outputs.Artifacts {
-			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
-			}
-		}
-		for _, out := range tmpl.Outputs.Parameters {
-			if out.ValueFrom == nil {
-				continue
-			}
-			if out.ValueFrom.Path != "" {
-				if common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
-					return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
-				}
 			}
 		}
 	}

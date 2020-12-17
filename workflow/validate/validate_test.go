@@ -11,7 +11,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
@@ -1540,37 +1539,16 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	wfEmptyDirOutArt := unmarshalWf(volumeMountOutputArtifact)
 	wfBaseWithEmptyDirOutArt := unmarshalWf(baseImageDirWithEmptyDirOutputArtifact)
 	wfNonPathOutputParam := unmarshalWf(nonPathOutputParameter)
-	var err error
-
-	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
-		switch executor {
-		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfNonPathOutputParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-		case common.ContainerRuntimeExecutorPNS:
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-		case common.ContainerRuntimeExecutorDocker, "":
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-		}
-		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-		assert.NoError(t, err)
-	}
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{})
+	assert.NoError(t, err)
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{})
+	assert.NoError(t, err)
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{})
+	assert.NoError(t, err)
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfNonPathOutputParam, ValidateOpts{})
+	assert.NoError(t, err)
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfEmptyDirOutArt, ValidateOpts{})
+	assert.NoError(t, err)
 }
 
 var localTemplateRef = `
@@ -2654,26 +2632,8 @@ spec:
 `
 
 func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
-	t.Run("DefaultExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: ""})
-		assert.NoError(t, err)
-	})
-	t.Run("DockerExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorDocker})
-		assert.NoError(t, err)
-	})
-	t.Run("PNSExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorPNS})
-		assert.NoError(t, err)
-	})
-	t.Run("K8SExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorK8sAPI})
-		assert.NoError(t, err)
-	})
-	t.Run("KubeletExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorKubelet})
-		assert.NoError(t, err)
-	})
+	_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{})
+	assert.NoError(t, err)
 }
 
 var testWorkflowTemplateLabels = `

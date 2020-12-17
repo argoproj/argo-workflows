@@ -373,18 +373,15 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 		}
 	}
 
-	if !we.isBaseImagePath(art.Path) {
+	mountedArtPath := filepath.Join(common.ExecutorMainFilesystemDir, art.Path)
+	if argofile.Exists(mountedArtPath) {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
-		mountedArtPath := filepath.Join(common.ExecutorMainFilesystemDir, art.Path)
 		log.Infof("Staging %s from mirrored volume mount %s", art.Path, mountedArtPath)
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
 			log.Infof("No compression strategy needed. Staging skipped")
-			if !argofile.Exists(mountedArtPath) {
-				return "", "", errors.Errorf(errors.CodeNotFound, "%s no such file or directory", art.Path)
-			}
 			return fileName, mountedArtPath, nil
 		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
@@ -448,31 +445,6 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	return fileName, localArtPath, nil
 }
 
-// isBaseImagePath checks if the given artifact path resides in the base image layer of the container
-// versus a shared volume mount between the wait and main container
-func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
-	// first check if path overlaps with a user-specified volumeMount
-	if common.FindOverlappingVolume(&we.Template, path) != nil {
-		return false
-	}
-	// next check if path overlaps with a shared input-artifact emptyDir mounted by argo
-	for _, inArt := range we.Template.Inputs.Artifacts {
-		if path == inArt.Path {
-			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
-			// the input artifact volume. Since this function was called, we know that we want to use this path as an
-			// ourput artifact, so we should look for it in the base image path.
-			if inArt.Optional && !inArt.HasLocation() {
-				return true
-			}
-			return false
-		}
-		if strings.HasPrefix(path, inArt.Path+"/") {
-			return false
-		}
-	}
-	return true
-}
-
 // SaveParameters will save the content in the specified file path as output parameter value
 func (we *WorkflowExecutor) SaveParameters() error {
 	if len(we.Template.Outputs.Parameters) == 0 {
@@ -493,13 +465,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		}
 
 		var output *wfv1.AnyString
-		if we.isBaseImagePath(param.ValueFrom.Path) {
-			executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
-			if executorType == common.ContainerRuntimeExecutorK8sAPI || executorType == common.ContainerRuntimeExecutorKubelet {
-				log.Infof("Copying output parameter %s from base image layer %s is not supported for k8sapi and kubelet executors. "+
-					"Consider using an emptyDir volume: https://argoproj.github.io/argo/empty-dir/.", param.Name, param.ValueFrom.Path)
-				continue
-			}
+		mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
+		if !argofile.Exists(mountedPath) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
@@ -514,7 +481,6 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
-			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
 			data, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
 				// We have a default value to use instead of returning an error

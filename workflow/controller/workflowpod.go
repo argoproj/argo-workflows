@@ -3,10 +3,12 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -286,7 +288,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if err != nil {
 		return nil, err
 	}
-	addOutputArtifactsVolumes(pod, tmpl)
+	woc.addOutputArtifactsVolumes(pod, tmpl)
 
 	// Set the container template JSON in pod annotations, which executor examines for things like
 	// artifact location/path.
@@ -901,7 +903,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 // wait container will collect the artifacts directly from volumeMount instead of `docker cp`-ing
 // them to the wait sidecar. In order for this to work, we mirror all volume mounts in the main
 // container under a well-known path.
-func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if tmpl.GetType() == wfv1.TemplateTypeResource {
 		return
 	}
@@ -922,13 +924,55 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	mainCtr = &pod.Spec.Containers[mainCtrIndex]
 	waitCtr := &pod.Spec.Containers[waitCtrIndex]
 
+	if woc.needAutoMountOutputVolume(pod) {
+		z := func(path string) {
+			// the main container main create a file or a dir at path, so we must mount the parent dir
+			mountPath := filepath.Dir(path)
+			// we don't need to mount this if it is already mounted
+			for _, x := range mainCtr.VolumeMounts {
+				if strings.HasPrefix(mountPath, x.MountPath) {
+					return
+				}
+			}
+			h := fnv.New32()
+			_, _ = h.Write([]byte(mountPath))
+			name := fmt.Sprintf("output-%v", h.Sum32())
+			log.WithFields(log.Fields{"mountPath": mountPath, "name": name}).Debugln("auto-mounting output volume")
+			mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, apiv1.VolumeMount{Name: name, MountPath: mountPath})
+			pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{Name: name, VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}}})
+		}
+		for _, x := range tmpl.Outputs.Artifacts {
+			z(x.Path)
+		}
+		for _, x := range tmpl.Outputs.Parameters {
+			if x.ValueFrom != nil && x.ValueFrom.Path != "" {
+				z(x.ValueFrom.Path)
+			}
+		}
+	}
+
 	for _, mnt := range mainCtr.VolumeMounts {
 		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
 		// ReadOnly is needed to be false for overlapping volume mounts
 		mnt.ReadOnly = false
 		waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, mnt)
 	}
+
+	pod.Spec.Containers[mainCtrIndex] = *mainCtr
 	pod.Spec.Containers[waitCtrIndex] = *waitCtr
+}
+
+func (woc *wfOperationCtx) needAutoMountOutputVolume(pod *apiv1.Pod) bool {
+	switch woc.controller.GetContainerRuntimeExecutor() {
+	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
+		return true // must always be mounted - these executors do not support CopyFile/GetFileContents
+	case common.ContainerRuntimeExecutorPNS:
+		s := pod.Spec
+		return s.SecurityContext != nil && s.SecurityContext.RunAsNonRoot != nil && *s.SecurityContext.RunAsNonRoot
+	default:
+		// "docker" cannot support 'runAsNonRoot', so this must always be false
+		return false
+	}
 }
 
 // addArchiveLocation conditionally updates the template with the default artifact repository
