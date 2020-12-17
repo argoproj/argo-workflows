@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"os"
 	"testing"
 	"time"
 
