@@ -9,20 +9,21 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/antonmedv/expr v1.8.8
-	github.com/argoproj/argo-events v1.1.0
+	github.com/argoproj/argo-events v0.17.1-0.20201218181257-97e4926c7c62
 	github.com/argoproj/pkg v0.3.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
+	github.com/corbym/gocrest v1.0.3 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gavv/httpexpect/v2 v2.0.3
-	github.com/go-openapi/jsonreference v0.19.3
+	github.com/go-openapi/jsonreference v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/go-swagger/go-swagger v0.23.0
+	github.com/go-swagger/go-swagger v0.25.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
@@ -49,18 +50,18 @@ require (
 	github.com/valyala/fasttemplate v1.1.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/tools v0.0.0-20200630154851-b2d8b0336632
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/tools v0.0.0-20200717024301-6ddee64345a6
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.29.1
 	gopkg.in/go-playground/webhooks.v5 v5.15.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	gopkg.in/square/go-jose.v2 v2.4.1
+	gopkg.in/square/go-jose.v2 v2.5.1
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/api v0.17.8
 	k8s.io/apimachinery v0.17.8
