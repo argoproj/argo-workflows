@@ -567,39 +567,24 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
-	if woc.execWf.Spec.PodGC != nil {
-		inlinePodGC := os.Getenv("INLINE_POD_GC") != "false"
-		switch woc.execWf.Spec.PodGC.Strategy {
-		case wfv1.PodGCOnPodSuccess:
-			if len(woc.succeededPods) > 0 {
-				if inlinePodGC {
-					woc.deletePodsByPhase(apiv1.PodSucceeded)
-				} else {
-					for podName := range woc.succeededPods {
-						woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
-					}
-				}
-			}
-		case wfv1.PodGCOnPodCompletion:
-			if len(woc.completedPods) > 0 {
-				if inlinePodGC {
-					woc.deletePodsByPhase(apiv1.PodSucceeded)
-					woc.deletePodsByPhase(apiv1.PodFailed)
-				} else {
-					for podName := range woc.completedPods {
-						woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
-					}
-				}
-			}
-		}
-	} else {
-		// label pods which will not be deleted
+	inlinePodGC := os.Getenv("INLINE_POD_GC") == "true"
+	podGCStrategy := woc.execWf.Spec.GetPodGCStrategy()
+	switch {
+	case inlinePodGC && podGCStrategy == wfv1.PodGCOnPodSuccess:
+		woc.deletePodsByPhase(apiv1.PodSucceeded)
+	case inlinePodGC && podGCStrategy == wfv1.PodGCOnPodCompletion:
+		woc.deletePodsByPhase(apiv1.PodSucceeded)
+		woc.deletePodsByPhase(apiv1.PodFailed)
+	default:
 		for podName := range woc.completedPods {
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
+			x := labelPodCompleted
+			if podGCStrategy == wfv1.PodGCOnPodCompletion || podGCStrategy == wfv1.PodGCOnPodSuccess && woc.succeededPods[podName] {
+				x = deletePod
+			}
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, x)
 		}
 	}
 }

@@ -488,6 +488,13 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }
 
+func (wfs WorkflowSpec) GetPodGCStrategy() PodGCStrategy {
+	if wfs.PodGC != nil {
+		return wfs.PodGC.Strategy
+	}
+	return ""
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
