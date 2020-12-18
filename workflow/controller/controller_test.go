@@ -156,7 +156,6 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		kubeclientset:        map[wfv1.ClusterName]kubernetes.Interface{wfv1.ThisCluster: kube},
 		dynamicInterface:     dynamicClient,
 		wfclientset:          wfclientset,
-		completedPods:        make(chan string, 16),
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
@@ -180,6 +179,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.throttler = wfc.newThrottler()
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
@@ -258,15 +258,7 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 }
 
 func expectWorkflow(controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	obj, exists, err := controller.wfInformer.GetStore().GetByKey(name)
-	if err != nil {
-		panic(err)
-	}
-	if !exists {
-		test(nil)
-		return
-	}
-	wf, err := util.FromUnstructured(obj.(*unstructured.Unstructured))
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}

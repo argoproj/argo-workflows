@@ -69,6 +69,10 @@ LOG_LEVEL             := info
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
+ifeq ($(PROFILE),prometheus)
+RUN_MODE              := kubernetes
+endif
+
 ALWAYS_OFFLOAD_NODE_STATUS := false
 ifeq ($(PROFILE),mysql)
 ALWAYS_OFFLOAD_NODE_STATUS := true
@@ -365,7 +369,7 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
-	./dist/install_kustomize.sh
+	./dist/install_kustomize.sh 3.8.8
 	sudo mv kustomize /usr/local/bin/
 	kustomize version
 
@@ -465,7 +469,13 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
+ifeq ($(RUN_MODE),kubernetes)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller --timeout 1m
+endif
+ifeq ($(PROFILE),prometheus)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
+endif
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)

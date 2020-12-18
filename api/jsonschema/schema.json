@@ -760,6 +760,13 @@
     },
     "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
       "properties": {
+        "email": {
+          "type": "string"
+        },
+        "emailVerified": {
+          "format": "boolean",
+          "type": "boolean"
+        },
         "groups": {
           "items": {
             "type": "string"

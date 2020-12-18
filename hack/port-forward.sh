@@ -6,11 +6,12 @@ pf() {
   name=$1
   resource=$2
   port=$3
+  dest_port=${4:-"$port"}
   pid=$(lsof -i ":$port" | grep -v PID | awk '{print $2}' || true)
   if [ "$pid" != "" ]; then
     kill $pid
   fi
-  kubectl -n argo port-forward "$resource" "$port:$port" > /dev/null &
+  kubectl -n argo port-forward "$resource" "$port:$dest_port" > /dev/null &
   # wait until port forward is established
 	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
   info "$name on http://127.0.0.1:$port"
@@ -47,10 +48,6 @@ if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; 
   pf "Workflow Controller" deploy/workflow-controller 9090
 fi
 
-if [[ "$(kubectl -n argo get pod -l app=agent -o name)" != "" ]]; then
-  pf "Agent" deploy/agent 2468
-fi
-
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
-  pf "Prometheus" deploy/prometheus 9091
+  pf "Prometheus Server" deploy/prometheus 9091 9090
 fi

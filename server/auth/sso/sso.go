@@ -18,6 +18,7 @@ import (
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -139,10 +140,13 @@ func newSso(
 	// if it fails, then the get will fail, and the pod restart
 	// it may fail due to race condition with another pod - which is fine,
 	// when it restart it'll get the new key
-	_, _ = secretsIf.Create(&apiv1.Secret{
+	_, err = secretsIf.Create(&apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
 	})
+	if err != nil && !apierr.IsAlreadyExists(err) {
+		return nil, fmt.Errorf("failed to create secret: %w", err)
+	}
 	secret, err := secretsIf.Get(secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to read secret: %w", err)
@@ -172,7 +176,7 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
+	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID, "scopes": config.Scopes}).Info("SSO configuration")
 	return &sso{
 		config:          config,
 		idTokenVerifier: idTokenVerifier,
@@ -233,7 +237,14 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(s.expiry))}, Groups: c.Groups}
+	argoClaims := &types.Claims{Claims: jwt.Claims{
+		Issuer:  issuer,
+		Subject: c.Subject,
+		Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry))},
+		Groups:        c.Groups,
+		Email:         c.Email,
+		EmailVerified: c.EmailVerified,
+	}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)

@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/strftime"
+
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -240,6 +242,11 @@ func TestGlobalParams(t *testing.T) {
 	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
 		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
 	}
+	for char := range strftime.FormatChars {
+		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
+	}
+	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.s")
+
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")

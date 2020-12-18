@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -176,25 +178,31 @@ type ConnectionPool struct {
 	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
 
-type PostgreSQLConfig struct {
+type DatabaseConfig struct {
 	Host           string                  `json:"host"`
-	Port           int                     `json:"port"`
+	Port           int                     `json:"port,omitempty"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
-	SSL            bool                    `json:"ssl,omitempty"`
-	SSLMode        string                  `json:"sslMode,omitempty"`
+}
+
+func (c DatabaseConfig) GetHostname() string {
+	if c.Port == 0 {
+		return c.Host
+	}
+	return fmt.Sprintf("%s:%v", c.Host, c.Port)
+}
+
+type PostgreSQLConfig struct {
+	DatabaseConfig
+	SSL     bool   `json:"ssl,omitempty"`
+	SSLMode string `json:"sslMode,omitempty"`
 }
 
 type MySQLConfig struct {
-	Host           string                  `json:"host"`
-	Port           int                     `json:"port"`
-	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName,omitempty"`
-	Options        map[string]string       `json:"options,omitempty"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	DatabaseConfig
+	Options map[string]string `json:"options,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
