@@ -1,6 +1,5 @@
 .vscode/
 .idea/
-.run/
 .DS_Store
 vendor/
 dist/
@@ -19,8 +18,8 @@ git-ask-pass.sh
 /workflow-controller
 /.scannerwork/
 /test-results/
-/*.crt
-/*.key
+/argo-server.crt
+/argo-server.key
 /package-lock.json
 /pkg/apiclient/_.secondary.swagger.json
 /pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json

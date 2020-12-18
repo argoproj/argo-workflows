@@ -130,8 +130,8 @@ spec:
 func (s *MultiClusterSuite) TestOtherCluster() {
 	s.Assert().Equal("pns", s.Config.ContainerRuntimeExecutor)
 
-		s.Given().
-			Workflow(`
+	s.Given().
+		Workflow(`
 metadata:
   generateName: multi-cluster-
   labels:
@@ -148,18 +148,18 @@ spec:
       container:
         image: argoproj/argosay:v2
 `).
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(1 * time.Minute).
-			Then().
-			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-				x := status.Nodes.FindByDisplayName(metadata.Name)
-				if assert.NotNil(t, x) {
-					assert.Equal(t, "other", x.ClusterName)
-					assert.Empty(t, x.Namespace)
-				}
-			})
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(1 * time.Minute).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			x := status.Nodes.FindByDisplayName(metadata.Name)
+			if assert.NotNil(t, x) {
+				assert.Equal(t, "other", x.ClusterName)
+				assert.Empty(t, x.Namespace)
+			}
+		})
 
 }
 

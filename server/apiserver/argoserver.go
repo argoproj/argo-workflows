@@ -249,7 +249,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 // using grpc-gateway as a proxy to the gRPC server.
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 
-	endpoint := fmt.Sprintf("127.0.0.1:%d", port)
+	endpoint := fmt.Sprintf("localhost:%d", port)
 
 	mux := http.NewServeMux()
 	httpServer := http.Server{

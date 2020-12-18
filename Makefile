@@ -49,6 +49,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 # perform static compilation
 STATIC_BUILD          ?= true
 STATIC_FILES          ?= true
+GOTEST                ?= go test
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
@@ -139,15 +140,15 @@ endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
-	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) .; fi
+	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	if [ $(DEV_IMAGE) = true ]; then mv $(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) dist/; fi
-	if [ $(K3D) = true ] ; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
+	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
+	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
 endef
 define docker_pull
 	docker pull $(1)
-	if [ $(K3D) = true ] ; then k3d image import $(1); fi
+	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
 ifndef $(GOPATH)
@@ -164,7 +165,7 @@ images: cli-image executor-image controller-image
 # cli
 
 .PHONY: cli
-cli: dist/argo argo-server.key
+cli: dist/argo argo-server.crt argo-server.key
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 	# Build UI
@@ -201,8 +202,10 @@ dist/argo-%.gz: dist/argo-%
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
-%.key:
-	openssl req -x509 -newkey rsa:4096 -keyout $*.key -out $*.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
+argo-server.crt: argo-server.key
+
+argo-server.key:
+	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
 
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
@@ -385,7 +388,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	env KUBECONFIG=/dev/null go test ./...
+	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 dist/main-context:
 	kubectl config current-context > dist/main-context
@@ -493,23 +496,23 @@ mysql-cli:
 test-e2e:
 	# set-up bad user for e2e tests
 	kubectl config set-credentials fake_token_user --token=xxxxxx
-	go test -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-cli
 test-cli:
-	go test -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-mc
 test-e2e-mc:
-	go test -timeout 15m -count 1 --tags e2emc -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags e2emc -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	go test -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
+	$(GOTEST) -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
-	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
+	$(GOTEST) -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
 # clean
 

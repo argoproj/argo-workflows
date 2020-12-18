@@ -237,7 +237,6 @@ func (s *CLISuite) TestTokenArg() {
 		goodToken = token
 	})
 	s.Run("ListWithGoodToken", func() {
-		s.T().Skip("TODO")
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", goodToken}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		})

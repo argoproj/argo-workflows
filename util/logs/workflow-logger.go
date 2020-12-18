@@ -196,7 +196,6 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		}()
 	}
 
-
 	logWorkflow := func(wf *wfv1.Workflow) error {
 		err := hydrator.Hydrate(wf)
 		if err != nil {

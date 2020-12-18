@@ -73,7 +73,7 @@ COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
-COPY argoexec-linux-amd64 /usr/local/bin/argoexec
+COPY argoexec /usr/local/bin/
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
@@ -83,7 +83,7 @@ FROM scratch as workflow-controller
 USER 8737
 # Add timezone data
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY workflow-controller-linux-amd64 /bin/workflow-controller
+COPY workflow-controller /bin/
 ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################

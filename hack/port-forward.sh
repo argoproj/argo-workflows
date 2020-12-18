@@ -14,16 +14,14 @@ pf() {
   kubectl -n argo port-forward "$resource" "$port:$dest_port" > /dev/null &
   # wait until port forward is established
 	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
-  info "$name on http://127.0.0.1:$port"
+  info "$name on http://localhost:$port"
 }
 
 info() {
     echo '[INFO] ' "$@"
 }
 
-if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
-  pf MinIO pod/minio 9000
-fi
+pf MinIO pod/minio 9000
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
