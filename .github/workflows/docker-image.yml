@@ -6,6 +6,7 @@ on:
       - v*
     branches:
       - master
+      - multic
 
 defaults:
   run:

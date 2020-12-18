@@ -88,9 +88,9 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           map[wfv1.ClusterName]cache.SharedIndexInformer
-	wfQueue               workqueue.RateLimitingInterface
+	wfQueue               workqueue.RateLimitingInterface // wfv1.WorkflowKey
 	podQueue              workqueue.RateLimitingInterface
-	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
+	podCleanupQueue       workqueue.RateLimitingInterface // wfv1.PodKey -  pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
@@ -181,7 +181,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 	defer wfc.podCleanupQueue.ShutDown()
@@ -230,7 +230,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset[wfv1.ThisCluster].CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID},
 		},
 		ReleaseOnCancel: true,
@@ -404,8 +404,9 @@ func (wfc *WorkflowController) UpdateConfig() {
 	}
 }
 
-func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName string, action podCleanupAction) {
-	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
+func (wfc *WorkflowController) queuePodForCleanup(key wfv1.PodKey, action podCleanupAction) {
+	clusterName, namespace, podName := wfv1.SplitPodKey(key)
+	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(clusterName, namespace, podName, action))
 }
 
 func (wfc *WorkflowController) runPodCleanup() {
@@ -420,11 +421,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem() bool {
 		return false
 	}
 	defer wfc.podCleanupQueue.Done(key)
-	namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
+	clusterName, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+		pods := wfc.kubeclientset[clusterName].CoreV1().Pods(namespace)
 		switch action {
 		case labelPodCompleted:
 			_, err := pods.Patch(podName, types.MergePatchType, []byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`))
@@ -640,8 +641,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 			}
 		}
 		if doPodGC {
-			for podName := range woc.completedPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			for key := range woc.completedPods {
+				woc.controller.queuePodForCleanup(key, deletePod)
 			}
 		}
 	}
@@ -655,18 +656,20 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
 // enqueue workflow for processing
-func (wfc *WorkflowController) enqueueWfFromPodLabel(clusterName wfv1.ClusterName, obj interface{}) {
+func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) {
 	err := func() error {
 		pod, ok := obj.(*apiv1.Pod)
 		if !ok {
 			return fmt.Errorf("key in index is not a pod")
 		}
-	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
-	if !ok {
-		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		return fmt.Errorf("Watch returned pod unrelated to any workflow")
-	}
-	wfc.wfQueue.AddRateLimited(clusterName + "/" + pod.ObjectMeta.Namespace + "/" + workflowName)
+		workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
+		if !ok {
+			// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
+			return fmt.Errorf("watch returned pod unrelated to any workflow")
+		}
+		wfc.wfQueue.AddRateLimited(pod.Namespace + "/" + workflowName)
+		return nil
+	}()
 	if err != nil {
 		log.WithError(err).Warn("failed to queue workflow")
 	}
@@ -893,7 +896,7 @@ func (wfc *WorkflowController) newPodInformer() map[wfv1.ClusterName]cache.Share
 			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		})
 		enqueuePodsWorkflow := func(obj interface{}) {
-			wfc.enqueueWfFromPodLabel(clusterName, obj)
+			wfc.enqueueWfFromPodLabel(obj)
 		}
 		informer.AddEventHandler(
 			cache.FilteringResourceEventHandler{

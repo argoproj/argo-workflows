@@ -4,8 +4,3 @@ kind: Kustomization
 resources:
   - ../../../../manifests/quick-start/base/workflow-role.yaml
   - ../../../../manifests/quick-start/base/workflow-default-rolebinding.yaml
-  - ../../../../manifests/base/agent
-  - agent-ing.yaml
-
-patchesStrategicMerge:
-  - agent-deploy.yaml

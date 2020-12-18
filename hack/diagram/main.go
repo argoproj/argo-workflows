@@ -32,7 +32,6 @@ func main() {
 	workflowController := k8s.Compute.Pod(diagram.NodeLabel("1 x Workflow Controller"))
 	k8sapi := k8s.Controlplane.Api(diagram.NodeLabel("Kubernetes API"))
 	otherk8sapi := k8s.Controlplane.Api(diagram.NodeLabel("Other Kubernetes API"))
-	agent := k8s.Compute.Pod(diagram.NodeLabel("2x Agent"))
 	workflowArchive := gcp.Database.Sql(diagram.NodeLabel("Workflow Archive (e.g. MySQL)"))
 	workflowPod := k8s.Compute.Pod(diagram.NodeLabel("1000s x Workflow Pod"))
 	storage := gcp.Database.Datastore(diagram.NodeLabel("Artifact Store (e.g. S3)"))
@@ -52,8 +51,7 @@ func main() {
 		Add(k8sapi)
 
 	otherKubeCluster.NewGroup("other-user-namespace").
-		Label("other user namespace").
-		Add(agent)
+		Label("other user namespace")
 
 	otherKubeCluster.NewGroup("other-kube-system").
 		Label("other kube-system namespace").
@@ -80,8 +78,6 @@ func main() {
 	d.Connect(argoServer, workflowArchive, diagram.Forward()).Group(kubeCluster)
 	d.Connect(workflowController, workflowArchive, diagram.Forward()).Group(kubeCluster)
 	d.Connect(workflowController, otherk8sapi, diagram.Forward()).Group(kubeCluster)
-	d.Connect(workflowController, agent, diagram.Forward()).Group(kubeCluster)
-	d.Connect(agent, otherk8sapi, diagram.Forward()).Group(otherKubeCluster)
 
 	if err := d.Render(); err != nil {
 		panic(err)

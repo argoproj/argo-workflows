@@ -575,18 +575,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if woc.execWf.Spec.PodGC != nil {
 		switch woc.execWf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
-			for podName := range woc.succeededPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			for key := range woc.succeededPods {
+				woc.controller.queuePodForCleanup(key, deletePod)
 			}
 		case wfv1.PodGCOnPodCompletion:
-			for podName := range woc.completedPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			for key := range woc.completedPods {
+				woc.controller.queuePodForCleanup(key, deletePod)
 			}
 		}
 	} else {
 		// label pods which will not be deleted
-		for podName := range woc.completedPods {
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
+		for key := range woc.completedPods {
+			woc.controller.queuePodForCleanup(key, labelPodCompleted)
 		}
 	}
 }

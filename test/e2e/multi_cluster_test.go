@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -130,9 +129,9 @@ spec:
 
 func (s *MultiClusterSuite) TestOtherCluster() {
 	s.Assert().Equal("pns", s.Config.ContainerRuntimeExecutor)
-	for _, clusterName := range []wfv1.ClusterName{"other", "agent"} {
+
 		s.Given().
-			Workflow(fmt.Sprintf(`
+			Workflow(`
 metadata:
   generateName: multi-cluster-
   labels:
@@ -144,11 +143,11 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      clusterName: %s
+      clusterName: other
       namespace: argo
       container:
         image: argoproj/argosay:v2
-`, clusterName)).
+`).
 			When().
 			SubmitWorkflow().
 			WaitForWorkflow(1 * time.Minute).
@@ -157,11 +156,11 @@ spec:
 				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 				x := status.Nodes.FindByDisplayName(metadata.Name)
 				if assert.NotNil(t, x) {
-					assert.Equal(t, clusterName, x.ClusterName)
+					assert.Equal(t, "other", x.ClusterName)
 					assert.Empty(t, x.Namespace)
 				}
 			})
-	}
+
 }
 
 func TestMultiClusterSuite(t *testing.T) {
