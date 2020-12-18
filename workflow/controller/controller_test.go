@@ -255,15 +255,7 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 }
 
 func expectWorkflow(controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	obj, exists, err := controller.wfInformer.GetStore().GetByKey(name)
-	if err != nil {
-		panic(err)
-	}
-	if !exists {
-		test(nil)
-		return
-	}
-	wf, err := util.FromUnstructured(obj.(*unstructured.Unstructured))
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}

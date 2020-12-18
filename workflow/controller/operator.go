@@ -118,8 +118,7 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 var (
-	maxOperationTime   = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
-	defaultRequeueTime = envutil.LookupEnvDurationOr("DEFAULT_REQUEUE_TIME", maxOperationTime/2)
+	maxOperationTime = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
 )
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
@@ -277,7 +276,7 @@ func (woc *wfOperationCtx) operate() {
 		// Workflow will not be requeued if workflow steps are in pending state.
 		// Workflow needs to requeue on its deadline,
 		if woc.workflowDeadline != nil {
-			woc.requeue(time.Until(*woc.workflowDeadline))
+			woc.requeueAfter(time.Until(*woc.workflowDeadline))
 		}
 
 		if woc.execWf.Spec.Metrics != nil {
@@ -330,7 +329,7 @@ func (woc *wfOperationCtx) operate() {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(defaultRequeueTime)
+			woc.requeue()
 			return
 		}
 		err = fmt.Errorf("pvc create error: %w", err)
@@ -475,6 +474,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
 		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
 	}
+	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp+".s"] = strconv.FormatInt(woc.wf.ObjectMeta.CreationTimestamp.Time.Unix(), 10)
 
 	if workflowParameters, err := json.Marshal(woc.execWf.Spec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
@@ -555,13 +555,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	if os.Getenv("INFORMER_WRITE_BACK") != "false" {
+	switch os.Getenv("INFORMER_WRITE_BACK") {
+	case "true":
 		if err := woc.writeBackToInformer(); err != nil {
 			woc.markWorkflowError(err)
 			return
 		}
-	} else {
-		time.Sleep(enoughTimeForInformerSync)
+	case "false":
+		time.Sleep(1 * time.Second)
 	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
@@ -681,13 +682,14 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 }
 
 // requeue this workflow onto the workqueue for later processing
-func (woc *wfOperationCtx) requeue(afterDuration time.Duration) {
-	key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-	if err != nil {
-		woc.log.Errorf("Failed to requeue workflow %s: %v", woc.wf.ObjectMeta.Name, err)
-		return
-	}
+func (woc *wfOperationCtx) requeueAfter(afterDuration time.Duration) {
+	key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
 	woc.controller.wfQueue.AddAfter(key, afterDuration)
+}
+
+func (woc *wfOperationCtx) requeue() {
+	key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
+	woc.controller.wfQueue.AddRateLimited(key)
 }
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
@@ -769,7 +771,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 		// See if we have waited past the deadline
 		if time.Now().Before(waitingDeadline) {
-			woc.requeue(timeToWait)
+			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
@@ -923,7 +925,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
 				// workflow will not update for 20m. Requeuing here prevents that happening.
-				woc.requeue(defaultRequeueTime)
+				woc.requeue()
 				continue
 			}
 
@@ -1598,7 +1600,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Check if we took too long operating on this workflow and immediately return if we did
 	if time.Now().UTC().After(woc.deadline) {
 		woc.log.Warnf("Deadline exceeded")
-		woc.requeue(defaultRequeueTime)
+		woc.requeue()
 		return node, ErrDeadlineExceeded
 	}
 
@@ -2343,7 +2345,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
 	if errorsutil.IsTransientErr(err) {
 		// Our error was most likely caused by a lack of resources.
-		woc.requeue(defaultRequeueTime)
+		woc.requeue()
 		return woc.markNodePending(nodeName, err), nil
 	}
 	return nil, err
@@ -2672,7 +2674,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	}
 
 	if requeueTime != nil {
-		woc.requeue(time.Until(*requeueTime))
+		woc.requeueAfter(time.Until(*requeueTime))
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
