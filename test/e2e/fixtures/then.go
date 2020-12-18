@@ -6,6 +6,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -55,7 +56,40 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 		t.t.FailNow()
 	}
 	return t
+}
 
+func (t *Then) ExpectWorkflowDeleted() *Then {
+	_, err := t.client.Get(t.wf.Name, metav1.GetOptions{})
+	if err == nil || !apierr.IsNotFound(err) {
+		t.t.Fatalf("expected workflow to be deleted: %v", err)
+	}
+	return t
+}
+
+// Check on a specific node in the workflow.
+// If no node matches the selector, then the NodeStatus and Pod will be nil.
+// If the pod does not exist (e.g. because it was deleted) then the Pod will be nil too.
+func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f func(t *testing.T, status *wfv1.NodeStatus, pod *apiv1.Pod)) *Then {
+	return t.expectWorkflow(t.wf.Name, func(tt *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		n := status.Nodes.Find(selector)
+		var p *apiv1.Pod
+		if n != nil {
+			println("Found node", "id="+n.ID, "type="+n.Type)
+			if n.Type == wfv1.NodeTypePod {
+				var err error
+				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(n.ID, metav1.GetOptions{})
+				if err != nil {
+					if !apierr.IsNotFound(err) {
+						t.t.Fatal(err)
+					}
+					p = nil // i did not expect to need to nil the pod, but here we are
+				}
+			}
+		} else {
+			println("Did not find node")
+		}
+		f(tt, n, p)
+	})
 }
 
 func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {

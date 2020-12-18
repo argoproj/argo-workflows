@@ -154,7 +154,7 @@ access is on a per project rather than per bucket basis.
 ```yaml
 artifacts:
   - name: my-output-artifact
-    path: /my-ouput-artifact
+    path: /my-output-artifact
     s3:
       endpoint: storage.googleapis.com
       bucket: my-gcs-bucket-name
@@ -320,7 +320,7 @@ configuring the default artifact repository described previously.
     outputs:
       artifacts:
       - name: my-output-artifact
-        path: /my-ouput-artifact
+        path: /my-output-artifact
         s3:
           endpoint: storage.googleapis.com
           bucket: my-gcs-bucket-name
