@@ -572,14 +572,28 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
 	if woc.execWf.Spec.PodGC != nil {
+		inlinePodGC := os.Getenv("INLINE_POD_GC") != "false"
 		switch woc.execWf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
-			for podName := range woc.succeededPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			if len(woc.succeededPods) > 0 {
+				if inlinePodGC {
+					woc.deletePodsByPhase(apiv1.PodSucceeded)
+				} else {
+					for podName := range woc.succeededPods {
+						woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+					}
+				}
 			}
 		case wfv1.PodGCOnPodCompletion:
-			for podName := range woc.completedPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			if len(woc.completedPods) > 0 {
+				if inlinePodGC {
+					woc.deletePodsByPhase(apiv1.PodSucceeded)
+					woc.deletePodsByPhase(apiv1.PodFailed)
+				} else {
+					for podName := range woc.completedPods {
+						woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+					}
+				}
 			}
 		}
 	} else {
@@ -587,6 +601,25 @@ func (woc *wfOperationCtx) persistUpdates() {
 		for podName := range woc.completedPods {
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
+	}
+}
+
+func (woc *wfOperationCtx) deletePodsByPhase(podPhase apiv1.PodPhase) {
+	metrics.PodGCMetric.WithLabelValues("delete-collection").Inc()
+	deletePropagationBackground := metav1.DeletePropagationBackground
+	listOptions := metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("status.phase=%v", podPhase),
+		LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name + "," + common.LabelKeyCompleted + "=false",
+	}
+	woc.log.WithField("listOptions", listOptions).Info("deleting pods by phase")
+	err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).DeleteCollection(
+		&metav1.DeleteOptions{
+			PropagationPolicy: &deletePropagationBackground,
+		},
+		listOptions,
+	)
+	if err != nil {
+		log.WithError(err).Warn("failed to delete pods")
 	}
 }
 
