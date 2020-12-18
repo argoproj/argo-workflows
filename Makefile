@@ -84,6 +84,7 @@ endef
 define protoc
 	# protoc $(1)
     [ -e vendor ] || go mod vendor
+    [ -e v3 ] || ln -s . v3
     protoc \
       -I /usr/local/include \
       -I . \
@@ -95,6 +96,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1) 2>&1 | grep -v 'warning: Import .* is unused'
+	rm v3
 endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -319,7 +321,7 @@ test-cli: dist/argo
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor dist/* ui/dist
+	rm -Rf test-results node_modules vendor v3 dist/* ui/dist
 
 # swagger
 
