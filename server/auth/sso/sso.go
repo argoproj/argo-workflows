@@ -18,6 +18,7 @@ import (
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -139,10 +140,13 @@ func newSso(
 	// if it fails, then the get will fail, and the pod restart
 	// it may fail due to race condition with another pod - which is fine,
 	// when it restart it'll get the new key
-	_, _ = secretsIf.Create(&apiv1.Secret{
+	_, err = secretsIf.Create(&apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
 	})
+	if err != nil && !apierr.IsAlreadyExists(err) {
+		return nil, fmt.Errorf("failed to create secret: %w", err)
+	}
 	secret, err := secretsIf.Get(secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to read secret: %w", err)
