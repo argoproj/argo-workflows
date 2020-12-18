@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - ../base
-  - ./argo-server-rbac
   - ./workflow-controller-rbac
 
 patchesJson6902:
@@ -13,9 +12,3 @@ patchesJson6902:
       kind: Deployment
       name: workflow-controller
     path: ./overlays/workflow-controller-deployment.yaml
-  - target:
-      version: v1
-      group: apps
-      kind: Deployment
-      name: argo-server
-    path: ./overlays/argo-server-deployment.yaml

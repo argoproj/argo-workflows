@@ -117,11 +117,6 @@ kind: ServiceAccount
 metadata:
   name: argo
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: argo-server
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -321,69 +316,6 @@ rules:
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argo-server-cluster-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - create
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  - pods/log
-  verbs:
-  - get
-  - list
-  - watch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - watch
-  - create
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  - workfloweventbindings
-  - workflowtemplates
-  - cronworkflows
-  - clusterworkflowtemplates
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - patch
-  - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -408,35 +340,10 @@ subjects:
   name: argo
   namespace: argo
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: argo-server-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: argo-server-cluster-role
-subjects:
-- kind: ServiceAccount
-  name: argo-server
-  namespace: argo
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: argo-server
-spec:
-  ports:
-  - name: web
-    port: 2746
-    targetPort: 2746
-  selector:
-    app: argo-server
 ---
 apiVersion: v1
 kind: Service
@@ -450,50 +357,6 @@ spec:
     targetPort: 9090
   selector:
     app: workflow-controller
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: argo-server
-spec:
-  selector:
-    matchLabels:
-      app: argo-server
-  template:
-    metadata:
-      labels:
-        app: argo-server
-    spec:
-      containers:
-      - args:
-        - server
-        image: argoproj/argocli:latest
-        name: argo-server
-        ports:
-        - containerPort: 2746
-          name: web
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 2746
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: 20
-        securityContext:
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp
-      nodeSelector:
-        kubernetes.io/os: linux
-      securityContext:
-        runAsNonRoot: true
-      serviceAccountName: argo-server
-      volumes:
-      - emptyDir: {}
-        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment

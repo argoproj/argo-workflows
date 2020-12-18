@@ -4,4 +4,3 @@ kind: Kustomization
 resources:
 - crds
 - workflow-controller
-- argo-server

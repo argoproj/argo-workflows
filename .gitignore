@@ -6,7 +6,6 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
-/argo
 /argoexec
 debug.test
 git-ask-pass.sh
@@ -18,17 +17,6 @@ git-ask-pass.sh
 /workflow-controller
 /.scannerwork/
 /test-results/
-/argo-server.crt
-/argo-server.key
-/package-lock.json
-/pkg/apiclient/_.secondary.swagger.json
-/pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json
-/pkg/apiclient/cronworkflow/cron-workflow.swagger.json
-/pkg/apiclient/event/event.swagger.json
-/pkg/apiclient/info/info.swagger.json
-/pkg/apiclient/workflow/workflow.swagger.json
-/pkg/apiclient/workflowarchive/workflow-archive.swagger.json
-/pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 /site/
 /.brew_home
 /go-diagrams/

@@ -117,16 +117,6 @@ kind: ServiceAccount
 metadata:
   name: argo
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: argo-server
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: github.com
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -235,93 +225,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: argo-server-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - create
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  - pods/log
-  verbs:
-  - get
-  - list
-  - watch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - watch
-  - create
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  - workfloweventbindings
-  - workflowtemplates
-  - cronworkflows
-  - cronworkflows/finalizers
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - patch
-  - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: submit-workflow-template
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workfloweventbindings
-  verbs:
-  - list
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtemplates
-  verbs:
-  - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  verbs:
-  - create
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
   name: workflow-role
 rules:
 - apiGroups:
@@ -363,24 +266,6 @@ rules:
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argo-server-clusterworkflowtemplate-role
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - clusterworkflowtemplates
-  - clusterworkflowtemplates/finalizers
-  verbs:
-  - create
-  - delete
-  - watch
-  - get
-  - list
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -391,31 +276,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: argo-server-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: argo-server-role
-subjects:
-- kind: ServiceAccount
-  name: argo-server
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: github.com
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: submit-workflow-template
-subjects:
-- kind: ServiceAccount
-  name: github.com
-  namespace: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -440,19 +300,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
-  namespace: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: argo-server-clusterworkflowtemplate-role-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: argo-server-clusterworkflowtemplate-role
-subjects:
-- kind: ServiceAccount
-  name: argo-server
   namespace: argo
 ---
 apiVersion: v1
@@ -551,32 +398,6 @@ type: Opaque
 apiVersion: v1
 kind: Secret
 metadata:
-  name: argo-server-sso
-stringData:
-  clientID: argo-server
-  clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: argo-workflows-webhook-clients
-stringData:
-  bitbucket.org: |
-    type: bitbucket
-    secret: "my-uuid"
-  bitbucketserver: |
-    type: bitbucketserver
-    secret: "shh!"
-  github.com: |
-    type: github
-    secret: "shh!"
-  gitlab.com: |
-    type: gitlab
-    secret: "shh!"
----
-apiVersion: v1
-kind: Secret
-metadata:
   labels:
     app: minio
   name: my-minio-cred
@@ -584,18 +405,6 @@ stringData:
   accesskey: admin
   secretkey: password
 type: Opaque
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: argo-server
-spec:
-  ports:
-  - name: web
-    port: 2746
-    targetPort: 2746
-  selector:
-    app: argo-server
 ---
 apiVersion: v1
 kind: Service
@@ -637,55 +446,6 @@ spec:
     targetPort: 9090
   selector:
     app: workflow-controller
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: argo-server
-spec:
-  selector:
-    matchLabels:
-      app: argo-server
-  template:
-    metadata:
-      labels:
-        app: argo-server
-    spec:
-      containers:
-      - args:
-        - server
-        - --namespaced
-        - --auth-mode
-        - server
-        - --auth-mode
-        - client
-        image: argoproj/argocli:latest
-        name: argo-server
-        ports:
-        - containerPort: 2746
-          name: web
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 2746
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: 20
-        securityContext:
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp
-      nodeSelector:
-        kubernetes.io/os: linux
-      securityContext:
-        runAsNonRoot: true
-      serviceAccountName: argo-server
-      volumes:
-      - emptyDir: {}
-        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment

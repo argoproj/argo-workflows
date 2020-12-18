@@ -75,16 +75,6 @@ COPY hack/nsswitch.conf /etc/nsswitch.conf
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 ####################################################################################################
-
-FROM node:14.0.0 as argo-ui
-
-ADD ["ui", "ui"]
-ADD ["api", "api"]
-
-RUN JOBS=max yarn --cwd ui install --network-timeout 1000000
-RUN JOBS=max yarn --cwd ui build
-
-####################################################################################################
 # Argo Build stage which performs the actual build of Argo binaries
 ####################################################################################################
 FROM builder as argo-build
@@ -105,15 +95,6 @@ RUN . hack/image_arch.sh && ./dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH}
 RUN . hack/image_arch.sh && make dist/argoexec-${IMAGE_OS}-${IMAGE_ARCH}
 RUN . hack/image_arch.sh && ./dist/argoexec-${IMAGE_OS}-${IMAGE_ARCH} version | grep clean
 
-# cli image
-RUN mkdir -p ui/dist
-COPY --from=argo-ui ui/dist/app ui/dist/app
-# stop make from trying to re-build this without yarn installed
-RUN touch ui/dist/node_modules.marker
-RUN touch ui/dist/app/index.html
-RUN . hack/image_arch.sh && make argo-server.crt argo-server.key dist/argo-${IMAGE_OS}-${IMAGE_ARCH}
-RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 2>&1 | grep clean
-
 ####################################################################################################
 # argoexec
 ####################################################################################################
@@ -133,16 +114,3 @@ COPY --from=argo-build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-${IMAGE_OS}-* /bin/workflow-controller
 ENTRYPOINT [ "workflow-controller" ]
 
-####################################################################################################
-# argocli
-####################################################################################################
-FROM scratch as argocli
-USER 8737
-ARG IMAGE_OS=linux
-COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
-COPY --from=argoexec-base /etc/nsswitch.conf /etc/nsswitch.conf
-COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt
-COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.key argo-server.key
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-${IMAGE_OS}-* /bin/argo
-ENTRYPOINT [ "argo" ]

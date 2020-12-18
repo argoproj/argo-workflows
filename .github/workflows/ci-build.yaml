@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make test STATIC_FILES=false
+        run: make test
 
   e2e-tests:
     name: E2E Tests
@@ -43,17 +43,13 @@ jobs:
       fail-fast: false
       matrix:
         # kubelet is not included because it'd take ages to get it working methinks
-        test: [ "smoke", "test-e2e", "test-cli", "test-e2e-cron" ]
+        test: [ "smoke", "test-e2e", "test-e2e-cron" ]
         containerRuntimeExecutor: [ "docker", "k8sapi", "pns" ]
         # ok, so we're only running `smoke` for all CREs,
         exclude:
           - test: test-e2e
             containerRuntimeExecutor: k8sapi
           - test: test-e2e
-            containerRuntimeExecutor: pns
-          - test: test-cli
-            containerRuntimeExecutor: k8sapi
-          - test: test-cli
             containerRuntimeExecutor: pns
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi
@@ -94,16 +90,15 @@ jobs:
           GOPATH: /home/runner/go
           PROFILE: mysql
         run: |
-          echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
-      - name: Wait for Argo Server to be ready
+      - name: Wait to be ready
         env:
           GOPATH: /home/runner/go
         run: make wait
@@ -160,39 +155,15 @@ jobs:
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
 
           # we use -B to force make to always make targets
-          make -B codegen STATIC_FILES=false
+          make -B codegen
       - name: Make lint
         env:
           GOPATH: /home/runner/go
-        run: make lint STATIC_FILES=false
+        run: make lint
       - name: Make validate-examples
         env:
           GOPATH: /home/runner/go
-        run: make validate-examples STATIC_FILES=false
+        run: make validate-examples
       - name: Ensure nothing changed
         run: git diff --exit-code
 
-  ui:
-    name: UI
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: "14"
-      - name: Restore node dependency cache
-        uses: actions/cache@v1
-        with:
-          path: ui/node_modules
-          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - name: Install, build and Lint
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-        run: |
-          yarn --cwd ui install
-          yarn --cwd ui build
-          yarn --cwd ui lint
-      - name: Ensure nothing changed
-        run: git diff --exit-code

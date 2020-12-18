@@ -3,12 +3,8 @@ run:
   skip-dirs:
     - pkg/client
     - vendor
-    - ui
-  skip-files:
-    - server/static/files.go
   build-tags:
     - e2e
-    - cli
 linters:
   enable:
     - goimports

@@ -210,7 +210,7 @@ func NewDocGeneratorContext() *DocGeneratorContext {
 }
 
 func (c *DocGeneratorContext) loadFiles() {
-	bytes, err := ioutil.ReadFile("api/openapi-spec/swagger.json")
+	bytes, err := ioutil.ReadFile("api/jsonschema/schema.json")
 	if err != nil {
 		panic(err)
 	}
