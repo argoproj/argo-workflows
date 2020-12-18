@@ -172,7 +172,7 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
+	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID, "scopes": config.Scopes}).Info("SSO configuration")
 	return &sso{
 		config:          config,
 		idTokenVerifier: idTokenVerifier,
@@ -233,7 +233,14 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(s.expiry))}, Groups: c.Groups}
+	argoClaims := &types.Claims{Claims: jwt.Claims{
+		Issuer:  issuer,
+		Subject: c.Subject,
+		Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry))},
+		Groups:        c.Groups,
+		Email:         c.Email,
+		EmailVerified: c.EmailVerified,
+	}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)

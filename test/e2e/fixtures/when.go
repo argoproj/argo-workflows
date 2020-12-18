@@ -170,6 +170,10 @@ var ToBeDone Condition = func(wf *wfv1.Workflow) bool {
 
 var ToBeArchived Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }
 
+var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) bool {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil
+}
+
 // Wait for a workflow to meet a condition:
 // Options:
 // * `time.Duration` - change the timeout - 30s by default

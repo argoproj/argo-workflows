@@ -227,6 +227,10 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 	}()
 
 	for {
+		if checkIfResourceDeleted(resourceName, resourceNamespace) {
+			return false, errors.Errorf(errors.CodeNotFound, "Resource %s in namespace %s has been deleted somehow.", resourceName, resourceNamespace)
+		}
+
 		jsonBytes, err := readJSON(reader)
 
 		if err != nil {
@@ -252,10 +256,6 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 				log.Infof("readJSon failed for resource %s but cmd.Wait for kubectl get -w command did not error", resourceName)
 			}
 			return true, resultErr
-		}
-
-		if checkIfResourceDeleted(resourceName, resourceNamespace) {
-			return false, errors.Errorf(errors.CodeNotFound, "Resource %s in namespace %s has been deleted somehow.", resourceName, resourceNamespace)
 		}
 
 		log.Info(string(jsonBytes))

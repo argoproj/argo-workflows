@@ -134,8 +134,6 @@ metadata:
 rules:
 - apiGroups:
   - coordination.k8s.io
-  resourceNames:
-  - workflow-controller
   resources:
   - leases
   verbs:
@@ -471,6 +469,7 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  empty: ""
   my-key: |
     archiveLogs: true
     s3:
