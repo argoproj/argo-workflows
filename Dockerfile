@@ -69,7 +69,7 @@ ARG IMAGE_OS=linux
 COPY hack/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY hack/nsswitch.conf /etc/nsswitch.conf
 COPY --from=argo-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=argo-build /go/src/github.com/argoproj/argo-server/argo-server.crt argo-server.crt
-COPY --from=argo-build /go/src/github.com/argoproj/argo-server/argo-server.key argo-server.key
+COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo-server/argo-server.crt argo-server.crt
+COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo-server/argo-server.key argo-server.key
 COPY --from=argo-build /go/src/github.com/argoproj/argo-server/dist/argo-${IMAGE_OS}-* /bin/argo
 ENTRYPOINT [ "argo" ]
