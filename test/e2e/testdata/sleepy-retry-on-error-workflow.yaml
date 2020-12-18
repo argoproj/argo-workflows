@@ -1,7 +1,7 @@
 kind: Workflow
 apiVersion: argoproj.io/v1alpha1
 metadata:
-  name: sleepy-retry-on-error
+  generateName: sleepy-retry-on-error-
   labels:
     argo-e2e: "true"
 spec:

@@ -9,8 +9,12 @@ spec:
   entrypoint: main
   arguments:
     parameters:
-      - name: "y"
+      - name: "nodes"
         value: "1"
+      - name: "sleep"
+        value: "1s"
+  artifactRepositoryRef:
+    key: empty
   ttlStrategy:
     secondsAfterCompletion: 60
   podGC:
@@ -19,13 +23,16 @@ spec:
     - name: main
       dag:
         tasks:
-          - name: create-pod
-            template: create-pod
+          - name: sleep
+            template: sleep
             withSequence:
-              count: "{{workflow.parameters.y}}"
-    - name: create-pod
+              count: "{{workflow.parameters.nodes}}"
+    - name: sleep
       container:
         image: argoproj/argosay:v2
+        args:
+          - sleep
+          - "{{workflow.parameters.sleep}}"
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -34,13 +41,21 @@ metadata:
   labels:
     stress: "true"
 spec:
+  artifactRepositoryRef:
+    key: empty
+  ttlStrategy:
+    secondsAfterCompletion: 60
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: main
   arguments:
     parameters:
-      - name: "x"
+      - name: "workflows"
         value: "1"
-      - name: "y"
+      - name: "nodes"
         value: "1"
+      - name: "sleep"
+        value: "1s"
   workflowMetadata:
     labels:
       stress: "true"
@@ -55,7 +70,7 @@ spec:
                 - name: i
                   value: "{{item}}"
             withSequence:
-              count: "{{workflow.parameters.x}}"
+              count: "{{workflow.parameters.workflows}}"
     - name: create-workflow
       inputs:
         parameters:
@@ -67,13 +82,15 @@ spec:
           apiVersion: argoproj.io/v1alpha1
           kind: Workflow
           metadata:
-            name: "large-workflow-{{workflow.parameters.x}}x{{workflow.parameters.y}}-{{inputs.parameters.i}}"
+            name: "large-workflow-{{workflow.parameters.workflows}}x{{workflow.parameters.nodes}}-{{inputs.parameters.i}}"
             labels:
               stress: "true"
           spec:
             arguments:
               parameters:
-                - name: "y"
-                  value: "{{workflow.parameters.y}}"
+                - name: "nodes"
+                  value: "{{workflow.parameters.nodes}}"
+                - name: "sleep"
+                  value: "{{workflow.parameters.sleep}}"
             workflowTemplateRef:
               name: massive-workflow
