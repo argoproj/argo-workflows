@@ -637,7 +637,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
 |`podPriority`|`integer`|Priority to apply to workflow pods.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
-|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
+|~`podSpecPatch`~|~`string`~|~PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).~ DEPRECATED: Use Template.podSpecPatch instead.|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
@@ -1297,7 +1297,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
 |`podPriority`|`integer`|Priority to apply to workflow pods.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
-|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
+|~`podSpecPatch`~|~`string`~|~PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).~ DEPRECATED: Use Template.podSpecPatch instead.|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
