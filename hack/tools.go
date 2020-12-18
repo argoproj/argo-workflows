@@ -5,6 +5,9 @@
 package tools
 
 import (
+	_ "github.com/gogo/protobuf/gogoproto"
+	_ "github.com/gogo/protobuf/protoc-gen-gogo"
+	_ "github.com/gogo/protobuf/protoc-gen-gogofast"
 	_ "github.com/mattn/goreman"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "k8s.io/code-generator"
