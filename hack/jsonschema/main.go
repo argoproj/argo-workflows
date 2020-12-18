@@ -8,6 +8,7 @@ import (
 	"github.com/go-openapi/jsonreference"
 	"github.com/go-openapi/spec"
 
+	"github.com/argoproj/argo/hack/jsonschema/k8s"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -43,7 +44,7 @@ func main() {
 	}) {
 		definitions[pleasentName(n)] = objectify(s.Schema)
 	}
-	for n, s := range GetOpenAPIDefinitions(func(path string) spec.Ref {
+	for n, s := range k8s.GetOpenAPIDefinitions(func(path string) spec.Ref {
 		return spec.Ref{Ref: jsonreference.MustCreateRef("#/definitions/" + pleasentName(path))}
 	}) {
 		definitions[pleasentName(n)] = objectify(s.Schema)
@@ -58,11 +59,11 @@ func main() {
 				}
 			}
 		}
-		kind := strings.TrimPrefix(n, "io.argoproj.workflows.v1alpha1.")
+		kind := strings.TrimPrefix(n, "io.argoproj.workflow.v1alpha1.")
 		switch kind {
 		case "CronWorkflow", "ClusterWorkflowTemplate", "Workflow", "WorkflowEventBinding", "WorkflowTemplate":
-			v["apiVersion"].(obj)["const"] = "argoproj.io/v1alpha1"
-			v["kind"].(obj)["const"] = kind
+			v["properties"].(obj)["apiVersion"].(obj)["const"] = "argoproj.io/v1alpha1"
+			v["properties"].(obj)["kind"].(obj)["const"] = kind
 		}
 		switch n {
 		case "io.k8s.apimachinery.pkg.util.intstr.IntOrString":
@@ -79,6 +80,7 @@ func main() {
 		}
 		definitions[n] = v
 	}
+	delete(definitions, "io.k8s.apimachinery.pkg.apis.meta.v1.InternalEvent")
 	{
 		schema := obj{
 			"$id":     "http://workflows.argoproj.io/workflows.json", // don't really know what this should be

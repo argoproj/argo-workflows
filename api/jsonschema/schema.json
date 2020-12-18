@@ -272,10 +272,12 @@
       "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
       "properties": {
         "apiVersion": {
+          "const": "argoproj.io/v1alpha1",
           "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
           "type": "string"
         },
         "kind": {
+          "const": "ClusterWorkflowTemplate",
           "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
           "type": "string"
         },
@@ -375,10 +377,12 @@
       "description": "CronWorkflow is the definition of a scheduled workflow resource",
       "properties": {
         "apiVersion": {
+          "const": "argoproj.io/v1alpha1",
           "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
           "type": "string"
         },
         "kind": {
+          "const": "CronWorkflow",
           "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
           "type": "string"
         },
@@ -2357,10 +2361,12 @@
       "description": "Workflow is the definition of a workflow resource",
       "properties": {
         "apiVersion": {
+          "const": "argoproj.io/v1alpha1",
           "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
           "type": "string"
         },
         "kind": {
+          "const": "Workflow",
           "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
           "type": "string"
         },
@@ -2384,10 +2390,12 @@
       "description": "WorkflowEventBinding is the definition of an event resource",
       "properties": {
         "apiVersion": {
+          "const": "argoproj.io/v1alpha1",
           "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
           "type": "string"
         },
         "kind": {
+          "const": "WorkflowEventBinding",
           "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
           "type": "string"
         },
@@ -2803,10 +2811,12 @@
       "description": "WorkflowTemplate is the definition of a workflow template resource",
       "properties": {
         "apiVersion": {
+          "const": "argoproj.io/v1alpha1",
           "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
           "type": "string"
         },
         "kind": {
+          "const": "WorkflowTemplate",
           "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
           "type": "string"
         },
@@ -10085,23 +10095,6 @@
       ],
       "type": "object"
     },
-    "io.k8s.apimachinery.pkg.apis.meta.v1.InternalEvent": {
-      "description": "InternalEvent makes watch.Event versioned",
-      "properties": {
-        "Object": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.runtime.Object",
-          "description": "Object is:\n * If Type is Added or Modified: the new state of the object.\n * If Type is Deleted: the state of the object immediately before deletion.\n * If Type is Bookmark: the object (instance of a type being watched) where\n   only ResourceVersion field is set. On successful restart of watch from a\n   bookmark resourceVersion, client is guaranteed to not get repeat event\n   nor miss any events.\n * If Type is Error: *api.Status is recommended; other types may make sense\n   depending on context."
-        },
-        "Type": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "Type",
-        "Object"
-      ],
-      "type": "object"
-    },
     "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector": {
       "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
       "properties": {
@@ -10836,6 +10829,52 @@
       "required": [
         "type",
         "object"
+      ],
+      "type": "object"
+    },
+    "io.k8s.apimachinery.pkg.runtime.RawExtension": {
+      "description": "RawExtension is used to hold extensions in external versions.\n\nTo use this, make a field which has RawExtension as its type in your external, versioned struct, and Object in your internal struct. You also need to register your various plugin types.\n\n// Internal package: type MyAPIObject struct {\n\truntime.TypeMeta `json:\",inline\"`\n\tMyPlugin runtime.Object `json:\"myPlugin\"`\n} type PluginA struct {\n\tAOption string `json:\"aOption\"`\n}\n\n// External package: type MyAPIObject struct {\n\truntime.TypeMeta `json:\",inline\"`\n\tMyPlugin runtime.RawExtension `json:\"myPlugin\"`\n} type PluginA struct {\n\tAOption string `json:\"aOption\"`\n}\n\n// On the wire, the JSON will look something like this: {\n\t\"kind\":\"MyAPIObject\",\n\t\"apiVersion\":\"v1\",\n\t\"myPlugin\": {\n\t\t\"kind\":\"PluginA\",\n\t\t\"aOption\":\"foo\",\n\t},\n}\n\nSo what happens? Decode first uses json or yaml to unmarshal the serialized data into your external MyAPIObject. That causes the raw JSON to be stored, but not unpacked. The next step is to copy (using pkg/conversion) into the internal struct. The runtime package's DefaultScheme has conversion functions installed which will unpack the JSON stored in RawExtension, turning it into the correct object type, and storing it in the Object. (TODO: In the case where the object is of an unknown type, a runtime.Unknown object will be created and stored.)",
+      "type": "object"
+    },
+    "io.k8s.apimachinery.pkg.runtime.TypeMeta": {
+      "description": "TypeMeta is shared by all top level objects. The proper way to use it is to inline it in your type, like this: type MyAwesomeAPIObject struct {\n     runtime.TypeMeta    `json:\",inline\"`\n     ... // other fields\n} func (obj *MyAwesomeAPIObject) SetGroupVersionKind(gvk *metav1.GroupVersionKind) { metav1.UpdateTypeMeta(obj,gvk) }; GroupVersionKind() *GroupVersionKind\n\nTypeMeta is provided here for convenience. You may use it directly from this package or define your own with the same fields.",
+      "properties": {
+        "apiVersion": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.k8s.apimachinery.pkg.runtime.Unknown": {
+      "description": "Unknown allows api objects with unknown types to be passed-through. This can be used to deal with the API objects from a plug-in. Unknown objects still have functioning TypeMeta features-- kind, version, etc. metadata and field mutatation.",
+      "properties": {
+        "ContentEncoding": {
+          "description": "ContentEncoding is encoding used to encode 'Raw' data. Unspecified means no encoding.",
+          "type": "string"
+        },
+        "ContentType": {
+          "description": "ContentType  is serialization method used to serialize 'Raw'. Unspecified means ContentTypeJSON.",
+          "type": "string"
+        },
+        "Raw": {
+          "description": "Raw will hold the complete serialized object which couldn't be matched with a registered type. Most likely, nothing should be done with this except for passing it through the system.",
+          "format": "byte",
+          "type": "string"
+        },
+        "apiVersion": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Raw",
+        "ContentEncoding",
+        "ContentType"
       ],
       "type": "object"
     },

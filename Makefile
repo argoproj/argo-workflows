@@ -351,12 +351,12 @@ clean:
 
 # swagger
 
-hack/jsonschema/openapi_generated.go: $(GOPATH)/bin/openapi-gen
+hack/jsonschema/k8s/openapi_generated.go: $(GOPATH)/bin/openapi-gen
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs k8s.io/api/core/v1,k8s.io/api/policy/v1beta1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/util/intstr \
-	  --output-package github.com/argoproj/argo/hack/jsonschema \
-	  --report-filename pkg/apis/api-rules/violation_exceptions.list
+	  --input-dirs k8s.io/api/core/v1,k8s.io/api/policy/v1beta1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/util/intstr,k8s.iom/apimachinery/pkg/runtime \
+	  --output-package github.com/argoproj/argo/hack/jsonschema/k8s \
+	  --report-filename /dev/null
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
 	openapi-gen \
@@ -373,7 +373,7 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 		workflow:v1alpha1 \
 		--go-header-file ./hack/custom-boilerplate.go.txt
 
-api/jsonschema/schema.json: hack/jsonschema/main.go hack/jsonschema/openapi_generated.go pkg/apis/workflow/v1alpha1/openapi_generated.go
+api/jsonschema/schema.json: hack/jsonschema/main.go hack/jsonschema/k8s/openapi_generated.go pkg/apis/workflow/v1alpha1/openapi_generated.go
 	go run ./hack/jsonschema
 
 go-diagrams/diagram.dot: ./hack/diagram/main.go
@@ -415,6 +415,3 @@ check-version-warning:
 	@if [[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then echo -n "It looks like you're trying to use a SemVer version, but have not prepended it with a "v" (such as "v$(VERSION)"). The "v" is required for our releases. Do you wish to continue anyway? [y/N]" && read ans && [ $${ans:-N} = y ]; fi
 endif
 
-.PHONY: parse-examples
-parse-examples:
-	go run -tags fields ./hack parseexamples
