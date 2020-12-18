@@ -605,7 +605,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 }
 
 func (woc *wfOperationCtx) deletePodsByPhase(podPhase apiv1.PodPhase) {
-	metrics.PodGCMetric.WithLabelValues("delete-collection").Inc()
 	deletePropagationBackground := metav1.DeletePropagationBackground
 	listOptions := metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("status.phase=%v", podPhase),
