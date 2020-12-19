@@ -98,8 +98,16 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 		}
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), tmpl.GetWorkflowMetadata(), ref.ClusterScope)
 		o.instanceIDService.Label(wf)
-		// make sure we have a predicable name, so re-creation doesn't create two workflows
-		wf.SetName(wf.GetGenerateName() + nameSuffix)
+		err = o.populateWorkflowMetadata(wf, &submit.ObjectMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(wf.Name) == 0 {
+			// make sure we have a predicable name, so re-creation doesn't create two workflows
+			wf.SetName(wf.GetGenerateName() + nameSuffix)
+		}
+
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
@@ -127,6 +135,45 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 		return wf, nil
 	}
 	return nil, nil
+}
+
+func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1.ObjectMeta) error {
+	if len(metadata.Name) > 0 {
+		evalName, err := o.evaluateStringExpression(metadata.Name, "name")
+		if err != nil {
+			return err
+		}
+		wf.SetName(evalName)
+	}
+	for labelKey, labelValue := range metadata.Labels {
+		evalLabel, err := o.evaluateStringExpression(labelValue, fmt.Sprintf("label \"%s\"", labelKey))
+		if err != nil {
+			return err
+		}
+		wf.Labels[labelKey] = evalLabel
+	}
+	for annotationKey, annotationValue := range metadata.Annotations {
+		evalAnnotation, err := o.evaluateStringExpression(annotationValue, fmt.Sprintf("annotation \"%s\"", annotationKey))
+		if err != nil {
+			return err
+		}
+		wf.Annotations[annotationKey] = evalAnnotation
+	}
+	return nil
+}
+
+func (o *Operation) evaluateStringExpression(statement string, errorInfo string) (string, error) {
+	result, err := expr.Eval(statement, o.env)
+	if err != nil {
+		return "", fmt.Errorf("failed to evaluate workflow %s expression: %w", errorInfo, err)
+	}
+
+	switch v := result.(type) {
+	case string:
+		return v, nil
+	default:
+		return "", fmt.Errorf("workflow %s expression must evaluate to a string, not a %T", errorInfo, v)
+	}
 }
 
 func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
