@@ -512,7 +512,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 		return err
 	}
 	req.Name = wf.Name
-	_, kubeClients, err := clusters.GetConfigs( nil, kubeClient, s.thisClusterName, s.namespace)
+	_, kubeClients, err := clusters.GetConfigs(nil, kubeClient, s.thisClusterName, s.namespace)
 	if err != nil {
 		return err
 	}

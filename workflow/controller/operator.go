@@ -1140,7 +1140,7 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, pod *a
 		}
 	}
 
-	node.ClusterName = clusterName
+	node.ClusterName = wfv1.ClusterNameOtherAsEmpty(clusterName, woc.thisCluster())
 	node.Namespace = wfv1.NamespaceOtherAsEmpty(pod.Namespace, woc.wf.Namespace)
 
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]

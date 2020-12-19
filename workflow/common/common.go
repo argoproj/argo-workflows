@@ -67,7 +67,6 @@ const (
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
-
 	// Who created this workflow.
 	LabelKeyCreator      = workflow.WorkflowFullName + "/creator"
 	LabelKeyCreatorEmail = workflow.WorkflowFullName + "/creator-email"
