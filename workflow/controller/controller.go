@@ -114,11 +114,17 @@ const (
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+	configController := config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc)
+	x, err := configController.Get()
+	if err != nil {
+		return nil, err
+	}
+	initConfig := x.(*config.Config)
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
 	}
-	restConfigs, kubeclientsets, err := clusters.GetConfigs(restConfig, kubeclientset, namespace)
+	restConfigs, kubeclientsets, err := clusters.GetConfigs(restConfig, kubeclientset, initConfig.ClusterName, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +141,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
+		configController:           configController,
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
@@ -230,7 +236,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset[wfv1.ThisCluster].CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset[wfc.thisCluster()].CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID},
 		},
 		ReleaseOnCancel: true,
@@ -292,7 +298,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset[wfv1.ThisCluster].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.kubeclientset[wfc.thisCluster()].CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -326,10 +332,14 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	return nil
 }
 
+func (wfc *WorkflowController) thisCluster() wfv1.ClusterName {
+	return wfc.Config.ClusterName
+}
+
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset[wfv1.ThisCluster].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
+			return wfc.kubeclientset[wfc.thisCluster()].CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
 		},
 	})
 	if err != nil {
@@ -378,11 +388,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.ThisCluster], "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset[wfc.thisCluster()], "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.ThisCluster], "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset[wfc.thisCluster()], "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[wfv1.ThisCluster], "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset[wfc.thisCluster()], "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -767,7 +777,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					},
 					metav1.ListOptions{
 						LabelSelector: labels.NewSelector().
-							Add(util.ClusterNameRequirement(clusterName)).
+							Add(wfc.clusterNameRequirement(clusterName)).
 							Add(wfc.instanceIdRequirement()).
 							Add(util.WorkflowNameRequirement(name)).
 							String(),
@@ -866,7 +876,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch(clusterName wfv1.ClusterName)
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 	labelSelector := labels.NewSelector().
-		Add(util.ClusterNameRequirement(clusterName)).
+		Add(wfc.clusterNameRequirement(clusterName)).
 		Add(wfc.instanceIdRequirement()).
 		Add(*incompleteReq).
 		Add(*workflowReq)
@@ -882,6 +892,10 @@ func (wfc *WorkflowController) newWorkflowPodWatch(clusterName wfv1.ClusterName)
 		return c.Watch(options)
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+}
+
+func (wfc *WorkflowController) clusterNameRequirement(clusterName wfv1.ClusterName) v1Label.Requirement {
+	return util.ClusterNameRequirement(clusterName, wfc.thisCluster())
 }
 
 func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {

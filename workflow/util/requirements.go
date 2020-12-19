@@ -8,9 +8,9 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
-func ClusterNameRequirement(clusterName wfv1.ClusterName) labels.Requirement {
-	if clusterName != wfv1.ThisCluster {
-		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{clusterName})
+func ClusterNameRequirement(a, b wfv1.ClusterName) labels.Requirement {
+	if a != b {
+		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{b})
 		return *r
 	} else {
 		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.DoesNotExist, nil)

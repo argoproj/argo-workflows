@@ -97,6 +97,9 @@ type Config struct {
 	//Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 
+	// The name of the cluster, mandatory for multi-cluster set-up.
+	ClusterName wfv1.ClusterName `json:"clusterName,omitempty"`
+
 	// Declares what clusters and namespaces each namespace in the main cluster may access.
 	// If omitted, then workflows may only create pods in their own cluster and namespace.
 	// If supplied, their own cluster and namespace should be added if needed.

@@ -60,12 +60,10 @@ const (
 	// It is similar to instance ID.
 	// * If a pod is unlabelled in my cluster, it is mine.
 	// * If a pod is labelled in my cluster, it is someone else's (I should ignore it).
-	// * If a pod is unlabelled in another cluster, it is theirs.
+	// * If a pod is unlabelled in another cluster, it is theirs (I should ignore it).
 	// * If a pod is labelled in another cluster AND it has my label, it is mine.
 	// Cluster names therefore must be unique amongst the group of clusters.
-	// "default" is used to indicate the default cluster, but that value need not (and should not) ever be used as a
-	// label because historically any pod without this label would have run in the default cluster.
-	LabelKeyClusterName = workflow.WorkflowFullName + "/cluster-name"
+	LabelKeyClusterName = workflow.WorkflowFullName + "/workflow-cluster-name"
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"

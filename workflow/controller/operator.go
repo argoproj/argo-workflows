@@ -835,7 +835,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 
-	performAssessment := func(pod *apiv1.Pod) {
+	performAssessment := func(clusterName wfv1.ClusterName, pod *apiv1.Pod) {
 		if pod == nil {
 			return
 		}
@@ -848,7 +848,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
+			if newState := woc.assessNodeStatus(clusterName, pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
@@ -862,7 +862,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
-			podKey := wfv1.NewPodKey(pod.Labels[common.LabelKeyClusterName], pod.Namespace, pod.Name)
+			podKey := wfv1.NewPodKey(clusterName, pod.Namespace, pod.Name)
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
@@ -886,18 +886,20 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
 
-	for _, pod := range podList {
-		parallelPodNum <- pod.Name
-		wg.Add(1)
-		go func(pod *apiv1.Pod) {
-			defer wg.Done()
-			performAssessment(pod)
-			err = woc.applyExecutionControl(pod, wfNodesLock)
-			if err != nil {
-				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
-			}
-			<-parallelPodNum
-		}(pod)
+	for clusterName, pods := range podList {
+		for _, pod := range pods {
+			parallelPodNum <- pod.Name
+			wg.Add(1)
+			go func(clusterName wfv1.ClusterName, pod *apiv1.Pod) {
+				defer wg.Done()
+				performAssessment(clusterName, pod)
+				err = woc.applyExecutionControl(clusterName, pod, wfNodesLock)
+				if err != nil {
+					woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
+				}
+				<-parallelPodNum
+			}(clusterName, pod)
+		}
 	}
 
 	wg.Wait()
@@ -1028,9 +1030,10 @@ func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
 }
 
 // getAllWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
-	pods := make([]*apiv1.Pod, 0)
-	for _, i := range woc.controller.podInformer {
+func (woc *wfOperationCtx) getAllWorkflowPods() (map[wfv1.ClusterName][]*apiv1.Pod, error) {
+	pods := make(map[wfv1.ClusterName][]*apiv1.Pod)
+	for clusterName, i := range woc.controller.podInformer {
+		pods[clusterName] = make([]*apiv1.Pod, 0)
 		objs, err := i.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 		if err != nil {
 			return nil, err
@@ -1040,7 +1043,7 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 			if !ok {
 				return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
 			}
-			pods = append(pods, pod)
+			pods[clusterName] = append(pods[clusterName], pod)
 		}
 	}
 	return pods, nil
@@ -1056,7 +1059,7 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	var newPhase wfv1.NodePhase
 	var newDaemonStatus *bool
 	var message string
@@ -1137,7 +1140,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 
-	node.ClusterName = pod.Labels[common.LabelKeyClusterName]
+	node.ClusterName = clusterName
 	node.Namespace = wfv1.NamespaceOtherAsEmpty(pod.Namespace, woc.wf.Namespace)
 
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
@@ -1353,6 +1356,10 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	return wfv1.NodeSucceeded, ""
 }
 
+func (woc *wfOperationCtx) thisCluster() wfv1.ClusterName {
+	return woc.controller.thisCluster()
+}
+
 func (woc *wfOperationCtx) createPVCs() error {
 	if !(woc.wf.Status.Phase == wfv1.NodePending || woc.wf.Status.Phase == wfv1.NodeRunning) {
 		// Only attempt to create PVCs if workflow is in Pending or Running state
@@ -1364,7 +1371,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset[wfv1.ThisCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset[woc.thisCluster()].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -1441,7 +1448,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset[wfv1.ThisCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset[woc.thisCluster()].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -3016,7 +3023,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		return nil
 	}
 
-	pdb, err := woc.controller.kubeclientset[wfv1.ThisCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
+	pdb, err := woc.controller.kubeclientset[woc.thisCluster()].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
@@ -3041,7 +3048,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.kubeclientset[wfv1.ThisCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+	_, err = woc.controller.kubeclientset[woc.thisCluster()].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
 		return err
 	}
@@ -3055,7 +3062,7 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		return nil
 	}
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.kubeclientset[wfv1.ThisCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		err := woc.controller.kubeclientset[woc.thisCluster()].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !errorsutil.IsTransientErr(err) {

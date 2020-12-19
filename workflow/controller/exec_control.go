@@ -16,11 +16,10 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
+func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
 	if pod == nil {
 		return nil
 	}
-	clusterName := wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName])
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
@@ -114,7 +113,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 			continue
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
-		clusterName := wfv1.ClusterNameOrThis(tmpl.ClusterName)
+		clusterName := tmpl.ClusterName
 		namespace := wfv1.NamespaceOrOther(tmpl.Namespace, woc.wf.Namespace)
 		err := woc.updateExecutionControl(clusterName, namespace, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {

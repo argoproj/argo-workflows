@@ -8,11 +8,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func TestNamespace_IsEmpty(t *testing.T) {
-	assert.True(t, Namespace{}.IsEmpty())
-	assert.False(t, Namespace{Name: "my-ns"}.IsEmpty())
-}
-
 func TestRules_Allow(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
@@ -23,9 +18,9 @@ func TestRules_Allow(t *testing.T) {
 	}{
 		{"no rules", Rules{}, "", "", false},
 		{"one empty rules", Rules{{}}, "", "", false},
-		{"any    cluster, no   namespace", Rules{{ClusterNames: []wfv1.ClusterName{""}, Namespaces: []string{}}}, "", "", false},
-		{"no    cluster, any   namespace", Rules{{ClusterNames: []wfv1.ClusterName{}, Namespaces: []string{""}}}, "", "", false},
-		{"any   cluster, any   namespace", Rules{{ClusterNames: []wfv1.ClusterName{""}, Namespaces: []string{""}}}, "", "", true},
+		{"any    cluster, no   namespace", Rules{{ClusterNames: []wfv1.ClusterName{"*"}, Namespaces: []string{}}}, "", "", false},
+		{"no    cluster, any   namespace", Rules{{ClusterNames: []wfv1.ClusterName{}, Namespaces: []string{"*"}}}, "", "", false},
+		{"any   cluster, any   namespace", Rules{{ClusterNames: []wfv1.ClusterName{"*"}, Namespaces: []string{"*"}}}, "", "", true},
 		{"other cluster, any   namespace", Rules{{ClusterNames: []wfv1.ClusterName{"o"}, Namespaces: []string{""}}}, "", "", false},
 		{"any   cluster, other namespace", Rules{{ClusterNames: []wfv1.ClusterName{""}, Namespaces: []string{"o"}}}, "", "", false},
 		{"other cluster, other namespace", Rules{{ClusterNames: []wfv1.ClusterName{"o"}, Namespaces: []string{"o"}}}, "", "", false},

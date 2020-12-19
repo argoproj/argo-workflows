@@ -3,6 +3,7 @@ package logs
 import (
 	"bufio"
 	"context"
+	"io"
 	"sort"
 	"strings"
 	"sync"
@@ -41,7 +42,7 @@ type sender interface {
 	Send(entry *workflowpkg.LogEntry) error
 }
 
-func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient map[wfv1.ClusterName]kubernetes.Interface, hydrator hydrator.Interface, req request, sender sender) error {
+func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClient versioned.Interface, kubeClient map[wfv1.ClusterName]kubernetes.Interface, hydrator hydrator.Interface, req request, sender sender) error {
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
 	wf, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -140,7 +141,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 			err := func() error {
 				listOptions := metav1.ListOptions{
 					LabelSelector: labels.NewSelector().
-						Add(util.ClusterNameRequirement(clusterName)).
+						Add(util.ClusterNameRequirement(clusterName, thisClusterName)).
 						Add(util.InstanceIDRequirement(instanceID)).
 						Add(util.WorkflowNameRequirement(req.GetName())).
 						String(),
@@ -158,7 +159,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				})
 				for _, pod := range list.Items {
 					if pod.Status.Phase != corev1.PodPending {
-						logPod(wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
+						logPod(clusterName, pod.Namespace, pod.Name)
 					}
 				}
 				// TODO - retry watcher? resource version too old?
@@ -185,7 +186,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							return apierr.FromObject(event.Object)
 						}
 						if pod.Status.Phase != corev1.PodPending {
-							logPod(wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName]), pod.Namespace, pod.Name)
+							logPod(thisClusterName, pod.Namespace, pod.Name)
 						}
 					}
 				}
@@ -203,7 +204,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		}
 		for clusterName, namespaces := range wf.Status.Nodes.GetClusterNamespaces() {
 			for namespace := range namespaces {
-				logClusterNamespace(wfv1.ClusterNameOrThis(clusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOrOther(namespace, wf.Namespace))
+				logClusterNamespace(wfv1.ClusterNameOrOther(clusterName, thisClusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOrOther(namespace, wf.Namespace))
 			}
 		}
 		return nil
@@ -224,8 +225,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 			if !req.GetLogOptions().Follow {
 				return nil
 			}
-			wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()}
-			wfWatch, err := wfInterface.Watch(wfListOptions)
+
+			wfWatch, err := wfInterface.Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()})
 			if err != nil {
 				return err
 			}
@@ -241,12 +242,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					return nil
 				case event, open := <-wfWatch.ResultChan():
 					if !open {
-						wfWatch.Stop()
-						wfWatch, err = wfInterface.Watch(wfListOptions)
-						if err != nil {
-							return err
-						}
-						continue
+						return io.EOF
 					}
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {

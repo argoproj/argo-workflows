@@ -13,12 +13,12 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
+  clusterName: main
   namespaces: |
     - name: argo
       rules:
         - clusterNames:
-            # "." is a special name which mean's the controller's cluster
-            - .
+            - main
           namespaces:
             - argo
             # tests run in managed-namespace mode, so this will not be allowed

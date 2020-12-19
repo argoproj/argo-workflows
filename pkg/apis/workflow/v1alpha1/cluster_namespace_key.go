@@ -4,5 +4,5 @@ package v1alpha1
 type ClusterNamespaceKey = string
 
 func NewClusterNamespaceKey(clusterName ClusterName, namespace string) ClusterNamespaceKey {
-	return ClusterNameOrThis(clusterName) + "/" + namespace
+	return clusterName + "/" + namespace
 }

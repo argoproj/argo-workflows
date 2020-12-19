@@ -29,7 +29,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
@@ -166,7 +166,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactRepositories := artifactrepositories.New(as.kubeClientset, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
-	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
+	grpcServer := as.newGRPCServer(config.ClusterName, instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -210,7 +210,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link) *grpc.Server {
+func (as *argoServer) newGRPCServer(thisClusterName wfv1.ClusterName, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*wfv1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
@@ -237,7 +237,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
-	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(as.namespace, instanceIDService, offloadNodeStatusRepo))
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(thisClusterName, as.namespace, instanceIDService, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))

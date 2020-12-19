@@ -13,12 +13,12 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, namespace string) (map[string]*rest.Config, map[wfv1.ClusterName]kubernetes.Interface, error) {
+func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, thisClusterName wfv1.ClusterName, namespace string) (map[string]*rest.Config, map[wfv1.ClusterName]kubernetes.Interface, error) {
 	restConfigs := map[string]*rest.Config{}
 	if restConfig != nil {
-		restConfigs[wfv1.ThisCluster] = restConfig
+		restConfigs[thisClusterName] = restConfig
 	}
-	kubernetesInterfaces := map[wfv1.ClusterName]kubernetes.Interface{wfv1.ThisCluster: kubeclientset}
+	kubernetesInterfaces := map[wfv1.ClusterName]kubernetes.Interface{thisClusterName: kubeclientset}
 	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get("clusters", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 	} else if err != nil {

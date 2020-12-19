@@ -132,7 +132,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
-	clusterName := wfv1.ClusterNameOrThis(tmpl.ClusterName)
+	clusterName := wfv1.ClusterNameOrOther(tmpl.ClusterName, woc.controller.thisCluster())
 	namespace := wfv1.NamespaceOrOther(tmpl.Namespace, woc.wf.Namespace)
 
 	err := woc.enforceClusterNamespaceAccessControl(clusterName, namespace)
@@ -210,7 +210,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		},
 	}
 
-	if clusterName == wfv1.ThisCluster {
+	if clusterName == woc.thisCluster() {
 		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		}
@@ -245,9 +245,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	if clusterName != wfv1.ThisCluster {
-		// Only annotate if not default cluster. This is important for historical reasons.
-		pod.Labels[common.LabelKeyClusterName] = clusterName
+	if clusterName != woc.thisCluster() {
+		pod.Labels[common.LabelKeyClusterName] = woc.thisCluster()
 	}
 
 	if namespace != woc.wf.Namespace {
@@ -255,7 +254,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
 	}
 
-	err = woc.setupServiceAccount(pod, tmpl)
+	err = woc.setupServiceAccount(clusterName, pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +412,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, wfv1.ClusterNameOrThis(created.Labels[common.LabelKeyClusterName]), created.Namespace, created.Name)
+	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, clusterName, created.Namespace, created.Name)
 	woc.activePods++
 	return created, nil
 }
@@ -422,7 +421,7 @@ func (woc *wfOperationCtx) enforceClusterNamespaceAccessControl(clusterName wfv1
 	// check to see if roles allow this
 	role := woc.controller.Config.Namespaces.Find(woc.wf.Namespace)
 	log.WithFields(log.Fields{"role": role, "clusterName": clusterName, "namespace": namespace}).Info("Checking namespace roles allow pod creation")
-	if !role.IsEmpty() && !role.Rules.Allow(clusterName, namespace) {
+	if woc.thisCluster() != "" && !role.Rules.Allow(clusterName, namespace) {
 		return fmt.Errorf(`access denied for namespace "%s" to cluster-namespace "%s/%s"`, woc.wf.Namespace, clusterName, namespace)
 	}
 
@@ -1072,7 +1071,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 }
 
 // setupServiceAccount sets up service account and token.
-func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) setupServiceAccount(clusterName wfv1.ClusterName, pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
 	} else if woc.execWf.Spec.ServiceAccountName != "" {
@@ -1096,7 +1095,6 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		clusterName := wfv1.ClusterNameOrThis(pod.Labels[common.LabelKeyClusterName])
 		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset[clusterName], pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err

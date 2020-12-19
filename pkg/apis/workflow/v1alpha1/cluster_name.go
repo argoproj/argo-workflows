@@ -4,15 +4,12 @@ type ClusterName = string
 
 const (
 	// Represent all clusters, much like corev1.NamespaceAll.
-	ClusterAll  ClusterName = ""
-	ThisCluster ClusterName = "."
+	ClusterAll ClusterName = ""
 )
 
-// Return the clusterName, or ThisCluster if the clusterName was empty
-// This will never return an empty name.
-func ClusterNameOrThis(n ClusterName) ClusterName {
-	if n != "" {
-		return n
+func ClusterNameOrOther(a ClusterName, b ClusterName) ClusterName {
+	if a != "" {
+		return a
 	}
-	return ThisCluster
+	return b
 }
