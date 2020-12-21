@@ -63,10 +63,16 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
 			assert.Len(t, status.Nodes, 1)
-			if assert.Contains(t, status.Nodes, "sleepy") {
-				assert.Equal(t, "pod deleted during operation", status.Nodes["sleepy"].Message)
+			// the outcome could be either of these, depending on time
+			// this is due to the grace period recently deleted pods get
+			switch status.Phase {
+			case wfv1.NodeError:
+				assert.Equal(t, "pod deleted during operation", status.Nodes[metadata.Name].Message)
+			case wfv1.NodeFailed:
+				assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
+			default:
+				assert.Fail(t, "expected error of failed")
 			}
 		})
 }
