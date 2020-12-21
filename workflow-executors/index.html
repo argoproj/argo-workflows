@@ -2093,7 +2093,7 @@
 <li>Popular</li>
 </ul>
 </li>
-<li>Secure:<ul>
+<li>Most secure:<ul>
 <li>No <code>privileged</code> access</li>
 <li>Cannot escape the privileges of the pod's service account</li>
 <li>Can <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a></li>
@@ -2119,10 +2119,11 @@
 <li>Popular</li>
 </ul>
 </li>
-<li>Secure:<ul>
+<li>More secure:<ul>
 <li>No <code>privileged</code> access</li>
 <li>cannot escape the privileges of the pod's service account</li>
 <li>Can <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a>, if you use volumes (e.g. <a href="../empty-dir/">emptyDir</a>) for your output artifacts</li>
+<li>Processes are visible to other containers in the pod. This includes all information visible in /proc, such as passwords that were passed as arguments or environment variables. These are protected only by regular Unix permissions.</li>
 </ul>
 </li>
 <li>Scalable:<ul>
@@ -2142,6 +2143,7 @@
 <li>Process will no longer run with PID 1</li>
 <li><a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod">Doesn't work for Windows containers</a>.</li>
 </ul>
+<p><a href="https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/">https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/</a></p>
                 
                   
                 
