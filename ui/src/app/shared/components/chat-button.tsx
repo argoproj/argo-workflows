@@ -10,7 +10,7 @@ export const ChatButton = () => {
         services.info
             .getInfo()
             .then(info => info.links)
-            .then(links => links.filter(x => x.scope === 'chat'))
+            .then(links => (links || []).filter(x => x.scope === 'chat'))
             .then(links => {
                 if (links.length > 0) {
                     setLink(links[0]);
