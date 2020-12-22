@@ -16,7 +16,7 @@ spec:
   artifactRepositoryRef:
     key: empty
   ttlStrategy:
-    secondsAfterCompletion: 60
+    secondsAfterCompletion: 600
   podGC:
     strategy: OnPodCompletion
   templates:
@@ -48,7 +48,7 @@ spec:
   artifactRepositoryRef:
     key: empty
   ttlStrategy:
-    secondsAfterCompletion: 60
+    secondsAfterCompletion: 600
   podGC:
     strategy: OnPodCompletion
   entrypoint: main
