@@ -14,9 +14,9 @@ spec:
       - name: "sleep"
         value: "1s"
   ttlStrategy:
-    secondsAfterCompletion: 120
+    secondsAfterSuccess: 120
   podGC:
-    strategy: OnPodCompletion
+    strategy: OnPodSuccess
   templates:
     - name: main
       dag:
@@ -28,7 +28,6 @@ spec:
     - name: sleep
       container:
         image: argoproj/argosay:v2
-        imagePullPolicy: IfNotPresent
         resources:
           requests:
             memory: 2Mi
@@ -36,57 +35,3 @@ spec:
         args:
           - sleep
           - "{{workflow.parameters.sleep}}"
----
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: many-massive-workflows
-  labels:
-    stress: "true"
-spec:
-  ttlStrategy:
-    secondsAfterCompletion: 600
-  podGC:
-    strategy: OnPodCompletion
-  entrypoint: main
-  arguments:
-    parameters:
-      - name: "workflows"
-        value: "1"
-      - name: "nodes"
-        value: "1"
-      - name: "sleep"
-        value: "1s"
-  workflowMetadata:
-    labels:
-      stress: "true"
-  podDisruptionBudget:
-    minAvailable: 100%
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: create-workflow
-            template: create-workflow
-            arguments:
-              parameters:
-                - name: i
-                  value: "{{item}}"
-            withSequence:
-              count: "{{workflow.parameters.workflows}}"
-    - name: create-workflow
-      inputs:
-        parameters:
-          - name: i
-      container:
-        image: argoproj/argocli:latest
-        imagePullPolicy: IfNotPresent
-        command:
-          - argo
-        args:
-          - -nargo
-          - submit
-          - --from=workflowtemplate/massive-workflow
-          - --name=large-workflow-{{workflow.parameters.workflows}}x{{workflow.parameters.nodes}}-{{inputs.parameters.i}}
-          - -p=nodes={{workflow.parameters.nodes}}
-          - -p=sleep={{workflow.parameters.sleep}}

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
@@ -27,10 +25,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 10000; i++ {
 		_, err := workflows.Create(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("stress-%d", i),
+				GenerateName: "stress-",
 				Labels: map[string]string{
 					"stress": "true",
 				},
