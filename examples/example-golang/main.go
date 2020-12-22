@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os/user"
@@ -55,13 +56,14 @@ func main() {
 	wfClient := wfclientset.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
 
 	// submit the hello world workflow
-	createdWf, err := wfClient.Create(&helloWorldWorkflow)
+	ctx := context.Background()
+	createdWf, err := wfClient.Create(ctx, &helloWorldWorkflow)
 	checkErr(err)
 	fmt.Printf("Workflow %s submitted\n", createdWf.Name)
 
 	// wait for the workflow to complete
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", createdWf.Name))
-	watchIf, err := wfClient.Watch(metav1.ListOptions{FieldSelector: fieldSelector.String(), TimeoutSeconds: pointer.Int64Ptr(180)})
+	watchIf, err := wfClient.Watch(ctx, metav1.ListOptions{FieldSelector: fieldSelector.String(), TimeoutSeconds: pointer.Int64Ptr(180)})
 	errors.CheckError(err)
 	defer watchIf.Stop()
 	for next := range watchIf.ResultChan() {

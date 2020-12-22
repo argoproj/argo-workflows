@@ -1,6 +1,8 @@
 package common
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -8,8 +10,8 @@ import (
 )
 
 // GetServiceAccountTokenName returns the name of the first referenced ServiceAccountToken secret of the service account.
-func GetServiceAccountTokenName(clientset kubernetes.Interface, namespace, name string) (string, error) {
-	serviceAccount, err := clientset.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
+func GetServiceAccountTokenName(ctx context.Context, clientset kubernetes.Interface, namespace, name string) (string, error) {
+	serviceAccount, err := clientset.CoreV1().ServiceAccounts(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -18,8 +19,8 @@ import (
 )
 
 type Controller interface {
-	Run(stopCh <-chan struct{}, onChange func(config interface{}) error)
-	Get() (interface{}, error)
+	Run(ctx context.Context, stopCh <-chan struct{}, onChange func(config interface{}) error)
+	Get(context.Context) (interface{}, error)
 }
 
 type controller struct {
@@ -73,7 +74,7 @@ func (cc *controller) parseConfigMap(cm *apiv1.ConfigMap) (interface{}, error) {
 	return config, err
 }
 
-func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config interface{}) error) {
+func (cc *controller) Run(ctx context.Context, stopCh <-chan struct{}, onChange func(config interface{}) error) {
 	restClient := cc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", cc.configMap))
@@ -83,7 +84,7 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config interface
 			Namespace(cc.namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Do().Get()
+		return req.Do(ctx).Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
@@ -92,7 +93,7 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config interface
 			Namespace(cc.namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Watch()
+		return req.Watch(ctx)
 	}
 	source := &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 	_, controller := cache.NewInformer(
@@ -119,9 +120,9 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config interface
 	log.Info("Watching config map updates")
 }
 
-func (cc *controller) Get() (interface{}, error) {
+func (cc *controller) Get(ctx context.Context) (interface{}, error) {
 	cmClient := cc.kubeclientset.CoreV1().ConfigMaps(cc.namespace)
-	cm, err := cmClient.Get(cc.configMap, metav1.GetOptions{})
+	cm, err := cmClient.Get(ctx, cc.configMap, metav1.GetOptions{})
 	if err != nil && !apierr.IsNotFound(err) {
 		return cc.emptyConfigFunc(), err
 	}

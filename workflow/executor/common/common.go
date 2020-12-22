@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -34,7 +35,7 @@ func GetContainerID(container *v1.ContainerStatus) string {
 type KubernetesClientInterface interface {
 	GetContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error)
 	KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error
-	CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error)
+	CreateArchive(ctx context.Context, containerID, sourcePath string) (*bytes.Buffer, error)
 }
 
 // WaitForTermination of the given containerID, set the timeout to 0 to discard it

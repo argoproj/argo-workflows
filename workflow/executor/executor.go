@@ -648,12 +648,12 @@ func (we *WorkflowExecutor) InitDriver(art *wfv1.Artifact) (artifact.ArtifactDri
 }
 
 // getPod is a wrapper around the pod interface to get the current pod from kube API server
-func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
+func (we *WorkflowExecutor) getPod(ctx context.Context) (*apiv1.Pod, error) {
 	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	var pod *apiv1.Pod
 	var err error
 	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
-		pod, err = podsIf.Get(we.PodName, metav1.GetOptions{})
+		pod, err = podsIf.Get(ctx, we.PodName, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get pod '%s': %v", we.PodName, err)
 			return false, nil
@@ -667,7 +667,7 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 }
 
 // GetConfigMapKey retrieves a configmap value and memoizes the result
-func (we *WorkflowExecutor) GetConfigMapKey(name, key string) (string, error) {
+func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
 	namespace := we.Namespace
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
 	if val, ok := we.memoizedConfigMaps[cachedKey]; ok {
@@ -677,7 +677,7 @@ func (we *WorkflowExecutor) GetConfigMapKey(name, key string) (string, error) {
 	var configmap *apiv1.ConfigMap
 	var err error
 	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		configmap, err = configmapsIf.Get(name, metav1.GetOptions{})
+		configmap, err = configmapsIf.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get configmap '%s': %v", name, err)
 			return false, nil
@@ -700,7 +700,7 @@ func (we *WorkflowExecutor) GetConfigMapKey(name, key string) (string, error) {
 }
 
 // GetSecrets retrieves a secret value and memoizes the result
-func (we *WorkflowExecutor) GetSecrets(namespace, name, key string) ([]byte, error) {
+func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key string) ([]byte, error) {
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
 	if val, ok := we.memoizedSecrets[cachedKey]; ok {
 		return val, nil
@@ -709,7 +709,7 @@ func (we *WorkflowExecutor) GetSecrets(namespace, name, key string) ([]byte, err
 	var secret *apiv1.Secret
 	var err error
 	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		secret, err = secretsIf.Get(name, metav1.GetOptions{})
+		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get secret '%s': %v", name, err)
 			return false, nil
@@ -851,8 +851,8 @@ func (we *WorkflowExecutor) AddError(err error) {
 }
 
 // AddAnnotation adds an annotation to the workflow pod
-func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
-	return common.AddPodAnnotation(we.ClientSet, we.PodName, we.Namespace, key, value, ExecutorRetry)
+func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
+	return common.AddPodAnnotation(ctx, we.ClientSet, we.PodName, we.Namespace, key, value, ExecutorRetry)
 }
 
 // isTarball returns whether or not the file is a tarball
@@ -1063,7 +1063,7 @@ func (we *WorkflowExecutor) Wait() error {
 }
 
 // waitMainContainerStart waits for the main container to start and returns its container ID.
-func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
+func (we *WorkflowExecutor) waitMainContainerStart(ctx context.Context) (string, error) {
 	for {
 		podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 		fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", we.PodName))
@@ -1075,7 +1075,7 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 		var watchIf watch.Interface
 
 		err = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
-			watchIf, err = podsIf.Watch(opts)
+			watchIf, err = podsIf.Watch(ctx, opts)
 			if err != nil {
 				log.Debugf("Failed to establish watch, retrying: %v", err)
 				return false, nil
