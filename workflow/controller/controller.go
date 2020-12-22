@@ -139,11 +139,10 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
-	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(&fixedItemIntervalRateLimiter{}, "workflow_queue")
+	wfc.wfQueue = metrics.NewWorkQueue(&fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
-	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
-	wfc.podCleanupQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
-
+	wfc.podQueue = metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
+	wfc.podCleanupQueue = metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 	return &wfc, nil
 }
 
@@ -983,7 +982,7 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 
 func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
-		objs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.WorkflowPhaseIndex, string(phase))
+		objs, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
 		if err != nil {
 			log.WithError(err).Errorf("failed to list workflows by '%s'", phase)
 			continue

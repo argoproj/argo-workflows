@@ -14,7 +14,8 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-server
-          image: argoproj/argocli:latest
+          image: argoproj/argocli:ui-v3
+          imagePullPolicy: Always
           securityContext:
             capabilities:
               drop:

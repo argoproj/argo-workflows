@@ -16,6 +16,7 @@ spec:
       containers:
         - name: workflow-controller
           image: argoproj/workflow-controller:test
+          imagePullPolicy: Always
           securityContext:
             capabilities:
               drop:
@@ -31,7 +32,7 @@ spec:
             - --qps=2048
             - --pod-cleanup-workers=16
             - --workflow-workers=256
-            - --workflow-ttl-workers=32
+            - --workflow-ttl-workers=64
           env:
             - name: DEFAULT_REQUEUE_TIME
               value: 20s

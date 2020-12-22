@@ -25,7 +25,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 1000; i++ {
 		_, err := workflows.Create(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "stress-",

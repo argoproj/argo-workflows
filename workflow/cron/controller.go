@@ -54,7 +54,7 @@ const (
 	cronWorkflowWorkers      = 8
 )
 
-func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
+func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metricsService *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -63,9 +63,9 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		wfQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
-		cronWfQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
-		metrics:              metrics,
+		wfQueue:              metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
+		cronWfQueue:          metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		metrics:              metricsService,
 		eventRecorderManager: eventRecorderManager,
 	}
 }

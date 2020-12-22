@@ -5,12 +5,12 @@ import (
 )
 
 var (
-	WorkersBusyMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	WorkersBusyMetric = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: argoNamespace,
 			Name:      "worker_busy",
 			Help:      "Number of workers currently busy",
 		},
 		[]string{"queue_name"},
 	)
-)]
+)

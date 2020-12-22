@@ -18,6 +18,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	commonutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -33,7 +34,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	controller := &Controller{
 		wfclientset: wfClientset,
 		wfInformer:  wfInformer,
-		workqueue:   workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
+		workqueue:   metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
 		clock:       clock.RealClock{},
 	}
 
