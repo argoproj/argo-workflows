@@ -227,8 +227,10 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 
 	println("Waiting", timeout.String(), "for workflow", fieldSelector, message)
+
+	ctx := context.Background()
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
-	watch, err := w.client.Watch(opts)
+	watch, err := w.client.Watch(ctx, opts)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -282,7 +284,8 @@ func (w *When) Wait(timeout time.Duration) *When {
 func (w *When) DeleteWorkflow() *When {
 	w.t.Helper()
 	println("Deleting", w.wf.Name)
-	err := w.client.Delete(w.wf.Name, nil)
+	ctx := context.Background()
+	err := w.client.Delete(ctx, w.wf.Name, nil)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -315,10 +318,12 @@ func (w *When) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (w *When) CreateConfigMap(name string, data map[string]string) *When {
 	w.t.Helper()
-	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(&corev1.ConfigMap{
+
+	ctx := context.Background()
+	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(ctx, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
 		Data:       data,
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -327,7 +332,8 @@ func (w *When) CreateConfigMap(name string, data map[string]string) *When {
 
 func (w *When) DeleteConfigMap(name string) *When {
 	w.t.Helper()
-	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(name, nil)
+	ctx := context.Background()
+	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -336,7 +342,8 @@ func (w *When) DeleteConfigMap(name string) *When {
 
 func (w *When) PodsQuota(podLimit int) *When {
 	w.t.Helper()
-	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(metav1.ListOptions{})
+	ctx := context.Background()
+	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -357,10 +364,11 @@ func (w *When) StorageQuota(storageLimit string) *When {
 
 func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 	w.t.Helper()
-	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(&corev1.ResourceQuota{
+	ctx := context.Background()
+	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(ctx, &corev1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{"argo-e2e": "true"}},
 		Spec:       corev1.ResourceQuotaSpec{Hard: rl},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -384,7 +392,8 @@ func (w *When) DeleteMemoryQuota() *When {
 
 func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
-	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(name, &metav1.DeleteOptions{PropagationPolicy: &foreground})
+	ctx := context.Background()
+	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: &foreground})
 	if err != nil {
 		w.t.Fatal(err)
 	}
