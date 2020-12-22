@@ -38,7 +38,7 @@ export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {respo
         <Notice {...props.style}>
             <span>
                 <PhaseIcon value='Error' /> {error.message || 'Unknown error. Open your browser error console for more information.'}
-                {props.error.response && error.response.body && error.response.body.message && ': ' + error.response.body.message}
+                {error.response && error.response.body && error.response.body.message && ': ' + error.response.body.message}
             </span>
             {reload && (
                 <span>

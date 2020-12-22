@@ -110,7 +110,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.state = {
             pagination: {
                 offset: this.queryParam('offset'),
-                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit
+                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 500
             },
             namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
