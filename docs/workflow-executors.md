@@ -44,7 +44,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Reliability:
     * Well-tested
     * Popular
-* Secure:
+* Most secure:
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
     * Can [`runAsNonRoot`](workflow-pod-security-context.md)
@@ -60,10 +60,11 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Reliability:
     * Well-tested
     * Popular
-* Secure:
+* More secure:
     * No `privileged` access
     * cannot escape the privileges of the pod's service account
     * Can [`runAsNonRoot`](workflow-pod-security-context.md), if you use volumes (e.g. [emptyDir](empty-dir.md)) for your output artifacts
+    * Processes are visible to other containers in the pod. This includes all information visible in /proc, such as passwords that were passed as arguments or environment variables. These are protected only by regular Unix permissions.
 * Scalable:
     * Most operations use local `procfs`.
     * Log retrieval uses the remote Kubernetes API
@@ -75,3 +76,4 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Process will no longer run with PID 1
 * [Doesn't work for Windows containers](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod).
 
+[https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)
