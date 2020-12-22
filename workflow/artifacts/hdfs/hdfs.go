@@ -1,6 +1,7 @@
 package hdfs
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -72,13 +73,13 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 }
 
 // CreateDriver constructs ArtifactDriver
-func CreateDriver(ci resource.Interface, art *wfv1.HDFSArtifact) (*ArtifactDriver, error) {
+func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArtifact) (*ArtifactDriver, error) {
 	var krbConfig string
 	var krbOptions *KrbOptions
 	var err error
 
 	if art.KrbConfigConfigMap != nil && art.KrbConfigConfigMap.Name != "" {
-		krbConfig, err = ci.GetConfigMapKey(art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
+		krbConfig, err = ci.GetConfigMapKey(ctx, art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
 		if err != nil {
 			return nil, err
 		}

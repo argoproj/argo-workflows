@@ -2,6 +2,7 @@ package kubelet
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -166,7 +167,7 @@ func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) 
 	return resp, nil
 }
 
-func (k *kubeletClient) GetContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+func (k *kubeletClient) GetContainerStatus(ctx context.Context, containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
 	podList, err := k.getPodList()
 	if err != nil {
 		return nil, nil, errors.InternalWrapError(err)
@@ -243,7 +244,7 @@ func (k *kubeletClient) readFileContents(u *url.URL) (*bytes.Buffer, error) {
 }
 
 // createArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
-func (k *kubeletClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
+func (k *kubeletClient) CreateArchive(ctx context.Context, containerID, sourcePath string) (*bytes.Buffer, error) {
 	return k.getCommandOutput(containerID, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
 }
 
@@ -298,6 +299,6 @@ func (k *kubeletClient) KillGracefully(containerID string) error {
 	return execcommon.KillGracefully(k, containerID)
 }
 
-func (k *kubeletClient) CopyArchive(containerID, sourcePath, destPath string) error {
+func (k *kubeletClient) CopyArchive(ctx context.Context, containerID, sourcePath, destPath string) error {
 	return execcommon.CopyArchive(k, containerID, sourcePath, destPath)
 }

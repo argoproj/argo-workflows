@@ -119,9 +119,9 @@ func KillGracefully(c KubernetesClientInterface, containerID string) error {
 }
 
 // CopyArchive downloads files and directories as a tarball and saves it to a specified path.
-func CopyArchive(c KubernetesClientInterface, containerID, sourcePath, destPath string) error {
+func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerID, sourcePath, destPath string) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	b, err := c.CreateArchive(containerID, sourcePath)
+	b, err := c.CreateArchive(ctx, containerID, sourcePath)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -166,7 +167,7 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 }
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
 
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
@@ -182,18 +183,18 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.DryRun {
 		return wf, nil
 	} else if opts.ServerDryRun {
-		wf, err := CreateServerDryRun(wf, wfClientset)
+		wf, err := CreateServerDryRun(ctx, wf, wfClientset)
 		if err != nil {
 			return nil, err
 		}
 		return wf, err
 	} else {
-		return wfIf.Create(wf)
+		return wfIf.Create(ctx, wf)
 	}
 }
 
 // CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
-func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+func CreateServerDryRun(ctx context.Context, wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
 	// Keep the workflow metadata because it will be overwritten by the Post request
 	workflowTypeMeta := wf.TypeMeta
 	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
@@ -201,7 +202,7 @@ func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*
 		Resource("workflows").
 		Body(wf).
 		Param("dryRun", "All").
-		Do().
+		Do(ctx).
 		Into(wf)
 	wf.TypeMeta = workflowTypeMeta
 	return wf, err
@@ -321,9 +322,9 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
-func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
+func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workflowName string) error {
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
+		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -332,7 +333,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
 			wf.Spec.Suspend = pointer.BoolPtr(true)
-			_, err = wfIf.Update(wf)
+			_, err = wfIf.Update(ctx, wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
 					return false, nil
@@ -347,12 +348,12 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
+func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
+		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
 	} else {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
+			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
 			if err != nil {
 				return false, err
 			}
@@ -396,7 +397,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 				}
 
-				_, err = wfIf.Update(wf)
+				_, err = wfIf.Update(ctx, wf)
 				if err != nil {
 					if apierr.IsConflict(err) {
 						return false, nil
@@ -435,13 +436,13 @@ type SetOperationValues struct {
 	OutputParameters map[string]string
 }
 
-func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues) error {
+func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
 		return err
 	}
 	err = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
+		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -510,7 +511,7 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 		}
 
-		_, err = wfIf.Update(wf)
+		_, err = wfIf.Update(ctx, wf)
 		if err != nil {
 			if apierr.IsConflict(err) {
 				// Try again if we have a conflict
@@ -666,11 +667,11 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func RetryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	var updated *wfv1.Workflow
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
+		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
 		return err == nil, err
 	})
 	if err != nil {
@@ -679,8 +680,8 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	return updated, err
 }
 
-func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	wf, err := wfClient.Get(name, metav1.GetOptions{})
+func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -751,7 +752,7 @@ func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		}
 		if node.Type == wfv1.NodeTypePod {
 			log.Infof("Deleting pod: %s", node.ID)
-			err := podIf.Delete(node.ID, &metav1.DeleteOptions{})
+			err := podIf.Delete(ctx, node.ID, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, errors.InternalWrapError(err)
 			}
@@ -797,7 +798,7 @@ func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	return wfClient.Update(newWF)
+	return wfClient.Update(ctx, newWF)
 }
 
 func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
@@ -847,7 +848,7 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 }
 
 // TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
-func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
+func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string) error {
 	patchObj := map[string]interface{}{
 		"spec": map[string]interface{}{
 			"shutdown": wfv1.ShutdownStrategyTerminate,
@@ -859,7 +860,7 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 		return errors.InternalWrapError(err)
 	}
 	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		_, err = wfClient.Patch(name, types.MergePatchType, patch)
+		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch)
 		if err != nil {
 			if !apierr.IsConflict(err) {
 				return false, err
@@ -873,9 +874,9 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 
 // StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
 // Or terminates a single resume step referenced by nodeFieldSelector
-func StopWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
+func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
+		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
 	} else {
 		patchObj := map[string]interface{}{
 			"spec": map[string]interface{}{
@@ -888,7 +889,7 @@ func StopWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interfa
 			return errors.InternalWrapError(err)
 		}
 		for attempt := 0; attempt < 10; attempt++ {
-			_, err = wfClient.Patch(name, types.MergePatchType, patch)
+			_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch)
 			if err != nil {
 				if !apierr.IsConflict(err) {
 					return err
@@ -902,9 +903,9 @@ func StopWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interfa
 	}
 }
 
-func SetWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, values SetOperationValues) error {
+func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, values SetOperationValues) error {
 	if nodeFieldSelector != "" {
-		return updateSuspendedNode(wfClient, hydrator, name, nodeFieldSelector, values)
+		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, values)
 	}
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }
