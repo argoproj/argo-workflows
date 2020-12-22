@@ -21,7 +21,9 @@ info() {
     echo '[INFO] ' "$@"
 }
 
-pf MinIO pod/minio 9000
+if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
+  pf MinIO pod/minio 9000
+fi
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then

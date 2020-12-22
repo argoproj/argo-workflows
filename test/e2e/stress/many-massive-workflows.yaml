@@ -30,6 +30,10 @@ spec:
     - name: sleep
       container:
         image: argoproj/argosay:v2
+        resources:
+          requests:
+            memory: 2Mi
+            cpu: 50m
         args:
           - sleep
           - "{{workflow.parameters.sleep}}"
