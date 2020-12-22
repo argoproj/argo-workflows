@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 	"strings"
@@ -40,7 +41,8 @@ func (w *When) SubmitWorkflow() *When {
 		w.t.Fatal("No workflow to submit")
 	}
 	println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
-	wf, err := w.client.Create(w.wf)
+	ctx := context.Background()
+	wf, err := w.client.Create(ctx, w.wf)
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
@@ -51,9 +53,10 @@ func (w *When) SubmitWorkflow() *When {
 
 func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	w.t.Helper()
+	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
 		println("Submitting workflow from workflow template", tmpl.Name)
-		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false))
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false))
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
@@ -65,9 +68,10 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 
 func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	w.t.Helper()
+	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
 		println("Submitting workflow from cluster workflow template", tmpl.Name)
-		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true))
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true))
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
@@ -80,7 +84,8 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
 	w.t.Helper()
 	println("Submitting workflow from cron workflow", w.cronWf.Name)
-	wf, err := w.client.Create(common.ConvertCronWorkflowToWorkflow(w.cronWf))
+	ctx := context.Background()
+	wf, err := w.client.Create(ctx, common.ConvertCronWorkflowToWorkflow(w.cronWf))
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
@@ -95,7 +100,8 @@ func (w *When) CreateWorkflowEventBinding() *When {
 		w.t.Fatal("No workflow event to create")
 	}
 	println("Creating workflow event binding")
-	_, err := w.wfebClient.Create(w.wfeb)
+	ctx := context.Background()
+	_, err := w.wfebClient.Create(ctx, w.wfeb)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -108,9 +114,11 @@ func (w *When) CreateWorkflowTemplates() *When {
 	if len(w.wfTemplates) == 0 {
 		w.t.Fatal("No workflow templates to create")
 	}
+
+	ctx := context.Background()
 	for _, wfTmpl := range w.wfTemplates {
 		println("Creating workflow template", wfTmpl.Name)
-		_, err := w.wfTemplateClient.Create(wfTmpl)
+		_, err := w.wfTemplateClient.Create(ctx, wfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
 		}
@@ -124,9 +132,11 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	if len(w.cwfTemplates) == 0 {
 		w.t.Fatal("No cluster workflow templates to create")
 	}
+
+	ctx := context.Background()
 	for _, cwfTmpl := range w.cwfTemplates {
 		println("Creating cluster workflow template", cwfTmpl.Name)
-		_, err := w.cwfTemplateClient.Create(cwfTmpl)
+		_, err := w.cwfTemplateClient.Create(ctx, cwfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
 		}
@@ -141,7 +151,9 @@ func (w *When) CreateCronWorkflow() *When {
 		w.t.Fatal("No cron workflow to create")
 	}
 	println("Creating cron workflow", w.cronWf.Name)
-	cronWf, err := w.cronClient.Create(w.cronWf)
+
+	ctx := context.Background()
+	cronWf, err := w.cronClient.Create(ctx, w.cronWf)
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
