@@ -567,66 +567,26 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
+	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
-	woc.cleanupPods()
-}
-
-func (woc *wfOperationCtx) cleanupPods() {
-	podGCStrategy := woc.execWf.Spec.GetPodGCStrategy()
-	switch {
-	case podGCStrategy == wfv1.PodGCOnPodSuccess || podGCStrategy == wfv1.PodGCOnWorkflowSuccess && woc.wf.Status.Successful():
-		woc.deleteSucceededPods()
-	case podGCStrategy == wfv1.PodGCOnPodCompletion || podGCStrategy == wfv1.PodGCOnWorkflowCompletion && woc.wf.Status.Fulfilled():
-		woc.deleteCompletedPods()
-	case podGCStrategy == "":
-		woc.labelCompletedPods()
-	}
-}
-
-func (woc *wfOperationCtx) labelCompletedPods() {
-	for podName := range woc.completedPods {
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
-	}
-}
-
-func (woc *wfOperationCtx) deleteSucceededPods() {
-	if inlinePodGC {
-		woc.deletePodsByPhase(apiv1.PodSucceeded)
-	} else {
-		for podName := range woc.succeededPods {
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+	if woc.execWf.Spec.PodGC != nil {
+		switch woc.execWf.Spec.PodGC.Strategy {
+		case wfv1.PodGCOnPodSuccess:
+			for podName := range woc.succeededPods {
+				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			}
+		case wfv1.PodGCOnPodCompletion:
+			for podName := range woc.completedPods {
+				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			}
 		}
-	}
-}
-
-func (woc *wfOperationCtx) deleteCompletedPods() {
-	if inlinePodGC {
-		woc.deletePodsByPhase(apiv1.PodSucceeded)
-		woc.deletePodsByPhase(apiv1.PodFailed)
 	} else {
+		// label pods which will not be deleted
 		for podName := range woc.completedPods {
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
-	}
-}
-
-func (woc *wfOperationCtx) deletePodsByPhase(podPhase apiv1.PodPhase) {
-	deletePropagationBackground := metav1.DeletePropagationBackground
-	listOptions := metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("status.phase=%v", podPhase),
-		LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name + "," + common.LabelKeyCompleted + "=false",
-	}
-	woc.log.WithField("listOptions", listOptions).Info("deleting pods by phase")
-	err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).DeleteCollection(
-		&metav1.DeleteOptions{
-			PropagationPolicy: &deletePropagationBackground,
-		},
-		listOptions,
-	)
-	if err != nil {
-		log.WithError(err).Warn("failed to delete pods")
 	}
 }
 
