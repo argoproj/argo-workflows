@@ -141,17 +141,18 @@ func (c *Controller) deleteWorkflow(key string) error {
 	}
 	expiresIn, ok := c.expiresIn(wf)
 	if !ok {
-		return fmt.Errorf("workflow no longer has a TTL")
+		return fmt.Errorf("workflow '%s' no longer has a TTL", key)
 	}
 	if expiresIn > 0 {
 		// I'm not sure why this happens, but it does
+		log.Warnf("not deleting workflow '%s' because it does not expire for %v", key, expiresIn)
 		c.enqueueWF(obj)
 		return nil
 	}
 	log.Infof("Deleting TTL expired workflow '%s'", key)
 	err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
-		if !apierr.IsNotFound(err) {
+		if apierr.IsNotFound(err) {
 			log.Infof("Workflow already deleted '%s'", key)
 		} else {
 			return err
@@ -178,7 +179,8 @@ func (c *Controller) expiresIn(wf *wfv1.Workflow) (expiresIn time.Duration, ok b
 	if !ok {
 		return 0, false
 	}
-	return wf.Status.FinishedAt.Add(ttl).Sub(c.clock.Now()), true
+	expiresAt := wf.Status.FinishedAt.Add(ttl)
+	return expiresAt.Sub(c.clock.Now()), true
 }
 
 // ttl - the workflow's TTL
