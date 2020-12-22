@@ -13,8 +13,6 @@ spec:
         value: "1"
       - name: "sleep"
         value: "1s"
-  artifactRepositoryRef:
-    key: empty
   ttlStrategy:
     secondsAfterCompletion: 600
   podGC:
@@ -45,8 +43,6 @@ metadata:
   labels:
     stress: "true"
 spec:
-  artifactRepositoryRef:
-    key: empty
   ttlStrategy:
     secondsAfterCompletion: 600
   podGC:

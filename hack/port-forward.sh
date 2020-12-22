@@ -51,3 +51,5 @@ fi
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
   pf "Prometheus Server" deploy/prometheus 9091 9090
 fi
+
+pf "Workflow Controller PProf (go tool pprof http://localhost:6060/debug/pprof/heap)" deploy/workflow-controller 6060 6060
