@@ -116,8 +116,8 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", 4, "Number of workflow TTL workers")
 	command.Flags().IntVar(&podWorkers, "pod-workers", 32, "Number of pod workers")
 	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
-	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
-	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
+	command.Flags().IntVar(&burst, "burst", 256, "Maximum burst for throttle.")
+	command.Flags().Float32Var(&qps, "qps", 256, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	return &command
