@@ -14,7 +14,7 @@ spec:
       - name: "sleep"
         value: "1s"
   ttlStrategy:
-    secondsAfterSuccess: 120
+    secondsAfterSuccess: 600
   podGC:
     strategy: OnPodSuccess
   templates:
@@ -26,6 +26,9 @@ spec:
             withSequence:
               count: "{{workflow.parameters.nodes}}"
     - name: sleep
+      metadata:
+        labels:
+          stress: "true"
       container:
         image: argoproj/argosay:v2
         resources:

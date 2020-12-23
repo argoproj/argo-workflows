@@ -21,6 +21,8 @@ info() {
     echo '[INFO] ' "$@"
 }
 
+killall kubectl || true
+
 if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
   pf MinIO pod/minio 9000
 fi

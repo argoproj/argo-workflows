@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
@@ -12,6 +14,9 @@ import (
 )
 
 func main() {
+	var numWorkflows int
+	flag.IntVar(&numWorkflows, "workflows", 1000, "number of workflows to run")
+	flag.Parse()
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -27,7 +32,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < 1000; i++ {
+	log.Infof("scheduling %d workflows", numWorkflows)
+	for i := 0; i < numWorkflows; i++ {
 		_, err := workflows.Create(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "stress-",

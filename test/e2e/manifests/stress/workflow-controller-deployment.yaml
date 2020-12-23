@@ -8,22 +8,29 @@ spec:
     spec:
       containers:
         - name: workflow-controller
+          imagePullPolicy: Always
           args:
             - --loglevel=warn
-            - --configmap
-            - workflow-controller-configmap
-            - --executor-image
-            - argoproj/argoexec:latest
+            - --configmap=workflow-controller-configmap
+            - --executor-image=argoproj/argoexec:latest
             - --namespaced
             - --burst=2048
             - --qps=2048
-            - --pod-cleanup-workers=32
             - --workflow-workers=256
-            - --workflow-ttl-workers=64
-          env:
-            - name: RECENTLY_STARTED_POD_DURATION
-              value: 20s
-            - name: DEFAULT_REQUEUE_TIME
-              value: 10s
-            - name: MAX_OPERATION_TIME
-              value: 10s
+            # > v2.11
+            # - --pod-cleanup-workers=32
+            # > v2.12
+            # - --workflow-ttl-workers=64
+          #env:
+          #  - name: RECENTLY_STARTED_POD_DURATION
+          #    value: 20s
+          #  - name: DEFAULT_REQUEUE_TIME
+          #    value: 2s
+          #  - name: MAX_OPERATION_TIME
+          #    value: 30s
+          #  - name: INFORMER_WRITE_BACK
+          #    value: "true"
+          # allow us to run <= v2.11 images
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 8737

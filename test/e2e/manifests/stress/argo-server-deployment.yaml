@@ -7,9 +7,12 @@ spec:
     spec:
       containers:
         - name: argo-server
-          # TODO - revert this image
-          image: argoproj/argocli:ui-v3
+          imagePullPolicy: Always
           args:
             - server
             - --loglevel=debug
             - --namespaced
+          # allow us to run <= v2.11 images
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 8737

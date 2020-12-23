@@ -399,10 +399,18 @@ test: server/static/files.go
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
+	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
+ifeq ($(PROFILE),stress)
+	kubectl -n $(KUBE_NAMESPACE) delete wf,pod -l stress
+endif
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
+	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
+ifeq ($(RUN_MODE),kubernetes)
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
+endif
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -425,24 +433,17 @@ test-images:
 	$(call docker_pull,argoproj/argosay:v2)
 	$(call docker_pull,python:alpine3.6)
 
-.PHONY: stop
-stop:
-	killall argo workflow-controller kubectl || true
-
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
 ifeq ($(RUN_MODE),kubernetes)
-start: stop controller-image cli-image executor-image install
+start: controller-image cli-image install executor-image
 else
-start: stop install controller cli executor-image $(GOPATH)/bin/goreman
+start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
-	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
-endif
+	# allow time for pods to terminate
+	sleep 10s
 ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
@@ -462,7 +463,10 @@ endif
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
+	killall goreman argo workflow-controller
 	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+else
+	kubectl -n $(KUBE_NAMESPACE) logs deploy/workflow-controller --follow
 endif
 
 .PHONY: wait
