@@ -6,4 +6,5 @@ resources:
 - workflow-controller-deployment.yaml
 - workflow-controller-sa.yaml
 - workflow-controller-metrics-service.yaml
+- workflow-controller-pprof-service.yaml
 - workflow-controller-pdb.yaml

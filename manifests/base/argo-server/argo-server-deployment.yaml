@@ -6,6 +6,7 @@ spec:
   selector:
     matchLabels:
       app: argo-server
+  replicas: 2
   template:
     metadata:
       labels:

@@ -41,22 +41,15 @@ if [[ "$mysql" != "" ]]; then
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
-  pf "Argo Server" deploy/argo-server 2746
+  pf "Argo Server" svc/argo-server 2746
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
-  pf "Workflow Controller" deploy/workflow-controller 9090
-  pf "Workflow Controller PProf" deploy/workflow-controller 6060
-  echo "  https://blog.golang.org/pprof"
-  echo "  go tool pprof http://localhost:6060/debug/pprof/heap"
-  echo "  go tool pprof http://localhost:6060/debug/pprof/allocs"
-  echo "  go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30"
-  echo "  go tool pprof http://localhost:6060/debug/pprof/heap"
-  echo "  go tool pprof http://localhost:6060/debug/pprof/block"
-  echo "  go tool pprof http://localhost:6060/debug/pprof/mutex"
+  pf "Workflow Controller Metrics" svc/workflow-controller-metrics 9090
+  pf "Workflow Controller PProf" svc/workflow-controller-pprof 6060
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
-  pf "Prometheus Server" deploy/prometheus 9091 9090
+  pf "Prometheus Server" svc/prometheus 9091 9090
 fi
 
