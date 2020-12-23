@@ -10,5 +10,5 @@ By default, the server will start with auth mode of "server".
 
 To change the server auth mode specify the list as multiple auth-mode flags:
 ```
-argo server --auth-mode sso --auth-mode ...
+argo server --auth-mode=sso --auth-mode=...
 ```
