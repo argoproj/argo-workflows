@@ -15,7 +15,7 @@ import (
 
 func main() {
 	var numWorkflows int
-	flag.IntVar(&numWorkflows, "workflows", 1000, "number of workflows to run")
+	flag.IntVar(&numWorkflows, "workflows", 500, "number of workflows to run")
 	flag.Parse()
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}

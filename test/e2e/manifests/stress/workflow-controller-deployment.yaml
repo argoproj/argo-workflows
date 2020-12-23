@@ -17,9 +17,9 @@ spec:
             - --burst=2048
             - --qps=2048
             - --workflow-workers=256
-            # > v2.11
+            # v2.12
             # - --pod-cleanup-workers=32
-            # > v2.12
+            # beyond v2.12
             # - --workflow-ttl-workers=64
           #env:
           #  - name: RECENTLY_STARTED_POD_DURATION
