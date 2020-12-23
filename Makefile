@@ -25,13 +25,16 @@ IMAGE_NAMESPACE       ?= argoproj
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
-VERSION               := latest
-DEV_IMAGE             := true
-
-# VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
-# we assume HEAD means you are on a tag
-ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
+DEV_IMAGE             := true
+DOCKER_PUSH           := false
+
+ifeq ($(GIT_BRANCH),master)
+VERSION               := latest
+DEV_IMAGE             := false
+endif
+
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
 DEV_IMAGE             := false
 endif
 
@@ -69,6 +72,9 @@ UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
 ifeq ($(PROFILE),prometheus)
+RUN_MODE              := kubernetes
+endif
+ifeq ($(PROFILE),stress)
 RUN_MODE              := kubernetes
 endif
 
@@ -142,6 +148,7 @@ define docker_build
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
+	if [ $(DOCKER_PUSH) = true ] ; then  docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 	touch $(3)
 endef
 define docker_pull
@@ -388,15 +395,10 @@ endif
 test: server/static/files.go
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
-	mkdir -p dist
-	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
-
 .PHONY: install
-install: dist/$(PROFILE).yaml
-	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
-	kubectl apply -f dist/argo-ns.yaml
-	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
+install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
+	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
+	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -427,18 +429,26 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
+ifeq ($(RUN_MODE),kubernetes)
+start: stop install controller-image cli-image executor-image $(GOPATH)/bin/goreman
+else
 start: stop install controller cli executor-image $(GOPATH)/bin/goreman
+endif
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 ifeq ($(RUN_MODE),kubernetes)
-	$(MAKE) controller-image cli-image
+ifneq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
+endif
 endif
 ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server --timeout 1m
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller --timeout 1m
 endif
 ifeq ($(PROFILE),prometheus)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
+endif
+ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
 endif
 	./hack/port-forward.sh

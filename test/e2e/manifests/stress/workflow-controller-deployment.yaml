@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: workflow-controller
+          args:
+            - --loglevel=warn
+            - --configmap
+            - workflow-controller-configmap
+            - --executor-image
+            - argoproj/argoexec:latest
+            - --namespaced
+            - --burst=2048
+            - --qps=2048
+            - --pod-cleanup-workers=32
+            - --workflow-workers=256
+            - --workflow-ttl-workers=64
+          env:
+            - name: RECENTLY_STARTED_POD_DURATION
+              value: 20s
+            - name: DEFAULT_REQUEUE_TIME
+              value: 10s
+            - name: MAX_OPERATION_TIME
+              value: 10s

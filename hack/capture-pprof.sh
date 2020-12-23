@@ -3,9 +3,10 @@ set -eu -o pipefail
 
 echo "  https://blog.golang.org/pprof"
 
-n=$(date +%s)
-
+mkdir -p $(dirname $0)/../pprof
 cd $(dirname $0)/../pprof
+
+n=$(date +%s)
 
 go tool pprof -png -output heap-$n.png http://localhost:6060/debug/pprof/heap
 go tool pprof -png -output allocs-$n.png http://localhost:6060/debug/pprof/allocs

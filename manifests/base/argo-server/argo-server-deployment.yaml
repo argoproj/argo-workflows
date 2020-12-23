@@ -6,7 +6,6 @@ spec:
   selector:
     matchLabels:
       app: argo-server
-  replicas: 2
   template:
     metadata:
       labels:
@@ -15,8 +14,7 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-server
-          image: argoproj/argocli:ui-v3
-          imagePullPolicy: Always
+          image: argoproj/argocli:latest
           securityContext:
             capabilities:
               drop:

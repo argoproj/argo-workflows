@@ -6,7 +6,6 @@ spec:
   selector:
     matchLabels:
       app: workflow-controller
-  replicas: 2
   template:
     metadata:
       labels:
@@ -15,8 +14,7 @@ spec:
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: argoproj/workflow-controller:test
-          imagePullPolicy: Always
+          image: argoproj/workflow-controller:latest
           securityContext:
             capabilities:
               drop:
@@ -24,23 +22,11 @@ spec:
           command:
             - workflow-controller
           args:
-            - --loglevel=warn
             - --configmap
             - workflow-controller-configmap
             - --executor-image
-            - argoproj/argoexec:test
-            - --burst=2048
-            - --qps=2048
-            - --pod-cleanup-workers=32
-            - --workflow-workers=256
-            - --workflow-ttl-workers=64
+            - argoproj/argoexec:latest
           env:
-            - name: RECENTLY_STARTED_POD_DURATION
-              value: 20s
-            - name: DEFAULT_REQUEUE_TIME
-              value: 1m
-            - name: MAX_OPERATION_TIME
-              value: 10s
             - name: LEADER_ELECTION_IDENTITY
               valueFrom:
                 fieldRef:
