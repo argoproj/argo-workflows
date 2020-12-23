@@ -912,8 +912,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		if _, ok := seenPods[nodeID]; !ok {
 
 			// grace-period to allow informer sync
-			age, recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted, "age": age}).Info("Workflow pod is missing")
+			recentlyStarted := recentlyStarted(node)
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
 			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
@@ -929,7 +929,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				continue
 			}
 
-			woc.markNodePhase(node.Name, wfv1.NodeError, fmt.Sprintf("pod deleted, aged %v", age.Truncate(time.Second)))
+			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
 			// it is safe to extract the k8s-node information given this knowledge.
@@ -943,9 +943,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	return nil
 }
 
-func recentlyStarted(node wfv1.NodeStatus) (time.Duration, bool) {
-	age := time.Since(node.StartedAt.Time)
-	return age, age <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 10*time.Second)
+func recentlyStarted(node wfv1.NodeStatus) bool {
+	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 10*time.Second)
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
