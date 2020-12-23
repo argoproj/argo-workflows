@@ -720,7 +720,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					if err == nil {
 						priority, creation := getWfPriority(obj)
 						// recentlyCreated will often (but not always) mean it is new
-						recentlyCreated := creation.Sub(time.Now()) > 10*time.Second
+						recentlyCreated := time.Until(creation) > 10*time.Second
 						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
 						if recentlyCreated {
 							wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)

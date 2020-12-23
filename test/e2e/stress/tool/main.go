@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +16,9 @@ import (
 
 func main() {
 	var numWorkflows int
+	var sleep time.Duration
 	flag.IntVar(&numWorkflows, "workflows", 500, "number of workflows to run")
+	flag.DurationVar(&sleep, "sleep", 10*time.Second, "How long each node should sleep")
 	flag.Parse()
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
@@ -47,7 +50,7 @@ func main() {
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
 					Parameters: []wfv1.Parameter{
-						{Name: "sleep", Value: wfv1.AnyStringPtr("10s")},
+						{Name: "sleep", Value: wfv1.AnyStringPtr(sleep)},
 					},
 				},
 				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "massive-workflow"},

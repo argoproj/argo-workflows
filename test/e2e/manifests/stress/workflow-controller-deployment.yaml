@@ -21,15 +21,15 @@ spec:
             # - --pod-cleanup-workers=32
             # beyond v2.12
             # - --workflow-ttl-workers=64
-          #env:
-          #  - name: RECENTLY_STARTED_POD_DURATION
-          #    value: 20s
-          #  - name: DEFAULT_REQUEUE_TIME
-          #    value: 2s
-          #  - name: MAX_OPERATION_TIME
-          #    value: 30s
-          #  - name: INFORMER_WRITE_BACK
-          #    value: "true"
+          env:
+            #  - name: RECENTLY_STARTED_POD_DURATION
+            #    value: 20s
+            #  - name: DEFAULT_REQUEUE_TIME
+            #    value: 2s
+            #  - name: MAX_OPERATION_TIME
+            #    value: 30s
+            - name: INFORMER_WRITE_BACK
+              value: ""
           # allow us to run <= v2.11 images
           securityContext:
             runAsNonRoot: true

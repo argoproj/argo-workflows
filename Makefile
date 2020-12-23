@@ -25,13 +25,15 @@ IMAGE_NAMESPACE       ?= argoproj
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
+VERSION               := latest
+ifneq ($(GIT_BRANCH),HEAD)
 VERSION               := $(GIT_BRANCH)
+endif
 MANIFEST_IMAGE_TAG    := latest
 DEV_IMAGE             := true
 DOCKER_PUSH           := false
 
 ifeq ($(GIT_BRANCH),master)
-VERSION               := latest
 DEV_IMAGE             := false
 endif
 
@@ -468,7 +470,9 @@ endif
 ifeq ($(RUN_MODE),local)
 	killall goreman argo workflow-controller
 	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
-else
+endif
+ifeq ($(PROFILE),stress)
+	go run ./test/e2e/stress/tool
 	kubectl -n $(KUBE_NAMESPACE) logs deploy/workflow-controller --follow
 endif
 
