@@ -25,7 +25,7 @@ IMAGE_NAMESPACE       ?= argoproj
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
-VERSION               := $(GIT_TAG)
+VERSION               := $(GIT_BRANCH)
 DEV_IMAGE             := true
 DOCKER_PUSH           := false
 
@@ -35,6 +35,7 @@ DEV_IMAGE             := false
 endif
 
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
+VERSION               := $(GIT_TAG)
 DEV_IMAGE             := false
 endif
 
@@ -398,7 +399,10 @@ test: server/static/files.go
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
+	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
+	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
+	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -430,26 +434,24 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: start
 ifeq ($(RUN_MODE),kubernetes)
-start: stop install controller-image cli-image executor-image $(GOPATH)/bin/goreman
+start: stop controller-image cli-image executor-image install
 else
 start: stop install controller cli executor-image $(GOPATH)/bin/goreman
 endif
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 ifeq ($(RUN_MODE),kubernetes)
-ifneq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
-endif
 ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server --timeout 1m
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
 endif
 ifeq ($(PROFILE),prometheus)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
 endif
 ifeq ($(PROFILE),stress)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
 endif
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
