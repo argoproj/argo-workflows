@@ -6,4 +6,3 @@ resources:
 - workflow-controller-deployment.yaml
 - workflow-controller-sa.yaml
 - workflow-controller-metrics-service.yaml
-
