@@ -26,6 +26,7 @@ IMAGE_NAMESPACE       ?= argoproj
 KUBE_NAMESPACE        ?= argo
 
 VERSION               := $(GIT_BRANCH)
+MANIFEST_IMAGE_TAG    := latest
 DEV_IMAGE             := true
 DOCKER_PUSH           := false
 
@@ -36,6 +37,7 @@ endif
 
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
+MANIFEST_IMAGE_TAG    := $(VERSION)
 DEV_IMAGE             := false
 endif
 
@@ -367,7 +369,7 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 
 # generates several installation files
 manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
-	./hack/update-image-tags.sh manifests/base $(VERSION)
+	./hack/update-image-tags.sh manifests/base $(MANIFEST_IMAGE_TAG)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
 	kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
