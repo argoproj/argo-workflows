@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -19,7 +20,9 @@ func NewResourceCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			err := execResource(args[0])
+
+			ctx := context.Background()
+			err := execResource(ctx, args[0])
 			if err != nil {
 				log.Fatalf("%+v", err)
 			}
@@ -28,9 +31,9 @@ func NewResourceCommand() *cobra.Command {
 	return &command
 }
 
-func execResource(action string) error {
+func execResource(ctx context.Context, action string) error {
 	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError()
+	defer wfExecutor.HandleError(ctx)
 	err := wfExecutor.StageFiles()
 	if err != nil {
 		wfExecutor.AddError(err)
@@ -50,12 +53,12 @@ func execResource(action string) error {
 		return err
 	}
 	if !isDelete {
-		err = wfExecutor.WaitResource(resourceNamespace, resourceName)
+		err = wfExecutor.WaitResource(ctx, resourceNamespace, resourceName)
 		if err != nil {
 			wfExecutor.AddError(err)
 			return err
 		}
-		err = wfExecutor.SaveResourceParameters(resourceNamespace, resourceName)
+		err = wfExecutor.SaveResourceParameters(ctx, resourceNamespace, resourceName)
 		if err != nil {
 			wfExecutor.AddError(err)
 			return err

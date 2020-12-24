@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"time"
 
 	"github.com/argoproj/pkg/stats"
@@ -13,7 +14,8 @@ func NewWaitCommand() *cobra.Command {
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := waitContainer()
+			ctx := context.Context()
+			err := waitContainer(ctx)
 			if err != nil {
 				log.Fatalf("%+v", err)
 			}
@@ -22,15 +24,15 @@ func NewWaitCommand() *cobra.Command {
 	return &command
 }
 
-func waitContainer() error {
+func waitContainer(ctx context.Context) error {
 	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError() // Must be placed at the bottom of defers stack.
+	defer wfExecutor.HandleError(ctx) // Must be placed at the bottom of defers stack.
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
 	defer func() {
 		// Killing sidecar containers
-		err := wfExecutor.KillSidecars()
+		err := wfExecutor.KillSidecars(ctx)
 		if err != nil {
 			wfExecutor.AddError(err)
 		}

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -201,8 +202,9 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
+	ctx := context.Background()
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
-		ref, err := woc.controller.artifactRepositories.Resolve(woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
+		ref, err := woc.controller.artifactRepositories.Resolve(ctx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
 		if err != nil {
 			woc.markWorkflowError(fmt.Errorf("failed to resolve artifact repository: %w", err))
 			return

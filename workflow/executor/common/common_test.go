@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"syscall"
 	"testing"
 
@@ -40,7 +41,8 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err := TerminatePodWithContainerID(mock, "container-id", syscall.SIGTERM)
+	ctx := context.Background()
+	err := TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
 	assert.NoError(t, err)
 
 	// w/ ShareProcessNamespace.
@@ -59,7 +61,7 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate a process-namespace-shared Pod foo")
 
 	// w/ HostPID.
@@ -78,7 +80,7 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate a hostPID Pod foo")
 
 	// w/ RestartPolicy.
@@ -97,7 +99,7 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate pod with a \"Always\" restart policy")
 
 	// Successfully call KillContainer of the client interface.
@@ -116,6 +118,6 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
 	assert.NoError(t, err)
 }

@@ -95,7 +95,7 @@ type ContainerRuntimeExecutor interface {
 
 	// GetExitCode returns the exit code of the container
 	// Used to capture script exit code as an output parameter
-	GetExitCode(containerID string) (string, error)
+	GetExitCode(ctx context.Context, containerID string) (string, error)
 
 	// WaitInit is called before Wait() to signal the executor about an impending Wait call.
 	// For most executors this is a noop, and is only used by the the PNS executor
@@ -815,7 +815,7 @@ func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	exitCode, err := we.RuntimeExecutor.GetExitCode(mainContainerID)
+	exitCode, err := we.RuntimeExecutor.GetExitCode(ctx, mainContainerID)
 	if err != nil {
 		return err
 	}
