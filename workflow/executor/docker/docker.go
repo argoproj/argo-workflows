@@ -3,6 +3,7 @@ package docker
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -130,7 +131,7 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 	return &cmdCloser{Reader: reader, cmd: cmd}, nil
 }
 
-func (d *DockerExecutor) GetExitCode(containerID string) (string, error) {
+func (d *DockerExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
 	reader, err := cmd.StdoutPipe()
 	if err != nil {

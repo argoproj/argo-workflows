@@ -100,7 +100,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
-func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
+func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID string) error {
 	woc.log.Infof("Checking daemoned children of %s", nodeID)
 	var firstErr error
 	execCtl := common.ExecutionControl{
@@ -113,7 +113,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 		if childNode.Daemoned == nil || !*childNode.Daemoned {
 			continue
 		}
-		err := woc.updateExecutionControl(childNode.ID, execCtl, common.WaitContainerName)
+		err := woc.updateExecutionControl(ctx, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {
 			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)
 			if firstErr == nil {

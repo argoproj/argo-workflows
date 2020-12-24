@@ -91,7 +91,7 @@ type ContainerRuntimeExecutor interface {
 
 	// GetOutputStream returns the entirety of the container output as a io.Reader
 	// Used to capture script results as an output parameter, and to archive container logs
-	GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error)
+	GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error)
 
 	// GetExitCode returns the exit code of the container
 	// Used to capture script exit code as an output parameter
@@ -102,10 +102,10 @@ type ContainerRuntimeExecutor interface {
 	WaitInit() error
 
 	// Wait waits for the container to complete
-	Wait(containerID string) error
+	Wait(ctx context.Context, containerID string) error
 
 	// Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-	Kill(containerIDs []string) error
+	Kill(ctx context.Context, containerIDs []string) error
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -562,7 +562,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 	}
 	fileName := "main.log"
 	mainLog := path.Join(tempLogsDir, fileName)
-	err = we.saveLogToFile(mainCtrID, mainLog)
+	err = we.saveLogToFile(ctx, mainCtrID, mainLog)
 	if err != nil {
 		return nil, err
 	}
@@ -620,13 +620,13 @@ func (we *WorkflowExecutor) GetSecret(accessKeyName string, accessKey string) (s
 }
 
 // saveLogToFile saves the entire log output of a container to a local file
-func (we *WorkflowExecutor) saveLogToFile(mainCtrID, path string) error {
+func (we *WorkflowExecutor) saveLogToFile(ctx context.Context, mainCtrID, path string) error {
 	outFile, err := os.Create(path)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 	defer func() { _ = outFile.Close() }()
-	reader, err := we.RuntimeExecutor.GetOutputStream(mainCtrID, true)
+	reader, err := we.RuntimeExecutor.GetOutputStream(ctx, mainCtrID, true)
 	if err != nil {
 		return err
 	}
@@ -777,7 +777,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	reader, err := we.RuntimeExecutor.GetOutputStream(mainContainerID, false)
+	reader, err := we.RuntimeExecutor.GetOutputStream(ctx, mainContainerID, false)
 	if err != nil {
 		return err
 	}
@@ -1048,7 +1048,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
 	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
-		err = we.RuntimeExecutor.Wait(mainContainerID)
+		err = we.RuntimeExecutor.Wait(ctx, mainContainerID)
 		if err != nil {
 			log.Warnf("Failed to wait for container id '%s': %v", mainContainerID, err)
 			return false, err
@@ -1240,7 +1240,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 					_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, message)
 					log.Infof("Killing main container")
 					mainContainerID, _ := we.GetMainContainerID(ctx)
-					err := we.RuntimeExecutor.Kill([]string{mainContainerID})
+					err := we.RuntimeExecutor.Kill(ctx, []string{mainContainerID})
 					if err != nil {
 						log.Warnf("Failed to kill main container: %v", err)
 					}
@@ -1274,7 +1274,7 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 	if len(sidecarIDs) == 0 {
 		return nil
 	}
-	return we.RuntimeExecutor.Kill(sidecarIDs)
+	return we.RuntimeExecutor.Kill(ctx, sidecarIDs)
 }
 
 // LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file

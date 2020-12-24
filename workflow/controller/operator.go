@@ -213,7 +213,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.updated = true
 	}
 
-	repo, err := woc.controller.artifactRepositories.Get(woc.wf.Status.ArtifactRepositoryRef)
+	repo, err := woc.controller.artifactRepositories.Get(ctx, woc.wf.Status.ArtifactRepositoryRef)
 	if err != nil {
 		woc.markWorkflowError(fmt.Errorf("failed to get artifact repository: %v", err))
 		return

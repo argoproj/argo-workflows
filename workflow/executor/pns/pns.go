@@ -242,7 +242,7 @@ func (p *PNSExecutor) GetExitCode(ctx context.Context, containerID string) (stri
 }
 
 // Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (p *PNSExecutor) Kill(containerIDs []string) error {
+func (p *PNSExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	var asyncErr error
 	wg := sync.WaitGroup{}
 	for _, cid := range containerIDs {

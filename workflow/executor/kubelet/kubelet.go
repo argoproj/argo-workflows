@@ -33,7 +33,7 @@ func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPa
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the kubelet executor.")
 }
 
-func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (k *KubeletExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	if !combinedOutput {
 		log.Warn("non combined output unsupported")
 	}
