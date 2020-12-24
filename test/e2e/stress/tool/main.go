@@ -17,7 +17,7 @@ import (
 func main() {
 	var numWorkflows int
 	var sleep time.Duration
-	flag.IntVar(&numWorkflows, "workflows", 500, "number of workflows to run")
+	flag.IntVar(&numWorkflows, "workflows", 1000, "number of workflows to run")
 	flag.DurationVar(&sleep, "sleep", 10*time.Second, "How long each node should sleep")
 	flag.Parse()
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()

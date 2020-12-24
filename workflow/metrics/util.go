@@ -163,11 +163,9 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 		}
 	}
 	return map[wfv1.NodePhase]prometheus.Gauge{
-		"":                 prometheus.NewGauge(getOptsByPahse("")),
 		wfv1.NodePending:   prometheus.NewGauge(getOptsByPahse(wfv1.NodePending)),
 		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeRunning)),
 		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPahse(wfv1.NodeSucceeded)),
-		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeSkipped)),
 		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),
 		wfv1.NodeError:     prometheus.NewGauge(getOptsByPahse(wfv1.NodeError)),
 	}

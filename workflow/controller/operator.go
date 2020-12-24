@@ -833,7 +833,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	seenPods := make(map[string]*apiv1.Pod)
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
-
+	podRunningCondition := wfv1.Condition{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}
 	performAssessment := func(pod *apiv1.Pod) {
 		if pod == nil {
 			return
@@ -857,6 +857,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 						woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
 						node.Phase = wfv1.NodeError
 					}
+				}
+				if node.Phase == wfv1.NodeRunning {
+					podRunningCondition.Status = metav1.ConditionTrue
 				}
 				woc.updated = true
 			}
@@ -900,6 +903,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 	wg.Wait()
 
+	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
+
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
 	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
@@ -941,6 +946,13 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 	return nil
+}
+
+func podRunningConditionStatus(anyPodRunning bool) metav1.ConditionStatus {
+	if anyPodRunning {
+		return metav1.ConditionTrue
+	}
+	return metav1.ConditionFalse
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {

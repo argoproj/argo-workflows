@@ -24,7 +24,7 @@ info() {
 killall kubectl || true
 
 if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
-  pf MinIO pod/minio 9000
+  pf MinIO deploy/minio 9000
 fi
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
