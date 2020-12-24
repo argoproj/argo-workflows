@@ -138,7 +138,7 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 }
 
 // LoadArtifacts loads artifacts from location to a container path
-func (we *WorkflowExecutor) LoadArtifacts() error {
+func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	log.Infof("Start loading input artifacts...")
 
 	for _, art := range we.Template.Inputs.Artifacts {
@@ -153,7 +153,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				return errors.Errorf("required artifact %s not supplied", art.Name)
 			}
 		}
-		artDriver, err := we.InitDriver(&art)
+		artDriver, err := we.InitDriver(ctx, &art)
 		if err != nil {
 			return err
 		}
@@ -274,7 +274,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 	}
 
 	for i, art := range we.Template.Outputs.Artifacts {
-		err := we.saveArtifact(mainCtrID, &art)
+		err := we.saveArtifact(ctx, mainCtrID, &art)
 		if err != nil {
 			return err
 		}
@@ -283,7 +283,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) error {
+func (we *WorkflowExecutor) saveArtifact(ctx context.Context, mainCtrID string, art *wfv1.Artifact) error {
 	// Determine the file path of where to find the artifact
 	if art.Path == "" {
 		return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
@@ -332,7 +332,7 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 		}
 	}
 
-	artDriver, err := we.InitDriver(art)
+	artDriver, err := we.InitDriver(ctx, art)
 	if err != nil {
 		return err
 	}
@@ -598,7 +598,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
-	artDriver, err := we.InitDriver(&art)
+	artDriver, err := we.InitDriver(ctx, &art)
 	if err != nil {
 		return nil, err
 	}

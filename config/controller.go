@@ -19,7 +19,7 @@ import (
 )
 
 type Controller interface {
-	Run(ctx context.Context, stopCh <-chan struct{}, onChange func(config interface{}) error)
+	Run(stopCh <-chan struct{}, onChange func(config interface{}) error)
 	Get(context.Context) (interface{}, error)
 }
 
@@ -74,10 +74,11 @@ func (cc *controller) parseConfigMap(cm *apiv1.ConfigMap) (interface{}, error) {
 	return config, err
 }
 
-func (cc *controller) Run(ctx context.Context, stopCh <-chan struct{}, onChange func(config interface{}) error) {
+func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config interface{}) error) {
 	restClient := cc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", cc.configMap))
+	ctx := context.Background()
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
 		req := restClient.Get().

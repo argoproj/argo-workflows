@@ -112,7 +112,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Background, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
 
-	wfc.UpdateConfig()
+	wfc.UpdateConfig(ctx)
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
@@ -203,7 +203,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Create Synchronization Manager
-	err := wfc.createSynchronizationManager()
+	err := wfc.createSynchronizationManager(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -229,6 +229,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				logCtx.Info("started leading")
 				ctx, cancel = context.WithCancel(ctx)
 
+				// TODO JPZ13 12/24/2020 - refactor to use untilwithcontext
 				for i := 0; i < podCleanupWorkers; i++ {
 					go wait.Until(wfc.runPodCleanup, time.Second, ctx.Done())
 				}
@@ -272,13 +273,13 @@ func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
 }
 
 // Create and initialize the Synchronization Manager
-func (wfc *WorkflowController) createSynchronizationManager() error {
+func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context) error {
 	getSyncLimit := func(lockKey string) (int, error) {
 		lockName, err := sync.DecodeLockName(lockKey)
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -303,7 +304,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
-	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.namespace).List(listOpts)
+	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.namespace).List(ctx, listOpts)
 	if err != nil {
 		return err
 	}
@@ -313,9 +314,10 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
+	ctx := context.Background()
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
 		},
 	})
 	if err != nil {
@@ -359,11 +361,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -374,8 +376,8 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	}
 }
 
-func (wfc *WorkflowController) UpdateConfig() {
-	config, err := wfc.configController.Get()
+func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
+	config, err := wfc.configController.Get(ctx)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
@@ -390,12 +392,13 @@ func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName stri
 }
 
 func (wfc *WorkflowController) runPodCleanup() {
-	for wfc.processNextPodCleanupItem() {
+	ctx := context.Background()
+	for wfc.processNextPodCleanupItem(ctx) {
 	}
 }
 
 // all pods will ultimately be cleaned up by either deleting them, or labelling them
-func (wfc *WorkflowController) processNextPodCleanupItem() bool {
+func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bool {
 	key, quit := wfc.podCleanupQueue.Get()
 	if quit {
 		return false
@@ -408,13 +411,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem() bool {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
 		case labelPodCompleted:
-			_, err := pods.Patch(podName, types.MergePatchType, []byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`))
+			_, err := pods.Patch(ctx, podName, types.MergePatchType, []byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`))
 			if err != nil {
 				return err
 			}
 		case deletePod:
 			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(podName, &metav1.DeleteOptions{PropagationPolicy: &propagation})
+			err := pods.Delete(ctx, podName, metav1.DeleteOptions{PropagationPolicy: &propagation})
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
