@@ -16,9 +16,11 @@ import (
 
 func main() {
 	var numWorkflows int
+	var numNodes int
 	var sleep time.Duration
-	flag.IntVar(&numWorkflows, "workflows", 1000, "number of workflows to run")
-	flag.DurationVar(&sleep, "sleep", 10*time.Second, "How long each node should sleep")
+	flag.IntVar(&numWorkflows, "workflows", 250, "Number of workflows to run")
+	flag.IntVar(&numNodes, "nodes", 2, "Number of nodes to run")
+	flag.DurationVar(&sleep, "sleep", 30*time.Second, "How long each node should sleep")
 	flag.Parse()
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
@@ -35,7 +37,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Infof("scheduling %d workflows", numWorkflows)
+	log.Infof("creating %d workflows", numWorkflows)
 	for i := 0; i < numWorkflows; i++ {
 		_, err := workflows.Create(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
@@ -50,6 +52,7 @@ func main() {
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
 					Parameters: []wfv1.Parameter{
+						{Name: "nodes", Value: wfv1.AnyStringPtr(numNodes)},
 						{Name: "sleep", Value: wfv1.AnyStringPtr(sleep)},
 					},
 				},

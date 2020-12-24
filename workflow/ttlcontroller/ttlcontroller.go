@@ -112,10 +112,10 @@ func (c *Controller) enqueueWF(obj interface{}) {
 	// double-check that sees if the workflow in the informer is already deleted and we'll make 2 API requests when
 	// one is enough.
 	// Additionally, this allows enough time to make sure the double checking that the workflow is actually expired
-	// truely works.
+	// truly works.
 	addAfter := remaining + time.Second
 	key, _ := cache.MetaNamespaceKeyFunc(obj)
-	log.Infof("Queueing workflow %s for delete in %v", key, addAfter.Truncate(time.Second))
+	log.Infof("Queueing %v workflow %s for delete in %v", wf.Status.Phase, key, addAfter.Truncate(time.Second))
 	c.workqueue.AddAfter(key, addAfter)
 }
 
@@ -142,13 +142,11 @@ func (c *Controller) deleteWorkflow(key string) error {
 	}
 	expiresIn, ok := c.expiresIn(wf)
 	if !ok {
-		return fmt.Errorf("workflow '%s' no longer has a TTL", key)
+		return fmt.Errorf("%v workflow '%s' no longer has a TTL", wf.Status.Phase, key)
 	}
 	if expiresIn > 0 {
-		// I'm not sure why this happens, but it does
-		log.Warnf("not deleting workflow '%s' because it does not expire for %v", key, expiresIn)
 		c.enqueueWF(obj)
-		return nil
+		return fmt.Errorf("not deleting %v workflow '%s' because it does not expire for %v", wf.Status.Phase, key, expiresIn)
 	}
 	log.Infof("Deleting TTL expired workflow '%s'", key)
 	err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})

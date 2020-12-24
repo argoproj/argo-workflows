@@ -502,6 +502,11 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  executor: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
   links: |
     - name: Example Workflow Link
       scope: workflow

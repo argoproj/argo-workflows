@@ -14,7 +14,7 @@ spec:
       - name: "sleep"
         value: "1s"
   ttlStrategy:
-    secondsAfterSuccess: 600
+    secondsAfterSuccess: 60
   podGC:
     strategy: OnPodSuccess
   templates:
@@ -34,7 +34,7 @@ spec:
         resources:
           requests:
             memory: 2Mi
-            cpu: 50m
+            cpu: 10m
         args:
           - sleep
           - "{{workflow.parameters.sleep}}"

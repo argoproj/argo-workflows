@@ -7,22 +7,22 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+// GetConditions returns the conditions, excluding the `message` field.
 func GetConditions(un *unstructured.Unstructured) []wfv1.Condition {
 	if un == nil {
 		return nil
 	}
 	items, _, _ := unstructured.NestedSlice(un.Object, "status", "conditions")
-	var y []wfv1.Condition
+	var x []wfv1.Condition
 	for _, item := range items {
 		m, ok := item.(map[string]interface{})
 		if !ok {
 			return nil
 		}
-		y = append(y, wfv1.Condition{
-			Type:    wfv1.ConditionType(m["type"].(string)),
-			Status:  metav1.ConditionStatus(m["status"].(string)),
-			Message: m["message"].(string),
+		x = append(x, wfv1.Condition{
+			Type:   wfv1.ConditionType(m["type"].(string)),
+			Status: metav1.ConditionStatus(m["status"].(string)),
 		})
 	}
-	return y
+	return x
 }

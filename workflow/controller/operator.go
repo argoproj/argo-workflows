@@ -145,6 +145,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		log: log.WithFields(log.Fields{
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
+			"rv":        wf.ResourceVersion,
 		}),
 		controller:             wfc,
 		globalParams:           make(map[string]string),
@@ -523,7 +524,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Release all acquired lock for completed workflow
 	if woc.wf.Status.Synchronization != nil && woc.wf.Status.Fulfilled() {
 		if woc.controller.syncManager.ReleaseAll(woc.wf) {
-			log.WithFields(log.Fields{"key": woc.wf.Name}).Info("Released all acquired locks")
+			woc.log.WithFields(log.Fields{"key": woc.wf.Name}).Info("Released all acquired locks")
 		}
 	}
 
@@ -646,9 +647,18 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 		if err != nil {
 			return nil, err
 		}
+		if currWf.Status.Fulfilled() {
+			return nil, fmt.Errorf("must never update completed workflows")
+		}
 		err = woc.controller.hydrator.Hydrate(currWf)
 		if err != nil {
 			return nil, err
+		}
+		for _, x := range woc.wf.Status.Nodes {
+			y, exists := currWf.Status.Nodes[x.ID]
+			if exists && y.Fulfilled() && x.Phase != y.Phase {
+				return nil, fmt.Errorf("must never update completed node %s", x.ID)
+			}
 		}
 		currWfBytes, err := json.Marshal(currWf)
 		if err != nil {
@@ -918,7 +928,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+			woc.log.WithFields(log.Fields{"podName": node.ID, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
 			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
@@ -1077,7 +1087,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		} else {
 			newPhase, message = inferFailedReason(pod)
 			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Infof("Pod failed")
+				WithField("pod", pod.Name).Infof("Pod failed: %s", message)
 		}
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
@@ -1091,13 +1101,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newPhase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 			if !ok {
-				log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
+				woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
 				return nil
 			}
 			var tmpl wfv1.Template
 			err := json.Unmarshal([]byte(tmplStr), &tmpl)
 			if err != nil {
-				log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
+				woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
 				return nil
 			}
 			if tmpl.Daemon != nil && *tmpl.Daemon {
@@ -1110,7 +1120,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 				// proceed to mark node status as running (and daemoned)
 				newPhase = wfv1.NodeRunning
 				newDaemonStatus = pointer.BoolPtr(true)
-				log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+				woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 			}
 		}
 	default:
@@ -1127,12 +1137,12 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = nil
 		}
 		if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
-			log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
+			woc.log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
 			node.Daemoned = newDaemonStatus
 			updated = true
 			if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
 				// only update Pod IP for daemoned nodes to reduce number of updates
-				log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
+				woc.log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
 				node.PodIP = pod.Status.PodIP
 			}
 		}
@@ -1140,7 +1150,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
 		updated = true
-		log.Infof("Setting node %v outputs", node.ID)
+		woc.log.Infof("Setting node %v outputs", node.ID)
 		var outputs wfv1.Outputs
 		err := json.Unmarshal([]byte(outputStr), &outputs)
 		if err != nil {
@@ -1152,7 +1162,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 	if node.Phase != newPhase {
-		log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
+		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
 		if node.Phase == wfv1.NodePending {
 			node.Message = ""
@@ -1161,7 +1171,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		node.Phase = newPhase
 	}
 	if message != "" && node.Message != message {
-		log.Infof("Updating node %s message: %s", node.ID, message)
+		woc.log.Infof("Updating node %s message: %s", node.ID, message)
 		updated = true
 		node.Message = message
 	}

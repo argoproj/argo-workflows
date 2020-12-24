@@ -41,7 +41,6 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
 	errorsutil "github.com/argoproj/argo/util/errors"
-	workflow "github.com/argoproj/argo/util/unstructured/workflow"
 	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
@@ -292,7 +291,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.Add(key)
+		wfc.wfQueue.AddRateLimited(key)
 	}
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
@@ -354,7 +353,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
-		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
+		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
 
@@ -720,12 +719,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
-						if workflow.GetPhase(obj.(*unstructured.Unstructured)) == "" {
-							wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
-						} else {
-							wfc.wfQueue.AddRateLimited(key)
-						}
+						wfc.wfQueue.AddRateLimited(key)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
