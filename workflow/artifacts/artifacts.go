@@ -28,7 +28,7 @@ type ArtifactDriver interface {
 
 var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
 
-type NewDriverFunc func(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error)
+type NewDriverFunc func(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error)
 
 // NewDriver initializes an instance of an artifact driver
 func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error) {

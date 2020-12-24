@@ -47,7 +47,7 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 	}, nil
 }
 
-func (o *Operation) Dispatch() {
+func (o *Operation) Dispatch(ctx context.Context) {
 	log.Debug("Executing event dispatch")
 
 	data, _ := json.MarshalIndent(o.env, "", "  ")
@@ -58,7 +58,7 @@ func (o *Operation) Dispatch() {
 		// being created twice
 		nameSuffix := fmt.Sprintf("%v", time.Now().Unix())
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			_, err := o.dispatch(event, nameSuffix)
+			_, err := o.dispatch(ctx, event, nameSuffix)
 			return err == nil, err
 		})
 		if err != nil {
@@ -68,7 +68,7 @@ func (o *Operation) Dispatch() {
 	}
 }
 
-func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) (*wfv1.Workflow, error) {
+func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding, nameSuffix string) (*wfv1.Workflow, error) {
 	selector := wfeb.Spec.Event.Selector
 	result, err := expr.Eval(selector, o.env)
 	if err != nil {
@@ -85,9 +85,9 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 		var tmpl wfv1.WorkflowSpecHolder
 		var err error
 		if ref.ClusterScope {
-			tmpl, err = client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ref.Name, metav1.GetOptions{})
+			tmpl, err = client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, ref.Name, metav1.GetOptions{})
 		} else {
-			tmpl, err = client.ArgoprojV1alpha1().WorkflowTemplates(wfeb.Namespace).Get(ref.Name, metav1.GetOptions{})
+			tmpl, err = client.ArgoprojV1alpha1().WorkflowTemplates(wfeb.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to get workflow template: %w", err)
@@ -128,7 +128,7 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: wfv1.AnyStringPtr(wfv1.Item{Value: data})})
 			}
 		}
-		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(wf)
+		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(ctx, wf)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create workflow: %w", err)
 		}

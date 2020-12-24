@@ -75,7 +75,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return util.CreateServerDryRun(req.Workflow, wfClient)
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(req.Workflow)
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, req.Workflow)
 	if err != nil {
 		if apierr.IsServerTimeout(err) && req.Workflow.GenerateName != "" && req.Workflow.Name != "" {
 			errWithHint := fmt.Errorf(`create request failed due to timeout, but it's possible that workflow "%s" already exists. Original error: %w`, req.Workflow.Name, err)
@@ -134,7 +134,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		listOption = req.ListOptions
 	}
 	s.instanceIDService.With(listOption)
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(*listOption)
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(ctx, *listOption)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	}
 	s.instanceIDService.With(opts)
 	wfIf := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace)
-	watch, err := wfIf.Watch(*opts)
+	watch, err := wfIf.Watch(ctx, *opts)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 	}
 	s.instanceIDService.With(opts)
 	eventInterface := kubeClient.CoreV1().Events(req.Namespace)
-	watch, err := eventInterface.Watch(*opts)
+	watch, err := eventInterface.Watch(ctx, *opts)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, err
 	}
-	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: argoutil.GetDeletePropagation()})
+	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(ctx, wf.Name, &metav1.DeleteOptions{PropagationPolicy: argoutil.GetDeletePropagation()})
 	if err != nil {
 		return nil, err
 	}
