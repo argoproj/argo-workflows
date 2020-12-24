@@ -5,12 +5,12 @@ import (
 )
 
 var (
-	PodPhaseMetric = prometheus.NewGaugeVec(
+	PodCountMetric = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: argoNamespace,
 			Subsystem: workflowsSubsystem,
 			Name:      "pod_count",
-			Help:      "Number of pods. https://argoproj.github.io/argo/fields/#pod_count",
+			Help:      "Number of pods. https://argoproj.github.io/argo/metrics/#pod_count",
 		},
 		[]string{"phase"},
 	)

@@ -1005,6 +1005,6 @@ func (wfc *WorkflowController) syncMetrics() {
 	for _, phase := range []apiv1.PodPhase{apiv1.PodPending, apiv1.PodRunning, apiv1.PodSucceeded, apiv1.PodFailed, apiv1.PodUnknown} {
 		keys, err := wfc.podInformer.GetIndexer().IndexKeys(indexes.PhaseIndex, string(phase))
 		errors.CheckError(err)
-		metrics.PodPhaseMetric.WithLabelValues(string(phase)).Set(float64(len(keys)))
+		metrics.PodCountMetric.WithLabelValues(string(phase)).Set(float64(len(keys)))
 	}
 }

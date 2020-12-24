@@ -8,10 +8,9 @@ var (
 	WorkersBusyMetric = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: argoNamespace,
-			// TODO Subsystem:   workflowsSubsystem,
-			// TODO should be `workers_busy` with an 's'
-			Name: "worker_busy",
-			Help: "Number of workers currently busy. https://argoproj.github.io/argo/fields/#workers_busy",
+			Subsystem: workflowsSubsystem,
+			Name:      "workers_busy",
+			Help:      "Number of workers currently busy. https://argoproj.github.io/argo/metrics/#workers_busy",
 		},
 		[]string{"queue_name"},
 	)

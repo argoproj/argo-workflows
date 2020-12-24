@@ -72,8 +72,8 @@ func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	m.logMetric.Describe(ch)
 	WorkflowConditionMetric.Describe(ch)
 	PodMissingMetric.Describe(ch)
-	PodPhaseMetric.Describe(ch)
-	K8sRequestsTotal.Describe(ch)
+	PodCountMetric.Describe(ch)
+	K8sRequestTotal.Describe(ch)
 	WorkersBusyMetric.Describe(ch)
 }
 
@@ -84,8 +84,8 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	m.logMetric.Collect(ch)
 	WorkflowConditionMetric.Collect(ch)
 	PodMissingMetric.Collect(ch)
-	PodPhaseMetric.Collect(ch)
-	K8sRequestsTotal.Collect(ch)
+	PodCountMetric.Collect(ch)
+	K8sRequestTotal.Collect(ch)
 	WorkersBusyMetric.Collect(ch)
 }
 

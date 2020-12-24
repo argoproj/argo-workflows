@@ -58,15 +58,35 @@ a way to view and analyze historical data, consider the [workflow archive](workf
 
 There are several controller-level metrics. These include:
 
-* `workflows_processed_count`: a count of all Workflow updates processed by the controller
-* `count`: a count of all workflows currently accessible by the controller by status
-* `operation_duration_seconds`: a histogram of durations of operations
-* `error_count`: a count of certain errors incurred by the controller
-* `queue_depth_count`: the depth of the queue of workflows or cron workflows to be processed by the controller
-* `queue_adds_count`: the number of adds to the queue of workflows or cron workflows
-* `queue_latency`: the time workflows or cron workflows spend in the queue waiting to be processed
-
 <!-- titles choose for deep linking -->
+
+#### workflows_processed_count
+
+A count of all Workflow updates processed by the controller.
+
+#### count
+
+Number of workflow in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
+
+#### operation_duration_seconds
+
+A histogram of durations of operations.
+
+#### error_count
+
+A count of certain errors incurred by the controller.
+
+#### queue_depth_count
+
+The depth of the queue of workflows or cron workflows to be processed by the controller.
+
+#### queue_adds_count
+
+The number of additions to the queue of workflows or cron workflows.
+
+#### queue_latency
+
+The time workflows or cron workflows spend in the queue waiting to be processed.
 
 #### k8s_request_total
 
@@ -74,11 +94,19 @@ Number of API requests sent to the Kubernetes API.
 
 #### pod_count
 
-It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metrics sheds light on actual work being done. You should rarely see Failed or Succeeded pods in this metric. If you see them, that's probably a bug.
+It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done. You should rarely see Failed or Succeeded pods in this metric. If you see them, that's probably a bug.
+
+#### workflow_conditions
+
+The number of workflow with different conditions. This will tell you the number of workflows with running pods.
 
 #### workers_busy
 
-It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metrics sheds light on actual work being done. You should rarely see Failed or Succeeded pods in this metric. If you see them, that's probably a bug.This is a saturation metric. If these sit at a maximum value, it probably means that the workers are 100% busy and you may wish to increase the the number of workers.
+The number of workers that are busy.
+
+#### pod_missing
+
+Pods were not seen. E.g. by being deleted by Kubernetes. You should only see this under high load
 
 ### Metric types
 

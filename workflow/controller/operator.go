@@ -948,13 +948,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	return nil
 }
 
-func podRunningConditionStatus(anyPodRunning bool) metav1.ConditionStatus {
-	if anyPodRunning {
-		return metav1.ConditionTrue
-	}
-	return metav1.ConditionFalse
-}
-
 func recentlyStarted(node wfv1.NodeStatus) bool {
 	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 10*time.Second)
 }

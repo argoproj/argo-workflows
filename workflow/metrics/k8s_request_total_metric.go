@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	K8sRequestsTotal = prometheus.NewCounterVec(
+	K8sRequestTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: argoNamespace,
-			// TODO Subsystem:   workflowsSubsystem,
-			Name: "k8s_request_total",
-			Help: "Number of kubernetes requests executed. https://argoproj.github.io/argo/fields/#k8s_request_total",
+			Subsystem: workflowsSubsystem,
+			Name:      "k8s_request_total",
+			Help:      "Number of kubernetes requests executed. https://argoproj.github.io/argo/metrics/#k8s_request_total",
 		},
 		[]string{"kind", "verb", "status_code"},
 	)
@@ -31,7 +31,7 @@ func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 	if x != nil {
 		verb, kind := parseRequest(r)
 		log.Debugf("%s %s %v", verb, kind, x.StatusCode)
-		K8sRequestsTotal.WithLabelValues(kind, verb, strconv.Itoa(x.StatusCode)).Inc()
+		K8sRequestTotal.WithLabelValues(kind, verb, strconv.Itoa(x.StatusCode)).Inc()
 	}
 	return x, err
 }
