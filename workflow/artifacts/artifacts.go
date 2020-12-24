@@ -37,12 +37,12 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var secretKey string
 
 		if art.S3.AccessKeySecret.Name != "" {
-			accessKeyBytes, err := ri.GetSecret(art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
+			accessKeyBytes, err := ri.GetSecret(ctx, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			accessKey = accessKeyBytes
-			secretKeyBytes, err := ri.GetSecret(art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
+			secretKeyBytes, err := ri.GetSecret(ctx, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -68,21 +68,21 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			InsecureIgnoreHostKey: art.Git.InsecureIgnoreHostKey,
 		}
 		if art.Git.UsernameSecret != nil {
-			usernameBytes, err := ri.GetSecret(art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
+			usernameBytes, err := ri.GetSecret(ctx, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			gitDriver.Username = usernameBytes
 		}
 		if art.Git.PasswordSecret != nil {
-			passwordBytes, err := ri.GetSecret(art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
+			passwordBytes, err := ri.GetSecret(ctx, art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			gitDriver.Password = passwordBytes
 		}
 		if art.Git.SSHPrivateKeySecret != nil {
-			sshPrivateKeyBytes, err := ri.GetSecret(art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
+			sshPrivateKeyBytes, err := ri.GetSecret(ctx, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -92,11 +92,11 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return &gitDriver, nil
 	}
 	if art.Artifactory != nil {
-		usernameBytes, err := ri.GetSecret(art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
+		usernameBytes, err := ri.GetSecret(ctx, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		passwordBytes, err := ri.GetSecret(art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
+		passwordBytes, err := ri.GetSecret(ctx, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -119,12 +119,12 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var secretKey string
 
 		if art.OSS.AccessKeySecret.Name != "" {
-			accessKeyBytes, err := ri.GetSecret(art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
+			accessKeyBytes, err := ri.GetSecret(ctx, art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			accessKey = string(accessKeyBytes)
-			secretKeyBytes, err := ri.GetSecret(art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
+			secretKeyBytes, err := ri.GetSecret(ctx, art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -142,7 +142,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 	if art.GCS != nil {
 		driver := gcs.ArtifactDriver{}
 		if art.GCS.ServiceAccountKeySecret.Name != "" {
-			serviceAccountKeyBytes, err := ri.GetSecret(art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
+			serviceAccountKeyBytes, err := ri.GetSecret(ctx, art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}

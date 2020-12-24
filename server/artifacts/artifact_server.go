@@ -134,7 +134,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("artifact not found")
 	}
 
-	driver, err := a.artDriverFactory(art, resources{kubeClient, wf.Namespace})
+	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
 		return err
 	}

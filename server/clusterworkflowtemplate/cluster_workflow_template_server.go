@@ -83,7 +83,7 @@ func (cwts *ClusterWorkflowTemplateServer) DeleteClusterWorkflowTemplate(ctx con
 	if err != nil {
 		return nil, err
 	}
-	err = wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Delete(ctx, req.Name, v1.DeleteOptions{})
+	err = wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Delete(ctx, req.Name, &v1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
