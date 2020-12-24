@@ -581,7 +581,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
-		woc.persistUpdates()
+		woc.persistUpdates(ctx)
 		return true
 	}
 
@@ -609,7 +609,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc.log.WithField("transientErr", transientErr).Errorf("hydration failed: %v", err)
 		if !transientErr {
 			woc.markWorkflowError(err)
-			woc.persistUpdates()
+			woc.persistUpdates(ctx)
 		}
 		return true
 	}
@@ -768,7 +768,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: wfc.archiveWorkflow,
+			AddFunc: func(obj interface{}) {
+				wfc.archiveWorkflow(ctx, obj)
+			},
 			UpdateFunc: func(_, obj interface{}) {
 				wfc.archiveWorkflow(ctx, obj)
 			},

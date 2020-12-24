@@ -56,6 +56,7 @@ func TestArtifactRepositories(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("Explicit.ConfigMapNotFound", func(t *testing.T) {
+		ctx := context.Background()
 		_, err := i.Resolve(ctx, &wfv1.ArtifactRepositoryRef{}, "my-wf-ns")
 		assert.Error(t, err)
 	})
@@ -63,7 +64,7 @@ func TestArtifactRepositories(t *testing.T) {
 		ctx := context.Background()
 		_, err := k.CoreV1().ConfigMaps("my-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
-		}, metav1.CreateOptions)
+		}, metav1.CreateOptions{})
 		assert.NoError(t, err)
 
 		_, err = i.Resolve(ctx, &wfv1.ArtifactRepositoryRef{}, "my-wf-ns")
@@ -94,6 +95,7 @@ func TestArtifactRepositories(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("Default", func(t *testing.T) {
+		ctx := context.Background()
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		assert.NoError(t, err)
 		assert.Equal(t, wfv1.DefaultArtifactRepositoryRefStatus, ref)

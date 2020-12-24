@@ -84,7 +84,7 @@ func (c *cmdCloser) Close() error {
 	return nil
 }
 
-func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (d *DockerExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	cmd := exec.Command("docker", "logs", containerID)
 	log.Info(cmd.Args)
 
@@ -173,7 +173,7 @@ func (d *DockerExecutor) Wait(containerID string) error {
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (d *DockerExecutor) Kill(containerIDs []string) error {
+func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
 	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
