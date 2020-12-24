@@ -185,7 +185,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
-	wfc.addWorkflowInformerHandlers()
+	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
@@ -536,12 +536,13 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 }
 
 func (wfc *WorkflowController) runWorker() {
-	for wfc.processNextItem() {
+	ctx := context.Background()
+	for wfc.processNextItem(ctx) {
 	}
 }
 
 // processNextItem is the worker logic for handling workflow updates
-func (wfc *WorkflowController) processNextItem() bool {
+func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	key, quit := wfc.wfQueue.Get()
 	if quit {
 		return false
@@ -614,7 +615,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	startTime := time.Now()
-	woc.operate()
+	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
@@ -718,7 +719,7 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-func (wfc *WorkflowController) addWorkflowInformerHandlers() {
+func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) {
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
@@ -769,7 +770,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: wfc.archiveWorkflow,
 			UpdateFunc: func(_, obj interface{}) {
-				wfc.archiveWorkflow(obj)
+				wfc.archiveWorkflow(ctx, obj)
 			},
 		},
 	},
@@ -784,7 +785,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	})
 }
 
-func (wfc *WorkflowController) archiveWorkflow(obj interface{}) {
+func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		log.Error("failed to get key for object")
@@ -792,13 +793,13 @@ func (wfc *WorkflowController) archiveWorkflow(obj interface{}) {
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
-	err = wfc.archiveWorkflowAux(obj)
+	err = wfc.archiveWorkflowAux(ctx, obj)
 	if err != nil {
 		log.WithField("key", key).WithError(err).Error("failed to archive workflow")
 	}
 }
 
-func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
+func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj interface{}) error {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return nil
@@ -831,7 +832,6 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 		un.GetName(),
 		types.MergePatchType,
 		data,
-		metav1.PatchOptions{},
 	)
 	if err != nil {
 		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually

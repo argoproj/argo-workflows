@@ -172,12 +172,12 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
 // As you must not call `persistUpdates` twice, you must not call `operate` twice.
-func (woc *wfOperationCtx) operate() {
+func (woc *wfOperationCtx) operate(ctx context.Context) {
 	defer func() {
 		if woc.wf.Status.Fulfilled() {
-			_ = woc.killDaemonedChildren("")
+			_ = woc.killDaemonedChildren(ctx, "")
 		}
-		woc.persistUpdates()
+		woc.persistUpdates(ctx)
 	}()
 	defer func() {
 		if r := recover(); r != nil {
@@ -202,7 +202,6 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	ctx := context.Background()
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
 		ref, err := woc.controller.artifactRepositories.Resolve(ctx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
 		if err != nil {
@@ -501,7 +500,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // It also labels any pods as completed if we have extracted everything we need from it.
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
-func (woc *wfOperationCtx) persistUpdates() {
+func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if !woc.updated {
 		return
 	}
@@ -540,7 +539,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 		woc.log.Info("Re-applying updates on latest version and retrying update")
-		wf, err := woc.reapplyUpdate(wfClient, nodes)
+		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
 			woc.log.Infof("Failed to re-apply update: %+v", err)
 			return
@@ -620,7 +619,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // reapplyUpdate GETs the latest version of the workflow, re-applies the updates and
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
-func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
+func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
 	// if this condition is true, then this func will always error
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot re-apply update with mismatched resource versions")
@@ -646,7 +645,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 	// Next get latest version of the workflow, apply the patch and retry the update
 	attempt := 1
 	for {
-		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
+		currWf, err := wfClient.Get(ctx, woc.wf.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}

@@ -84,7 +84,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 			podExecCtl.Deadline = &time.Time{}
 			woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
-			return woc.updateExecutionControl(pod.Name, podExecCtl, containerName)
+			return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, containerName)
 		}
 	}
 
@@ -92,7 +92,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		if podExecCtl.Deadline == nil || woc.workflowDeadline.Before(*podExecCtl.Deadline) {
 			podExecCtl.Deadline = woc.workflowDeadline
 			woc.log.Infof("Applying sooner Workflow Deadline for pod %s at: %v", pod.Name, woc.workflowDeadline)
-			return woc.updateExecutionControl(pod.Name, podExecCtl, containerName)
+			return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, containerName)
 		}
 	}
 
