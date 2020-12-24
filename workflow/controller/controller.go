@@ -112,7 +112,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Background, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()
-	wfc.podInformer = wfc.newPodInformer()
+	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -411,7 +411,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
 		case labelPodCompleted:
-			_, err := pods.Patch(ctx, podName, types.MergePatchType, []byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`))
+			_, err := pods.Patch(
+				ctx,
+				podName,
+				types.MergePatchType,
+				[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`),
+				metav1.PatchOptions{},
+			)
 			if err != nil {
 				return err
 			}
@@ -820,7 +826,13 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal patch: %w", err)
 	}
-	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
+	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(
+		ctx,
+		un.GetName(),
+		types.MergePatchType,
+		data,
+		metav1.PatchOptions{},
+	)
 	if err != nil {
 		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually
 		// been deleted, so it's not a problem to get a `IsNotFound` error
@@ -832,7 +844,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 	return nil
 }
 
-func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
+func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context) *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
@@ -842,18 +854,18 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
-		return c.List(options)
+		return c.List(ctx, options)
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.LabelSelector = labelSelector.String()
-		return c.Watch(options)
+		return c.Watch(ctx, options)
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
-	source := wfc.newWorkflowPodWatch()
+func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedIndexInformer {
+	source := wfc.newWorkflowPodWatch(ctx)
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 	})

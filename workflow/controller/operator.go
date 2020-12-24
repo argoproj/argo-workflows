@@ -343,7 +343,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowRunning()
 	}
 
-	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
+	node, err := woc.executeTemplate(ctx, woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
 		// the error are handled in the callee so just log it.
 		msg := "error in entry template execution"
@@ -1512,7 +1512,7 @@ type executeTemplateOpts struct {
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
-func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
 
 	node := woc.wf.GetNodeByName(nodeName)
@@ -1736,7 +1736,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	case wfv1.TemplateTypeResource:
 		node, err = woc.executeResource(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeDAG:
-		node, err = woc.executeDAG(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
+		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
@@ -1789,7 +1789,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if retryNodeName != "" {
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
 		if !retryNode.Fulfilled() && node.Fulfilled() { //if the retry child has completed we need to update outself
-			node, err = woc.executeTemplate(retryNodeName, orgTmpl, tmplCtx, args, opts)
+			node, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
 			}
@@ -2889,11 +2889,11 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) runOnExitNode(templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
 	if templateRef != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
-		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
+		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
 		})
