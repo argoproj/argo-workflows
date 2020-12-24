@@ -611,7 +611,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 }
 
 // GetSecret will retrieve the Secrets from VolumeMount
-func (we *WorkflowExecutor) GetSecret(accessKeyName string, accessKey string) (string, error) {
+func (we *WorkflowExecutor) GetSecret(ctx context.Context, accessKeyName string, accessKey string) (string, error) {
 	file, err := ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey))
 	if err != nil {
 		return "", err
