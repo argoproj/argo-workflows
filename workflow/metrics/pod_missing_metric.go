@@ -8,7 +8,7 @@ var (
 			Namespace: argoNamespace,
 			Subsystem: workflowsSubsystem,
 			Name:      "pod_missing",
-			Help:      "Incidents of pod missing. https://argoproj.github.io/argo/metrics/#workers_busy",
+			Help:      "Incidents of pod missing. https://argoproj.github.io/argo/metrics/#pod_missing",
 		},
 		[]string{"recently_started", "node_phase"},
 	)
