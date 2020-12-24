@@ -66,6 +66,20 @@ There are several controller-level metrics. These include:
 * `queue_adds_count`: the number of adds to the queue of workflows or cron workflows
 * `queue_latency`: the time workflows or cron workflows spend in the queue waiting to be processed
 
+<!-- titles choose for deep linking -->
+
+#### k8s_request_total
+
+Number of API requests sent to the Kubernetes API. 
+
+#### pod_count
+
+It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metrics sheds light on actual work being done. You should rarely see Failed or Succeeded pods in this metric. If you see them, that's probably a bug.
+
+#### workers_busy
+
+It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metrics sheds light on actual work being done. You should rarely see Failed or Succeeded pods in this metric. If you see them, that's probably a bug.This is a saturation metric. If these sit at a maximum value, it probably means that the workers are 100% busy and you may wish to increase the the number of workers.
+
 ### Metric types
 
 Please see the [Prometheus docs on metric types](https://prometheus.io/docs/concepts/metric_types/).

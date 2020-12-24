@@ -5,6 +5,6 @@ const (
 	CronWorkflowIndex            = "cronworkflow"
 	WorkflowIndex                = "workflow"
 	WorkflowTemplateIndex        = "workflowtemplate"
-	WorkflowPhaseIndex           = "workflow.phase"
+	PhaseIndex                   = "phase"
 	SemaphoreConfigIndexName     = "bySemaphoreConfigMap"
 )

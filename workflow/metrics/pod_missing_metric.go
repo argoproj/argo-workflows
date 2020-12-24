@@ -6,8 +6,9 @@ var (
 	PodMissingMetric = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: argoNamespace,
-			Name:      "pod_missing",
-			Help:      "Incidents of pod missing",
+			// TODO Subsystem:   workflowsSubsystem,
+			Name: "pod_missing",
+			Help: "Incidents of pod missing. You should rarely see cases when the node is running except under high load.",
 		},
 		[]string{"recently_started", "node_phase"},
 	)

@@ -169,7 +169,7 @@ var indexers = cache.Indexers{
 	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
 	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
-	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
+	indexes.PhaseIndex:                   indexes.MetaWorkflowPhaseIndexFunc(),
 }
 
 // Run starts an Workflow resource controller
@@ -718,9 +718,15 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
-						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
+						// recentlyCreated will often (but not always) mean it is new
+						recentlyCreated := time.Now().Sub(creation) < 10*time.Second
+						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
+						if recentlyCreated {
+							wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
+						} else {
+							wfc.wfQueue.AddRateLimited(key)
+						}
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
@@ -852,6 +858,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+		indexes.PhaseIndex:    indexes.PodPhaseIndexFunc(),
 	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -981,12 +988,20 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 }
 
 func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
-	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
-		objs, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
+	for _, phase := range []wfv1.NodePhase{"", wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
+		objs, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.PhaseIndex, string(phase))
 		if err != nil {
 			log.WithError(err).Errorf("failed to list workflows by '%s'", phase)
 			continue
 		}
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(objs))
+	}
+	for _, phase := range []apiv1.PodPhase{apiv1.PodPending, apiv1.PodRunning, apiv1.PodSucceeded, apiv1.PodFailed, apiv1.PodUnknown} {
+		objs, err := wfc.podInformer.GetIndexer().IndexKeys(indexes.PhaseIndex, string(phase))
+		if err != nil {
+			log.WithError(err).Errorf("failed to list pods by '%s'", phase)
+			continue
+		}
+		metrics.PodPhaseMetric.WithLabelValues(string(phase)).Set(float64(len(objs)))
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -20,12 +19,7 @@ func MetaWorkflowPhaseIndexFunc() cache.IndexFunc {
 		if err != nil {
 			return []string{}, fmt.Errorf("object has no meta: %v", err)
 		}
-		if value, exists := v.GetLabels()[common.LabelKeyPhase]; exists {
-			return []string{value}, nil
-		} else {
-			// If the object doesn't have a phase set, consider it pending
-			return []string{string(v1alpha1.NodePending)}, nil
-		}
+		return []string{v.GetLabels()[common.LabelKeyPhase]}, nil
 	}
 }
 

@@ -92,6 +92,7 @@ ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 override LDFLAGS += \
+  -s -w \
   -X github.com/argoproj/argo.version=$(VERSION) \
   -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
   -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
@@ -468,7 +469,7 @@ endif
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	killall goreman argo workflow-controller
+	killall goreman argo workflow-controller || true
 	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 endif
 ifeq ($(PROFILE),stress)
