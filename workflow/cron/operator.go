@@ -254,7 +254,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, err
 	return time.Time{}, nil
 }
 
-func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx, workflows []v1alpha1.Workflow) error {
+func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows []v1alpha1.Workflow) error {
 	updated := false
 	currentWfsFulfilled := make(map[types.UID]bool)
 	for _, wf := range workflows {

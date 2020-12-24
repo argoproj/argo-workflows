@@ -66,10 +66,10 @@ func (k *K8sAPIExecutor) Wait(ctx context.Context, containerID string) error {
 }
 
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (k *K8sAPIExecutor) Kill(containerIDs []string) error {
+func (k *K8sAPIExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	log.Infof("Killing containers %s", containerIDs)
 	for _, containerID := range containerIDs {
-		err := k.client.killGracefully(containerID)
+		err := k.client.killGracefully(ctx, containerID)
 		if err != nil {
 			return err
 		}

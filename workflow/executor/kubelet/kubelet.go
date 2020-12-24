@@ -57,14 +57,14 @@ func (k *KubeletExecutor) WaitInit() error {
 }
 
 // Wait for the container to complete
-func (k *KubeletExecutor) Wait(containerID string) error {
-	return k.cli.WaitForTermination(containerID, 0)
+func (k *KubeletExecutor) Wait(ctx context.Context, containerID string) error {
+	return k.cli.WaitForTermination(ctx, containerID, 0)
 }
 
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (k *KubeletExecutor) Kill(containerIDs []string) error {
+func (k *KubeletExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	for _, containerID := range containerIDs {
-		err := k.cli.KillGracefully(containerID)
+		err := k.cli.KillGracefully(ctx, containerID)
 		if err != nil {
 			return err
 		}

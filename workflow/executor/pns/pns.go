@@ -229,9 +229,9 @@ func (p *PNSExecutor) GetOutputStream(ctx context.Context, containerID string, c
 	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream(ctx)
 }
 
-func (p *PNSExecutor) GetExitCode(containerID string) (string, error) {
+func (p *PNSExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
-	_, containerStatus, err := p.GetTerminatedContainerStatus(containerID)
+	_, containerStatus, err := p.GetTerminatedContainerStatus(ctx, containerID)
 	if err != nil {
 		return "", fmt.Errorf("could not get container status: %s", err)
 	}

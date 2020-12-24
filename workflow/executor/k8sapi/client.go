@@ -89,6 +89,6 @@ func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.Containe
 	return err
 }
 
-func (c *k8sAPIClient) killGracefully(containerID string) error {
-	return execcommon.KillGracefully(c, containerID)
+func (c *k8sAPIClient) killGracefully(ctx context.Context, containerID string) error {
+	return execcommon.KillGracefully(ctx, c, containerID)
 }

@@ -282,8 +282,8 @@ func (k *kubeletClient) getCommandOutput(containerID, command string) (*bytes.Bu
 }
 
 // WaitForTermination of the given containerID, set the timeout to 0 to discard it
-func (k *kubeletClient) WaitForTermination(containerID string, timeout time.Duration) error {
-	return execcommon.WaitForTermination(k, containerID, timeout)
+func (k *kubeletClient) WaitForTermination(ctx context.Context, containerID string, timeout time.Duration) error {
+	return execcommon.WaitForTermination(ctx, k, containerID, timeout)
 }
 
 func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
@@ -295,8 +295,8 @@ func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.Contain
 	return err
 }
 
-func (k *kubeletClient) KillGracefully(containerID string) error {
-	return execcommon.KillGracefully(k, containerID)
+func (k *kubeletClient) KillGracefully(ctx context.Context, containerID string) error {
+	return execcommon.KillGracefully(ctx, k, containerID)
 }
 
 func (k *kubeletClient) CopyArchive(ctx context.Context, containerID, sourcePath, destPath string) error {

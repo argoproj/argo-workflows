@@ -639,8 +639,8 @@ func (we *WorkflowExecutor) saveLogToFile(mainCtrID, path string) error {
 }
 
 // InitDriver initializes an instance of an artifact driver
-func (we *WorkflowExecutor) InitDriver(art *wfv1.Artifact) (artifact.ArtifactDriver, error) {
-	driver, err := artifact.NewDriver(art, we)
+func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifact.ArtifactDriver, error) {
+	driver, err := artifact.NewDriver(ctx, art, we)
 	if err == artifact.ErrUnsupportedDriver {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 	}
