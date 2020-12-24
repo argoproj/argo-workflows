@@ -1336,6 +1336,16 @@ type Backoff struct {
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
+// RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
+// In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+type RetryNodeAntiAffinity struct {
+}
+
+// RetryAffinity prevents running steps on the same host.
+type RetryAffinity struct {
+	NodeAntiAffinity *RetryNodeAntiAffinity `json:"nodeAntiAffinity,omitempty" protobuf:"bytes,1,opt,name=nodeAntiAffinity"`
+}
+
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
@@ -1347,9 +1357,8 @@ type RetryStrategy struct {
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 
-	// If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host
-	// Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. "kubernetes.io/hostname" or "k3s.io/hostname"
-	ScheduleOnDifferentHostNodesLabel string `json:"scheduleOnDifferentHostNodesLabel,omitempty" protobuf:"bytes,4,opt,name=scheduleOnDifferentHostNodesLabel"`
+	// Affinity prevents running workflow's step on the same host
+	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
 }
 
 // The amount of requested resource * the duration that request was used.

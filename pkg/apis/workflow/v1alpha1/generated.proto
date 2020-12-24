@@ -849,6 +849,16 @@ message ResourceTemplate {
   repeated string flags = 7;
 }
 
+// RetryAffinity prevents running steps on the same host.
+message RetryAffinity {
+  optional RetryNodeAntiAffinity nodeAntiAffinity = 1;
+}
+
+// RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
+// In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+message RetryNodeAntiAffinity {
+}
+
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
@@ -860,9 +870,8 @@ message RetryStrategy {
   // Backoff is a backoff strategy
   optional Backoff backoff = 3;
 
-  // If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host
-  // Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. "kubernetes.io/hostname" or "k3s.io/hostname"
-  optional string scheduleOnDifferentHostNodesLabel = 4;
+  // Affinity prevents running workflow's step on the same host
+  optional RetryAffinity affinity = 4;
 }
 
 // S3Artifact is the location of an S3 artifact

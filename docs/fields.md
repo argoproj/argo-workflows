@@ -1567,10 +1567,10 @@ RetryStrategy provides controls on how to retry a workflow step
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`affinity`|[`RetryAffinity`](#retryaffinity)|Affinity prevents running workflow's step on the same host|
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
 |`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
-|`scheduleOnDifferentHostNodesLabel`|`string`|If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. "kubernetes.io/hostname" or "k3s.io/hostname"|
 
 ## Synchronization
 
@@ -2384,6 +2384,15 @@ Prometheus is a prometheus metric to be emitted
 |`labels`|`Array<`[`MetricLabel`](#metriclabel)`>`|Labels is a list of metric labels|
 |`name`|`string`|Name is the name of the metric|
 |`when`|`string`|When is a conditional statement that decides when to emit the metric|
+
+## RetryAffinity
+
+RetryAffinity prevents running steps on the same host.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`nodeAntiAffinity`|[`RetryNodeAntiAffinity`](#retrynodeantiaffinity)|_No description available_|
 
 ## Backoff
 
@@ -3740,6 +3749,10 @@ MetricLabel is a single label for a prometheus metric
 |:----------:|:----------:|---------------|
 |`key`|`string`|_No description available_|
 |`value`|`string`|_No description available_|
+
+## RetryNodeAntiAffinity
+
+RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
 
 ## DAGTask
 

@@ -3570,10 +3570,27 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.RetryAffinity": {
+      "description": "RetryAffinity prevents running steps on the same host.",
+      "type": "object",
+      "properties": {
+        "nodeAntiAffinity": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryNodeAntiAffinity"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.RetryNodeAntiAffinity": {
+      "description": "RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses \"kubernetes.io/hostname\".",
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.RetryStrategy": {
       "description": "RetryStrategy provides controls on how to retry a workflow step",
       "type": "object",
       "properties": {
+        "affinity": {
+          "description": "Affinity prevents running workflow's step on the same host",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryAffinity"
+        },
         "backoff": {
           "description": "Backoff is a backoff strategy",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Backoff"
@@ -3584,10 +3601,6 @@
         },
         "retryPolicy": {
           "description": "RetryPolicy is a policy of NodePhase statuses that will be retried",
-          "type": "string"
-        },
-        "scheduleOnDifferentHostNodesLabel": {
-          "description": "If exists, ScheduleOnDifferentHostNodes prevents of running workflow step on the same host Step won't rerun on the host where label is equal scheduleOnDifferentHostNodesLabel, e.g. \"kubernetes.io/hostname\" or \"k3s.io/hostname\"",
           "type": "string"
         }
       }

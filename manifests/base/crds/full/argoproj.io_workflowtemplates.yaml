@@ -816,6 +816,11 @@ spec:
               type: integer
             retryStrategy:
               properties:
+                affinity:
+                  properties:
+                    nodeAntiAffinity:
+                      type: object
+                  type: object
                 backoff:
                   properties:
                     duration:
@@ -834,8 +839,6 @@ spec:
                   - type: string
                   x-kubernetes-int-or-string: true
                 retryPolicy:
-                  type: string
-                scheduleOnDifferentHostNodesLabel:
                   type: string
               type: object
             schedulerName:
@@ -4158,6 +4161,11 @@ spec:
                     type: object
                   retryStrategy:
                     properties:
+                      affinity:
+                        properties:
+                          nodeAntiAffinity:
+                            type: object
+                        type: object
                       backoff:
                         properties:
                           duration:
@@ -4176,8 +4184,6 @@ spec:
                         - type: string
                         x-kubernetes-int-or-string: true
                       retryPolicy:
-                        type: string
-                      scheduleOnDifferentHostNodesLabel:
                         type: string
                     type: object
                   schedulerName:

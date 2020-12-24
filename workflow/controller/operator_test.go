@@ -5511,7 +5511,9 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	hostSelector := "kubernetes.io/hostname"
 	retries := wfv1.RetryStrategy{}
-	retries.ScheduleOnDifferentHostNodesLabel = hostSelector
+	retries.Affinity = &wfv1.RetryAffinity{
+		NodeAntiAffinity: &wfv1.RetryNodeAntiAffinity{},
+	}
 
 	woc.wf.Status.Nodes[nodeID] = *node
 
