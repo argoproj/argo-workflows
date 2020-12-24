@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/argoproj/argo/workflow/artifacts/gcs"
@@ -30,7 +31,7 @@ var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
 type NewDriverFunc func(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error)
 
 // NewDriver initializes an instance of an artifact driver
-func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error) {
+func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string
@@ -107,7 +108,7 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 
 	}
 	if art.HDFS != nil {
-		return hdfs.CreateDriver(ri, art.HDFS)
+		return hdfs.CreateDriver(ctx, ri, art.HDFS)
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil

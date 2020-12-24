@@ -96,6 +96,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
 	go wait.Until(cc.syncAll, 10*time.Second, ctx.Done())
 
+	// TODO JPZ13 12/24/2020 - refactor until to use untilwithcontext
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
 	}
@@ -104,11 +105,12 @@ func (cc *Controller) Run(ctx context.Context) {
 }
 
 func (cc *Controller) runCronWorker() {
-	for cc.processNextCronItem() {
+	ctx := context.Background()
+	for cc.processNextCronItem(ctx) {
 	}
 }
 
-func (cc *Controller) processNextCronItem() bool {
+func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	key, quit := cc.cronWfQueue.Get()
 	if quit {
 		return false
@@ -153,7 +155,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	wfWasRun, err := cronWorkflowOperationCtx.runOutstandingWorkflows()
+	wfWasRun, err := cronWorkflowOperationCtx.runOutstandingWorkflows(ctx)
 	if err != nil {
 		logCtx.WithError(err).Error("could not run outstanding Workflow")
 		return true
@@ -229,7 +231,8 @@ func (cc *Controller) syncAll() {
 			continue
 		}
 
-		err = cc.syncCronWorkflow(cronWf, groupedWorkflows[cronWf.UID])
+		ctx := context.Background()
+		err = cc.syncCronWorkflow(ctx, cronWf, groupedWorkflows[cronWf.UID])
 		if err != nil {
 			log.WithError(err).Error("Unable to sync CronWorkflow")
 			continue
@@ -237,17 +240,17 @@ func (cc *Controller) syncAll() {
 	}
 }
 
-func (cc *Controller) syncCronWorkflow(cronWf *v1alpha1.CronWorkflow, workflows []v1alpha1.Workflow) error {
+func (cc *Controller) syncCronWorkflow(ctx context.Context, cronWf *v1alpha1.CronWorkflow, workflows []v1alpha1.Workflow) error {
 	key := cronWf.Namespace + "/" + cronWf.Name
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
 	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics)
-	err := cwoc.enforceHistoryLimit(workflows)
+	err := cwoc.enforceHistoryLimit(ctx, workflows)
 	if err != nil {
 		return err
 	}
-	err = cwoc.reconcileActiveWfs(workflows)
+	err = cwoc.reconcileActiveWfs(ctx, workflows)
 	if err != nil {
 		return err
 	}

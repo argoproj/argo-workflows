@@ -53,7 +53,7 @@ func (c *k8sAPIClient) CreateArchive(ctx context.Context, containerID, sourcePat
 }
 
 func (c *k8sAPIClient) getLogsAsStream(ctx context.Context, containerID string) (io.ReadCloser, error) {
-	_, containerStatus, err := c.GetContainerStatus(containerID)
+	_, containerStatus, err := c.GetContainerStatus(ctx, containerID)
 	if err != nil {
 		return nil, err
 	}

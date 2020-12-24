@@ -300,5 +300,5 @@ func (k *kubeletClient) KillGracefully(containerID string) error {
 }
 
 func (k *kubeletClient) CopyArchive(ctx context.Context, containerID, sourcePath, destPath string) error {
-	return execcommon.CopyArchive(k, containerID, sourcePath, destPath)
+	return execcommon.CopyArchive(ctx, k, containerID, sourcePath, destPath)
 }

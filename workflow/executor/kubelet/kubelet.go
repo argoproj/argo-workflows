@@ -1,6 +1,7 @@
 package kubelet
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -39,9 +40,9 @@ func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput boo
 	return k.cli.GetLogStream(containerID)
 }
 
-func (k *KubeletExecutor) GetExitCode(containerID string) (string, error) {
+func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
-	_, status, err := k.cli.GetContainerStatus(containerID)
+	_, status, err := k.cli.GetContainerStatus(ctx, containerID)
 	if err != nil {
 		return "", errors.InternalWrapError(err, "Could not get container status")
 	}
