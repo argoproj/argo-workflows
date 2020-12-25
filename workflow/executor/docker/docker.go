@@ -167,7 +167,7 @@ func (d *DockerExecutor) WaitInit() error {
 }
 
 // Wait for the container to complete
-func (d *DockerExecutor) Wait(containerID string) error {
+func (d *DockerExecutor) Wait(ctx context.Context, containerID string) error {
 	_, err := common.RunCommand("docker", "wait", containerID)
 	return err
 }

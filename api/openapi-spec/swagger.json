@@ -21,7 +21,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ListArchivedWorkflows",
+        "operationId": "ArchivedWorkflowService_ListArchivedWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -37,22 +37,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -82,6 +86,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowList"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -91,7 +101,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "GetArchivedWorkflow",
+        "operationId": "ArchivedWorkflowService_GetArchivedWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -106,6 +116,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -113,7 +129,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "DeleteArchivedWorkflow",
+        "operationId": "ArchivedWorkflowService_DeleteArchivedWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -128,6 +144,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchivedWorkflowDeletedResponse"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -137,7 +159,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ListClusterWorkflowTemplates",
+        "operationId": "ClusterWorkflowTemplateService_ListClusterWorkflowTemplates",
         "parameters": [
           {
             "type": "string",
@@ -153,22 +175,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -198,6 +224,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateList"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -205,7 +237,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "CreateClusterWorkflowTemplate",
+        "operationId": "ClusterWorkflowTemplateService_CreateClusterWorkflowTemplate",
         "parameters": [
           {
             "name": "body",
@@ -222,6 +254,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -231,7 +269,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "LintClusterWorkflowTemplate",
+        "operationId": "ClusterWorkflowTemplateService_LintClusterWorkflowTemplate",
         "parameters": [
           {
             "name": "body",
@@ -248,6 +286,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -257,7 +301,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "GetClusterWorkflowTemplate",
+        "operationId": "ClusterWorkflowTemplateService_GetClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -267,7 +311,7 @@
           },
           {
             "type": "string",
-            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "getOptions.resourceVersion",
             "in": "query"
           }
@@ -278,6 +322,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -285,7 +335,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "UpdateClusterWorkflowTemplate",
+        "operationId": "ClusterWorkflowTemplateService_UpdateClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -309,6 +359,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -316,7 +372,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "DeleteClusterWorkflowTemplate",
+        "operationId": "ClusterWorkflowTemplateService_DeleteClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -345,7 +401,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -373,6 +428,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateDeleteResponse"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -382,7 +443,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "ListCronWorkflows",
+        "operationId": "CronWorkflowService_ListCronWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -404,22 +465,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -449,6 +514,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowList"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -456,7 +527,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CreateCronWorkflow",
+        "operationId": "CronWorkflowService_CreateCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -479,6 +550,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -488,7 +565,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "LintCronWorkflow",
+        "operationId": "CronWorkflowService_LintCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -511,6 +588,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -520,7 +603,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "GetCronWorkflow",
+        "operationId": "CronWorkflowService_GetCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -536,7 +619,7 @@
           },
           {
             "type": "string",
-            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "getOptions.resourceVersion",
             "in": "query"
           }
@@ -547,6 +630,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -554,7 +643,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "UpdateCronWorkflow",
+        "operationId": "CronWorkflowService_UpdateCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -584,6 +673,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -591,7 +686,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "DeleteCronWorkflow",
+        "operationId": "CronWorkflowService_DeleteCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -626,7 +721,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -654,6 +748,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -663,7 +763,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "ResumeCronWorkflow",
+        "operationId": "CronWorkflowService_ResumeCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -692,6 +792,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -701,7 +807,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "SuspendCronWorkflow",
+        "operationId": "CronWorkflowService_SuspendCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -730,6 +836,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -739,7 +851,7 @@
         "tags": [
           "EventService"
         ],
-        "operationId": "ReceiveEvent",
+        "operationId": "EventService_ReceiveEvent",
         "parameters": [
           {
             "type": "string",
@@ -771,6 +883,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventResponse"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -780,12 +898,18 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "GetInfo",
+        "operationId": "InfoService_GetInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.InfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -796,7 +920,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WatchEvents",
+        "operationId": "WorkflowService_WatchEvents",
         "parameters": [
           {
             "type": "string",
@@ -818,22 +942,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -872,6 +1000,12 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -881,12 +1015,18 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "GetUserInfo",
+        "operationId": "InfoService_GetUserInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GetUserInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -897,12 +1037,18 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "GetVersion",
+        "operationId": "InfoService_GetVersion",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Version"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -913,7 +1059,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WatchWorkflows",
+        "operationId": "WorkflowService_WatchWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -935,22 +1081,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -989,6 +1139,12 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -998,7 +1154,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "ListWorkflowTemplates",
+        "operationId": "WorkflowTemplateService_ListWorkflowTemplates",
         "parameters": [
           {
             "type": "string",
@@ -1020,22 +1176,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -1065,6 +1225,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateList"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -1072,7 +1238,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "CreateWorkflowTemplate",
+        "operationId": "WorkflowTemplateService_CreateWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1095,6 +1261,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1104,7 +1276,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "LintWorkflowTemplate",
+        "operationId": "WorkflowTemplateService_LintWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1127,6 +1299,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1136,7 +1314,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "GetWorkflowTemplate",
+        "operationId": "WorkflowTemplateService_GetWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1152,7 +1330,7 @@
           },
           {
             "type": "string",
-            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "getOptions.resourceVersion",
             "in": "query"
           }
@@ -1163,6 +1341,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -1170,7 +1354,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "UpdateWorkflowTemplate",
+        "operationId": "WorkflowTemplateService_UpdateWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1200,6 +1384,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -1207,7 +1397,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "DeleteWorkflowTemplate",
+        "operationId": "WorkflowTemplateService_DeleteWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1242,7 +1432,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -1270,6 +1459,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateDeleteResponse"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1279,7 +1474,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "ListWorkflows",
+        "operationId": "WorkflowService_ListWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -1301,22 +1496,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -1352,6 +1551,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowList"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -1359,7 +1564,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "CreateWorkflow",
+        "operationId": "WorkflowService_CreateWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1382,6 +1587,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1391,7 +1602,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "LintWorkflow",
+        "operationId": "WorkflowService_LintWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1414,6 +1625,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1423,7 +1640,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "SubmitWorkflow",
+        "operationId": "WorkflowService_SubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1446,6 +1663,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1455,7 +1678,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "GetWorkflow",
+        "operationId": "WorkflowService_GetWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1471,7 +1694,7 @@
           },
           {
             "type": "string",
-            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "getOptions.resourceVersion",
             "in": "query"
           },
@@ -1488,6 +1711,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       },
@@ -1495,7 +1724,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "DeleteWorkflow",
+        "operationId": "WorkflowService_DeleteWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1530,7 +1759,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -1558,6 +1786,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1567,7 +1801,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowLogs",
+        "operationId": "WorkflowService_WorkflowLogs",
         "parameters": [
           {
             "type": "string",
@@ -1594,14 +1828,12 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
             "name": "logOptions.follow",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
             "name": "logOptions.previous",
             "in": "query"
@@ -1629,7 +1861,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
             "name": "logOptions.timestamps",
             "in": "query"
@@ -1650,7 +1881,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
@@ -1671,6 +1901,12 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1680,7 +1916,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "ResubmitWorkflow",
+        "operationId": "WorkflowService_ResubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1709,6 +1945,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1718,7 +1960,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "ResumeWorkflow",
+        "operationId": "WorkflowService_ResumeWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1747,6 +1989,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1756,7 +2004,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "RetryWorkflow",
+        "operationId": "WorkflowService_RetryWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1785,6 +2033,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1794,7 +2048,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "SetWorkflow",
+        "operationId": "WorkflowService_SetWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1823,6 +2077,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1832,7 +2092,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "StopWorkflow",
+        "operationId": "WorkflowService_StopWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1861,6 +2121,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1870,7 +2136,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "SuspendWorkflow",
+        "operationId": "WorkflowService_SuspendWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1899,6 +2165,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1908,7 +2180,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "TerminateWorkflow",
+        "operationId": "WorkflowService_TerminateWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1937,6 +2209,12 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -1947,7 +2225,7 @@
           "WorkflowService"
         ],
         "summary": "DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.",
-        "operationId": "PodLogs",
+        "operationId": "WorkflowService_PodLogs",
         "parameters": [
           {
             "type": "string",
@@ -1975,14 +2253,12 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
             "name": "logOptions.follow",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
             "name": "logOptions.previous",
             "in": "query"
@@ -2010,7 +2286,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
             "name": "logOptions.timestamps",
             "in": "query"
@@ -2031,7 +2306,6 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
@@ -2052,6 +2326,12 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
           }
         }
       }
@@ -2067,6 +2347,26 @@
         "value": {
           "type": "string",
           "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
         }
       }
     },
@@ -2817,8 +3117,7 @@
           "type": "string"
         },
         "emailVerified": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "groups": {
           "type": "array",
@@ -4485,8 +4784,7 @@
           "type": "string"
         },
         "serverDryRun": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "workflow": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
@@ -4578,8 +4876,7 @@
       "type": "object",
       "properties": {
         "memoized": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "name": {
           "type": "string"
@@ -4616,8 +4913,7 @@
           "type": "string"
         },
         "restartSuccessful": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         }
       }
     },
@@ -5926,6 +6222,20 @@
         }
       }
     },
+    "io.k8s.api.core.v1.EphemeralVolumeSource": {
+      "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
+      "type": "object",
+      "properties": {
+        "readOnly": {
+          "type": "boolean",
+          "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional"
+        },
+        "volumeClaimTemplate": {
+          "description": "Will be used to create a stand-alone PVC to provision the volume.\nThe pod in which this EphemeralVolumeSource is embedded will be the\nowner of the PVC, i.e. the PVC will be deleted together with the\npod.  The name of the PVC will be `\u003cpod name\u003e-\u003cvolume name\u003e` where\n`\u003cvolume name\u003e` is the name from the `PodSpec.Volumes` array\nentry. Pod validation will reject the pod if the concatenated name\nis not valid for a PVC (for example, too long).\n\nAn existing PVC with that name that is not owned by the pod\nwill *not* be used for the pod to avoid using an unrelated\nvolume by mistake. Starting the pod is then blocked until\nthe unrelated PVC is removed. If such a pre-created PVC is\nmeant to be used by the pod, the PVC has to updated with an\nowner reference to the pod once the pod exists. Normally\nthis should not be necessary, but it may be useful when\nmanually reconstructing a broken cluster.\n\nThis field is read-only and no changes will be made by Kubernetes\nto the PVC after it has been created.\n\nRequired, must not be nil.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimTemplate"
+        }
+      }
+    },
     "io.k8s.api.core.v1.Event": {
       "description": "Event is a report of an event somewhere in the cluster.",
       "type": "object",
@@ -6691,6 +7001,20 @@
         "phase": {
           "description": "Phase represents the current phase of PersistentVolumeClaim.",
           "type": "string"
+        }
+      }
+    },
+    "io.k8s.api.core.v1.PersistentVolumeClaimTemplate": {
+      "description": "PersistentVolumeClaimTemplate is used to produce\nPersistentVolumeClaim objects as part of an EphemeralVolumeSource.",
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "description": "May contain labels and annotations that will be copied into the PVC\nwhen creating it. No other fields are allowed and will be rejected during\nvalidation.\n\n+optional",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "description": "The specification for the PersistentVolumeClaim. The entire content is\ncopied unchanged into the PVC that gets created from this\ntemplate. The same fields as in a PersistentVolumeClaim\nare also valid here.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimSpec"
         }
       }
     },

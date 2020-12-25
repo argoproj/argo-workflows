@@ -580,7 +580,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
 		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
+		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates(ctx)
 		return true
 	}
@@ -608,7 +608,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		transientErr := errorsutil.IsTransientErr(err)
 		woc.log.WithField("transientErr", transientErr).Errorf("hydration failed: %v", err)
 		if !transientErr {
-			woc.markWorkflowError(err)
+			woc.markWorkflowError(ctx, err)
 			woc.persistUpdates(ctx)
 		}
 		return true

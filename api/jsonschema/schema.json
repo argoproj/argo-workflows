@@ -14,6 +14,26 @@
       },
       "type": "object"
     },
+    "grpc.gateway.runtime.Error": {
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          },
+          "type": "array"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "grpc.gateway.runtime.StreamError": {
       "properties": {
         "details": {
@@ -764,7 +784,6 @@
           "type": "string"
         },
         "emailVerified": {
-          "format": "boolean",
           "type": "boolean"
         },
         "groups": {
@@ -2434,7 +2453,6 @@
           "type": "string"
         },
         "serverDryRun": {
-          "format": "boolean",
           "type": "boolean"
         },
         "workflow": {
@@ -2529,7 +2547,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowResubmitRequest": {
       "properties": {
         "memoized": {
-          "format": "boolean",
           "type": "boolean"
         },
         "name": {
@@ -2567,7 +2584,6 @@
           "type": "string"
         },
         "restartSuccessful": {
-          "format": "boolean",
           "type": "boolean"
         }
       },
@@ -3880,6 +3896,20 @@
       },
       "type": "object"
     },
+    "io.k8s.api.core.v1.EphemeralVolumeSource": {
+      "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
+      "properties": {
+        "readOnly": {
+          "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional",
+          "type": "boolean"
+        },
+        "volumeClaimTemplate": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimTemplate",
+          "description": "Will be used to create a stand-alone PVC to provision the volume.\nThe pod in which this EphemeralVolumeSource is embedded will be the\nowner of the PVC, i.e. the PVC will be deleted together with the\npod.  The name of the PVC will be `\u003cpod name\u003e-\u003cvolume name\u003e` where\n`\u003cvolume name\u003e` is the name from the `PodSpec.Volumes` array\nentry. Pod validation will reject the pod if the concatenated name\nis not valid for a PVC (for example, too long).\n\nAn existing PVC with that name that is not owned by the pod\nwill *not* be used for the pod to avoid using an unrelated\nvolume by mistake. Starting the pod is then blocked until\nthe unrelated PVC is removed. If such a pre-created PVC is\nmeant to be used by the pod, the PVC has to updated with an\nowner reference to the pod once the pod exists. Normally\nthis should not be necessary, but it may be useful when\nmanually reconstructing a broken cluster.\n\nThis field is read-only and no changes will be made by Kubernetes\nto the PVC after it has been created.\n\nRequired, must not be nil."
+        }
+      },
+      "type": "object"
+    },
     "io.k8s.api.core.v1.Event": {
       "description": "Event is a report of an event somewhere in the cluster.",
       "properties": {
@@ -4644,6 +4674,20 @@
         "phase": {
           "description": "Phase represents the current phase of PersistentVolumeClaim.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.k8s.api.core.v1.PersistentVolumeClaimTemplate": {
+      "description": "PersistentVolumeClaimTemplate is used to produce\nPersistentVolumeClaim objects as part of an EphemeralVolumeSource.",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+          "description": "May contain labels and annotations that will be copied into the PVC\nwhen creating it. No other fields are allowed and will be rejected during\nvalidation.\n\n+optional"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimSpec",
+          "description": "The specification for the PersistentVolumeClaim. The entire content is\ncopied unchanged into the PVC that gets created from this\ntemplate. The same fields as in a PersistentVolumeClaim\nare also valid here."
         }
       },
       "type": "object"

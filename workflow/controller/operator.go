@@ -422,7 +422,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			// the workflow is now considered unsuccessful.
 			woc.markWorkflowPhase(ctx, onExitNode.Phase, onExitNode.Message)
 		} else {
-			woc.markWorkflowSuccess()
+			woc.markWorkflowSuccess(ctx)
 		}
 	case wfv1.NodeFailed:
 		woc.markWorkflowFailed(ctx, workflowMessage)
