@@ -81,10 +81,11 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// start a controller on instances of our custom resource
-			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
-			errors.CheckError(err)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			errors.CheckError(err)
 
 			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
 
