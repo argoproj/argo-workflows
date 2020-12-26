@@ -13,6 +13,7 @@ import events from './events';
 import help from './help';
 import login from './login';
 import reports from './reports';
+import sensors from './sensors';
 import {uiUrl} from './shared/base';
 import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
@@ -24,6 +25,7 @@ import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
 const eventsUrl = uiUrl('events');
+const sensorUrl = uiUrl('sensors');
 const workflowsUrl = uiUrl('workflows');
 const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
@@ -93,6 +95,11 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             iconClassName: 'fa fa-broadcast-tower'
                         },
                         {
+                            title: 'Sensors',
+                            path: sensorUrl + '/' + namespace,
+                            iconClassName: 'fa fa-circle'
+                        },
+                        {
                             title: 'Workflow Event Bindings',
                             path: workflowsEventBindingsUrl + '/' + namespace,
                             iconClassName: 'fa fa-cloud'
@@ -131,6 +138,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 <Redirect to={workflowsUrl} />
                             </Route>
                             <Route path={eventsUrl} component={events.component} />
+                            <Route path={sensorUrl} component={sensors.component} />
                             <Route path={workflowsUrl} component={workflows.component} />
                             <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
                             <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />

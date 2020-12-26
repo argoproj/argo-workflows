@@ -28,6 +28,29 @@ func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensor
 	return list, nil
 }
 
+func (s *sensorServer) GetSensor(ctx context.Context, in *sensorpkg.GetSensorRequest) (*sv1.Sensor, error) {
+	client := auth.GetSensorClient(ctx)
+	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Get(in.Name, metav1.GetOptions{})
+}
+
+func (s *sensorServer) CreateSensor(ctx context.Context, in *sensorpkg.CreateSensorRequest) (*sv1.Sensor, error) {
+	client := auth.GetSensorClient(ctx)
+	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Create(in.Sensor)
+}
+
+func (s *sensorServer) UpdateSensor(ctx context.Context, in *sensorpkg.UpdateSensorRequest) (*sv1.Sensor, error) {
+	client := auth.GetSensorClient(ctx)
+	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Update(in.Sensor)
+}
+
+func (s *sensorServer) DeleteSensor(ctx context.Context, in *sensorpkg.DeleteSensorRequest) (*sensorpkg.DeleteSensorResponse, error) {
+	client := auth.GetSensorClient(ctx)
+	if err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Delete(in.Name, &metav1.DeleteOptions{}); err != nil {
+		return nil, err
+	}
+	return &sensorpkg.DeleteSensorResponse{}, nil
+}
+
 func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorpkg.SensorService_SensorsLogsServer) error {
 	labelSelector := "sensor-name"
 	if in.Name != "" {
@@ -63,7 +86,7 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 	)
 }
 
-func (e *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensorpkg.SensorService_WatchSensorsServer) error {
+func (s *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensorpkg.SensorService_WatchSensorsServer) error {
 	ctx := srv.Context()
 	listOptions := metav1.ListOptions{}
 	if in.ListOptions != nil {
@@ -93,6 +116,8 @@ func (e *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 		}
 	}
 }
+
+// NewSensorServer returns a new sensorServer instance
 func NewSensorServer() sensorpkg.SensorServiceServer {
 	return &sensorServer{}
 }
