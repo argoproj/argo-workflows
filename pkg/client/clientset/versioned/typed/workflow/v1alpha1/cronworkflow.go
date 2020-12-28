@@ -22,14 +22,14 @@ type CronWorkflowsGetter interface {
 
 // CronWorkflowInterface has methods to work with CronWorkflow resources.
 type CronWorkflowInterface interface {
-	Create(context.Context, *v1alpha1.CronWorkflow) (*v1alpha1.CronWorkflow, error)
-	Update(context.Context, *v1alpha1.CronWorkflow) (*v1alpha1.CronWorkflow, error)
-	Delete(ctx context.Context, name string, options *v1.DeleteOptions) error
-	DeleteCollection(ctx context.Context, options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(ctx context.Context, name string, options v1.GetOptions) (*v1alpha1.CronWorkflow, error)
+	Create(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, opts v1.CreateOptions) (*v1alpha1.CronWorkflow, error)
+	Update(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, opts v1.UpdateOptions) (*v1alpha1.CronWorkflow, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.CronWorkflow, error)
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.CronWorkflowList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CronWorkflow, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CronWorkflow, err error)
 	CronWorkflowExpansion
 }
 
@@ -93,11 +93,12 @@ func (c *cronWorkflows) Watch(ctx context.Context, opts v1.ListOptions) (watch.I
 }
 
 // Create takes the representation of a cronWorkflow and creates it.  Returns the server's representation of the cronWorkflow, and an error, if there is any.
-func (c *cronWorkflows) Create(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow) (result *v1alpha1.CronWorkflow, err error) {
+func (c *cronWorkflows) Create(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, opts v1.CreateOptions) (result *v1alpha1.CronWorkflow, err error) {
 	result = &v1alpha1.CronWorkflow{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("cronworkflows").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cronWorkflow).
 		Do(ctx).
 		Into(result)
@@ -105,12 +106,13 @@ func (c *cronWorkflows) Create(ctx context.Context, cronWorkflow *v1alpha1.CronW
 }
 
 // Update takes the representation of a cronWorkflow and updates it. Returns the server's representation of the cronWorkflow, and an error, if there is any.
-func (c *cronWorkflows) Update(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow) (result *v1alpha1.CronWorkflow, err error) {
+func (c *cronWorkflows) Update(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, opts v1.UpdateOptions) (result *v1alpha1.CronWorkflow, err error) {
 	result = &v1alpha1.CronWorkflow{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("cronworkflows").
 		Name(cronWorkflow.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cronWorkflow).
 		Do(ctx).
 		Into(result)
@@ -118,40 +120,41 @@ func (c *cronWorkflows) Update(ctx context.Context, cronWorkflow *v1alpha1.CronW
 }
 
 // Delete takes name of the cronWorkflow and deletes it. Returns an error if one occurs.
-func (c *cronWorkflows) Delete(ctx context.Context, name string, options *v1.DeleteOptions) error {
+func (c *cronWorkflows) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cronworkflows").
 		Name(name).
-		Body(options).
+		Body(&opts).
 		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *cronWorkflows) DeleteCollection(ctx context.Context, options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *cronWorkflows) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cronworkflows").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
+		Body(&opts).
 		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched cronWorkflow.
-func (c *cronWorkflows) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CronWorkflow, err error) {
+func (c *cronWorkflows) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CronWorkflow, err error) {
 	result = &v1alpha1.CronWorkflow{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("cronworkflows").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

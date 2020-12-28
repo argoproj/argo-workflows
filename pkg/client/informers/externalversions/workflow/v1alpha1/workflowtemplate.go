@@ -40,20 +40,19 @@ func NewWorkflowTemplateInformer(client versioned.Interface, namespace string, r
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredWorkflowTemplateInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	ctx := context.Background()
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).List(ctx, options)
+				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Watch(ctx, options)
+				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&workflowv1alpha1.WorkflowTemplate{},

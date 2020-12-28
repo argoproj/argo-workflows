@@ -22,14 +22,14 @@ type WorkflowsGetter interface {
 
 // WorkflowInterface has methods to work with Workflow resources.
 type WorkflowInterface interface {
-	Create(context.Context, *v1alpha1.Workflow) (*v1alpha1.Workflow, error)
-	Update(context.Context, *v1alpha1.Workflow) (*v1alpha1.Workflow, error)
-	Delete(ctx context.Context, name string, options *v1.DeleteOptions) error
-	DeleteCollection(ctx context.Context, options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(ctx context.Context, name string, options v1.GetOptions) (*v1alpha1.Workflow, error)
+	Create(ctx context.Context, workflow *v1alpha1.Workflow, opts v1.CreateOptions) (*v1alpha1.Workflow, error)
+	Update(ctx context.Context, workflow *v1alpha1.Workflow, opts v1.UpdateOptions) (*v1alpha1.Workflow, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Workflow, error)
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.WorkflowList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Workflow, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Workflow, err error)
 	WorkflowExpansion
 }
 
@@ -93,11 +93,12 @@ func (c *workflows) Watch(ctx context.Context, opts v1.ListOptions) (watch.Inter
 }
 
 // Create takes the representation of a workflow and creates it.  Returns the server's representation of the workflow, and an error, if there is any.
-func (c *workflows) Create(ctx context.Context, workflow *v1alpha1.Workflow) (result *v1alpha1.Workflow, err error) {
+func (c *workflows) Create(ctx context.Context, workflow *v1alpha1.Workflow, opts v1.CreateOptions) (result *v1alpha1.Workflow, err error) {
 	result = &v1alpha1.Workflow{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("workflows").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(workflow).
 		Do(ctx).
 		Into(result)
@@ -105,12 +106,13 @@ func (c *workflows) Create(ctx context.Context, workflow *v1alpha1.Workflow) (re
 }
 
 // Update takes the representation of a workflow and updates it. Returns the server's representation of the workflow, and an error, if there is any.
-func (c *workflows) Update(ctx context.Context, workflow *v1alpha1.Workflow) (result *v1alpha1.Workflow, err error) {
+func (c *workflows) Update(ctx context.Context, workflow *v1alpha1.Workflow, opts v1.UpdateOptions) (result *v1alpha1.Workflow, err error) {
 	result = &v1alpha1.Workflow{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("workflows").
 		Name(workflow.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(workflow).
 		Do(ctx).
 		Into(result)
@@ -118,40 +120,41 @@ func (c *workflows) Update(ctx context.Context, workflow *v1alpha1.Workflow) (re
 }
 
 // Delete takes name of the workflow and deletes it. Returns an error if one occurs.
-func (c *workflows) Delete(ctx context.Context, name string, options *v1.DeleteOptions) error {
+func (c *workflows) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("workflows").
 		Name(name).
-		Body(options).
+		Body(&opts).
 		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *workflows) DeleteCollection(ctx context.Context, options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *workflows) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("workflows").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
+		Body(&opts).
 		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched workflow.
-func (c *workflows) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Workflow, err error) {
+func (c *workflows) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Workflow, err error) {
 	result = &v1alpha1.Workflow{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("workflows").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)
