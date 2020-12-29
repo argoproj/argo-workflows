@@ -1,8 +1,6 @@
 package indexes
 
 import (
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
@@ -14,11 +12,11 @@ import (
 func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
-		return []string{}, fmt.Errorf("object has no meta: %v", err)
+		return nil, nil
 	}
 	name, ok := m.GetLabels()[common.LabelKeyWorkflow]
 	if !ok {
-		return []string{}, fmt.Errorf("object has no workflow label")
+		return nil, nil
 	}
 	return []string{WorkflowIndexValue(m.GetNamespace(), name)}, nil
 }
