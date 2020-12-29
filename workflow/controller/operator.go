@@ -653,10 +653,10 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 		if err != nil {
 			return nil, err
 		}
-		for _, x := range woc.wf.Status.Nodes {
-			y, exists := currWf.Status.Nodes[x.ID]
-			if exists && y.Fulfilled() && x.Phase != y.Phase {
-				return nil, fmt.Errorf("must never update completed node %s", x.ID)
+		for id, node := range woc.wf.Status.Nodes {
+			currNode, exists := currWf.Status.Nodes[id]
+			if exists && currNode.Fulfilled() && node.Phase != currNode.Phase {
+				return nil, fmt.Errorf("must never update completed node %s", id)
 			}
 		}
 		currWfBytes, err := json.Marshal(currWf)
