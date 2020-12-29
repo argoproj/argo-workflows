@@ -291,7 +291,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.Add(key)
+		wfc.wfQueue.AddRateLimited(key)
 	}
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
@@ -353,7 +353,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
-		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
+		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
 
