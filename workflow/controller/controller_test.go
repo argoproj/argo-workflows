@@ -596,6 +596,6 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	assert.Equal(0, controller.wfQueue.Len())
 
 	controller.notifySemaphoreConfigUpdate(&cm)
-	time.Sleep(2*time.Second)
+	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }
