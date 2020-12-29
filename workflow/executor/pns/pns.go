@@ -379,6 +379,8 @@ var backoffOver30s = wait.Backoff{
 func (p *PNSExecutor) GetTerminatedContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
 	var pod *corev1.Pod
 	var containerStatus *corev1.ContainerStatus
+	// Under high load, the Kubernetes API may be unresponsive for some time (30s). This would have failed the workflow
+	// previously (<=v2.11) but a 30s back-off mitigates this.
 	err := wait.ExponentialBackoff(backoffOver30s, func() (bool, error) {
 		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
 		if err != nil {

@@ -119,7 +119,9 @@ func (c *Controller) enqueueWF(obj interface{}) {
 }
 
 func (c *Controller) deleteWorkflow(key string) error {
+	// It should be impossible for a workflow to have been queue without a valid key.
 	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+	// Any workflow that was queued must need deleting, therefore we do not check the expiry again.
 	log.Infof("Deleting TTL expired workflow '%s'", key)
 	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
