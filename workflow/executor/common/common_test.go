@@ -19,7 +19,7 @@ type MockKC struct {
 	killContainerError                error
 }
 
-func (m *MockKC) GetContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
+func (m *MockKC) GetContainerStatus(ctx context.Context, containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
 	return m.getContainerStatusPod, m.getContainerStatusContainerStatus, m.getContainerStatusErr
 }
 
@@ -27,7 +27,7 @@ func (m *MockKC) KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig s
 	return m.killContainerError
 }
 
-func (*MockKC) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
+func (*MockKC) CreateArchive(ctx context.Context, containerID, sourcePath string) (*bytes.Buffer, error) {
 	return nil, nil
 }
 
