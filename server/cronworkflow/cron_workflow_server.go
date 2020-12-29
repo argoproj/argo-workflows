@@ -85,7 +85,13 @@ func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
-	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Delete(ctx, req.Name, *req.DeleteOptions)
+
+	opts := metav1.DeleteOptions{}
+	if req.DeleteOptions != nil {
+		opts = *req.DeleteOptions
+	}
+
+	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Delete(ctx, req.Name, opts)
 	if err != nil {
 		return nil, err
 	}
