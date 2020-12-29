@@ -556,7 +556,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
-	case "true":
+	case "", "true":
 		if err := woc.writeBackToInformer(); err != nil {
 			woc.markWorkflowError(err)
 			return
