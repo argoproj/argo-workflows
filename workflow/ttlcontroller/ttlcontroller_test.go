@@ -1,6 +1,7 @@
 package ttlcontroller
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -416,20 +417,23 @@ func TestTTLStrategySucceded(t *testing.T) {
 	wf2.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf2)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf2)
+
+	ctx := context.Background()
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf2, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
-	controller.processNextWorkItem()
+	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 	wf3 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
 	wf3.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf3)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf3)
+
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf3, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
-	controller.processNextWorkItem()
+	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 }

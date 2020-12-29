@@ -139,7 +139,7 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 		return
 	}
 	err = wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
-		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data)
+		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
 		if err != nil {
 			if argoerr.IsTransientErr(err) {
 				return false, nil
@@ -338,7 +338,7 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 	})
 
 	for _, wf := range jobList[workflowsToKeep:] {
-		err := woc.wfClient.Delete(ctx, wf.Name, &v1.DeleteOptions{})
+		err := woc.wfClient.Delete(ctx, wf.Name, v1.DeleteOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
 				woc.log.Infof("Workflow '%s' was already deleted", wf.Name)

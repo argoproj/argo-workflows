@@ -834,6 +834,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 		un.GetName(),
 		types.MergePatchType,
 		data,
+		metav1.PatchOptions{},
 	)
 	if err != nil {
 		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually

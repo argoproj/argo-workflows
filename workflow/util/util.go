@@ -189,7 +189,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 		}
 		return wf, err
 	} else {
-		return wfIf.Create(ctx, wf)
+		return wfIf.Create(ctx, wf, metav1.CreateOptions{})
 	}
 }
 
@@ -333,7 +333,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
 			wf.Spec.Suspend = pointer.BoolPtr(true)
-			_, err = wfIf.Update(ctx, wf)
+			_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if err != nil {
 				if apierr.IsConflict(err) {
 					return false, nil
@@ -397,7 +397,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 				}
 
-				_, err = wfIf.Update(ctx, wf)
+				_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 				if err != nil {
 					if apierr.IsConflict(err) {
 						return false, nil
@@ -511,7 +511,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 		}
 
-		_, err = wfIf.Update(ctx, wf)
+		_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 		if err != nil {
 			if apierr.IsConflict(err) {
 				// Try again if we have a conflict
@@ -798,7 +798,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	return wfClient.Update(ctx, newWF)
+	return wfClient.Update(ctx, newWF, metav1.UpdateOptions{})
 }
 
 func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
@@ -860,7 +860,7 @@ func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface,
 		return errors.InternalWrapError(err)
 	}
 	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch)
+		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			if !apierr.IsConflict(err) {
 				return false, err
@@ -889,7 +889,7 @@ func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydr
 			return errors.InternalWrapError(err)
 		}
 		for attempt := 0; attempt < 10; attempt++ {
-			_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch)
+			_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 			if err != nil {
 				if !apierr.IsConflict(err) {
 					return err

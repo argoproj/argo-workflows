@@ -528,7 +528,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 
-	wf, err := wfClient.Update(ctx, woc.wf)
+	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -610,7 +610,7 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
-	_, err = wfClient.Update(ctx, woc.wf)
+	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow with size error: %v", err)
 	}
@@ -683,7 +683,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if err != nil {
 			return nil, err
 		}
-		wf, err := wfClient.Update(ctx, &newWf)
+		wf, err := wfClient.Update(ctx, &newWf, metav1.UpdateOptions{})
 		if err == nil {
 			woc.log.Infof("Update retry attempt %d successful", attempt)
 			woc.controller.hydrator.HydrateWithNodes(wf, nodes)
