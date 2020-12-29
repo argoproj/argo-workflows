@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -50,14 +51,17 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	defer makeMax()()
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(fmt.Errorf("not found"), false)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.False(t, wf.Status.IsOffloadNodeStatus())
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
@@ -68,14 +72,17 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	defer makeMax()()
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(errors.New("23324", "test"), false)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeError, wf.Status.Phase)
 }
@@ -85,14 +92,17 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, true)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	// check the saved version has been offloaded
@@ -110,14 +120,17 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(errors.New("23324", "test"), true)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	// check the saved version has not been offloaded
