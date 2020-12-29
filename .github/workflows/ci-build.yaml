@@ -93,6 +93,8 @@ jobs:
         env:
           GOPATH: /home/runner/go
           PROFILE: mysql
+          # by keeping this short we speed up the tests
+          DEFAULT_REQUEUE_TIME: 1s
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
