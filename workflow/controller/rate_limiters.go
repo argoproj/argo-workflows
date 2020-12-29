@@ -11,7 +11,7 @@ import (
 type fixedItemIntervalRateLimiter struct{}
 
 func (r *fixedItemIntervalRateLimiter) When(interface{}) time.Duration {
-	return env.LookupEnvDurationOr("DEFAULT_REQUEUE_TIME", 2*time.Second)
+	return env.LookupEnvDurationOr("DEFAULT_REQUEUE_TIME", 10*time.Second)
 }
 
 func (r *fixedItemIntervalRateLimiter) Forget(interface{}) {}
