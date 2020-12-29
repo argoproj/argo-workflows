@@ -353,12 +353,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
-		wf, err := util.FromUnstructured(un)
-		if err != nil {
-			log.Errorf("failed to convert to workflow from unstructured: %v", err)
-			continue
-		}
-		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
+		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
 
@@ -992,7 +987,7 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 		if err != nil {
 			log.WithError(err).Errorf("failed to list workflows by '%s'", phase)
 			continue
-		}
+	}
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(objs))
 	}
 }

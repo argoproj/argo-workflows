@@ -646,9 +646,18 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 		if err != nil {
 			return nil, err
 		}
+		if currWf.Status.Fulfilled() {
+			return nil, fmt.Errorf("must never update completed workflows")
+		}
 		err = woc.controller.hydrator.Hydrate(currWf)
 		if err != nil {
 			return nil, err
+		}
+		for _, x := range woc.wf.Status.Nodes {
+			y, exists := currWf.Status.Nodes[x.ID]
+			if exists && y.Fulfilled() && x.Phase != y.Phase {
+				return nil, fmt.Errorf("must never update completed node %s", x.ID)
+			}
 		}
 		currWfBytes, err := json.Marshal(currWf)
 		if err != nil {
