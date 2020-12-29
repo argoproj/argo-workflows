@@ -987,7 +987,7 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 		if err != nil {
 			log.WithError(err).Errorf("failed to list workflows by '%s'", phase)
 			continue
-	}
+		}
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(objs))
 	}
 }
