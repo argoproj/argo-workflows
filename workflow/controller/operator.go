@@ -651,7 +651,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 		// There is something about having informer indexers (introduced in v2.12) that means we are more likely to operate on the
 		// previous version of the workflow. This means under high load, a previously successful workflow could
 		// be operated on again. This can error (e.g. if any pod was deleted as part of clean-up). This check prevents that.
-        // https://github.com/argoproj/argo/issues/4798
+		// https://github.com/argoproj/argo/issues/4798
 		if currWf.Status.Fulfilled() {
 			return nil, fmt.Errorf("must never update completed workflows")
 		}
