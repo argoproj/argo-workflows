@@ -344,7 +344,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	})
 	defer func() {
 		// Clean up created sa
-		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(goodSaName, metav1.DeleteOptions{})
+		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(ctx, goodSaName, metav1.DeleteOptions{})
 	}()
 
 	// Create bad serviceaccount
