@@ -128,7 +128,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: wfv1.AnyStringPtr(wfv1.Item{Value: data})})
 			}
 		}
-		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(ctx, wf)
+		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to create workflow: %w", err)
 		}

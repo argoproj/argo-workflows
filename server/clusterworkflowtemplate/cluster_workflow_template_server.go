@@ -36,7 +36,7 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, req.Template)
+	return wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, req.Template, v1.CreateOptions{})
 }
 
 func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateGetRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
@@ -83,7 +83,7 @@ func (cwts *ClusterWorkflowTemplateServer) DeleteClusterWorkflowTemplate(ctx con
 	if err != nil {
 		return nil, err
 	}
-	err = wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Delete(ctx, req.Name, &v1.DeleteOptions{})
+	err = wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Delete(ctx, req.Name, v1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +121,6 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 		return nil, err
 	}
 
-	res, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Update(ctx, req.Template)
+	res, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Update(ctx, req.Template, v1.UpdateOptions{})
 	return res, err
 }
