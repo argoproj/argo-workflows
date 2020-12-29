@@ -57,7 +57,7 @@ func main() {
 
 	// submit the hello world workflow
 	ctx := context.Background()
-	createdWf, err := wfClient.Create(ctx, &helloWorldWorkflow)
+	createdWf, err := wfClient.Create(ctx, &helloWorldWorkflow, metav1.CreateOptions{})
 	checkErr(err)
 	fmt.Printf("Workflow %s submitted\n", createdWf.Name)
 
