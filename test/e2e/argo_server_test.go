@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -336,24 +337,25 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Create good serviceaccount
 	goodSaName := "argotestgood"
 	goodSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: goodSaName}}
+	ctx := context.Background()
 	s.Run("CreateGoodSA", func() {
-		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(goodSa)
+		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(ctx, goodSa, metav1.CreateOptions{})
 		assert.NoError(s.T(), err)
 	})
 	defer func() {
 		// Clean up created sa
-		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(goodSaName, nil)
+		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(goodSaName, metav1.DeleteOptions{})
 	}()
 
 	// Create bad serviceaccount
 	badSaName := "argotestbad"
 	badSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: badSaName}}
 	s.Run("CreateBadSA", func() {
-		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(badSa)
+		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(ctx, badSa, metav1.CreateOptions{})
 		assert.NoError(s.T(), err)
 	})
 	defer func() {
-		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(badSaName, nil)
+		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(ctx, badSaName, metav1.DeleteOptions{})
 	}()
 
 	// Create RBAC Role
@@ -363,11 +365,11 @@ func (s *ArgoServerSuite) TestPermission() {
 		assert.NoError(s.T(), err)
 		role, _ := obj.(*rbacv1.Role)
 		roleName = role.Name
-		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(role)
+		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(ctx, role, metav1.CreateOptions{})
 		assert.NoError(s.T(), err)
 	})
 	defer func() {
-		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(roleName, nil)
+		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(ctx, roleName, metav1.DeleteOptions{})
 	}()
 
 	// Create RBAC RoleBinding
@@ -382,11 +384,11 @@ func (s *ArgoServerSuite) TestPermission() {
 		},
 	}
 	s.Run("CreateRoleBinding", func() {
-		_, err := s.KubeClient.RbacV1().RoleBindings(nsName).Create(roleBinding)
+		_, err := s.KubeClient.RbacV1().RoleBindings(nsName).Create(ctx, roleBinding, metav1.CreateOptions{})
 		assert.NoError(s.T(), err)
 	})
 	defer func() {
-		_ = s.KubeClient.RbacV1().RoleBindings(nsName).Delete(roleBindingName, nil)
+		_ = s.KubeClient.RbacV1().RoleBindings(nsName).Delete(ctx, roleBindingName, metav1.DeleteOptions{})
 	}()
 
 	// Sleep 2 seconds to wait for serviceaccount token created.
@@ -396,10 +398,10 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Get token of good serviceaccount
 	var goodToken string
 	s.Run("GetGoodSAToken", func() {
-		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(goodSaName, metav1.GetOptions{})
+		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, goodSaName, metav1.GetOptions{})
 		if assert.NoError(s.T(), err) {
 			secretName := sAccount.Secrets[0].Name
-			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
+			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 			assert.NoError(s.T(), err)
 			goodToken = string(secret.Data["token"])
 		}
@@ -408,10 +410,10 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Get token of bad serviceaccount
 	var badToken string
 	s.Run("GetBadSAToken", func() {
-		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(badSaName, metav1.GetOptions{})
+		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, badSaName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
 		secretName := sAccount.Secrets[0].Name
-		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
+		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
 		badToken = string(secret.Data["token"])
 	})
