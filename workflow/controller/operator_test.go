@@ -989,11 +989,16 @@ func TestRetriesVariable(t *testing.T) {
 	}
 
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
-	if assert.NoError(t, err) && assert.Len(t, pods.Items, iterations) {
-		for i := 0; i < iterations; i++ {
-			assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
-		}
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, iterations)
+	expected := []string{}
+	actual := []string{}
+	for i := 0; i < iterations; i++ {
+		actual = append(actual, pods.Items[i].Spec.Containers[1].Args[0])
+		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
+	// ordering not preserved
+	assert.Subset(t, expected, actual)
 }
 
 var stepsRetriesVariableTemplate = `
@@ -1043,11 +1048,16 @@ func TestStepsRetriesVariable(t *testing.T) {
 
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
-	if assert.Len(t, pods.Items, iterations) {
-		for i := 0; i < iterations; i++ {
-			assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
-		}
+	assert.Len(t, pods.Items, iterations)
+
+	expected := []string{}
+	actual := []string{}
+	for i := 0; i < iterations; i++ {
+		actual = append(actual, pods.Items[i].Spec.Containers[1].Args[0])
+		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
+	// ordering not preserved
+	assert.Subset(t, expected, actual)
 }
 
 func TestAssessNodeStatus(t *testing.T) {
