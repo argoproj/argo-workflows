@@ -120,7 +120,7 @@ func (s *CLISuite) TestLogLevels() {
 
 func (s *CLISuite) TestGLogLevels() {
 	s.skipIfServer()
-	expected := "Client options"
+	expected := "Config loaded from file"
 	s.Run("Verbose", func() {
 		s.Given().
 			RunCli([]string{"-v", "list"}, func(t *testing.T, output string, err error) {
