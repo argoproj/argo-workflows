@@ -6,6 +6,8 @@ require (
 	bou.ke/staticfiles v0.0.0-20210106104248-dd04075d4104
 	cloud.google.com/go v0.55.0 // indirect
 	cloud.google.com/go/storage v1.6.0
+	github.com/Azure/go-autorest/autorest v0.11.1 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible
 	github.com/antonmedv/expr v1.8.2
@@ -27,6 +29,7 @@ require (
 	github.com/go-swagger/go-swagger v0.23.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.3
+	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
@@ -62,21 +65,24 @@ require (
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	golang.org/x/tools v0.0.0-20201221201019-196535612888
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.29.1
+	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/go-playground/webhooks.v5 v5.15.0
 	gopkg.in/jcmturner/goidentity.v2 v2.0.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.1
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	k8s.io/api v0.20.1
-	k8s.io/apimachinery v0.20.1
-	k8s.io/client-go v0.20.1
-	k8s.io/code-generator v0.20.1
+	k8s.io/api v0.19.6
+	k8s.io/apimachinery v0.19.6
+	k8s.io/client-go v0.19.6
+	k8s.io/code-generator v0.19.6
 	k8s.io/gengo v0.0.0-20201214224949-b6c5ce23f027 // indirect
+	k8s.io/klog/v2 v2.4.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 	sigs.k8s.io/controller-tools v0.3.0

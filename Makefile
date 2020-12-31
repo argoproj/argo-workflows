@@ -504,7 +504,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
-	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.20.1/generate-groups.sh \
+	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
 		github.com/argoproj/argo/pkg/client github.com/argoproj/argo/pkg/apis \
 		workflow:v1alpha1 \

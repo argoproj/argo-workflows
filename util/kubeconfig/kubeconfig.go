@@ -121,7 +121,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
-		auth, err := exec.GetAuthenticator(in.ExecProvider, nil)
+		auth, err := exec.GetAuthenticator(in.ExecProvider)
 		if err != nil {
 			return "", err
 		}
