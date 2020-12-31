@@ -522,7 +522,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 				output = wfv1.AnyStringPtr(fileContents)
 			}
 		} else {
-			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
+			log.Infof("Copying %s from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
 			data, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
