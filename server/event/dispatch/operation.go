@@ -103,7 +103,7 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 			return nil, err
 		}
 
-		if len(wf.Name) == 0 {
+		if wf.Name == "" {
 			// make sure we have a predicable name, so re-creation doesn't create two workflows
 			wf.SetName(wf.GetGenerateName() + nameSuffix)
 		}
@@ -150,12 +150,21 @@ func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1
 		if err != nil {
 			return err
 		}
+		// This is invariant code, but it's a convenient way to only initialize labels if there are actually labels
+		// defined. Given that there will likely be few user defined labels this shouldn't affect performance at all.
+		if wf.Labels == nil {
+			wf.Labels = map[string]string{}
+		}
 		wf.Labels[labelKey] = evalLabel
 	}
 	for annotationKey, annotationValue := range metadata.Annotations {
 		evalAnnotation, err := o.evaluateStringExpression(annotationValue, fmt.Sprintf("annotation \"%s\"", annotationKey))
 		if err != nil {
 			return err
+		}
+		// See labels comment above.
+		if wf.Annotations == nil {
+			wf.Annotations = map[string]string{}
 		}
 		wf.Annotations[annotationKey] = evalAnnotation
 	}
@@ -168,12 +177,11 @@ func (o *Operation) evaluateStringExpression(statement string, errorInfo string)
 		return "", fmt.Errorf("failed to evaluate workflow %s expression: %w", errorInfo, err)
 	}
 
-	switch v := result.(type) {
-	case string:
-		return v, nil
-	default:
-		return "", fmt.Errorf("workflow %s expression must evaluate to a string, not a %T", errorInfo, v)
+	v, ok := result.(string)
+	if ! ok {
+		return "", fmt.Errorf("workflow %s expression must evaluate to a string, not a %T", errorInfo, result)
 	}
+	return v, nil
 }
 
 func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {

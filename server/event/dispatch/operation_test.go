@@ -199,8 +199,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "\"my-wfeb-2\"",
-						Labels: map[string]string{"aLabel": "\"someValue\""},
+						Name:        "\"my-wfeb-2\"",
+						Labels:      map[string]string{"aLabel": "\"someValue\""},
 						Annotations: map[string]string{"anAnnotation": "\"otherValue\""},
 					},
 				},
@@ -214,8 +214,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "\"my-wfeb-\" + payload.foo.bar",
-						Labels: map[string]string{"aLabel": "payload.list[0]"},
+						Name:        "\"my-wfeb-\" + payload.foo.bar",
+						Labels:      map[string]string{"aLabel": "payload.list[0]"},
 						Annotations: map[string]string{"anAnnotation": "payload.list[1]"},
 					},
 				},
@@ -228,7 +228,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta: metav1.ObjectMeta{Name: "payload.......foo[.numeric]"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.......foo[.numeric]"},
 				},
 			},
 		},
@@ -263,7 +263,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta: metav1.ObjectMeta{Name: "payload.foo.numeric"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.foo.numeric"},
 				},
 			},
 		},
@@ -274,7 +274,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta: metav1.ObjectMeta{Name: "payload.foo.bool"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.foo.bool"},
 				},
 			},
 		},
@@ -285,7 +285,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta: metav1.ObjectMeta{Name: "payload.foo"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.foo"},
 				},
 			},
 		},
@@ -296,7 +296,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta: metav1.ObjectMeta{Name: "payload.list"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.list"},
 				},
 			},
 		},
@@ -307,12 +307,12 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Event: wfv1.Event{Selector: "true"},
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
-					ObjectMeta: metav1.ObjectMeta{Name: "payload.nothing"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.nothing"},
 				},
 			},
 		},
 	}, "my-ns", "my-discriminator",
-	&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
+		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
 
 	assert.NoError(t, err)
 	operation.Dispatch()
