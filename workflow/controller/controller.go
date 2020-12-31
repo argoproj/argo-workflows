@@ -744,7 +744,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
-						wfc.wfQueue.AddRateLimited(key)
+						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
 				},
