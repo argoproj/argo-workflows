@@ -178,7 +178,7 @@ func (o *Operation) evaluateStringExpression(statement string, errorInfo string)
 	}
 
 	v, ok := result.(string)
-	if ! ok {
+	if !ok {
 		return "", fmt.Errorf("workflow %s expression must evaluate to a string, not a %T", errorInfo, result)
 	}
 	return v, nil
