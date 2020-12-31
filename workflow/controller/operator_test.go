@@ -3062,8 +3062,8 @@ spec:
         image: docker/whalesay:latest
 `: {
 			"Normal WorkflowRunning Workflow Running",
-			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a%!(EXTRA []interface {}=[])",
-			"Normal WorkflowNodeSucceeded Succeeded node dag-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events",
 			"Normal WorkflowSucceeded Workflow completed",
 		},
 		// steps
@@ -3082,9 +3082,9 @@ spec:
         image: docker/whalesay:latest
 `: {
 			"Normal WorkflowRunning Workflow Running",
-			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a%!(EXTRA []interface {}=[])",
-			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]%!(EXTRA []interface {}=[])",
-			"Normal WorkflowNodeSucceeded Succeeded node steps-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events",
 			"Normal WorkflowSucceeded Workflow completed",
 		},
 	} {
