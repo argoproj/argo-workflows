@@ -51,7 +51,7 @@ STATIC_FILES          ?= true
 GOTEST                ?= go test
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 1s
+DEFAULT_REQUEUE_TIME  ?= 2s
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid
