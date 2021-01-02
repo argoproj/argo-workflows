@@ -583,13 +583,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
-			assert.Equal(t, "Stopped with strategy 'Stop'", status.Message)
-			nodeStatus := status.Nodes.FindByDisplayName("A")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-				assert.Equal(t, "terminated", nodeStatus.Message)
-			}
-			nodeStatus = status.Nodes.FindByDisplayName("A.onExit")
+			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
@@ -606,17 +600,17 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "workflow stop-terminate terminated")
+			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
 		}).
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			assert.Nil(t, nodeStatus)
-			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
 			assert.Nil(t, nodeStatus)
 		})
 }
