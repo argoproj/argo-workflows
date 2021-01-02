@@ -793,6 +793,19 @@
     Submitting A Workflow From A Workflow Template
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#customizing-the-workflow-metadata" title="Customizing the Workflow Metadata" class="md-nav__link">
+    Customizing the Workflow Metadata
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2063,6 +2076,19 @@
     Submitting A Workflow From A Workflow Template
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#customizing-the-workflow-metadata" title="Customizing the Workflow Metadata" class="md-nav__link">
+    Customizing the Workflow Metadata
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2208,6 +2234,36 @@ The following example will be trigger by an event with "message" in the payload.
 <p class="admonition-title">Malformed Expressions</p>
 <p>If the expression is malformed, this is logged. It is not visible in logs or the UI. </p>
 </div>
+<h3 id="customizing-the-workflow-metadata">Customizing the Workflow Metadata<a class="headerlink" href="#customizing-the-workflow-metadata" title="Permanent link">&para;</a></h3>
+<p>You can customize the name of the submitted workflow as well as add annotations and
+labels. This is done by adding a <code>metadata</code> object to the submit object.</p>
+<p>Normally the name of the workflow created from an event is simply the name of the
+template with a timestamp appended. This can be customized by setting the name in the
+<code>metadata</code> object.</p>
+<p>Annotations and labels are added in the same fashion.</p>
+<p>All the values for the name, annotations and labels are treated as expressions (see
+below for details).  The <code>metadata</code> object is the same <code>metadata</code> type as on all 
+Kubernetes resources and as such is parsed in the same manner. It is best to enclose
+the expression in single quotes to avoid any problems when submitting the event
+binding to Kubernetes.</p>
+<p>This is an example snippet of how to set the name, annotations and labels. This is
+based on the workflow binding from above, and the first event.
+<div class="highlight"><pre><span></span><code>  <span class="nt">submit</span><span class="p">:</span>
+    <span class="nt">metadata</span><span class="p">:</span>
+      <span class="nt">annotations</span><span class="p">:</span>
+        <span class="nt">anAnnotation</span><span class="p">:</span> <span class="s">&#39;event.payload.message&#39;</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="s">&#39;event.payload.message</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">&quot;-world&quot;&#39;</span>
+      <span class="nt">labels</span><span class="p">:</span>
+        <span class="nt">someLabel</span><span class="p">:</span> <span class="s">&#39;&quot;literal</span><span class="nv"> </span><span class="s">string&quot;&#39;</span>
+</code></pre></div>
+This will result in the workflow being named "hello-world" instead of
+<code>my-wf-tmple-&lt;timestamp&gt;</code>. There will be an extra label with the key "someLabel" and
+a value of "literal string". There will also be an extra annotation with the key
+"anAnnotation" and a value of "hello"</p>
+<p>Be careful when setting the name. If the name expression evaluates to that of a currently
+existing workflow, the new workflow will fail to submit.</p>
+<p>The name, annotation and label expression must evaluate to a string and follow the normal <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/">Kubernetes naming
+requirements</a>.</p>
 <h2 id="event-expression-syntax-and-the-event-expression-environment">Event Expression Syntax and the Event Expression Environment<a class="headerlink" href="#event-expression-syntax-and-the-event-expression-environment" title="Permanent link">&para;</a></h2>
 <p><strong>Event expressions</strong> are expressions that are evaluated over the <strong>event expression environment</strong>.</p>
 <h3 id="expression-syntax">Expression Syntax<a class="headerlink" href="#expression-syntax" title="Permanent link">&para;</a></h3>
