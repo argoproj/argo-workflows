@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -123,6 +124,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 			glogLevel = 6
 		}
 		cli.SetLogLevel(logLevel)
+		klog.InitFlags(nil)
 		cli.SetGLogLevel(glogLevel)
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
 	}
