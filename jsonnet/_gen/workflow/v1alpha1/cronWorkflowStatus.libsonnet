@@ -1,0 +1,21 @@
+{
+  local d = (import 'doc-util/main.libsonnet'),
+  '#':: d.pkg(name='cronWorkflowStatus', url='', help='CronWorkflowStatus is the status of a CronWorkflow'),
+  '#lastScheduledTime':: d.obj(help='Time is a wrapper around time.Time which supports correct\nmarshaling to YAML and JSON.  Wrappers are provided for many\nof the factory methods that the time package offers.\n\n+protobuf.options.marshal=false\n+protobuf.as=Timestamp\n+protobuf.options.(gogoproto.goproto_stringer)=false'),
+  lastScheduledTime: {
+    '#withNanos':: d.fn(help='Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.', args=[d.arg(name='nanos', type=d.T.integer)]),
+    withNanos(nanos): { lastScheduledTime+: { nanos: nanos } },
+    '#withSeconds':: d.fn(help='Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.', args=[d.arg(name='seconds', type=d.T.string)]),
+    withSeconds(seconds): { lastScheduledTime+: { seconds: seconds } },
+  },
+  '#withActive':: d.fn(help='Active is a list of active workflows stemming from this CronWorkflow', args=[d.arg(name='active', type=d.T.array)]),
+  withActive(active): { active: if std.isArray(v=active) then active else [active] },
+  '#withActiveMixin':: d.fn(help='Active is a list of active workflows stemming from this CronWorkflow\n\n**Note:** This function appends passed data to existing values', args=[d.arg(name='active', type=d.T.array)]),
+  withActiveMixin(active): { active+: if std.isArray(v=active) then active else [active] },
+  '#withConditions':: d.fn(help='Conditions is a list of conditions the CronWorkflow may have', args=[d.arg(name='conditions', type=d.T.array)]),
+  withConditions(conditions): { conditions: if std.isArray(v=conditions) then conditions else [conditions] },
+  '#withConditionsMixin':: d.fn(help='Conditions is a list of conditions the CronWorkflow may have\n\n**Note:** This function appends passed data to existing values', args=[d.arg(name='conditions', type=d.T.array)]),
+  withConditionsMixin(conditions): { conditions+: if std.isArray(v=conditions) then conditions else [conditions] },
+  '#mixin': 'ignore',
+  mixin: self,
+}

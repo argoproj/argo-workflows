@@ -33,6 +33,7 @@ require (
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
+	github.com/jsonnet-libs/k8s v0.0.0-20201230150533-1b7091735950
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/klauspost/compress v1.9.7 // indirect
 	github.com/lib/pq v1.3.0 // indirect
@@ -46,7 +47,6 @@ require (
 	github.com/prometheus/procfs v0.0.8 // indirect
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/soheilhy/cmux v0.1.4

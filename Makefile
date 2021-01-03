@@ -273,6 +273,7 @@ codegen: \
 	api/jsonschema/schema.json \
 	docs/fields.md \
 	docs/cli/argo.md \
+	jsonnet \
 	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
@@ -312,6 +313,12 @@ $(GOPATH)/bin/swagger:
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
+
+$(GOPATH)/bin/k8s:
+	$(call go install,github.com/jsonnet-libs/k8s)
+
+jsonnet: $(GOPATH)/bin/k8s dist/swaggifed.swagger.json
+	go run hack/jsonnet/main.go
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor

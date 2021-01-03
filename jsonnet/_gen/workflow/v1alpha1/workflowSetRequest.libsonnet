@@ -1,0 +1,18 @@
+{
+  local d = (import 'doc-util/main.libsonnet'),
+  '#':: d.pkg(name='workflowSetRequest', url='', help=''),
+  '#withMessage':: d.fn(help='', args=[d.arg(name='message', type=d.T.string)]),
+  withMessage(message): { message: message },
+  '#withName':: d.fn(help='', args=[d.arg(name='name', type=d.T.string)]),
+  withName(name): { name: name },
+  '#withNamespace':: d.fn(help='', args=[d.arg(name='namespace', type=d.T.string)]),
+  withNamespace(namespace): { namespace: namespace },
+  '#withNodeFieldSelector':: d.fn(help='', args=[d.arg(name='nodeFieldSelector', type=d.T.string)]),
+  withNodeFieldSelector(nodeFieldSelector): { nodeFieldSelector: nodeFieldSelector },
+  '#withOutputParameters':: d.fn(help='', args=[d.arg(name='outputParameters', type=d.T.string)]),
+  withOutputParameters(outputParameters): { outputParameters: outputParameters },
+  '#withPhase':: d.fn(help='', args=[d.arg(name='phase', type=d.T.string)]),
+  withPhase(phase): { phase: phase },
+  '#mixin': 'ignore',
+  mixin: self,
+}

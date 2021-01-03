@@ -1,0 +1,48 @@
+{
+  local d = (import 'doc-util/main.libsonnet'),
+  '#':: d.pkg(name='hdfsKrbConfig', url='', help='HDFSKrbConfig is auth configurations for Kerberos'),
+  '#krbCCacheSecret':: d.obj(help='SecretKeySelector selects a key of a Secret.'),
+  krbCCacheSecret: {
+    '#localObjectReference':: d.obj(help='LocalObjectReference contains enough information to let you locate the\nreferenced object inside the same namespace.'),
+    localObjectReference: {
+      '#withName':: d.fn(help='', args=[d.arg(name='name', type=d.T.string)]),
+      withName(name): { krbCCacheSecret+: { localObjectReference+: { name: name } } },
+    },
+    '#withKey':: d.fn(help='The key of the secret to select from.  Must be a valid secret key.', args=[d.arg(name='key', type=d.T.string)]),
+    withKey(key): { krbCCacheSecret+: { key: key } },
+    '#withOptional':: d.fn(help='', args=[d.arg(name='optional', type=d.T.boolean)]),
+    withOptional(optional): { krbCCacheSecret+: { optional: optional } },
+  },
+  '#krbConfigConfigMap':: d.obj(help='Selects a key from a ConfigMap.'),
+  krbConfigConfigMap: {
+    '#localObjectReference':: d.obj(help='LocalObjectReference contains enough information to let you locate the\nreferenced object inside the same namespace.'),
+    localObjectReference: {
+      '#withName':: d.fn(help='', args=[d.arg(name='name', type=d.T.string)]),
+      withName(name): { krbConfigConfigMap+: { localObjectReference+: { name: name } } },
+    },
+    '#withKey':: d.fn(help='The key to select.', args=[d.arg(name='key', type=d.T.string)]),
+    withKey(key): { krbConfigConfigMap+: { key: key } },
+    '#withOptional':: d.fn(help='', args=[d.arg(name='optional', type=d.T.boolean)]),
+    withOptional(optional): { krbConfigConfigMap+: { optional: optional } },
+  },
+  '#krbKeytabSecret':: d.obj(help='SecretKeySelector selects a key of a Secret.'),
+  krbKeytabSecret: {
+    '#localObjectReference':: d.obj(help='LocalObjectReference contains enough information to let you locate the\nreferenced object inside the same namespace.'),
+    localObjectReference: {
+      '#withName':: d.fn(help='', args=[d.arg(name='name', type=d.T.string)]),
+      withName(name): { krbKeytabSecret+: { localObjectReference+: { name: name } } },
+    },
+    '#withKey':: d.fn(help='The key of the secret to select from.  Must be a valid secret key.', args=[d.arg(name='key', type=d.T.string)]),
+    withKey(key): { krbKeytabSecret+: { key: key } },
+    '#withOptional':: d.fn(help='', args=[d.arg(name='optional', type=d.T.boolean)]),
+    withOptional(optional): { krbKeytabSecret+: { optional: optional } },
+  },
+  '#withKrbRealm':: d.fn(help='KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.', args=[d.arg(name='krbRealm', type=d.T.string)]),
+  withKrbRealm(krbRealm): { krbRealm: krbRealm },
+  '#withKrbServicePrincipalName':: d.fn(help='KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.', args=[d.arg(name='krbServicePrincipalName', type=d.T.string)]),
+  withKrbServicePrincipalName(krbServicePrincipalName): { krbServicePrincipalName: krbServicePrincipalName },
+  '#withKrbUsername':: d.fn(help='KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.', args=[d.arg(name='krbUsername', type=d.T.string)]),
+  withKrbUsername(krbUsername): { krbUsername: krbUsername },
+  '#mixin': 'ignore',
+  mixin: self,
+}
