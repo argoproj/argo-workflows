@@ -15,7 +15,9 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
+	retryutil "k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
@@ -53,7 +55,13 @@ var (
 		MountPath: common.PodMetadataMountPath,
 	}
 
-	hostPathSocket = apiv1.HostPathSocket
+	hostPathSocket        = apiv1.HostPathSocket
+	createPodRetryBackoff = wait.Backoff{
+		Steps:    10,
+		Duration: 100 * time.Millisecond,
+		Factor:   1.0,
+		Jitter:   0.1,
+	}
 )
 
 func (woc *wfOperationCtx) getVolumeMountDockerSock(tmpl *wfv1.Template) apiv1.VolumeMount {
@@ -375,7 +383,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
+	var created *apiv1.Pod
+	err = retryutil.OnError(createPodRetryBackoff, woc.shouldRetryCreate, func() error {
+		_created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
+		created = _created
+		return err
+	})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
@@ -392,6 +405,15 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
+}
+
+// shouldRetryCreate returns whether a create request can be retried on the given error.
+func (woc *wfOperationCtx) shouldRetryCreate(err error) bool {
+	res := apierr.IsTooManyRequests(err) || apierr.IsServerTimeout(err)
+	if res {
+		woc.log.Debugf("Retry the pod create request failed with %s", err)
+	}
+	return res
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
