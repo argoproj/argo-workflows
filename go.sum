@@ -1127,7 +1127,6 @@ k8s.io/apiserver v0.17.0/go.mod h1:ABM+9x/prjINN6iiffRVNCBR2Wk7uY4z+EtEGZD48cg=
 k8s.io/client-go v0.17.0/go.mod h1:TYgR6EUHs6k45hb6KWjVD6jFZvJV4gHDikv/It0xz+k=
 k8s.io/client-go v0.17.8 h1:cuZSfjqVrNjoZ3wViQHljFPyWMOcgxUjjmQs5Rifbxk=
 k8s.io/client-go v0.17.8/go.mod h1:SJsDS64AAtt9VZyeaQMb4Ck5etCitZ/FwajWdzua5eY=
-k8s.io/client-go v11.0.0+incompatible h1:LBbX2+lOwY9flffWlJM7f1Ct8V2SRNiMRDFeiwnJo9o=
 k8s.io/code-generator v0.17.0 h1:y+KWtDWNqlJzJu/kUy8goJZO0X71PGIpAHLX8a0JYk0=
 k8s.io/code-generator v0.17.0/go.mod h1:DVmfPQgxQENqDIzVR2ddLXMH34qeszkKSdH/N+s+38s=
 k8s.io/code-generator v0.17.5 h1:JKh5hYOFb0cTls9mce3ZC4DWh01/nLEgqj8OSJBpVRw=
