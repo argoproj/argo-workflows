@@ -16,7 +16,7 @@ import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {ID} from './id';
 
-export const WorkflowEventBindingsList = ({match, location, history}: RouteComponentProps<any>) => {
+export const WorkflowEventBindings = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
     const ctx = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -24,7 +24,16 @@ export const WorkflowEventBindingsList = ({match, location, history}: RouteCompo
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
-    useEffect(() => history.push(historyUrl('workflow-event-bindings/{namespace}', {namespace, selectedWorkflowEventBinding})), [namespace, selectedWorkflowEventBinding]);
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('workflow-event-bindings/{namespace}', {
+                    namespace,
+                    selectedWorkflowEventBinding
+                })
+            ),
+        [namespace, selectedWorkflowEventBinding]
+    );
 
     // internal state
     const [error, setError] = useState<Error>();
@@ -37,9 +46,13 @@ export const WorkflowEventBindingsList = ({match, location, history}: RouteCompo
         const bindingId = ID.join('WorkflowEventBinding', web.metadata.namespace, web.metadata.name);
         g.nodes.set(bindingId, {label: web.spec.event.selector, genre: 'event', icon: 'cloud'});
         if (web.spec.submit) {
-            const templateName = web.spec.submit.workflowTemplateRef.name;
-            const templateId = ID.join('WorkflowTemplate', web.metadata.namespace, templateName);
-            g.nodes.set(templateId, {label: templateName, genre: 'template', icon: 'window-maximize'});
+            const x = web.spec.submit.workflowTemplateRef;
+            const templateId = ID.join(x.clusterScope ? 'ClusterWorkflowTemplate' : 'WorkflowTemplate', web.metadata.namespace, x.name);
+            g.nodes.set(templateId, {
+                label: x.name,
+                genre: x.clusterScope ? 'cluster-template' : 'template',
+                icon: x.clusterScope ? 'window-restore' : 'window-maximize'
+            });
             g.edges.set({v: bindingId, w: templateId}, {});
         }
     });
@@ -92,11 +105,13 @@ export const WorkflowEventBindingsList = ({match, location, history}: RouteCompo
                     <GraphPanel
                         storageScope='workflow-event-bindings'
                         graph={g}
-                        nodeGenres={{event: true, template: true}}
+                        nodeGenres={{'event': true, 'template': true, 'cluster-template': true}}
                         horizontal={true}
                         onNodeSelect={id => {
                             const x = ID.split(id);
-                            if (x.type === 'WorkflowTemplate') {
+                            if (x.type === 'ClusterWorkflowTemplate') {
+                                ctx.navigation.goto(uiUrl('cluster-workflow-templates/' + x.name));
+                            } else if (x.type === 'WorkflowTemplate') {
                                 ctx.navigation.goto(uiUrl('workflow-templates/' + x.namespace + '/' + x.name));
                             } else {
                                 setSelectedWorkflowEventBinding(x.namespace + '/' + x.name);

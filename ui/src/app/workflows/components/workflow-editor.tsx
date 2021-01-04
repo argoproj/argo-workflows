@@ -27,6 +27,11 @@ export const WorkflowEditor = ({
             onTabSelected={onTabSelected}
             tabs={[
                 {
+                    key: 'manifest',
+                    title: 'Manifest',
+                    content: <ObjectEditor type='io.argoproj.workflow.v1alpha1.Workflow' value={template} onChange={x => onChange({...x})} />
+                },
+                {
                     key: 'spec',
                     title: 'Spec',
                     content: <WorkflowSpecEditor value={template.spec} onChange={spec => onChange({...template, spec})} onError={onError} />
@@ -35,11 +40,6 @@ export const WorkflowEditor = ({
                     key: 'metadata',
                     title: 'MetaData',
                     content: <MetadataEditor value={template.metadata} onChange={metadata => onChange({...template, metadata})} />
-                },
-                {
-                    key: 'manifest',
-                    title: 'Manifest',
-                    content: <ObjectEditor type='io.argoproj.workflow.v1alpha1.Workflow' value={template} onChange={x => onChange({...x})} />
                 }
             ]}
         />
