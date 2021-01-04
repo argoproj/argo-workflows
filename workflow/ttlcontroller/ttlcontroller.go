@@ -2,6 +2,7 @@ package ttlcontroller
 
 import (
 	"fmt"
+	"github.com/argoproj/argo/workflow/metrics"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -26,15 +27,17 @@ type Controller struct {
 	wfInformer  cache.SharedIndexInformer
 	workqueue   workqueue.DelayingInterface
 	clock       clock.Clock
+	metrics     *metrics.Metrics
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics) *Controller {
 	controller := &Controller{
 		wfclientset: wfClientset,
 		wfInformer:  wfInformer,
 		workqueue:   workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
 		clock:       clock.RealClock{},
+		metrics:     metrics,
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -80,11 +83,14 @@ func (c *Controller) runWorker() {
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling the syncHandler.
 func (c *Controller) processNextWorkItem() bool {
+	c.metrics.WorkerFree("workflow-ttl")
 	key, quit := c.workqueue.Get()
 	if quit {
 		return false
 	}
 	defer c.workqueue.Done(key)
+
+	c.metrics.WorkerBusy("workflow-ttl")
 
 	runtimeutil.HandleError(c.deleteWorkflow(key.(string)))
 

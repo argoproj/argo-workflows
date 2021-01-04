@@ -49,6 +49,7 @@ type Metrics struct {
 	errors             map[ErrorCause]prometheus.Counter
 	customMetrics      map[string]metric
 	workqueueMetrics   map[string]prometheus.Metric
+	workersFree        map[string]prometheus.Gauge
 
 	// Used to quickly check if a metric desc is already used by the system
 	defaultMetricDescs map[string]bool
@@ -78,6 +79,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		workqueueMetrics:   make(map[string]prometheus.Metric),
+		workersFree:        getWorkersFree(),
 		defaultMetricDescs: make(map[string]bool),
 		metricNameHelps:    make(map[string]string),
 		logMetric: prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -114,6 +116,9 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.workqueueMetrics {
+		allMetrics = append(allMetrics, metric)
+	}
+	for _, metric := range m.workersFree {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.customMetrics {
@@ -203,6 +208,24 @@ func (m *Metrics) CronWorkflowSubmissionError() {
 	defer m.mutex.Unlock()
 
 	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
+}
+
+func (m *Metrics) WorkerBusy(workerType string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if metric, ok := m.workersFree[workerType]; ok {
+		metric.Dec()
+	}
+}
+
+func (m *Metrics) WorkerFree(workerType string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if metric, ok := m.workersFree[workerType]; ok {
+		metric.Inc()
+	}
 }
 
 // Act as a metrics provider for a workflow queue

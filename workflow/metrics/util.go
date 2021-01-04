@@ -188,6 +188,25 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 	}
 }
 
+func getWorkersFree() map[string]prometheus.Gauge {
+	getOptsByWorker := func(worker string) prometheus.GaugeOpts {
+		return prometheus.GaugeOpts{
+			Namespace:   argoNamespace,
+			Subsystem:   workflowsSubsystem,
+			Name:        "workers_free_count",
+			Help:        "Number of workers currently free",
+			ConstLabels: map[string]string{"worker_type": worker},
+		}
+	}
+	return map[string]prometheus.Gauge{
+		"workflow":      prometheus.NewGauge(getOptsByWorker("workflow")),
+		"pod":           prometheus.NewGauge(getOptsByWorker("pod")),
+		"cron-workflow": prometheus.NewGauge(getOptsByWorker("cron-workflow")),
+		"workflow-ttl":  prometheus.NewGauge(getOptsByWorker("workflow-ttl")),
+		"pod-cleanup":   prometheus.NewGauge(getOptsByWorker("pod-cleanup")),
+	}
+}
+
 func IsValidMetricName(name string) bool {
 	return model.IsValidMetricName(model.LabelValue(name))
 }

@@ -109,11 +109,14 @@ func (cc *Controller) runCronWorker() {
 }
 
 func (cc *Controller) processNextCronItem() bool {
+	cc.metrics.WorkerFree("cron-workflow")
 	key, quit := cc.cronWfQueue.Get()
 	if quit {
 		return false
 	}
 	defer cc.cronWfQueue.Done(key)
+
+	cc.metrics.WorkerBusy("cron-workflow")
 
 	cc.keyLock.Lock(key.(string))
 	defer cc.keyLock.Unlock(key.(string))
