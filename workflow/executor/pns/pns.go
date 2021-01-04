@@ -21,6 +21,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util/archive"
+	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
 	argowait "github.com/argoproj/argo/workflow/executor/common/wait"
@@ -369,13 +370,21 @@ func (p *PNSExecutor) updateCtrIDMap() {
 	}
 }
 
+var backoffOver30s = wait.Backoff{
+	Duration: 1 * time.Second,
+	Steps:    7,
+	Factor:   2,
+}
+
 func (p *PNSExecutor) GetTerminatedContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
 	var pod *corev1.Pod
 	var containerStatus *corev1.ContainerStatus
-	err := wait.Poll(1*time.Second, 3*time.Second, func() (bool, error) {
+	// Under high load, the Kubernetes API may be unresponsive for some time (30s). This would have failed the workflow
+	// previously (<=v2.11) but a 30s back-off mitigates this.
+	err := wait.ExponentialBackoff(backoffOver30s, func() (bool, error) {
 		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
 		if err != nil {
-			return false, fmt.Errorf("could not get pod: %s", err)
+			return !errorsutil.IsTransientErr(err), fmt.Errorf("could not get pod: %w", err)
 		}
 		for _, containerStatusRes := range podRes.Status.ContainerStatuses {
 			if execcommon.GetContainerID(&containerStatusRes) != containerID {
