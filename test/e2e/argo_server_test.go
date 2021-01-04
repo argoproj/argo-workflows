@@ -1067,6 +1067,42 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 }
 
+func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
+	t := s.T()
+	req, err := http.NewRequest("GET", baseUrl+url, nil)
+	assert.NoError(t, err)
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+	req.Close = true
+	resp, err := httpClient.Do(req)
+	assert.NoError(t, err)
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
+	if t.Failed() {
+		t.FailNow()
+	}
+	if f == nil {
+		return
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		log.WithField("line", line).Debug()
+		// make sure we have this enabled
+		if line == "" {
+			continue
+		}
+		if f(t, line) || t.Failed() {
+			return
+		}
+	}
+}
+
 // do some basic testing on the stream methods
 func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	var name string
@@ -1082,68 +1118,21 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func() {
-		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name="+name, nil)
-		assert.NoError(t, err)
-		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-		req.Close = true
-		resp, err := httpClient.Do(req)
-		defer func() {
-			if resp != nil && resp.Body != nil {
-				_ = resp.Body.Close()
+		s.stream("/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name="+name, func(t *testing.T, line string) (done bool) {
+			if strings.Contains(line, `status:`) {
+				assert.Contains(t, line, `"offloadNodeStatus":true`)
+				// so that we get this
+				assert.Contains(t, line, `"nodes":`)
 			}
-		}()
-		if assert.NoError(t, err) && assert.NotNil(t, resp) {
-			if assert.Equal(t, 200, resp.StatusCode) {
-				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-				scanner := bufio.NewScanner(resp.Body)
-				for scanner.Scan() {
-					line := scanner.Text()
-					log.WithField("line", line).Debug()
-					// make sure we have this enabled
-					if line == "" {
-						continue
-					}
-					if strings.Contains(line, `status:`) {
-						assert.Contains(t, line, `"offloadNodeStatus":true`)
-						// so that we get this
-						assert.Contains(t, line, `"nodes":`)
-					}
-					if strings.Contains(line, "Succeeded") {
-						break
-					}
-				}
-			}
-		}
+			return strings.Contains(line, "Succeeded")
+		})
 	})
 
 	// then,  lets see what events we got
 	s.Run("WatchEvents", func() {
-		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, nil)
-		assert.NoError(t, err)
-		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-		req.Close = true
-		resp, err := httpClient.Do(req)
-		defer func() {
-			if resp != nil && resp.Body != nil {
-				_ = resp.Body.Close()
-			}
-		}()
-		if assert.NoError(t, err) && assert.NotNil(t, resp) {
-			if assert.Equal(t, 200, resp.StatusCode) {
-				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-				s := bufio.NewScanner(resp.Body)
-				for s.Scan() {
-					line := s.Text()
-					if strings.Contains(line, "WorkflowRunning") {
-						break
-					}
-				}
-			}
-		}
+		s.stream("/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, func(t *testing.T, line string) (done bool) {
+			return strings.Contains(line, "WorkflowRunning")
+		})
 	})
 
 	// then,  lets check the logs
@@ -1155,32 +1144,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main&logOptions.tailLines=3"},
 	} {
 		s.Run(tt.name, func() {
-			t := s.T()
-			req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/"+name+tt.path, nil)
-			assert.NoError(t, err)
-			req.Header.Set("Accept", "text/event-stream")
-			req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-			req.Close = true
-			resp, err := httpClient.Do(req)
-			defer func() {
-				if resp != nil && resp.Body != nil {
-					_ = resp.Body.Close()
+			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
+				if strings.Contains(line, "data: ") {
+					assert.Contains(t, line, `"content":":) Hello Argo!"`)
+					assert.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
+					return true
 				}
-			}()
-			if assert.NoError(t, err) && assert.NotNil(t, resp) {
-				if assert.Equal(t, 200, resp.StatusCode) {
-					assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-					s := bufio.NewScanner(resp.Body)
-					for s.Scan() {
-						line := s.Text()
-						if strings.Contains(line, "data: ") {
-							assert.Contains(t, line, `"content":":) Hello Argo!"`)
-							assert.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
-							break
-						}
-					}
-				}
-			}
+				return false
+			})
 		})
 	}
 }
@@ -1588,6 +1559,38 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 			Status(200)
 	})
 
+}
+
+func (s *ArgoServerSuite) TestEventSourcesService() {
+	s.Run("ListEventSources", func() {
+		s.e().GET("/api/v1/event-sources/argo").
+			Expect().
+			Status(200)
+	})
+	s.Run("EventSourcesLogs", func() {
+		s.T().Skip("TODO")
+		s.stream("/api/v1/stream/event-sources/argo/logs", nil)
+	})
+	s.Run("WatchEventSources", func() {
+		s.T().Skip("TODO")
+		s.stream("/api/v1/stream/event-sources/argo", nil)
+	})
+}
+
+func (s *ArgoServerSuite) TestSensorService() {
+	s.Run("ListSensors", func() {
+		s.e().GET("/api/v1/sensors/argo").
+			Expect().
+			Status(200)
+	})
+	s.Run("SensorsLogs", func() {
+		s.T().Skip("TODO")
+		s.stream("/api/v1/stream/sensors/argo/logs", nil)
+	})
+	s.Run("WatchSensors", func() {
+		s.T().Skip("TODO")
+		s.stream("/api/v1/stream/sensors/argo", nil)
+	})
 }
 
 func TestArgoServerSuite(t *testing.T) {
