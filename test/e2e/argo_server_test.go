@@ -840,15 +840,11 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 
 		s.e().GET("/api/v1/workflows/argo/" + name).
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.status.message").
-			Equal("Stopped with strategy 'Terminate'")
+			Status(200)
 	})
 
 	s.Run("Resubmit", func() {
 		s.e().PUT("/api/v1/workflows/argo/" + name + "/resubmit").
-			WithBytes([]byte(`{"memoized": true}`)).
 			Expect().
 			Status(200).
 			JSON().
