@@ -187,7 +187,7 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                                     props.onChange(props.value);
                                     setSelectedId(idForTemplate(templateName));
                                 }}>
-                                <i className={'fa fa-' + icons.container} />{' '}
+                                <i className={'fa fa-' + icons.container} /> Container
                             </a>
                             <a
                                 title='Script'
@@ -207,7 +207,7 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                                     props.onChange(props.value);
                                     setSelectedId(idForTemplate(templateName));
                                 }}>
-                                <i className={'fa fa-' + icons.script} />
+                                <i className={'fa fa-' + icons.script} /> Script
                             </a>
                             <a
                                 title='DAG'
@@ -227,7 +227,7 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                                     props.onChange(props.value);
                                     setSelectedId(idForTemplate(templateName));
                                 }}>
-                                <i className={'fa fa-' + icons.dag} />
+                                <i className={'fa fa-' + icons.dag} /> DAG
                             </a>
                             <a
                                 title='Steps'
@@ -247,7 +247,7 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                                     props.onChange(props.value);
                                     setSelectedId(idForTemplate(templateName));
                                 }}>
-                                <i className={'fa fa-' + icons.steps} />
+                                <i className={'fa fa-' + icons.steps} /> Steps
                             </a>
                             <a
                                 title='Exit handler'
@@ -256,7 +256,7 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                                     props.onChange(props.value);
                                     setSelectedId(onExitId);
                                 }}>
-                                <i className={'fa fa-' + icons.onExit} />
+                                <i className={'fa fa-' + icons.onExit} /> On-Exit
                             </a>
                         </div>
                     </div>

@@ -39,7 +39,7 @@ export const SubmitFromWorkflowTemplatePanel = ({namespace}: {namespace: string}
             ) : (
                 <>
                     <div>
-                        <Button icon='arrow-left' type='Secondary' onClick={() => setWorkflowTemplate(null)}>
+                        <Button icon='arrow-left' outline={true} onClick={() => setWorkflowTemplate(null)}>
                             Back
                         </Button>
                     </div>
