@@ -987,7 +987,7 @@ func (wfc *WorkflowController) syncMetrics() {
 		keys, err := indexer.IndexKeys(indexes.PhaseIndex, string(phase))
 		errors.CheckError(err)
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(keys))
-		}
+	}
 	for _, x := range []wfv1.Condition{
 		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionTrue},
 		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
