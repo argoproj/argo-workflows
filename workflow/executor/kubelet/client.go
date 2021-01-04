@@ -73,7 +73,6 @@ func newKubeletClient() (*kubeletClient, error) {
 			return nil, errors.InternalWrapError(fmt.Errorf("fail to load certificate authority: %s", string(caCert)))
 		}
 		tlsConfig.RootCAs = caCertPool
-		tlsConfig.BuildNameToCertificate()
 	}
 	return &kubeletClient{
 		httpClient: &http.Client{

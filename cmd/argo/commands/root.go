@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"flag"
+	"strconv"
+
 	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -8,12 +11,13 @@ import (
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
 
+	"k8s.io/klog/v2"
+
 	"github.com/argoproj/argo/cmd/argo/commands/archive"
 	"github.com/argoproj/argo/cmd/argo/commands/auth"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -124,8 +128,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 			glogLevel = 6
 		}
 		cli.SetLogLevel(logLevel)
-		klog.InitFlags(nil)
-		cli.SetGLogLevel(glogLevel)
+		setGLogLevel(glogLevel)
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
@@ -133,4 +136,13 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 
 	return command
+}
+
+// setGLogLevel set the glog level for the k8s go-client
+// this is taken from argoproj/pkg but uses v2 of klog here
+// to be compatible with k8s clients v0.19.x and above
+func setGLogLevel(glogLevel int) {
+	klog.InitFlags(nil)
+	_ = flag.Set("logtostderr", "true")
+	_ = flag.Set("v", strconv.Itoa(glogLevel))
 }
