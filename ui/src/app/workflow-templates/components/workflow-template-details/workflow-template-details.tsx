@@ -85,7 +85,6 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                         {
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
-                            disabled: edited,
                             action: () => {
                                 if (!confirm('Are you sure you want to delete this workflow template?\nThere is no undo.')) {
                                     return;

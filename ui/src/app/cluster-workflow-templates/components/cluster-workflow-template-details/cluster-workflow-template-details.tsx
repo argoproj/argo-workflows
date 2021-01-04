@@ -89,7 +89,6 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                         {
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
-                            disabled: edited,
                             action: () => {
                                 if (!confirm('Are you sure you want to delete this cluster workflow template?\nThere is no undo.')) {
                                     return;

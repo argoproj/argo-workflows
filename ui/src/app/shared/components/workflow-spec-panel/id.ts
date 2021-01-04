@@ -18,7 +18,7 @@ export const artifactsId: Type = 'Artifacts';
 export const onExitId: Type = 'OnExit';
 export const workflowTemplateRefId: Type = 'WorkflowTemplateRef';
 
-export const typeOf = (id: string): Type => id.split('/')[0] as Type;
+export const typeOf = (id: string): Type => (!!id ? (id.split('/')[0] as Type) : null);
 
 export const idForStepGroup = (templateName: string, i: number) => 'StepGroup/' + templateName + '/' + i;
 

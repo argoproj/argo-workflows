@@ -1,7 +1,6 @@
 import {SlidingPanel} from 'argo-ui';
 import * as React from 'react';
-import {Arguments, WorkflowSpec} from '../../../../models';
-import {Parameter} from '../../../../models/workflows';
+import {Arguments, Parameter, WorkflowSpec} from '../../../../models';
 import {exampleTemplate, randomSillyName} from '../../examples';
 import {Button} from '../button';
 import {ObjectEditor} from '../object-editor/object-editor';
@@ -25,8 +24,9 @@ const type = (id: string) => {
 export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onChange: (value: T) => void; onError: (error: Error) => void}) => {
     const [selectedId, setSelectedId] = React.useState<string>();
 
+    const templateByName = (name: string) => props.value.templates.filter(t => !!t).find(t => t.name === name);
+
     const object = (id: string) => {
-        const template = (name: string) => props.value.templates.filter(t => !!t).find(t => t.name === name);
         switch (typeOf(id)) {
             case 'Artifacts':
                 return props.value.arguments.artifacts;
@@ -36,18 +36,18 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                 return props.value.arguments.parameters;
             case 'Step': {
                 const {templateName, i, j} = stepOf(id);
-                return template(templateName).steps[i][j];
+                return templateByName(templateName).steps[i][j];
             }
             case 'StepGroup': {
                 const {templateName, i} = stepGroupOf(id);
-                return template(templateName).steps[i];
+                return templateByName(templateName).steps[i];
             }
             case 'Task': {
                 const {templateName, taskName} = taskOf(id);
-                return template(templateName).dag.tasks.find(task => task.name === taskName);
+                return templateByName(templateName).dag.tasks.find(task => task.name === taskName);
             }
             case 'Template':
-                return template(templateOf(id).templateName);
+                return templateByName(templateOf(id).templateName);
             case 'WorkflowTemplateRef':
                 return props.value.workflowTemplateRef;
         }
@@ -138,8 +138,7 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                 break;
         }
     };
-    const anyContainerOrScriptTemplate = () => props.value.templates.find(t => t.container || t.script);
-    const bestTemplateName = () => (anyContainerOrScriptTemplate() || {name: 'TBD'}).name;
+    const bestTemplateName = () => (props.value.templates.find(t => t.container || t.script) || {name: 'TBD'}).name;
     const parameterKeyValues =
         props.value &&
         props.value.arguments &&
@@ -150,6 +149,8 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                 obj[key] = val;
                 return obj;
             }, {} as {[key: string]: string});
+    const selectedObject = object(selectedId);
+    const selectedType = type(selectedId);
     return (
         <>
             <div className='white-box'>
@@ -261,20 +262,20 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                     </div>
                 </div>
                 <SlidingPanel isShown={!!selectedId} onClose={() => setSelectedId(null)} isNarrow={true}>
-                    {selectedId && object(selectedId) ? (
+                    {selectedObject ? (
                         <>
                             <h4>{selectedId}</h4>
                             <ObjectEditor
-                                type={type(selectedId)}
-                                value={object(selectedId)}
+                                type={selectedType}
+                                value={selectedObject}
                                 onChange={value => setObject(selectedId, value)}
                                 buttons={
                                     <>
                                         <Button
                                             icon='times'
                                             onClick={() => {
-                                                deleteObject(selectedId);
                                                 setSelectedId(undefined);
+                                                deleteObject(selectedId);
                                             }}>
                                             Remove
                                         </Button>
