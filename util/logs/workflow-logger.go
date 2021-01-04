@@ -147,7 +147,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		ensureWeAreStreaming(&pod)
 	}
 
-	if req.GetLogOptions().Follow {
+	if logOptions.Follow {
 		wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName(), ResourceVersion: "0"}
 		wfWatch, err := wfInterface.Watch(wfListOptions)
 		if err != nil {
