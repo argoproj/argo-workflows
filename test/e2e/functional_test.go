@@ -42,7 +42,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -59,14 +59,19 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Len(t, status.Nodes, 1)
-			if assert.Contains(t, status.Nodes, "sleepy") {
-				assert.Equal(t, "pod deleted during operation", status.Nodes["sleepy"].Message)
+			// the outcome could be either of these, depending on time
+			// this is due to the grace period recently deleted pods get
+			switch status.Phase {
+			case wfv1.NodeError:
+				assert.Equal(t, "pod deleted during operation", status.Nodes[metadata.Name].Message)
+			case wfv1.NodeFailed:
+				assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
+			default:
+				assert.Fail(t, "expected error of failed")
 			}
 		})
 }
@@ -86,6 +91,60 @@ func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 2)
 		})
+}
+
+func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
+		Workflow("@functional/synchronization-mutex-wf-level.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestTemplateLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowTTL() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: workflow-ttl-
+  labels:
+    argo-e2e: true
+spec:
+  ttlStrategy:
+    secondsAfterCompletion: 0
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Wait(3 * time.Second). // enough time for TTL controller to delete the workflow
+		Then().
+		ExpectWorkflowDeleted()
 }
 
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows

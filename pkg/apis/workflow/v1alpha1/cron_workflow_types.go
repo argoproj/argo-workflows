@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // CronWorkflow is the definition of a scheduled workflow resource
@@ -64,6 +65,15 @@ type CronWorkflowStatus struct {
 	LastScheduledTime *metav1.Time `json:"lastScheduledTime" protobuf:"bytes,2,opt,name=lastScheduledTime"`
 	// Conditions is a list of conditions the CronWorkflow may have
 	Conditions Conditions `json:"conditions" protobuf:"bytes,3,rep,name=conditions"`
+}
+
+func (c *CronWorkflowStatus) HasActiveUID(uid types.UID) bool {
+	for _, ref := range c.Active {
+		if uid == ref.UID {
+			return true
+		}
+	}
+	return false
 }
 
 const (

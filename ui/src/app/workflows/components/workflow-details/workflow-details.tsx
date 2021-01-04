@@ -47,10 +47,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     private changesSubscription: Subscription;
     private timelineComponent: WorkflowTimeline;
 
-    private get resourceVersion() {
-        return this.state.workflow && this.state.workflow.metadata.resourceVersion;
-    }
-
     private get selectedTabKey() {
         return new URLSearchParams(this.props.location.search).get('tab') || 'workflow';
     }
@@ -134,8 +130,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                             )
                         }}>
                         <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
-                            {(this.selectedTabKey === 'summary' && this.renderSummaryTab()) ||
-                                (this.state.workflow && (
+                            {this.state.error ? (
+                                <ErrorNotice error={this.state.error} onReload={() => this.reloadWorkflow()} reloadAfterSeconds={10} />
+                            ) : !this.state.workflow ? (
+                                <Loading />
+                            ) : (
+                                (this.selectedTabKey === 'summary' && this.renderSummaryTab()) || (
                                     <div>
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
@@ -173,7 +173,8 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                             )}
                                         </div>
                                     </div>
-                                ))}
+                                )
+                            )}
                         </div>
                         {this.state.workflow && (
                             <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
@@ -296,12 +297,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private renderSummaryTab() {
-        if (this.state.error) {
-            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
-        }
-        if (!this.state.workflow) {
-            return <Loading />;
-        }
         return (
             <div className='argo-container'>
                 <div className='workflow-details__content'>
@@ -329,15 +324,19 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         this.changesSubscription = null;
     }
 
+    private reloadWorkflow() {
+        this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
+    }
+
     private loadWorkflow(namespace: string, name: string) {
         try {
             this.ensureUnsubscribed();
             this.changesSubscription = services.workflows
-                .watch({name, namespace, resourceVersion: this.resourceVersion})
+                .watch({name, namespace, resourceVersion: '0'})
                 .map(changeEvent => changeEvent.object)
                 .subscribe(
                     workflow => this.setState({workflow, error: null}),
-                    error => this.setState({error}, () => this.loadWorkflow(namespace, name))
+                    error => this.setState({error})
                 );
         } catch (error) {
             this.setState({error});

@@ -340,14 +340,23 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 	if err != nil {
 		return err
 	}
-	// remove is best effort (the container will go away anyways).
-	// we just want reduce peak space usage
-	err = os.Remove(localArtPath)
-	if err != nil {
-		log.Warnf("Failed to remove %s: %v", localArtPath, err)
-	}
+	we.maybeDeleteLocalArtPath(localArtPath)
 	log.Infof("Successfully saved file: %s", localArtPath)
 	return nil
+}
+
+func (we *WorkflowExecutor) maybeDeleteLocalArtPath(localArtPath string) {
+	if os.Getenv("REMOVE_LOCAL_ART_PATH") == "true" {
+		log.WithField("localArtPath", localArtPath).Info("deleting local artifact")
+		// remove is best effort (the container will go away anyways).
+		// we just want reduce peak space usage
+		err := os.Remove(localArtPath)
+		if err != nil {
+			log.Warnf("Failed to remove %s: %v", localArtPath, err)
+		}
+	} else {
+		log.WithField("localArtPath", localArtPath).Info("not deleting local artifact")
+	}
 }
 
 // stageArchiveFile stages a path in a container for archiving from the wait sidecar.
@@ -513,7 +522,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 				output = wfv1.AnyStringPtr(fileContents)
 			}
 		} else {
-			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
+			log.Infof("Copying %s from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
 			data, err := ioutil.ReadFile(mountedPath)
 			if err != nil {

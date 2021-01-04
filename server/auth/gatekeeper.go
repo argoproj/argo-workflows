@@ -131,7 +131,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	authorization := getAuthHeader(md)
 	mode, valid := s.Modes.GetMode(authorization)
 	if !valid {
-		return nil, nil, nil, status.Error(codes.Unauthenticated, "token not valid for requested mode")
+		return nil, nil, nil, status.Error(codes.Unauthenticated, "token not valid for running mode")
 	}
 	switch mode {
 	case Client:

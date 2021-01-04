@@ -760,6 +760,13 @@
     },
     "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
       "properties": {
+        "email": {
+          "type": "string"
+        },
+        "emailVerified": {
+          "format": "boolean",
+          "type": "boolean"
+        },
         "groups": {
           "items": {
             "type": "string"
@@ -1791,6 +1798,10 @@
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
           "description": "Arguments extracted from the event and then set as arguments to the workflow created."
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+          "description": "Metadata optional means to customize select fields of the workflow metadata"
         },
         "workflowTemplateRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
