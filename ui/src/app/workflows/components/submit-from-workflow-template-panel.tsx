@@ -24,7 +24,7 @@ export const SubmitFromWorkflowTemplatePanel = ({namespace}: {namespace: string}
             {!workflowTemplate ? (
                 <>
                     <h3>Select workflow template...</h3>
-                    {workflowTemplates ? (
+                    {workflowTemplates && workflowTemplates.length > 0 ? (
                         <ul>
                             {(workflowTemplates || []).map(x => (
                                 <li>
