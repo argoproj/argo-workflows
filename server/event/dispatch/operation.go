@@ -98,8 +98,16 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 		}
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), tmpl.GetWorkflowMetadata(), ref.ClusterScope)
 		o.instanceIDService.Label(wf)
-		// make sure we have a predicable name, so re-creation doesn't create two workflows
-		wf.SetName(wf.GetGenerateName() + nameSuffix)
+		err = o.populateWorkflowMetadata(wf, &submit.ObjectMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		if wf.Name == "" {
+			// make sure we have a predicable name, so re-creation doesn't create two workflows
+			wf.SetName(wf.GetGenerateName() + nameSuffix)
+		}
+
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
@@ -127,6 +135,53 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 		return wf, nil
 	}
 	return nil, nil
+}
+
+func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1.ObjectMeta) error {
+	if len(metadata.Name) > 0 {
+		evalName, err := o.evaluateStringExpression(metadata.Name, "name")
+		if err != nil {
+			return err
+		}
+		wf.SetName(evalName)
+	}
+	for labelKey, labelValue := range metadata.Labels {
+		evalLabel, err := o.evaluateStringExpression(labelValue, fmt.Sprintf("label \"%s\"", labelKey))
+		if err != nil {
+			return err
+		}
+		// This is invariant code, but it's a convenient way to only initialize labels if there are actually labels
+		// defined. Given that there will likely be few user defined labels this shouldn't affect performance at all.
+		if wf.Labels == nil {
+			wf.Labels = map[string]string{}
+		}
+		wf.Labels[labelKey] = evalLabel
+	}
+	for annotationKey, annotationValue := range metadata.Annotations {
+		evalAnnotation, err := o.evaluateStringExpression(annotationValue, fmt.Sprintf("annotation \"%s\"", annotationKey))
+		if err != nil {
+			return err
+		}
+		// See labels comment above.
+		if wf.Annotations == nil {
+			wf.Annotations = map[string]string{}
+		}
+		wf.Annotations[annotationKey] = evalAnnotation
+	}
+	return nil
+}
+
+func (o *Operation) evaluateStringExpression(statement string, errorInfo string) (string, error) {
+	result, err := expr.Eval(statement, o.env)
+	if err != nil {
+		return "", fmt.Errorf("failed to evaluate workflow %s expression: %w", errorInfo, err)
+	}
+
+	v, ok := result.(string)
+	if !ok {
+		return "", fmt.Errorf("workflow %s expression must evaluate to a string, not a %T", errorInfo, result)
+	}
+	return v, nil
 }
 
 func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
