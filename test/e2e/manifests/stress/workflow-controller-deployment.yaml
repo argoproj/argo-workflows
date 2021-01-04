@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: workflow-controller
+          imagePullPolicy: Always
+          args:
+            - --loglevel=warn
+            - --configmap=workflow-controller-configmap
+            - --executor-image=argoproj/argoexec:latest
+            - --namespaced
+            - --burst=2048
+            - --qps=512
+            - --workflow-workers=128
+          env:
+            - name: DEFAULT_REQUEUE_TIME
+              value: 20s
+          # allow us to run <= v2.11 images
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 8737

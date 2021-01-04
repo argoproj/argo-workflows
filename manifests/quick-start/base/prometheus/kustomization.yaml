@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - prometheus-deployment.yaml
   - prometheus-config-cluster.yaml
+  - prometheus-service.yaml

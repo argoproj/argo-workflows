@@ -158,7 +158,7 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
 			Name:        "count",
-			Help:        "Number of Workflows currently accessible by the controller by status",
+			Help:        "Number of Workflows currently accessible by the controller by status. https://argoproj.github.io/argo/metrics/#count",
 			ConstLabels: map[string]string{"status": string(phase)},
 		}
 	}
@@ -166,7 +166,6 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 		wfv1.NodePending:   prometheus.NewGauge(getOptsByPahse(wfv1.NodePending)),
 		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeRunning)),
 		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPahse(wfv1.NodeSucceeded)),
-		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeSkipped)),
 		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),
 		wfv1.NodeError:     prometheus.NewGauge(getOptsByPahse(wfv1.NodeError)),
 	}

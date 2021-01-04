@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -20,7 +22,9 @@ import (
 
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/controller"
+	"github.com/argoproj/argo/workflow/metrics"
 )
 
 const (
@@ -64,6 +68,9 @@ func NewRootCommand() *cobra.Command {
 			config.Burst = burst
 			config.QPS = qps
 
+			metrics.AddMetricsTransportWrapper(config)
+			logs.AddLoggingTransportWrapper(config)
+
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
 				return err
@@ -87,6 +94,10 @@ func NewRootCommand() *cobra.Command {
 			defer cancel()
 
 			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
+
+			go func() {
+				log.Println(http.ListenAndServe("localhost:6060", nil))
+			}()
 
 			// Wait forever
 			select {}

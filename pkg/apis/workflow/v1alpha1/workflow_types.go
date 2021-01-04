@@ -1427,6 +1427,8 @@ type ConditionType string
 const (
 	// ConditionTypeCompleted is a signifies the workflow has completed
 	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypePodRunning any workflow pods are currently running
+	ConditionTypePodRunning ConditionType = "PodRunning"
 	// ConditionTypeSpecWarning is a warning on the current application spec
 	ConditionTypeSpecWarning ConditionType = "SpecWarning"
 	// ConditionTypeSpecWarning is an error on the current application spec
