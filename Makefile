@@ -131,7 +131,7 @@ define protoc
       -I ./vendor \
       -I ${GOPATH}/src \
       -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
-      -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.2/third_party/googleapis \
+      -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
       --gogofast_out=plugins=grpc:${GOPATH}/src \
       --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
@@ -533,7 +533,6 @@ dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger
 
 api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
-	git diff
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
