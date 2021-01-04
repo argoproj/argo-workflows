@@ -270,7 +270,7 @@ codegen: \
 	pkg/apis/workflow/v1alpha1/openapi_generated.go \
 	pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
-	manifests/install.yaml \
+	manifests \
 	api/openapi-spec/swagger.json \
 	api/jsonschema/schema.json \
 	docs/fields.md \
@@ -360,7 +360,8 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 	kustomize version
 
 # generates several installation files
-manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
+.PHONY: manifests
+manifests: $(CRDS) /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
