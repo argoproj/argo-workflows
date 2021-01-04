@@ -153,7 +153,7 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTLWorkers int) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, wfc.metrics)
 	err := ttlCtrl.Run(ctx.Done(), workflowTTLWorkers)
 	if err != nil {
 		panic(err)
