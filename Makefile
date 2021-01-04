@@ -533,6 +533,7 @@ dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger
 
 api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
+	git diff
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
