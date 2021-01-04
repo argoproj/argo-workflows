@@ -3311,6 +3311,12 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Metadata optional means to customize select fields of the workflow metadata",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments extracted from the event and then set as arguments to the workflow created.",
@@ -3322,7 +3328,7 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 

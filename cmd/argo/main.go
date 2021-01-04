@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"github.com/argoproj/argo/cmd/argo/commands"
+	// load authentication plugin for obtaining credentials from cloud providers.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func main() {

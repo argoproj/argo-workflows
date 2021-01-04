@@ -1807,6 +1807,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
           "description": "Arguments extracted from the event and then set as arguments to the workflow created."
         },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+          "description": "Metadata optional means to customize select fields of the workflow metadata"
+        },
         "workflowTemplateRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
           "description": "WorkflowTemplateRef the workflow template to submit"

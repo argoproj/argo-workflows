@@ -380,6 +380,8 @@ spec:
                         type: object
                       type: array
                   type: object
+                metadata:
+                  type: object
                 workflowTemplateRef:
                   properties:
                     clusterScope:

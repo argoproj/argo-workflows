@@ -169,6 +169,183 @@ func TestNewOperation(t *testing.T) {
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template parameter \"my-param\" expression: unexpected token Operator(\"!\") (1:8)\n | rubbish!!!\n | .......^", <-recorder.Events)
 }
 
+func Test_populateWorkflowMetadata(t *testing.T) {
+	// set-up
+	client := fake.NewSimpleClientset(
+		&wfv1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
+		},
+	)
+	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	recorder := record.NewFakeRecorder(10)
+
+	// act
+	operation, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), recorder, []wfv1.WorkflowEventBinding{
+		{
+			// No name specified
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-1", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+				},
+			},
+		},
+		{
+			// Fixed name, label and annotation given
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-2", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "\"my-wfeb-2\"",
+						Labels:      map[string]string{"aLabel": "\"someValue\""},
+						Annotations: map[string]string{"anAnnotation": "\"otherValue\""},
+					},
+				},
+			},
+		},
+		{
+			// Name, label and annotations using expressions
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-3", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "\"my-wfeb-\" + payload.foo.bar",
+						Labels:      map[string]string{"aLabel": "payload.list[0]"},
+						Annotations: map[string]string{"anAnnotation": "payload.list[1]"},
+					},
+				},
+			},
+		},
+		{
+			// Invalid name expression
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-4", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.......foo[.numeric]"},
+				},
+			},
+		},
+		{
+			// Invalid label expression
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-4", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"invalidLabel": "foo...bar"}},
+				},
+			},
+		},
+		{
+			// Invalid annotation expression
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-4", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{"invalidAnnotation": "foo.[..]bar"}},
+				},
+			},
+		},
+		{
+			// Name expression evaluates to invalid type (float)
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-5", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.foo.numeric"},
+				},
+			},
+		},
+		{
+			// Name expression evaluates to invalid type (boolean)
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-6", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.foo.bool"},
+				},
+			},
+		},
+		{
+			// Name expression evaluates to invalid type (map)
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-7", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.foo"},
+				},
+			},
+		},
+		{
+			// Name expression evaluates to invalid type (list)
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-8", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.list"},
+				},
+			},
+		},
+		{
+			// Name expression evaluates to non existent value (nil)
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-9", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta:          metav1.ObjectMeta{Name: "payload.nothing"},
+				},
+			},
+		},
+	}, "my-ns", "my-discriminator",
+		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
+
+	assert.NoError(t, err)
+	operation.Dispatch()
+
+	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(metav1.ListOptions{})
+
+	assert.NoError(t, err)
+	assert.Len(t, list.Items, 3)
+
+	assert.Contains(t, list.Items[0].Name, "my-wft")
+
+	assert.Equal(t, list.Items[1].Name, "my-wfeb-2")
+	assert.Contains(t, list.Items[1].Labels, "aLabel")
+	assert.Equal(t, "someValue", list.Items[1].Labels["aLabel"])
+	assert.Contains(t, list.Items[1].Annotations, "anAnnotation")
+	assert.Equal(t, "otherValue", list.Items[1].Annotations["anAnnotation"])
+
+	assert.Equal(t, list.Items[2].Name, "my-wfeb-baz")
+	assert.Contains(t, list.Items[2].Labels, "aLabel")
+	assert.Equal(t, "one", list.Items[2].Labels["aLabel"])
+	assert.Contains(t, list.Items[2].Annotations, "anAnnotation")
+	assert.Equal(t, "two", list.Items[2].Annotations["anAnnotation"])
+
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow name expression: unexpected token Operator(\"..\") (1:10)\n | payload.......foo[.numeric]\n | .........^", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: cannot use pointer accessor outside closure (1:6)\n | foo...bar\n | .....^", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow annotation \"invalidAnnotation\" expression: expected name (1:6)\n | foo.[..]bar\n | .....^", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a float64", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a bool", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a map[string]interface {}", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a []interface {}", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a <nil>", <-recorder.Events)
+}
+
 func Test_expressionEnvironment(t *testing.T) {
 	env, err := expressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
 	if assert.NoError(t, err) {
