@@ -116,7 +116,13 @@ func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
 	}
 }
 
-// FromUnstructured converts an unstructured object to a workflow
+// FromUnstructured converts an unstructured object to a workflow.
+// This function performs a lot of allocations and con resulting in a lot of memory
+// being used. Users should avoid invoking this function if the data they need is
+// available from `unstructured.Unstructured`. especially if they're looping.
+// Available values include: `GetLabels()`, `GetName()`, `GetNamespace()` etc.
+// Single values can be accessed using `unstructured.Nested*`, e.g.
+// `unstructured.NestedString(un.Object, "spec", "phase")`.
 func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
 	err := FromUnstructuredObj(un, &wf)

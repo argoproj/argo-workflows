@@ -656,8 +656,7 @@ spec:
         runAsNonRoot: true
       serviceAccountName: argo-server
       volumes:
-      - emptyDir: {}
-        name: tmp
+      - name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -727,7 +726,16 @@ spec:
         command:
         - workflow-controller
         image: argoproj/workflow-controller:v2.12.2
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
         name: workflow-controller
+        ports:
+        - containerPort: 9090
+          name: metrics
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:

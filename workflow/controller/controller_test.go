@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/argoproj/pkg/sync"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -589,5 +590,6 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	assert.Equal(0, controller.wfQueue.Len())
 
 	controller.notifySemaphoreConfigUpdate(&cm)
+	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }

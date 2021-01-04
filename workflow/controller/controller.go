@@ -252,7 +252,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.Add(key)
+		wfc.wfQueue.AddRateLimited(key)
 	}
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
@@ -314,12 +314,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
-		wf, err := util.FromUnstructured(un)
-		if err != nil {
-			log.Errorf("failed to convert to workflow from unstructured: %v", err)
-			continue
-		}
-		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
+		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }
 
@@ -716,7 +711,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
-						wfc.wfQueue.AddRateLimited(key)
+						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
 				},
