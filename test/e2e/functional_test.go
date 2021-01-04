@@ -42,7 +42,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -59,14 +59,19 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Len(t, status.Nodes, 1)
-			if assert.Contains(t, status.Nodes, "sleepy") {
-				assert.Equal(t, "pod deleted during operation", status.Nodes["sleepy"].Message)
+			// the outcome could be either of these, depending on time
+			// this is due to the grace period recently deleted pods get
+			switch status.Phase {
+			case wfv1.NodeError:
+				assert.Equal(t, "pod deleted during operation", status.Nodes[metadata.Name].Message)
+			case wfv1.NodeFailed:
+				assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
+			default:
+				assert.Fail(t, "expected error of failed")
 			}
 		})
 }
@@ -85,6 +90,36 @@ func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 2)
+		})
+}
+
+func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
+		Workflow("@functional/synchronization-mutex-wf-level.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestTemplateLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, "to be waiting on a mutex").
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 
@@ -540,19 +575,19 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		RunCli([]string{"stop", "stop-terminate"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "workflow stop-terminate stopped")
+			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
 		WaitForWorkflow(45 * time.Second).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
-			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
@@ -565,17 +600,17 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "workflow stop-terminate terminated")
+			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
 		}).
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			assert.Nil(t, nodeStatus)
-			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
 			assert.Nil(t, nodeStatus)
 		})
 }

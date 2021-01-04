@@ -44,8 +44,9 @@ spec:
       image: docker/whalesay:latest
     name: whalesay
 status:
-  phase: Running
+  phase: Succeeded
   startedAt: 2018-08-27T20:41:38Z
+  finishedAt: 2018-08-27T20:41:38Z
 `
 
 var succeededWf = `
@@ -344,17 +345,16 @@ func newTTLController() *Controller {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	return &Controller{
-		wfclientset:  wfclientset,
-		wfInformer:   wfInformer,
-		resyncPeriod: workflowTTLResyncPeriod,
-		clock:        clock,
-		workqueue:    workqueue.NewDelayingQueue(),
+		wfclientset: wfclientset,
+		wfInformer:  wfInformer,
+		clock:       clock,
+		workqueue:   workqueue.NewDelayingQueue(),
 	}
 }
 
 func enqueueWF(controller *Controller, un *unstructured.Unstructured) {
 	controller.enqueueWF(un)
-	time.Sleep(100*time.Millisecond + enoughTimeForInformerSync)
+	time.Sleep(100*time.Millisecond + time.Second)
 }
 
 func TestEnqueueWF(t *testing.T) {
