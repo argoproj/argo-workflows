@@ -1,6 +1,6 @@
 import {SlidingPanel} from 'argo-ui';
 import * as React from 'react';
-import {WorkflowSpec} from '../../../../models';
+import {Arguments, WorkflowSpec} from '../../../../models';
 import {Parameter} from '../../../../models/workflows';
 import {exampleTemplate, randomSillyName} from '../../examples';
 import {Button} from '../button';
@@ -157,6 +157,9 @@ export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onC
                 <KeyValueEditor
                     keyValues={parameterKeyValues}
                     onChange={parameters => {
+                        if (!props.value.arguments) {
+                            props.value.arguments = {parameters: []} as Arguments;
+                        }
                         props.value.arguments.parameters = Object.entries(parameters).map(
                             ([k, v]) =>
                                 ({
