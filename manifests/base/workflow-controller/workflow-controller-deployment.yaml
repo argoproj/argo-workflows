@@ -32,6 +32,20 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.name
+          ports:
+            - name: metrics
+              containerPort: 9090
+          # Periodically check we are listening on the metrics port
+          # causing a restart if it is not OK.
+          # This takes advantage of the fact that if the metrics service has died,
+          # then the controller has died.
+          # In testing, it appears to take 60-90s from failure to restart.
+          livenessProbe:
+            httpGet:
+              port: metrics
+              path: /metrics
+            initialDelaySeconds: 30
+            periodSeconds: 30
       securityContext:
         runAsNonRoot: true
       nodeSelector:

@@ -575,19 +575,19 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		RunCli([]string{"stop", "stop-terminate"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "workflow stop-terminate stopped")
+			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
 		WaitForWorkflow(45 * time.Second).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
-			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
@@ -600,17 +600,17 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "workflow stop-terminate terminated")
+			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
 		}).
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			assert.Nil(t, nodeStatus)
-			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
 			assert.Nil(t, nodeStatus)
 		})
 }

@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
@@ -594,5 +595,6 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	assert.Equal(0, controller.wfQueue.Len())
 
 	controller.notifySemaphoreConfigUpdate(&cm)
+	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }
