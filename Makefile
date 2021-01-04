@@ -491,7 +491,7 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-cli
 test-cli:
