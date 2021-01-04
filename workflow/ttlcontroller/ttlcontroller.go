@@ -88,7 +88,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	}
 	defer c.workqueue.Done(key)
 
-	runtimeutil.HandleError(c.deleteWorkflow(key.(string)))
+	runtimeutil.HandleError(c.deleteWorkflow(ctx, key.(string)))
 
 	return true
 }
@@ -125,7 +125,7 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 	// Any workflow that was queued must need deleting, therefore we do not check the expiry again.
 	log.Infof("Deleting TTL expired workflow '%s'", key)
-	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
+	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			log.Infof("Workflow already deleted '%s'", key)
