@@ -384,7 +384,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	var created *apiv1.Pod
-	err = retryutil.OnError(createPodRetryBackoff, woc.shouldRetryCreate, func() error {
+	err = retryutil.OnError(createPodRetryBackoff, errorsutil.IsTransientErr, func() error {
 		_created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 		created = _created
 		return err
@@ -405,15 +405,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
-}
-
-// shouldRetryCreate returns whether a create request can be retried on the given error.
-func (woc *wfOperationCtx) shouldRetryCreate(err error) bool {
-	res := apierr.IsTooManyRequests(err) || apierr.IsServerTimeout(err)
-	if res {
-		woc.log.Debugf("Retry the pod create request failed with %s", err)
-	}
-	return res
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
