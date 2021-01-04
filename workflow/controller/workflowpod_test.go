@@ -9,13 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/fake"
-	kubetesting "k8s.io/client-go/testing"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
@@ -1316,62 +1311,5 @@ func TestPropagateMaxDuration(t *testing.T) {
 	out, err := json.Marshal(map[string]time.Time{"deadline": deadline})
 	if assert.NoError(t, err) {
 		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
-	}
-}
-
-var retryCreatePodRequest = `
-name: ubuntu
-container:
-  image: ubuntu:18.04
-  command: [echo]
-`
-
-type retryCreatePodReactor struct {
-	reacted int
-	errors  []error
-}
-
-func (reactor *retryCreatePodReactor) React(action kubetesting.Action) (bool, runtime.Object, error) {
-	var err error
-	if len(reactor.errors) == 0 {
-		return false, nil, nil
-	}
-	err, errors := reactor.errors[0], reactor.errors[1:]
-	reactor.reacted += 1
-	reactor.errors = errors
-	return true, nil, err
-}
-
-func TestRetryCreatePodRequest(t *testing.T) {
-	tmpl := unmarshalTemplate(retryCreatePodRequest)
-	woc := newWoc()
-
-	// Retriable errors
-	{
-		reactor := &retryCreatePodReactor{
-			errors: []error{
-				apierr.NewServerTimeoutForKind(schema.GroupKind{}, "create", 3),
-				apierr.NewTooManyRequestsError("too many"),
-			},
-		}
-		woc.controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", reactor.React)
-
-		pod, err := woc.createWorkflowPod(tmpl.Name, *tmpl.Container, tmpl, &createWorkflowPodOpts{})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, reactor.reacted)
-		assert.Equal(t, "ubuntu:18.04", pod.Spec.Containers[1].Image)
-	}
-	// Other error
-	{
-		reactor := &retryCreatePodReactor{
-			errors: []error{
-				apierr.NewBadRequest("bad arg"),
-			},
-		}
-		woc.controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", reactor.React)
-
-		_, err := woc.createWorkflowPod(tmpl.Name, *tmpl.Container, tmpl, &createWorkflowPodOpts{})
-		assert.EqualError(t, err, "bad arg")
-		assert.Equal(t, 1, reactor.reacted)
 	}
 }
