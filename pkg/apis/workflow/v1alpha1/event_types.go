@@ -40,6 +40,9 @@ type Submit struct {
 	// WorkflowTemplateRef the workflow template to submit
 	WorkflowTemplateRef WorkflowTemplateRef `json:"workflowTemplateRef" protobuf:"bytes,1,opt,name=workflowTemplateRef"`
 
+	// Metadata optional means to customize select fields of the workflow metadata
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,3,opt,name=metadata"`
+
 	// Arguments extracted from the event and then set as arguments to the workflow created.
 	Arguments *Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 }
