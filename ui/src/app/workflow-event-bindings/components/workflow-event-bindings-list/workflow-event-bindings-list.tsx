@@ -16,14 +16,13 @@ import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {ID} from './id';
 
-export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
+export const WorkflowEventBindingsList = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {match, location, history} = props;
     const ctx = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(match.params.namespace);
+    const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
     useEffect(() => history.push(historyUrl('workflow-event-bindings/{namespace}', {namespace, selectedWorkflowEventBinding})), [namespace, selectedWorkflowEventBinding]);
 
@@ -36,11 +35,11 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
     const g = new Graph();
     (workflowEventBindings || []).forEach(web => {
         const bindingId = ID.join('WorkflowEventBinding', web.metadata.namespace, web.metadata.name);
-        g.nodes.set(bindingId, {label: web.spec.event.selector, type: 'event', icon: 'cloud'});
+        g.nodes.set(bindingId, {label: web.spec.event.selector, genre: 'event', icon: 'cloud'});
         if (web.spec.submit) {
             const templateName = web.spec.submit.workflowTemplateRef.name;
             const templateId = ID.join('WorkflowTemplate', web.metadata.namespace, templateName);
-            g.nodes.set(templateId, {label: templateName, type: 'template', icon: 'window-maximize'});
+            g.nodes.set(templateId, {label: templateName, genre: 'template', icon: 'window-maximize'});
             g.edges.set({v: bindingId, w: templateId}, {});
         }
     });
@@ -49,6 +48,7 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
         services.event
             .listWorkflowEventBindings(namespace)
             .then(list => setWorkflowEventBindings(list.items || []))
+            .then(() => setError(null))
             .catch(setError);
     }, [namespace]);
 
@@ -56,6 +56,10 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
         <Page
             title='Workflow Event Bindings'
             toolbar={{
+                breadcrumbs: [
+                    {title: 'Workflow Event Bindings', path: uiUrl('workflow-event-bindings')},
+                    {title: namespace, path: uiUrl('workflow-event-bindings/' + namespace)}
+                ],
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
             <ErrorNotice error={error} />
@@ -86,9 +90,9 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
             ) : (
                 <>
                     <GraphPanel
+                        storageScope='workflow-event-bindings'
                         graph={g}
-                        nodeTypes={{event: true, template: true}}
-                        nodeClassNames={{'': true}}
+                        nodeGenres={{event: true, template: true}}
                         horizontal={true}
                         onNodeSelect={id => {
                             const x = ID.split(id);

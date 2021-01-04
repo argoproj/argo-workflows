@@ -1,20 +1,21 @@
-import {Page} from 'argo-ui';
+import {NotificationType, Page} from 'argo-ui';
 import {SlidingPanel} from 'argo-ui/src/index';
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
-import {Status, StatusNotice} from '../../../shared/components/status-notice';
+import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {WorkflowTemplateEditor} from '../workflow-template-editor';
 
-export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
+export const WorkflowTemplateDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {match, location, history} = props;
+    const {notifications, navigation} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
@@ -22,7 +23,6 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
     const name = match.params.name;
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
-    const [edited, setEdited] = useState(false);
 
     useEffect(
         () =>
@@ -37,8 +37,9 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
         [namespace, name, sidePanel, tab]
     );
 
-    const [status, setStatus] = useState<Status>();
+    const [error, setError] = useState<Error>();
     const [template, setTemplate] = useState<WorkflowTemplate>();
+    const [edited, setEdited] = useState(false);
 
     useEffect(() => setEdited(true), [template]);
 
@@ -47,13 +48,19 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
             .get(name, namespace)
             .then(setTemplate)
             .then(() => setEdited(false)) // set back to false
-            .catch(setStatus);
+            .then(() => setError(null))
+            .catch(setError);
     }, [name, namespace]);
 
     return (
         <Page
             title='Workflow Template Details'
             toolbar={{
+                breadcrumbs: [
+                    {title: 'Workflow Templates', path: uiUrl('workflow-templates')},
+                    {title: namespace, path: uiUrl('workflow-templates/' + namespace)},
+                    {title: name, path: uiUrl('workflow-templates/' + namespace + '/' + name)}
+                ],
                 actionMenu: {
                     items: [
                         {
@@ -63,16 +70,17 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
                             action: () => setSidePanel(true)
                         },
                         {
-                            title: 'Save',
+                            title: 'Update',
                             iconClassName: 'fa fa-save',
                             disabled: !edited,
                             action: () =>
                                 services.workflowTemplate
                                     .update(template, name, namespace)
                                     .then(setTemplate)
-                                    .then(() => setStatus('Succeeded'))
+                                    .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
                                     .then(() => setEdited(false))
-                                    .catch(setStatus)
+                                    .then(() => setError(null))
+                                    .catch(setError)
                         },
                         {
                             title: 'Delete',
@@ -84,16 +92,17 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
                                 }
                                 services.workflowTemplate
                                     .delete(name, namespace)
-                                    .catch(setStatus)
-                                    .then(() => (document.location.href = uiUrl('workflow-templates')));
+                                    .then(() => navigation.goto(uiUrl('workflow-templates/' + namespace)))
+                                    .then(() => setError(null))
+                                    .catch(setError);
                             }
                         }
                     ]
                 }
             }}>
             <>
-                <StatusNotice status={status} />
-                {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setStatus} onTabSelected={setTab} selectedTabKey={tab} />}
+                <ErrorNotice error={error} />
+                {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />}
             </>
             {template && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isNarrow={true}>

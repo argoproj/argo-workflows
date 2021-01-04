@@ -1,4 +1,4 @@
-export type Type = 'WorkflowEventBinding' | 'WorkflowTemplate';
+type Type = 'WorkflowEventBinding' | 'WorkflowTemplate';
 
 export const ID = {
     join: (type: Type, namespace: string, name: string) => type + '/' + namespace + '/' + name,

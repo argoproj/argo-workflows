@@ -52,6 +52,13 @@ Full boolean logic is also available. Operators include:
 depends: "(task-2.Succeeded || task-2.Skipped) && !task-3.Failed"
 ```
 
+In the case that you're depending on a task that uses withItems, you can depend on
+whether any of the item tasks are successful or all have failed using .AnySucceeded and .AllFailed, for example:
+
+```
+depends: "task-1.AnySucceeded || task-2.AllFailed"
+```
+   
 ## Compatibility with `dependencies` and `dag.task.continueOn`
 
 This feature is fully compatible with `dependencies` and conversion is easy.

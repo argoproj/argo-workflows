@@ -19,17 +19,26 @@ require('./workflow-template-list.scss');
 
 const learnMore = <a href='https://argoproj.github.io/argo/workflow-templates/'>Learn more</a>;
 
-export const WorkflowTemplateList = (props: RouteComponentProps<any>) => {
+export const WorkflowTemplateList = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {match, location, history} = props;
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(match.params.namespace);
+    const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
-    useEffect(() => history.push(historyUrl('workflow-templates/{namespace}', {namespace, sidePanel})), [namespace, sidePanel]);
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('workflow-templates/{namespace}', {
+                    namespace,
+                    sidePanel
+                })
+            ),
+        [namespace, sidePanel]
+    );
 
+    // internal state
     const [error, setError] = useState<Error>();
     const [templates, setTemplates] = useState<WorkflowTemplate[]>();
 
@@ -45,6 +54,10 @@ export const WorkflowTemplateList = (props: RouteComponentProps<any>) => {
         <Page
             title='Workflow Templates'
             toolbar={{
+                breadcrumbs: [
+                    {title: 'Workflow Templates', path: uiUrl('workflow-templates')},
+                    {title: namespace, path: uiUrl('workflow-templates/' + namespace)}
+                ],
                 actionMenu: {
                     items: [
                         {
@@ -56,7 +69,7 @@ export const WorkflowTemplateList = (props: RouteComponentProps<any>) => {
                 },
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
-            <ErrorNotice error={error} style={{margin: 20}} />;
+            <ErrorNotice error={error} />
             {!templates ? (
                 <Loading />
             ) : templates.length === 0 ? (
@@ -67,36 +80,34 @@ export const WorkflowTemplateList = (props: RouteComponentProps<any>) => {
                     </p>
                 </ZeroState>
             ) : (
-                <div className='row'>
-                    <div className='columns small-12'>
-                        <div className='argo-table-list'>
-                            <div className='row argo-table-list__head'>
-                                <div className='columns small-1' />
-                                <div className='columns small-5'>NAME</div>
-                                <div className='columns small-3'>NAMESPACE</div>
-                                <div className='columns small-3'>CREATED</div>
-                            </div>
-                            {templates.map(t => (
-                                <Link
-                                    className='row argo-table-list__row'
-                                    key={`${t.metadata.namespace}/${t.metadata.name}`}
-                                    to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
-                                    <div className='columns small-1'>
-                                        <i className='fa fa-clone' />
-                                    </div>
-                                    <div className='columns small-5'>{t.metadata.name}</div>
-                                    <div className='columns small-3'>{t.metadata.namespace}</div>
-                                    <div className='columns small-3'>
-                                        <Timestamp date={t.metadata.creationTimestamp} />
-                                    </div>
-                                </Link>
-                            ))}
+                <>
+                    <div className='argo-table-list'>
+                        <div className='row argo-table-list__head'>
+                            <div className='columns small-1' />
+                            <div className='columns small-5'>NAME</div>
+                            <div className='columns small-3'>NAMESPACE</div>
+                            <div className='columns small-3'>CREATED</div>
                         </div>
-                        <p>
-                            <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
-                        </p>
+                        {templates.map(t => (
+                            <Link
+                                className='row argo-table-list__row'
+                                key={`${t.metadata.namespace}/${t.metadata.name}`}
+                                to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
+                                <div className='columns small-1'>
+                                    <i className='fa fa-clone' />
+                                </div>
+                                <div className='columns small-5'>{t.metadata.name}</div>
+                                <div className='columns small-3'>{t.metadata.namespace}</div>
+                                <div className='columns small-3'>
+                                    <Timestamp date={t.metadata.creationTimestamp} />
+                                </div>
+                            </Link>
+                        ))}
                     </div>
-                </div>
+                    <p>
+                        <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
+                    </p>
+                </>
             )}
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
                 <WorkflowTemplateCreator namespace={namespace} onCreate={wf => navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))} />

@@ -9,23 +9,18 @@ interface Resource {
 type Type = 'ADDED' | 'MODIFIED' | 'DELETED' | 'ERROR';
 type Sorter = (a: Resource, b: Resource) => number;
 
-// alphabetical name order
-export const sortByName: Sorter = (a: Resource, b: Resource) => (a.metadata.name > b.metadata.name ? -1 : 1);
 // put the youngest at the start of the list
-export const sortByYouth: Sorter = (a: Resource, b: Resource) =>
-    a.metadata.creationTimestamp === b.metadata.creationTimestamp ? 0 : a.metadata.creationTimestamp < b.metadata.creationTimestamp ? -1 : 1;
+export const sortByYouth: Sorter = (a: Resource, b: Resource) => b.metadata.creationTimestamp.localeCompare(a.metadata.creationTimestamp);
 
 const reconnectAfterMs = 3000;
 
 /**
  * ListWatch allows you to start watching for changes, automatically reconnecting on error.
- *
- * Items are sorted by creation timestamp.
  */
 export class ListWatch<T extends Resource> {
     private readonly list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>;
     private readonly onLoad: (metadata: kubernetes.ListMeta) => void;
-    private readonly onChange: (items: T[]) => void;
+    private readonly onChange: (items: T[], item?: T, type?: Type) => void;
     private readonly onError: (error: Error) => void;
     private readonly sorter: (a: T, b: T) => number;
     private items: T[];
@@ -37,24 +32,24 @@ export class ListWatch<T extends Resource> {
         watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>,
         onLoad: (metadata: kubernetes.ListMeta) => void, // called when the list is loaded
         onOpen: () => void, //  called, when watches is re-established after error,  so should clear any errors
-        onChange: (items: T[]) => void, // called whenever items change, any users that changes state should use [...items]
+        onChange: (items: T[], item?: T, type?: Type) => void, // called whenever items change, any users that changes state should use [...items]
         onError: (error: Error) => void, // called on any error
-        sorter: Sorter = sortByName
+        sorter: Sorter = sortByYouth // show the youngest first by default
     ) {
         this.onLoad = onLoad;
         this.list = list;
+        this.onChange = onChange;
+        this.onError = onError;
+        this.sorter = sorter;
         this.retryWatch = new RetryWatch<T>(
             watch,
             onOpen,
             e => {
-                this.items = mergeItem(e.object, e.type, this.items).sort(this.sorter);
-                onChange(this.items);
+                this.items = mergeItem(e.object, e.type, this.items).sort(sorter);
+                onChange(this.items, e.object, e.type);
             },
             onError
         );
-        this.onChange = onChange;
-        this.onError = onError;
-        this.sorter = sorter;
     }
 
     // Start watching
@@ -75,9 +70,10 @@ export class ListWatch<T extends Resource> {
     }
 
     // Stop watching.
-    // You should almost always  invoke on component unload.
+    // Must invoke on component unload.
     // Idempotent.
     public stop() {
+        clearTimeout(this.timeout);
         this.retryWatch.stop();
     }
 }
@@ -86,7 +82,7 @@ export class ListWatch<T extends Resource> {
  * This is used to update (or delete) and item in a the list.
  */
 const mergeItem = <T extends Resource>(item: T, type: Type, items: T[]): T[] => {
-    const index = items.findIndex(x => x.metadata.uid === item.metadata.uid);
+    const index = items.findIndex(x => x.metadata.namespace === item.metadata.namespace && x.metadata.name === item.metadata.name);
     if (type === 'DELETED') {
         if (index > -1) {
             items.splice(index, 1);
@@ -95,7 +91,7 @@ const mergeItem = <T extends Resource>(item: T, type: Type, items: T[]): T[] => 
         if (index > -1) {
             items[index] = item;
         } else {
-            items.unshift(item);
+            items.push(item);
         }
     }
     return items;

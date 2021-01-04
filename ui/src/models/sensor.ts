@@ -45,15 +45,5 @@ export interface LogEntry {
 
 export type SensorWatchEvent = kubernetes.WatchEvent<Sensor>;
 
-export const triggerTypes: {[key: string]: string} = {
-    argoWorkflow: 'ArgoWorkflow',
-    awsLambda: 'AWSLambda',
-    custom: 'Custom',
-    http: 'HTTPTrigger',
-    k8s: 'K8S',
-    kafka: 'Kafka',
-    log: 'Log',
-    nats: 'NATS',
-    openWhisk: 'OpenWhisk',
-    slack: 'Slack'
-};
+export const TriggerTypes = ['argoWorkflow', 'awsLambda', 'custom', 'http', 'k8s', 'kafka', 'log', 'nats', 'openWhisk', 'slack'] as const;
+export type TriggerType = typeof TriggerTypes[number];

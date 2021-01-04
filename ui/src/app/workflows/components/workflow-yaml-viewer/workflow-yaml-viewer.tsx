@@ -5,7 +5,7 @@ import * as models from '../../../../models';
 import {ObjectEditor} from '../../../shared/components/object-editor/object-editor';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 
-export interface WorkflowYamlViewerProps {
+interface WorkflowYamlViewerProps {
     workflow: models.Workflow;
     selectedNode: models.NodeStatus;
 }

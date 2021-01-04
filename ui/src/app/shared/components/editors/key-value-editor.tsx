@@ -5,22 +5,26 @@ interface KeyValues {
     [key: string]: string;
 }
 
-export const KeyValueEditor = (props: {value: KeyValues; onChange: (value: KeyValues) => void; hide?: (key: string) => boolean}) => {
-    const keyValues: KeyValues = props.value || {};
+export const KeyValueEditor = ({onChange, keyValues, hide}: {keyValues: KeyValues; onChange: (value: KeyValues) => void; hide?: (key: string) => boolean}) => {
     const [name, setName] = React.useState('');
     const [value, setValue] = React.useState('');
     const deleteItem = (k: string) => {
         delete keyValues[k];
-        props.onChange(keyValues);
+        onChange(keyValues);
     };
     const addItem = () => {
+        if (!name || !value) {
+            return;
+        }
         keyValues[name] = value;
-        props.onChange(keyValues);
+        onChange(keyValues);
+        setName('');
+        setValue('');
     };
     return (
         <>
             {Object.entries(keyValues)
-                .filter(([k]) => props.hide === undefined || !props.hide(k))
+                .filter(([k]) => hide === undefined || !hide(k))
                 .map(([k, v]) => (
                     <div className='row white-box__details-row' key={k}>
                         <div className='columns small-4'>{k}</div>
@@ -32,7 +36,13 @@ export const KeyValueEditor = (props: {value: KeyValues; onChange: (value: KeyVa
                         </div>
                     </div>
                 ))}
-            <div className='row white-box__details-row'>
+            <div
+                className='row white-box__details-row'
+                onKeyPress={e => {
+                    if (e.key === 'Enter') {
+                        addItem();
+                    }
+                }}>
                 <div className='columns small-4'>
                     <TextInput value={name} onChange={setName} placeholder='Name...' />
                 </div>
@@ -47,4 +57,8 @@ export const KeyValueEditor = (props: {value: KeyValues; onChange: (value: KeyVa
             </div>
         </>
     );
+};
+
+KeyValueEditor.defaultProps = {
+    keyValues: {}
 };

@@ -5,7 +5,7 @@ import {ResourceEditor} from '../../shared/components/resource-editor/resource-e
 import {Timestamp} from '../../shared/components/timestamp';
 import {services} from '../../shared/services';
 // @ts-ignore
-import {EventSource} from '../../../models'
+import {EventSource} from '../../../models';
 
 interface Props {
     eventSource: EventSource;

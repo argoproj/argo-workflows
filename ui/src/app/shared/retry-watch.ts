@@ -5,7 +5,7 @@ interface Resource {
     metadata: kubernetes.ObjectMeta;
 }
 
-const reconnectAfterMs = 3000;
+const reconnectAfterMs = 5000;
 
 /**
  * RetryWatch allows you to watch for changes, automatically reconnecting on error.
@@ -15,7 +15,6 @@ export class RetryWatch<T extends Resource> {
     private readonly onOpen: () => void;
     private readonly onItem: (event: kubernetes.WatchEvent<T>) => void;
     private readonly onError: (error: Error) => void;
-    private lastResourceVersion: string;
     private subscription: Subscription;
     private timeout: any; // should be `number`
 
@@ -36,7 +35,6 @@ export class RetryWatch<T extends Resource> {
         this.subscription = this.watch(resourceVersion).subscribe(
             next => {
                 if (next) {
-                    this.lastResourceVersion = next.object.metadata.resourceVersion;
                     this.onItem(next);
                 } else {
                     this.onOpen();
@@ -45,13 +43,14 @@ export class RetryWatch<T extends Resource> {
             e => {
                 clearTimeout(this.timeout);
                 this.onError(e);
-                this.timeout = setTimeout(() => this.start(this.lastResourceVersion || resourceVersion), reconnectAfterMs);
+                this.timeout = setTimeout(() => this.start('0'), reconnectAfterMs);
             }
         );
     }
 
-    // You should almost always  invoke on component unload.
+    // Must invoke on component unload.
     public stop() {
+        clearTimeout(this.timeout);
         if (this.subscription) {
             this.subscription.unsubscribe();
         }

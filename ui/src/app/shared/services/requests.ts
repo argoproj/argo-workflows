@@ -46,7 +46,22 @@ export default {
             // otherwise, you'd have to wait for your first message (which maybe some time)
             eventSource.onopen = () => observer.next(null);
             eventSource.onmessage = x => observer.next(x.data);
-            eventSource.onerror = x => observer.error(x);
+            eventSource.onerror = x => {
+                switch (eventSource.readyState) {
+                    case EventSource.CONNECTING:
+                        observer.error(new Error('Failed to connect to ' + url));
+                        break;
+                    case EventSource.OPEN:
+                        observer.error(new Error('Error in open connection to ' + url));
+                        break;
+                    case EventSource.CLOSED:
+                        observer.error(new Error('Connection closed to ' + url));
+                        break;
+                    default:
+                        observer.error(new Error('Unknown error with ' + url));
+                }
+            };
+
             return () => {
                 eventSource.close();
             };

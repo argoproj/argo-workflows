@@ -49,29 +49,31 @@ export interface LogEntry {
 
 export type EventSourceWatchEvent = kubernetes.WatchEvent<EventSource>;
 
-export const eventSourceTypes: {[key: string]: string} = {
-    amqp: 'AMQP',
-    azureEventsHub: 'AzureEventsHub',
-    calendar: 'Calendar',
-    emitter: 'Emitter',
-    file: 'File',
-    generic: 'Generic',
-    github: 'Github',
-    gitlab: 'Gitlab',
-    hdfs: 'HDFS',
-    kafka: 'Kafka',
-    minio: 'Minio',
-    mqtt: 'MQTT',
-    nats: 'NATS',
-    nsq: 'NSQ',
-    pubSub: 'PubSub',
-    pulsar: 'Pulsar',
-    redis: 'Redis',
-    resource: 'Resource',
-    slack: 'Slack',
-    sns: 'SNS',
-    sqs: 'SQS',
-    storageGrid: 'StorageGrid',
-    stripe: 'Stripe',
-    webhook: 'Webhook'
-};
+export const EventSourceTypes = [
+    'amqp',
+    'azureEventsHub',
+    'calendar',
+    'emitter',
+    'file',
+    'generic',
+    'github',
+    'gitlab',
+    'hdfs',
+    'kafka',
+    'minio',
+    'mqtt',
+    'nats',
+    'nsq',
+    'pubSub',
+    'pulsar',
+    'redis',
+    'resource',
+    'slack',
+    'sns',
+    'sqs',
+    'storageGrid',
+    'stripe',
+    'webhook'
+] as const;
+
+export type EventSourceType = typeof EventSourceTypes[number];

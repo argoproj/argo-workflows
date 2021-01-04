@@ -8,7 +8,7 @@ import {SensorService} from './sensor-service';
 import {WorkflowTemplateService} from './workflow-template-service';
 import {WorkflowsService} from './workflows-service';
 
-export interface Services {
+interface Services {
     info: InfoService;
     sensor: SensorService;
     event: EventService;
@@ -19,9 +19,6 @@ export interface Services {
     archivedWorkflows: ArchivedWorkflowsService;
     cronWorkflows: CronWorkflowService;
 }
-
-export * from './workflows-service';
-export * from './responses';
 
 export const services: Services = {
     info: new InfoService(),

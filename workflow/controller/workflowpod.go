@@ -142,7 +142,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if exists {
 		existing, ok := obj.(*apiv1.Pod)
 		if ok {
-			woc.log.WithField("podPhase", existing.Status.Phase).Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+			woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return existing, nil
 		}
 	}
@@ -151,6 +151,14 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
+	// Allow customization of main container resources.
+	if isResourcesSpecified(woc.controller.Config.MainContainer) {
+		mainCtr.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
+	}
+	// Container resources in workflow spec takes precedence over the main container's configuration in controller.
+	if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
+		mainCtr.Resources = *tmpl.Container.Resources.DeepCopy()
+	}
 
 	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()
@@ -563,9 +571,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		}
 	}
 	if isResourcesSpecified(woc.controller.Config.Executor) {
-		exec.Resources = woc.controller.Config.Executor.Resources
+		exec.Resources = *woc.controller.Config.Executor.Resources.DeepCopy()
 	} else if woc.controller.Config.ExecutorResources != nil {
-		exec.Resources = *woc.controller.Config.ExecutorResources
+		exec.Resources = *woc.controller.Config.ExecutorResources.DeepCopy()
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
@@ -601,7 +609,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 }
 
 func isResourcesSpecified(ctr *apiv1.Container) bool {
-	return ctr != nil && (ctr.Resources.Limits.Cpu() != nil || ctr.Resources.Limits.Memory() != nil)
+	return ctr != nil && len(ctr.Resources.Limits) != 0
 }
 
 // addMetadata applies metadata specified in the template

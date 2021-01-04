@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/strftime"
+
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -240,6 +242,11 @@ func TestGlobalParams(t *testing.T) {
 	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
 		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
 	}
+	for char := range strftime.FormatChars {
+		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
+	}
+	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.s")
+
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
@@ -2339,7 +2346,6 @@ spec:
 func TestResolveIOPathPlaceholders(t *testing.T) {
 	wf := unmarshalWF(ioPathPlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2369,7 +2375,6 @@ spec:
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	wf := unmarshalWF(outputValuePlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2407,7 +2412,6 @@ spec:
 func TestResolvePodNameInRetries(t *testing.T) {
 	wf := unmarshalWF(podNameInRetries)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2631,65 +2635,6 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 		assert.Equal(t, "manual-ref-name", objectMetas["resource-cm-3"].OwnerReferences[0].Name)
 		assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-3"].OwnerReferences[1].Name)
 	}
-}
-
-var artifactRepositoryRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: artifact-repo-config-ref-
-  namespace: my-ns
-spec:
-  entrypoint: whalesay
-  artifactRepositoryRef:
-    key: minio
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      artifacts:
-      - name: message
-        path: /tmp/hello_world.txt
-`
-
-var artifactRepositoryConfigMapData = `
-s3:
-  bucket: my-bucket
-  keyPrefix: prefix/in/bucket
-  endpoint: my-minio-endpoint.default:9000
-  insecure: true
-  accessKeySecret:
-    name: my-minio-cred
-    key: accesskey
-  secretKeySecret:
-    name: my-minio-cred
-    key: secretkey
-`
-
-func TestArtifactRepositoryRef(t *testing.T) {
-	wf := unmarshalWF(artifactRepositoryRef)
-	woc := newWoc(*wf)
-	_, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(wf.ObjectMeta.Namespace).Create(
-		&apiv1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "artifact-repositories",
-			},
-			Data: map[string]string{
-				"minio": artifactRepositoryConfigMapData,
-			},
-		},
-	)
-	assert.NoError(t, err)
-	woc.operate()
-	assert.Equal(t, woc.artifactRepository.S3.Bucket, "my-bucket")
-	assert.Equal(t, woc.artifactRepository.S3.Endpoint, "my-minio-endpoint.default:9000")
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 }
 
 var stepScriptTmpl = `
@@ -3010,30 +2955,6 @@ spec:
 			"Normal WorkflowRunning Workflow Running",
 			"Warning WorkflowFailed invalid spec: template name '123' undefined",
 		},
-		`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: artifact-repo-config-ref-
-spec:
-  entrypoint: whalesay
-  artifactRepositoryRef:
-    configMap: artifact-repository
-    key: config
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      artifacts:
-      - name: message
-        path: /tmp/hello_world.txt
-`: {
-			"Normal WorkflowRunning Workflow Running",
-			"Warning WorkflowFailed failed to find artifactory ref {,}/artifact-repository#config",
-		},
 		// DAG
 		`
 metadata:
@@ -3078,8 +2999,9 @@ spec:
 		},
 	} {
 		wf := unmarshalWF(manifest)
-		cancel, controller := newController(wf)
 		t.Run(wf.Name, func(t *testing.T) {
+			cancel, controller := newController(wf)
+			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			woc.operate()
 			makePodsPhase(woc, apiv1.PodSucceeded)
@@ -3087,7 +3009,6 @@ spec:
 			woc.operate()
 			assert.Equal(t, want, getEvents(controller, len(want)))
 		})
-		cancel()
 	}
 }
 
@@ -3676,7 +3597,6 @@ spec:
 func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -5372,4 +5292,207 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 			assert.Contains(t, string(podbyte), "includeScriptOutput")
 		}
 	})
+}
+
+var paramAggregation = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parameter-aggregation-dag-h8b82
+spec:
+  arguments: {}
+  entrypoint: parameter-aggregation
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: num
+            value: '{{item}}'
+        name: odd-or-even
+        template: odd-or-even
+        withItems:
+        - 1
+        - 2
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{tasks.odd-or-even.outputs.parameters.num}}'
+        dependencies:
+        - odd-or-even
+        name: print-nums
+        template: whalesay
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{tasks.odd-or-even.outputs.parameters.evenness}}'
+        dependencies:
+        - odd-or-even
+        name: print-evenness
+        template: whalesay
+    inputs: {}
+    metadata: {}
+    name: parameter-aggregation
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - |
+        sleep 1 &&
+        echo {{inputs.parameters.num}} > /tmp/num &&
+        if [ $(({{inputs.parameters.num}}%2)) -eq 0 ]; then
+          echo "even" > /tmp/even;
+        else
+          echo "odd" > /tmp/even;
+        fi
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: num
+    metadata: {}
+    name: odd-or-even
+    outputs:
+      parameters:
+      - name: num
+        valueFrom:
+          path: /tmp/num
+      - name: evenness
+        valueFrom:
+          path: /tmp/even
+  - arguments: {}
+    container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  nodes:
+    parameter-aggregation-dag-h8b82:
+      children:
+      - parameter-aggregation-dag-h8b82-3379492521
+      displayName: parameter-aggregation-dag-h8b82
+      finishedAt: "2020-12-09T15:37:07Z"
+      id: parameter-aggregation-dag-h8b82
+      name: parameter-aggregation-dag-h8b82
+      outboundNodes:
+      - parameter-aggregation-dag-h8b82-3175470584
+      - parameter-aggregation-dag-h8b82-2243926302
+      phase: Running
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: parameter-aggregation
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: DAG
+    parameter-aggregation-dag-h8b82-1440345089:
+      boundaryID: parameter-aggregation-dag-h8b82
+      children:
+      - parameter-aggregation-dag-h8b82-2243926302
+      - parameter-aggregation-dag-h8b82-3175470584
+      displayName: odd-or-even(1:2)
+      finishedAt: "2020-12-09T15:36:54Z"
+      hostNodeName: minikube
+      id: parameter-aggregation-dag-h8b82-1440345089
+      inputs:
+        parameters:
+        - name: num
+          value: "2"
+      name: parameter-aggregation-dag-h8b82.odd-or-even(1:2)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "2"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: even
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: Pod
+    parameter-aggregation-dag-h8b82-3379492521:
+      boundaryID: parameter-aggregation-dag-h8b82
+      children:
+      - parameter-aggregation-dag-h8b82-3572919299
+      - parameter-aggregation-dag-h8b82-1440345089
+      displayName: odd-or-even
+      finishedAt: "2020-12-09T15:36:55Z"
+      id: parameter-aggregation-dag-h8b82-3379492521
+      name: parameter-aggregation-dag-h8b82.odd-or-even
+      phase: Succeeded
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: TaskGroup
+    parameter-aggregation-dag-h8b82-3572919299:
+      boundaryID: parameter-aggregation-dag-h8b82
+      children:
+      - parameter-aggregation-dag-h8b82-2243926302
+      - parameter-aggregation-dag-h8b82-3175470584
+      displayName: odd-or-even(0:1)
+      finishedAt: "2020-12-09T15:36:53Z"
+      hostNodeName: minikube
+      id: parameter-aggregation-dag-h8b82-3572919299
+      inputs:
+        parameters:
+        - name: num
+          value: "1"
+      name: parameter-aggregation-dag-h8b82.odd-or-even(0:1)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "1"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: odd
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: Pod
+  phase: Succeeded
+  startedAt: "2020-12-09T15:36:46Z"
+`
+
+func TestParamAggregation(t *testing.T) {
+	wf := unmarshalWF(paramAggregation)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	evenNode := woc.wf.Status.Nodes.FindByDisplayName("print-evenness")
+	if assert.NotNil(t, evenNode) {
+		if assert.Len(t, evenNode.Inputs.Parameters, 1) {
+			assert.Equal(t, `["odd","even"]`, evenNode.Inputs.Parameters[0].Value.String())
+		}
+	}
+
+	numNode := woc.wf.Status.Nodes.FindByDisplayName("print-nums")
+	if assert.NotNil(t, numNode) {
+		if assert.Len(t, numNode.Inputs.Parameters, 1) {
+			assert.Equal(t, `["1","2"]`, numNode.Inputs.Parameters[0].Value.String())
+		}
+	}
 }

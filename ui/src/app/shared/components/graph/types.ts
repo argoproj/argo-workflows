@@ -1,19 +1,19 @@
 import {Icon} from '../icon';
 
 export type Node = string;
-export type NodeGroup = string;
+type NodeGroup = string;
 
 export interface NodeLabel {
-    type: string;
-    label: string;
+    label: string; // the label of the node - placed below the icon
+    genre: string; // the class or type of the node, displayed below the icon
     icon?: Icon;
     classNames?: string;
-    progress?: number;
+    progress?: number; // progress between 0..1
     x?: number;
     y?: number;
 }
 
-export interface EdgeLabel {
+interface EdgeLabel {
     label?: string;
     classNames?: string;
     points?: {x: number; y: number}[];

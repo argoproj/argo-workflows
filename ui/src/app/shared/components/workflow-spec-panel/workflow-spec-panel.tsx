@@ -1,18 +1,18 @@
 import * as React from 'react';
 import {WorkflowSpec} from '../../../../models';
 import {GraphPanel} from '../graph/graph-panel';
-import {types} from './types';
+import {genres} from './genres';
 import {workflowSpecGraph} from './workflow-spec-graph';
 
-export const WorkflowSpecPanel = (props: {spec: WorkflowSpec; selectedId?: string; onSelect?: (id: string) => void}) => {
+export const WorkflowSpecPanel = ({spec, selectedId, onSelect}: {spec: WorkflowSpec; selectedId?: string; onSelect?: (id: string) => void}) => {
     return (
         <GraphPanel
-            graph={workflowSpecGraph(props.spec)}
-            selectedNode={props.selectedId}
-            onNodeSelect={id => props.onSelect && props.onSelect(id)}
+            storageScope='workflow-spec'
+            graph={workflowSpecGraph(spec)}
+            selectedNode={selectedId}
+            onNodeSelect={id => onSelect && onSelect(id)}
             horizontal={true}
-            nodeTypes={types}
-            nodeClassNames={{'': true}}
+            nodeGenres={genres}
             iconShapes={{
                 when: 'circle',
                 withItems: 'circle',

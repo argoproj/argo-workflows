@@ -100,6 +100,10 @@ export interface Parameter {
      * ValueFrom is the source for the output parameter's value
      */
     valueFrom?: ValueFrom;
+    /**
+     * Enum holds a list of string values to choose from, for the actual value of the parameter
+     */
+    enum?: Array<string>;
 }
 
 /**
@@ -409,6 +413,8 @@ export interface Workflow {
     status?: WorkflowStatus;
 }
 
+export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
+
 export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
@@ -612,9 +618,9 @@ export interface WorkflowStatus {
     conditions?: Condition[];
 
     /**
-     * StoredWorkflowSpec is a Workflow Spec of top level WorkflowTemplate.
+     * StoredWorkflowTemplateSpec is a Workflow Spec of top level WorkflowTemplate.
      */
-    storedWorkflowSpec?: WorkflowSpec;
+    storedWorkflowTemplateSpec?: WorkflowSpec;
 }
 
 export interface Condition {
@@ -870,3 +876,8 @@ export function getColorForNodePhase(p: NodePhase) {
 }
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';
+
+export interface LogEntry {
+    content: string;
+    podName?: string;
+}

@@ -10,13 +10,17 @@ export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {respo
     if (!props.error) {
         return null;
     }
+    const [error, setError] = useState(props.error); // allow us to close the error panel - in case it does not get automatically closed
     // This timer code is based on https://stackoverflow.com/questions/57137094/implementing-a-countdown-timer-in-react-with-hooks
     const reloadAfterSeconds = props.reloadAfterSeconds || 120;
-    const reload = props.onReload || document.location.reload;
+    const reload = props.onReload;
     const [timeLeft, setTimeLeft] = useState(reloadAfterSeconds);
-    const canAutoReload = reload !== document.location.reload; // we cannot automatically call `document.location.reload`
-    if (canAutoReload) {
+    // we cannot automatically call `document.location.reload`
+    if (reload) {
         useEffect(() => {
+            if (!error) {
+                return;
+            }
             if (!timeLeft) {
                 reload();
                 setTimeLeft(reloadAfterSeconds);
@@ -25,16 +29,30 @@ export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {respo
                 setTimeLeft(timeLeft - 1);
             }, 1000);
             return () => clearInterval(intervalId);
-        }, [timeLeft]);
+        }, [timeLeft, error]);
+    }
+    if (!error) {
+        return null;
     }
     return (
-        <Notice style={props.style}>
-            <PhaseIcon value='Error' /> {props.error.message || 'Unknown error. Open your browser error console for more information.'}
-            {props.error.response && props.error.response.body && props.error.response.body.message && ': ' + props.error.response.body.message}:{' '}
-            <a onClick={() => reload()}>
-                <i className='fa fa-redo' /> Reload
-            </a>{' '}
-            {canAutoReload && `${timeLeft}s`}
+        <Notice {...props.style}>
+            <span>
+                <PhaseIcon value='Error' /> {error.message || 'Unknown error. Open your browser error console for more information.'}
+                {error.response && error.response.body && error.response.body.message && ': ' + error.response.body.message}
+            </span>
+            {reload && (
+                <span>
+                    <a onClick={() => reload()}>
+                        <i className='fa fa-redo' /> Reload
+                    </a>{' '}
+                    {timeLeft}s
+                </span>
+            )}
+            <span className='fa-pull-right'>
+                <a onClick={() => setError(null)}>
+                    <i className='fa fa-times' />
+                </a>
+            </span>
         </Notice>
     );
 };

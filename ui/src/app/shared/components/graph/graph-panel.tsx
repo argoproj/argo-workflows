@@ -1,4 +1,6 @@
 import * as React from 'react';
+import {useEffect} from 'react';
+import {ScopedLocalStorage} from '../../scoped-local-storage';
 import {FilterDropDown} from '../filter-drop-down';
 import {Icon} from '../icon';
 import {GraphIcon} from './icon';
@@ -10,33 +12,50 @@ require('./graph-panel.scss');
 
 type IconShape = 'rect' | 'circle';
 
+interface NodeGenres {
+    [type: string]: boolean;
+}
+
+interface NodeClassNames {
+    [type: string]: boolean;
+}
+
 interface Props {
     graph: Graph;
-    classNames?: string;
-    nodeTypes: {[type: string]: boolean};
-    nodeClassNames: {[type: string]: boolean};
+    storageScope: string; // the scope of storage, similar graphs should use the same vaulue
     options?: React.ReactNode; // add to the option panel
+    classNames?: string;
+    nodeGenres: NodeGenres;
+    nodeClassNames?: NodeClassNames;
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
-    hideTypes?: boolean; // default "false"
-    iconShape?: IconShape; // default "rect"
+    hideNodeTypes?: boolean; // default "false"
+    defaultIconShape?: IconShape; // default "rect"
     iconShapes?: {[type: string]: Icon};
-    edgeStrokeWidthMultiple?: number; // multiple by X, default "1"
     selectedNode?: Node;
     onNodeSelect?: (id: Node) => void;
 }
 
-const defaultNodeSize = 64;
 export const GraphPanel = (props: Props) => {
-    const [nodeSize, setNodeSize] = React.useState(props.nodeSize || defaultNodeSize);
-    const [horizontal, setHorizontal] = React.useState(props.horizontal);
-    const [fast, setFast] = React.useState(false);
-    const [types, setTypes] = React.useState(props.nodeTypes);
-    const [classNames, setClassNames] = React.useState(props.nodeClassNames);
+    const storage = new ScopedLocalStorage('graph/' + props.storageScope);
+    const [nodeSize, setNodeSize] = React.useState<number>(storage.getItem('nodeSize', props.nodeSize));
+    const [horizontal, setHorizontal] = React.useState<boolean>(storage.getItem('horizontal', props.horizontal));
+    const [fast, setFast] = React.useState<boolean>(storage.getItem('fast', false));
+    const [nodeGenres, setNodeGenres] = React.useState<NodeGenres>(storage.getItem('nodeGenres', props.nodeGenres));
+    const [nodeClassNames, setNodeClassNames] = React.useState<NodeClassNames>(storage.getItem('nodeClassNames', props.nodeClassNames));
+
+    useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
+    useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
+    useEffect(() => storage.setItem('fast', fast, false), [fast]);
+    useEffect(() => storage.setItem('nodeGenres', nodeGenres, props.nodeGenres), [nodeGenres]);
+    useEffect(() => storage.setItem('nodeClassNames', nodeClassNames, props.nodeClassNames), [nodeClassNames]);
 
     const visible = (id: Node) => {
         const label = props.graph.nodes.get(id);
-        return types[label.type] && Object.entries(classNames).find(([className, checked]) => checked && className.includes(label.classNames || ''));
+        return (
+            nodeGenres[label.genre] &&
+            (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className)))
+        );
     };
 
     layout(props.graph, nodeSize, horizontal, id => !visible(id), fast);
@@ -48,24 +67,26 @@ export const GraphPanel = (props: Props) => {
             <div className='graph-options-panel'>
                 <FilterDropDown
                     key='types'
-                    values={types}
+                    values={nodeGenres}
                     onChange={(label, checked) => {
-                        setTypes(v => {
+                        setNodeGenres(v => {
                             v[label] = checked;
                             return Object.assign({}, v);
                         });
                     }}
                 />
-                <FilterDropDown
-                    key='class-names'
-                    values={classNames}
-                    onChange={(label, checked) => {
-                        setClassNames(v => {
-                            v[label] = checked;
-                            return Object.assign({}, v);
-                        });
-                    }}
-                />
+                {nodeClassNames && (
+                    <FilterDropDown
+                        key='class-names'
+                        values={nodeClassNames}
+                        onChange={(label, checked) => {
+                            setNodeClassNames(v => {
+                                v[label] = checked;
+                                return Object.assign({}, v);
+                            });
+                        }}
+                    />
+                )}
                 <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
                     <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
                 </a>
@@ -118,7 +139,7 @@ export const GraphPanel = (props: Props) => {
                                         <path
                                             d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')}
                                             className='line'
-                                            strokeWidth={((props.edgeStrokeWidthMultiple || 1) * nodeSize) / 32}
+                                            strokeWidth={nodeSize / 32}
                                         />
                                         <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
                                             <text className='edge-label' fontSize={nodeSize / 6}>
@@ -135,20 +156,20 @@ export const GraphPanel = (props: Props) => {
                                         <g
                                             className={`node ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
                                             onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
-                                            {((props.iconShapes || {})[label.type] || props.iconShape) === 'circle' ? (
+                                            {((props.iconShapes || {})[label.genre] || props.defaultIconShape) === 'circle' ? (
                                                 <circle r={nodeSize / 2} className='bg' />
                                             ) : (
                                                 <rect x={-nodeSize / 2} y={-nodeSize / 2} width={nodeSize} height={nodeSize} className='bg' rx={nodeSize / 4} />
                                             )}
                                             <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
-                                            {props.hideTypes || (
-                                                <text y={nodeSize * 0.33} className='type' fontSize={(12 * nodeSize) / defaultNodeSize}>
-                                                    {label.type}
+                                            {props.hideNodeTypes || (
+                                                <text y={nodeSize * 0.33} className='type' fontSize={(12 * nodeSize) / GraphPanel.defaultProps.nodeSize}>
+                                                    {label.genre}
                                                 </text>
                                             )}
                                         </g>
                                         <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
-                                            <text className='node-label' fontSize={(16 * nodeSize) / defaultNodeSize}>
+                                            <text className='node-label' fontSize={(18 * nodeSize) / GraphPanel.defaultProps.nodeSize}>
                                                 {formatLabel(label.label)}
                                             </text>
                                         </g>
@@ -160,4 +181,8 @@ export const GraphPanel = (props: Props) => {
             </div>
         </div>
     );
+};
+
+GraphPanel.defaultProps = {
+    nodeSize: 64
 };

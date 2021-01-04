@@ -148,7 +148,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 	authorization := getAuthHeader(md)
 	mode, valid := s.Modes.GetMode(authorization)
 	if !valid {
-		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for requested mode")
+		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for running mode")
 	}
 	switch mode {
 	case Client:

@@ -133,6 +133,14 @@ metadata:
   name: argo-role
 rules:
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - ""
   resources:
   - pods
@@ -451,7 +459,21 @@ subjects:
 ---
 apiVersion: v1
 data:
-  minio: |
+  default-v1: |
+    archiveLogs: true
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+  empty: ""
+  my-key: |
+    archiveLogs: true
     s3:
       bucket: my-bucket
       endpoint: minio:9000
@@ -464,6 +486,8 @@ data:
         key: secretkey
 kind: ConfigMap
 metadata:
+  annotations:
+    workflows.argoproj.io/default-artifact-repository: default-v1
   name: artifact-repositories
 ---
 apiVersion: v1
@@ -487,6 +511,9 @@ data:
     - name: Example Pod Link
       scope: pod
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Get help
+      scope: chat
+      url: https://argoproj.github.io/argo/
   metricsConfig: |
     disableLegacy: true
     enabled: true
@@ -649,6 +676,10 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
         volumeMounts:
         - mountPath: /tmp
           name: tmp
@@ -720,8 +751,18 @@ spec:
         - --namespaced
         command:
         - workflow-controller
+        env:
+        - name: LEADER_ELECTION_IDENTITY
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
         image: argoproj/workflow-controller:latest
         name: workflow-controller
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:

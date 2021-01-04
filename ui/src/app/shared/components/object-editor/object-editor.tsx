@@ -1,24 +1,43 @@
 import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
 import * as React from 'react';
-import {createRef, useEffect} from 'react';
+import {createRef, useEffect, useState} from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import {uiUrl} from '../../base';
+import {ScopedLocalStorage} from '../../scoped-local-storage';
+import {ErrorNotice} from '../error-notice';
 import {parse, stringify} from '../object-parser';
+import {ToggleButton} from '../toggle-button';
 
 interface Props<T> {
-    language?: string;
     type: string;
     value: T;
+    buttons?: React.ReactNode;
     onChange?: (value: T) => void;
-    onError?: (error: Error) => void;
 }
 
-export const ObjectEditor = <T extends any>(props: Props<T>) => {
-    const language = props.language || 'yaml';
+const defaultLang = 'yaml';
+
+export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Props<T>) => {
+    const storage = new ScopedLocalStorage('object-editor');
+    const [error, setError] = useState<Error>();
+    const [lang, setLang] = useState<string>(storage.getItem('lang', defaultLang));
+    const [text, setText] = useState<string>(stringify(value, lang));
+
+    useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
+    useEffect(() => setText(stringify(parse(text), lang)), [lang]);
+    if (onChange) {
+        useEffect(() => {
+            try {
+                onChange(parse(text));
+            } catch (e) {
+                setError(e);
+            }
+        }, [text]);
+    }
 
     useEffect(() => {
-        if (props.type && language === 'json') {
-            const uri = uiUrl('assets/openapi-spec/swagger.json');
+        if (type && lang === 'json') {
+            const uri = uiUrl('assets/jsonschema/schema.json');
             fetch(uri)
                 .then(res => res.json())
                 .then(swagger => {
@@ -30,8 +49,8 @@ export const ObjectEditor = <T extends any>(props: Props<T>) => {
                                 uri,
                                 fileMatch: ['*'],
                                 schema: {
-                                    $id: 'http://workflows.argoproj.io/' + props.type + '.json',
-                                    $ref: '#/definitions/' + props.type,
+                                    $id: 'http://workflows.argoproj.io/' + type + '.json',
+                                    $ref: '#/definitions/' + type,
                                     $schema: 'http://json-schema.org/draft-07/schema',
                                     definitions: swagger.definitions
                                 }
@@ -39,34 +58,45 @@ export const ObjectEditor = <T extends any>(props: Props<T>) => {
                         ]
                     });
                 })
-                .catch(error => props.onError(error));
+                .catch(setError);
         }
-    }, [language]);
+    }, [lang, type]);
 
     const editor = createRef<MonacoEditor>();
 
     return (
-        <div onBlur={() => props.onChange && props.onChange(parse(editor.current.editor.getModel().getValue()))}>
-            <MonacoEditor
-                ref={editor}
-                key='editor'
-                value={stringify(props.value, language)}
-                language={language}
-                height='600px'
-                options={{
-                    readOnly: props.onChange === null,
-                    minimap: {enabled: false},
-                    lineNumbers: 'off',
-                    renderIndentGuides: false
-                }}
-            />
-            {props.onChange && (
-                <p>
-                    <i className='fa fa-info-circle' />{' '}
-                    {props.language === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
-                    <a href='https://argoproj.github.io/argo/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
-                </p>
-            )}
-        </div>
+        <>
+            <div style={{paddingBottom: '1em'}}>
+                <ToggleButton toggled={lang === 'yaml'} onToggle={() => setLang(lang === 'yaml' ? 'json' : 'yaml')}>
+                    YAML
+                </ToggleButton>
+                {buttons}
+            </div>
+            <ErrorNotice error={error} style={{margin: 0}} />
+            <div onBlur={() => setText(editor.current.editor.getModel().getValue())}>
+                <MonacoEditor
+                    ref={editor}
+                    key='editor'
+                    value={text}
+                    language={lang}
+                    height='600px'
+                    options={{
+                        readOnly: onChange === null,
+                        minimap: {enabled: false},
+                        lineNumbers: 'off',
+                        renderIndentGuides: false
+                    }}
+                />
+            </div>
+            <div style={{paddingTop: '1em'}}>
+                {onChange && (
+                    <>
+                        <i className='fa fa-info-circle' />{' '}
+                        {lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
+                    </>
+                )}{' '}
+                <a href='https://argoproj.github.io/argo/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
+            </div>
+        </>
     );
 };

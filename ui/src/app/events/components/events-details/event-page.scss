@@ -2,7 +2,7 @@
 
 @keyframes flowing {
   50% {
-    stroke: $argo-running-color-light;
+    stroke: $argo-running-color;
   }
   to {
     stroke-dashoffset: -128;
@@ -13,7 +13,7 @@
   .node {
     &.Ready {
       .bg {
-        fill: $argo-running-color-light;
+        fill: $argo-running-color;
       }
     }
   }
@@ -24,7 +24,7 @@
     }
 
     &.flow path {
-      animation: flowing 2s ease-in-out none;
+      animation: flowing 3s ease-in-out none;
     }
   }
 }

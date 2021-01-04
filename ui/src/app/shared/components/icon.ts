@@ -1,4 +1,5 @@
 export type Icon =
+    | 'arrow-left'
     | 'arrow-right'
     | 'bell'
     | 'box'

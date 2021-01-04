@@ -10,7 +10,7 @@
  * WorkflowTemplateRef
  */
 
-export type Type = 'Workflow' | 'WorkflowTemplateRef' | 'Template' | 'StepGroup' | 'Step' | 'Task' | 'OnExit' | 'Parameters' | 'TemplateRef' | 'Artifacts';
+type Type = 'Workflow' | 'WorkflowTemplateRef' | 'Template' | 'StepGroup' | 'Step' | 'Task' | 'OnExit' | 'Parameters' | 'TemplateRef' | 'Artifacts';
 
 export const workflowId: Type = 'Workflow';
 export const parametersId: Type = 'Parameters';

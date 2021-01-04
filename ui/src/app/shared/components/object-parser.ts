@@ -8,5 +8,5 @@ export function parse<T>(value: string) {
 }
 
 export function stringify<T>(value: T, type: string) {
-    return type === 'yaml' ? jsyaml.dump(value) : JSON.stringify(value, null, '  ');
+    return type === 'yaml' ? jsyaml.dump(value, {noRefs: true}) : JSON.stringify(value, null, '  ');
 }

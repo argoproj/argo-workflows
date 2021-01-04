@@ -1,37 +1,32 @@
 import * as React from 'react';
 import {kubernetes} from '../../../../models';
 import {TextInput} from '../text-input';
-import {KeyValueEditor} from './key-value-editor';
+import {LabelsAndAnnotationsEditor} from './labels-and-annotations-editor';
 
-export const MetadataEditor = (props: {value: kubernetes.ObjectMeta; onChange: (value: kubernetes.ObjectMeta) => void}) => {
+export const MetadataEditor = ({onChange, value}: {value: kubernetes.ObjectMeta; onChange: (value: kubernetes.ObjectMeta) => void}) => {
     return (
         <>
             <div className='white-box'>
                 <div className='row white-box__details-row'>
                     <div className='columns small-4'>Name</div>
                     <div className='columns small-4'>
-                        <TextInput onChange={name => props.onChange({...props.value, name})} value={props.value.name} readOnly={!!props.value.creationTimestamp} />
+                        <TextInput onChange={name => onChange({...value, name})} value={value.name} readOnly={!!value.creationTimestamp} />
+                    </div>
+                </div>
+                <div className='row white-box__details-row'>
+                    <div className='columns small-4'>Generate Name</div>
+                    <div className='columns small-4'>
+                        <TextInput onChange={generateName => onChange({...value, generateName})} value={value.generateName} readOnly={!!value.creationTimestamp} />
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
                     <div className='columns small-4'>Namespace</div>
                     <div className='columns small-4'>
-                        <TextInput onChange={namespace => props.onChange({...props.value, namespace})} value={props.value.namespace} readOnly={!!props.value.creationTimestamp} />
+                        <TextInput onChange={namespace => onChange({...value, namespace})} value={value.namespace} readOnly={!!value.creationTimestamp} />
                     </div>
                 </div>
             </div>
-            <div className='white-box'>
-                <h5>Labels</h5>
-                <KeyValueEditor value={props.value.labels} onChange={labels => props.onChange({...props.value, labels})} />
-            </div>
-            <div className='white-box'>
-                <h5>Annotations</h5>
-                <KeyValueEditor
-                    value={props.value.annotations}
-                    onChange={annotations => props.onChange({...props.value, annotations})}
-                    hide={key => key === 'kubectl.kubernetes.io/last-applied-configuration'}
-                />
-            </div>
+            <LabelsAndAnnotationsEditor value={value} onChange={onChange} />
         </>
     );
 };

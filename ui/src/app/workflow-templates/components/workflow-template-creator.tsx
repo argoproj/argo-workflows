@@ -1,16 +1,17 @@
 import * as React from 'react';
 import {useState} from 'react';
-import {Workflow, WorkflowTemplate} from '../../../models';
+import {WorkflowTemplate} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ExampleManifests} from '../../shared/components/example-manifests';
 import {UploadButton} from '../../shared/components/upload-button';
 import {exampleWorkflowTemplate} from '../../shared/examples';
 import {services} from '../../shared/services';
+import {Utils} from '../../shared/utils';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
-export const WorkflowTemplateCreator = (props: {namespace: string; onCreate: (workflow: Workflow) => void}) => {
-    const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(props.namespace || 'default'));
+export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) => {
+    const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(Utils.getNamespace(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -21,7 +22,7 @@ export const WorkflowTemplateCreator = (props: {namespace: string; onCreate: (wo
                     onClick={() => {
                         services.workflowTemplate
                             .create(template, template.metadata.namespace)
-                            .then(props.onCreate)
+                            .then(onCreate)
                             .catch(setError);
                     }}>
                     Create

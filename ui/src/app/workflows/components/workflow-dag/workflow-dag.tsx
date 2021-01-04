@@ -4,6 +4,7 @@ import {NODE_PHASE, NodeStatus} from '../../../../models';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {Utils} from '../../../shared/utils';
+import {genres} from './genres';
 import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from './graph/collapsible-node';
 import {icons} from './icons';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
@@ -12,24 +13,12 @@ export interface WorkflowDagRenderOptions {
     expandNodes: Set<string>;
 }
 
-export interface WorkflowDagProps {
+interface WorkflowDagProps {
     workflowName: string;
     nodes: {[nodeId: string]: NodeStatus};
     selectedNodeId?: string;
     nodeClicked?: (nodeId: string) => any;
 }
-
-const types = {
-    Pod: true,
-    Steps: true,
-    DAG: true,
-    Retry: true,
-    Skipped: true,
-    Suspend: true,
-    TaskGroup: false,
-    StepGroup: false,
-    Collapsed: true
-};
 
 function progress(n: NodeStatus) {
     if (!n || !n.estimatedDuration) {
@@ -42,8 +31,8 @@ function nodeLabel(n: NodeStatus) {
     const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
     return {
         label: Utils.shortNodeName(n),
-        type: n.type,
-        icon: icons[phase],
+        genre: n.type,
+        icon: icons[phase] || icons.Pending,
         progress: phase === 'Running' && progress(n),
         classNames: phase
     };
@@ -51,7 +40,8 @@ function nodeLabel(n: NodeStatus) {
 
 const classNames = (() => {
     const v: {[label: string]: boolean} = {
-        Suspended: true
+        Suspended: true,
+        Collapsed: true
     };
     Object.entries(NODE_PHASE).forEach(([, label]) => (v[label] = true));
     return v;
@@ -71,15 +61,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.prepareGraph();
         return (
             <GraphPanel
+                storageScope='workflow-dag'
                 graph={this.graph}
-                nodeTypes={types}
+                nodeGenres={genres}
                 nodeClassNames={classNames}
+                nodeSize={32}
+                defaultIconShape='circle'
+                hideNodeTypes={true}
                 selectedNode={this.props.selectedNodeId}
                 onNodeSelect={id => this.selectNode(id)}
-                nodeSize={40}
-                iconShape='circle'
                 options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
-                hideTypes={true}
             />
         );
     }
@@ -169,8 +160,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     if (item.nodeName !== previousCollapsed) {
                         nodes.set(item.nodeName, {
                             label: getMessage(item.nodeName),
-                            type: 'Collapsed',
-                            icon: icons.Collapsed
+                            genre: 'Collapsed',
+                            icon: icons.Collapsed,
+                            classNames: 'Collapsed'
                         });
                         edges.set({v: item.parent, w: item.nodeName}, {});
                         previousCollapsed = item.nodeName;

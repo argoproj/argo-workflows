@@ -1239,45 +1239,6 @@ func (s *CLISuite) TestRetryOmit() {
 		WaitForWorkflow()
 }
 
-func (s *CLISuite) TestSynchronizationWfLevelMutex() {
-	s.NeedsOffloading()
-	s.Given().
-		Workflow("@functional/synchronization-mutex-wf-level.yaml").
-		When().
-		RunCli([]string{"submit", "functional/synchronization-mutex-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "synchronization-wf-level-mutex")
-			}
-		}).
-		SubmitWorkflow().
-		Wait(1*time.Second).
-		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Pending")
-		}).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *CLISuite) TestTemplateLevelMutex() {
-	s.NeedsOffloading()
-	s.Given().
-		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
-		When().
-		SubmitWorkflow().
-		Wait(3*time.Second).
-		RunCli([]string{"get", "synchronization-tmpl-level-mutex"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for")
-		}).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 	s.NeedsOffloading()
 	s.Run("ResourceTemplateStop", func() {
@@ -1287,6 +1248,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
+			WaitForWorkflow(fixtures.ToBeRunning).
 			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Running")
 			}).

@@ -47,7 +47,11 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 
 # perform static compilation
 STATIC_BUILD          ?= true
+ifeq ($(GIT_TREE_STATE),dirty)
+STATIC_FILES          ?= false
+else
 STATIC_FILES          ?= true
+endif
 GOTEST                ?= go test
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
@@ -64,9 +68,13 @@ endif
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
 K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
-LOG_LEVEL             := debug
+LOG_LEVEL             := info
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
+
+ifeq ($(PROFILE),prometheus)
+RUN_MODE              := kubernetes
+endif
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
 ifeq ($(PROFILE),mysql)
@@ -205,7 +213,7 @@ argo-server.key:
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
 
-$(CLI_IMAGE_FILE): $(CLI_PKGS)
+$(CLI_IMAGE_FILE): $(CLI_PKGS) argo-server.crt argo-server.key
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
@@ -269,6 +277,7 @@ codegen: \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests/install.yaml \
 	api/openapi-spec/swagger.json \
+	api/jsonschema/schema.json \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
@@ -358,7 +367,7 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
-	./dist/install_kustomize.sh
+	./dist/install_kustomize.sh 3.8.8
 	sudo mv kustomize /usr/local/bin/
 	kustomize version
 
@@ -395,13 +404,13 @@ test: server/static/files.go
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
+	cd test/e2e/manifests/$(PROFILE) && kustomize edit set namespace $(KUBE_NAMESPACE)
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
 .PHONY: install
 install: dist/$(PROFILE).yaml
-	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
-	kubectl apply -f dist/argo-ns.yaml
-	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
+	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -439,7 +448,13 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
+ifeq ($(RUN_MODE),kubernetes)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller --timeout 1m
+endif
+ifeq ($(PROFILE),prometheus)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
+endif
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
@@ -533,6 +548,9 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
+api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
+	go run ./hack/jsonschema
+
 go-diagrams/diagram.dot: ./hack/diagram/main.go
 	rm -Rf go-diagrams
 	go run ./hack/diagram
@@ -546,6 +564,10 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 # generates several other files
 docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
+
+.PHONY: validate-examples
+validate-examples: api/jsonschema/schema.json
+	cd examples && go test
 
 # pre-push
 

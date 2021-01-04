@@ -3,7 +3,7 @@ package sensor
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"io"
 	"regexp"
 
 	esv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/watch"
 
 	sensorpkg "github.com/argoproj/argo/pkg/apiclient/sensor"
 	"github.com/argoproj/argo/server/auth"
@@ -30,9 +29,9 @@ func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensor
 }
 
 func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorpkg.SensorService_SensorsLogsServer) error {
-	listOptions := metav1.ListOptions{LabelSelector: "sensor-name"}
+	labelSelector := "sensor-name"
 	if in.Name != "" {
-		listOptions.LabelSelector += "=" + in.Name
+		labelSelector += "=" + in.Name
 	}
 	grep, err := regexp.Compile(in.Grep)
 	if err != nil {
@@ -41,7 +40,7 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 	return logs.LogPods(
 		svr.Context(),
 		in.Namespace,
-		listOptions,
+		labelSelector,
 		in.PodLogOptions,
 		func(pod *corev1.Pod, data []byte) error {
 			now := metav1.Now()
@@ -56,7 +55,6 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 			if in.TriggerName != "" && in.TriggerName != e.TriggerName {
 				return nil
 			}
-
 			if !grep.MatchString(e.Msg) {
 				return nil
 			}
@@ -72,7 +70,7 @@ func (e *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 		listOptions = *in.ListOptions
 	}
 	eventSourceInterface := auth.GetSensorClient(ctx).ArgoprojV1alpha1().Sensors(in.Namespace)
-	watcher, err := watch.NewRetryWatcher(listOptions.ResourceVersion, eventSourceInterface)
+	watcher, err := eventSourceInterface.Watch(listOptions)
 	if err != nil {
 		return err
 	}
@@ -80,9 +78,9 @@ func (e *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 		select {
 		case <-ctx.Done():
 			return nil
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				return fmt.Errorf("failed to read event")
+		case event, open := <-watcher.ResultChan():
+			if !open {
+				return io.EOF
 			}
 			es, ok := event.Object.(*esv1.Sensor)
 			if !ok {

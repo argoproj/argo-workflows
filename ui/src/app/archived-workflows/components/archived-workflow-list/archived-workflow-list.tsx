@@ -60,7 +60,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             <Page
                 title='Archived Workflows'
                 toolbar={{
-                    breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}]
+                    breadcrumbs: [
+                        {title: 'Archived Workflows', path: uiUrl('archived-workflows')},
+                        {title: this.state.namespace, path: uiUrl('archived-workflows/' + this.state.namespace)}
+                    ]
                 }}>
                 <div className='row'>
                     <div className='columns small-12 xlarge-2'>
@@ -122,7 +125,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (this.state.pagination.offset) {
             params.append('offset', this.state.pagination.offset);
         }
-        if (this.state.pagination.limit !== defaultPaginationLimit) {
+        if (this.state.pagination.limit && this.state.pagination.limit !== defaultPaginationLimit) {
             params.append('limit', this.state.pagination.limit.toString());
         }
         return params;

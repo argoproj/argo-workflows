@@ -1,5 +1,5 @@
 import * as models from '../../models';
-import {ResourceScope, WorkflowStep} from '../../models';
+import {execSpec, ResourceScope, WorkflowStep} from '../../models';
 
 export function getResolvedTemplates(workflow: models.Workflow, node: models.NodeStatus): models.Template {
     let tmpTemplate = {
@@ -16,7 +16,7 @@ export function getResolvedTemplates(workflow: models.Workflow, node: models.Nod
         if (templRef.StorageNeeded) {
             tmpl = workflow.status.storedTemplates[templRef.StoredTemplateName];
         } else if (tmpTemplate.template) {
-            tmpl = workflow.spec.templates.find(item => item.name === tmpTemplate.template);
+            tmpl = execSpec(workflow).templates.find(item => item.name === tmpTemplate.template);
         }
         if (!tmpl) {
             const name = templRef.StoredTemplateName || tmpTemplate.template;

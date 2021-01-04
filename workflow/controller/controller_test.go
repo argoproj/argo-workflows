@@ -28,6 +28,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
+	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -145,11 +146,15 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
 	wfc := &WorkflowController{
-		Config:               config.Config{ExecutorImage: "executor:latest"},
+		Config: config.Config{ExecutorImage: "executor:latest"},
+		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
+			S3: &config.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+			},
+		}),
 		kubeclientset:        kube,
 		dynamicInterface:     dynamicClient,
 		wfclientset:          wfclientset,
-		completedPods:        make(chan string, 16),
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
@@ -173,6 +178,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.throttler = wfc.newThrottler()
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
@@ -249,15 +255,7 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 }
 
 func expectWorkflow(controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	obj, exists, err := controller.wfInformer.GetStore().GetByKey(name)
-	if err != nil {
-		panic(err)
-	}
-	if !exists {
-		test(nil)
-		return
-	}
-	wf, err := util.FromUnstructured(obj.(*unstructured.Unstructured))
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}

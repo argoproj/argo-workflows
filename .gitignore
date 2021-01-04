@@ -34,3 +34,4 @@ git-ask-pass.sh
 /site/
 /.brew_home
 /go-diagrams/
+/.run/

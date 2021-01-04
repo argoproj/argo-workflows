@@ -1,3 +1,39 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: massive-workflow
+  labels:
+    stress: "true"
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: "nodes"
+        value: "1"
+      - name: "sleep"
+        value: "1s"
+  artifactRepositoryRef:
+    key: empty
+  ttlStrategy:
+    secondsAfterCompletion: 60
+  podGC:
+    strategy: OnPodCompletion
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: sleep
+            template: sleep
+            withSequence:
+              count: "{{workflow.parameters.nodes}}"
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - sleep
+          - "{{workflow.parameters.sleep}}"
+---
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -5,15 +41,21 @@ metadata:
   labels:
     stress: "true"
 spec:
-  entrypoint: main
+  artifactRepositoryRef:
+    key: empty
+  ttlStrategy:
+    secondsAfterCompletion: 60
   podGC:
     strategy: OnPodCompletion
+  entrypoint: main
   arguments:
     parameters:
-      - name: "x"
-        value: 1
-      - name: "y"
-        value: 1
+      - name: "workflows"
+        value: "1"
+      - name: "nodes"
+        value: "1"
+      - name: "sleep"
+        value: "1s"
   workflowMetadata:
     labels:
       stress: "true"
@@ -28,7 +70,7 @@ spec:
                 - name: i
                   value: "{{item}}"
             withSequence:
-              count: "{{workflow.parameters.x}}"
+              count: "{{workflow.parameters.workflows}}"
     - name: create-workflow
       inputs:
         parameters:
@@ -40,23 +82,15 @@ spec:
           apiVersion: argoproj.io/v1alpha1
           kind: Workflow
           metadata:
-            name: "large-workflow-{{workflow.parameters.x}}x{{workflow.parameters.y}}-{{inputs.parameters.i}}"
+            name: "large-workflow-{{workflow.parameters.workflows}}x{{workflow.parameters.nodes}}-{{inputs.parameters.i}}"
             labels:
               stress: "true"
           spec:
-            entrypoint: main
-            podGC:
-              strategy: OnPodCompletion
-            ttlStrategy:
-              secondsAfterCompletion: 60
-            templates:
-              - name: main
-                dag:
-                  tasks:
-                    - name: create-pod
-                      template: create-pod
-                      withSequence:
-                        count: "{{workflow.parameters.y}}"
-              - name: create-pod
-                container:
-                  image: argoproj/argosay:v2
+            arguments:
+              parameters:
+                - name: "nodes"
+                  value: "{{workflow.parameters.nodes}}"
+                - name: "sleep"
+                  value: "{{workflow.parameters.sleep}}"
+            workflowTemplateRef:
+              name: massive-workflow

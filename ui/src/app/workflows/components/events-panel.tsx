@@ -8,7 +8,7 @@ import {ToggleButton} from '../../shared/components/toggle-button';
 import {ListWatch} from '../../shared/list-watch';
 import {services} from '../../shared/services';
 
-export const EventsPanel = (props: {namespace: string; name: string; kind: string}) => {
+export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: string; kind: string}) => {
     const [showAll, setShowAll] = useState(false);
     const [hideNormal, setHideNormal] = useState(false);
     const [events, setEvents] = useState<Event[]>();
@@ -17,8 +17,8 @@ export const EventsPanel = (props: {namespace: string; name: string; kind: strin
     useEffect(() => {
         const fieldSelectors: string[] = [];
         if (!showAll) {
-            fieldSelectors.push('involvedObject.kind=' + props.kind);
-            fieldSelectors.push('involvedObject.name=' + props.name);
+            fieldSelectors.push('involvedObject.kind=' + kind);
+            fieldSelectors.push('involvedObject.name=' + name);
         }
         if (hideNormal) {
             fieldSelectors.push('type!=Normal');
@@ -30,7 +30,7 @@ export const EventsPanel = (props: {namespace: string; name: string; kind: strin
             () => Promise.resolve({metadata: {}, items: []}),
             () =>
                 // ListWatch can only handle Kubernetes Watch Event - so we fake it
-                services.workflows.watchEvents(props.namespace, fieldSelector).map(
+                services.workflows.watchEvents(namespace, fieldSelector).map(
                     x =>
                         x && {
                             type: 'ADDED',
@@ -56,9 +56,9 @@ export const EventsPanel = (props: {namespace: string; name: string; kind: strin
                     Hide normal
                 </ToggleButton>
             </div>
-            <ErrorNotice error={error} style={{margin: 20}} />
+            <ErrorNotice error={error} />
             {!events || events.length === 0 ? (
-                <Notice style={{margin: 20}}>
+                <Notice>
                     <i className='fa fa-spin fa-circle-notch' /> Waiting for events. Still waiting for data? Try changing the filters.
                 </Notice>
             ) : (

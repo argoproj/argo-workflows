@@ -12,7 +12,7 @@ export const historyUrl = (path: string, params: {[key: string]: any}) => {
         .forEach(([k, v]) => {
             const searchValue = '{' + k + '}';
             if (path.includes(searchValue)) {
-                path = path.replace(searchValue, v);
+                path = path.replace(searchValue, v != null ? v : '');
             } else if (v) {
                 queryParams.push(k + '=' + v);
             }
@@ -20,5 +20,5 @@ export const historyUrl = (path: string, params: {[key: string]: any}) => {
                 Utils.setCurrentNamespace(v);
             }
         });
-    return uiUrl(path) + '?' + queryParams.join('&');
+    return uiUrl(path.replace(/{[^}]*}/g, '')) + '?' + queryParams.join('&');
 };

@@ -4,6 +4,6 @@ import {WorkflowEventBindingsList} from './workflow-event-bindings-list/workflow
 
 export const WorkflowEventBindingsContainer = (props: RouteComponentProps<any>) => (
     <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace`} component={WorkflowEventBindingsList} />
+        <Route exact={true} path={`${props.match.path}/:namespace?`} component={WorkflowEventBindingsList} />
     </Switch>
 );

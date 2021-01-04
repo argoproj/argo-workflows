@@ -1,4 +1,4 @@
 import * as React from 'react';
 
-export const TextInput = (props: {value: string; onChange: (value: string) => void; readOnly?: boolean; placeholder?: string}) =>
-    props.readOnly ? <>{props.value}</> : <input className='argo-field' value={props.value} onChange={e => props.onChange(e.target.value)} placeholder={props.placeholder} />;
+export const TextInput = ({placeholder, value, onChange, readOnly}: {value: string; onChange: (value: string) => void; readOnly?: boolean; placeholder?: string}) =>
+    readOnly ? <>{value}</> : <input className='argo-field' value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />;

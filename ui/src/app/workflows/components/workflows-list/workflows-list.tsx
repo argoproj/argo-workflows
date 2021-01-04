@@ -13,15 +13,15 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Query} from '../../../shared/components/query';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
-import {exampleWorkflow} from '../../../shared/examples';
 import {ListWatch, sortByYouth} from '../../../shared/list-watch';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import * as Actions from '../../../shared/workflow-operations-map';
+import {SubmitFromWorkflowTemplatePanel} from '../submit-from-workflow-template-panel';
+import {WorkflowCreator} from '../workflow-creator';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
@@ -58,8 +58,8 @@ const allBatchActionsEnabled: Actions.OperationDisabled = {
 const LOCAL_STORAGE_KEY = 'ListOptions';
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
-    private get wfInput() {
-        return Utils.tryJsonParse(this.queryParam('new'));
+    private get sidePanel() {
+        return this.queryParam('sidePanel');
     }
 
     private get filterParams() {
@@ -110,7 +110,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.state = {
             pagination: {
                 offset: this.queryParam('offset'),
-                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit
+                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 500
             },
             namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
@@ -140,17 +140,24 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     <Page
                         title='Workflows'
                         toolbar={{
-                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}],
+                            breadcrumbs: [
+                                {title: 'Workflows', path: uiUrl('workflows')},
+                                {title: this.state.namespace, path: uiUrl('workflows/' + this.state.namespace)}
+                            ],
                             actionMenu: {
                                 items: [
                                     {
                                         title: 'Submit New Workflow',
                                         iconClassName: 'fa fa-plus',
-                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                        action: () => ctx.navigation.goto('.', {sidePanel: 'submit-new-workflow'})
+                                    },
+                                    {
+                                        title: 'Submit Workflow From Template',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => ctx.navigation.goto('.', {sidePanel: 'submit-workflow-from-template'})
                                     }
                                 ]
-                            },
-                            tools: []
+                            }
                         }}>
                         <WorkflowsToolbar
                             selectedWorkflows={this.state.selectedWorkflows}
@@ -179,23 +186,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             </div>
                             <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                         </div>
-                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <ResourceEditor
-                                title='Submit Workflow'
-                                kind='Workflow'
-                                upload={true}
-                                editing={true}
-                                namespace={this.state.namespace || 'default'}
-                                value={exampleWorkflow()}
-                                onSubmit={wfValue =>
-                                    services.workflows
-                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
-                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-                                }
-                            />
-                            <p>
-                                <ExampleManifests />.
-                            </p>
+                        <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
+                            {this.sidePanel === 'submit-new-workflow' && (
+                                <WorkflowCreator
+                                    namespace={Utils.getNamespace(this.state.namespace)}
+                                    onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
+                                />
+                            )}
+                            {this.sidePanel === 'submit-workflow-from-template' && <SubmitFromWorkflowTemplatePanel namespace={Utils.getNamespace(this.state.namespace)} />}
                         </SlidingPanel>
                     </Page>
                 )}
@@ -213,6 +211,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             metadata =>
                 this.setState(
                     {
+                        error: null,
                         namespace,
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue},
                         selectedPhases,
@@ -255,7 +254,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         const counts = this.countsByCompleted();
         return (
             <>
-                {this.state.error && <ErrorNotice error={this.state.error} />}
+                <ErrorNotice error={this.state.error} />
                 {!this.state.workflows ? (
                     <Loading />
                 ) : this.state.workflows.length === 0 ? (

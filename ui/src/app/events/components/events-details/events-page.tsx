@@ -4,8 +4,8 @@ import React = require('react');
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 import {kubernetes, Workflow} from '../../../../models';
-import {EventSource, eventSourceTypes} from '../../../../models/event-source';
-import {Sensor, triggerTypes} from '../../../../models/sensor';
+import {EventSource} from '../../../../models/event-source';
+import {Sensor} from '../../../../models/sensor';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
@@ -20,28 +20,21 @@ import {services} from '../../../shared/services';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {buildGraph} from './build-graph';
+import {genres} from './genres';
 import {ID} from './id';
 
 require('./event-page.scss');
 
-const types = (() => {
-    const v: {[label: string]: boolean} = {sensor: true, conditions: true, workflow: true};
-    Object.keys(eventSourceTypes)
-        .concat(Object.keys(triggerTypes))
-        .forEach(label => (v[label] = true));
-    return v;
-})();
-
-export const EventsPage = (props: RouteComponentProps<any>) => {
+export const EventsPage = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
     const {navigation} = useContext(Context);
-    const {match, location, history} = props;
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(match.params.namespace);
+    const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') === 'true');
+    const [expanded, setExpanded] = useState(queryParams.get('expanded') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
     useEffect(
@@ -51,11 +44,12 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
                     namespace,
                     showFlow,
                     showWorkflows,
+                    expanded,
                     selectedNode,
                     tab
                 })
             ),
-        [namespace, showFlow, showWorkflows, selectedNode, tab]
+        [namespace, showFlow, showWorkflows, expanded, expanded, tab]
     );
 
     // internal state
@@ -63,13 +57,13 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
     const [eventSources, setEventSources] = useState<EventSource[]>();
     const [sensors, setSensors] = useState<Sensor[]>();
     const [workflows, setWorkflows] = useState<Workflow[]>();
-    const [flow, setFlow] = useState<{[id: string]: any}>({}); // event flowing?
+    const [flow, setFlow] = useState<{[id: string]: {count: number; timeout?: any}}>({}); // event flowing?
 
     // when namespace changes, we must reload
     useEffect(() => {
         const listWatch = new ListWatch<EventSource>(
-            () => {metadata: kubernetes.ListMeta, items: services.eventSource.list(namespace)},
-            resourceVersion => services.eventSource.watch(namespace, resourceVersion),
+            () => services.eventSource.list(namespace),
+            () => services.eventSource.watch(namespace),
             () => setError(null),
             () => setError(null),
             items => setEventSources([...items]),
@@ -81,7 +75,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
     useEffect(() => {
         const listWatch = new ListWatch<Sensor>(
             () => services.sensor.list(namespace),
-            resourceVersion => services.sensor.watch(namespace, resourceVersion),
+            () => services.sensor.watch(namespace),
             () => setError(null),
             () => setError(null),
             items => setSensors([...items]),
@@ -97,21 +91,27 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
         }
         const listWatch = new ListWatch<Workflow>(
             () =>
-                services.workflows.list(namespace, null, ['events.argoproj.io/trigger'], null, [
+                services.workflows.list(namespace, null, ['events.argoproj.io/sensor', 'events.argoproj.io/trigger'], null, [
                     'metadata',
                     'items.metadata.name',
                     'items.metadata.namespace',
+                    'items.metadata.creationTimestamp',
                     'items.metadata.labels'
                 ]),
             resourceVersion =>
                 services.workflows.watch({
                     namespace,
                     resourceVersion,
-                    labels: ['events.argoproj.io/trigger']
+                    labels: ['events.argoproj.io/sensor', 'events.argoproj.io/trigger']
                 }),
             () => setError(null),
             () => setError(null),
-            items => setWorkflows([...items]),
+            (items, item, type) => {
+                setWorkflows([...items]);
+                if (type === 'ADDED') {
+                    markFlowing(ID.join('Workflow', item.metadata.namespace, item.metadata.name));
+                }
+            },
             setError
         );
         listWatch.start();
@@ -119,14 +119,22 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
     }, [namespace, showWorkflows]);
     // follow logs and mark flow
     const markFlowing = (id: Node) => {
+        if (!showFlow) {
+            return;
+        }
+        setError(null);
         setFlow(newFlow => {
-            clearTimeout(newFlow[id]);
-            newFlow[id] = setTimeout(() => {
+            if (!newFlow[id]) {
+                newFlow[id] = {count: 0};
+            }
+            clearTimeout(newFlow[id].timeout);
+            newFlow[id].count++;
+            newFlow[id].timeout = setTimeout(() => {
                 setFlow(evenNewerFlow => {
-                    delete evenNewerFlow[id];
+                    delete evenNewerFlow[id].timeout;
                     return Object.assign({}, evenNewerFlow); // Object.assign work-around to make sure state updates
                 });
-            }, 2000);
+            }, 3000);
             return Object.assign({}, newFlow);
         });
     };
@@ -135,7 +143,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
             return;
         }
         const sub = services.eventSource
-            .eventSourcesLogs(namespace, '', '', '', 'dispatching', 0)
+            .eventSourcesLogs(namespace, '', '', '', 'dispatching.*event', 0)
             .filter(e => !!e && !!e.eventSourceName)
             .subscribe(e => markFlowing(ID.join('EventSource', e.namespace, e.eventSourceName, e.eventName)), setError);
         return () => sub.unsubscribe();
@@ -156,7 +164,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
         return () => sub.unsubscribe();
     }, [namespace, showFlow]);
 
-    const graph = buildGraph(eventSources, sensors, workflows, flow);
+    const graph = buildGraph(eventSources, sensors, workflows, flow, expanded);
 
     const selected = (() => {
         if (!selectedNode) {
@@ -169,28 +177,41 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
         return {kind, value, ...x};
     })();
 
+    const emptyGraph = graph.nodes.size === 0;
     return (
         <Page
             title='Events'
             toolbar={{
+                breadcrumbs: [
+                    {title: 'Events', path: uiUrl('events')},
+                    {title: namespace, path: uiUrl('events/' + namespace)}
+                ],
                 actionMenu: {
                     items: [
                         {
                             action: () => setShowFlow(!showFlow),
                             iconClassName: showFlow ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
+                            disabled: emptyGraph,
                             title: 'Show event-flow'
                         },
                         {
                             action: () => setShowWorkflows(!showWorkflows),
                             iconClassName: showWorkflows ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
+                            disabled: emptyGraph,
                             title: 'Show workflows'
+                        },
+                        {
+                            action: () => setExpanded(!expanded),
+                            iconClassName: expanded ? 'fa fa-compress' : 'fa fa-expand',
+                            disabled: emptyGraph,
+                            title: 'Collapse/expand hidden nodes'
                         }
                     ]
                 },
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
             <ErrorNotice error={error} />
-            {graph.nodes.size === 0 ? (
+            {emptyGraph ? (
                 <ZeroState>
                     <p>Argo Events allow you to trigger workflows, lambadas, and other actions when an event such as a webhooks, message, or a cron schedule occurs.</p>
                     <p>
@@ -200,17 +221,20 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
             ) : (
                 <>
                     <GraphPanel
+                        storageScope='events'
                         classNames='events'
                         graph={graph}
-                        nodeTypes={types}
+                        nodeGenres={genres}
                         nodeClassNames={{'': true, 'Pending': true, 'Ready': true, 'Running': true, 'Failed': true, 'Succeeded': true, 'Error': true}}
-                        iconShapes={{workflow: 'circle', conditions: 'circle'}}
+                        iconShapes={{workflow: 'circle', collapsed: 'circle', conditions: 'circle'}}
                         horizontal={true}
                         selectedNode={selectedNode}
                         onNodeSelect={x => {
                             const id = ID.split(x);
                             if (id.type === 'Workflow') {
                                 navigation.goto(uiUrl('workflows/' + id.namespace + '/' + id.name));
+                            } else if (id.type === 'Collapsed') {
+                                setExpanded(true);
                             } else {
                                 setSelectedNode(x);
                             }

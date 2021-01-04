@@ -3,6 +3,7 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 
 	log "github.com/sirupsen/logrus"
@@ -19,6 +20,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/auth"
 	argoutil "github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/fields"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
@@ -105,7 +107,23 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if err != nil {
 		return nil, err
 	}
-	return wf, err
+	if req.Fields != "" {
+		wfBytes, err := json.Marshal(wf)
+		if err != nil {
+			return nil, err
+		}
+		resClean, err := fields.CleanFields(req.Fields, wfBytes)
+		if err != nil {
+			return nil, fmt.Errorf("unable to CleanFields in request: %w", err)
+		}
+		var newWf wfv1.Workflow
+		err = json.Unmarshal(resClean, &newWf)
+		if err != nil {
+			return nil, err
+		}
+		return &newWf, nil
+	}
+	return wf, nil
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
@@ -139,7 +157,24 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	// we make no promises about the overall list sorting, we just sort each page
 	sort.Sort(wfList.Items)
 
-	return &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}, nil
+	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
+	if req.Fields != "" {
+		resBytes, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+		resClean, err := fields.CleanFields(req.Fields, resBytes)
+		if err != nil {
+			return nil, fmt.Errorf("unable to CleanFields in request: %w", err)
+		}
+		var newRes wfv1.WorkflowList
+		err = json.Unmarshal(resClean, &newRes)
+		if err != nil {
+			return nil, err
+		}
+		return &newRes, nil
+	}
+	return res, nil
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
@@ -176,13 +211,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return nil
 		case event, open := <-watch.ResultChan():
 			if !open {
-				log.Debug("Re-establishing workflow watch")
-				watch.Stop()
-				watch, err = wfIf.Watch(*opts)
-				if err != nil {
-					return err
-				}
-				continue
+				return io.EOF
 			}
 			log.Debug("Received workflow event")
 			wf, ok := event.Object.(*wfv1.Workflow)
@@ -200,8 +229,6 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			if err != nil {
 				return err
 			}
-			// when we re-establish, we want to start at the same place
-			opts.ResourceVersion = wf.ResourceVersion
 		}
 	}
 }
@@ -230,13 +257,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 			return nil
 		case event, open := <-watch.ResultChan():
 			if !open {
-				log.Debug("Re-establishing event watch")
-				watch.Stop()
-				watch, err = eventInterface.Watch(*opts)
-				if err != nil {
-					return err
-				}
-				continue
+				return io.EOF
 			}
 			log.Debug("Received event")
 			e, ok := event.Object.(*corev1.Event)
@@ -249,8 +270,6 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 			if err != nil {
 				return err
 			}
-			// when we re-establish, we want to start at the same place
-			opts.ResourceVersion = e.ResourceVersion
 		}
 	}
 }
