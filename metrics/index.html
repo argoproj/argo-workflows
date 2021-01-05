@@ -1618,6 +1618,20 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#controller-metrics" title="Controller metrics" class="md-nav__link">
+    Controller metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-metrics" title="Custom metrics" class="md-nav__link">
+    Custom metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#what-is-and-isnt-a-prometheus-metric" title="What is and isn't a Prometheus metric" class="md-nav__link">
     What is and isn't a Prometheus metric
   </a>
@@ -2046,6 +2060,20 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#controller-metrics" title="Controller metrics" class="md-nav__link">
+    Controller metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-metrics" title="Custom metrics" class="md-nav__link">
+    Custom metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#what-is-and-isnt-a-prometheus-metric" title="What is and isn't a Prometheus metric" class="md-nav__link">
     What is and isn't a Prometheus metric
   </a>
@@ -2143,10 +2171,11 @@ for many cases; some examples:</p>
 best way to define metrics in Argo to avoid problems such as <a href="https://stackoverflow.com/questions/46373442/how-dangerous-are-high-cardinality-labels-in-prometheus">cardinality explosion</a>.</p>
 <h2 id="metrics-and-metrics-in-argo">Metrics and metrics in Argo<a class="headerlink" href="#metrics-and-metrics-in-argo" title="Permanent link">&para;</a></h2>
 <p>There are two kinds of metrics emitted by Argo: <strong>controller metrics</strong> and <strong>custom metrics</strong>.</p>
-<ul>
-<li>Controller metrics are metrics that inform on the state of the controller; i.e., they answer the question "What is the state of the controller right now?".</li>
-<li>Custom metrics are metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.</li>
-</ul>
+<h4 id="controller-metrics">Controller metrics<a class="headerlink" href="#controller-metrics" title="Permanent link">&para;</a></h4>
+<p>Metrics that inform on the state of the controller; i.e., they answer the question "What is the state of the controller right now?"
+Default controller metrics can be scraped from service <code>workflow-controller-metrics</code> at the endpoint <code>&lt;host&gt;:9090/metrics</code></p>
+<h4 id="custom-metrics">Custom metrics<a class="headerlink" href="#custom-metrics" title="Permanent link">&para;</a></h4>
+<p>Metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.</p>
 <p>Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible
 for emitting metrics correctly.</p>
 <h3 id="what-is-and-isnt-a-prometheus-metric">What is and isn't a Prometheus metric<a class="headerlink" href="#what-is-and-isnt-a-prometheus-metric" title="Permanent link">&para;</a></h3>
