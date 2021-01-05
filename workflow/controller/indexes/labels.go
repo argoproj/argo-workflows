@@ -35,6 +35,9 @@ func MetaPodPhaseIndexFunc() cache.IndexFunc {
 		if !ok {
 			return nil, nil
 		}
+		if pod.Status.Phase == "" {
+			return []string{}, nil
+		}
 		return []string{string(pod.Status.Phase)}, nil
 	}
 }

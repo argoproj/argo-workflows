@@ -1,6 +1,7 @@
 package indexes
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,5 +48,20 @@ func TestMetaNamespaceLabelIndexFunc(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, values, []string{string(wfv1.NodePending)})
+	})
+}
+
+func TestMetaPodPhaseIndexFunc(t *testing.T) {
+	t.Run("NoPhase", func(t *testing.T) {
+		values, err := MetaPodPhaseIndexFunc()(&v1.Pod{})
+		assert.NoError(t, err)
+		assert.Empty(t, values)
+	})
+	t.Run("Phase", func(t *testing.T) {
+		values, err := MetaPodPhaseIndexFunc()(&v1.Pod{
+			Status: v1.PodStatus{Phase: v1.PodRunning},
+		})
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, values, []string{string(v1.PodRunning)})
 	})
 }
