@@ -929,7 +929,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				continue
 			}
 
-			if node.Daemoned != nil && *node.Daemoned == true {
+			if node.Daemoned != nil && *node.Daemoned {
 				node.Daemoned = nil
 				woc.updated = true
 			}
