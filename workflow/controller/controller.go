@@ -218,7 +218,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
 			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
-			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID},
+			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
 		},
 		ReleaseOnCancel: true,
 		LeaseDuration:   15 * time.Second,
