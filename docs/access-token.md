@@ -32,7 +32,7 @@ echo $ARGO_TOKEN
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
 
-To that token with the CLI you need to set `ARGO_SERVER` (see `argo --help`).
+To use that token with the CLI you need to set `ARGO_SERVER` (see `argo --help`).
 
 Use that token in your API requests, e.g. to list workflows:
 

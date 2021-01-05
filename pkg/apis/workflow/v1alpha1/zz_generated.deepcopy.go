@@ -1770,6 +1770,7 @@ func (in *Sequence) DeepCopy() *Sequence {
 func (in *Submit) DeepCopyInto(out *Submit) {
 	*out = *in
 	out.WorkflowTemplateRef = in.WorkflowTemplateRef
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	if in.Arguments != nil {
 		in, out := &in.Arguments, &out.Arguments
 		*out = new(Arguments)
