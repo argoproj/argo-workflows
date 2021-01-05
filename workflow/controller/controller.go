@@ -864,7 +864,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
-		indexes.PodPhaseIndex: indexes.MetaPodPhaseIndexFunc(),
+		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc(),
 	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -1005,10 +1005,12 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 }
 
 func (wfc *WorkflowController) syncPodPhaseMetrics() {
-	objs, err := wfc.podInformer.GetIndexer().ByIndex(indexes.PodPhaseIndex, string(apiv1.PodRunning))
-	if err != nil {
-		log.WithError(err).Error("failed to list active pods")
-		return
+	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
+		objs, err := wfc.podInformer.GetIndexer().ByIndex(indexes.PodPhaseIndex, string(phase))
+		if err != nil {
+			log.WithError(err).Error("failed to list active pods")
+			return
+		}
+		wfc.metrics.SetPodPhaseGauge(phase, len(objs))
 	}
-	wfc.metrics.SetActivePods(len(objs))
 }

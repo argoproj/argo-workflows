@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"regexp"
 	"strconv"
 	"strings"
@@ -153,7 +154,7 @@ func newHistogram(name, help string, labels map[string]string, buckets []float64
 }
 
 func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
-	getOptsByPahse := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
+	getOptsByPhase := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
 		return prometheus.GaugeOpts{
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
@@ -163,12 +164,30 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 		}
 	}
 	return map[wfv1.NodePhase]prometheus.Gauge{
-		wfv1.NodePending:   prometheus.NewGauge(getOptsByPahse(wfv1.NodePending)),
-		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeRunning)),
-		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPahse(wfv1.NodeSucceeded)),
-		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeSkipped)),
-		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),
-		wfv1.NodeError:     prometheus.NewGauge(getOptsByPahse(wfv1.NodeError)),
+		wfv1.NodePending:   prometheus.NewGauge(getOptsByPhase(wfv1.NodePending)),
+		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPhase(wfv1.NodeRunning)),
+		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPhase(wfv1.NodeSucceeded)),
+		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPhase(wfv1.NodeSkipped)),
+		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPhase(wfv1.NodeFailed)),
+		wfv1.NodeError:     prometheus.NewGauge(getOptsByPhase(wfv1.NodeError)),
+	}
+}
+
+func getPodPhaseGauges() map[v1.PodPhase]prometheus.Gauge {
+	getOptsByPhase := func(phase v1.PodPhase) prometheus.GaugeOpts {
+		return prometheus.GaugeOpts{
+			Namespace:   argoNamespace,
+			Subsystem:   workflowsSubsystem,
+			Name:        "count",
+			Help:        "Number of Pods from Workflows currently accessible by the controller by status (refreshed every 15s)",
+			ConstLabels: map[string]string{"status": string(phase)},
+		}
+	}
+	return map[v1.PodPhase]prometheus.Gauge{
+		v1.PodPending:   prometheus.NewGauge(getOptsByPhase(v1.PodPending)),
+		v1.PodRunning:   prometheus.NewGauge(getOptsByPhase(v1.PodRunning)),
+		//v1.PodSucceeded: prometheus.NewGauge(getOptsByPhase(v1.PodSucceeded)),
+		//v1.PodFailed:    prometheus.NewGauge(getOptsByPhase(v1.PodFailed)),
 	}
 }
 
@@ -201,9 +220,9 @@ func getWorkersFree() map[string]prometheus.Gauge {
 	return map[string]prometheus.Gauge{
 		"workflow":      prometheus.NewGauge(getOptsByWorker("workflow")),
 		"pod":           prometheus.NewGauge(getOptsByWorker("pod")),
-		"cron-workflow": prometheus.NewGauge(getOptsByWorker("cron-workflow")),
-		"workflow-ttl":  prometheus.NewGauge(getOptsByWorker("workflow-ttl")),
-		"pod-cleanup":   prometheus.NewGauge(getOptsByWorker("pod-cleanup")),
+		"cron_workflow": prometheus.NewGauge(getOptsByWorker("cron_workflow")),
+		"workflow_ttl":  prometheus.NewGauge(getOptsByWorker("workflow_ttl")),
+		"pod_cleanup":   prometheus.NewGauge(getOptsByWorker("pod_cleanup")),
 	}
 }
 

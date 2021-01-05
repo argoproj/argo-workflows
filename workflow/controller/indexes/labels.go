@@ -1,7 +1,6 @@
 package indexes
 
 import (
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/tools/cache"
 
@@ -25,20 +24,6 @@ func MetaWorkflowPhaseIndexFunc() cache.IndexFunc {
 			// If the object doesn't have a phase set, consider it pending
 			return []string{string(v1alpha1.NodePending)}, nil
 		}
-	}
-}
-
-func MetaPodPhaseIndexFunc() cache.IndexFunc {
-	return func(obj interface{}) ([]string, error) {
-		pod, ok := obj.(*v1.Pod)
-
-		if !ok {
-			return nil, nil
-		}
-		if pod.Status.Phase == "" {
-			return []string{}, nil
-		}
-		return []string{string(pod.Status.Phase)}, nil
 	}
 }
 
