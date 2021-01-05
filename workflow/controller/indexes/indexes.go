@@ -12,5 +12,6 @@ const (
 	WorkflowIndex                = "workflow"
 	WorkflowTemplateIndex        = "workflowtemplate"
 	WorkflowPhaseIndex           = "workflow.phase"
+	PodPhaseIndex                = "pod.phase"
 	SemaphoreConfigIndexName     = "bySemaphoreConfigMap"
 )

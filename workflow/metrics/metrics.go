@@ -43,6 +43,7 @@ type Metrics struct {
 	telemetryConfig ServerConfig
 
 	workflowsProcessed prometheus.Counter
+	podsActive         prometheus.Gauge
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
 	workflows          map[string][]string
 	operationDurations prometheus.Histogram
@@ -73,6 +74,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		metricsConfig:      metricsConfig,
 		telemetryConfig:    telemetryConfig,
 		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
+		podsActive:         newGauge("pods_active_count", "Number of active Pods managed by Workflows from this controller (refreshed every 15s)", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
 		workflows:          make(map[string][]string),
 		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
@@ -108,6 +110,7 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	allMetrics := []prometheus.Metric{
 		m.workflowsProcessed,
 		m.operationDurations,
+		m.podsActive,
 	}
 	for _, metric := range m.workflowsByPhase {
 		allMetrics = append(allMetrics, metric)
@@ -226,6 +229,13 @@ func (m *Metrics) WorkerFree(workerType string) {
 	if metric, ok := m.workersFree[workerType]; ok {
 		metric.Inc()
 	}
+}
+
+func (m *Metrics) SetActivePods(count int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.podsActive.Set(float64(count))
 }
 
 // Act as a metrics provider for a workflow queue

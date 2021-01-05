@@ -239,6 +239,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				go wfc.runCronController(ctx)
 				go wfc.metrics.RunServer(ctx)
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
+				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
 				for i := 0; i < wfWorkers; i++ {
 					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
@@ -863,6 +864,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+		indexes.PodPhaseIndex: indexes.MetaPodPhaseIndexFunc(),
 	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -1000,4 +1002,13 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 		}
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(objs))
 	}
+}
+
+func (wfc *WorkflowController) syncPodPhaseMetrics() {
+	objs, err := wfc.podInformer.GetIndexer().ByIndex(indexes.PodPhaseIndex, string(apiv1.PodRunning))
+	if err != nil {
+		log.WithError(err).Error("failed to list active pods")
+		return
+	}
+	wfc.metrics.SetActivePods(len(objs))
 }

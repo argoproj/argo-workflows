@@ -924,7 +924,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
-		if _, ok := seenPods[nodeID]; !ok {
+		if seenPod, ok := seenPods[nodeID]; !ok {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
@@ -948,8 +948,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
 			// it is safe to extract the k8s-node information given this knowledge.
-			if node.HostNodeName != seenPods[nodeID].Spec.NodeName {
-				node.HostNodeName = seenPods[nodeID].Spec.NodeName
+			if node.HostNodeName != seenPod.Spec.NodeName {
+				node.HostNodeName = seenPod.Spec.NodeName
 				woc.wf.Status.Nodes[nodeID] = node
 				woc.updated = true
 			}

@@ -158,7 +158,7 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
 			Name:        "count",
-			Help:        "Number of Workflows currently accessible by the controller by status",
+			Help:        "Number of Workflows currently accessible by the controller by status (refreshed every 15s)",
 			ConstLabels: map[string]string{"status": string(phase)},
 		}
 	}
