@@ -67,7 +67,7 @@ func TestMetrics(t *testing.T) {
 
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
 		Name:   "count",
-		Help:   "Number of Workflows currently accessible by the controller by status",
+		Help:   "Number of Workflows currently accessible by the controller by status (refreshed every 15s)",
 		Labels: []*v1alpha1.MetricLabel{{Key: "status", Value: "Running"}},
 		Gauge: &v1alpha1.Gauge{
 			Value: "1",

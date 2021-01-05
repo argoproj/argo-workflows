@@ -1,6 +1,7 @@
 package ttlcontroller
 
 import (
+	"github.com/argoproj/argo/workflow/metrics"
 	"testing"
 	"time"
 
@@ -349,6 +350,7 @@ func newTTLController() *Controller {
 		wfInformer:  wfInformer,
 		clock:       clock,
 		workqueue:   workqueue.NewDelayingQueue(),
+		metrics:     metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
 }
 
