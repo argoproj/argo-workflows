@@ -396,14 +396,14 @@ func (wfc *WorkflowController) runPodCleanup() {
 
 // all pods will ultimately be cleaned up by either deleting them, or labelling them
 func (wfc *WorkflowController) processNextPodCleanupItem() bool {
-	wfc.metrics.WorkerFree("pod-cleanup")
+	wfc.metrics.WorkerFree("pod_cleanup")
 	key, quit := wfc.podCleanupQueue.Get()
 	if quit {
 		return false
 	}
 	defer wfc.podCleanupQueue.Done(key)
 
-	wfc.metrics.WorkerBusy("pod-cleanup")
+	wfc.metrics.WorkerBusy("pod_cleanup")
 
 	namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})

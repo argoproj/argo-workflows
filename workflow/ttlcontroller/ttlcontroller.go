@@ -83,14 +83,14 @@ func (c *Controller) runWorker() {
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling the syncHandler.
 func (c *Controller) processNextWorkItem() bool {
-	c.metrics.WorkerFree("workflow-ttl")
+	c.metrics.WorkerFree("workflow_ttl")
 	key, quit := c.workqueue.Get()
 	if quit {
 		return false
 	}
 	defer c.workqueue.Done(key)
 
-	c.metrics.WorkerBusy("workflow-ttl")
+	c.metrics.WorkerBusy("workflow_ttl")
 
 	runtimeutil.HandleError(c.deleteWorkflow(key.(string)))
 
