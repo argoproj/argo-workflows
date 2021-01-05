@@ -3053,6 +3053,8 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
         <span class="nt">duration</span><span class="p">:</span> <span class="s">&quot;1&quot;</span>      <span class="c1"># Must be a string. Default unit is seconds. Could also be a Duration, e.g.: &quot;2m&quot;, &quot;6h&quot;, &quot;1d&quot;</span>
         <span class="nt">factor</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
         <span class="nt">maxDuration</span><span class="p">:</span> <span class="s">&quot;1m&quot;</span>  <span class="c1"># Must be a string. Default unit is seconds. Could also be a Duration, e.g.: &quot;2m&quot;, &quot;6h&quot;, &quot;1d&quot;</span>
+      <span class="nt">affinity</span><span class="p">:</span>
+        <span class="nt">nodeAntiAffinity</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
     <span class="nt">container</span><span class="p">:</span>
       <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span>
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
@@ -3063,6 +3065,7 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 <li><code>limit</code> is the maximum number of times the container will be retried.</li>
 <li><code>retryPolicy</code> specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"</li>
 <li><code>backoff</code> is an exponential backoff</li>
+<li><code>nodeAntiAffinity</code> prevents running steps on the same host.  Current implementation allows only empty <code>nodeAntiAffinity</code> (i.e. <code>nodeAntiAffinity: {}</code>) and by default it uses label <code>kubernetes.io/hostname</code> as the selector.</li>
 </ul>
 <p>Providing an empty <code>retryStrategy</code> (i.e. <code>retryStrategy: {}</code>) will cause a container to retry until completion.</p>
 <h2 id="recursion">Recursion<a class="headerlink" href="#recursion" title="Permanent link">&para;</a></h2>
