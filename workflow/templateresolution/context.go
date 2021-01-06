@@ -29,9 +29,7 @@ func WrapWorkflowTemplateInterface(clientset v1alpha1.WorkflowTemplateInterface)
 
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.WorkflowTemplate, error) {
-	// TODO JPZ13 12/21/20 - determine if there's a way to combine the below
-	// context with the context declared in this package
-	ctx := context.Background()
+	ctx := context.TODO()
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
@@ -65,9 +63,7 @@ func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkf
 
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
-	// TODO JPZ13 12/21/20 - determine if there's a way to combine the below
-	// context with the context declared in this package
-	ctx := context.Background()
+	ctx := context.TODO()
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 

@@ -96,7 +96,6 @@ func (cc *Controller) Run(ctx context.Context) {
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
 	go wait.Until(cc.syncAll, 10*time.Second, ctx.Done())
 
-	// TODO JPZ13 12/24/2020 - refactor until to use untilwithcontext
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
 	}
@@ -105,7 +104,7 @@ func (cc *Controller) Run(ctx context.Context) {
 }
 
 func (cc *Controller) runCronWorker() {
-	ctx := context.Background()
+	ctx := context.TODO()
 	for cc.processNextCronItem(ctx) {
 	}
 }
