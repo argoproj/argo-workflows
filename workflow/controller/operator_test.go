@@ -58,28 +58,56 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 }
 
 func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo"}}},
-	}
-	cancel, controller := newController(wf)
-	defer cancel()
-	controller.hydrator = hydratorfake.Always
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	// fake the behaviour woc.operate()
-	assert.NoError(t, controller.hydrator.Hydrate(wf))
-	nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
-
-	// now force a re-apply update
-	updatedWf, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
-	if assert.NoError(t, err) && assert.NotNil(t, updatedWf) {
-		assert.True(t, woc.controller.hydrator.IsHydrated(updatedWf))
-		if assert.Contains(t, updatedWf.Status.Nodes, "foo") {
-			assert.Equal(t, "my-foo", updatedWf.Status.Nodes["foo"].Name)
-			assert.Equal(t, wfv1.NodeSucceeded, updatedWf.Status.Nodes["foo"].Phase, "phase is merged")
+	t.Run("Success", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
+			Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo"}}},
 		}
-	}
+		cancel, controller := newController(wf)
+		defer cancel()
+		controller.hydrator = hydratorfake.Always
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		// fake the behaviour woc.operate()
+		assert.NoError(t, controller.hydrator.Hydrate(wf))
+		nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
+
+		// now force a re-apply update
+		updatedWf, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
+		if assert.NoError(t, err) && assert.NotNil(t, updatedWf) {
+			assert.True(t, woc.controller.hydrator.IsHydrated(updatedWf))
+			if assert.Contains(t, updatedWf.Status.Nodes, "foo") {
+				assert.Equal(t, "my-foo", updatedWf.Status.Nodes["foo"].Name)
+				assert.Equal(t, wfv1.NodeSucceeded, updatedWf.Status.Nodes["foo"].Phase, "phase is merged")
+			}
+		}
+	})
+	t.Run("ErrUpdatingCompletedWorkflow", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
+			Status:     wfv1.WorkflowStatus{Phase: wfv1.NodeError},
+		}
+		currWf := wf.DeepCopy()
+		currWf.Status.Phase = wfv1.NodeSucceeded
+		cancel, controller := newController(currWf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		_, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wfv1.Nodes{})
+		assert.EqualError(t, err, "must never update completed workflows")
+	})
+	t.Run("ErrUpdatingCompletedNode", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
+			Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"my-node": wfv1.NodeStatus{Phase: wfv1.NodeError}}},
+		}
+		currWf := wf.DeepCopy()
+		currWf.Status.Nodes = wfv1.Nodes{"my-node": wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}}
+		cancel, controller := newController(currWf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		_, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wf.Status.Nodes)
+		assert.EqualError(t, err, "must never update completed node my-node")
+	})
 }
 
 func TestResourcesDuration(t *testing.T) {
@@ -5495,4 +5523,70 @@ func TestParamAggregation(t *testing.T) {
 			assert.Equal(t, `["1","2"]`, numNode.Inputs.Parameters[0].Value.String())
 		}
 	}
+}
+func TestRetryOnDiffHost(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wf := unmarshalWF(helloWorldWf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	// Verify that there are no nodes in the wf status.
+	assert.Empty(t, woc.wf.Status.Nodes)
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+
+	hostSelector := "kubernetes.io/hostname"
+	retries := wfv1.RetryStrategy{}
+	retries.Affinity = &wfv1.RetryAffinity{
+		NodeAntiAffinity: &wfv1.RetryNodeAntiAffinity{},
+	}
+
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	assert.Nil(t, lastChild)
+
+	// Add child node.
+	childNode := fmt.Sprintf("child-node-%d", 0)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	woc.addChildNode(nodeName, childNode)
+
+	n := woc.wf.GetNodeByName(nodeName)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
+	assert.NotNil(t, lastChild)
+
+	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
+	_, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	n = woc.wf.GetNodeByName(nodeName)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Ensure related fields are not set
+	assert.Equal(t, lastChild.HostNodeName, "")
+
+	// Set host name
+	n = woc.wf.GetNodeByName(nodeName)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
+	lastChild.HostNodeName = "test-fail-hostname"
+	woc.wf.Status.Nodes[lastChild.ID] = *lastChild
+
+	tmpl := &wfv1.Template{}
+	tmpl.RetryStrategy = &retries
+	RetryOnDifferentHost(nodeID)(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, tmpl)
+	assert.NotNil(t, tmpl.Affinity)
+
+	// Verify if template's Affinity has the right value
+	targetNodeSelectorRequirement :=
+		tmpl.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{lastChild.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }

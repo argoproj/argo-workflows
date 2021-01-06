@@ -1,4 +1,12 @@
-# This example demonstrates the ability to memoize a template
+# This example demonstrates the ability to memoize a template.
+# Cache can be configured in configmap. Eg.:
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: my-config
+# data:
+#   whalesay-cache: "whalesay-cache"
+#---
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -16,10 +24,11 @@ spec:
       - name: message
     memoize:
       key: "{{inputs.parameters.message}}"
-      maxAge: '10s'
+      maxAge: "10s"
       cache:
         configMap:
-          name: whalesay-cache
+          name: my-config
+          key: whalesay-cache
     container:
       image: docker/whalesay:latest
       command: [sh, -c]

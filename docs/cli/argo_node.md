@@ -30,6 +30,7 @@ argo node ACTION WORKFLOW FLAGS [flags]
   -m, --message string                 Set the message of a node, eg: --message "Hello, world!"
       --node-field-selector string     Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc
   -p, --output-parameter stringArray   Set a "supplied" output parameter of node, eg: --output-parameter parameter-name="Hello, world!"
+      --phase string                   Phase to set the node to, eg: --phase Succeeded
 ```
 
 ### Options inherited from parent commands

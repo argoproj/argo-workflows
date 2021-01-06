@@ -556,7 +556,9 @@ func (woc *wfOperationCtx) persistUpdates() {
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
-	case "true":
+	// By default we write back (as per v2.11), this does not reduce errors, but does reduce
+	// conflicts and therefore we log fewer warning messages.
+	case "", "true":
 		if err := woc.writeBackToInformer(); err != nil {
 			woc.markWorkflowError(err)
 			return
@@ -646,9 +648,22 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 		if err != nil {
 			return nil, err
 		}
+		// There is something about having informer indexers (introduced in v2.12) that means we are more likely to operate on the
+		// previous version of the workflow. This means under high load, a previously successful workflow could
+		// be operated on again. This can error (e.g. if any pod was deleted as part of clean-up). This check prevents that.
+		// https://github.com/argoproj/argo/issues/4798
+		if currWf.Status.Fulfilled() {
+			return nil, fmt.Errorf("must never update completed workflows")
+		}
 		err = woc.controller.hydrator.Hydrate(currWf)
 		if err != nil {
 			return nil, err
+		}
+		for id, node := range woc.wf.Status.Nodes {
+			currNode, exists := currWf.Status.Nodes[id]
+			if exists && currNode.Fulfilled() && node.Phase != currNode.Phase {
+				return nil, fmt.Errorf("must never update completed node %s", id)
+			}
 		}
 		currWfBytes, err := json.Marshal(currWf)
 		if err != nil {
@@ -1688,6 +1703,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
+
+			// It has to be one child at least
+			if lastChildNode != nil {
+				RetryOnDifferentHost(retryNodeName)(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
+			}
 
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
