@@ -40,16 +40,20 @@ To make the workflow controller aware of other clusters and able to connect to t
 kubectl -n argo create secret generic rest-config
 ```
 
-This needs to be populated with one entry per cluster/namespace (namespace can be the empty string for all namespaces), e.g.:
+For each cluster, it needs to be populated with either:
+
+1. One entry per cluster/namespace (if you only have access to specific namespaces).
+2. One entry for the whole cluster (if you have access to all namespaces in the cluster).
 
 ```yaml
 apiVersion: v1
 data:
   # `clusterName/namespace` - if this can only be used for this cluster and namespace (i.e. has Role and RoleBinding)
   other/argo: eyJIb3N0Ijoi...
+  other/default: eyJIb3N0Ijoi...
   # `clusterName/` - if this can be used for any cluster and namespace (i.e. has ClusterRole and ClusterRoleBinding)
   # don't specify both - this will result in unpredictable behaviour
-  # other/: eyJIb3N0Ijoi...
+  another/: eyJIb3N0Ijoi...
 kind: Secret
 metadata:
   name: rest-config

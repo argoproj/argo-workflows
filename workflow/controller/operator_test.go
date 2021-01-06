@@ -1120,7 +1120,7 @@ func TestAssessNodeStatus(t *testing.T) {
 			cancel, controller := newController()
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
-			got := woc.assessNodeStatus(tt.pod, tt.node)
+			got := woc.assessNodeStatus("", tt.pod, tt.node)
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
