@@ -57,7 +57,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 			Name: wfName,
 		},
 		Status: wfv1.WorkflowStatus{
-			Phase: wfv1.NodeFailed,
+			Phase: wfv1.WorkflowFailed,
 			Nodes: map[string]wfv1.NodeStatus{},
 		},
 	}
@@ -747,13 +747,13 @@ func TestRetryWorkflow(t *testing.T) {
 			common.LabelKeyCompleted:               "true",
 			common.LabelKeyWorkflowArchivingStatus: "Pending",
 		}},
-		Status: wfv1.WorkflowStatus{Phase: wfv1.NodeFailed},
+		Status: wfv1.WorkflowStatus{Phase: wfv1.WorkflowFailed},
 	}
 	_, err := wfClient.Create(wf)
 	assert.NoError(t, err)
 	wf, err = RetryWorkflow(kubeClient, hydratorfake.Always, wfClient, wf.Name, false, "")
 	if assert.NoError(t, err) {
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
 		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
 	}

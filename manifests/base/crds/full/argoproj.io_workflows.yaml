@@ -8909,7 +8909,7 @@ spec:
                 type: object
               type: array
             phase:
-              type: string
+              type: integer
             progress:
               type: string
             resourcesDuration:

@@ -439,7 +439,7 @@ spec:
 
 	expectWorkflow(controller, "my-wf-0", func(wf *wfv1.Workflow) {
 		if assert.NotNil(t, wf) {
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 		}
 	})
 	expectWorkflow(controller, "my-wf-1", func(wf *wfv1.Workflow) {

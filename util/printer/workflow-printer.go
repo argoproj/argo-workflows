@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util"
 )
 
 func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) error {
@@ -74,7 +73,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		if wf.Spec.Priority != nil {
 			priority = int(*wf.Spec.Priority)
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, wf.WorkflowStatusString(), ageStr, durationStr, priority)
 		if opts.Output == "wide" {
 			pending, running, completed := countPendingRunningCompleted(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
@@ -126,27 +125,4 @@ func parameterString(params []wfv1.Parameter) string {
 		}
 	}
 	return strings.Join(pStrs, ",")
-}
-
-// WorkflowStatus returns a human readable inferred workflow status based on workflow phase and conditions
-func WorkflowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
-	switch wf.Status.Phase {
-	case wfv1.NodeRunning:
-		if util.IsWorkflowSuspended(wf) {
-			return "Running (Suspended)"
-		}
-		return wf.Status.Phase
-	case wfv1.NodeFailed:
-		if wf.Spec.Shutdown != "" {
-			return "Failed (Terminated)"
-		}
-		return wf.Status.Phase
-	case "", wfv1.NodePending:
-		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-			return wfv1.NodePending
-		}
-		return "Unknown"
-	default:
-		return wf.Status.Phase
-	}
 }

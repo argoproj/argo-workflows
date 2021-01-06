@@ -552,7 +552,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 		ArchiveLogs: pointer.BoolPtr(true),
 	})
 	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)

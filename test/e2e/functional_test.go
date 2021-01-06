@@ -66,9 +66,9 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 			// the outcome could be either of these, depending on time
 			// this is due to the grace period recently deleted pods get
 			switch status.Phase {
-			case wfv1.NodeError:
+			case wfv1.WorkflowError:
 				assert.Equal(t, "pod deleted during operation", status.Nodes[metadata.Name].Message)
-			case wfv1.NodeFailed:
+			case wfv1.WorkflowFailed:
 				assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
 			default:
 				assert.Fail(t, "expected error of failed")
@@ -931,7 +931,7 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "Waiting for timeout", 30*time.Second)
 }
 
@@ -978,7 +978,7 @@ spec:
 		MemoryQuota("130M").
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "Waiting for timeout", 30*time.Second).
 		DeleteMemoryQuota()
 }

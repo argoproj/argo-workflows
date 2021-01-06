@@ -20,7 +20,6 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	argoutil "github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/printer"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -125,7 +124,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		serviceAccount = "default"
 	}
 	out += fmt.Sprintf(fmtStr, "ServiceAccount:", serviceAccount)
-	out += fmt.Sprintf(fmtStr, "Status:", printer.WorkflowStatus(wf))
+	out += fmt.Sprintf(fmtStr, "Status:", wf.WorkflowStatusString())
 	if wf.Status.Message != "" {
 		out += fmt.Sprintf(fmtStr, "Message:", wf.Status.Message)
 	}
@@ -142,7 +141,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if !wf.Status.StartedAt.IsZero() {
 		out += fmt.Sprintf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
-	if wf.Status.Phase == wfv1.NodeRunning {
+	if wf.Status.Phase == wfv1.WorkflowRunning {
 		if wf.Status.EstimatedDuration > 0 {
 			out += fmt.Sprintf(fmtStr, "EstimatedDuration:", humanize.Duration(wf.Status.EstimatedDuration.ToDuration()))
 		}

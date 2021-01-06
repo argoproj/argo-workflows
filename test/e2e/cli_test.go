@@ -475,7 +475,7 @@ func (s *CLISuite) TestNodeSuspendResume() {
 			}
 		}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "suspended node").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -761,7 +761,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			retryTime = wf.Status.FinishedAt
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "is terminated", 20*time.Second).
 		Wait(3*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
@@ -1183,7 +1183,7 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 		}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == ""
+			return wf.Status.Phase == wfv1.WorkflowUnknown
 		}), "Workflow is waiting for lock").
 		WaitForWorkflow().
 		DeleteConfigMap("my-config").
@@ -1205,7 +1205,7 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeRunning
+			return wf.Status.Phase == wfv1.WorkflowRunning
 		}), "waiting for Workflow to run", 10*time.Second).
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")

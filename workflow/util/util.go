@@ -554,7 +554,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// The following simulates the behavior of generateName
 	if memoized {
 		switch wf.Status.Phase {
-		case wfv1.NodeFailed, wfv1.NodeError:
+		case wfv1.WorkflowFailed, wfv1.WorkflowError:
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
@@ -653,7 +653,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 
 	newWF.Status.Conditions = wfv1.Conditions{{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted}}
-	newWF.Status.Phase = ""
+	newWF.Status.Phase = wfv1.WorkflowUnknown
 
 	return &newWF, nil
 }
@@ -685,7 +685,7 @@ func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		return nil, err
 	}
 	switch wf.Status.Phase {
-	case wfv1.NodeFailed, wfv1.NodeError:
+	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
@@ -702,7 +702,7 @@ func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
-	newWF.Status.Phase = wfv1.NodeRunning
+	newWF.Status.Phase = wfv1.WorkflowRunning
 	newWF.Status.Nodes = make(wfv1.Nodes)
 	newWF.Status.Message = ""
 	newWF.Status.FinishedAt = metav1.Time{}
@@ -833,18 +833,6 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 
 var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")
 
-// IsWorkflowSuspended returns whether or not a workflow is considered suspended
-func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
-	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-		return true
-	}
-	for _, node := range wf.Status.Nodes {
-		if node.IsActiveSuspendNode() {
-			return true
-		}
-	}
-	return false
-}
 
 // TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
 func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
