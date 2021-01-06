@@ -7,8 +7,8 @@ require (
 	cloud.google.com/go v0.55.0 // indirect
 	cloud.google.com/go/storage v1.6.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
-	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
-	github.com/antonmedv/expr v1.8.8
+	github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible
+	github.com/antonmedv/expr v1.8.2
 	github.com/argoproj/argo-events v1.1.0
 	github.com/argoproj/pkg v0.3.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
