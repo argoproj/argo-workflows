@@ -63,8 +63,8 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		wfQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
-		cronWfQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		wfQueue:              metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
+		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
 	}
@@ -109,14 +109,11 @@ func (cc *Controller) runCronWorker() {
 }
 
 func (cc *Controller) processNextCronItem() bool {
-	cc.metrics.WorkerFree("cron_workflow")
 	key, quit := cc.cronWfQueue.Get()
 	if quit {
 		return false
 	}
 	defer cc.cronWfQueue.Done(key)
-
-	cc.metrics.WorkerBusy("cron_workflow")
 
 	cc.keyLock.Lock(key.(string))
 	defer cc.keyLock.Unlock(key.(string))

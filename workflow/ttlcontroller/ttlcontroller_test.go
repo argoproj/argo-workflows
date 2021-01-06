@@ -1,7 +1,6 @@
 package ttlcontroller
 
 import (
-	"github.com/argoproj/argo/workflow/metrics"
 	"testing"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 

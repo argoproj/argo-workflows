@@ -2,7 +2,6 @@ package ttlcontroller
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/workflow/metrics"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -19,6 +18,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	commonutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -35,7 +35,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	controller := &Controller{
 		wfclientset: wfClientset,
 		wfInformer:  wfInformer,
-		workqueue:   workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
+		workqueue:   metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
 		clock:       clock.RealClock{},
 		metrics:     metrics,
 	}
@@ -83,14 +83,11 @@ func (c *Controller) runWorker() {
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling the syncHandler.
 func (c *Controller) processNextWorkItem() bool {
-	c.metrics.WorkerFree("workflow_ttl")
 	key, quit := c.workqueue.Get()
 	if quit {
 		return false
 	}
 	defer c.workqueue.Done(key)
-
-	c.metrics.WorkerBusy("workflow_ttl")
 
 	runtimeutil.HandleError(c.deleteWorkflow(key.(string)))
 

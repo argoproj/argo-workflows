@@ -2,11 +2,11 @@ package metrics
 
 import (
 	"fmt"
-	v1 "k8s.io/api/core/v1"
 	"regexp"
 	"strconv"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 
@@ -178,14 +178,14 @@ func getPodPhaseGauges() map[v1.PodPhase]prometheus.Gauge {
 		return prometheus.GaugeOpts{
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
-			Name:        "count",
+			Name:        "pods_count",
 			Help:        "Number of Pods from Workflows currently accessible by the controller by status (refreshed every 15s)",
 			ConstLabels: map[string]string{"status": string(phase)},
 		}
 	}
 	return map[v1.PodPhase]prometheus.Gauge{
-		v1.PodPending:   prometheus.NewGauge(getOptsByPhase(v1.PodPending)),
-		v1.PodRunning:   prometheus.NewGauge(getOptsByPhase(v1.PodRunning)),
+		v1.PodPending: prometheus.NewGauge(getOptsByPhase(v1.PodPending)),
+		v1.PodRunning: prometheus.NewGauge(getOptsByPhase(v1.PodRunning)),
 		//v1.PodSucceeded: prometheus.NewGauge(getOptsByPhase(v1.PodSucceeded)),
 		//v1.PodFailed:    prometheus.NewGauge(getOptsByPhase(v1.PodFailed)),
 	}
@@ -207,23 +207,14 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 	}
 }
 
-func getWorkersFree() map[string]prometheus.Gauge {
-	getOptsByWorker := func(worker string) prometheus.GaugeOpts {
-		return prometheus.GaugeOpts{
-			Namespace:   argoNamespace,
-			Subsystem:   workflowsSubsystem,
-			Name:        "workers_free_count",
-			Help:        "Number of workers currently free",
-			ConstLabels: map[string]string{"worker_type": worker},
-		}
-	}
-	return map[string]prometheus.Gauge{
-		"workflow":      prometheus.NewGauge(getOptsByWorker("workflow")),
-		"pod":           prometheus.NewGauge(getOptsByWorker("pod")),
-		"cron_workflow": prometheus.NewGauge(getOptsByWorker("cron_workflow")),
-		"workflow_ttl":  prometheus.NewGauge(getOptsByWorker("workflow_ttl")),
-		"pod_cleanup":   prometheus.NewGauge(getOptsByWorker("pod_cleanup")),
-	}
+func getWorkersBusy(name string) prometheus.Gauge {
+	return prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace:   argoNamespace,
+		Subsystem:   workflowsSubsystem,
+		Name:        "workers_busy_count",
+		Help:        "Number of workers currently free",
+		ConstLabels: map[string]string{"worker_type": name},
+	})
 }
 
 func IsValidMetricName(name string) bool {

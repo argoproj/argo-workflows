@@ -139,10 +139,10 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
-	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(&fixedItemIntervalRateLimiter{}, "workflow_queue")
+	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(&fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
-	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
-	wfc.podCleanupQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
+	wfc.podQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_queue")
+	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
 }
@@ -397,14 +397,11 @@ func (wfc *WorkflowController) runPodCleanup() {
 
 // all pods will ultimately be cleaned up by either deleting them, or labelling them
 func (wfc *WorkflowController) processNextPodCleanupItem() bool {
-	wfc.metrics.WorkerFree("pod_cleanup")
 	key, quit := wfc.podCleanupQueue.Get()
 	if quit {
 		return false
 	}
 	defer wfc.podCleanupQueue.Done(key)
-
-	wfc.metrics.WorkerBusy("pod_cleanup")
 
 	namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
@@ -538,14 +535,11 @@ func (wfc *WorkflowController) runWorker() {
 
 // processNextItem is the worker logic for handling workflow updates
 func (wfc *WorkflowController) processNextItem() bool {
-	wfc.metrics.WorkerFree("workflow")
 	key, quit := wfc.wfQueue.Get()
 	if quit {
 		return false
 	}
 	defer wfc.wfQueue.Done(key)
-
-	wfc.metrics.WorkerBusy("workflow")
 
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
@@ -651,14 +645,11 @@ func (wfc *WorkflowController) podWorker() {
 // For pods updates, this simply means to "wake up" the workflow by
 // adding the corresponding workflow key into the workflow workqueue.
 func (wfc *WorkflowController) processNextPodItem() bool {
-	wfc.metrics.WorkerFree("pod")
 	key, quit := wfc.podQueue.Get()
 	if quit {
 		return false
 	}
 	defer wfc.podQueue.Done(key)
-
-	wfc.metrics.WorkerBusy("pod")
 
 	obj, exists, err := wfc.podInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
