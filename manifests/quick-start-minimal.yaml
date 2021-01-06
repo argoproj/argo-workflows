@@ -819,6 +819,11 @@ spec:
                 type: integer
               retryStrategy:
                 properties:
+                  affinity:
+                    properties:
+                      nodeAntiAffinity:
+                        type: object
+                    type: object
                   backoff:
                     properties:
                       duration:
@@ -4190,6 +4195,11 @@ spec:
                       type: object
                     retryStrategy:
                       properties:
+                        affinity:
+                          properties:
+                            nodeAntiAffinity:
+                              type: object
+                          type: object
                         backoff:
                           properties:
                             duration:
@@ -7792,6 +7802,11 @@ spec:
                     type: integer
                   retryStrategy:
                     properties:
+                      affinity:
+                        properties:
+                          nodeAntiAffinity:
+                            type: object
+                        type: object
                       backoff:
                         properties:
                           duration:
@@ -11163,6 +11178,11 @@ spec:
                           type: object
                         retryStrategy:
                           properties:
+                            affinity:
+                              properties:
+                                nodeAntiAffinity:
+                                  type: object
+                              type: object
                             backoff:
                               properties:
                                 duration:
@@ -15200,6 +15220,11 @@ spec:
                 type: integer
               retryStrategy:
                 properties:
+                  affinity:
+                    properties:
+                      nodeAntiAffinity:
+                        type: object
+                    type: object
                   backoff:
                     properties:
                       duration:
@@ -18571,6 +18596,11 @@ spec:
                       type: object
                     retryStrategy:
                       properties:
+                        affinity:
+                          properties:
+                            nodeAntiAffinity:
+                              type: object
+                          type: object
                         backoff:
                           properties:
                             duration:
@@ -26439,6 +26469,11 @@ spec:
                       type: object
                     retryStrategy:
                       properties:
+                        affinity:
+                          properties:
+                            nodeAntiAffinity:
+                              type: object
+                          type: object
                         backoff:
                           properties:
                             duration:
@@ -29152,6 +29187,11 @@ spec:
                     type: integer
                   retryStrategy:
                     properties:
+                      affinity:
+                        properties:
+                          nodeAntiAffinity:
+                            type: object
+                        type: object
                       backoff:
                         properties:
                           duration:
@@ -32523,6 +32563,11 @@ spec:
                           type: object
                         retryStrategy:
                           properties:
+                            affinity:
+                              properties:
+                                nodeAntiAffinity:
+                                  type: object
+                              type: object
                             backoff:
                               properties:
                                 duration:
@@ -36156,6 +36201,11 @@ spec:
                 type: integer
               retryStrategy:
                 properties:
+                  affinity:
+                    properties:
+                      nodeAntiAffinity:
+                        type: object
+                    type: object
                   backoff:
                     properties:
                       duration:
@@ -39527,6 +39577,11 @@ spec:
                       type: object
                     retryStrategy:
                       properties:
+                        affinity:
+                          properties:
+                            nodeAntiAffinity:
+                              type: object
+                          type: object
                         backoff:
                           properties:
                             duration:
