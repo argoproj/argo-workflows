@@ -21,6 +21,17 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
     return endTime.diff(moment(node.startedAt)) / 1000;
 }
 
+function failHosts(node: models.NodeStatus, workflow: models.Workflow) {
+    const hosts = [];
+    for (const childNodeID of node.children) {
+        const childNode = workflow.status.nodes[childNodeID];
+        if ((childNode.phase === models.NODE_PHASE.FAILED || childNode.phase === models.NODE_PHASE.ERROR) && hosts.indexOf(childNode.hostNodeName) === -1) {
+            hosts.push(childNode.hostNodeName);
+        }
+    }
+    return hosts.join('\n');
+}
+
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
@@ -103,6 +114,9 @@ const WorkflowNodeSummary = (props: Props) => {
                 value: props.node.hostNodeName
             }
         );
+    }
+    if (props.node.type === 'Retry') {
+        attributes.push({title: 'FAIL HOSTS', value: <pre className='workflow-node-info__multi-line'>{failHosts(props.node, props.workflow)}</pre>});
     }
     if (props.node.resourcesDuration) {
         attributes.push({
