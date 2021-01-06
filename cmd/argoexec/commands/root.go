@@ -15,7 +15,6 @@ import (
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"
 	"github.com/argoproj/argo/workflow/executor/docker"
@@ -75,7 +74,6 @@ func initExecutor() *executor.WorkflowExecutor {
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
-	logs.AddLoggingTransportWrapper(config)
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)
