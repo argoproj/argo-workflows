@@ -1,12 +1,12 @@
-package cluster
+package rest_config
 
 import (
 	"github.com/spf13/cobra"
 )
 
-func NewClusterCommand() *cobra.Command {
+func NewRestConfigCommand() *cobra.Command {
 	var command = &cobra.Command{
-		Use: "cluster",
+		Use: "rest-config",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
 		},

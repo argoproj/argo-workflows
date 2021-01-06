@@ -1,4 +1,4 @@
-package cluster
+package rest_config
 
 import (
 	"encoding/json"
@@ -14,17 +14,26 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/config/clusters"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func NewAddCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "add CLUSTER_NAME KUBECONFIG",
+		Use: "add CLUSTER_NAME/NAMESPACE CONTEXT_NAME",
+		Example: `
+# whole cluster
+argo rest-config add other/ k3s-default
+
+# just one namespace
+argo rest-config add other/argo k3s-default
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			clusterName := args[0]
+			clusterNamespace, err := wfv1.ParseClusterNamespaceKey(args[0])
+			errors.CheckError(err)
 			contextName := args[1]
 			startingConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()
 			errors.CheckError(err)
@@ -54,16 +63,16 @@ func NewAddCommand() *cobra.Command {
 			log.Debug(string(data))
 			data, err = json.Marshal(map[string]map[string]string{
 				"stringData": {
-					clusterName: string(data),
+					string(clusterNamespace): string(data),
 				},
 			})
 			errors.CheckError(err)
 			restConfig, err := client.GetConfig().ClientConfig()
 			errors.CheckError(err)
 			_, err = kubernetes.NewForConfigOrDie(restConfig).CoreV1().Secrets(client.Namespace()).
-				Patch("clusters", types.MergePatchType, data)
+				Patch("rest-config", types.MergePatchType, data)
 			errors.CheckError(err)
-			fmt.Printf("added cluster named \"%s\" from context \"%s\"\n", clusterName, contextName)
+			fmt.Printf("added cluster/namespace \"%v\" from context \"%s\"\n", clusterNamespace, contextName)
 		},
 	}
 }

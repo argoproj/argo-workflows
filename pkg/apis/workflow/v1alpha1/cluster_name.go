@@ -1,6 +1,6 @@
 package v1alpha1
 
-type ClusterName = string
+type ClusterName string
 
 func ClusterNameOrOther(a ClusterName, b ClusterName) ClusterName {
 	if a != "" {

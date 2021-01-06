@@ -48,7 +48,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "access denied for namespace \"argo\" to un-managed namespace \"unmanaged\"", status.Message)
+			assert.Equal(t, "access denied to un-managed namespace \"unmanaged\"", status.Message)
 		})
 }
 
@@ -73,7 +73,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "access denied for namespace \"argo\" to cluster-namespace \"main/default\"", status.Message)
+			assert.Equal(t, "access denied to un-managed namespace \"default\"", status.Message)
 		})
 }
 
@@ -123,7 +123,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "no cluster named \"not-found\" has been configured", status.Message)
+			assert.Equal(t, "access denied to cluster-namespace \"not-found/argo\"", status.Message)
 		})
 }
 
@@ -156,7 +156,7 @@ spec:
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			x := status.Nodes.FindByDisplayName(metadata.Name)
 			if assert.NotNil(t, x) {
-				assert.Equal(t, "other", x.ClusterName)
+				assert.Equal(t, wfv1.ClusterName("other"), x.ClusterName)
 				assert.Empty(t, x.Namespace)
 			}
 		})

@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo/config/namespace"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -100,10 +99,8 @@ type Config struct {
 	// The name of the cluster, mandatory for multi-cluster set-up.
 	ClusterName wfv1.ClusterName `json:"clusterName,omitempty"`
 
-	// Declares what clusters and namespaces each namespace in the main cluster may access.
-	// If omitted, then workflows may only create pods in their own cluster and namespace.
-	// If supplied, their own cluster and namespace should be added if needed.
-	Namespaces namespace.Namespaces `json:"namespaces,omitempty"`
+	// A map of cluster namespace and the Kubernetes REST config to use for that cluster namespace.
+	Clusters map[wfv1.ClusterNamespaceKey]string `json:"clusters,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

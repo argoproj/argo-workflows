@@ -154,7 +154,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		kubeclientset:        map[wfv1.ClusterName]kubernetes.Interface{"": kube},
+		kubeclientset:        map[wfv1.ClusterNamespaceKey]kubernetes.Interface{".": kube},
 		dynamicInterface:     dynamicClient,
 		wfclientset:          wfclientset,
 		workflowKeyLock:      sync.NewKeyLock(),
@@ -276,7 +276,7 @@ func withAnnotation(key, val string) with {
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	podcs := woc.controller.kubeclientset[""].CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.kubeclientset0().CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(metav1.ListOptions{})
 	if err != nil {
 		panic(err)
@@ -294,7 +294,7 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformer[""].GetStore().Update(updatedPod)
+			err = woc.controller.podInformer["."].GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -303,13 +303,13 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 }
 
 func deletePods(woc *wfOperationCtx) {
-	for _, obj := range woc.controller.podInformer[""].GetStore().List() {
+	for _, obj := range woc.controller.podInformer["."].GetStore().List() {
 		pod := obj.(*apiv1.Pod)
-		err := woc.controller.kubeclientset[""].CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
+		err := woc.controller.kubeclientset0().CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
 		if err != nil {
 			panic(err)
 		}
-		err = woc.controller.podInformer[""].GetStore().Delete(obj)
+		err = woc.controller.podInformer["."].GetStore().Delete(obj)
 		if err != nil {
 			panic(err)
 		}
@@ -388,7 +388,7 @@ func TestNamespacedController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubeclientset = map[wfv1.ClusterName]kubernetes.Interface{"": kubernetes.Interface(&kubeClient)}
+	controller.kubeclientset = map[wfv1.ClusterNamespaceKey]kubernetes.Interface{".": kubernetes.Interface(&kubeClient)}
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
@@ -405,7 +405,7 @@ func TestClusterController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubeclientset = map[wfv1.ClusterName]kubernetes.Interface{"": kubernetes.Interface(&kubeClient)}
+	controller.kubeclientset = map[wfv1.ClusterNamespaceKey]kubernetes.Interface{".": kubernetes.Interface(&kubeClient)}
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)

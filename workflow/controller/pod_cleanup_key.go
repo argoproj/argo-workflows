@@ -28,6 +28,6 @@ func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, namespac
 	if len(parts) != 4 {
 		return "", "", "", ""
 	}
-	return parts[0], parts[1], parts[2], parts[3]
+	return wfv1.ClusterName(parts[0]), parts[1], parts[2], parts[3]
 
 }

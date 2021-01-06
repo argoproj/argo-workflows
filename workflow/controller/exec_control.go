@@ -32,7 +32,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
-				err := woc.controller.kubeclientset[clusterName].CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := woc.controller.kubeclientsetX(clusterName, pod.Namespace).CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -51,7 +51,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := woc.controller.kubeclientset[clusterName].CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := woc.controller.kubeclientsetX(clusterName, pod.Namespace).CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -135,7 +135,7 @@ func (woc *wfOperationCtx) updateExecutionControl(clusterName wfv1.ClusterName, 
 
 	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
 	err = common.AddPodAnnotation(
-		woc.controller.kubeclientset[clusterName],
+		woc.controller.kubeclientsetX(clusterName, namespace),
 		podName,
 		namespace,
 		common.AnnotationKeyExecutionControl,
@@ -152,7 +152,7 @@ func (woc *wfOperationCtx) updateExecutionControl(clusterName wfv1.ClusterName, 
 	// using SIGUSR2 that something changed.
 	woc.log.Infof("Signalling %s of updates", podName)
 	exec, err := common.ExecPodContainer(
-		woc.controller.restConfig[clusterName], woc.wf.ObjectMeta.Namespace, podName,
+		woc.controller.restConfigX(clusterName, namespace), woc.wf.ObjectMeta.Namespace, podName,
 		containerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
 	)
 	if err != nil {

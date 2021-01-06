@@ -10,7 +10,7 @@ import (
 
 func ClusterNameRequirement(a, b wfv1.ClusterName) labels.Requirement {
 	if a != b {
-		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{b})
+		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{string(b)})
 		return *r
 	} else {
 		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.DoesNotExist, nil)

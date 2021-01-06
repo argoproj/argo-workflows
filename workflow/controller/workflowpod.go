@@ -143,9 +143,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	informer, ok := woc.controller.podInformer[clusterName]
-	if !ok {
-		return nil, fmt.Errorf(`no cluster named "%s" has been configured`, clusterName)
+	informer := woc.controller.podInformerX(clusterName, namespace)
+	if informer == nil {
+		return nil, fmt.Errorf(`no cluster/namespace "%s/%s" has been configured`, clusterName, namespace)
 	}
 	obj, exists, err := informer.GetStore().Get(cache.ExplicitKey(namespace + "/" + nodeID))
 	if err != nil {
@@ -246,7 +246,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	if clusterName != woc.thisCluster() {
-		pod.Labels[common.LabelKeyClusterName] = woc.thisCluster()
+		pod.Labels[common.LabelKeyClusterName] = string(woc.thisCluster())
 	}
 
 	if namespace != woc.wf.Namespace {
@@ -398,7 +398,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	created, err := woc.controller.kubeclientset[clusterName].CoreV1().Pods(namespace).Create(pod)
+	created, err := woc.controller.kubeclientsetX(clusterName, namespace).CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
@@ -418,16 +418,13 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 }
 
 func (woc *wfOperationCtx) enforceClusterNamespaceAccessControl(clusterName wfv1.ClusterName, namespace string) error {
-	// check to see if roles allow this
-	role := woc.controller.Config.Namespaces.Find(woc.wf.Namespace)
-	log.WithFields(log.Fields{"role": role, "clusterName": clusterName, "namespace": namespace}).Info("Checking namespace roles allow pod creation")
-	if woc.thisCluster() != "" && !role.Rules.Allow(clusterName, namespace) {
-		return fmt.Errorf(`access denied for namespace "%s" to cluster-namespace "%s/%s"`, woc.wf.Namespace, clusterName, namespace)
+	if woc.controller.podInformerX(clusterName, namespace) == nil {
+		return fmt.Errorf(`cluster-namespace "%s/%s not configured"`, clusterName, namespace)
 	}
 
 	// this is a check both for miss-configuration and a permission denied,
 	if woc.controller.managedNamespace != "" && woc.controller.managedNamespace != namespace {
-		return fmt.Errorf(`access denied for namespace "%s" to un-managed namespace "%s"`, woc.wf.Namespace, namespace)
+		return fmt.Errorf(`access denied to un-managed namespace "%s"`, namespace)
 	}
 	return nil
 }
@@ -1095,7 +1092,7 @@ func (woc *wfOperationCtx) setupServiceAccount(clusterName wfv1.ClusterName, pod
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset[clusterName], pod.Namespace, executorServiceAccountName)
+		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientsetX(clusterName, pod.Namespace), pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}

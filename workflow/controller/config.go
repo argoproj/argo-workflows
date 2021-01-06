@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -23,10 +22,7 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Infoln("Configuration:")
-	for _, l := range strings.Split(string(bytes), "\n") {
-		log.Println(l)
-	}
+	log.Info("Configuration:\n" + string(bytes))
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}
@@ -38,14 +34,14 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset[wfc.Config.ClusterName], wfc.namespace, &wfc.Config.ArtifactRepository)
+	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset0(), wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset[wfc.Config.ClusterName], wfc.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset0(), wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}

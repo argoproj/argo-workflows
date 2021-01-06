@@ -31,21 +31,26 @@ This may not be allowed in some organisations.
 To make the workflow controller aware of other clusters and able to connect to them:
 
 ```bash
-kubectl -n argo create secret generic clusters
+kubectl -n argo create secret generic rest-config
 ```
 
-This needs to be populated with one entry per cluster, e.g.:
+This needs to be populated with one entry per cluster/namespace (namespace can be empty for all namespaces), e.g.:
 
 ```yaml
 apiVersion: v1
 data:
-  other: eyJIb3N0Ijoi...
+  # `clusterName/namespace` - if this can only be used for this cluster and namespace (i.e. has Role and RoleBinding)
+  other/argo: eyJIb3N0Ijoi...
+  # `clusterName/` - if this can be used for any cluster and namespace (i.e. has ClusterRole and ClusterRoleBinding)
+  # don't specify both - this will result in unpredictable behaviour
+  # other/: eyJIb3N0Ijoi...
 kind: Secret
 metadata:
-  name: clusters
+  name: rest-config
   namespace: argo
 type: Opaque
 ```
+
 
 To manually configure a cluster, take the following example JSON, enter your values, and base-64 encode it:
 
@@ -79,34 +84,6 @@ Alternatively, download the KUBECONFIG into your local `~/.kube/config` and add 
 
 ```bash
 argo cluster add my-other-cluster-name my-context-name 
-```
-
-Next, we only run pods in cluster-namespaces that have been explicitly allowed by configuration:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: workflow-controller-configmap
-data:
-  namespaces: |
-    # This example declares which cluster-namespaces for workflows created in the "argo" 
-    # namespace the controller is allowed to run workflow pods in.
-    - name: argo
-      rules:
-        # You must include one entry for the default cluster if you wish to continue
-        # running pods there.
-        - clusterNames:
-            - default
-          namespaces:
-            # Use "" for all namespaces, e.g. if you have a cluster-install.
-            - argo            
-        # List other clusters-namespaces that this namespace will be able to declare
-        # workflow pods in.
-        - clusterNames:
-            - other
-          namespaces:
-            - other-ns
 ```
 
 Finally, restart the workflow controller.

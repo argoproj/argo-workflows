@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	v1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -13,29 +14,34 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, thisClusterName wfv1.ClusterName, namespace string) (map[string]*rest.Config, map[wfv1.ClusterName]kubernetes.Interface, error) {
-	restConfigs := map[string]*rest.Config{}
+func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, thisClusterName wfv1.ClusterName, namespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, error) {
+	clusterNamespace := wfv1.NewClusterNamespaceKey(thisClusterName, v1.NamespaceAll)
+	restConfigs := map[wfv1.ClusterNamespaceKey]*rest.Config{}
 	if restConfig != nil {
-		restConfigs[thisClusterName] = restConfig
+		restConfigs[clusterNamespace] = restConfig
 	}
-	kubernetesInterfaces := map[wfv1.ClusterName]kubernetes.Interface{thisClusterName: kubeclientset}
-	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get("clusters", metav1.GetOptions{})
+	kubernetesInterfaces := map[wfv1.ClusterNamespaceKey]kubernetes.Interface{clusterNamespace: kubeclientset}
+	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get("rest-config", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 	} else if err != nil {
 		return nil, nil, fmt.Errorf("failed to get secret/clusters: %w", err)
 	} else {
-		for clusterName, data := range secret.Data {
+		for key, data := range secret.Data {
+			clusterNamespace,err := wfv1.ParseClusterNamespaceKey(key)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed parse key %s: %w", key, err)
+			}
 			c := &clusters.Config{}
-			err := json.Unmarshal(data, c)
+			err = json.Unmarshal(data, c)
 			if err != nil {
-				return nil, nil, fmt.Errorf("failed unmarshall JSON for cluster %s: %w", clusterName, err)
+				return nil, nil, fmt.Errorf("failed unmarshall JSON for cluster %s: %w", key, err)
 			}
-			restConfigs[clusterName] = c.RestConfig()
-			clientset, err := kubernetes.NewForConfig(restConfigs[clusterName])
+			restConfigs[clusterNamespace] = c.RestConfig()
+			clientset, err := kubernetes.NewForConfig(restConfigs[clusterNamespace])
 			if err != nil {
-				return nil, nil, fmt.Errorf("failed create new kube client for cluster %s: %w", clusterName, err)
+				return nil, nil, fmt.Errorf("failed create new kube client for cluster %s: %w", key, err)
 			}
-			kubernetesInterfaces[clusterName] = clientset
+			kubernetesInterfaces[clusterNamespace] = clientset
 		}
 	}
 	return restConfigs, kubernetesInterfaces, nil

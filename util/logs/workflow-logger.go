@@ -42,7 +42,7 @@ type sender interface {
 	Send(entry *workflowpkg.LogEntry) error
 }
 
-func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClient versioned.Interface, kubeClient map[wfv1.ClusterName]kubernetes.Interface, hydrator hydrator.Interface, req request, sender sender) error {
+func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClient versioned.Interface, kubeClient map[wfv1.ClusterNamespaceKey]kubernetes.Interface, hydrator hydrator.Interface, req request, sender sender) error {
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
 	wf, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -71,6 +71,13 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 	podLogStreamOptions := *logOptions
 	podLogStreamOptions.Timestamps = true
 
+	kube := func(clusterName wfv1.ClusterName, namespace string) kubernetes.Interface {
+		if x, ok := kubeClient[wfv1.NewClusterNamespaceKey(clusterName, namespace)]; ok {
+			return x
+		}
+		return kubeClient[wfv1.NewClusterNamespaceKey(clusterName, corev1.NamespaceAll)]
+	}
+
 	// this func start a stream if one is not already running
 	logPod := func(clusterName wfv1.ClusterName, namespace, podName string) {
 		podKey := wfv1.NewPodKey(clusterName, namespace, podName)
@@ -85,7 +92,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 			defer wg.Done()
 			defer logCtx.Debug("pod logging done")
 			err := func() error {
-				stream, err := kubeClient[clusterName].CoreV1().Pods(namespace).GetLogs(podName, &podLogStreamOptions).Stream()
+				stream, err := kube(clusterName, namespace).CoreV1().Pods(namespace).GetLogs(podName, &podLogStreamOptions).Stream()
 				if err != nil {
 					return err
 				}
@@ -149,7 +156,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 				if req.GetPodName() != "" {
 					listOptions.FieldSelector = "metadata.name=" + req.GetPodName()
 				}
-				list, err := kubeClient[clusterName].CoreV1().Pods(namespace).List(listOptions)
+				list, err := kube(clusterName, namespace).CoreV1().Pods(namespace).List(listOptions)
 				if err != nil {
 					return err
 				}
@@ -166,7 +173,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 				retryWatcher, err := retrywatch.NewRetryWatcher(list.ResourceVersion, &cache.ListWatch{
 					WatchFunc: func(x metav1.ListOptions) (watch.Interface, error) {
 						x.LabelSelector = listOptions.LabelSelector
-						return kubeClient[clusterName].CoreV1().Pods(namespace).Watch(x)
+						return kube(clusterName, namespace).CoreV1().Pods(namespace).Watch(x)
 					},
 				})
 				if err != nil {
