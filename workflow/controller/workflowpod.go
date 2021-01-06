@@ -135,17 +135,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	clusterName := wfv1.ClusterNameOr(tmpl.ClusterName, woc.clusterName())
 	namespace := wfv1.NamespaceOr(tmpl.Namespace, woc.wf.Namespace)
 
-	err := woc.enforceClusterNamespaceAccessControl(clusterName, namespace)
-	if err != nil {
-		return nil, err
-	}
-
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	informer := woc.controller.podInformerX(clusterName, namespace)
-	if informer == nil {
-		return nil, fmt.Errorf(`no cluster/namespace "%s/%s" has been configured`, clusterName, namespace)
+	informer, err := woc.controller.podInformerX(clusterName, namespace)
+	if err != nil {
+		return nil, err
 	}
 	obj, exists, err := informer.GetStore().Get(cache.ExplicitKey(namespace + "/" + nodeID))
 	if err != nil {
@@ -248,7 +243,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if err != nil {
 		return nil, err
 	}
-
 
 	err = woc.setupServiceAccount(clusterName, pod, tmpl)
 	if err != nil {
@@ -394,30 +388,21 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	created, err := woc.controller.kubeclientsetX(clusterName, namespace).CoreV1().Pods(namespace).Create(pod)
+	k, err := woc.controller.kubeclientsetX(clusterName, namespace)
 	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if the
-			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
-			return created, nil
-		}
+		return nil, err
+	}
+	created, err := k.CoreV1().Pods(namespace).Create(pod)
+	if err != nil && !apierr.IsAlreadyExists(err) {
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, clusterName, created.Namespace, created.Name)
+	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, clusterName, namespace, pod.Name)
 	woc.activePods++
 	return created, nil
-}
-
-func (woc *wfOperationCtx) enforceClusterNamespaceAccessControl(clusterName wfv1.ClusterName, namespace string) error {
-	if woc.controller.podInformerX(clusterName, namespace) == nil {
-		return fmt.Errorf(`cluster-namespace "%s/%s" not configured`, clusterName, namespace)
-	}
-	return nil
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
@@ -1083,7 +1068,11 @@ func (woc *wfOperationCtx) setupServiceAccount(clusterName wfv1.ClusterName, pod
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientsetX(clusterName, pod.Namespace), pod.Namespace, executorServiceAccountName)
+		k, err := woc.controller.kubeclientsetX(clusterName, pod.Namespace)
+		if err != nil {
+			return err
+		}
+		tokenName, err := common.GetServiceAccountTokenName(k, pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}

@@ -26,13 +26,17 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 		return nil
 	case apiv1.PodPending:
 		// Check if we are currently shutting down
+		k, err := woc.controller.kubeclientsetX(clusterName, pod.Namespace)
+		if err != nil {
+			return err
+		}
 		if woc.execWf.Spec.Shutdown != "" {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
-				err := woc.controller.kubeclientsetX(clusterName, pod.Namespace).CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := k.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -51,7 +55,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := woc.controller.kubeclientsetX(clusterName, pod.Namespace).CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := k.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -134,8 +138,12 @@ func (woc *wfOperationCtx) updateExecutionControl(clusterName wfv1.ClusterName, 
 	}
 
 	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
+	k, err := woc.controller.kubeclientsetX(clusterName, namespace)
+	if err != nil {
+		return err
+	}
 	err = common.AddPodAnnotation(
-		woc.controller.kubeclientsetX(clusterName, namespace),
+		k,
 		podName,
 		namespace,
 		common.AnnotationKeyExecutionControl,
@@ -151,8 +159,12 @@ func (woc *wfOperationCtx) updateExecutionControl(clusterName wfv1.ClusterName, 
 	// propagate (minutes). The following code fast-tracks this by signaling the executor
 	// using SIGUSR2 that something changed.
 	woc.log.Infof("Signalling %s of updates", podName)
+	restConfig, err := woc.controller.restConfigX(clusterName, namespace)
+	if err != nil {
+		return err
+	}
 	exec, err := common.ExecPodContainer(
-		woc.controller.restConfigX(clusterName, namespace), woc.wf.ObjectMeta.Namespace, podName,
+		restConfig, woc.wf.ObjectMeta.Namespace, podName,
 		containerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
 	)
 	if err != nil {

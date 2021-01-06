@@ -9,7 +9,7 @@ func ClusterNameOr(a ClusterName, b ClusterName) ClusterName {
 	return b
 }
 
-func ClusterNameIfDiff(a, b ClusterName) ClusterName {
+func ClusterNameIfNot(a, b ClusterName) ClusterName {
 	if a == b {
 		return ""
 	}

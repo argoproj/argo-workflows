@@ -61,7 +61,7 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(".", a.namespace, a.instanceIDService, argoKubeOffloadNodeStatusRepo)}}
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer("", a.namespace, "", a.instanceIDService, argoKubeOffloadNodeStatusRepo)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {

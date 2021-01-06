@@ -1158,8 +1158,11 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, pod *a
 		}
 	}
 
-	node.ClusterName = wfv1.ClusterNameIfDiff(clusterName, woc.clusterName())
-	node.Namespace = wfv1.NamespaceIfDiff(pod.Namespace, woc.wf.Namespace)
+	// we only update the clusterName and namespace once we're sure the pod has actually been scheduled
+	// this prevents there being a NodeStatus pointing to an invalid clusterName or namespace
+	// which would prevent us deleting the pods during the finalization of the workflow
+	node.ClusterName = wfv1.ClusterNameIfNot(clusterName, woc.clusterName())
+	node.Namespace = wfv1.NamespaceIfNot(pod.Namespace, woc.wf.Namespace)
 
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {

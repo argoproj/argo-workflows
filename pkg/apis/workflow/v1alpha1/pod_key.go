@@ -12,7 +12,7 @@ func NewPodKey(clusterName ClusterName, namespace, podName string) PodKey {
 	return PodKey(fmt.Sprintf("%s/%s/%s", clusterName, namespace, podName))
 }
 
-func SplitPodKey(key PodKey) (clusterName ClusterName, namespace string, name string) {
+func (key PodKey) Split() (clusterName ClusterName, namespace string, name string) {
 	parts := strings.Split(string(key), "/")
 	if len(parts) != 3 {
 		return "", "", ""

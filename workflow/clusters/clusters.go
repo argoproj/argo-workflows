@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -14,8 +13,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, thisClusterName wfv1.ClusterName, namespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, error) {
-	clusterNamespace := wfv1.NewClusterNamespaceKey(thisClusterName, v1.NamespaceAll)
+func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, error) {
+	clusterNamespace := wfv1.NewClusterNamespaceKey(clusterName, managedNamespace)
 	restConfigs := map[wfv1.ClusterNamespaceKey]*rest.Config{}
 	if restConfig != nil {
 		restConfigs[clusterNamespace] = restConfig

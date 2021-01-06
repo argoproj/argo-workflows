@@ -7,7 +7,7 @@ func NamespaceOr(a, b string) string {
 	return b
 }
 
-func NamespaceIfDiff(a, b string) string {
+func NamespaceIfNot(a, b string) string {
 	if a == b {
 		return ""
 	}

@@ -27,32 +27,7 @@ func (s *MultiClusterSuite) SetupSuite() {
 	}
 }
 
-func (s *MultiClusterSuite) TestNamespaceUnmanaged() {
-	s.Given().
-		Workflow(`
-metadata:
-  generateName: namespace-unmanaged-
-  labels:
-    argo-e2e: true
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      namespace: unmanaged
-      container:
-        image: argoproj/argosay:v2
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "access denied to un-managed namespace \"unmanaged\"", status.Message)
-		})
-}
-
-func (s *MultiClusterSuite) TestNamespaceDenied() {
+func (s *MultiClusterSuite) TestNamespaceNotConfigured() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -73,11 +48,11 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "access denied to un-managed namespace \"default\"", status.Message)
+			assert.Equal(t, "cluster-namespace \"main/default\" not configured", status.Message)
 		})
 }
 
-func (s *MultiClusterSuite) TestClusterDenied() {
+func (s *MultiClusterSuite) TestClusterNotConfigured() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -129,11 +104,10 @@ spec:
 
 func (s *MultiClusterSuite) TestOtherCluster() {
 	s.Assert().Equal("pns", s.Config.ContainerRuntimeExecutor)
-
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: multi-cluster-
+  generateName: mult-cluster-other-
   labels:
     argo-e2e: true
 spec:
@@ -144,7 +118,7 @@ spec:
   templates:
     - name: main
       clusterName: other
-      namespace: argo
+      namespace: default
       container:
         image: argoproj/argosay:v2
 `).
@@ -157,7 +131,7 @@ spec:
 			x := status.Nodes.FindByDisplayName(metadata.Name)
 			if assert.NotNil(t, x) {
 				assert.Equal(t, wfv1.ClusterName("other"), x.ClusterName)
-				assert.Empty(t, x.Namespace)
+				assert.Equal(t, "default", x.Namespace)
 			}
 		})
 

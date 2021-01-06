@@ -33,8 +33,9 @@ import (
 )
 
 type workflowServer struct {
-	thisClusterName       wfv1.ClusterName
+	clusterName           wfv1.ClusterName
 	namespace             string
+	managedNamespace      string
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
@@ -43,8 +44,8 @@ type workflowServer struct {
 const latestAlias = "@latest"
 
 // NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(thisClusterName wfv1.ClusterName, namespace string, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{thisClusterName, namespace, instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
+func NewWorkflowServer(thisClusterName wfv1.ClusterName, namespace, managedNamespace string, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
+	return &workflowServer{thisClusterName, namespace, managedNamespace,instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {
@@ -512,11 +513,11 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 		return err
 	}
 	req.Name = wf.Name
-	_, kubeClients, err := clusters.GetConfigs(nil, kubeClient, s.thisClusterName, s.namespace)
+	_, kubeClients, err := clusters.GetConfigs(nil, kubeClient, s.clusterName, s.namespace, s.managedNamespace)
 	if err != nil {
 		return err
 	}
-	return logs.WorkflowLogs(ctx, s.thisClusterName, wfClient, kubeClients, s.hydrator, req, ws)
+	return logs.WorkflowLogs(ctx, s.clusterName, wfClient, kubeClients, s.hydrator, req, ws)
 }
 
 func (s *workflowServer) WorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_WorkflowLogsServer) error {
