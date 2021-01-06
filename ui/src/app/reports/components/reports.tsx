@@ -253,7 +253,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private renderFilters() {
         return (
-            <div style={{margin: 25}} className='wf-filters-container'>
+            <div className='wf-filters-container'>
                 <div className='row'>
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Archived Workflows</p>
