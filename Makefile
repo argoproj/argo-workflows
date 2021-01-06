@@ -498,7 +498,7 @@ mysql-cli:
 test-e2e:
 	# set-up bad user for e2e tests
 	kubectl config set-credentials fake_token_user --token=xxxxxx
-	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-cli
 test-cli:
