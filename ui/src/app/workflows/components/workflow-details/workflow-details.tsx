@@ -93,7 +93,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         items.push({
             action: () => setSidePanel('logs'),
             disabled: false,
-            iconClassName: 'fa fa-file',
+            iconClassName: 'fa fa-file-alt',
             title: 'Logs'
         });
 

@@ -3,7 +3,9 @@ import {useEffect, useState} from 'react';
 
 import {Observable} from 'rxjs';
 import * as models from '../../../../models';
+import {execSpec} from '../../../../models';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
@@ -74,6 +76,17 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                 </select>
             </p>
             {error && <ErrorNotice error={error} />}
+            {selectedContainer === 'init' && (
+                <p>
+                    <InfoIcon /> Init containers logs are usually only useful when debugging input artifact problems. The init container is only run if there were input artifacts.
+                </p>
+            )}
+            {selectedContainer === 'wait' && (
+                <p>
+                    <InfoIcon /> Wait containers logs are usually only useful when debugging output artifact problems. The wait container is only run if there were output artifacts
+                    (including archived logs).
+                </p>
+            )}
             <div className='white-box'>
                 {!loaded ? (
                     <p>
@@ -98,9 +111,12 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                         <a href={services.workflows.getArtifactLogsUrl(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
-                {selectedContainer === 'init' && <>Init containers will not have logs if the pod did not have any input artifacts.</>}
-                Logs only appear for pods that are not deleted.
-                {workflow.spec.podGC && <>You pod GC settings will delete pods immediately.</>}
+                {execSpec(workflow).podGC && (
+                    <>
+                        <WarningIcon /> You pod GC settings will delete pods and their logs immediately on completion.
+                    </>
+                )}{' '}
+                Logs do not appear for pods that are deleted.
             </p>
         </div>
     );
