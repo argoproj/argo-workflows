@@ -402,8 +402,7 @@ ifeq ($(MULTI_CLUSTER),true)
 	k3d cluster get other || k3d cluster create other --no-lb --wait --update-default-kubeconfig
 	# configure other cluster
 	kubectl config use-context k3d-other
-	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
-	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl -n $(KUBE_NAMESPACE) apply --force -f-
+	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl apply --force -f-
 else
 	k3d cluster delete other
 endif

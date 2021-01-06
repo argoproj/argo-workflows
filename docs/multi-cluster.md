@@ -1,5 +1,7 @@
 # Multi-Cluster, Multi-Namespace Workflows
 
+> v3.0 and after
+
 You can execute workflows where some pods run in clusters or namespaces other than the cluster the controller is installed in.
 
 ## Considerations 
@@ -10,9 +12,11 @@ Do not use this feature as a way to have single Argo Workflows installation mana
 
 This mode only listens to workflows within the controller's cluster. You cannot create workflows in other clusters - you must install a workflow controller in every cluster you create workflows in.
 
-### Typically, Not Suitable With Managed Namespace Install
+### Othogonal Managed Namespace Install
 
-This feature is orthogonal to managed namespaces. If you install in namespace-mode but configure multiple clusters - you can only run manage workflow pods in the namespace with exactly the same name, regardless of cluster.
+This feature is orthogonal to managed namespaces. If you install in namespace-mode but configure multiple clusters/namespaces, you will be able to run workflow pods in other clusters/namespaces.
+
+This might not have been your original intention.
 
 ### Networking
 

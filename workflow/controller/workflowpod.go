@@ -417,11 +417,6 @@ func (woc *wfOperationCtx) enforceClusterNamespaceAccessControl(clusterName wfv1
 	if woc.controller.podInformerX(clusterName, namespace) == nil {
 		return fmt.Errorf(`cluster-namespace "%s/%s" not configured`, clusterName, namespace)
 	}
-
-	// this is a check both for miss-configuration and a permission denied,
-	if woc.controller.managedNamespace != "" && woc.controller.managedNamespace != namespace {
-		return fmt.Errorf(`access denied to un-managed namespace "%s"`, namespace)
-	}
 	return nil
 }
 

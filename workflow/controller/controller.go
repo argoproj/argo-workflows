@@ -128,6 +128,11 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	if err != nil {
 		return nil, err
 	}
+
+	for key := range restConfigs {
+		log.WithField("clusterNamespace", key).Info()
+	}
+
 	wfc := WorkflowController{
 		restConfig:                 restConfigs,
 		kubeclientset:              kubeclientsets,
@@ -779,12 +784,15 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	})
 	finalizeWorkflow := func(obj interface{}) {
 		err := func() error {
-			key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			workflowNamespace,workflowName, _ := cache.SplitMetaNamespaceKey(key)
+			wf, err := util.FromUnstructured(obj.(*unstructured.Unstructured))
+			if err != nil {
+				return fmt.Errorf("failed to convert from unstructured: %w", err)
+			}
 			propagationBackground := metav1.DeletePropagationBackground
-			for clusterNamespace, k := range wfc.kubeclientset {
+			key := wf.Namespace + "/" + wf.Name
+			for clusterNamespace := range wfc.podInformer {
 				clusterName, namespace := clusterNamespace.Split()
-				err := k.CoreV1().Pods(namespace).DeleteCollection(
+				err := wfc.kubeclientsetX(clusterName, namespace).CoreV1().Pods(namespace).DeleteCollection(
 					&metav1.DeleteOptions{
 						PropagationPolicy: &propagationBackground,
 					},
@@ -792,8 +800,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 						LabelSelector: labels.NewSelector().
 							Add(wfc.clusterNameRequirement(clusterName)).
 							Add(wfc.instanceIdRequirement()).
-							Add(util.WorkflowNamespaceRequirement(workflowNamespace)).
-							Add(util.WorkflowNameRequirement(workflowName)).
+							Add(util.WorkflowNamespaceRequirement(wf.GetNamespace())).
+							Add(util.WorkflowNameRequirement(wf.GetName())).
 							String(),
 					},
 				)
@@ -801,7 +809,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					return fmt.Errorf("failed to delete pods from %s for %s: %w", clusterName, key, err)
 				}
 			}
-			_, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(workflowNamespace).Patch(workflowName, types.MergePatchType, []byte(`{"metadata": {"finalizers": []}}`))
+			_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(wf.Name, types.MergePatchType, []byte(`{"metadata": {"finalizers": []}}`))
 			if err != nil {
 				return fmt.Errorf("failed to remove finalizer from %s: %w", key, err)
 			}

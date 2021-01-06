@@ -4,6 +4,7 @@ metadata:
   name: workflow-controller-configmap
 data:
   containerRuntimeExecutor: pns
+  clusterName: main
   executor: |
     imagePullPolicy: IfNotPresent
     resources:
