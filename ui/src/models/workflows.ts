@@ -530,8 +530,8 @@ export interface NodeStatus {
      */
     templateScope?: string;
 
-    namespace?: string;
     clusterName?: string;
+    namespace?: string;
 
     /**
      * HostNodeName name of the Kubernetes node on which the Pod is running, if applicable.

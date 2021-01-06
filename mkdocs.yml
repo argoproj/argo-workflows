@@ -43,7 +43,6 @@ nav:
           - artifact-repository-ref.md
           - resource-duration.md
           - estimated-duration.md
-          - security.md
           - workflow-pod-security-context.md
           - progress.md
           - workflow-creator.md
@@ -67,6 +66,7 @@ nav:
           - resuming-workflow-via-automation.md
           - multi-cluster.md
           - async-pattern.md
+          - security.md
       - ide-setup.md
       - Examples: examples/README.md
       - Field Reference: fields.md
