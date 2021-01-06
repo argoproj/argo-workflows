@@ -85,7 +85,7 @@ export const Utils = {
         return localStorage.getItem('current_namespace');
     },
 
-    // return a namespace, never return null/undefined, defaults to "deafult"
+    // return a namespace, never return null/undefined, defaults to "default"
     getNamespace(namespace: string): string {
         return namespace || localStorage.getItem('current_namespace') || 'default';
     }
