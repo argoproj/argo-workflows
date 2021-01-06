@@ -11,7 +11,7 @@ func TestMetaPodPhaseIndexFunc(t *testing.T) {
 	t.Run("NoPhase", func(t *testing.T) {
 		values, err := PodPhaseIndexFunc()(&corev1.Pod{})
 		assert.NoError(t, err)
-		assert.Empty(t, values)
+		assert.Equal(t, []string{""}, values)
 	})
 	t.Run("Phase", func(t *testing.T) {
 		values, err := PodPhaseIndexFunc()(&corev1.Pod{
