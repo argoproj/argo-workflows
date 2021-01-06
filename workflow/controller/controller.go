@@ -190,7 +190,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	defer wfc.podCleanupQueue.ShutDown()
 
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
-	log.Infof("Workers: workflow: %d,  pod cleanup: %d", wfWorkers, podCleanupWorkers)
+	log.Infof("Workers: workflow: %d, pod cleanup: %d", wfWorkers, podCleanupWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -329,12 +329,9 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	return nil
 }
 
-func (wfc *WorkflowController) thisCluster() wfv1.ClusterName {
-	return wfc.Config.ClusterName
-}
-
-func (wfc *WorkflowController) thisClusterNamespace() wfv1.ClusterNamespaceKey {
-	return wfv1.NewClusterNamespaceKey(wfc.thisCluster(), wfc.managedNamespace)
+// system client - used for reading configuration etc
+func (wfc *WorkflowController) kubeclientset0() kubernetes.Interface {
+	return wfc.kubeclientset[wfv1.NewClusterNamespaceKey(wfc.Config.ClusterName, apiv1.NamespaceAll)]
 }
 
 func (wfc *WorkflowController) kubeclientsetX(clusterName wfv1.ClusterName, namespace string) kubernetes.Interface {
@@ -342,11 +339,6 @@ func (wfc *WorkflowController) kubeclientsetX(clusterName wfv1.ClusterName, name
 		return x
 	}
 	return wfc.kubeclientset[wfv1.NewClusterNamespaceKey(clusterName, apiv1.NamespaceAll)]
-}
-
-// `0` - system kubeclient, used for reading configuration
-func (wfc *WorkflowController) kubeclientset0() kubernetes.Interface {
-	return wfc.kubeclientset[wfv1.NewClusterNamespaceKey(wfc.thisCluster(), apiv1.NamespaceAll)]
 }
 
 func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, namespace string) *rest.Config {
@@ -788,10 +780,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	finalizeWorkflow := func(obj interface{}) {
 		err := func() error {
 			key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+			workflowNamespace,workflowName, _ := cache.SplitMetaNamespaceKey(key)
 			propagationBackground := metav1.DeletePropagationBackground
 			for clusterNamespace, k := range wfc.kubeclientset {
-				clusterName, _ := clusterNamespace.Split()
+				clusterName, namespace := clusterNamespace.Split()
 				err := k.CoreV1().Pods(namespace).DeleteCollection(
 					&metav1.DeleteOptions{
 						PropagationPolicy: &propagationBackground,
@@ -800,7 +792,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 						LabelSelector: labels.NewSelector().
 							Add(wfc.clusterNameRequirement(clusterName)).
 							Add(wfc.instanceIdRequirement()).
-							Add(util.WorkflowNameRequirement(name)).
+							Add(util.WorkflowNamespaceRequirement(workflowNamespace)).
+							Add(util.WorkflowNameRequirement(workflowName)).
 							String(),
 					},
 				)
@@ -808,7 +801,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					return fmt.Errorf("failed to delete pods from %s for %s: %w", clusterName, key, err)
 				}
 			}
-			_, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Patch(name, types.MergePatchType, []byte(`{"metadata": {"finalizers": []}}`))
+			_, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(workflowNamespace).Patch(workflowName, types.MergePatchType, []byte(`{"metadata": {"finalizers": []}}`))
 			if err != nil {
 				return fmt.Errorf("failed to remove finalizer from %s: %w", key, err)
 			}
@@ -893,7 +886,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 }
 func (wfc *WorkflowController) newWorkflowPodWatch(clusterNamespace wfv1.ClusterNamespaceKey) *cache.ListWatch {
 	clusterName, namespace := clusterNamespace.Split()
-	c := wfc.kubeclientsetX(clusterName,namespace).CoreV1().Pods(namespace)
+	c := wfc.kubeclientsetX(clusterName, namespace).CoreV1().Pods(namespace)
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
@@ -917,7 +910,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch(clusterNamespace wfv1.Cluster
 }
 
 func (wfc *WorkflowController) clusterNameRequirement(clusterName wfv1.ClusterName) v1Label.Requirement {
-	return util.ClusterNameRequirement(clusterName, wfc.thisCluster())
+	return util.ClusterNameRequirement(clusterName, wfc.Config.ClusterName)
 }
 
 func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {

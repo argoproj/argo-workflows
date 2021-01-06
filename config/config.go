@@ -98,9 +98,6 @@ type Config struct {
 
 	// The name of the cluster, mandatory for multi-cluster set-up.
 	ClusterName wfv1.ClusterName `json:"clusterName,omitempty"`
-
-	// A map of cluster namespace and the Kubernetes REST config to use for that cluster namespace.
-	Clusters map[wfv1.ClusterNamespaceKey]string `json:"clusters,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

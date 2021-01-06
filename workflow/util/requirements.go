@@ -10,15 +10,20 @@ import (
 
 func ClusterNameRequirement(a, b wfv1.ClusterName) labels.Requirement {
 	if a != b {
-		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.Equals, []string{string(b)})
+		r, _ := labels.NewRequirement(common.LabelKeyWorkflowClusterName, selection.Equals, []string{string(b)})
 		return *r
 	} else {
-		r, _ := labels.NewRequirement(common.LabelKeyClusterName, selection.DoesNotExist, nil)
+		r, _ := labels.NewRequirement(common.LabelKeyWorkflowClusterName, selection.DoesNotExist, nil)
 		return *r
 	}
 }
 
-func WorkflowNameRequirement(workflowName string) labels.Requirement {
-	r, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Equals, []string{workflowName})
+func WorkflowNamespaceRequirement(namespace string) labels.Requirement {
+	r, _ := labels.NewRequirement(common.LabelKeyWorkflowNamespace, selection.Equals, []string{namespace})
+	return *r
+}
+
+func WorkflowNameRequirement(name string) labels.Requirement {
+	r, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Equals, []string{name})
 	return *r
 }

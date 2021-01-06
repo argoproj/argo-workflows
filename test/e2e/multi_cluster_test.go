@@ -98,7 +98,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "access denied for namespace \"argo\" to cluster-namespace \"denied/argo\"", status.Message)
+			assert.Equal(t, "cluster-namespace \"denied/argo\" not configured", status.Message)
 		})
 }
 
@@ -123,7 +123,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "access denied to cluster-namespace \"not-found/argo\"", status.Message)
+			assert.Equal(t, "cluster-namespace \"not-found/argo\" not configured", status.Message)
 		})
 }
 

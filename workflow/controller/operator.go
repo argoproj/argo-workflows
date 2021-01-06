@@ -1049,7 +1049,9 @@ func (woc *wfOperationCtx) getAllWorkflowPods() (map[wfv1.ClusterName][]*apiv1.P
 	pods := make(map[wfv1.ClusterName][]*apiv1.Pod)
 	for clusterNamespace, i := range woc.controller.podInformer {
 		clusterName, _ := clusterNamespace.Split()
-		pods[clusterName] = make([]*apiv1.Pod, 0)
+		if _, exists := pods[clusterName]; !exists {
+			pods[clusterName] = make([]*apiv1.Pod, 0)
+		}
 		objs, err := i.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 		if err != nil {
 			return nil, err
@@ -1156,8 +1158,8 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, pod *a
 		}
 	}
 
-	node.ClusterName = wfv1.ClusterNameOtherAsEmpty(clusterName, woc.thisCluster())
-	node.Namespace = wfv1.NamespaceOtherAsEmpty(pod.Namespace, woc.wf.Namespace)
+	node.ClusterName = wfv1.ClusterNameIfDiff(clusterName, woc.clusterName())
+	node.Namespace = wfv1.NamespaceIfDiff(pod.Namespace, woc.wf.Namespace)
 
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
@@ -1372,8 +1374,8 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	return wfv1.NodeSucceeded, ""
 }
 
-func (woc *wfOperationCtx) thisCluster() wfv1.ClusterName {
-	return woc.controller.thisCluster()
+func (woc *wfOperationCtx) clusterName() wfv1.ClusterName {
+	return woc.controller.Config.ClusterName
 }
 
 func (woc *wfOperationCtx) createPVCs() error {

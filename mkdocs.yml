@@ -78,9 +78,6 @@ nav:
           - argo archive list: cli/argo_archive_list.md
           - argo auth: cli/argo_auth.md
           - argo auth token: cli/argo_auth_token.md
-          - argo cluster: cli/argo_cluster.md
-          - argo cluster add: cli/argo_cluster_add.md
-          - argo cluster rm: cli/argo_cluster_rm.md
           - argo cluster-template: cli/argo_cluster-template.md
           - argo cluster-template create: cli/argo_cluster-template_create.md
           - argo cluster-template delete: cli/argo_cluster-template_delete.md
@@ -102,6 +99,9 @@ nav:
           - argo list: cli/argo_list.md
           - argo logs: cli/argo_logs.md
           - argo node: cli/argo_node.md
+          - argo rest-config: cli/argo_rest-config.md
+          - argo rest-config add: cli/argo_rest-config_add.md
+          - argo rest-config rm: cli/argo_rest-config_rm.md
           - argo resubmit: cli/argo_resubmit.md
           - argo resume: cli/argo_resume.md
           - argo retry: cli/argo_retry.md

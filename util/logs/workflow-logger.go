@@ -211,7 +211,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 		}
 		for clusterName, namespaces := range wf.Status.Nodes.GetClusterNamespaces() {
 			for namespace := range namespaces {
-				logClusterNamespace(wfv1.ClusterNameOrOther(clusterName, thisClusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOrOther(namespace, wf.Namespace))
+				logClusterNamespace(wfv1.ClusterNameOr(clusterName, thisClusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOr(namespace, wf.Namespace))
 			}
 		}
 		return nil

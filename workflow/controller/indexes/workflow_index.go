@@ -19,7 +19,7 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	if !ok {
 		return nil, nil
 	}
-	namespace := wfv1.NamespaceOrOther(m.GetLabels()[common.LabelKeyWorkflowNamespace], m.GetNamespace())
+	namespace := wfv1.NamespaceOr(m.GetLabels()[common.LabelKeyWorkflowNamespace], m.GetNamespace())
 	return []string{WorkflowIndexValue(namespace, name)}, nil
 }
 

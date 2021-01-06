@@ -101,7 +101,6 @@ argo [flags]
 
 * [argo archive](argo_archive.md)	 - 
 * [argo auth](argo_auth.md)	 - 
-* [argo cluster](argo_cluster.md)	 - 
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
 * [argo cron](argo_cron.md)	 - manage cron workflows
@@ -113,6 +112,7 @@ NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
 * [argo list](argo_list.md)	 - list workflows
 * [argo logs](argo_logs.md)	 - view logs of a pod or workflow
 * [argo node](argo_node.md)	 - perform action on a node in a workflow
+* [argo rest-config](argo_rest-config.md)	 - 
 * [argo resubmit](argo_resubmit.md)	 - resubmit one or more workflows
 * [argo resume](argo_resume.md)	 - resume zero or more workflows
 * [argo retry](argo_retry.md)	 - retry zero or more workflows

@@ -132,8 +132,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
-	clusterName := wfv1.ClusterNameOrOther(tmpl.ClusterName, woc.controller.thisCluster())
-	namespace := wfv1.NamespaceOrOther(tmpl.Namespace, woc.wf.Namespace)
+	clusterName := wfv1.ClusterNameOr(tmpl.ClusterName, woc.clusterName())
+	namespace := wfv1.NamespaceOr(tmpl.Namespace, woc.wf.Namespace)
 
 	err := woc.enforceClusterNamespaceAccessControl(clusterName, namespace)
 	if err != nil {
@@ -210,12 +210,16 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		},
 	}
 
-	if clusterName == woc.thisCluster() {
-		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
-			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+	if clusterName == woc.clusterName() && namespace == woc.wf.Namespace {
+		pod.SetOwnerReferences([]metav1.OwnerReference{*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))})
+	} else {
+		if clusterName != woc.clusterName() {
+			pod.Labels[common.LabelKeyWorkflowClusterName] = string(woc.clusterName())
+		}
+		if namespace != woc.wf.Namespace {
+			pod.Labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
 		}
 	}
-
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
 		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
@@ -245,14 +249,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	if clusterName != woc.thisCluster() {
-		pod.Labels[common.LabelKeyClusterName] = string(woc.thisCluster())
-	}
-
-	if namespace != woc.wf.Namespace {
-		// Only annotate if not the same as the workflow. This is important for historical reasons.
-		pod.Labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
-	}
 
 	err = woc.setupServiceAccount(clusterName, pod, tmpl)
 	if err != nil {
@@ -419,7 +415,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 func (woc *wfOperationCtx) enforceClusterNamespaceAccessControl(clusterName wfv1.ClusterName, namespace string) error {
 	if woc.controller.podInformerX(clusterName, namespace) == nil {
-		return fmt.Errorf(`cluster-namespace "%s/%s not configured"`, clusterName, namespace)
+		return fmt.Errorf(`cluster-namespace "%s/%s" not configured`, clusterName, namespace)
 	}
 
 	// this is a check both for miss-configuration and a permission denied,

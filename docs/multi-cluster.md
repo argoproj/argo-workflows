@@ -16,13 +16,15 @@ This feature is orthogonal to managed namespaces. If you install in namespace-mo
 
 ### Networking
 
-To start pods in another cluster you have one options:
-
-1. Enable access to the **Kubernetes API** from your main cluster to your target cluster (simple, but less secure).
+To start pods in another cluster you need to enable access to the Kubernetes API from your main cluster to your other cluster.
 
 As you need to communicate cross-cluster - you'll be connecting across security groups. Consider how you set this up. 
 
 This may not be allowed in some organisations.
+
+## Cluster Name
+
+You'll need to define a **unique name** for each main cluster you'll be running multi-cluster workflows. It is worthwhile coming up with a naming scheme before you start that can give every cluster a unique name within your organization.  
 
 ## Usage
 
@@ -34,7 +36,7 @@ To make the workflow controller aware of other clusters and able to connect to t
 kubectl -n argo create secret generic rest-config
 ```
 
-This needs to be populated with one entry per cluster/namespace (namespace can be empty for all namespaces), e.g.:
+This needs to be populated with one entry per cluster/namespace (namespace can be the empty string for all namespaces), e.g.:
 
 ```yaml
 apiVersion: v1
@@ -83,8 +85,10 @@ To manually configure a cluster, take the following example JSON, enter your val
 Alternatively, download the KUBECONFIG into your local `~/.kube/config` and add it as follows:
 
 ```bash
-argo cluster add my-other-cluster-name my-context-name 
+argo cluster add other. my-context-name 
 ```
+
+Note the trailing dot on `other.` indicating this is cluster-scoped.
 
 Finally, restart the workflow controller.
 

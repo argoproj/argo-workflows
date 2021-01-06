@@ -53,17 +53,6 @@ const (
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 
-	// LabelKeyNamespaceName is used to identify the namespace of the workflow that created a pod.
-	// If this is absent, then it is the same as the workflow.
-	LabelKeyWorkflowNamespace = workflow.WorkflowFullName + "/workflow-namespace"
-	// LabelKeyClusterName is used to label pods in other clusters created by this controller.
-	// It is similar to instance ID.
-	// * If a pod is unlabelled in my cluster, it is mine.
-	// * If a pod is labelled in my cluster, it is someone else's (I should ignore it).
-	// * If a pod is unlabelled in another cluster, it is theirs (I should ignore it).
-	// * If a pod is labelled in another cluster AND it has my label, it is mine.
-	// Cluster names therefore must be unique amongst the group of clusters.
-	LabelKeyClusterName = workflow.WorkflowFullName + "/workflow-cluster-name"
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
@@ -80,7 +69,14 @@ const (
 	// * `Archived` - has been archived
 	// See also `LabelKeyCompleted`.
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
-	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
+	// LabelKeyWorkflowClusterName is used to label pods by a workflow in a different cluster to the pod. Otherwise, it is omitted.
+	// If this label exists, then the pod cannot/will not have an ownership reference.
+	LabelKeyWorkflowClusterName = workflow.WorkflowFullName + "/workflow-cluster-name"
+	// LabelKeyNamespaceName is used to label a pod when it is created in a different namespace to the workflow. Otherwise, it is omitted.
+	// If this label exists, then the pod cannot/will not have an ownership reference.
+	LabelKeyWorkflowNamespace = workflow.WorkflowFullName + "/workflow-namespace"
+	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name.
+	// The workflow might be in a different namespace or cluster, see LabelKeyWorkflowClusterName and LabelKeyWorkflowNamespace.
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
