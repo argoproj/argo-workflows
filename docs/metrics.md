@@ -23,8 +23,13 @@ best way to define metrics in Argo to avoid problems such as [cardinality explos
 
 There are two kinds of metrics emitted by Argo: **controller metrics** and **custom metrics**.
 
-* Controller metrics are metrics that inform on the state of the controller; i.e., they answer the question "What is the state of the controller right now?".
-* Custom metrics are metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
+#### Controller metrics 
+Metrics that inform on the state of the controller; i.e., they answer the question "What is the state of the controller right now?"
+Default controller metrics can be scraped from service ```workflow-controller-metrics``` at the endpoint ```<host>:9090/metrics```
+ 
+
+#### Custom metrics 
+Metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
 
 Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible
 for emitting metrics correctly.

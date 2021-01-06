@@ -113,6 +113,62 @@ func TestNodes_Any(t *testing.T) {
 	assert.True(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "foo" }))
 }
 
+func TestNodes_Children(t *testing.T) {
+	var nodes = Nodes{
+		"node_0": NodeStatus{Name: "node_0", Phase: NodeFailed, Children: []string{"node_1", "node_2"}},
+		"node_1": NodeStatus{Name: "node_1", Phase: NodeFailed, Children: []string{}},
+		"node_2": NodeStatus{Name: "node_2", Phase: NodeRunning, Children: []string{}},
+	}
+	t.Run("Found", func(t *testing.T) {
+		ret := nodes.Children("node_0")
+		assert.Equal(t, len(ret), 2)
+		assert.Equal(t, ret["node_1"].Name, "node_1")
+		assert.Equal(t, ret["node_2"].Name, "node_2")
+	})
+	t.Run("NotFound", func(t *testing.T) {
+		assert.Empty(t, nodes.Children("node_1"))
+	})
+	t.Run("Empty", func(t *testing.T) {
+		assert.Empty(t, Nodes{}.Children("node_1"))
+	})
+}
+
+func TestNodes_Filter(t *testing.T) {
+	var nodes = Nodes{
+		"node_1": NodeStatus{ID: "node_1", Phase: NodeFailed},
+		"node_2": NodeStatus{ID: "node_2", Phase: NodeRunning},
+		"node_3": NodeStatus{ID: "node_3", Phase: NodeFailed},
+	}
+	t.Run("Empty", func(t *testing.T) {
+		assert.Empty(t, Nodes{}.Filter(func(x NodeStatus) bool { return x.Phase == NodeError }))
+	})
+	t.Run("NotFound", func(t *testing.T) {
+		assert.Empty(t, nodes.Filter(func(x NodeStatus) bool { return x.Phase == NodeError }))
+	})
+	t.Run("Found", func(t *testing.T) {
+		n := nodes.Filter(func(x NodeStatus) bool { return x.Phase == NodeFailed })
+		assert.Equal(t, len(n), 2)
+		assert.Equal(t, n["node_1"].ID, "node_1")
+		assert.Equal(t, n["node_3"].ID, "node_3")
+	})
+}
+
+//Map(f func(x NodeStatus) interface{}) map[string]interface{} {
+func TestNodes_Map(t *testing.T) {
+	var nodes = Nodes{
+		"node_1": NodeStatus{ID: "node_1", HostNodeName: "host_1"},
+		"node_2": NodeStatus{ID: "node_2", HostNodeName: "host_2"},
+	}
+	t.Run("Empty", func(t *testing.T) {
+		assert.Empty(t, Nodes{}.Map(func(x NodeStatus) interface{} { return x.HostNodeName }))
+	})
+	t.Run("Exist", func(t *testing.T) {
+		n := nodes.Map(func(x NodeStatus) interface{} { return x.HostNodeName })
+		assert.Equal(t, n["node_1"], "host_1")
+		assert.Equal(t, n["node_2"], "host_2")
+	})
+}
+
 func TestResourcesDuration_String(t *testing.T) {
 	assert.Empty(t, ResourcesDuration{}.String(), "empty")
 	assert.Equal(t, "1s*(100Mi memory)", ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "memory")
