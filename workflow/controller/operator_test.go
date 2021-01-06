@@ -5524,3 +5524,69 @@ func TestParamAggregation(t *testing.T) {
 		}
 	}
 }
+func TestRetryOnDiffHost(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wf := unmarshalWF(helloWorldWf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	// Verify that there are no nodes in the wf status.
+	assert.Empty(t, woc.wf.Status.Nodes)
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+
+	hostSelector := "kubernetes.io/hostname"
+	retries := wfv1.RetryStrategy{}
+	retries.Affinity = &wfv1.RetryAffinity{
+		NodeAntiAffinity: &wfv1.RetryNodeAntiAffinity{},
+	}
+
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	assert.Nil(t, lastChild)
+
+	// Add child node.
+	childNode := fmt.Sprintf("child-node-%d", 0)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	woc.addChildNode(nodeName, childNode)
+
+	n := woc.wf.GetNodeByName(nodeName)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
+	assert.NotNil(t, lastChild)
+
+	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
+	_, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	n = woc.wf.GetNodeByName(nodeName)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Ensure related fields are not set
+	assert.Equal(t, lastChild.HostNodeName, "")
+
+	// Set host name
+	n = woc.wf.GetNodeByName(nodeName)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
+	lastChild.HostNodeName = "test-fail-hostname"
+	woc.wf.Status.Nodes[lastChild.ID] = *lastChild
+
+	tmpl := &wfv1.Template{}
+	tmpl.RetryStrategy = &retries
+	RetryOnDifferentHost(nodeID)(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, tmpl)
+	assert.NotNil(t, tmpl.Affinity)
+
+	// Verify if template's Affinity has the right value
+	targetNodeSelectorRequirement :=
+		tmpl.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{lastChild.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}

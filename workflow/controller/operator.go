@@ -1719,6 +1719,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 
+			// It has to be one child at least
+			if lastChildNode != nil {
+				RetryOnDifferentHost(retryNodeName)(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
+			}
+
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
 			if processedTmpl.IsPodType() {
