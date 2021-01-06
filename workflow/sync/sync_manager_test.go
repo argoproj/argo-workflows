@@ -660,5 +660,4 @@ func TestMutexWfLevel(t *testing.T) {
 		assert.Len(t, mutex.mutex.pending.items, 0)
 
 	})
-
 }
