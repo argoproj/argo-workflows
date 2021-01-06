@@ -68,11 +68,6 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                 <Layout
                     navItems={[
                         {
-                            title: 'Events',
-                            path: eventsUrl + '/' + namespace,
-                            iconClassName: 'fa fa-broadcast-tower'
-                        },
-                        {
                             title: 'Workflows',
                             path: workflowsUrl + '/' + namespace,
                             iconClassName: 'fa fa-stream'
@@ -91,6 +86,11 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             title: 'Cron Workflows',
                             path: cronWorkflowsUrl + '/' + namespace,
                             iconClassName: 'fa fa-clock'
+                        },
+                        {
+                            title: 'Events',
+                            path: eventsUrl + '/' + namespace,
+                            iconClassName: 'fa fa-broadcast-tower'
                         },
                         {
                             title: 'Workflow Event Bindings',

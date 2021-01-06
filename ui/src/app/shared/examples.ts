@@ -1,6 +1,6 @@
 import {ClusterWorkflowTemplate, CronWorkflow, Template, Workflow, WorkflowTemplate} from '../../models';
 
-export const randomSillyName = () => {
+const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely', 'sparkly', 'omniscient'];
     const nouns = ['rhino', 'python', 'bear', 'dragon', 'octopus', 'tiger', 'whale', 'poochenheimer'];
     const random = (array: string[]) => array[Math.floor(Math.random() * array.length)];
@@ -14,7 +14,7 @@ const labels = {example: 'true'};
 const ttlStrategy = {secondsAfterCompletion: 5 * 60};
 const podGC = {strategy: 'OnPodCompletion'};
 
-export const exampleTemplate = (name: string): Template => ({
+const exampleTemplate = (name: string): Template => ({
     name,
     inputs: {
         parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
