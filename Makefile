@@ -47,11 +47,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 
 # perform static compilation
 STATIC_BUILD          ?= true
-ifeq ($(GIT_TREE_STATE),dirty)
-STATIC_FILES          ?= false
-else
 STATIC_FILES          ?= true
-endif
 GOTEST                ?= go test
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -70,7 +66,7 @@ endif
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
 K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
-LOG_LEVEL             := info
+LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
@@ -362,7 +358,6 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 
 # generate other files for other CRDs
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
-	[ -e vendor ] || go mod vendor
 	./hack/crdgen.sh
 
 /usr/local/bin/kustomize:
@@ -411,7 +406,7 @@ dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 
 .PHONY: install
 install: dist/$(PROFILE).yaml
-	kubectl create ns $(KUBE_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
 
 .PHONY: pull-build-images
