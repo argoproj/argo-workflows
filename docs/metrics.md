@@ -61,57 +61,65 @@ a way to view and analyze historical data, consider the [workflow archive](workf
 
 ### Default Controller Metrics
 
-There are several controller-level metrics. These include:
+Metrics for the Four Golden Signals are:
 
-<!-- titles choose for deep linking -->
+* Latency: `argo_workflows_queue_latency`
+* Traffic: `argo_workflows_count` and `argo_workflows_queue_depth_count`
+* Errors: `argo_workflows_count` and `argo_workflows_error_count`
+* Saturation: `argo_workflows_workers_busy` and `argo_workflows_workflow_condition`
 
-#### workflows_processed_count
+<!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 
-A count of all Workflow updates processed by the controller.
+#### argo_pod_missing
 
-#### count
+Pods were not seen. E.g. by being deleted by Kubernetes. You should only see this under high load.
+
+!!! NOTE
+    This metric's name starts with `argo_` not `argo_workflows_`.
+
+#### argo_workflows_count
 
 Number of workflow in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
 
-#### operation_duration_seconds
-
-A histogram of durations of operations.
-
-#### error_count
+#### argo_workflows_error_count
 
 A count of certain errors incurred by the controller.
 
-#### queue_depth_count
+#### argo_workflows_k8s_request_total
 
-The depth of the queue of workflows or cron workflows to be processed by the controller.
+Number of API requests sent to the Kubernetes API.
 
-#### queue_adds_count
+#### argo_workflows_operation_duration_seconds
+
+A histogram of durations of operations.
+
+#### argo_workflows_pods_count
+
+It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done. 
+
+#### argo_workflows_queue_adds_count
 
 The number of additions to the queue of workflows or cron workflows.
 
-#### queue_latency
+#### argo_workflows_queue_depth_count
+
+The depth of the queue of workflows or cron workflows to be processed by the controller.
+
+#### argo_workflows_queue_latency
 
 The time workflows or cron workflows spend in the queue waiting to be processed.
 
-#### k8s_request_total
-
-Number of API requests sent to the Kubernetes API. 
-
-#### pod_count
-
-It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done. You should rarely see Failed or Succeeded pods in this metric. If you see them, that's probably a bug.
-
-#### workflow_conditions
-
-The number of workflow with different conditions. This will tell you the number of workflows with running pods.
-
-#### workers_busy
+#### argo_workflows_workers_busy
 
 The number of workers that are busy.
 
-#### pod_missing
+#### argo_workflows_workflow_condition
 
-Pods were not seen. E.g. by being deleted by Kubernetes. You should only see this under high load
+The number of workflow with different conditions. This will tell you the number of workflows with running pods.
+
+#### argo_workflows_workflows_processed_count
+
+A count of all Workflow updates processed by the controller.
 
 ### Metric types
 

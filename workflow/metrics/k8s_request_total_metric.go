@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 )
 
@@ -16,7 +15,7 @@ var (
 			Namespace: argoNamespace,
 			Subsystem: workflowsSubsystem,
 			Name:      "k8s_request_total",
-			Help:      "Number of kubernetes requests executed. https://argoproj.github.io/argo/metrics/#k8s_request_total",
+			Help:      "Number of kubernetes requests executed. https://argoproj.github.io/argo/metrics/#argo_workflows_k8s_request_total",
 		},
 		[]string{"kind", "verb", "status_code"},
 	)
@@ -30,7 +29,6 @@ func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 	x, err := m.roundTripper.RoundTrip(r)
 	if x != nil {
 		verb, kind := parseRequest(r)
-		log.Debugf("%s %s %v", verb, kind, x.StatusCode)
 		K8sRequestTotalMetric.WithLabelValues(kind, verb, strconv.Itoa(x.StatusCode)).Inc()
 	}
 	return x, err
