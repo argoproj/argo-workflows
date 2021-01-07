@@ -2,18 +2,15 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/klog/v2"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
@@ -92,13 +89,4 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 		labels[labelSpec[0]] = labelSpec[1]
 	}
 	return labels, nil
-}
-
-// SetGLogLevel set the glog level for the k8s go-client
-// this is taken from argoproj/pkg but uses v2 of klog here
-// to be compatible with k8s clients v0.19.x and above
-func SetGLogLevel(glogLevel int) {
-	klog.InitFlags(nil)
-	_ = flag.Set("logtostderr", "true")
-	_ = flag.Set("v", strconv.Itoa(glogLevel))
 }
