@@ -2,7 +2,6 @@ import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Observable} from 'rxjs';
 import {Sensor} from '../../../../models';
 import {kubernetes} from '../../../../models';
 import {ID} from '../../../events/components/events-details/id';
@@ -17,16 +16,10 @@ import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {EventsPanel} from '../../../workflows/components/events-panel';
-import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {SensorCreator} from '../sensor-creator';
-
-require('./sensor-list.scss');
+import {SensorLogsViewer} from '../sensor-logs-viewer';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
-
-function identity<T>(value: T) {
-    return () => value;
-}
 
 export const SensorList = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
@@ -71,30 +64,6 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
         const value = (sensors || []).find((y: {metadata: kubernetes.ObjectMeta}) => y.metadata.namespace === x.namespace && y.metadata.name === x.name);
         return {value, ...x};
     })();
-
-    const [logsObservable, setLogsObservable] = useState<Observable<string>>();
-    const [logLoaded, setLogLoaded] = useState(false);
-    useEffect(() => {
-        if (!selectedNode) {
-            return;
-        }
-        setError(null);
-        setLogLoaded(false);
-        const source = services.sensor
-            .sensorsLogs(namespace, selected.name, selected.key, '', 50)
-            .filter(e => !!e)
-            .map(
-                e =>
-                    Object.entries(e)
-                        .map(([key, value]) => key + '=' + value)
-                        .join(', ') + '\n'
-            )
-            .publishReplay()
-            .refCount();
-        const subscription = source.subscribe(() => setLogLoaded(true), setError);
-        setLogsObservable(source);
-        return () => subscription.unsubscribe();
-    }, [selectedNode]);
 
     return (
         <Page
@@ -178,57 +147,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                 {
                                     title: 'LOGS',
                                     key: 'logs',
-                                    content: (
-                                        <div>
-                                            <div className='row'>
-                                                <div className='columns small-3 medium-2'>
-                                                    <p>Triggers</p>
-                                                    <div key='all' style={{marginBottom: '1em'}}>
-                                                        <div
-                                                            key='all'
-                                                            onClick={() => {
-                                                                setSelectedNode(`${namespace}/Sensor/${selected.name}`);
-                                                            }}>
-                                                            {!selected.key && <i className='fa fa-angle-right' />}
-                                                            {!!selected.key && <span>&nbsp;&nbsp;</span>}
-                                                            <a>
-                                                                <span title='all'>all</span>
-                                                            </a>
-                                                        </div>
-                                                        {!!selected.value &&
-                                                            selected.value.spec.triggers.map(x => (
-                                                                <div
-                                                                    key={x.template.name}
-                                                                    onClick={() => {
-                                                                        setSelectedNode(`${namespace}/Trigger/${selected.name}/${x.template.name}`);
-                                                                    }}>
-                                                                    {selected.key === x.template.name && <i className='fa fa-angle-right' />}
-                                                                    {selected.key !== x.template.name && <span>&nbsp;&nbsp;</span>}
-                                                                    <a>
-                                                                        <span title={x.template.name}>{x.template.name}</span>
-                                                                    </a>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                </div>
-                                                <div className='columns small-9 medium-10' style={{height: 600}}>
-                                                    {!logLoaded ? (
-                                                        <p>
-                                                            <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
-                                                        </p>
-                                                    ) : (
-                                                        <FullHeightLogsViewer
-                                                            source={{
-                                                                key: 'logs',
-                                                                loadLogs: identity(logsObservable),
-                                                                shouldRepeat: () => false
-                                                            }}
-                                                        />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
+                                    content: <SensorLogsViewer namespace={namespace} selectedTrigger={selected.key} sensor={selected.value} onClick={setSelectedNode} />
                                 },
                                 {
                                     title: 'EVENTS',

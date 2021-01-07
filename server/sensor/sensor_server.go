@@ -6,7 +6,6 @@ import (
 	"io"
 	"regexp"
 
-	esv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -105,7 +104,7 @@ func (s *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 			if !open {
 				return io.EOF
 			}
-			es, ok := event.Object.(*esv1.Sensor)
+			es, ok := event.Object.(*sv1.Sensor)
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}

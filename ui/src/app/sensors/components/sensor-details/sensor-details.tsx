@@ -15,7 +15,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 export const SensorDetails = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {navigation, notifications} = useContext(Context);
+    const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
@@ -78,14 +78,15 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                             iconClassName: 'fa fa-trash',
                             disabled: edited,
                             action: () => {
-                                if (!confirm('Are you sure you want to delete this sensor object?\nThere is no undo.')) {
-                                    return;
-                                }
-                                services.sensor
-                                    .delete(name, namespace)
-                                    .then(() => navigation.goto(uiUrl('sensors/' + namespace)))
-                                    .then(() => setError(null))
-                                    .catch(setError);
+                                popup.confirm('Confirm', `Are you sure you want to delete this sensor object?\nThere is no undo.`).then(yes => {
+                                    if (yes) {
+                                        services.sensor
+                                            .delete(name, namespace)
+                                            .then(() => navigation.goto(uiUrl('sensors/' + namespace)))
+                                            .then(() => setError(null))
+                                            .catch(setError);
+                                    }
+                                });
                             }
                         }
                     ]
