@@ -27,15 +27,17 @@ type Controller struct {
 	wfInformer  cache.SharedIndexInformer
 	workqueue   workqueue.DelayingInterface
 	clock       clock.Clock
+	metrics     *metrics.Metrics
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics) *Controller {
 	controller := &Controller{
 		wfclientset: wfClientset,
 		wfInformer:  wfInformer,
-		workqueue:   metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
+		workqueue:   metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
 		clock:       clock.RealClock{},
+		metrics:     metrics,
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{

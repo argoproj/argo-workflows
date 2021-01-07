@@ -63,9 +63,9 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		wfQueue:              metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
-		cronWfQueue:          metrics.NewWorkQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
-		metrics:              metricsService,
+		wfQueue:              metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
+		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
 	}
 }
