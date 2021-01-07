@@ -79,6 +79,9 @@ const config = {
     historyApiFallback: {
       disableDotRule: true
     },
+    headers: {
+      'X-Frame-Options': 'SAMEORIGIN'
+    },
     proxy: {
       "/api/v1": {
         "target": isProd ? "" : "http://localhost:2746",

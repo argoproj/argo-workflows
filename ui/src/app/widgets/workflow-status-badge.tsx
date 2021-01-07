@@ -4,6 +4,7 @@ import {RouteComponentProps} from 'react-router';
 import {NodePhase} from '../../models';
 import {uiUrl} from '../shared/base';
 import {historyUrl} from '../shared/history';
+import {RetryWatch} from '../shared/retry-watch';
 import {services} from '../shared/services';
 
 require('./workflow-status-badge.scss');
@@ -23,9 +24,18 @@ export const WorkflowStatusBadge = ({history, match}: RouteComponentProps<any>) 
     const [phase, setPhase] = useState<NodePhase>('');
 
     useEffect(() => {
-        services.workflows.get(namespace, name).then(w => {
-            setPhase(w.status.phase);
-        });
+        const w = new RetryWatch(
+            () => services.workflows.watch({namespace, name}),
+            () => {
+                // noop
+            },
+            e => setPhase(e.object.status.phase),
+            () => {
+                // noop
+            }
+        );
+        w.start();
+        return () => w.stop();
     }, [namespace, name]);
 
     return (

@@ -29,7 +29,7 @@ export class ListWatch<T extends Resource> {
 
     constructor(
         list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>,
-        watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>,
+        watch: (resourceVersion?: string) => Observable<kubernetes.WatchEvent<T>>,
         onLoad: (metadata: kubernetes.ListMeta) => void, // called when the list is loaded
         onOpen: () => void, //  called, when watches is re-established after error,  so should clear any errors
         onChange: (items: T[], item?: T, type?: Type) => void, // called whenever items change, any users that changes state should use [...items]
