@@ -19,6 +19,7 @@ import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
 import {Utils} from './shared/utils';
 import userinfo from './userinfo';
+import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
@@ -65,88 +66,91 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
         <>
             {popupProps && <Popup {...popupProps} />}
             <Router history={history}>
-                <Layout
-                    navItems={[
-                        {
-                            title: 'Workflows',
-                            path: workflowsUrl + '/' + namespace,
-                            iconClassName: 'fa fa-stream'
-                        },
-                        {
-                            title: 'Workflow Templates',
-                            path: workflowTemplatesUrl + '/' + namespace,
-                            iconClassName: 'fa fa-window-maximize'
-                        },
-                        {
-                            title: 'Cluster Workflow Templates',
-                            path: clusterWorkflowTemplatesUrl,
-                            iconClassName: 'fa fa-window-restore'
-                        },
-                        {
-                            title: 'Cron Workflows',
-                            path: cronWorkflowsUrl + '/' + namespace,
-                            iconClassName: 'fa fa-clock'
-                        },
-                        {
-                            title: 'Events',
-                            path: eventsUrl + '/' + namespace,
-                            iconClassName: 'fa fa-broadcast-tower'
-                        },
-                        {
-                            title: 'Workflow Event Bindings',
-                            path: workflowsEventBindingsUrl + '/' + namespace,
-                            iconClassName: 'fa fa-cloud'
-                        },
-                        {
-                            title: 'Archived Workflows',
-                            path: archivedWorkflowsUrl + '/' + namespace,
-                            iconClassName: 'fa fa-archive'
-                        },
-                        {
-                            title: 'Reports',
-                            path: reportsUrl + '/' + namespace,
-                            iconClassName: 'fa fa-chart-bar'
-                        },
-                        {
-                            title: 'User',
-                            path: userInfoUrl,
-                            iconClassName: 'fa fa-user-alt'
-                        },
-                        {
-                            title: 'API Docs',
-                            path: apiDocsUrl,
-                            iconClassName: 'fa fa-code'
-                        },
-                        {
-                            title: 'Help',
-                            path: helpUrl,
-                            iconClassName: 'fa fa-question-circle'
-                        }
-                    ]}
-                    version={() => <>{version ? version.version : 'unknown'}</>}>
-                    <Notifications notifications={notificationsManager.notifications} />
-                    <ErrorBoundary>
-                        <Switch>
-                            <Route exact={true} strict={true} path={timelineUrl}>
-                                <Redirect to={workflowsUrl} />
-                            </Route>
-                            <Route path={eventsUrl} component={events.component} />
-                            <Route path={workflowsUrl} component={workflows.component} />
-                            <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
-                            <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
-                            <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
-                            <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
-                            <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
-                            <Route path={reportsUrl} component={reports.component} />
-                            <Route exact={true} strict={true} path={helpUrl} component={help.component} />
-                            <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
-                            <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
-                            <Route exact={true} strict={true} path={loginUrl} component={login.component} />
-                            {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
-                        </Switch>
-                    </ErrorBoundary>
-                    <ChatButton />
-                </Layout>
+                <Switch>
+                    <Route path={uiUrl('widgets')} component={Widgets} />
+                    <Layout
+                        navItems={[
+                            {
+                                title: 'Workflows',
+                                path: workflowsUrl + '/' + namespace,
+                                iconClassName: 'fa fa-stream'
+                            },
+                            {
+                                title: 'Workflow Templates',
+                                path: workflowTemplatesUrl + '/' + namespace,
+                                iconClassName: 'fa fa-window-maximize'
+                            },
+                            {
+                                title: 'Cluster Workflow Templates',
+                                path: clusterWorkflowTemplatesUrl,
+                                iconClassName: 'fa fa-window-restore'
+                            },
+                            {
+                                title: 'Cron Workflows',
+                                path: cronWorkflowsUrl + '/' + namespace,
+                                iconClassName: 'fa fa-clock'
+                            },
+                            {
+                                title: 'Events',
+                                path: eventsUrl + '/' + namespace,
+                                iconClassName: 'fa fa-broadcast-tower'
+                            },
+                            {
+                                title: 'Workflow Event Bindings',
+                                path: workflowsEventBindingsUrl + '/' + namespace,
+                                iconClassName: 'fa fa-cloud'
+                            },
+                            {
+                                title: 'Archived Workflows',
+                                path: archivedWorkflowsUrl + '/' + namespace,
+                                iconClassName: 'fa fa-archive'
+                            },
+                            {
+                                title: 'Reports',
+                                path: reportsUrl + '/' + namespace,
+                                iconClassName: 'fa fa-chart-bar'
+                            },
+                            {
+                                title: 'User',
+                                path: userInfoUrl,
+                                iconClassName: 'fa fa-user-alt'
+                            },
+                            {
+                                title: 'API Docs',
+                                path: apiDocsUrl,
+                                iconClassName: 'fa fa-code'
+                            },
+                            {
+                                title: 'Help',
+                                path: helpUrl,
+                                iconClassName: 'fa fa-question-circle'
+                            }
+                        ]}
+                        version={() => <>{version ? version.version : 'unknown'}</>}>
+                        <Notifications notifications={notificationsManager.notifications} />
+                        <ErrorBoundary>
+                            <Switch>
+                                <Route exact={true} strict={true} path={timelineUrl}>
+                                    <Redirect to={workflowsUrl} />
+                                </Route>
+                                <Route path={eventsUrl} component={events.component} />
+                                <Route path={workflowsUrl} component={workflows.component} />
+                                <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
+                                <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
+                                <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
+                                <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
+                                <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
+                                <Route path={reportsUrl} component={reports.component} />
+                                <Route exact={true} strict={true} path={helpUrl} component={help.component} />
+                                <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
+                                <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
+                                <Route exact={true} strict={true} path={loginUrl} component={login.component} />
+                                {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
+                            </Switch>
+                        </ErrorBoundary>
+                        <ChatButton />
+                    </Layout>
+                </Switch>
             </Router>
         </>
     );
