@@ -93,11 +93,7 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
             }}>
             <>
                 <ErrorNotice error={error} />
-                {!sensor ? (
-                    <Loading />
-                ) : (
-                    <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />
-                )}
+                {!sensor ? <Loading /> : <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />}
             </>
         </Page>
     );

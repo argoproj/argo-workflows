@@ -1,4 +1,4 @@
-import {ClusterWorkflowTemplate, CronWorkflow, Template, Workflow, WorkflowTemplate, Sensor} from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, Sensor, Template, Workflow, WorkflowTemplate} from '../../models';
 
 const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely', 'sparkly', 'omniscient'];
@@ -104,26 +104,26 @@ export const exampleSensor = (namespace: string): Sensor => ({
     spec: {
         dependencies: [
             {
-                name: "dep01",
-                eventSourceName: "eventSource01",
-                eventName: "event01"
+                name: 'dep01',
+                eventSourceName: 'eventSource01',
+                eventName: 'event01'
             }
         ],
-        triggers:[
+        triggers: [
             {
                 template: {
-                    name: "trigger01",
+                    name: 'trigger01',
                     k8s: {
-                        group: "argoproj.io",
-                        version: "v1alpha1",
-                        resource: "workflows",
-                        operation: "create",
+                        group: 'argoproj.io',
+                        version: 'v1alpha1',
+                        resource: 'workflows',
+                        operation: 'create',
                         source: {
                             resource: exampleWorkflow(namespace)
-                        },
-                    },
-                }   
-            },
-        ],
+                        }
+                    }
+                }
+            }
+        ]
     }
 });

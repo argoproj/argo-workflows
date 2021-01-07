@@ -2,23 +2,23 @@ import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Sensor} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
 import {Observable} from 'rxjs';
+import {Sensor} from '../../../../models';
 import {kubernetes} from '../../../../models';
+import {ID} from '../../../events/components/events-details/id';
+import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {EventsPanel} from '../../../workflows/components/events-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
-import {SensorCreator} from '../sensor-creator';
-import {Node} from '../../../shared/components/graph/types';
+import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
-import {ID} from '../../../events/components/events-details/id';
+import {SensorCreator} from '../sensor-creator';
 
 require('./sensor-list.scss');
 
@@ -54,11 +54,11 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
     // internal state
     const [error, setError] = useState<Error>();
     const [sensors, setSensors] = useState<Sensor[]>();
-    
+
     useEffect(() => {
         services.sensor
             .list(namespace)
-            .then(l => setSensors(l.items?l.items:[]))
+            .then(l => setSensors(l.items ? l.items : []))
             .then(() => setError(null))
             .catch(setError);
     }, [namespace]);
@@ -80,7 +80,8 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
         }
         setError(null);
         setLogLoaded(false);
-        const source = services.sensor.sensorsLogs(namespace, selected.name, selected.key, '', 50)
+        const source = services.sensor
+            .sensorsLogs(namespace, selected.name, selected.key, '', 50)
             .filter(e => !!e)
             .map(
                 e =>
@@ -88,7 +89,8 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                         .map(([key, value]) => key + '=' + value)
                         .join(', ') + '\n'
             )
-            .publishReplay().refCount();
+            .publishReplay()
+            .refCount();
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
@@ -119,9 +121,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
             ) : sensors.length === 0 ? (
                 <ZeroState title='No sensors'>
                     <p>You can create new sensors here.</p>
-                    <p>
-                        {learnMore}.
-                    </p>
+                    <p>{learnMore}.</p>
                 </ZeroState>
             ) : (
                 <>
@@ -147,18 +147,17 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                     <Timestamp date={s.metadata.creationTimestamp} />
                                 </div>
                                 <div className='columns small-2'>
-                                    <div onClick={e => {
-                                        e.preventDefault();
-                                        setSelectedNode(`${s.metadata.namespace}/Sensor/${s.metadata.name}`);
-                                    }}>
+                                    <div
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            setSelectedNode(`${s.metadata.namespace}/Sensor/${s.metadata.name}`);
+                                        }}>
                                         <i className='fa fa-bars' />
                                     </div>
                                 </div>
                             </Link>
                         ))}
                     </div>
-                    <p>
-                    </p>
                 </>
             )}
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
@@ -168,7 +167,8 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                 {!!selectedNode && (
                     <div>
                         <h4>
-                            Sensor/{selected.name}{selected.key?'/'+selected.key:''}
+                            Sensor/{selected.name}
+                            {selected.key ? '/' + selected.key : ''}
                         </h4>
                         <Tabs
                             navTransparent={true}
@@ -184,24 +184,31 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                                 <div className='columns small-3 medium-2'>
                                                     <p>Triggers</p>
                                                     <div key='all' style={{marginBottom: '1em'}}>
-                                                        <div key='all'
+                                                        <div
+                                                            key='all'
                                                             onClick={() => {
                                                                 setSelectedNode(`${namespace}/Sensor/${selected.name}`);
-                                                                }}>
+                                                            }}>
                                                             {!selected.key && <i className='fa fa-angle-right' />}
                                                             {!!selected.key && <span>&nbsp;&nbsp;</span>}
-                                                            <a><span title='all'>all</span></a>
+                                                            <a>
+                                                                <span title='all'>all</span>
+                                                            </a>
                                                         </div>
-                                                        {!!selected.value && selected.value.spec.triggers.map(x => (
-                                                            <div key={x.template.name}
-                                                                onClick={() => {
-                                                                    setSelectedNode(`${namespace}/Trigger/${selected.name}/${x.template.name}`);
-                                                                }}>
-                                                                {selected.key === x.template.name && <i className='fa fa-angle-right' />}
-                                                                {selected.key != x.template.name && <span>&nbsp;&nbsp;</span>}
-                                                                <a><span title={x.template.name}>{x.template.name}</span></a>
-                                                            </div>
-                                                        ))}
+                                                        {!!selected.value &&
+                                                            selected.value.spec.triggers.map(x => (
+                                                                <div
+                                                                    key={x.template.name}
+                                                                    onClick={() => {
+                                                                        setSelectedNode(`${namespace}/Trigger/${selected.name}/${x.template.name}`);
+                                                                    }}>
+                                                                    {selected.key === x.template.name && <i className='fa fa-angle-right' />}
+                                                                    {selected.key !== x.template.name && <span>&nbsp;&nbsp;</span>}
+                                                                    <a>
+                                                                        <span title={x.template.name}>{x.template.name}</span>
+                                                                    </a>
+                                                                </div>
+                                                            ))}
                                                     </div>
                                                 </div>
                                                 <div className='columns small-9 medium-10' style={{height: 600}}>
@@ -218,7 +225,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                                             }}
                                                         />
                                                     )}
-                                                </div>                     
+                                                </div>
                                             </div>
                                         </div>
                                     )
