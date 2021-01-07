@@ -170,7 +170,7 @@ var indexers = cache.Indexers{
 	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
 	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
-	indexes.PhaseIndex:                   indexes.MetaWorkflowPhaseIndexFunc(),
+	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
 	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
 }
 
@@ -984,10 +984,9 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
 }
 
-func (wfc *WorkflowController) syncMetrics() {
-	indexer := wfc.wfInformer.GetIndexer()
+func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
-		keys, err := indexer.IndexKeys(indexes.PhaseIndex, string(phase))
+		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
 		errors.CheckError(err)
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(keys))
 	}
@@ -995,20 +994,15 @@ func (wfc *WorkflowController) syncMetrics() {
 		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionTrue},
 		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
 	} {
-		keys, err := indexer.IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
+		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
 		errors.CheckError(err)
 		metrics.WorkflowConditionMetric.WithLabelValues(string(x.Type), string(x.Status)).Set(float64(len(keys)))
-	}
-	for _, phase := range []apiv1.PodPhase{apiv1.PodPending, apiv1.PodRunning, apiv1.PodSucceeded, apiv1.PodFailed, apiv1.PodUnknown} {
-		keys, err := wfc.podInformer.GetIndexer().IndexKeys(indexes.PhaseIndex, string(phase))
-		errors.CheckError(err)
-		metrics.PodCountMetric.WithLabelValues(string(phase)).Set(float64(len(keys)))
 	}
 }
 
 func (wfc *WorkflowController) syncPodPhaseMetrics() {
 	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
-		objs, err := wfc.podInformer.GetIndexer().ByIndex(indexes.PodPhaseIndex, string(phase))
+		objs, err := wfc.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
 		if err != nil {
 			log.WithError(err).Error("failed to list active pods")
 			return

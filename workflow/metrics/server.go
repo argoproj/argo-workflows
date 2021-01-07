@@ -50,7 +50,7 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 	go func() {
 		log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
 		if err := srv.ListenAndServe(); err != nil {
-			log.Error(err) // can happen normally too
+			panic(err)
 		}
 	}()
 
@@ -72,9 +72,7 @@ func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	m.logMetric.Describe(ch)
 	WorkflowConditionMetric.Describe(ch)
 	PodMissingMetric.Describe(ch)
-	PodCountMetric.Describe(ch)
 	K8sRequestTotalMetric.Describe(ch)
-	WorkersBusyMetric.Describe(ch)
 }
 
 func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
@@ -84,9 +82,7 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	m.logMetric.Collect(ch)
 	WorkflowConditionMetric.Collect(ch)
 	PodMissingMetric.Collect(ch)
-	PodCountMetric.Collect(ch)
 	K8sRequestTotalMetric.Collect(ch)
-	WorkersBusyMetric.Collect(ch)
 }
 
 func (m *Metrics) garbageCollector(ctx context.Context) {
