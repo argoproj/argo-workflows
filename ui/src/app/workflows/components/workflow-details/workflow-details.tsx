@@ -25,8 +25,8 @@ import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowSummaryPanel} from '../workflow-summary-panel';
 import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
+import {WidgetGallery} from './widget-gallery';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
-import {WidgetGallery} from "./widget-gallery";
 
 require('./workflow-details.scss');
 
@@ -161,7 +161,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                             <WorkflowArtifacts workflow={workflow} archived={false} />
                             <WorkflowResourcePanel workflow={workflow} />
                             <h5>Widget Gallery</h5>
-                            <WidgetGallery namespace={workflow.metadata.namespace} name={workflow.metadata.name}/>
+                            <WidgetGallery namespace={workflow.metadata.namespace} name={workflow.metadata.name} />
                         </div>
                     </div>
                 )}
