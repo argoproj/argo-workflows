@@ -53,7 +53,7 @@ func NewRootCommand() *cobra.Command {
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
-			cli.SetGLogLevel(glogLevel)
+			cmdutil.SetGLogLevel(glogLevel)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
