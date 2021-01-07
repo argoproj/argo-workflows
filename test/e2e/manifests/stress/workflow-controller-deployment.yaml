@@ -7,7 +7,6 @@ spec:
     spec:
       containers:
         - name: workflow-controller
-          imagePullPolicy: Always
           args:
             - --loglevel=warn
             - --configmap=workflow-controller-configmap
@@ -16,10 +15,3 @@ spec:
             - --burst=2048
             - --qps=512
             - --workflow-workers=128
-          env:
-            - name: DEFAULT_REQUEUE_TIME
-              value: 20s
-          # allow us to run <= v2.11 images
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 8737

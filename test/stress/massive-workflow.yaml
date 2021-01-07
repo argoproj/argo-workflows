@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: massive-workflow
+  name: massive
   labels:
     stress: "true"
 spec:
@@ -31,6 +31,7 @@ spec:
           stress: "true"
       container:
         image: argoproj/argosay:v2
+        imagePullPolicy: IfNotPresent
         resources:
           requests:
             memory: 2Mi

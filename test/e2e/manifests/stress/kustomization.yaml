@@ -4,13 +4,9 @@ kind: Kustomization
 resources:
   - ../../../../manifests/quick-start/minimal
   - ../../../../manifests/quick-start/base/prometheus
-  - ../../stress/many-massive-workflows.yaml
   - workflow-controller-pprof-service.yaml
-  - workflow-controller-pdb.yaml
-  - argo-server-pdb.yaml
 
 patchesStrategicMerge:
-  - argo-server-deployment.yaml
   - workflow-controller-deployment.yaml
 
 commonLabels:

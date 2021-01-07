@@ -26,20 +26,11 @@ IMAGE_NAMESPACE       ?= argoproj
 KUBE_NAMESPACE        ?= argo
 
 VERSION               := latest
-ifneq ($(GIT_BRANCH),HEAD)
-VERSION               := $(GIT_BRANCH)
-endif
-MANIFEST_IMAGE_TAG    := latest
 DEV_IMAGE             := true
 DOCKER_PUSH           := false
 
-ifeq ($(GIT_BRANCH),master)
-DEV_IMAGE             := false
-endif
-
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
-MANIFEST_IMAGE_TAG    := $(VERSION)
 DEV_IMAGE             := false
 endif
 
@@ -94,7 +85,6 @@ ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 override LDFLAGS += \
-  -s -w \
   -X github.com/argoproj/argo.version=$(VERSION) \
   -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
   -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
@@ -409,13 +399,12 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/image: argoproj/image: $(IMAGE_NAMESPACE)/' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
-ifeq ($(PROFILE),stress)
-	kubectl -n $(KUBE_NAMESPACE) delete wf,pod -l stress
-endif
+	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
 ifeq ($(RUN_MODE),kubernetes)
+	# scale to 2 replicas so we touch upon leader election
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
@@ -460,9 +449,6 @@ endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
 endif
-	# allow time for pods to terminate
-	sleep 20s
-	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -470,6 +456,9 @@ endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
+	# allow time for pods to terminate
+	sleep 10s
+	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 endif

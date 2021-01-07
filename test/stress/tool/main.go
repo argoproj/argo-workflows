@@ -18,7 +18,7 @@ func main() {
 	var numWorkflows int
 	var numNodes int
 	var sleep time.Duration
-	flag.IntVar(&numWorkflows, "workflows", 1000, "Number of workflows to run")
+	flag.IntVar(&numWorkflows, "workflows", 100, "Number of workflows to run")
 	flag.IntVar(&numNodes, "nodes", 2, "Number of nodes to run")
 	flag.DurationVar(&sleep, "sleep", 30*time.Second, "How long each node should sleep")
 	flag.Parse()
@@ -31,15 +31,10 @@ func main() {
 	}
 	config.QPS = 512
 	namespace, _, _ := kubeConfig.Namespace()
-	w := versioned.NewForConfigOrDie(config)
-	workflows := w.ArgoprojV1alpha1().Workflows(namespace)
-	err = workflows.DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: "stress"})
-	if err != nil {
-		panic(err)
-	}
+	w := versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
 	log.Infof("creating %d workflows", numWorkflows)
 	for i := 0; i < numWorkflows; i++ {
-		_, err := workflows.Create(&wfv1.Workflow{
+		_, err := w.Create(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "stress-",
 				Labels: map[string]string{
@@ -56,7 +51,7 @@ func main() {
 						{Name: "sleep", Value: wfv1.AnyStringPtr(sleep)},
 					},
 				},
-				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "massive-workflow"},
+				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "massive"},
 			},
 		})
 		if err != nil {

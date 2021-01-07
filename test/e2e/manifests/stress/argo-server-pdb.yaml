@@ -1,9 +1,0 @@
-apiVersion: policy/v1beta1
-kind: PodDisruptionBudget
-metadata:
-  name: argo-server
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: argo-server
