@@ -43,7 +43,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
     }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, archived]);
 
     const podNameOptions = [{value: '', title: 'All'}].concat(
-        Object.values(workflow.status.nodes)
+        Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
             .map(x => ({value: x.id, title: x.displayName || x.name}))
     );
