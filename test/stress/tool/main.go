@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-
-	// _ "k8s.io/client-go/plugin/pkg/client/auth"
+	
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
 
