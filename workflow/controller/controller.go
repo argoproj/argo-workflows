@@ -722,7 +722,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.AddRateLimited(key)
+						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
+						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}

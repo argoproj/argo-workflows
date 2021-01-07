@@ -1,27 +1,18 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"time"
 
-	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 )
 
 func main() {
-	var numWorkflows int
-	var numNodes int
-	var sleep time.Duration
-	flag.IntVar(&numWorkflows, "workflows", 100, "Number of workflows to run")
-	flag.IntVar(&numNodes, "nodes", 2, "Number of nodes to run")
-	flag.DurationVar(&sleep, "sleep", 30*time.Second, "How long each node should sleep")
-	flag.Parse()
+
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -32,32 +23,32 @@ func main() {
 	config.QPS = 512
 	namespace, _, _ := kubeConfig.Namespace()
 	w := versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
-	log.Infof("creating %d workflows", numWorkflows)
-	for i := 0; i < numWorkflows; i++ {
-		_, err := w.Create(&wfv1.Workflow{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "stress-",
-				Labels: map[string]string{
-					"stress": "true",
-				},
-				Annotations: map[string]string{
-					"i": fmt.Sprintf("%d", i),
-				},
-			},
-			Spec: wfv1.WorkflowSpec{
-				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{
-						{Name: "nodes", Value: wfv1.AnyStringPtr(numNodes)},
-						{Name: "sleep", Value: wfv1.AnyStringPtr(sleep)},
-					},
-				},
-				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "massive"},
-			},
-		})
+
+	wf := &wfv1.Workflow{}
+	err = yaml.Unmarshal([]byte(fmt.Sprintf(`
+metadata:
+  generateName: stress-
+  labels:
+    stress: "true"
+spec:
+  arguments:
+    parameters:
+      - name: nodes
+        value: "2"
+      - name: sleep
+        value: "30s"
+  workflowTemplateRef:
+    name: massive
+`)), wf)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < 100; i++ {
+		_, err := w.Create(wf)
 		if err != nil {
 			panic(err)
 		}
-		print(i, ",")
+		print(i, " ")
 	}
-
 }
