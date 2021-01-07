@@ -371,7 +371,7 @@ manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.27.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.33.2
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -472,7 +472,7 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-cli
 test-cli:

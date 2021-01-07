@@ -65,3 +65,24 @@ func TestItem_GetStrVal(t *testing.T) {
 	val := item.GetStrVal()
 	assert.Equal(t, "foo", val)
 }
+
+var testItemStringTable = []struct {
+	name   string
+	origin interface{}
+	str    string
+}{
+	{"string", "http://www/any?query=1&query2=2", "http://www/any?query=1&query2=2"},
+	{"array", []int{1, 2, 3}, "[1,2,3]"},
+	{"number", 1.1, "1.1"},
+}
+
+func TestItem_String(t *testing.T) {
+	for _, s := range testItemStringTable {
+		t.Run(s.name, func(t *testing.T) {
+			bytes, _ := json.Marshal(s.origin)
+			var i Item
+			_ = json.Unmarshal(bytes, &i)
+			assert.Equal(t, s.str, i.String())
+		})
+	}
+}
