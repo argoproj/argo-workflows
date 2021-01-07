@@ -29,6 +29,8 @@ VERSION               := latest
 DEV_IMAGE             := true
 DOCKER_PUSH           := false
 
+# VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
+# we assume HEAD means you are on a tag
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
 DEV_IMAGE             := false
@@ -364,7 +366,7 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 
 # generates several installation files
 manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
-	./hack/update-image-tags.sh manifests/base $(MANIFEST_IMAGE_TAG)
+	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
 	kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
