@@ -211,7 +211,7 @@ func getWorkersBusy(name string) prometheus.Gauge {
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
 		Name:        "workers_busy_count",
-		Help:        "Number of workers currently free",
+		Help:        "Number of workers currently busy",
 		ConstLabels: map[string]string{"worker_type": name},
 	})
 }
