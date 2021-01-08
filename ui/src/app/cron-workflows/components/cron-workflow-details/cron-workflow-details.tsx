@@ -126,6 +126,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                                     .catch(setError);
                             }
                         },
+                        suspendButton,
                         {
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
@@ -141,7 +142,6 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                                     .catch(setError);
                             }
                         },
-                        suspendButton,
                         {
                             title: 'Share',
                             iconClassName: 'fa fa-share-alt',
