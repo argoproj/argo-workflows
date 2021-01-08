@@ -29,8 +29,8 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                     Create
                 </Button>
             </div>
-            <ErrorNotice error={error} />
             <FromWorkflowTemplate namespace={namespace} onError={setError} onTemplateSelect={setWorkflow} />
+            <ErrorNotice error={error} />
             <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
             <div>
                 <ExampleManifests />.

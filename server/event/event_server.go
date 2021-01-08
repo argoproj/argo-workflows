@@ -93,5 +93,5 @@ func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg
 	if in.ListOptions != nil {
 		listOptions = *in.ListOptions
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(listOptions)
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(ctx, listOptions)
 }

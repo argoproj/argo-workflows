@@ -22,7 +22,7 @@ func LogPods(ctx context.Context, namespace, labelSelector string, podLogOptions
 		podLogOptions = &corev1.PodLogOptions{}
 	}
 	podInterface := coreV1.Pods(namespace)
-	list, err := podInterface.List(metav1.ListOptions{LabelSelector: labelSelector})
+	list, err := podInterface.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func LogPods(ctx context.Context, namespace, labelSelector string, podLogOptions
 					return nil
 				}
 				defer streaming.Delete(pod.Name)
-				stream, err := coreV1.Pods(pod.Namespace).GetLogs(pod.Name, podLogOptions).Stream()
+				stream, err := coreV1.Pods(pod.Namespace).GetLogs(pod.Name, podLogOptions).Stream(ctx)
 				if err != nil {
 					return err
 				}
@@ -70,7 +70,7 @@ func LogPods(ctx context.Context, namespace, labelSelector string, podLogOptions
 	}
 	for {
 		done, err := func() (bool, error) {
-			watcher, err := podInterface.Watch(metav1.ListOptions{LabelSelector: labelSelector})
+			watcher, err := podInterface.Watch(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 			if err != nil {
 				return true, err
 			}

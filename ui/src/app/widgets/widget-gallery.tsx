@@ -48,7 +48,7 @@ export const WidgetGallery = ({namespace, name, label}: {namespace: string; name
                 <ul>
                     {parameters.map(p => (
                         <li>
-                            {p.name}: {p.description} {!!p.defaultValue && '(default ' + p.defaultValue + ')'}
+                            {p.name}: {p.description} {!!p.defaultValue && '(default "' + p.defaultValue + '")'}
                         </li>
                     ))}
                 </ul>
@@ -59,5 +59,8 @@ export const WidgetGallery = ({namespace, name, label}: {namespace: string; name
                 </p>
             </>
         ))}
+        <p>
+            Widgets not loading? Check for <a href='https://argoproj.github.io/argo/widgets'>solutions in the docs</a>.
+        </p>
     </div>
 );

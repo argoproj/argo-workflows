@@ -2,7 +2,7 @@ import * as React from 'react';
 import {Arguments, Parameter, WorkflowSpec} from '../../../../models';
 import {KeyValueEditor} from './key-value-editor';
 
-export const WorkflowSpecEditor = <T extends WorkflowSpec>(props: {value: T; onChange: (value: T) => void; onError: (error: Error) => void}) => {
+export const WorkflowParametersEditor = <T extends WorkflowSpec>(props: {value: T; onChange: (value: T) => void; onError: (error: Error) => void}) => {
     const parameterKeyValues =
         props.value &&
         props.value.arguments &&

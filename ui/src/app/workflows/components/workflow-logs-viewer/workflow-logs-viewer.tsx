@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
+import {Autocomplete} from 'argo-ui';
 import {Observable} from 'rxjs';
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
@@ -42,10 +43,10 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
         return () => subscription.unsubscribe();
     }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, archived]);
 
-    const podNameOptions = [{value: '', title: 'All'}].concat(
+    const podNameOptions = [{value: null, label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
-            .map(x => ({value: x.id, title: x.displayName || x.name}))
+            .map(x => ({value: x.id, label: (x.displayName || x.name) + ' (' + x.id + ')'}))
     );
 
     const containers = ['main', 'init', 'wait'];
@@ -59,23 +60,10 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             )}
             <p>
                 <i className='fa fa-box' />{' '}
-                <select className='select' value={podName} onChange={x => setPodName(podNameOptions[x.target.selectedIndex].value)}>
-                    {podNameOptions.map(x => (
-                        <option key={x.value} value={x.value}>
-                            {x.title}
-                        </option>
-                    ))}
-                </select>{' '}
-                /{' '}
-                <select className='select' value={selectedContainer} onChange={x => setContainer(containers[x.target.selectedIndex])}>
-                    {containers.map(x => (
-                        <option key={x} value={x}>
-                            {x}
-                        </option>
-                    ))}
-                </select>
+                <Autocomplete items={podNameOptions} value={podNameOptions.find(x => x.value === podName).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
+                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
             </p>
-            {error && <ErrorNotice error={error} />}
+            <ErrorNotice error={error} />
             {selectedContainer === 'init' && (
                 <p>
                     <InfoIcon /> Init containers logs are usually only useful when debugging input artifact problems. The init container is only run if there were input artifacts.

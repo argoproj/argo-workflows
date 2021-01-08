@@ -20,7 +20,7 @@ type sensorServer struct{}
 
 func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensorsRequest) (*sv1.SensorList, error) {
 	client := auth.GetSensorClient(ctx)
-	list, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).List(metav1.ListOptions{})
+	list, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -29,22 +29,22 @@ func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensor
 
 func (s *sensorServer) GetSensor(ctx context.Context, in *sensorpkg.GetSensorRequest) (*sv1.Sensor, error) {
 	client := auth.GetSensorClient(ctx)
-	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Get(in.Name, metav1.GetOptions{})
+	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Get(ctx, in.Name, metav1.GetOptions{})
 }
 
 func (s *sensorServer) CreateSensor(ctx context.Context, in *sensorpkg.CreateSensorRequest) (*sv1.Sensor, error) {
 	client := auth.GetSensorClient(ctx)
-	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Create(in.Sensor)
+	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Create(ctx, in.Sensor, metav1.CreateOptions{})
 }
 
 func (s *sensorServer) UpdateSensor(ctx context.Context, in *sensorpkg.UpdateSensorRequest) (*sv1.Sensor, error) {
 	client := auth.GetSensorClient(ctx)
-	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Update(in.Sensor)
+	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Update(ctx, in.Sensor, metav1.UpdateOptions{})
 }
 
 func (s *sensorServer) DeleteSensor(ctx context.Context, in *sensorpkg.DeleteSensorRequest) (*sensorpkg.DeleteSensorResponse, error) {
 	client := auth.GetSensorClient(ctx)
-	if err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Delete(in.Name, &metav1.DeleteOptions{}); err != nil {
+	if err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Delete(ctx, in.Name, metav1.DeleteOptions{}); err != nil {
 		return nil, err
 	}
 	return &sensorpkg.DeleteSensorResponse{}, nil
@@ -92,7 +92,7 @@ func (s *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 		listOptions = *in.ListOptions
 	}
 	eventSourceInterface := auth.GetSensorClient(ctx).ArgoprojV1alpha1().Sensors(in.Namespace)
-	watcher, err := eventSourceInterface.Watch(listOptions)
+	watcher, err := eventSourceInterface.Watch(ctx, listOptions)
 	if err != nil {
 		return err
 	}

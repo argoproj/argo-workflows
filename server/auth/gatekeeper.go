@@ -181,7 +181,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims) (versioned.Interface, kubernetes.Interface, error) {
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims) (*servertypes.Clients, error) {
 	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
