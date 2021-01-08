@@ -1,4 +1,5 @@
-import {Page, SlidingPanel, Tabs} from 'argo-ui';
+import {Page, SlidingPanel} from 'argo-ui';
+import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
@@ -15,9 +16,9 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
-import {EventsPanel} from '../../../workflows/components/events-panel';
 import {SensorCreator} from '../sensor-creator';
-import {SensorLogsViewer} from '../sensor-logs-viewer';
+import {SensorLogsWindow} from '../sensor-logs-window';
+import {Utils as EventsUtils} from '../utils';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
 
@@ -30,18 +31,16 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
-    const [tab, setTab] = useState<Node>(queryParams.get('tab'));
     useEffect(
         () =>
             history.push(
                 historyUrl('sensors/{namespace}', {
                     namespace,
                     sidePanel,
-                    selectedNode,
-                    tab
+                    selectedNode
                 })
             ),
-        [namespace, sidePanel, selectedNode, tab]
+        [namespace, sidePanel, selectedNode]
     );
 
     // internal state
@@ -108,7 +107,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                 key={`${s.metadata.namespace}/${s.metadata.name}`}
                                 to={uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i className='fa fa-clone' />
+                                    <i className={classNames('fa', EventsUtils.statusIconClasses(s))} aria-hidden='true' />
                                 </div>
                                 <div className='columns small-4'>{s.metadata.name}</div>
                                 <div className='columns small-3'>{s.metadata.namespace}</div>
@@ -132,33 +131,16 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
                 <SensorCreator namespace={namespace} onCreate={s => navigation.goto(uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`))} />
             </SlidingPanel>
-            <SlidingPanel isShown={!!selectedNode} onClose={() => setSelectedNode(null)}>
-                {!!selectedNode && (
-                    <div>
-                        <h4>
-                            Sensor/{selected.name}
-                            {selected.key ? '/' + selected.key : ''}
-                        </h4>
-                        <Tabs
-                            navTransparent={true}
-                            selectedTabKey={tab}
-                            onTabSelected={setTab}
-                            tabs={[
-                                {
-                                    title: 'LOGS',
-                                    key: 'logs',
-                                    content: <SensorLogsViewer namespace={namespace} selectedTrigger={selected.key} sensor={selected.value} onClick={setSelectedNode} />
-                                },
-                                {
-                                    title: 'EVENTS',
-                                    key: 'events',
-                                    content: <EventsPanel kind='Sensor' namespace={selected.namespace} name={selected.name} />
-                                }
-                            ]}
-                        />
-                    </div>
-                )}
-            </SlidingPanel>
+            {!!selectedNode && (
+                <SensorLogsWindow
+                    isShown={!!selectedNode}
+                    namespace={namespace}
+                    sensor={selected.value}
+                    selectedTrigger={selected.key}
+                    onTriggerClicked={setSelectedNode}
+                    onClose={() => setSelectedNode(null)}
+                />
+            )}
         </Page>
     );
 };
