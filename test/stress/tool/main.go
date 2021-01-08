@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
 
@@ -24,7 +22,7 @@ func main() {
 	w := versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
 
 	wf := &wfv1.Workflow{}
-	err = yaml.Unmarshal([]byte(fmt.Sprintf(`
+	err = yaml.Unmarshal([]byte(`
 metadata:
   generateName: stress-
   labels:
@@ -38,7 +36,7 @@ spec:
         value: "30s"
   workflowTemplateRef:
     name: massive
-`)), wf)
+`), wf)
 	if err != nil {
 		panic(err)
 	}
