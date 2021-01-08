@@ -85,6 +85,289 @@ func (m *ListSensorsRequest) GetListOptions() *v1.ListOptions {
 	return nil
 }
 
+type CreateSensorRequest struct {
+	Namespace            string            `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Sensor               *v1alpha1.Sensor  `protobuf:"bytes,2,opt,name=sensor,proto3" json:"sensor,omitempty"`
+	CreateOptions        *v1.CreateOptions `protobuf:"bytes,3,opt,name=createOptions,proto3" json:"createOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *CreateSensorRequest) Reset()         { *m = CreateSensorRequest{} }
+func (m *CreateSensorRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateSensorRequest) ProtoMessage()    {}
+func (*CreateSensorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_78ba963e1c6b5b55, []int{1}
+}
+func (m *CreateSensorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CreateSensorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CreateSensorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CreateSensorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSensorRequest.Merge(m, src)
+}
+func (m *CreateSensorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *CreateSensorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateSensorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateSensorRequest proto.InternalMessageInfo
+
+func (m *CreateSensorRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *CreateSensorRequest) GetSensor() *v1alpha1.Sensor {
+	if m != nil {
+		return m.Sensor
+	}
+	return nil
+}
+
+func (m *CreateSensorRequest) GetCreateOptions() *v1.CreateOptions {
+	if m != nil {
+		return m.CreateOptions
+	}
+	return nil
+}
+
+type GetSensorRequest struct {
+	Name                 string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	GetOptions           *v1.GetOptions `protobuf:"bytes,3,opt,name=getOptions,proto3" json:"getOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *GetSensorRequest) Reset()         { *m = GetSensorRequest{} }
+func (m *GetSensorRequest) String() string { return proto.CompactTextString(m) }
+func (*GetSensorRequest) ProtoMessage()    {}
+func (*GetSensorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_78ba963e1c6b5b55, []int{2}
+}
+func (m *GetSensorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetSensorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetSensorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetSensorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetSensorRequest.Merge(m, src)
+}
+func (m *GetSensorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetSensorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetSensorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetSensorRequest proto.InternalMessageInfo
+
+func (m *GetSensorRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *GetSensorRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *GetSensorRequest) GetGetOptions() *v1.GetOptions {
+	if m != nil {
+		return m.GetOptions
+	}
+	return nil
+}
+
+type UpdateSensorRequest struct {
+	Namespace            string           `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Sensor               *v1alpha1.Sensor `protobuf:"bytes,2,opt,name=sensor,proto3" json:"sensor,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *UpdateSensorRequest) Reset()         { *m = UpdateSensorRequest{} }
+func (m *UpdateSensorRequest) String() string { return proto.CompactTextString(m) }
+func (*UpdateSensorRequest) ProtoMessage()    {}
+func (*UpdateSensorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_78ba963e1c6b5b55, []int{3}
+}
+func (m *UpdateSensorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UpdateSensorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UpdateSensorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UpdateSensorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateSensorRequest.Merge(m, src)
+}
+func (m *UpdateSensorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *UpdateSensorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateSensorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateSensorRequest proto.InternalMessageInfo
+
+func (m *UpdateSensorRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *UpdateSensorRequest) GetSensor() *v1alpha1.Sensor {
+	if m != nil {
+		return m.Sensor
+	}
+	return nil
+}
+
+type DeleteSensorRequest struct {
+	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string            `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	DeleteOptions        *v1.DeleteOptions `protobuf:"bytes,3,opt,name=deleteOptions,proto3" json:"deleteOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *DeleteSensorRequest) Reset()         { *m = DeleteSensorRequest{} }
+func (m *DeleteSensorRequest) String() string { return proto.CompactTextString(m) }
+func (*DeleteSensorRequest) ProtoMessage()    {}
+func (*DeleteSensorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_78ba963e1c6b5b55, []int{4}
+}
+func (m *DeleteSensorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteSensorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteSensorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteSensorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSensorRequest.Merge(m, src)
+}
+func (m *DeleteSensorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteSensorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSensorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSensorRequest proto.InternalMessageInfo
+
+func (m *DeleteSensorRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *DeleteSensorRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *DeleteSensorRequest) GetDeleteOptions() *v1.DeleteOptions {
+	if m != nil {
+		return m.DeleteOptions
+	}
+	return nil
+}
+
+type DeleteSensorResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteSensorResponse) Reset()         { *m = DeleteSensorResponse{} }
+func (m *DeleteSensorResponse) String() string { return proto.CompactTextString(m) }
+func (*DeleteSensorResponse) ProtoMessage()    {}
+func (*DeleteSensorResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_78ba963e1c6b5b55, []int{5}
+}
+func (m *DeleteSensorResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteSensorResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteSensorResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteSensorResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSensorResponse.Merge(m, src)
+}
+func (m *DeleteSensorResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteSensorResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSensorResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSensorResponse proto.InternalMessageInfo
+
 type SensorsLogsRequest struct {
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// optional - only return entries for this sensor name
@@ -103,7 +386,7 @@ func (m *SensorsLogsRequest) Reset()         { *m = SensorsLogsRequest{} }
 func (m *SensorsLogsRequest) String() string { return proto.CompactTextString(m) }
 func (*SensorsLogsRequest) ProtoMessage()    {}
 func (*SensorsLogsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_78ba963e1c6b5b55, []int{1}
+	return fileDescriptor_78ba963e1c6b5b55, []int{6}
 }
 func (m *SensorsLogsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -189,7 +472,7 @@ func (m *LogEntry) Reset()         { *m = LogEntry{} }
 func (m *LogEntry) String() string { return proto.CompactTextString(m) }
 func (*LogEntry) ProtoMessage()    {}
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_78ba963e1c6b5b55, []int{2}
+	return fileDescriptor_78ba963e1c6b5b55, []int{7}
 }
 func (m *LogEntry) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -286,7 +569,7 @@ func (m *SensorWatchEvent) Reset()         { *m = SensorWatchEvent{} }
 func (m *SensorWatchEvent) String() string { return proto.CompactTextString(m) }
 func (*SensorWatchEvent) ProtoMessage()    {}
 func (*SensorWatchEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_78ba963e1c6b5b55, []int{3}
+	return fileDescriptor_78ba963e1c6b5b55, []int{8}
 }
 func (m *SensorWatchEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -331,6 +614,11 @@ func (m *SensorWatchEvent) GetObject() *v1alpha1.Sensor {
 
 func init() {
 	proto.RegisterType((*ListSensorsRequest)(nil), "sensor.ListSensorsRequest")
+	proto.RegisterType((*CreateSensorRequest)(nil), "sensor.CreateSensorRequest")
+	proto.RegisterType((*GetSensorRequest)(nil), "sensor.GetSensorRequest")
+	proto.RegisterType((*UpdateSensorRequest)(nil), "sensor.UpdateSensorRequest")
+	proto.RegisterType((*DeleteSensorRequest)(nil), "sensor.DeleteSensorRequest")
+	proto.RegisterType((*DeleteSensorResponse)(nil), "sensor.DeleteSensorResponse")
 	proto.RegisterType((*SensorsLogsRequest)(nil), "sensor.SensorsLogsRequest")
 	proto.RegisterType((*LogEntry)(nil), "sensor.LogEntry")
 	proto.RegisterType((*SensorWatchEvent)(nil), "sensor.SensorWatchEvent")
@@ -339,48 +627,61 @@ func init() {
 func init() { proto.RegisterFile("pkg/apiclient/sensor/sensor.proto", fileDescriptor_78ba963e1c6b5b55) }
 
 var fileDescriptor_78ba963e1c6b5b55 = []byte{
-	// 642 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0x5d, 0x6b, 0xd4, 0x4c,
-	0x14, 0x26, 0xfd, 0xd8, 0xb7, 0x3b, 0xdb, 0xbe, 0x94, 0xc1, 0x8b, 0xb0, 0xd6, 0xa5, 0x8d, 0xa2,
-	0xb5, 0xd0, 0x99, 0x6e, 0xf5, 0x42, 0x10, 0x44, 0xd4, 0xa2, 0x17, 0x4b, 0x95, 0x54, 0x50, 0xbc,
-	0x91, 0x69, 0xf6, 0x30, 0x9b, 0x36, 0x99, 0x89, 0x33, 0xd3, 0xe0, 0x22, 0x82, 0x78, 0x23, 0x78,
-	0xab, 0xd7, 0xfe, 0x1b, 0xc1, 0x4b, 0xc1, 0x3f, 0x20, 0xc5, 0x1f, 0x22, 0x33, 0xc9, 0x36, 0x59,
-	0x77, 0xa5, 0x0b, 0x5e, 0xe5, 0xcc, 0x99, 0xf3, 0xf1, 0x3c, 0x39, 0xcf, 0x19, 0xb4, 0x91, 0x1d,
-	0x73, 0xca, 0xb2, 0x38, 0x4a, 0x62, 0x10, 0x86, 0x6a, 0x10, 0x5a, 0xaa, 0xf2, 0x43, 0x32, 0x25,
-	0x8d, 0xc4, 0x8d, 0xe2, 0xd4, 0x5e, 0xe3, 0x52, 0xf2, 0x04, 0x6c, 0x34, 0x65, 0x42, 0x48, 0xc3,
-	0x4c, 0x2c, 0x85, 0x2e, 0xa2, 0xda, 0x37, 0x8f, 0x6f, 0x69, 0x12, 0x4b, 0x7b, 0x9b, 0xb2, 0x68,
-	0x10, 0x0b, 0x50, 0x43, 0x5a, 0x16, 0xd7, 0x34, 0x05, 0xc3, 0x68, 0xde, 0xa5, 0x1c, 0x04, 0x28,
-	0x66, 0xa0, 0x5f, 0x66, 0x05, 0x55, 0x16, 0x8d, 0xa4, 0x82, 0x69, 0x31, 0x8f, 0x78, 0x6c, 0x06,
-	0x27, 0x87, 0x24, 0x92, 0x29, 0x65, 0x8a, 0xcb, 0x4c, 0xc9, 0x23, 0x67, 0x6c, 0x43, 0x0e, 0xc2,
-	0xe8, 0xaa, 0x4b, 0x89, 0x3e, 0xef, 0xb2, 0x24, 0x1b, 0xb0, 0x89, 0x4a, 0xc1, 0x07, 0x0f, 0xe1,
-	0x5e, 0xac, 0xcd, 0x81, 0x8b, 0xd3, 0x21, 0xbc, 0x3a, 0x01, 0x6d, 0xf0, 0x1a, 0x6a, 0x0a, 0x96,
-	0x82, 0xce, 0x58, 0x04, 0xbe, 0xb7, 0xee, 0x6d, 0x36, 0xc3, 0xca, 0x81, 0x0f, 0x50, 0x2b, 0x89,
-	0xb5, 0x79, 0x9c, 0x39, 0xb6, 0xfe, 0xdc, 0xba, 0xb7, 0xd9, 0xda, 0xed, 0x92, 0x02, 0x38, 0xa9,
-	0xd3, 0x25, 0xd9, 0x31, 0xb7, 0x0e, 0x4d, 0x2c, 0x5d, 0x92, 0x77, 0x49, 0xaf, 0x4a, 0x0c, 0xeb,
-	0x55, 0x82, 0xaf, 0x1e, 0xc2, 0x25, 0x8a, 0x9e, 0xe4, 0x33, 0x22, 0xc1, 0x68, 0xc1, 0x1e, 0x1c,
-	0x84, 0x66, 0xe8, 0x6c, 0xbc, 0x8e, 0x5a, 0x46, 0xc5, 0x9c, 0x83, 0xda, 0xb7, 0x57, 0xf3, 0xee,
-	0xaa, 0xee, 0xb2, 0x59, 0x5c, 0x41, 0xe6, 0x2f, 0x14, 0x59, 0xd6, 0xc6, 0x0f, 0xd1, 0x4a, 0x26,
-	0xfb, 0x3d, 0xc9, 0x47, 0xac, 0x16, 0x1d, 0xab, 0x8d, 0x1a, 0x2b, 0x62, 0xc7, 0x61, 0x39, 0x3c,
-	0xa9, 0x07, 0x86, 0xe3, 0x79, 0xc1, 0x97, 0x39, 0xb4, 0xd4, 0x93, 0x7c, 0x4f, 0x18, 0x35, 0x3c,
-	0x07, 0x7d, 0x07, 0xa1, 0x62, 0x3e, 0xfb, 0x15, 0x87, 0x9a, 0x67, 0x06, 0x26, 0x17, 0xd0, 0x62,
-	0x02, 0x39, 0x24, 0x0e, 0x6d, 0x33, 0x2c, 0x0e, 0xf8, 0x0e, 0x5a, 0x30, 0x71, 0x0a, 0x7e, 0xc3,
-	0x51, 0xd8, 0x9a, 0x6d, 0x30, 0x4f, 0xe3, 0x14, 0x42, 0x97, 0x87, 0x57, 0xd1, 0x7c, 0xaa, 0xb9,
-	0xff, 0x9f, 0xab, 0x69, 0x4d, 0x7c, 0x15, 0xfd, 0xdf, 0x87, 0x0c, 0x44, 0x1f, 0x44, 0x34, 0x74,
-	0x60, 0x96, 0xdc, 0xe5, 0x1f, 0x5e, 0x1c, 0xa0, 0x65, 0xa7, 0xc0, 0xfb, 0x52, 0x18, 0x78, 0x6d,
-	0xfc, 0xa6, 0x8b, 0x1a, 0xf3, 0x05, 0xef, 0x3c, 0xb4, 0x5a, 0x0c, 0xfa, 0x19, 0x33, 0xd1, 0x60,
-	0xcf, 0xde, 0xd9, 0x91, 0x98, 0x61, 0x36, 0xfa, 0x47, 0xce, 0xc6, 0xcf, 0x51, 0x43, 0x1e, 0x1e,
-	0x41, 0x64, 0x4a, 0x85, 0xdd, 0x25, 0x95, 0xec, 0xc9, 0x48, 0xf6, 0xce, 0x78, 0x59, 0xc8, 0xbe,
-	0x22, 0x55, 0x6e, 0xeb, 0x48, 0xf6, 0xa4, 0xe8, 0x17, 0x96, 0xf5, 0x76, 0x3f, 0xce, 0xa3, 0x95,
-	0xc2, 0x75, 0x00, 0x2a, 0x8f, 0x23, 0xc0, 0x9f, 0x3d, 0xd4, 0xaa, 0xed, 0x01, 0x6e, 0x8f, 0x4a,
-	0x4c, 0x2e, 0x47, 0xfb, 0xc1, 0xbf, 0xe2, 0xb0, 0x35, 0x83, 0xcb, 0xef, 0x7f, 0xfc, 0xfa, 0x34,
-	0x77, 0x09, 0x5f, 0x74, 0x9b, 0x9e, 0x77, 0xcb, 0x55, 0xd5, 0xf4, 0xcd, 0x99, 0x40, 0xde, 0x62,
-	0x81, 0x5a, 0xb5, 0x9d, 0xa8, 0x50, 0x4d, 0x2e, 0x4a, 0x7b, 0xf5, 0x0c, 0x71, 0x29, 0xbe, 0x80,
-	0xba, 0x0e, 0xd7, 0xf1, 0xb5, 0xb3, 0x0e, 0x46, 0x01, 0x4b, 0xa7, 0x35, 0xa2, 0x89, 0xe4, 0x7a,
-	0xc7, 0xc3, 0x0a, 0x2d, 0xbb, 0xa1, 0xcc, 0xf2, 0x1b, 0xfc, 0x71, 0x30, 0xd5, 0x30, 0x83, 0x2d,
-	0xd7, 0xf8, 0x0a, 0x0e, 0xce, 0x6f, 0xbc, 0xe3, 0xdd, 0xbb, 0xfd, 0xed, 0xb4, 0xe3, 0x7d, 0x3f,
-	0xed, 0x78, 0x3f, 0x4f, 0x3b, 0xde, 0x8b, 0xed, 0xbf, 0x3d, 0x6d, 0x74, 0xda, 0xb3, 0x7c, 0xd8,
-	0x70, 0xcf, 0xd8, 0x8d, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xec, 0xc7, 0x23, 0x9c, 0xb5, 0x05,
-	0x00, 0x00,
+	// 863 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0x41, 0x6f, 0xe3, 0x44,
+	0x14, 0xd6, 0xa4, 0xdd, 0xee, 0xe6, 0x25, 0x41, 0xd1, 0x74, 0x85, 0x22, 0x6f, 0x89, 0xb2, 0x03,
+	0x5a, 0x96, 0x48, 0x6b, 0x37, 0xbb, 0x1c, 0x10, 0x48, 0x08, 0xd1, 0xae, 0xca, 0x21, 0x5a, 0x56,
+	0x2e, 0x08, 0x96, 0x0b, 0x72, 0x9d, 0xa7, 0x89, 0xb7, 0xb6, 0xc7, 0x78, 0xa6, 0x11, 0x11, 0x5a,
+	0x09, 0x71, 0xe1, 0xc4, 0xa9, 0xc0, 0x91, 0x03, 0xff, 0x05, 0xc1, 0x11, 0x89, 0x3f, 0x80, 0x2a,
+	0x0e, 0xfc, 0x0c, 0x34, 0x63, 0x27, 0xb6, 0x93, 0xb4, 0x0d, 0xb4, 0x07, 0x4e, 0x79, 0x79, 0x33,
+	0xef, 0x7b, 0xdf, 0xf7, 0xde, 0xcc, 0x1b, 0xc3, 0xdd, 0xe4, 0x98, 0x3b, 0x5e, 0x12, 0xf8, 0x61,
+	0x80, 0xb1, 0x72, 0x24, 0xc6, 0x52, 0xa4, 0xf9, 0x8f, 0x9d, 0xa4, 0x42, 0x09, 0xba, 0x95, 0xfd,
+	0xb3, 0x76, 0xb8, 0x10, 0x3c, 0x44, 0xbd, 0xdb, 0xf1, 0xe2, 0x58, 0x28, 0x4f, 0x05, 0x22, 0x96,
+	0xd9, 0x2e, 0xeb, 0xcd, 0xe3, 0xb7, 0xa4, 0x1d, 0x08, 0xbd, 0x1a, 0x79, 0xfe, 0x38, 0x88, 0x31,
+	0x9d, 0x3a, 0x39, 0xb8, 0x74, 0x22, 0x54, 0x9e, 0x33, 0x19, 0x38, 0x1c, 0x63, 0x4c, 0x3d, 0x85,
+	0xa3, 0x3c, 0x8a, 0x15, 0x51, 0x8e, 0x2f, 0x52, 0x5c, 0xb5, 0xe7, 0x03, 0x1e, 0xa8, 0xf1, 0xc9,
+	0x91, 0xed, 0x8b, 0xc8, 0xf1, 0x52, 0x2e, 0x92, 0x54, 0x3c, 0x37, 0xc6, 0x03, 0x9c, 0x60, 0xac,
+	0x64, 0x91, 0x25, 0x67, 0x3f, 0x19, 0x78, 0x61, 0x32, 0xf6, 0x96, 0x90, 0xd8, 0xb7, 0x04, 0xe8,
+	0x30, 0x90, 0xea, 0xd0, 0xec, 0x93, 0x2e, 0x7e, 0x71, 0x82, 0x52, 0xd1, 0x1d, 0xa8, 0xc7, 0x5e,
+	0x84, 0x32, 0xf1, 0x7c, 0xec, 0x90, 0x1e, 0xb9, 0x5f, 0x77, 0x0b, 0x07, 0x3d, 0x84, 0x46, 0x18,
+	0x48, 0xf5, 0x61, 0x62, 0xd4, 0x76, 0x6a, 0x3d, 0x72, 0xbf, 0xf1, 0x70, 0x60, 0x67, 0xc4, 0xed,
+	0xb2, 0x5c, 0x3b, 0x39, 0xe6, 0xda, 0x21, 0x6d, 0x2d, 0xd7, 0x9e, 0x0c, 0xec, 0x61, 0x11, 0xe8,
+	0x96, 0x51, 0xd8, 0xdf, 0x04, 0xb6, 0xf7, 0x52, 0xf4, 0x14, 0x66, 0x5c, 0xd6, 0xa3, 0xf2, 0x29,
+	0xe4, 0xbd, 0xc8, 0x59, 0xbc, 0x67, 0x17, 0xa5, 0xb1, 0x67, 0xa5, 0x31, 0xc6, 0xe7, 0x59, 0x69,
+	0x0a, 0x46, 0x79, 0x47, 0x67, 0xa5, 0xb1, 0xf3, 0xb4, 0x39, 0x1e, 0x7d, 0x06, 0x2d, 0xdf, 0xd0,
+	0x99, 0xc9, 0xdc, 0x30, 0x09, 0x1e, 0xad, 0x27, 0x73, 0xaf, 0x1c, 0xea, 0x56, 0x91, 0xd8, 0x8f,
+	0x04, 0xda, 0x07, 0xa8, 0xaa, 0x3a, 0x29, 0x6c, 0x6a, 0x59, 0xb9, 0x44, 0x63, 0x57, 0xb5, 0xd7,
+	0x16, 0xb5, 0x3f, 0x05, 0xe0, 0xa8, 0xaa, 0xf4, 0x76, 0xd7, 0xa3, 0x77, 0x30, 0x8f, 0x73, 0x4b,
+	0x18, 0xec, 0x3b, 0x02, 0xdb, 0x1f, 0x27, 0xa3, 0xff, 0x4b, 0x0f, 0xd8, 0xcf, 0x04, 0xb6, 0xf7,
+	0x31, 0xc4, 0x45, 0x3e, 0xff, 0xbe, 0x56, 0xcf, 0xa0, 0x35, 0x32, 0x40, 0xff, 0xa9, 0x9b, 0xfb,
+	0xe5, 0x50, 0xb7, 0x8a, 0xc4, 0x5e, 0x86, 0xdb, 0x55, 0x8e, 0x32, 0x11, 0xb1, 0x44, 0xf6, 0x0b,
+	0x01, 0x9a, 0x5f, 0xab, 0xa1, 0xe0, 0x6b, 0x5e, 0xad, 0x99, 0xb2, 0x5a, 0x49, 0x59, 0x0f, 0x1a,
+	0x2a, 0x0d, 0x38, 0xc7, 0xf4, 0x89, 0x5e, 0xda, 0x30, 0x4b, 0x65, 0x97, 0x8e, 0xe2, 0x29, 0x26,
+	0x9d, 0xcd, 0x2c, 0x4a, 0xdb, 0xf4, 0x00, 0x5a, 0x89, 0x18, 0x0d, 0x05, 0x9f, 0x29, 0xbe, 0x61,
+	0x14, 0xdf, 0x2d, 0x29, 0xb6, 0xf5, 0x7c, 0xd1, 0xfa, 0x9e, 0x96, 0x37, 0xba, 0xd5, 0x38, 0xf6,
+	0x53, 0x0d, 0x6e, 0x0d, 0x05, 0x7f, 0x1c, 0xab, 0x74, 0x7a, 0x09, 0xfb, 0x2e, 0x40, 0xd6, 0xb9,
+	0x27, 0x85, 0x86, 0x92, 0x67, 0x0d, 0x25, 0xb7, 0xe1, 0x46, 0x88, 0x13, 0x0c, 0x0d, 0xdb, 0xba,
+	0x9b, 0xfd, 0xa1, 0xef, 0xc2, 0xa6, 0x0a, 0x22, 0xec, 0x6c, 0x19, 0x09, 0xfd, 0xf5, 0x9a, 0xf6,
+	0x51, 0x10, 0xa1, 0x6b, 0xe2, 0x68, 0x1b, 0x36, 0x22, 0xc9, 0x3b, 0x37, 0x0d, 0xa6, 0x36, 0xe9,
+	0x3d, 0x78, 0x69, 0x84, 0x09, 0xc6, 0x23, 0x8c, 0xfd, 0xa9, 0x21, 0x73, 0xcb, 0x2c, 0x2e, 0x78,
+	0x29, 0x83, 0xa6, 0x39, 0xb3, 0x7b, 0x22, 0x56, 0xf8, 0xa5, 0xea, 0xd4, 0xcd, 0xae, 0x8a, 0x8f,
+	0x7d, 0x4d, 0xa0, 0x9d, 0x35, 0xfa, 0x13, 0x4f, 0xf9, 0xe3, 0xc7, 0x7a, 0x4d, 0xb7, 0x44, 0x4d,
+	0x93, 0xf9, 0x11, 0xd5, 0xb6, 0xbe, 0x28, 0xe2, 0xe8, 0x39, 0xfa, 0xea, 0xfa, 0x2e, 0x4a, 0x86,
+	0xf7, 0xf0, 0xd7, 0x9b, 0xd0, 0xca, 0x5c, 0x87, 0x98, 0x4e, 0x02, 0x1f, 0xe9, 0xf7, 0x04, 0x1a,
+	0xa5, 0xc1, 0x4e, 0xad, 0x19, 0xc4, 0xf2, 0xb4, 0xb7, 0xf6, 0xaf, 0xca, 0x43, 0x63, 0xb2, 0x57,
+	0xbf, 0xf9, 0xe3, 0xaf, 0xd3, 0xda, 0x2b, 0xf4, 0x8e, 0x79, 0xba, 0x26, 0x83, 0xfc, 0xed, 0x91,
+	0xce, 0x57, 0xf3, 0x03, 0xf2, 0x82, 0xc6, 0xd0, 0x28, 0xdd, 0x89, 0x82, 0xd5, 0xf2, 0x45, 0xb1,
+	0xda, 0x73, 0xc6, 0xf9, 0xe1, 0x63, 0x8e, 0xc9, 0xf0, 0x06, 0x7d, 0x7d, 0x9e, 0x41, 0xa5, 0xe8,
+	0x45, 0xab, 0x12, 0x39, 0xa1, 0xe0, 0x72, 0x97, 0xd0, 0x14, 0x9a, 0xa6, 0x29, 0xeb, 0x94, 0xa1,
+	0x53, 0x25, 0x53, 0x34, 0x93, 0xf5, 0x4d, 0xe2, 0xd7, 0x28, 0xbb, 0x3c, 0xf1, 0x2e, 0xa1, 0x3f,
+	0x10, 0x68, 0x96, 0x5f, 0x32, 0x7a, 0x67, 0x06, 0xbc, 0xe2, 0x7d, 0xb3, 0xae, 0x7c, 0x08, 0xd8,
+	0x3d, 0xc3, 0xae, 0xc7, 0x2e, 0x2a, 0xfc, 0xdb, 0xa4, 0x6f, 0x78, 0x95, 0xa7, 0x7b, 0xc1, 0x6b,
+	0xc5, 0xcc, 0xbf, 0x3e, 0x5e, 0xd6, 0x65, 0xbc, 0x4e, 0xa0, 0x59, 0x1e, 0xa0, 0x05, 0xad, 0x15,
+	0xa3, 0xdf, 0xda, 0x59, 0xbd, 0x98, 0xcf, 0xdc, 0xbc, 0x51, 0x7d, 0x76, 0x41, 0xca, 0xcc, 0x7e,
+	0x41, 0x4f, 0x09, 0xd4, 0xe7, 0xaf, 0x30, 0x9d, 0x37, 0x7f, 0xf1, 0x61, 0xbe, 0x86, 0x42, 0x2c,
+	0x1f, 0x9f, 0x73, 0x59, 0xbd, 0xff, 0xce, 0x6f, 0x67, 0x5d, 0xf2, 0xfb, 0x59, 0x97, 0xfc, 0x79,
+	0xd6, 0x25, 0x9f, 0x3d, 0x38, 0xef, 0x43, 0xcf, 0x59, 0xf5, 0x91, 0x7a, 0xb4, 0x65, 0x3e, 0xea,
+	0x1e, 0xfd, 0x13, 0x00, 0x00, 0xff, 0xff, 0xa5, 0xcd, 0x8e, 0xb3, 0xc3, 0x0a, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -398,6 +699,10 @@ type SensorServiceClient interface {
 	ListSensors(ctx context.Context, in *ListSensorsRequest, opts ...grpc.CallOption) (*v1alpha1.SensorList, error)
 	SensorsLogs(ctx context.Context, in *SensorsLogsRequest, opts ...grpc.CallOption) (SensorService_SensorsLogsClient, error)
 	WatchSensors(ctx context.Context, in *ListSensorsRequest, opts ...grpc.CallOption) (SensorService_WatchSensorsClient, error)
+	CreateSensor(ctx context.Context, in *CreateSensorRequest, opts ...grpc.CallOption) (*v1alpha1.Sensor, error)
+	UpdateSensor(ctx context.Context, in *UpdateSensorRequest, opts ...grpc.CallOption) (*v1alpha1.Sensor, error)
+	DeleteSensor(ctx context.Context, in *DeleteSensorRequest, opts ...grpc.CallOption) (*DeleteSensorResponse, error)
+	GetSensor(ctx context.Context, in *GetSensorRequest, opts ...grpc.CallOption) (*v1alpha1.Sensor, error)
 }
 
 type sensorServiceClient struct {
@@ -481,11 +786,51 @@ func (x *sensorServiceWatchSensorsClient) Recv() (*SensorWatchEvent, error) {
 	return m, nil
 }
 
+func (c *sensorServiceClient) CreateSensor(ctx context.Context, in *CreateSensorRequest, opts ...grpc.CallOption) (*v1alpha1.Sensor, error) {
+	out := new(v1alpha1.Sensor)
+	err := c.cc.Invoke(ctx, "/sensor.SensorService/CreateSensor", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sensorServiceClient) UpdateSensor(ctx context.Context, in *UpdateSensorRequest, opts ...grpc.CallOption) (*v1alpha1.Sensor, error) {
+	out := new(v1alpha1.Sensor)
+	err := c.cc.Invoke(ctx, "/sensor.SensorService/UpdateSensor", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sensorServiceClient) DeleteSensor(ctx context.Context, in *DeleteSensorRequest, opts ...grpc.CallOption) (*DeleteSensorResponse, error) {
+	out := new(DeleteSensorResponse)
+	err := c.cc.Invoke(ctx, "/sensor.SensorService/DeleteSensor", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sensorServiceClient) GetSensor(ctx context.Context, in *GetSensorRequest, opts ...grpc.CallOption) (*v1alpha1.Sensor, error) {
+	out := new(v1alpha1.Sensor)
+	err := c.cc.Invoke(ctx, "/sensor.SensorService/GetSensor", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SensorServiceServer is the server API for SensorService service.
 type SensorServiceServer interface {
 	ListSensors(context.Context, *ListSensorsRequest) (*v1alpha1.SensorList, error)
 	SensorsLogs(*SensorsLogsRequest, SensorService_SensorsLogsServer) error
 	WatchSensors(*ListSensorsRequest, SensorService_WatchSensorsServer) error
+	CreateSensor(context.Context, *CreateSensorRequest) (*v1alpha1.Sensor, error)
+	UpdateSensor(context.Context, *UpdateSensorRequest) (*v1alpha1.Sensor, error)
+	DeleteSensor(context.Context, *DeleteSensorRequest) (*DeleteSensorResponse, error)
+	GetSensor(context.Context, *GetSensorRequest) (*v1alpha1.Sensor, error)
 }
 
 // UnimplementedSensorServiceServer can be embedded to have forward compatible implementations.
@@ -500,6 +845,18 @@ func (*UnimplementedSensorServiceServer) SensorsLogs(req *SensorsLogsRequest, sr
 }
 func (*UnimplementedSensorServiceServer) WatchSensors(req *ListSensorsRequest, srv SensorService_WatchSensorsServer) error {
 	return status.Errorf(codes.Unimplemented, "method WatchSensors not implemented")
+}
+func (*UnimplementedSensorServiceServer) CreateSensor(ctx context.Context, req *CreateSensorRequest) (*v1alpha1.Sensor, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSensor not implemented")
+}
+func (*UnimplementedSensorServiceServer) UpdateSensor(ctx context.Context, req *UpdateSensorRequest) (*v1alpha1.Sensor, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSensor not implemented")
+}
+func (*UnimplementedSensorServiceServer) DeleteSensor(ctx context.Context, req *DeleteSensorRequest) (*DeleteSensorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSensor not implemented")
+}
+func (*UnimplementedSensorServiceServer) GetSensor(ctx context.Context, req *GetSensorRequest) (*v1alpha1.Sensor, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSensor not implemented")
 }
 
 func RegisterSensorServiceServer(s *grpc.Server, srv SensorServiceServer) {
@@ -566,6 +923,78 @@ func (x *sensorServiceWatchSensorsServer) Send(m *SensorWatchEvent) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _SensorService_CreateSensor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSensorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SensorServiceServer).CreateSensor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sensor.SensorService/CreateSensor",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SensorServiceServer).CreateSensor(ctx, req.(*CreateSensorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SensorService_UpdateSensor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSensorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SensorServiceServer).UpdateSensor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sensor.SensorService/UpdateSensor",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SensorServiceServer).UpdateSensor(ctx, req.(*UpdateSensorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SensorService_DeleteSensor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSensorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SensorServiceServer).DeleteSensor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sensor.SensorService/DeleteSensor",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SensorServiceServer).DeleteSensor(ctx, req.(*DeleteSensorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SensorService_GetSensor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSensorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SensorServiceServer).GetSensor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sensor.SensorService/GetSensor",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SensorServiceServer).GetSensor(ctx, req.(*GetSensorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _SensorService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "sensor.SensorService",
 	HandlerType: (*SensorServiceServer)(nil),
@@ -573,6 +1002,22 @@ var _SensorService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListSensors",
 			Handler:    _SensorService_ListSensors_Handler,
+		},
+		{
+			MethodName: "CreateSensor",
+			Handler:    _SensorService_CreateSensor_Handler,
+		},
+		{
+			MethodName: "UpdateSensor",
+			Handler:    _SensorService_UpdateSensor_Handler,
+		},
+		{
+			MethodName: "DeleteSensor",
+			Handler:    _SensorService_DeleteSensor_Handler,
+		},
+		{
+			MethodName: "GetSensor",
+			Handler:    _SensorService_GetSensor_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -632,6 +1077,243 @@ func (m *ListSensorsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintSensor(dAtA, i, uint64(len(m.Namespace)))
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateSensorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateSensorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateSensorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.CreateOptions != nil {
+		{
+			size, err := m.CreateOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSensor(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Sensor != nil {
+		{
+			size, err := m.Sensor.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSensor(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintSensor(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetSensorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetSensorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetSensorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.GetOptions != nil {
+		{
+			size, err := m.GetOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSensor(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintSensor(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintSensor(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateSensorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateSensorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateSensorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Sensor != nil {
+		{
+			size, err := m.Sensor.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSensor(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintSensor(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteSensorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteSensorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteSensorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.DeleteOptions != nil {
+		{
+			size, err := m.DeleteOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSensor(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintSensor(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintSensor(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteSensorResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteSensorResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteSensorResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return len(dAtA) - i, nil
 }
@@ -868,6 +1550,110 @@ func (m *ListSensorsRequest) Size() (n int) {
 	return n
 }
 
+func (m *CreateSensorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.Sensor != nil {
+		l = m.Sensor.Size()
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.CreateOptions != nil {
+		l = m.CreateOptions.Size()
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetSensorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.GetOptions != nil {
+		l = m.GetOptions.Size()
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *UpdateSensorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.Sensor != nil {
+		l = m.Sensor.Size()
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DeleteSensorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.DeleteOptions != nil {
+		l = m.DeleteOptions.Size()
+		n += 1 + l + sovSensor(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DeleteSensorResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *SensorsLogsRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1067,6 +1853,648 @@ func (m *ListSensorsRequest) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSensor(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateSensorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSensor
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateSensorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateSensorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sensor", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Sensor == nil {
+				m.Sensor = &v1alpha1.Sensor{}
+			}
+			if err := m.Sensor.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CreateOptions == nil {
+				m.CreateOptions = &v1.CreateOptions{}
+			}
+			if err := m.CreateOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSensor(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetSensorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSensor
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetSensorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetSensorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GetOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.GetOptions == nil {
+				m.GetOptions = &v1.GetOptions{}
+			}
+			if err := m.GetOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSensor(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateSensorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSensor
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateSensorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateSensorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sensor", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Sensor == nil {
+				m.Sensor = &v1alpha1.Sensor{}
+			}
+			if err := m.Sensor.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSensor(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteSensorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSensor
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteSensorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteSensorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSensor
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSensor
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DeleteOptions == nil {
+				m.DeleteOptions = &v1.DeleteOptions{}
+			}
+			if err := m.DeleteOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSensor(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthSensor
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteSensorResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSensor
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteSensorResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteSensorResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSensor(dAtA[iNdEx:])
