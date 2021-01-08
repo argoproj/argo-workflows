@@ -2,6 +2,7 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
 import {Sensor} from '../../../models';
+import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
 import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 
@@ -51,7 +52,8 @@ export const SensorLogsViewer = ({
             <div className='row'>
                 <div className='columns small-3 medium-2'>
                     <p>Triggers</p>
-                    <div key='all' style={{marginBottom: '1em'}}>
+                    {error && <ErrorNotice error={error} />}
+                    <div style={{marginBottom: '1em'}}>
                         <div
                             key='all'
                             onClick={() => {
