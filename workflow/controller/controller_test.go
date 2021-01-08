@@ -419,8 +419,8 @@ metadata:
 spec:
   entrypoint: main
   templates:
-    - name: main 
-      container: 
+    - name: main
+      container:
         image: my-image
 `),
 		unmarshalWF(`
@@ -430,7 +430,7 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      container: 
+      container:
         image: my-image
 `),
 		func(controller *WorkflowController) { controller.Config.Parallelism = 1 },

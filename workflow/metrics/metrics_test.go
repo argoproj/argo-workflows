@@ -5,12 +5,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
+
+func write(metric prometheus.Metric) dto.Metric {
+	var m dto.Metric
+	err := metric.Write(&m)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
 
 func TestServerConfig_SameServerAs(t *testing.T) {
 	a := ServerConfig{
@@ -48,16 +58,12 @@ func TestMetrics(t *testing.T) {
 	}
 	m := New(config, config)
 
-	var metric dto.Metric
 	m.OperationCompleted(0.05)
-	err := m.operationDurations.Write(&metric)
-	if assert.NoError(t, err) {
-		assert.Equal(t, uint64(1), *metric.Histogram.Bucket[0].CumulativeCount)
-	}
+	assert.Equal(t, uint64(1), *write(m.operationDurations).Histogram.Bucket[0].CumulativeCount)
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
-	err = m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
+	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, m.GetCustomMetric("metric"))
 	}
@@ -67,7 +73,7 @@ func TestMetrics(t *testing.T) {
 
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
 		Name:   "count",
-		Help:   "Number of Workflows currently accessible by the controller by status",
+		Help:   "Number of Workflows currently accessible by the controller by status (refreshed every 15s)",
 		Labels: []*v1alpha1.MetricLabel{{Key: "status", Value: "Running"}},
 		Gauge: &v1alpha1.Gauge{
 			Value: "1",
@@ -126,11 +132,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	wfQueue.Add("hello")
 
 	if assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"]) {
-		var metric dto.Metric
-		err := m.workqueueMetrics["workflow_queue-adds"].Write(&metric)
-		if assert.NoError(t, err) {
-			assert.Equal(t, 1.0, *metric.Counter.Value)
-		}
+		assert.Equal(t, 1.0, *write(m.workqueueMetrics["workflow_queue-adds"]).Counter.Value)
 	}
 }
 

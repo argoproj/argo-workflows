@@ -8,6 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
+	v1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -153,22 +154,39 @@ func newHistogram(name, help string, labels map[string]string, buckets []float64
 }
 
 func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
-	getOptsByPahse := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
+	getOptsByPhase := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
 		return prometheus.GaugeOpts{
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
 			Name:        "count",
-			Help:        "Number of Workflows currently accessible by the controller by status",
+			Help:        "Number of Workflows currently accessible by the controller by status (refreshed every 15s)",
 			ConstLabels: map[string]string{"status": string(phase)},
 		}
 	}
 	return map[wfv1.NodePhase]prometheus.Gauge{
-		wfv1.NodePending:   prometheus.NewGauge(getOptsByPahse(wfv1.NodePending)),
-		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeRunning)),
-		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPahse(wfv1.NodeSucceeded)),
-		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeSkipped)),
-		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),
-		wfv1.NodeError:     prometheus.NewGauge(getOptsByPahse(wfv1.NodeError)),
+		wfv1.NodePending:   prometheus.NewGauge(getOptsByPhase(wfv1.NodePending)),
+		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPhase(wfv1.NodeRunning)),
+		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPhase(wfv1.NodeSucceeded)),
+		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPhase(wfv1.NodeFailed)),
+		wfv1.NodeError:     prometheus.NewGauge(getOptsByPhase(wfv1.NodeError)),
+	}
+}
+
+func getPodPhaseGauges() map[v1.PodPhase]prometheus.Gauge {
+	getOptsByPhase := func(phase v1.PodPhase) prometheus.GaugeOpts {
+		return prometheus.GaugeOpts{
+			Namespace:   argoNamespace,
+			Subsystem:   workflowsSubsystem,
+			Name:        "pods_count",
+			Help:        "Number of Pods from Workflows currently accessible by the controller by status (refreshed every 15s)",
+			ConstLabels: map[string]string{"status": string(phase)},
+		}
+	}
+	return map[v1.PodPhase]prometheus.Gauge{
+		v1.PodPending: prometheus.NewGauge(getOptsByPhase(v1.PodPending)),
+		v1.PodRunning: prometheus.NewGauge(getOptsByPhase(v1.PodRunning)),
+		//v1.PodSucceeded: prometheus.NewGauge(getOptsByPhase(v1.PodSucceeded)),
+		//v1.PodFailed:    prometheus.NewGauge(getOptsByPhase(v1.PodFailed)),
 	}
 }
 
@@ -186,6 +204,16 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPahse(ErrorCauseOperationPanic)),
 		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSubmissionError)),
 	}
+}
+
+func getWorkersBusy(name string) prometheus.Gauge {
+	return prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace:   argoNamespace,
+		Subsystem:   workflowsSubsystem,
+		Name:        "workers_busy_count",
+		Help:        "Number of workers currently busy",
+		ConstLabels: map[string]string{"worker_type": name},
+	})
 }
 
 func IsValidMetricName(name string) bool {

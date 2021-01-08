@@ -156,10 +156,10 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
-	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(&fixedItemIntervalRateLimiter{}, "workflow_queue")
+	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(&fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
-	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
-	wfc.podCleanupQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
+	wfc.podQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_queue")
+	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
 }
@@ -170,7 +170,7 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTLWorkers int) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, wfc.metrics)
 	err := ttlCtrl.Run(ctx.Done(), workflowTTLWorkers)
 	if err != nil {
 		panic(err)
@@ -262,6 +262,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				go wfc.runCronController(ctx)
 				go wfc.metrics.RunServer(ctx)
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
+				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
 				for i := 0; i < wfWorkers; i++ {
 					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
@@ -953,6 +954,7 @@ func (wfc *WorkflowController) newPodInformer() map[wfv1.ClusterNamespaceKey]cac
 		source := wfc.newWorkflowPodWatch(clusterNamespace)
 		informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 		})
 		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: wfc.enqueueWfFromPodLabel,
@@ -1077,5 +1079,16 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 			continue
 		}
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(objs))
+	}
+}
+
+func (wfc *WorkflowController) syncPodPhaseMetrics() {
+	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
+		objs, err := wfc.podInformer.GetIndexer().ByIndex(indexes.PodPhaseIndex, string(phase))
+		if err != nil {
+			log.WithError(err).Error("failed to list active pods")
+			return
+		}
+		wfc.metrics.SetPodPhaseGauge(phase, len(objs))
 	}
 }
