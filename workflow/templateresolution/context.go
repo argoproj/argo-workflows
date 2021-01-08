@@ -1,6 +1,8 @@
 package templateresolution
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -27,7 +29,8 @@ func WrapWorkflowTemplateInterface(clientset v1alpha1.WorkflowTemplateInterface)
 
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.WorkflowTemplate, error) {
-	return wrapper.clientset.Get(name, metav1.GetOptions{})
+	ctx := context.TODO()
+	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
 // WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
@@ -60,7 +63,8 @@ func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkf
 
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
-	return wrapper.clientset.Get(name, metav1.GetOptions{})
+	ctx := context.TODO()
+	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
 // Context is a context of template search.

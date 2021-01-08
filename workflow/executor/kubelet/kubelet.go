@@ -1,6 +1,7 @@
 package kubelet
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -32,16 +33,16 @@ func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPa
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the kubelet executor.")
 }
 
-func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (k *KubeletExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	if !combinedOutput {
 		log.Warn("non combined output unsupported")
 	}
 	return k.cli.GetLogStream(containerID)
 }
 
-func (k *KubeletExecutor) GetExitCode(containerID string) (string, error) {
+func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
-	_, status, err := k.cli.GetContainerStatus(containerID)
+	_, status, err := k.cli.GetContainerStatus(ctx, containerID)
 	if err != nil {
 		return "", errors.InternalWrapError(err, "Could not get container status")
 	}
@@ -56,14 +57,14 @@ func (k *KubeletExecutor) WaitInit() error {
 }
 
 // Wait for the container to complete
-func (k *KubeletExecutor) Wait(containerID string) error {
-	return k.cli.WaitForTermination(containerID, 0)
+func (k *KubeletExecutor) Wait(ctx context.Context, containerID string) error {
+	return k.cli.WaitForTermination(ctx, containerID, 0)
 }
 
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (k *KubeletExecutor) Kill(containerIDs []string) error {
+func (k *KubeletExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	for _, containerID := range containerIDs {
-		err := k.cli.KillGracefully(containerID)
+		err := k.cli.KillGracefully(ctx, containerID)
 		if err != nil {
 			return err
 		}

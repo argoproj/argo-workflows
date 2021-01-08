@@ -1,6 +1,7 @@
 package k8sapi
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -35,17 +36,17 @@ func (k *K8sAPIExecutor) CopyFile(containerID string, sourcePath string, destPat
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the k8sapi executor.")
 }
 
-func (k *K8sAPIExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (k *K8sAPIExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	log.Infof("Getting output of %s", containerID)
 	if !combinedOutput {
 		log.Warn("non combined output unsupported")
 	}
-	return k.client.getLogsAsStream(containerID)
+	return k.client.getLogsAsStream(ctx, containerID)
 }
 
-func (k *K8sAPIExecutor) GetExitCode(containerID string) (string, error) {
+func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
-	_, status, err := k.client.GetContainerStatus(containerID)
+	_, status, err := k.client.GetContainerStatus(ctx, containerID)
 	if err != nil {
 		return "", errors.InternalWrapError(err, "Could not get container status")
 	}
@@ -60,15 +61,15 @@ func (k *K8sAPIExecutor) WaitInit() error {
 }
 
 // Wait for the container to complete
-func (k *K8sAPIExecutor) Wait(containerID string) error {
-	return wait.UntilTerminated(k.client.clientset, k.client.namespace, k.client.podName, containerID)
+func (k *K8sAPIExecutor) Wait(ctx context.Context, containerID string) error {
+	return wait.UntilTerminated(ctx, k.client.clientset, k.client.namespace, k.client.podName, containerID)
 }
 
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (k *K8sAPIExecutor) Kill(containerIDs []string) error {
+func (k *K8sAPIExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	log.Infof("Killing containers %s", containerIDs)
 	for _, containerID := range containerIDs {
-		err := k.client.killGracefully(containerID)
+		err := k.client.killGracefully(ctx, containerID)
 		if err != nil {
 			return err
 		}

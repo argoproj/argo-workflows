@@ -167,7 +167,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		if s.ssoIf.IsRBACEnabled() {
-			clients, err := s.rbacAuthorization(claims)
+			clients, err := s.rbacAuthorization(ctx, claims)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
@@ -181,8 +181,8 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(claims *types.Claims) (*servertypes.Clients, error) {
-	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).List(metav1.ListOptions{})
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims) (versioned.Interface, kubernetes.Interface, error) {
+	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
 	}
@@ -221,7 +221,7 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims) (*servertypes.Clien
 		if !allow {
 			continue
 		}
-		authorization, err := s.authorizationForServiceAccount(serviceAccount.Name)
+		authorization, err := s.authorizationForServiceAccount(ctx, serviceAccount.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -235,15 +235,15 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims) (*servertypes.Clien
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) authorizationForServiceAccount(serviceAccountName string) (string, error) {
-	serviceAccount, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccountName, metav1.GetOptions{})
+func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccountName string) (string, error) {
+	serviceAccount, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account: %w", err)
 	}
 	if len(serviceAccount.Secrets) == 0 {
 		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", err)
 	}
-	secret, err := s.clients.Kubernetes.CoreV1().Secrets(s.namespace).Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+	secret, err := s.clients.Kubernetes.CoreV1().Secrets(s.namespace).Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}

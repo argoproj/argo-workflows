@@ -3,6 +3,8 @@
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -22,7 +24,7 @@ var clusterworkflowtemplatesResource = schema.GroupVersionResource{Group: "argop
 var clusterworkflowtemplatesKind = schema.GroupVersionKind{Group: "argoproj.io", Version: "v1alpha1", Kind: "ClusterWorkflowTemplate"}
 
 // Get takes name of the clusterWorkflowTemplate, and returns the corresponding clusterWorkflowTemplate object, and an error if there is any.
-func (c *FakeClusterWorkflowTemplates) Get(name string, options v1.GetOptions) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
+func (c *FakeClusterWorkflowTemplates) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootGetAction(clusterworkflowtemplatesResource, name), &v1alpha1.ClusterWorkflowTemplate{})
 	if obj == nil {
@@ -32,7 +34,7 @@ func (c *FakeClusterWorkflowTemplates) Get(name string, options v1.GetOptions) (
 }
 
 // List takes label and field selectors, and returns the list of ClusterWorkflowTemplates that match those selectors.
-func (c *FakeClusterWorkflowTemplates) List(opts v1.ListOptions) (result *v1alpha1.ClusterWorkflowTemplateList, err error) {
+func (c *FakeClusterWorkflowTemplates) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ClusterWorkflowTemplateList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootListAction(clusterworkflowtemplatesResource, clusterworkflowtemplatesKind, opts), &v1alpha1.ClusterWorkflowTemplateList{})
 	if obj == nil {
@@ -53,13 +55,13 @@ func (c *FakeClusterWorkflowTemplates) List(opts v1.ListOptions) (result *v1alph
 }
 
 // Watch returns a watch.Interface that watches the requested clusterWorkflowTemplates.
-func (c *FakeClusterWorkflowTemplates) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeClusterWorkflowTemplates) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewRootWatchAction(clusterworkflowtemplatesResource, opts))
 }
 
 // Create takes the representation of a clusterWorkflowTemplate and creates it.  Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
-func (c *FakeClusterWorkflowTemplates) Create(clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
+func (c *FakeClusterWorkflowTemplates) Create(ctx context.Context, clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate, opts v1.CreateOptions) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootCreateAction(clusterworkflowtemplatesResource, clusterWorkflowTemplate), &v1alpha1.ClusterWorkflowTemplate{})
 	if obj == nil {
@@ -69,7 +71,7 @@ func (c *FakeClusterWorkflowTemplates) Create(clusterWorkflowTemplate *v1alpha1.
 }
 
 // Update takes the representation of a clusterWorkflowTemplate and updates it. Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
-func (c *FakeClusterWorkflowTemplates) Update(clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
+func (c *FakeClusterWorkflowTemplates) Update(ctx context.Context, clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate, opts v1.UpdateOptions) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateAction(clusterworkflowtemplatesResource, clusterWorkflowTemplate), &v1alpha1.ClusterWorkflowTemplate{})
 	if obj == nil {
@@ -79,22 +81,22 @@ func (c *FakeClusterWorkflowTemplates) Update(clusterWorkflowTemplate *v1alpha1.
 }
 
 // Delete takes name of the clusterWorkflowTemplate and deletes it. Returns an error if one occurs.
-func (c *FakeClusterWorkflowTemplates) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeClusterWorkflowTemplates) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewRootDeleteAction(clusterworkflowtemplatesResource, name), &v1alpha1.ClusterWorkflowTemplate{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeClusterWorkflowTemplates) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(clusterworkflowtemplatesResource, listOptions)
+func (c *FakeClusterWorkflowTemplates) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewRootDeleteCollectionAction(clusterworkflowtemplatesResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ClusterWorkflowTemplateList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched clusterWorkflowTemplate.
-func (c *FakeClusterWorkflowTemplates) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
+func (c *FakeClusterWorkflowTemplates) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(clusterworkflowtemplatesResource, name, pt, data, subresources...), &v1alpha1.ClusterWorkflowTemplate{})
 	if obj == nil {

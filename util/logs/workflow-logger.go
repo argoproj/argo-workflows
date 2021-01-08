@@ -40,7 +40,7 @@ type sender interface {
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
 
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
-	_, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
+	_, err := wfInterface.Get(ctx, req.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				defer wg.Done()
 				logCtx.Debug("Streaming pod logs")
 				defer logCtx.Debug("Pod logs stream done")
-				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream()
+				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
 				if err != nil {
 					logCtx.Error(err)
 					return
@@ -125,7 +125,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		}
 	}
 
-	podWatch, err := podInterface.Watch(podListOptions)
+	podWatch, err := podInterface.Watch(ctx, podListOptions)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	// only list after we start the watch
 	logCtx.Debug("Listing workflow pods")
-	list, err := podInterface.List(podListOptions)
+	list, err := podInterface.List(ctx, podListOptions)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	if logOptions.Follow {
 		wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName(), ResourceVersion: "0"}
-		wfWatch, err := wfInterface.Watch(wfListOptions)
+		wfWatch, err := wfInterface.Watch(ctx, wfListOptions)
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					if !open {
 						logCtx.Debug("Re-establishing workflow watch")
 						wfWatch.Stop()
-						wfWatch, err = wfInterface.Watch(wfListOptions)
+						wfWatch, err = wfInterface.Watch(ctx, wfListOptions)
 						if err != nil {
 							logCtx.Error(err)
 							return
@@ -207,7 +207,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					if !open {
 						logCtx.Info("Re-establishing pod watch")
 						podWatch.Stop()
-						podWatch, err = podInterface.Watch(podListOptions)
+						podWatch, err = podInterface.Watch(ctx, podListOptions)
 						if err != nil {
 							logCtx.Error(err)
 							return

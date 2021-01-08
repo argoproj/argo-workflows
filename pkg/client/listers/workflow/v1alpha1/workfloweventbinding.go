@@ -10,8 +10,10 @@ import (
 )
 
 // WorkflowEventBindingLister helps list WorkflowEventBindings.
+// All objects returned here must be treated as read-only.
 type WorkflowEventBindingLister interface {
 	// List lists all WorkflowEventBindings in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.WorkflowEventBinding, err error)
 	// WorkflowEventBindings returns an object that can list and get WorkflowEventBindings.
 	WorkflowEventBindings(namespace string) WorkflowEventBindingNamespaceLister
@@ -42,10 +44,13 @@ func (s *workflowEventBindingLister) WorkflowEventBindings(namespace string) Wor
 }
 
 // WorkflowEventBindingNamespaceLister helps list and get WorkflowEventBindings.
+// All objects returned here must be treated as read-only.
 type WorkflowEventBindingNamespaceLister interface {
 	// List lists all WorkflowEventBindings in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.WorkflowEventBinding, err error)
 	// Get retrieves the WorkflowEventBinding from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.WorkflowEventBinding, error)
 	WorkflowEventBindingNamespaceListerExpansion
 }

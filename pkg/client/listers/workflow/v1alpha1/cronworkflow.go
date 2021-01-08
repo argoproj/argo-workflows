@@ -10,8 +10,10 @@ import (
 )
 
 // CronWorkflowLister helps list CronWorkflows.
+// All objects returned here must be treated as read-only.
 type CronWorkflowLister interface {
 	// List lists all CronWorkflows in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.CronWorkflow, err error)
 	// CronWorkflows returns an object that can list and get CronWorkflows.
 	CronWorkflows(namespace string) CronWorkflowNamespaceLister
@@ -42,10 +44,13 @@ func (s *cronWorkflowLister) CronWorkflows(namespace string) CronWorkflowNamespa
 }
 
 // CronWorkflowNamespaceLister helps list and get CronWorkflows.
+// All objects returned here must be treated as read-only.
 type CronWorkflowNamespaceLister interface {
 	// List lists all CronWorkflows in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.CronWorkflow, err error)
 	// Get retrieves the CronWorkflow from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.CronWorkflow, error)
 	CronWorkflowNamespaceListerExpansion
 }
