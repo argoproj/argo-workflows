@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	workflowv1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -44,13 +45,13 @@ func NewFilteredClusterWorkflowTemplateInformer(client versioned.Interface, resy
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(options)
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(options)
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(context.TODO(), options)
 			},
 		},
 		&workflowv1alpha1.ClusterWorkflowTemplate{},
