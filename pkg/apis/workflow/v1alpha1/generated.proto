@@ -849,6 +849,16 @@ message ResourceTemplate {
   repeated string flags = 7;
 }
 
+// RetryAffinity prevents running steps on the same host.
+message RetryAffinity {
+  optional RetryNodeAntiAffinity nodeAntiAffinity = 1;
+}
+
+// RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
+// In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+message RetryNodeAntiAffinity {
+}
+
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
@@ -859,6 +869,9 @@ message RetryStrategy {
 
   // Backoff is a backoff strategy
   optional Backoff backoff = 3;
+
+  // Affinity prevents running workflow's step on the same host
+  optional RetryAffinity affinity = 4;
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -948,6 +961,9 @@ message Sequence {
 message Submit {
   // WorkflowTemplateRef the workflow template to submit
   optional WorkflowTemplateRef workflowTemplateRef = 1;
+
+  // Metadata optional means to customize select fields of the workflow metadata
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 3;
 
   // Arguments extracted from the event and then set as arguments to the workflow created.
   optional Arguments arguments = 2;

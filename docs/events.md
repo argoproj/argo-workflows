@@ -74,6 +74,44 @@ curl $ARGO_SERVER/api/v1/events/argo/my-discriminator \
 !!! Warning "Malformed Expressions"
     If the expression is malformed, this is logged. It is not visible in logs or the UI. 
 
+### Customizing the Workflow Metadata
+You can customize the name of the submitted workflow as well as add annotations and
+labels. This is done by adding a `metadata` object to the submit object.
+
+Normally the name of the workflow created from an event is simply the name of the
+template with a timestamp appended. This can be customized by setting the name in the
+`metadata` object.
+
+Annotations and labels are added in the same fashion.
+
+All the values for the name, annotations and labels are treated as expressions (see
+below for details).  The `metadata` object is the same `metadata` type as on all 
+Kubernetes resources and as such is parsed in the same manner. It is best to enclose
+the expression in single quotes to avoid any problems when submitting the event
+binding to Kubernetes.
+
+This is an example snippet of how to set the name, annotations and labels. This is
+based on the workflow binding from above, and the first event.
+```yaml
+  submit:
+    metadata:
+      annotations:
+        anAnnotation: 'event.payload.message'
+      name: 'event.payload.message + "-world"'
+      labels:
+        someLabel: '"literal string"'
+```
+This will result in the workflow being named "hello-world" instead of
+`my-wf-tmple-<timestamp>`. There will be an extra label with the key "someLabel" and
+a value of "literal string". There will also be an extra annotation with the key
+"anAnnotation" and a value of "hello"
+
+Be careful when setting the name. If the name expression evaluates to that of a currently
+existing workflow, the new workflow will fail to submit.
+
+The name, annotation and label expression must evaluate to a string and follow the normal [Kubernetes naming
+requirements](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/).
+
 ## Event Expression Syntax and the Event Expression Environment
 
 **Event expressions** are expressions that are evaluated over the **event expression environment**.

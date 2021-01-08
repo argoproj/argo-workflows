@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/argoproj/pkg/sync"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -256,15 +257,7 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 }
 
 func expectWorkflow(controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	obj, exists, err := controller.wfInformer.GetStore().GetByKey(name)
-	if err != nil {
-		panic(err)
-	}
-	if !exists {
-		test(nil)
-		return
-	}
-	wf, err := util.FromUnstructured(obj.(*unstructured.Unstructured))
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -424,8 +417,8 @@ metadata:
 spec:
   entrypoint: main
   templates:
-    - name: main 
-      container: 
+    - name: main
+      container:
         image: my-image
 `),
 		unmarshalWF(`
@@ -435,7 +428,7 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      container: 
+      container:
         image: my-image
 `),
 		func(controller *WorkflowController) { controller.Config.Parallelism = 1 },
@@ -603,5 +596,6 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	assert.Equal(0, controller.wfQueue.Len())
 
 	controller.notifySemaphoreConfigUpdate(&cm)
+	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }

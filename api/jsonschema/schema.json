@@ -1518,9 +1518,26 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.RetryAffinity": {
+      "description": "RetryAffinity prevents running steps on the same host.",
+      "properties": {
+        "nodeAntiAffinity": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryNodeAntiAffinity"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.RetryNodeAntiAffinity": {
+      "description": "RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses \"kubernetes.io/hostname\".",
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.RetryStrategy": {
       "description": "RetryStrategy provides controls on how to retry a workflow step",
       "properties": {
+        "affinity": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryAffinity",
+          "description": "Affinity prevents running workflow's step on the same host"
+        },
         "backoff": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Backoff",
           "description": "Backoff is a backoff strategy"
@@ -1798,6 +1815,10 @@
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
           "description": "Arguments extracted from the event and then set as arguments to the workflow created."
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+          "description": "Metadata optional means to customize select fields of the workflow metadata"
         },
         "workflowTemplateRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
