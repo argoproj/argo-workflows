@@ -45,7 +45,7 @@ const latestAlias = "@latest"
 
 // NewWorkflowServer returns a new workflowServer
 func NewWorkflowServer(thisClusterName wfv1.ClusterName, namespace, managedNamespace string, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{thisClusterName, namespace, managedNamespace,instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
+	return &workflowServer{thisClusterName, namespace, managedNamespace, instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {

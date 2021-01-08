@@ -26,7 +26,7 @@ func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, clu
 		return nil, nil, fmt.Errorf("failed to get secret/clusters: %w", err)
 	} else {
 		for key, data := range secret.Data {
-			clusterNamespace,err := wfv1.ParseClusterNamespaceKey(key)
+			clusterNamespace, err := wfv1.ParseClusterNamespaceKey(key)
 			if err != nil {
 				return nil, nil, fmt.Errorf("failed parse key %s: %w", key, err)
 			}
