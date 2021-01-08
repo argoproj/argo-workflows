@@ -1647,14 +1647,14 @@ func (s *ArgoServerSuite) TestSensorService() {
 		"metadata":{
 			"name":"test-sensor",
 			"resourceVersion": "` + resourceVersion + `",
-			"annotations": {
-				"test-anno": "test-value"
-			},
 			"labels": {
 				"argo-e2e": "true"
 			}
 		},
-		"spec":{
+		"spec": {
+			"template": {
+				"serviceAccountName": "default"
+			},
 			"dependencies":[
 				{
 					"name":"test-dep",
@@ -1677,6 +1677,14 @@ func (s *ArgoServerSuite) TestSensorService() {
 		}`)).
 			Expect().
 			Status(200)
+	})
+	s.Run("GetSensorAfterUpdating", func() {
+		s.e().GET("/api/v1/sensors/argo/test-sensor").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.spec.template.serviceAccountName").
+			Equal("default")
 	})
 	s.Run("DeleteSensor", func() {
 		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
