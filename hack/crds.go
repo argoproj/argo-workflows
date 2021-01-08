@@ -21,7 +21,9 @@ func cleanCRD(filename string) {
 	delete(metadata, "annotations")
 	delete(metadata, "creationTimestamp")
 	spec := crd["spec"].(obj)
-	validation := spec["validation"].(obj)
+	versions := spec["versions"].([]interface{})
+	version := versions[0].(obj)
+	validation := version["schema"].(obj)
 	schema := validation["openAPIV3Schema"].(obj)
 	name := crd["metadata"].(obj)["name"].(string)
 	switch name {
