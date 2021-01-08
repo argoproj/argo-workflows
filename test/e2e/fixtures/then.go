@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -42,7 +43,9 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 		t.t.Fatal("No workflow to test")
 	}
 	println("Checking expectation", workflowName)
-	wf, err := t.client.Get(workflowName, metav1.GetOptions{})
+
+	ctx := context.Background()
+	wf, err := t.client.Get(ctx, workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -59,7 +62,8 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 }
 
 func (t *Then) ExpectWorkflowDeleted() *Then {
-	_, err := t.client.Get(t.wf.Name, metav1.GetOptions{})
+	ctx := context.Background()
+	_, err := t.client.Get(ctx, t.wf.Name, metav1.GetOptions{})
 	if err == nil || !apierr.IsNotFound(err) {
 		t.t.Fatalf("expected workflow to be deleted: %v", err)
 	}
@@ -77,7 +81,8 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 			println("Found node", "id="+n.ID, "type="+n.Type)
 			if n.Type == wfv1.NodeTypePod {
 				var err error
-				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(n.ID, metav1.GetOptions{})
+				ctx := context.Background()
+				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, n.ID, metav1.GetOptions{})
 				if err != nil {
 					if !apierr.IsNotFound(err) {
 						t.t.Fatal(err)
@@ -98,7 +103,9 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 		t.t.Fatal("No cron workflow to test")
 	}
 	println("Checking cron expectation")
-	cronWf, err := t.cronClient.Get(t.cronWf.Name, metav1.GetOptions{})
+
+	ctx := context.Background()
+	cronWf, err := t.cronClient.Get(ctx, t.cronWf.Name, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -112,7 +119,9 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	t.t.Helper()
 	println("Listing workflows")
-	wfList, err := t.client.List(listOptions)
+
+	ctx := context.Background()
+	wfList, err := t.client.List(ctx, listOptions)
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -138,7 +147,9 @@ var HasInvolvedObjectWithName = func(kind string, name string) func(event apiv1.
 
 func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, block func(*testing.T, []apiv1.Event)) *Then {
 	t.t.Helper()
-	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
+
+	ctx := context.Background()
+	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}

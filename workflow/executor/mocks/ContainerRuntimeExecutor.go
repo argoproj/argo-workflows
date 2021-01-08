@@ -3,6 +3,8 @@
 package mocks
 
 import (
+	context "context"
+
 	io "io"
 
 	mock "github.com/stretchr/testify/mock"
@@ -27,20 +29,20 @@ func (_m *ContainerRuntimeExecutor) CopyFile(containerID string, sourcePath stri
 	return r0
 }
 
-// GetExitCode provides a mock function with given fields: containerID
-func (_m *ContainerRuntimeExecutor) GetExitCode(containerID string) (string, error) {
-	ret := _m.Called(containerID)
+// GetExitCode provides a mock function with given fields: ctx, containerID
+func (_m *ContainerRuntimeExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
+	ret := _m.Called(ctx, containerID)
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(containerID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, containerID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(containerID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, containerID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -69,13 +71,13 @@ func (_m *ContainerRuntimeExecutor) GetFileContents(containerID string, sourcePa
 	return r0, r1
 }
 
-// GetOutputStream provides a mock function with given fields: containerID, combinedOutput
-func (_m *ContainerRuntimeExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
-	ret := _m.Called(containerID, combinedOutput)
+// GetOutputStream provides a mock function with given fields: ctx, containerID, combinedOutput
+func (_m *ContainerRuntimeExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
+	ret := _m.Called(ctx, containerID, combinedOutput)
 
 	var r0 io.ReadCloser
-	if rf, ok := ret.Get(0).(func(string, bool) io.ReadCloser); ok {
-		r0 = rf(containerID, combinedOutput)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) io.ReadCloser); ok {
+		r0 = rf(ctx, containerID, combinedOutput)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(io.ReadCloser)
@@ -83,8 +85,8 @@ func (_m *ContainerRuntimeExecutor) GetOutputStream(containerID string, combined
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, bool) error); ok {
-		r1 = rf(containerID, combinedOutput)
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool) error); ok {
+		r1 = rf(ctx, containerID, combinedOutput)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -92,13 +94,13 @@ func (_m *ContainerRuntimeExecutor) GetOutputStream(containerID string, combined
 	return r0, r1
 }
 
-// Kill provides a mock function with given fields: containerIDs
-func (_m *ContainerRuntimeExecutor) Kill(containerIDs []string) error {
-	ret := _m.Called(containerIDs)
+// Kill provides a mock function with given fields: ctx, containerIDs
+func (_m *ContainerRuntimeExecutor) Kill(ctx context.Context, containerIDs []string) error {
+	ret := _m.Called(ctx, containerIDs)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]string) error); ok {
-		r0 = rf(containerIDs)
+	if rf, ok := ret.Get(0).(func(context.Context, []string) error); ok {
+		r0 = rf(ctx, containerIDs)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -106,13 +108,13 @@ func (_m *ContainerRuntimeExecutor) Kill(containerIDs []string) error {
 	return r0
 }
 
-// Wait provides a mock function with given fields: containerID
-func (_m *ContainerRuntimeExecutor) Wait(containerID string) error {
-	ret := _m.Called(containerID)
+// Wait provides a mock function with given fields: ctx, containerID
+func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context, containerID string) error {
+	ret := _m.Called(ctx, containerID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(containerID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, containerID)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -201,15 +202,18 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	wfResult := unmarshalWF(wf_wfdefaultResult)
 	cancel, controller := newControllerWithDefaults()
 	defer cancel()
+
+	ctx := context.Background()
 	controller.Config.WorkflowDefaults = wfDefault
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 	assert.Equal(woc.wf.Spec, wfResult.Spec)
 	assert.Contains(woc.wf.Labels, "testLabel")
 	assert.Contains(woc.wf.Annotations, "testAnnotation")
+
 	wf1.Spec.Entrypoint = ""
 	woc = newWorkflowOperationCtx(wf1, controller)
-	woc.operate()
+	woc.operate(ctx)
 	assert.Equal(woc.wf.Spec, wfResult.Spec)
 	assert.Contains(woc.wf.Labels, "testLabel")
 	assert.Contains(woc.wf.Annotations, "testAnnotation")
@@ -222,6 +226,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	var resultSpec wfv1.WorkflowSpec
 	err := json.Unmarshal([]byte(storedSpecResult), &resultSpec)
 	assert.NoError(err)
+
+	ctx := context.Background()
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {
 		cancel, controller := newController(wft)
 		defer cancel()
@@ -229,7 +235,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 
 		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: "default"}, Spec: wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}}}
 		woc := newWorkflowOperationCtx(&wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
 		assert.Equal(resultSpec, woc.execWf.Spec)
 		assert.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
@@ -256,7 +262,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
 
 		woc := newWorkflowOperationCtx(&wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Equal(resultSpec, woc.execWf.Spec)
 		assert.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
 	})
@@ -298,7 +304,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		resultSpec.Arguments.Artifacts = append(resultSpec.Arguments.Artifacts, art)
 
 		woc := newWorkflowOperationCtx(&wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Contains(woc.execWf.Spec.Arguments.Parameters, param)
 		assert.Contains(woc.wf.Status.StoredWorkflowSpec.Arguments.Artifacts, art)
 	})
