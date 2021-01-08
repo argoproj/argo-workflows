@@ -97,7 +97,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
         items.push({
             action: () => setSidePanel('share'),
-            iconClassName: 'fa fa-share',
+            iconClassName: 'fa fa-share-alt',
             title: 'Share'
         });
 

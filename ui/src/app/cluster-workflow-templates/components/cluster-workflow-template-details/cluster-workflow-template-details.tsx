@@ -83,6 +83,7 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                                         })
                                     )
                                     .then(() => setError(null))
+                                    .then(() => setEdited(false))
                                     .catch(setError);
                             }
                         },

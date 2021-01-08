@@ -6,8 +6,8 @@ import {WorkflowStatusBadge} from './workflow-status-badge';
 
 export const Widgets = (props: RouteComponentProps<any>) => (
     <Switch>
-        <Route path={`${props.match.path}/workflow-graphs/:namespace/:name`} component={WorkflowGraph} />
-        <Route path={`${props.match.path}/workflow-status-badges/:namespace/:name`} component={WorkflowStatusBadge} />
+        <Route path={`${props.match.path}/workflow-graphs/:namespace`} component={WorkflowGraph} />
+        <Route path={`${props.match.path}/workflow-status-badges/:namespace`} component={WorkflowStatusBadge} />
         <ErrorNotice error={new Error('Widget not found')} />
     </Switch>
 );

@@ -1,4 +1,4 @@
-import {NotificationType, Page} from 'argo-ui';
+import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
@@ -9,6 +9,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {CronWorkflowEditor} from '../cron-workflow-editor';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
@@ -20,7 +21,8 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
 
     const [namespace] = useState(match.params.namespace);
     const [name] = useState(match.params.name);
-    const [tab, setTab] = useState<string>(queryParams.get('tab'));
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const [tab, setTab] = useState(queryParams.get('tab'));
 
     const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>();
     const [edited, setEdited] = useState(false);
@@ -32,10 +34,11 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                 historyUrl('cron-workflows/{namespace}/{name}', {
                     namespace,
                     name,
+                    sidePanel,
                     tab
                 })
             ),
-        [namespace, name, tab]
+        [namespace, name, sidePanel, tab]
     );
 
     useEffect(() => {
@@ -119,6 +122,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                                     .then(setCronWorkflow)
                                     .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
                                     .then(() => setError(null))
+                                    .then(() => setEdited(false))
                                     .catch(setError);
                             }
                         },
@@ -137,7 +141,12 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                                     .catch(setError);
                             }
                         },
-                        suspendButton
+                        suspendButton,
+                        {
+                            title: 'Share',
+                            iconClassName: 'fa fa-share-alt',
+                            action: () => setSidePanel('share')
+                        }
                     ]
                 }
             }}>
@@ -148,6 +157,9 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                 ) : (
                     <CronWorkflowEditor cronWorkflow={cronWorkflow} onChange={setCronWorkflow} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />
                 )}
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
+                    {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/cron-workflow=' + name} />}
+                </SlidingPanel>
             </>
         </Page>
     );

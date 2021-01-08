@@ -4,62 +4,68 @@ import {RouteComponentProps} from 'react-router';
 import {NodeStatus} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
-import {Loading} from '../shared/components/loading';
 import {historyUrl} from '../shared/history';
 import {RetryWatch} from '../shared/retry-watch';
 import {services} from '../shared/services';
 import {WorkflowDag} from '../workflows/components/workflow-dag/workflow-dag';
 
 export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
-    const [namespace] = useState(match.params.namespace);
-    const [name] = useState(match.params.name);
-
     const queryParams = new URLSearchParams(location.search);
-
-    const [showOptions] = useState(queryParams.get('showOptions') === 'true');
-    const [nodeSize] = useState(parseInt(queryParams.get('nodeSize'), 10) || 16);
-    const [target] = useState(queryParams.get('target') || '_top');
+    const namespace = match.params.namespace;
+    const name = queryParams.get('name');
+    const label = queryParams.get('label');
+    const showOptions = queryParams.get('showOptions') === 'true';
+    const nodeSize = parseInt(queryParams.get('nodeSize'), 10) || 32;
+    const target = queryParams.get('target') || '_top';
 
     useEffect(() => {
         history.push(
-            historyUrl('widgets/workflow-graphs/{namespace}/{name}', {
+            historyUrl('widgets/workflow-graphs/{namespace}', {
                 namespace,
                 name,
+                label,
                 showOptions,
                 nodeSize,
                 target
             })
         );
-    }, [namespace, name]);
+    }, [namespace, name, label]);
 
+    const [displayName, setDisplayName] = useState<string>();
+    const [creationTimestamp, setCreationTimestamp] = useState<Date>(); // used to make sure we only display the most recent one
     const [nodes, setNodes] = useState<{[nodeId: string]: NodeStatus}>();
     const [error, setError] = useState<Error>();
 
     useEffect(() => {
         const w = new RetryWatch(
-            () => services.workflows.watch({namespace, name}),
+            () => services.workflows.watch({namespace, name, labels: [label]}),
             () => setError(null),
-            e => setNodes(e.object.status.nodes),
+            e => {
+                const wf = e.object;
+                const t = new Date(wf.metadata.creationTimestamp);
+                if (t < creationTimestamp) {
+                    return;
+                }
+                setDisplayName(wf.metadata.name);
+                setNodes(wf.status.nodes);
+                setCreationTimestamp(t);
+            },
             setError
         );
         w.start();
         return () => w.stop();
-    }, [namespace, name]);
+    }, [namespace, name, label]);
 
     return (
         <>
             <ErrorNotice error={error} />
-            {nodes ? (
-                <WorkflowDag
-                    nodeClicked={nodeId => window.open(uiUrl(`workflows/${namespace}/${name}?nodeId=${nodeId}`), target)}
-                    workflowName={name}
-                    nodes={nodes}
-                    hideOptions={!showOptions}
-                    nodeSize={nodeSize}
-                />
-            ) : (
-                <Loading />
-            )}
+            <WorkflowDag
+                nodeClicked={nodeId => window.open(uiUrl(`workflows/${namespace}/${displayName}?nodeId=${nodeId}`), target)}
+                workflowName={displayName}
+                nodes={nodes || {}}
+                hideOptions={!showOptions}
+                nodeSize={nodeSize}
+            />
         </>
     );
 };

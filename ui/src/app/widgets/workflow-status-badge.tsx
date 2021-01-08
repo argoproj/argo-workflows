@@ -10,37 +10,43 @@ import {services} from '../shared/services';
 require('./workflow-status-badge.scss');
 
 export const WorkflowStatusBadge = ({history, match}: RouteComponentProps<any>) => {
-    const [namespace] = useState(match.params.namespace);
-    const [name] = useState(match.params.name);
-
     const queryParams = new URLSearchParams(location.search);
-
-    const [target] = useState(queryParams.get('target') || '_top');
+    const namespace = match.params.namespace;
+    const name = queryParams.get('name');
+    const label = queryParams.get('label');
+    const target = queryParams.get('target') || '_top';
 
     useEffect(() => {
-        history.push(historyUrl('widgets/workflow-status-badges/{namespace}/{name}', {namespace, name, target}));
-    }, [namespace, name]);
+        history.push(historyUrl('widgets/workflow-status-badges/{namespace}', {namespace, name, label, target}));
+    }, [namespace, name, label]);
 
+    const [displayName, setDisplayName] = useState<string>();
+    const [creationTimestamp, setCreationTimestamp] = useState<Date>(); // used to make sure we only display the most recent one
     const [phase, setPhase] = useState<NodePhase>('');
 
     useEffect(() => {
         const w = new RetryWatch(
-            () => services.workflows.watch({namespace, name}),
-            () => {
-                // noop
+            () => services.workflows.watch({namespace, name, labels: [label]}),
+            () => setDisplayName(null),
+            e => {
+                const wf = e.object;
+                const t = new Date(wf.metadata.creationTimestamp);
+                if (t < creationTimestamp) {
+                    return;
+                }
+                setDisplayName(wf.metadata.name);
+                setPhase(wf.status.phase);
+                setCreationTimestamp(t);
             },
-            e => setPhase(e.object.status.phase),
-            () => {
-                // noop
-            }
+            e => setDisplayName(e.message || 'error')
         );
         w.start();
         return () => w.stop();
-    }, [namespace, name]);
+    }, [namespace, name, label]);
 
     return (
-        <a className='status-badge' href={uiUrl(`workflows/${namespace}/${name}`)} target={target}>
-            <span className='label'>{name}</span>
+        <a className='status-badge' href={uiUrl(`workflows/${namespace}/${displayName}`)} target={target}>
+            <span className='label'>{displayName || 'not found'}</span>
             <span className={'status ' + phase}>{(phase || 'unknown').toLowerCase()} </span>
         </a>
     );

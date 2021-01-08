@@ -173,7 +173,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     continue;
                 }
                 const child = allNodes[item.nodeName];
+                if (!child) {
+                    continue;
+                }
                 const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
+
                 nodes.set(item.nodeName, nodeLabel(child));
                 edges.set({v: item.parent, w: item.nodeName}, {});
 
