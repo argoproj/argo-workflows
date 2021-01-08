@@ -1578,8 +1578,108 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 }
 
 func (s *ArgoServerSuite) TestSensorService() {
+	s.Run("CreateSensor", func() {
+		s.e().POST("/api/v1/sensors/argo").
+			WithBytes([]byte(`{
+	"sensor":{
+		"apiVersion":"argoproj.io/v1alpha1",
+		"kind":"Sensor",
+		"metadata":{
+			"name":"test-sensor",
+			"labels": {
+				"argo-e2e": "true"
+			}
+		},
+		"spec":{
+			"dependencies":[
+				{
+					"name":"test-dep",
+					"eventSourceName":"calendar",
+					"eventName":"example-with-interval"
+				}
+			],
+			"triggers":[
+				{
+					"template":{
+						"name":"log-trigger",
+						"log":{
+							"intervalSeconds":20
+						}
+					}
+				}
+			]
+		}
+	}
+}`)).Expect().
+			Status(200)
+	})
 	s.Run("ListSensors", func() {
 		s.e().GET("/api/v1/sensors/argo").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+	s.Run("GetSensor", func() {
+		s.e().GET("/api/v1/sensors/argo/test-sensor").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			Equal("test-sensor")
+	})
+	resourceVersion := s.e().GET("/api/v1/sensors/argo/test-sensor").
+		Expect().
+		Status(200).
+		JSON().
+		Path("$.metadata.resourceVersion").
+		String().
+		Raw()
+	s.Run("UpdateSensor", func() {
+		s.e().PUT("/api/v1/sensors/argo").
+			WithBytes([]byte(`{
+	"sensor":{
+		"apiVersion":"argoproj.io/v1alpha1",
+		"kind":"Sensor",
+		"metadata":{
+			"name":"test-sensor",
+			"resourceVersion": "` + resourceVersion + `",
+			"annotations": {
+				"test-anno": "test-value"
+			},
+			"labels": {
+				"argo-e2e": "true"
+			}
+		},
+		"spec":{
+			"dependencies":[
+				{
+					"name":"test-dep",
+					"eventSourceName":"calendar",
+					"eventName":"example-with-interval"
+				}
+			],
+			"triggers":[
+				{
+					"template":{
+						"name":"log-trigger",
+						"log":{
+							"intervalSeconds":20
+						}
+					}
+				}
+			]
+		}
+	}
+		}`)).
+			Expect().
+			Status(200)
+	})
+	s.Run("DeleteSensor", func() {
+		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
 			Expect().
 			Status(200)
 	})
@@ -1590,6 +1690,13 @@ func (s *ArgoServerSuite) TestSensorService() {
 	s.Run("WatchSensors", func() {
 		s.T().Skip("TODO")
 		s.stream("/api/v1/stream/sensors/argo", nil)
+	})
+	s.Run("ListSensorsAfterDeletion", func() {
+		s.e().GET("/api/v1/sensors/argo").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").Null()
 	})
 }
 
