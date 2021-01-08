@@ -230,7 +230,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				ctx, cancel = context.WithCancel(ctx)
 
 				for i := 0; i < podCleanupWorkers; i++ {
-					go wait.Until(wfc.runPodCleanup, time.Second, ctx.Done())
+					go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
 				}
 				go wfc.workflowGarbageCollector(ctx.Done())
 				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
@@ -390,8 +390,7 @@ func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName stri
 	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
-func (wfc *WorkflowController) runPodCleanup() {
-	ctx := context.Background()
+func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
 	for wfc.processNextPodCleanupItem(ctx) {
 	}
 }

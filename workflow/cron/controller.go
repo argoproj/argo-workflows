@@ -94,7 +94,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cron.Stop()
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
-	go wait.Until(cc.syncAll, 10*time.Second, ctx.Done())
+	go wait.UntilWithContext(ctx, cc.syncAll, 10*time.Second)
 
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
@@ -207,7 +207,7 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 	})
 }
 
-func (cc *Controller) syncAll() {
+func (cc *Controller) syncAll(ctx context.Context) {
 	log.Debug("Syncing all CronWorkflows")
 
 	workflows, err := cc.wfLister.List()
@@ -230,7 +230,6 @@ func (cc *Controller) syncAll() {
 			continue
 		}
 
-		ctx := context.Background()
 		err = cc.syncCronWorkflow(ctx, cronWf, groupedWorkflows[cronWf.UID])
 		if err != nil {
 			log.WithError(err).Error("Unable to sync CronWorkflow")
