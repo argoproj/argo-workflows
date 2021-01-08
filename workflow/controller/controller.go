@@ -229,7 +229,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				logCtx.Info("started leading")
 				ctx, cancel = context.WithCancel(ctx)
 
-				// TODO JPZ13 12/24/2020 - refactor to use untilwithcontext
 				for i := 0; i < podCleanupWorkers; i++ {
 					go wait.Until(wfc.runPodCleanup, time.Second, ctx.Done())
 				}
