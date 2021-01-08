@@ -1686,11 +1686,6 @@ func (s *ArgoServerSuite) TestSensorService() {
 			Path("$.spec.template.serviceAccountName").
 			Equal("default")
 	})
-	s.Run("DeleteSensor", func() {
-		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
-			Expect().
-			Status(200)
-	})
 	s.Run("SensorsLogs", func() {
 		s.T().Skip("TODO")
 		s.stream("/api/v1/stream/sensors/argo/logs", nil)
@@ -1699,12 +1694,15 @@ func (s *ArgoServerSuite) TestSensorService() {
 		s.T().Skip("TODO")
 		s.stream("/api/v1/stream/sensors/argo", nil)
 	})
-	s.Run("ListSensorsAfterDeletion", func() {
-		s.e().GET("/api/v1/sensors/argo").
+	s.Run("DeleteSensor", func() {
+		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.items").Null()
+			Status(200)
+	})
+	s.Run("GetSensorAfterDeletion", func() {
+		s.e().GET("/api/v1/sensors/argo/test-sensor").
+			Expect().
+			Status(404)
 	})
 }
 
