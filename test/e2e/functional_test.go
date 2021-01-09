@@ -758,10 +758,8 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 func (s *FunctionalSuite) TestPropagateMaxDuration() {
 	s.Given().
 		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
 metadata:
-  name: retry-backoff-2
+  generateName: retry-backoff-2-
   labels:
     argo-e2e: true
 spec:
@@ -786,11 +784,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
-			assert.Len(t, status.Nodes, 3)
-			node := status.Nodes.FindByDisplayName("retry-backoff-2(1)")
-			if assert.NotNil(t, node) {
-				assert.Equal(t, "Step exceeded its deadline", node.Message)
-			}
+			assert.Equal(t, "Max duration limit exceeded", status.Message)
 		})
 }
 
