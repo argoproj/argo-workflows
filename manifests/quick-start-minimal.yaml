@@ -502,6 +502,27 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  executor: |
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+    # limits:
+    #     cpu: 0.5
+    #     memory: 512Mi
+    #  args & env allows command line arguments and environment variables to be appended to the
+    #  executor container and is mainly used for development/debugging purposes.
+    # args:
+    #   - --loglevel
+    #   - debug
+    #   - --gloglevel
+    #   - "6"
+    # env:
+    #  ARGO_TRACE enables some tracing information for debugging purposes. Currently it enables
+    #  logging of S3 request/response payloads (including auth headers)
+    #  - name: ARGO_TRACE
+    #    value: "1"
   links: |
     - name: Example Workflow Link
       scope: workflow

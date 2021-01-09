@@ -11,4 +11,3 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: [sh, -c, "exit 1"]
-        imagePullPolicy: IfNotPresent

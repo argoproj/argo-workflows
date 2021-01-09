@@ -11,4 +11,3 @@ spec:
       container:
         image: argoproj/argosay:v1
         command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent
