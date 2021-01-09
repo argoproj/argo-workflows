@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"context"
+
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -11,7 +13,8 @@ func NewInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Load artifacts",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := loadArtifacts()
+			ctx := context.Background()
+			err := loadArtifacts(ctx)
 			if err != nil {
 				log.Fatalf("%+v", err)
 			}
@@ -20,9 +23,9 @@ func NewInitCommand() *cobra.Command {
 	return &command
 }
 
-func loadArtifacts() error {
+func loadArtifacts(ctx context.Context) error {
 	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError()
+	defer wfExecutor.HandleError(ctx)
 	defer stats.LogStats()
 
 	// Download input artifacts
@@ -31,7 +34,7 @@ func loadArtifacts() error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	err = wfExecutor.LoadArtifacts()
+	err = wfExecutor.LoadArtifacts(ctx)
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err

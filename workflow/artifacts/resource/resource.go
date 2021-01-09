@@ -1,6 +1,8 @@
 package resource
 
+import "context"
+
 type Interface interface {
-	GetSecret(name, key string) (string, error)
-	GetConfigMapKey(name, key string) (string, error)
+	GetSecret(ctx context.Context, name, key string) (string, error)
+	GetConfigMapKey(ctx context.Context, name, key string) (string, error)
 }

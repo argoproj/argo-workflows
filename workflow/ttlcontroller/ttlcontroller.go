@@ -1,6 +1,7 @@
 package ttlcontroller
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -76,20 +77,21 @@ func (c *Controller) Run(stopCh <-chan struct{}, workflowTTLWorkers int) error {
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
 func (c *Controller) runWorker() {
-	for c.processNextWorkItem() {
+	ctx := context.Background()
+	for c.processNextWorkItem(ctx) {
 	}
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling the syncHandler.
-func (c *Controller) processNextWorkItem() bool {
+func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	key, quit := c.workqueue.Get()
 	if quit {
 		return false
 	}
 	defer c.workqueue.Done(key)
 
-	runtimeutil.HandleError(c.deleteWorkflow(key.(string)))
+	runtimeutil.HandleError(c.deleteWorkflow(ctx, key.(string)))
 
 	return true
 }
@@ -121,12 +123,12 @@ func (c *Controller) enqueueWF(obj interface{}) {
 	c.workqueue.AddAfter(key, addAfter)
 }
 
-func (c *Controller) deleteWorkflow(key string) error {
+func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	// It should be impossible for a workflow to have been queue without a valid key.
 	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 	// Any workflow that was queued must need deleting, therefore we do not check the expiry again.
 	log.Infof("Deleting TTL expired workflow '%s'", key)
-	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
+	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			log.Infof("Workflow already deleted '%s'", key)

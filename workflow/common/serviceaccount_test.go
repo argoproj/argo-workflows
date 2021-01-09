@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,10 +12,13 @@ import (
 
 // TestGetServiceAccountTokenName verifies service account token retrieved by service account name.
 func TestGetServiceAccountTokenName(t *testing.T) {
+	ctx := context.Background()
 	clientset := fake.NewSimpleClientset()
-	_, err := util.CreateServiceAccountWithToken(clientset, "", "test", "test-token")
+
+	_, err := util.CreateServiceAccountWithToken(ctx, clientset, "", "test", "test-token")
 	assert.NoError(t, err)
-	tokenName, err := GetServiceAccountTokenName(clientset, "", "test")
+
+	tokenName, err := GetServiceAccountTokenName(ctx, clientset, "", "test")
 	assert.NoError(t, err)
 	assert.Equal(t, "test-token", tokenName)
 }

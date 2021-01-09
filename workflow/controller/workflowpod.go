@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -130,7 +131,7 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
@@ -233,7 +234,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	err = woc.setupServiceAccount(pod, tmpl)
+	err = woc.setupServiceAccount(ctx, pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +378,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
+	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
@@ -1077,7 +1078,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 }
 
 // setupServiceAccount sets up service account and token.
-func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
 	} else if woc.execWf.Spec.ServiceAccountName != "" {
@@ -1101,7 +1102,7 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}

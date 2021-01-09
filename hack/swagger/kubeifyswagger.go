@@ -35,13 +35,27 @@ func kubeifySwagger(in, out string) {
 
 	//loop again to handle any new bad definitions
 	for _, d := range definitions {
-		if d.(obj)["properties"] != nil {
-			props := d.(obj)["properties"].(obj)
-			for _, content := range props {
-				if content.(obj)["format"] == "int32" || content.(obj)["format"] == "int64" {
-					delete(content.(obj), "format")
+		props, ok := d.(obj)["properties"].(obj)
+		if ok {
+			for _, prop := range props {
+				prop := prop.(obj)
+				if prop["format"] == "int32" || prop["format"] == "int64" {
+					delete(prop, "format")
+				}
+				delete(prop, "default")
+				items, ok := prop["items"].(obj)
+				if ok {
+					delete(items, "default")
+				}
+				additionalProperties, ok := prop["additionalProperties"].(obj)
+				if ok {
+					delete(additionalProperties, "default")
 				}
 			}
+		}
+		props, ok = d.(obj)["additionalProperties"].(obj)
+		if ok {
+			delete(props, "default")
 		}
 	}
 
