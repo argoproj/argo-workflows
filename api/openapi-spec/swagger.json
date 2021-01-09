@@ -1059,7 +1059,7 @@
         "tags": [
           "EventService"
         ],
-        "operationId": "ListWorkflowEventBindings",
+        "operationId": "EventService_ListWorkflowEventBindings",
         "parameters": [
           {
             "type": "string",
@@ -1081,22 +1081,26 @@
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
-            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
           {
             "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
             "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
             "in": "query"
           },
           {
@@ -1125,6 +1129,12 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventBindingList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }

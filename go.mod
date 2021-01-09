@@ -11,7 +11,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible
 	github.com/antonmedv/expr v1.8.8
-	github.com/argoproj/argo-events v1.2.0
+	github.com/argoproj/argo-events v0.0.0-00010101000000-000000000000
 	github.com/argoproj/pkg v0.3.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
@@ -79,3 +79,5 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
+
+replace github.com/argoproj/argo-events => github.com/argoproj/argo-events v1.2.0
