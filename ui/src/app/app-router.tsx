@@ -9,6 +9,7 @@ import apidocs from './apidocs';
 import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
+import eventSources from './event-sources';
 import events from './events';
 import help from './help';
 import login from './login';
@@ -30,6 +31,7 @@ const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowsUrl = uiUrl('cron-workflows');
 const archivedWorkflowsUrl = uiUrl('archived-workflows');
+const eventSourceUrl = uiUrl('event-sources')
 const helpUrl = uiUrl('help');
 const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
@@ -103,6 +105,11 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             iconClassName: 'fa fa-archive'
                         },
                         {
+                            title: 'Event Sources',
+                            path: eventSourceUrl + '/' + namespace,
+                            iconClassName: 'fas fa-bolt'
+                        },
+                        {
                             title: 'Reports',
                             path: reportsUrl + '/' + namespace,
                             iconClassName: 'fa fa-chart-bar'
@@ -137,6 +144,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
                             <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
                             <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
+                            <Route path={eventSourceUrl} component={eventSources.component} />
                             <Route path={reportsUrl} component={reports.component} />
                             <Route exact={true} strict={true} path={helpUrl} component={help.component} />
                             <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />

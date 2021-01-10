@@ -1,123 +1,103 @@
 import {NotificationType, Page} from 'argo-ui';
-import {SlidingPanel} from 'argo-ui/src/index';
 import * as React from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+import {EventSource} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
-import {Consumer} from '../../../shared/context';
+import {Context} from '../../../shared/context';
+import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
-import {EventSourceSummaryPanel} from "../event-source-summary-panel";
-import {EventSource} from "../../../../models";
+import {EventSourceEditor} from '../event-source-editor';
 
+export const EventSourceDetails = ({history, location, match}: RouteComponentProps<any>) => {
+    // boiler-plate
+    const {notifications, navigation} = useContext(Context);
+    const queryParams = new URLSearchParams(location.search);
 
-require('../../../workflows/components/workflow-details/workflow-details.scss');
+    // state for URL and query parameters
+    const namespace = match.params.namespace;
+    const name = match.params.name;
+    const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-interface State {
-    namespace?: string;
-    eventSource?: EventSource;
-    error?: Error;
-}
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('event-sources/{namespace}/{name}', {
+                    namespace,
+                    name,
+                    tab
+                })
+            ),
+        [namespace, name, tab]
+    );
 
-export class EventSourceDetails extends BasePage<RouteComponentProps<any>, State> {
-    private get name() {
-        return this.props.match.params.name;
-    }
+    const [edited, setEdited] = useState(false);
+    const [error, setError] = useState<Error>();
+    const [eventSource, setEventSource] = useState<EventSource>();
 
-    private get namespace(){
-        return this.props.match.params.namespace;
-    }
-
-    private get sidePanel() {
-        return this.queryParam('sidePanel');
-    }
-
-    private set sidePanel(sidePanel) {
-        this.setQueryParams({sidePanel});
-    }
-
-    constructor(props: RouteComponentProps<any>, context: any) {
-        super(props, context);
-        this.state = {};
-    }
-
-    public componentDidMount(): void {
+    useEffect(() => {
         services.eventSource
-            .get(this.name, this.namespace)
-            .then(eventSource => this.setState({error: null, eventSource: eventSource}))
-            .then(() => services.info.getInfo())
-            .then(info => this.setState({namespace: info.managedNamespace || Utils.getCurrentNamespace() || 'default'}))
-            .catch(error => this.setState({error}));
-    }
+            .get(name, namespace)
+            .then(setEventSource)
+            .then(() => setEdited(false)) // set back to false
+            .then(() => setError(null))
+            .catch(setError);
+    }, [name, namespace]);
 
-    public render() {
-        return (
-            <Consumer>
-                {ctx => (
-                    <Page
-                        title='Event Source Details'
-                        toolbar={{
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Delete',
-                                        iconClassName: 'fa fa-trash',
-                                        action: () => this.deleteEventSource()
-                                    }
-                                ]
-                            },
-                            breadcrumbs: [
-                                {
-                                    title: 'Event Source',
-                                    path: uiUrl('event-sources')
-                                },
-                                {title: this.name}
-                            ]
-                        }}>
-                        <div className='argo-container'>
-                            <div className='workflow-details__content'>{this.renderEventSource()}</div>
-                        </div>
-                        {this.state.eventSource && (
-                            <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                                {/*<SubmitWorkflowPanel*/}
-                                {/*    kind='ClusterWorkflowTemplate'*/}
-                                {/*    namespace={this.state.namespace}*/}
-                                {/*    name={this.state.eventSource.metadata.name}*/}
-                                {/*/>*/}
-                            </SlidingPanel>
-                        )}
-                    </Page>
+    useEffect(() => setEdited(true), [eventSource]);
+
+    return (
+        <Page
+            title='Event Source Details'
+            toolbar={{
+                breadcrumbs: [
+                    {title: 'Event Source', path: uiUrl('event-sources')},
+                    {title: namespace, path: uiUrl('event-sources/' + namespace)},
+                    {title: name, path: uiUrl('event-sources/' + namespace + '/' + name)}
+                ],
+                actionMenu: {
+                    items: [
+                        {
+                            title: 'Update',
+                            iconClassName: 'fa fa-save',
+                            disabled: !edited,
+                            action: () =>
+                                services.eventSource
+                                    .update(eventSource, name, namespace)
+                                    .then(setEventSource)
+                                    .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
+                                    .then(() => setEdited(false))
+                                    .then(() => setError(null))
+                                    .catch(setError)
+                        },
+                        {
+                            title: 'Delete',
+                            iconClassName: 'fa fa-trash',
+                            disabled: edited,
+                            action: () => {
+                                if (!confirm('Are you sure you want to delete this event source?\nThere is no undo.')) {
+                                    return;
+                                }
+                                services.eventSource
+                                    .delete(name, namespace)
+                                    .then(() => navigation.goto(uiUrl('event-sources/' + namespace)))
+                                    .then(() => setError(null))
+                                    .catch(setError);
+                            }
+                        }
+                    ]
+                }
+            }}>
+            <>
+                <ErrorNotice error={error} />
+                {!eventSource ? (
+                    <Loading />
+                ) : (
+                    <EventSourceEditor eventSource={eventSource} onChange={setEventSource} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />
                 )}
-            </Consumer>
-        );
-    }
-
-    private renderEventSource() {
-        if (this.state.error) {
-            return <ErrorNotice error={this.state.error} />;
-        }
-        if (!this.state.eventSource) {
-            return <Loading />;
-        }
-        return <EventSourceSummaryPanel eventSource={this.state.eventSource} onChange={eventSource => this.setState({eventSource: eventSource})} />;
-    }
-
-    private deleteEventSource() {
-        if (!confirm('Are you sure you want to delete this event source?\nThere is no undo.')) {
-            return;
-        }
-        services.eventSource
-            .delete(this.name, this.state.namespace)
-            .catch(e => {
-                this.appContext.apis.notifications.show({
-                    content: 'Failed to delete event source' + e,
-                    type: NotificationType.Error
-                });
-            })
-            .then(() => {
-                document.location.href = uiUrl('event-sources');
-            });
-    }
-}
+            </>
+        </Page>
+    );
+};

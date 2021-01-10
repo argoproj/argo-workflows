@@ -10,7 +10,7 @@ package eventsource;
 
 message CreateEventSourceRequest {
     string namespace = 1;
-    github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource evensource = 2;
+    github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource eventSource = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 3;
 }
 
@@ -34,7 +34,7 @@ message DeleteEventSourceRequest {
 message UpdateEventSourceRequest {
     string name = 1;
     string namespace = 2;
-    github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource evensource = 3;
+    github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource eventSource = 3;
 }
 
 message EventSourcesLogsRequest {

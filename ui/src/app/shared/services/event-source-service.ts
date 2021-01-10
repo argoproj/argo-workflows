@@ -1,9 +1,35 @@
-import {EventSourceList, EventSourceWatchEvent, LogEntry} from '../../../models/event-source';
+import {EventSource, EventSourceList, EventSourceWatchEvent, LogEntry} from '../../../models/event-source';
 import requests from './requests';
 
 export class EventSourceService {
+    public create(eventSource: EventSource, namespace: string) {
+        const str = JSON.stringify(eventSource, null, 4);
+        // tslint:disable-next-line:no-console
+        confirm(str)
+
+        return requests
+            .post(`api/v1/event-sources/${namespace}`)
+            .send({eventSource})
+            .then(res => res.body as EventSource);
+    }
+
     public list(namespace: string) {
         return requests.get(`api/v1/event-sources/${namespace}`).then(res => res.body as EventSourceList);
+    }
+
+    public get(name: string, namespace: string) {
+        return requests.get(`api/v1/event-sources/${namespace}/${name}`).then(res => res.body as EventSource);
+    }
+
+    public update(eventSource: EventSource, name: string, namespace: string) {
+        return requests
+            .put(`api/v1/event-sources/${namespace}/${name}`)
+            .send({eventSource})
+            .then(res => res.body as EventSource);
+    }
+
+    public delete(name: string, namespace: string) {
+        return requests.delete(`api/v1/event-sources/${namespace}/${name}`);
     }
 
     public watch(namespace: string) {

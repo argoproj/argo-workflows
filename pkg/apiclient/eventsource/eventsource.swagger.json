@@ -515,7 +515,7 @@
         "namespace": {
           "type": "string"
         },
-        "evensource": {
+        "eventSource": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource"
         },
         "createOptions": {
@@ -575,7 +575,7 @@
         "namespace": {
           "type": "string"
         },
-        "evensource": {
+        "eventSource": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSource"
         }
       }

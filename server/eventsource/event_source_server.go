@@ -20,7 +20,7 @@ type eventSourceServer struct{}
 
 func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsourcepkg.CreateEventSourceRequest) (*esv1.EventSource, error) {
 	client := auth.GetEventSourceClient(ctx)
-	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(in.Evensource)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(in.EventSource)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsour
 
 func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsourcepkg.UpdateEventSourceRequest) (*esv1.EventSource, error) {
 	client := auth.GetEventSourceClient(ctx)
-	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Update(in.Evensource)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Update(in.EventSource)
 	if err != nil {
 		return nil, err
 	}
