@@ -571,7 +571,7 @@ func (s *FunctionalSuite) TestGlobalScope() {
 
 func (s *FunctionalSuite) TestStopBehavior() {
 	if s.Config.ContainerRuntimeExecutor == "kubelet" || s.Config.ContainerRuntimeExecutor == "k8sapi" {
-		s.T().Skip("`stop` not working for kubelet and k8sapi executor")
+		s.T().Skip("`stop` not working on K3d for kubelet and k8sapi executors")
 	}
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
@@ -599,7 +599,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 
 func (s *FunctionalSuite) TestTerminateBehavior() {
 	if s.Config.ContainerRuntimeExecutor == "kubelet" || s.Config.ContainerRuntimeExecutor == "k8sapi" {
-		s.T().Skip("`terminate` not working for k8sapi executor")
+		s.T().Skip("`terminate` not working  on K3d for kubelet and k8sapi executors")
 	}
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
@@ -763,7 +763,7 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 
 func (s *FunctionalSuite) TestPropagateMaxDuration() {
 	if s.Config.ContainerRuntimeExecutor == "kubelet" || s.Config.ContainerRuntimeExecutor == "k8sapi" {
-		s.T().Skip("not working for kublet and k8sapi executors")
+		s.T().Skip("test not working on K3d for kubelet and k8sapi executors")
 	}
 	s.Given().
 		Workflow(`
