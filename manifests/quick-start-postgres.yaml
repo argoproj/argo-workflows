@@ -504,12 +504,12 @@ data:
         key: secretkey
   executor: |
     imagePullPolicy: IfNotPresent
-    resources:
-      requests:
-        cpu: 10m
-        memory: 64Mi
+    # resources:
+    #   requests:
+    #     cpu: 50m
+    #     memory: 64Mi
     # limits:
-    #     cpu: 0.5
+    #     cpu: 500m
     #     memory: 512Mi
     #  args & env allows command line arguments and environment variables to be appended to the
     #  executor container and is mainly used for development/debugging purposes.

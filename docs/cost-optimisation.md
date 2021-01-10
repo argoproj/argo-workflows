@@ -112,7 +112,7 @@ Configure [workflow-controller-configmap.yaml](workflow-controller-configmap.yam
 ```yaml
 executorResources:
   requests:
-    cpu: 100m
+    cpu: 50m
     memory: 64Mi
   limits:
     cpu: 500m

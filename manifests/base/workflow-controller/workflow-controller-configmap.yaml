@@ -54,8 +54,7 @@ data:
   #     scope: pod
   #     url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
 
-  # artifactRepository defines the default location to be used as the artifact repository for
-  # container artifacts.
+  # Define the default location to be used as the artifact repository for container artifacts.
   #
   # artifactRepository: |
   #   # archiveLogs will archive the main container logs as an artifact
@@ -97,14 +96,14 @@ data:
   #     # IRSA and any of the authentication methods that the golang SDK uses in it's default chain.
   #     useSDKCreds: false
 
-  # Specifies the container runtime interface to use (default: docker)
-  # must be one of: docker, kubelet, k8sapi, pns
+  # Specifies the container runtime interface to use.
+  # Must be one of: docker, kubelet, k8sapi, pns
   #
   # https://argoproj.github.io/argo/workflow-executors/
   #
   # containerRuntimeExecutor: docker
 
-  # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
+  # Specifies the location of docker.sock on the host for docker executor.
   # (available since Argo v2.4)
   #
   # dockerSockPath: /var/someplace/else/docker.sock
@@ -113,21 +112,25 @@ data:
   #
   # kubeletPort: 10250
 
-  # disable the TLS verification of the kubelet executor (default: false)
+  # Disable the TLS verification of the kubelet executor.
   #
   # kubeletInsecure: false
 
-  # executor controls how the init and wait container should be customized
+  # Control how the init and wait container should be customized
   # (available since Argo v2.3)
+  #
+  # https://argoproj.github.io/argo/cost-optimisation/
+  # https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-cpu-time-9eff74d3161b
+  # https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-memory-6b41e9a955f9
   #
   executor: |
     imagePullPolicy: IfNotPresent
-    resources:
-      requests:
-        cpu: 10m
-        memory: 64Mi
+    # resources:
+    #   requests:
+    #     cpu: 50m
+    #     memory: 64Mi
     # limits:
-    #     cpu: 0.5
+    #     cpu: 500m
     #     memory: 512Mi
     #  args & env allows command line arguments and environment variables to be appended to the
     #  executor container and is mainly used for development/debugging purposes.
@@ -162,7 +165,7 @@ data:
   #   # DEPRECATED: Legacy metrics are now removed, this field is ignored
   #   disableLegacy: false
 
-  # telemetryConfig controls the path and port for prometheus telemetry. Telemetry is enabled and emitted in the same endpoint
+  # Control the path and port for prometheus telemetry. Telemetry is enabled and emitted in the same endpoint
   # as metrics by default, but can be overridden using this config.
   #
   # telemetryConfig: |
@@ -225,7 +228,7 @@ data:
   #   #     name: argo-mysql-config
   #   #     key: password
 
-  # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
+  # Default values that will apply to all workflows from this controller, unless overridden on the workflow.
   #
   # https://argoproj.github.io/argo/default-workflow-specs
   #
