@@ -17,7 +17,7 @@ import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {SensorCreator} from '../sensor-creator';
-import {SensorLogsWindow} from '../sensor-logs-window';
+import {SensorSidePanel} from '../sensor-side-panel';
 import {Utils as EventsUtils} from '../utils';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
@@ -120,7 +120,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                             e.preventDefault();
                                             setSelectedNode(`${s.metadata.namespace}/Sensor/${s.metadata.name}`);
                                         }}>
-                                        <i className='fa fa-bars' />
+                                        <i className='fa fa-file-alt' />
                                     </div>
                                 </div>
                             </Link>
@@ -132,7 +132,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                 <SensorCreator namespace={namespace} onCreate={s => navigation.goto(uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`))} />
             </SlidingPanel>
             {!!selectedNode && (
-                <SensorLogsWindow
+                <SensorSidePanel
                     isShown={!!selectedNode}
                     namespace={namespace}
                     sensor={selected.value}

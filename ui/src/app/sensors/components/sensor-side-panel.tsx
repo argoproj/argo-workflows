@@ -6,7 +6,7 @@ import {Node} from '../../shared/components/graph/types';
 import {EventsPanel} from '../../workflows/components/events-panel';
 import {SensorLogsViewer} from './sensor-logs-viewer';
 
-export const SensorLogsWindow = ({
+export const SensorSidePanel = ({
     isShown,
     namespace,
     sensor,

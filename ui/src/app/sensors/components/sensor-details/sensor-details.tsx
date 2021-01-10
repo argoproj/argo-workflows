@@ -12,7 +12,7 @@ import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {SensorEditor} from '../sensor-editor';
-import {SensorLogsWindow} from '../sensor-logs-window';
+import {SensorSidePanel} from '../sensor-side-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -104,7 +104,7 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                         },
                         {
                             title: 'Logs',
-                            iconClassName: 'fa fa-bars',
+                            iconClassName: 'fa fa-file-alt',
                             disabled: false,
                             action: () => {
                                 setSelectedLogNode(`${namespace}/Sensor/${sensor.metadata.name}`);
@@ -118,7 +118,7 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                 {!sensor ? <Loading /> : <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />}
             </>
             {!!selectedLogNode && (
-                <SensorLogsWindow
+                <SensorSidePanel
                     isShown={!!selectedLogNode}
                     namespace={namespace}
                     sensor={sensor}
