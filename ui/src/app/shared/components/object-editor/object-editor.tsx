@@ -24,6 +24,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
     const [text, setText] = useState<string>(stringify(value, lang));
 
     useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
+    useEffect(() => setText(stringify(value, lang)), [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
     if (onChange) {
         useEffect(() => {

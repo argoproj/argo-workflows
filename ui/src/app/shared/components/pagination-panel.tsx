@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {Pagination, parseLimit} from '../pagination';
+import {WarningIcon} from './fa-icons';
 
 export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void}> {
     public render() {
@@ -24,8 +25,7 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                 </button>
                 {this.props.pagination.limit ? (
                     <>
-                        <span className={'fa fa-exclamation-triangle'} style={{color: '#d7b700'}} />
-                        Workflows cannot be globally sorted when paginated
+                        <WarningIcon /> Workflows cannot be globally sorted when paginated
                     </>
                 ) : (
                     <span />

@@ -16,6 +16,7 @@ import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
+import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
@@ -31,10 +32,7 @@ require('./workflow-details.scss');
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
-    if (type === 'logs' || type === 'yaml') {
-        return {type, nodeId, container: container || 'main'};
-    }
-    return null;
+    return {type, nodeId, container: container || 'main'};
 }
 
 export const WorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
@@ -67,34 +65,40 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const getItems = () => {
         const workflowOperationsMap: WorkflowOperations = Operations.WorkflowOperationsMap;
-        const items = Object.keys(workflowOperationsMap).map(actionName => {
-            const workflowOperation = workflowOperationsMap[actionName];
-            return {
-                title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
-                iconClassName: workflowOperation.iconClassName,
-                disabled: workflowOperation.disabled(workflow),
-                action: () => {
-                    popup
-                        .confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`)
-                        .then(() => workflowOperation.action(workflow))
-                        .then((wf: Workflow) => {
-                            if (workflowOperation.title === 'DELETE') {
-                                navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                            } else {
-                                // TODO - should fix this
-                                document.location.href = uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`);
-                            }
-                        })
-                        .catch(setError);
-                }
-            };
-        });
+        const items = Object.keys(workflowOperationsMap)
+            .filter(actionName => !workflowOperationsMap[actionName].disabled(workflow))
+            .map(actionName => {
+                const workflowOperation = workflowOperationsMap[actionName];
+                return {
+                    title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
+                    iconClassName: workflowOperation.iconClassName,
+                    action: () => {
+                        popup
+                            .confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`)
+                            .then(() => workflowOperation.action(workflow))
+                            .then((wf: Workflow) => {
+                                if (workflowOperation.title === 'DELETE') {
+                                    navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                } else {
+                                    // TODO - should fix this
+                                    document.location.href = uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`);
+                                }
+                            })
+                            .catch(setError);
+                    }
+                };
+            });
 
         items.push({
             action: () => setSidePanel('logs'),
-            disabled: false,
-            iconClassName: 'fa fa-file',
+            iconClassName: 'fa fa-file-alt',
             title: 'Logs'
+        });
+
+        items.push({
+            action: () => setSidePanel('share'),
+            iconClassName: 'fa fa-share-alt',
+            title: 'Share'
         });
 
         if (links) {
@@ -104,7 +108,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     items.push({
                         title: link.name,
                         iconClassName: 'fa fa-link',
-                        disabled: false,
                         action: () => openLink(link)
                     });
                 });
@@ -156,7 +159,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     <WorkflowParametersPanel parameters={workflow.spec.arguments.parameters} />
                                 </React.Fragment>
                             )}
-                            <h6>Artifacts</h6>
+                            <h5>Artifacts</h5>
                             <WorkflowArtifacts workflow={workflow} archived={false} />
                             <WorkflowResourcePanel workflow={workflow} />
                         </div>
@@ -269,10 +272,12 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             </div>
             {workflow && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
-                    {sidePanel && parsedSidePanel.type === 'logs' && (
+                    {parsedSidePanel.type === 'logs' && (
                         <WorkflowLogsViewer workflow={workflow} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
                     )}
-                    {sidePanel && parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
+                    {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
+                    {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
+                    {!parsedSidePanel}
                 </SlidingPanel>
             )}
         </Page>

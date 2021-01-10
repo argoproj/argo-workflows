@@ -4,7 +4,7 @@ import {Tabs} from 'argo-ui';
 import {CronWorkflow} from '../../../models';
 import {LabelsAndAnnotationsEditor} from '../../shared/components/editors/labels-and-annotations-editor';
 import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
-import {WorkflowSpecEditor} from '../../shared/components/editors/workflow-spec-editor';
+import {WorkflowParametersEditor} from '../../shared/components/editors/workflow-parameters-editor';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
 import {CronWorkflowSpecEditor} from './cron-workflow-spec-editior';
 import {CronWorkflowStatusViewer} from './cron-workflow-status-viewer';
@@ -39,6 +39,11 @@ export const CronWorkflowEditor = ({
                       ]
                     : []),
                 {
+                    key: 'manifest',
+                    title: 'Manifest',
+                    content: <ObjectEditor type='io.argoproj.workflow.v1alpha1.CronWorkflow' value={cronWorkflow} onChange={x => onChange({...x})} />
+                },
+                {
                     key: 'cron',
                     title: 'Cron',
                     content: <CronWorkflowSpecEditor spec={cronWorkflow.spec} onChange={spec => onChange({...cronWorkflow, spec})} />
@@ -52,7 +57,7 @@ export const CronWorkflowEditor = ({
                     key: 'workflow',
                     title: 'Workflow',
                     content: (
-                        <WorkflowSpecEditor
+                        <WorkflowParametersEditor
                             value={cronWorkflow.spec.workflowSpec}
                             onChange={workflowSpec => onChange({...cronWorkflow, spec: {...cronWorkflow.spec, workflowSpec}})}
                             onError={onError}
@@ -73,11 +78,6 @@ export const CronWorkflowEditor = ({
                             }
                         />
                     )
-                },
-                {
-                    key: 'manifest',
-                    title: 'Manifest',
-                    content: <ObjectEditor type='io.argoproj.workflow.v1alpha1.CronWorkflow' value={cronWorkflow} onChange={x => onChange({...x})} />
                 }
             ]}
         />

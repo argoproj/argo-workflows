@@ -8,6 +8,7 @@ import {UploadButton} from '../../shared/components/upload-button';
 import {exampleWorkflow} from '../../shared/examples';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
+import {FromWorkflowTemplate} from './from-workflow-template';
 import {WorkflowEditor} from './workflow-editor';
 
 export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) => {
@@ -28,6 +29,7 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                     Create
                 </Button>
             </div>
+            <FromWorkflowTemplate namespace={namespace} onError={setError} onTemplateSelect={setWorkflow} />
             <ErrorNotice error={error} />
             <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
             <div>

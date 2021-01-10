@@ -92,11 +92,11 @@ type ArgoServerOpts struct {
 	XFrameOptions           string
 }
 
-func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
+func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes, emptyConfigFunc)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get()
+		c, err := configController.Get(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	v, err := as.configController.Get()
+	v, err := as.configController.Get(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -296,7 +296,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
-	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
+	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles)
 	return &httpServer
 }

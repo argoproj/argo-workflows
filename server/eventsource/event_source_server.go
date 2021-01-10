@@ -60,7 +60,7 @@ func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsour
 
 func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourcepkg.ListEventSourcesRequest) (*esv1.EventSourceList, error) {
 	client := auth.GetEventSourceClient(ctx)
-	list, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).List(metav1.ListOptions{})
+	list, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (e *eventSourceServer) WatchEventSources(in *eventsourcepkg.ListEventSource
 		listOptions = *in.ListOptions
 	}
 	eventSourceInterface := auth.GetEventSourceClient(ctx).ArgoprojV1alpha1().EventSources(in.Namespace)
-	watcher, err := eventSourceInterface.Watch(listOptions)
+	watcher, err := eventSourceInterface.Watch(ctx, listOptions)
 	if err != nil {
 		return err
 	}

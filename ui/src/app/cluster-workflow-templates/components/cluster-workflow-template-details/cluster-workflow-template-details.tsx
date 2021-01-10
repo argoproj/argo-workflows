@@ -83,13 +83,13 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                                         })
                                     )
                                     .then(() => setError(null))
+                                    .then(() => setEdited(false))
                                     .catch(setError);
                             }
                         },
                         {
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
-                            disabled: edited,
                             action: () => {
                                 if (!confirm('Are you sure you want to delete this cluster workflow template?\nThere is no undo.')) {
                                     return;

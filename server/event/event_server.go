@@ -47,7 +47,8 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		go func() {
 			defer wg.Done()
 			for operation := range s.operationQueue {
-				operation.Dispatch()
+				ctx := context.Background()
+				operation.Dispatch(ctx)
 			}
 		}()
 		wg.Add(1)
@@ -69,7 +70,7 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	options := metav1.ListOptions{}
 	s.instanceIDService.With(&options)
 
-	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(req.Namespace).List(options)
+	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(req.Namespace).List(ctx, options)
 	if err != nil {
 		return nil, err
 	}
@@ -92,5 +93,5 @@ func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg
 	if in.ListOptions != nil {
 		listOptions = *in.ListOptions
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(listOptions)
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(ctx, listOptions)
 }

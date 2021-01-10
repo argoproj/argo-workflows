@@ -10,6 +10,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {WorkflowTemplateEditor} from '../workflow-template-editor';
 
@@ -21,7 +22,7 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
     // state for URL and query parameters
     const namespace = match.params.namespace;
     const name = match.params.name;
-    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
     useEffect(
@@ -67,7 +68,7 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                             title: 'Submit',
                             iconClassName: 'fa fa-plus',
                             disabled: edited,
-                            action: () => setSidePanel(true)
+                            action: () => setSidePanel('submit')
                         },
                         {
                             title: 'Update',
@@ -85,7 +86,6 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                         {
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
-                            disabled: edited,
                             action: () => {
                                 if (!confirm('Are you sure you want to delete this workflow template?\nThere is no undo.')) {
                                     return;
@@ -96,6 +96,11 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                                     .then(() => setError(null))
                                     .catch(setError);
                             }
+                        },
+                        {
+                            title: 'Share',
+                            iconClassName: 'fa fa-share-alt',
+                            action: () => setSidePanel('share')
                         }
                     ]
                 }
@@ -105,15 +110,18 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                 {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />}
             </>
             {template && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isNarrow={true}>
-                    <SubmitWorkflowPanel
-                        kind='WorkflowTemplate'
-                        namespace={namespace}
-                        name={name}
-                        entrypoint={template.spec.entrypoint}
-                        entrypoints={(template.spec.templates || []).map(t => t.name)}
-                        parameters={template.spec.arguments.parameters || []}
-                    />
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isNarrow={sidePanel === 'submit'}>
+                    {sidePanel === 'submit' && (
+                        <SubmitWorkflowPanel
+                            kind='WorkflowTemplate'
+                            namespace={namespace}
+                            name={name}
+                            entrypoint={template.spec.entrypoint}
+                            entrypoints={(template.spec.templates || []).map(t => t.name)}
+                            parameters={template.spec.arguments.parameters || []}
+                        />
+                    )}
+                    {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}
                 </SlidingPanel>
             )}
         </Page>

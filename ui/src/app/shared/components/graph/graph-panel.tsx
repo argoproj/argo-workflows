@@ -30,6 +30,7 @@ interface Props {
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
     hideNodeTypes?: boolean; // default "false"
+    hideOptions?: boolean; // default "false"
     defaultIconShape?: IconShape; // default "rect"
     iconShapes?: {[type: string]: Icon};
     selectedNode?: Node;
@@ -64,43 +65,45 @@ export const GraphPanel = (props: Props) => {
 
     return (
         <div>
-            <div className='graph-options-panel'>
-                <FilterDropDown
-                    key='types'
-                    values={nodeGenres}
-                    onChange={(label, checked) => {
-                        setNodeGenres(v => {
-                            v[label] = checked;
-                            return Object.assign({}, v);
-                        });
-                    }}
-                />
-                {nodeClassNames && (
+            {!props.hideOptions && (
+                <div className='graph-options-panel'>
                     <FilterDropDown
-                        key='class-names'
-                        values={nodeClassNames}
+                        key='types'
+                        values={nodeGenres}
                         onChange={(label, checked) => {
-                            setNodeClassNames(v => {
+                            setNodeGenres(v => {
                                 v[label] = checked;
                                 return Object.assign({}, v);
                             });
                         }}
                     />
-                )}
-                <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
-                    <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
-                </a>
-                <a onClick={() => setNodeSize(s => s * 1.2)} title='Zoom in'>
-                    <i className='fa fa-search-plus' />
-                </a>
-                <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
-                    <i className='fa fa-search-minus' />
-                </a>
-                <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
-                    <i className='fa fa-bolt' />
-                </a>
-                {props.options}
-            </div>
+                    {nodeClassNames && (
+                        <FilterDropDown
+                            key='class-names'
+                            values={nodeClassNames}
+                            onChange={(label, checked) => {
+                                setNodeClassNames(v => {
+                                    v[label] = checked;
+                                    return Object.assign({}, v);
+                                });
+                            }}
+                        />
+                    )}
+                    <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
+                        <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
+                    </a>
+                    <a onClick={() => setNodeSize(s => s * 1.2)} title='Zoom in'>
+                        <i className='fa fa-search-plus' />
+                    </a>
+                    <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
+                        <i className='fa fa-search-minus' />
+                    </a>
+                    <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
+                        <i className='fa fa-bolt' />
+                    </a>
+                    {props.options}
+                </div>
+            )}
             <div className={'graph ' + props.classNames}>
                 {props.graph.nodes.size === 0 ? (
                     <p>Nothing to show</p>

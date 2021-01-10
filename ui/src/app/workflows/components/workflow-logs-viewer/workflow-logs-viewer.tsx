@@ -1,9 +1,12 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
+import {Autocomplete} from 'argo-ui';
 import {Observable} from 'rxjs';
 import * as models from '../../../../models';
+import {execSpec} from '../../../../models';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
@@ -40,10 +43,10 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
         return () => subscription.unsubscribe();
     }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, archived]);
 
-    const podNameOptions = [{value: '', title: 'All'}].concat(
-        Object.values(workflow.status.nodes)
+    const podNameOptions = [{value: null, label: 'All'}].concat(
+        Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
-            .map(x => ({value: x.id, title: x.displayName || x.name}))
+            .map(x => ({value: x.id, label: (x.displayName || x.name) + ' (' + x.id + ')'}))
     );
 
     const containers = ['main', 'init', 'wait'];
@@ -57,23 +60,21 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             )}
             <p>
                 <i className='fa fa-box' />{' '}
-                <select className='select' value={podName} onChange={x => setPodName(podNameOptions[x.target.selectedIndex].value)}>
-                    {podNameOptions.map(x => (
-                        <option key={x.value} value={x.value}>
-                            {x.title}
-                        </option>
-                    ))}
-                </select>{' '}
-                /{' '}
-                <select className='select' value={selectedContainer} onChange={x => setContainer(containers[x.target.selectedIndex])}>
-                    {containers.map(x => (
-                        <option key={x} value={x}>
-                            {x}
-                        </option>
-                    ))}
-                </select>
+                <Autocomplete items={podNameOptions} value={podNameOptions.find(x => x.value === podName).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
+                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
             </p>
-            {error && <ErrorNotice error={error} />}
+            <ErrorNotice error={error} />
+            {selectedContainer === 'init' && (
+                <p>
+                    <InfoIcon /> Init containers logs are usually only useful when debugging input artifact problems. The init container is only run if there were input artifacts.
+                </p>
+            )}
+            {selectedContainer === 'wait' && (
+                <p>
+                    <InfoIcon /> Wait containers logs are usually only useful when debugging output artifact problems. The wait container is only run if there were output artifacts
+                    (including archived logs).
+                </p>
+            )}
             <div className='white-box'>
                 {!loaded ? (
                     <p>
@@ -98,9 +99,12 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                         <a href={services.workflows.getArtifactLogsUrl(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
-                {selectedContainer === 'init' && <>Init containers will not have logs if the pod did not have any input artifacts.</>}
-                Logs only appear for pods that are not deleted.
-                {workflow.spec.podGC && <>You pod GC settings will delete pods immediately.</>}
+                {execSpec(workflow).podGC && (
+                    <>
+                        <WarningIcon /> You pod GC settings will delete pods and their logs immediately on completion.
+                    </>
+                )}{' '}
+                Logs do not appear for pods that are deleted.
             </p>
         </div>
     );

@@ -17,6 +17,8 @@ interface WorkflowDagProps {
     workflowName: string;
     nodes: {[nodeId: string]: NodeStatus};
     selectedNodeId?: string;
+    nodeSize?: number;
+    hideOptions?: boolean;
     nodeClicked?: (nodeId: string) => any;
 }
 
@@ -65,9 +67,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 graph={this.graph}
                 nodeGenres={genres}
                 nodeClassNames={classNames}
-                nodeSize={32}
+                nodeSize={this.props.nodeSize || 32}
                 defaultIconShape='circle'
                 hideNodeTypes={true}
+                hideOptions={this.props.hideOptions}
                 selectedNode={this.props.selectedNodeId}
                 onNodeSelect={id => this.selectNode(id)}
                 options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
@@ -170,7 +173,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     continue;
                 }
                 const child = allNodes[item.nodeName];
+                if (!child) {
+                    continue;
+                }
                 const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
+
                 nodes.set(item.nodeName, nodeLabel(child));
                 edges.set({v: item.parent, w: item.nodeName}, {});
 

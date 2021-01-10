@@ -125,7 +125,7 @@ See %s`, help.ArgoSever),
 					}
 				}
 			}
-			server, err := apiserver.NewArgoServer(opts)
+			server, err := apiserver.NewArgoServer(ctx, opts)
 			errors.CheckError(err)
 			server.Run(ctx, port, browserOpenFunc)
 		},

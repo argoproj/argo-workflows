@@ -19,7 +19,7 @@ export class RetryWatch<T extends Resource> {
     private timeout: any; // should be `number`
 
     constructor(
-        watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>,
+        watch: (resourceVersion?: string) => Observable<kubernetes.WatchEvent<T>>,
         onOpen: () => void, //  called when watches (re-)established after error, so should clear any errors
         onEvent: (event: kubernetes.WatchEvent<T>) => void, // called whenever item is received,
         onError: (error: Error) => void
@@ -30,7 +30,7 @@ export class RetryWatch<T extends Resource> {
         this.onError = onError;
     }
 
-    public start(resourceVersion: string) {
+    public start(resourceVersion?: string) {
         this.stop();
         this.subscription = this.watch(resourceVersion).subscribe(
             next => {
@@ -43,7 +43,7 @@ export class RetryWatch<T extends Resource> {
             e => {
                 clearTimeout(this.timeout);
                 this.onError(e);
-                this.timeout = setTimeout(() => this.start('0'), reconnectAfterMs);
+                this.timeout = setTimeout(() => this.start(null), reconnectAfterMs);
             }
         );
     }
