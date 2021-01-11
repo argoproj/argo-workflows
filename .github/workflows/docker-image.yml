@@ -63,6 +63,8 @@ jobs:
             --target $TARGET \
             --tag $image_name .
 
+          docker tag $image_name quay.io/$image_name
+
   build-linux-arm64:
     name: Build & push linux/arm64
     runs-on: ubuntu-latest
@@ -117,6 +119,8 @@ jobs:
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
+
+          docker tag $image_name quay.io/$image_name
 
   build-windows:
     name: Build & push windows
