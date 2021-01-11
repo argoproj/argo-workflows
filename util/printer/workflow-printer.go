@@ -145,5 +145,5 @@ func WorkflowStatus(wf *wfv1.Workflow) string {
 		}
 		return "Unknown"
 	}
-	return wf.Status.Phase.String()
+	return string(wf.Status.Phase)
 }

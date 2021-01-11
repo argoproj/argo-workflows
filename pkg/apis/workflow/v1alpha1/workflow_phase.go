@@ -1,60 +1,16 @@
 package v1alpha1
 
-import (
-	"encoding/json"
-	"fmt"
-)
-
 // the workflow's phase
-type WorkflowPhase int
+type WorkflowPhase string
 
 const (
-	WorkflowUnknown WorkflowPhase = iota
-	WorkflowPending WorkflowPhase = iota // pending some set-up - rarely used
-	WorkflowRunning                      // any node has started; pods might not be running yet, the workflow maybe suspended too
-	WorkflowSucceeded
-	WorkflowFailed // it maybe that the the workflow was terminated
-	WorkflowError
+	WorkflowUnknown   WorkflowPhase = ""
+	WorkflowPending   WorkflowPhase = "Pending" // pending some set-up - rarely used
+	WorkflowRunning   WorkflowPhase = "Running" // any node has started; pods might not be running yet, the workflow maybe suspended too
+	WorkflowSucceeded WorkflowPhase = "Succeeded"
+	WorkflowFailed    WorkflowPhase = "Failed" // it maybe that the the workflow was terminated
+	WorkflowError     WorkflowPhase = "Error"
 )
-
-func (p *WorkflowPhase) UnmarshalJSON(b []byte) error {
-	var j string
-	if err := json.Unmarshal(b, &j); err != nil {
-		return err
-	}
-	m, ok := map[string]WorkflowPhase{
-		"Pending":   WorkflowPending,
-		"Running":   WorkflowRunning,
-		"Succeeded": WorkflowSucceeded,
-		"Failed":    WorkflowFailed,
-		"Error":     WorkflowError,
-	}[j]
-	if ok {
-		*p = m
-	} else {
-		*p = WorkflowUnknown
-	}
-	return nil
-}
-
-func (p WorkflowPhase) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%v"`, p)), nil
-}
-
-func (i WorkflowPhase) OpenAPISchemaType() []string {
-	return []string{"string"}
-}
-
-func (p WorkflowPhase) String() string {
-	return map[WorkflowPhase]string{
-		WorkflowUnknown:   "",
-		WorkflowPending:   "Pending",
-		WorkflowRunning:   "Running",
-		WorkflowSucceeded: "Succeeded",
-		WorkflowFailed:    "Failed",
-		WorkflowError:     "Error",
-	}[p]
-}
 
 func (p WorkflowPhase) Completed() bool {
 	switch p {

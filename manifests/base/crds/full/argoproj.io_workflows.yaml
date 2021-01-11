@@ -8802,7 +8802,7 @@ spec:
                 type: object
               type: array
             phase:
-              type: integer
+              type: string
             progress:
               type: string
             resourcesDuration:

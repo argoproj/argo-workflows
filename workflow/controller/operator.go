@@ -1842,7 +1842,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		if woc.wf.ObjectMeta.Labels == nil {
 			woc.wf.ObjectMeta.Labels = make(map[string]string)
 		}
-		woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = phase.String()
+		woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(phase)
 		switch phase {
 		case wfv1.WorkflowRunning:
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")

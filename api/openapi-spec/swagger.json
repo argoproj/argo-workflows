@@ -5181,7 +5181,7 @@
         },
         "phase": {
           "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
-          "type": "integer"
+          "type": "string"
         },
         "progress": {
           "description": "Progress to completion",
