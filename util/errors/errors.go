@@ -15,7 +15,7 @@ func IsTransientErr(err error) bool {
 		return false
 	}
 	err = argoerrs.Cause(err)
-	return isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err)
+	return isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err)
 }
 
 func isExceededQuotaErr(err error) bool {

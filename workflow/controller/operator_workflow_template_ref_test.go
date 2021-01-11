@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,8 +13,10 @@ import (
 func TestWorkflowTemplateRef(t *testing.T) {
 	cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
-	woc.operate()
+	woc.operate(ctx)
 	assert.Equal(t, unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
 	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
@@ -27,6 +30,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
+	ctx := context.Background()
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
@@ -38,7 +42,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
 	})
 
@@ -47,6 +51,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
+	ctx := context.Background()
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
@@ -58,7 +63,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
 
 	})
@@ -72,7 +77,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		},
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Equal(t, wfDefaultActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
 
 	})
@@ -90,12 +95,12 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		}
 		wf.Spec.ActiveDeadlineSeconds = &wfActiveS
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Equal(t, wfActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
 
 		wf.Spec.ActiveDeadlineSeconds = nil
 		woc = newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Equal(t, wftActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
 	})
 }
@@ -117,9 +122,10 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
 		cancel, controller := newController(wf)
 		defer cancel()
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	})
 }
 
@@ -198,8 +204,9 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 	t.Run("CheckArgumentFromWF", func(t *testing.T) {
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
 	})
 
@@ -266,8 +273,9 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 	t.Run("CheckArtifactArgumentFromWF", func(t *testing.T) {
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		assert.Len(t, woc.execWf.Spec.Arguments.Artifacts, 3)
 
 		assert.Equal(t, "own-file", woc.execWf.Spec.Arguments.Artifacts[0].Name)

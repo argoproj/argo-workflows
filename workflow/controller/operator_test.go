@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,13 +52,16 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 	// intentionally set clientset to nil to induce panic
 	controller.kubeclientset = nil
 	wf := unmarshalWF(helloWorldWf)
-	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(wf)
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 }
 
 func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
+	ctx := context.Background()
 	t.Run("Success", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
@@ -73,7 +77,7 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
 
 		// now force a re-apply update
-		updatedWf, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
+		updatedWf, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
 		if assert.NoError(t, err) && assert.NotNil(t, updatedWf) {
 			assert.True(t, woc.controller.hydrator.IsHydrated(updatedWf))
 			if assert.Contains(t, updatedWf.Status.Nodes, "foo") {
@@ -85,14 +89,14 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 	t.Run("ErrUpdatingCompletedWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
-			Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowError},
+			Status:     wfv1.WorkflowStatus{Phase: wfv1.NodeError},
 		}
 		currWf := wf.DeepCopy()
-		currWf.Status.Phase = wfv1.WorkflowSucceeded
+		currWf.Status.Phase = wfv1.NodeSucceeded
 		cancel, controller := newController(currWf)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
-		_, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wfv1.Nodes{})
+		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wfv1.Nodes{})
 		assert.EqualError(t, err, "must never update completed workflows")
 	})
 	t.Run("ErrUpdatingCompletedNode", func(t *testing.T) {
@@ -105,7 +109,7 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		cancel, controller := newController(currWf)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
-		_, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wf.Status.Nodes)
+		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wf.Status.Nodes)
 		assert.EqualError(t, err, "must never update completed node my-node")
 	})
 }
@@ -130,12 +134,13 @@ spec:
 	cancel, controller := newController(wf)
 	defer cancel()
 
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	makePodsPhase(woc, apiv1.PodSucceeded)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	assert.NotEmpty(t, woc.wf.Status.ResourcesDuration, "workflow duration not empty")
 	assert.False(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
@@ -176,14 +181,15 @@ status:
 `), wf)
 	defer cancel()
 
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	makePodsPhase(woc, apiv1.PodSucceeded)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.EstimatedDuration)
 	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.Nodes[woc.wf.Name].EstimatedDuration)
 	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.Nodes.FindByDisplayName("pod").EstimatedDuration)
@@ -209,14 +215,15 @@ spec:
 	cancel, controller := newController(wf)
 	defer cancel()
 
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	makePodsPhase(woc, apiv1.PodSucceeded)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Progress)
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes.FindByDisplayName("pod").Progress)
@@ -265,8 +272,10 @@ func TestGlobalParams(t *testing.T) {
 	wf := unmarshalWF(helloWorldWf)
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
 		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
 	}
@@ -283,7 +292,7 @@ func TestGlobalParams(t *testing.T) {
 	assert.Contains(t, woc.globalParams, "workflow.uid")
 
 	// Ensure that the phase label is included after the first operation
-	woc.operate()
+	woc.operate(ctx)
 	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
 }
 
@@ -291,16 +300,18 @@ func TestGlobalParams(t *testing.T) {
 func TestSidecarWithVolume(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(sidecarWithVol)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 	pod := pods.Items[0]
@@ -410,10 +421,12 @@ func TestVolumeGCStrategy(t *testing.T) {
 			wf := unmarshalWF(makeVolumeGcStrategyTemplate(tt.strategy, tt.phase))
 			cancel, controller := newController(wf)
 			defer cancel()
+
+			ctx := context.Background()
 			wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 			woc := newWorkflowOperationCtx(wf, controller)
-			woc.operate()
-			wf, err := wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			woc.operate(ctx)
+			wf, err := wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 			if assert.NoError(t, err) {
 				assert.Len(t, wf.Status.PersistentVolumeClaims, tt.expectedVolumesRemaining)
 			}
@@ -964,22 +977,28 @@ func TestRetriesVariable(t *testing.T) {
 	wf := unmarshalWF(retriesVariableTemplate)
 	cancel, controller := newController(wf)
 	defer cancel()
+	ctx := context.Background()
 	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		woc := newWorkflowOperationCtx(wf, controller)
 		if i != 1 {
-			makePodsPhase(woc, apiv1.PodFailed)
+			makePodsPhase(ctx, woc, apiv1.PodFailed)
 		}
-		woc.operate()
+		woc.operate(ctx)
 		wf = woc.wf
 	}
 
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	if assert.NoError(t, err) && assert.Len(t, pods.Items, iterations) {
-		for i := 0; i < iterations; i++ {
-			assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
-		}
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, iterations)
+	expected := []string{}
+	actual := []string{}
+	for i := 0; i < iterations; i++ {
+		actual = append(actual, pods.Items[i].Spec.Containers[1].Args[0])
+		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
+	// ordering not preserved
+	assert.Subset(t, expected, actual)
 }
 
 var stepsRetriesVariableTemplate = `
@@ -1015,24 +1034,30 @@ func TestStepsRetriesVariable(t *testing.T) {
 	wf := unmarshalWF(stepsRetriesVariableTemplate)
 	cancel, controller := newController(wf)
 	defer cancel()
+	ctx := context.Background()
 	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		woc := newWorkflowOperationCtx(wf, controller)
 		if i != 1 {
-			makePodsPhase(woc, apiv1.PodFailed)
+			makePodsPhase(ctx, woc, apiv1.PodFailed)
 		}
 		// move to next retry step
-		woc.operate()
+		woc.operate(ctx)
 		wf = woc.wf
 	}
 
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
-	if assert.Len(t, pods.Items, iterations) {
-		for i := 0; i < iterations; i++ {
-			assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
-		}
+	assert.Len(t, pods.Items, iterations)
+
+	expected := []string{}
+	actual := []string{}
+	for i := 0; i < iterations; i++ {
+		actual = append(actual, pods.Items[i].Spec.Containers[1].Args[0])
+		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
+	// ordering not preserved
+	assert.Subset(t, expected, actual)
 }
 
 func TestAssessNodeStatus(t *testing.T) {
@@ -1165,32 +1190,33 @@ spec:
 func TestWorkflowStepRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(workflowStepRetry)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.Nil(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(pods.Items))
 
 	//complete the first pod
-	makePodsPhase(woc, apiv1.PodSucceeded)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	// fail the second pod
-	makePodsPhase(woc, apiv1.PodFailed)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.Nil(t, err)
 	if assert.Equal(t, 3, len(pods.Items)) {
 		assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
@@ -1236,26 +1262,29 @@ spec:
 func TestWorkflowParallelismLimit(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(workflowParallelismLimit)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 	// operate again and make sure we don't schedule any more pods
-	makePodsPhase(woc, apiv1.PodRunning)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
 	// log.Printf("%s", wfBytes)
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 }
@@ -1297,25 +1326,28 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(stepsTemplateParallelismLimit)
-	wf, err := wfcset.Create(wf)
+	ctx := context.Background()
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
+
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 
 	// operate again and make sure we don't schedule any more pods
-	makePodsPhase(woc, apiv1.PodRunning)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
 	// log.Printf("%s", wfBytes)
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 }
@@ -1352,27 +1384,28 @@ spec:
 func TestDAGTemplateParallelismLimit(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(dagTemplateParallelismLimit)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 
 	// operate again and make sure we don't schedule any more pods
-	makePodsPhase(woc, apiv1.PodRunning)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
 	// log.Printf("%s", wfBytes)
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 }
@@ -1446,15 +1479,16 @@ spec:
 func TestNestedTemplateParallelismLimit(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(nestedParallelism)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(pods.Items))
 }
@@ -1475,12 +1509,13 @@ func TestSidecarResourceLimits(t *testing.T) {
 			},
 		},
 	}
+	ctx := context.Background()
 	wf := unmarshalWF(helloWorldWf)
-	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(wf)
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pod, err := controller.kubeclientset.CoreV1().Pods("").Get("hello-world", metav1.GetOptions{})
+	woc.operate(ctx)
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get(ctx, "hello-world", metav1.GetOptions{})
 	assert.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
@@ -1503,28 +1538,29 @@ func TestSuspendResume(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// suspend the workflow
-	err := util.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
+	ctx := context.Background()
+	err := util.SuspendWorkflow(ctx, wfcset, wf.ObjectMeta.Name)
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.True(t, *wf.Spec.Suspend)
 
 	// operate should not result in no workflows being created since it is suspended
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Nil(t, wf.Spec.Suspend)
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 }
@@ -1548,19 +1584,20 @@ func TestSuspendWithDeadline(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
 	wf := unmarshalWF(suspendTemplateWithDeadline)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
-	assert.True(t, wf.IsWorkflowSuspended())
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	updatedWf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	updatedWf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	found := false
 
@@ -1609,12 +1646,13 @@ func TestSequence(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(sequence)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	updatedWf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	updatedWf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	found100 := false
 	found101 := false
@@ -1671,12 +1709,13 @@ func TestInputParametersAsJson(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(inputParametersAsJson)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	updatedWf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	updatedWf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	found := false
 	for _, node := range updatedWf.Status.Nodes {
@@ -1728,15 +1767,16 @@ func TestExpandWithItems(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
+	ctx := context.Background()
 	wf := unmarshalWF(expandWithItems)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(newSteps))
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(pods.Items))
 }
@@ -1777,8 +1817,9 @@ func TestExpandWithItemsMap(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(expandWithItemsMap)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
@@ -1825,33 +1866,34 @@ func TestSuspendTemplate(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
 	wf := unmarshalWF(suspendTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.True(t, wf.IsWorkflowSuspended())
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.False(t, wf.IsWorkflowSuspended())
+	assert.False(t, util.IsWorkflowSuspended(wf))
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pods.Items))
 }
@@ -1862,34 +1904,35 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
 	wf := unmarshalWF(suspendTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.True(t, wf.IsWorkflowSuspended())
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.StopWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
+	err = util.StopWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.False(t, wf.IsWorkflowSuspended())
+	assert.False(t, util.IsWorkflowSuspended(wf))
 
 	// operate the workflow. it should be failed and not reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 }
@@ -1900,45 +1943,46 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
 	wf := unmarshalWF(suspendTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.True(t, wf.IsWorkflowSuspended())
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
+	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
 	assert.Error(t, err)
 
 	// operate the workflow. nothing should have happened
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
-	assert.True(t, wf.IsWorkflowSuspended())
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
+	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.False(t, wf.IsWorkflowSuspended())
+	assert.False(t, util.IsWorkflowSuspended(wf))
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pods.Items))
 }
@@ -1975,19 +2019,20 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
 	wf := unmarshalWF(suspendResumeAfterTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.True(t, wf.IsWorkflowSuspended())
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 
@@ -1996,8 +2041,8 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pods.Items))
 }
@@ -2008,19 +2053,20 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
 	wf := unmarshalWF(suspendResumeAfterTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.True(t, wf.IsWorkflowSuspended())
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 
@@ -2028,8 +2074,8 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 
 	// operate the workflow. it should have not reached the second step since not enough time passed
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 }
@@ -2073,13 +2119,14 @@ func TestWorkflowSpecParam(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(volumeWithParam)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	pod, err := controller.kubeclientset.CoreV1().Pods("").Get(wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	found := false
 	for _, vol := range pod.Spec.Volumes {
@@ -2175,11 +2222,12 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 func TestParamSubstitutionWithArtifact(t *testing.T) {
 	wf := test.LoadE2EWorkflow("functional/param-sub-with-artifacts.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	ctx := context.Background()
+	woc.operate(ctx)
+	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wf.Status.Phase, wfv1.WorkflowRunning)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Equal(t, wf.Status.Phase, wfv1.NodeRunning)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, len(pods.Items), 1)
 }
@@ -2187,11 +2235,12 @@ func TestParamSubstitutionWithArtifact(t *testing.T) {
 func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 	wf := test.LoadE2EWorkflow("functional/global-param-sub-with-artifacts.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	ctx := context.Background()
+	woc.operate(ctx)
+	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wf.Status.Phase, wfv1.WorkflowRunning)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Equal(t, wf.Status.Phase, wfv1.NodeRunning)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, len(pods.Items), 1)
 }
@@ -2296,16 +2345,17 @@ spec:
 func TestMetadataPassing(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(metadataTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -2372,11 +2422,12 @@ spec:
 `
 
 func TestResolveIOPathPlaceholders(t *testing.T) {
+	ctx := context.Background()
 	wf := unmarshalWF(ioPathPlaceholders)
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -2401,11 +2452,12 @@ spec:
 `
 
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
+	ctx := context.Background()
 	wf := unmarshalWF(outputValuePlaceholders)
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -2438,11 +2490,12 @@ spec:
 `
 
 func TestResolvePodNameInRetries(t *testing.T) {
+	ctx := context.Background()
 	wf := unmarshalWF(podNameInRetries)
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -2500,8 +2553,9 @@ func TestResolveStatuses(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
+	ctx := context.Background()
 	wf := unmarshalWF(outputStatuses)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	jsonValue, err := json.Marshal(&wf.Spec.Templates[0])
 	assert.NoError(t, err)
@@ -2534,16 +2588,17 @@ func TestResourceTemplate(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
+	ctx := context.Background()
 	wf := unmarshalWF(resourceTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
 
-	pod, err := controller.kubeclientset.CoreV1().Pods("").Get("resource-template", metav1.GetOptions{})
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get(ctx, "resource-template", metav1.GetOptions{})
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -2624,16 +2679,17 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
+	ctx := context.Background()
 	wf := unmarshalWF(resourceWithOwnerReferenceTemplate)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
 
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -2744,14 +2800,15 @@ func TestStepWFGetNodeName(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
+	ctx := context.Background()
 	wf := unmarshalWF(stepScriptTmpl)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	assert.True(t, hasOutputResultRef("generate", &wf.Spec.Templates[0]))
 	assert.False(t, hasOutputResultRef("print-message", &wf.Spec.Templates[0]))
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "generate") {
@@ -2769,14 +2826,15 @@ func TestDAGWFGetNodeName(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
+	ctx := context.Background()
 	wf := unmarshalWF(dagScriptTmpl)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	assert.True(t, hasOutputResultRef("A", &wf.Spec.Templates[0]))
 	assert.False(t, hasOutputResultRef("B", &wf.Spec.Templates[0]))
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, ".A") {
@@ -2825,12 +2883,13 @@ func TestWithParamAsJsonList(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
+	ctx := context.Background()
 	wf := unmarshalWF(withParamAsJsonList)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	woc.operate(ctx)
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(pods.Items))
 }
@@ -2870,11 +2929,12 @@ func TestStepsOnExit(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodFailed)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	onExitNodeIsPresent := false
 	for _, node := range woc.wf.Status.Nodes {
@@ -2913,11 +2973,12 @@ func TestStepsOnExitFailures(t *testing.T) {
 	defer cancel()
 
 	// Test list expansion
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodFailed)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"exit-handlers\"`)
 }
@@ -2947,17 +3008,18 @@ func TestStepsOnExitTimeout(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
+	ctx := context.Background()
 	wf := unmarshalWF(onExitTimeout)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	onExitNodeIsPresent := false
 	for _, node := range wf.Status.Nodes {
@@ -3000,8 +3062,8 @@ spec:
         image: docker/whalesay:latest
 `: {
 			"Normal WorkflowRunning Workflow Running",
-			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a%!(EXTRA []interface {}=[])",
-			"Normal WorkflowNodeSucceeded Succeeded node dag-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events",
 			"Normal WorkflowSucceeded Workflow completed",
 		},
 		// steps
@@ -3020,21 +3082,22 @@ spec:
         image: docker/whalesay:latest
 `: {
 			"Normal WorkflowRunning Workflow Running",
-			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a%!(EXTRA []interface {}=[])",
-			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]%!(EXTRA []interface {}=[])",
-			"Normal WorkflowNodeSucceeded Succeeded node steps-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events",
 			"Normal WorkflowSucceeded Workflow completed",
 		},
 	} {
 		wf := unmarshalWF(manifest)
+		ctx := context.Background()
 		t.Run(wf.Name, func(t *testing.T) {
 			cancel, controller := newController(wf)
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
-			woc.operate()
-			makePodsPhase(woc, apiv1.PodSucceeded)
+			woc.operate(ctx)
+			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
-			woc.operate()
+			woc.operate(ctx)
 			assert.Equal(t, want, getEvents(controller, len(want)))
 		})
 	}
@@ -3068,12 +3131,14 @@ func TestPDBCreation(t *testing.T) {
 	wf := unmarshalWF(pdbwf)
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	woc.operate(ctx)
+	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
 	assert.Equal(t, pdb.Name, wf.Name)
-	woc.markWorkflowSuccess()
-	_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	woc.markWorkflowSuccess(ctx)
+	_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
 	assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
 }
 
@@ -3081,24 +3146,28 @@ func TestPDBCreationRaceDelete(t *testing.T) {
 	wf := unmarshalWF(pdbwf)
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodSucceeded)
-	err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 func TestStatusConditions(t *testing.T) {
 	wf := unmarshalWF(pdbwf)
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 	assert.Empty(t, woc.wf.Status.Conditions)
-	woc.markWorkflowSuccess()
+	woc.markWorkflowSuccess(ctx)
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 }
 
@@ -3150,17 +3219,18 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
+	ctx := context.Background()
 	wf := unmarshalWF(nestedOptionalOutputArtifacts)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration
@@ -3168,12 +3238,14 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 	wf := unmarshalWF(helloWorldWf)
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	controller.Config.PodSpecLogStrategy.FailedPod = true
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodFailed)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
@@ -3183,17 +3255,19 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 func TestPodSpecLogForAllPods(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	assert.NotNil(t, controller)
 	controller.Config.PodSpecLogStrategy.AllPods = true
 	wf := unmarshalWF(nestedOptionalOutputArtifacts)
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-	woc.operate()
+	woc.operate(ctx)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
@@ -3297,11 +3371,12 @@ status:
 func TestRetryNodeOutputs(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(retryNodeOutputs)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
@@ -3387,7 +3462,8 @@ func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
 
 	assert.Len(woc.wf.Status.PersistentVolumeClaims, 1, "1 PVC before operating")
 
-	woc.operate()
+	ctx := context.Background()
+	woc.operate(ctx)
 
 	node1 := woc.wf.GetNodeByName("wf-with-pvc(0)[0].succeed")
 	node2 := woc.wf.GetNodeByName("wf-with-pvc(0)[1].failure")
@@ -3435,15 +3511,16 @@ func TestContainerOutputsResult(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
+	ctx := context.Background()
 	wf := unmarshalWF(containerOutputsResult)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	assert.True(t, hasOutputResultRef("hello1", &wf.Spec.Templates[0]))
 	assert.False(t, hasOutputResultRef("hello2", &wf.Spec.Templates[0]))
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "hello1") {
@@ -3587,8 +3664,9 @@ func TestNestedStepGroupGlobalParams(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("generate")
 	if assert.NotNil(t, node) && assert.NotNil(t, node.Outputs) && assert.Len(t, node.Outputs.Parameters, 1) {
@@ -3623,11 +3701,12 @@ spec:
 `
 
 func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
+	ctx := context.Background()
 	wf := unmarshalWF(globalVariablePlaceholders)
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -3722,9 +3801,10 @@ func TestMaxDurationOnErroredFirstNode(t *testing.T) {
 	node.StartedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	wf.Status.Nodes["echo-wngc4-1641470511"] = node
 
+	ctx := context.Background()
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
 var backoffExceedsMaxDuration = `
@@ -3817,9 +3897,10 @@ func TestBackoffExceedsMaxDuration(t *testing.T) {
 	node.FinishedAt = metav1.Time{Time: time.Now()}
 	wf.Status.Nodes["echo-r6v49-3721138751"] = node
 
+	ctx := context.Background()
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Nodes["echo-r6v49"].Message)
 	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Message)
 }
@@ -3984,8 +4065,9 @@ status:
 func TestNoOnExitWhenSkipped(t *testing.T) {
 	wf := unmarshalWF(noOnExitWhenSkipped)
 
+	ctx := context.Background()
 	woc := newWoc(*wf)
-	woc.operate()
+	woc.operate(ctx)
 	assert.Nil(t, woc.wf.GetNodeByName("B.onExit"))
 }
 
@@ -4006,8 +4088,9 @@ func TestPanicMetric(t *testing.T) {
 	woc := newWoc(*wf)
 
 	// This should make the call to "operate" panic
+	ctx := context.Background()
 	woc.preExecutionNodePhases = nil
-	woc.operate()
+	woc.operate(ctx)
 
 	metricsChan := make(chan prometheus.Metric)
 	go func() {
@@ -4038,23 +4121,25 @@ func TestControllerReferenceMode(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	cancel, controller := newController()
 	defer cancel()
+
+	ctx := context.Background()
 	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
 	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
 
 	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingSecure
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
 
 	controller.Config.WorkflowRestrictions = nil
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
 func TestValidReferenceMode(t *testing.T) {
@@ -4062,29 +4147,31 @@ func TestValidReferenceMode(t *testing.T) {
 	wfTmpl := test.LoadTestWorkflowTemplate("testdata/workflow-template-submittable.yaml")
 	cancel, controller := newController(wf, wfTmpl)
 	defer cancel()
+
+	ctx := context.Background()
 	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
 	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingSecure
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
 	// Change stored Workflow Spec
 	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
 
 	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
 	// Change stored Workflow Spec
 	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
 var workflowStatusMetric = `
@@ -4190,9 +4277,10 @@ status:
 `
 
 func TestWorkflowStatusMetric(t *testing.T) {
+	ctx := context.Background()
 	wf := unmarshalWF(workflowStatusMetric)
 	woc := newWoc(*wf)
-	woc.operate()
+	woc.operate(ctx)
 	// Must only be one (completed: true)
 	assert.Len(t, woc.wf.Status.Conditions, 1)
 }
@@ -4247,13 +4335,14 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	if assert.Len(t, woc.wf.Status.Nodes, 1) {
 		for _, node := range woc.wf.Status.Nodes {
@@ -4318,15 +4407,16 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	wf := unmarshalWF(workflowCachedMaxAge)
 	cancel, controller := newController()
 
-	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	nonExpiredEntry := getEntryCreatedAtTime(time.Now().Add(-5 * time.Second))
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&nonExpiredEntry)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &nonExpiredEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	if assert.Len(t, woc.wf.Status.Nodes, 1) {
 		for _, node := range woc.wf.Status.Nodes {
@@ -4342,11 +4432,11 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	defer cancel()
 
 	expiredEntry := getEntryCreatedAtTime(time.Now().Add(-15 * time.Second))
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&expiredEntry)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &expiredEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	if assert.Len(t, woc.wf.Status.Nodes, 1) {
 		for _, node := range woc.wf.Status.Nodes {
@@ -4374,13 +4464,17 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	assert.NotPanics(t, woc.operate)
+	fn := func() {
+		woc.operate(ctx)
+	}
+	assert.NotPanics(t, fn)
 
 	if assert.Len(t, woc.wf.Status.Nodes, 1) {
 		for _, node := range woc.wf.Status.Nodes {
@@ -4403,12 +4497,13 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		},
 	}
 
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodSucceeded, withOutputs(testutil.MustMarshallJSON(sampleOutputs)))
+	ctx := context.Background()
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(testutil.MustMarshallJSON(sampleOutputs)))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
 	assert.NotNil(t, cm.Data)
@@ -4568,9 +4663,11 @@ status:
 	if assert.NoError(t, err) {
 		cancel, controller := newController(wf)
 		defer cancel()
+
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 		for _, node := range woc.wf.Status.Nodes {
 			switch node.TemplateName {
 			case "main":
@@ -4582,7 +4679,7 @@ status:
 				assert.Fail(t, "invalid template")
 			}
 		}
-		list, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+		list, err := controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 		if assert.NoError(t, err) {
 			assert.Len(t, list.Items, 1)
 		}
@@ -4616,16 +4713,17 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	// reconcille
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
 	// make all created pods as successful
-	makePodsPhase(woc, apiv1.PodSucceeded, withOutputs(`{"parameters": [{"name": "my-param"}]}`))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(`{"parameters": [{"name": "my-param"}]}`))
 
 	// reconcille
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 var globalVarsOnExit = `
@@ -4773,7 +4871,8 @@ func TestGlobalVarsOnExit(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	ctx := context.Background()
+	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes["hello-world-6gphm-8n22g-3224262006"]
 	if assert.NotNil(t, node) && assert.NotNil(t, node.Inputs) && assert.NotEmpty(t, node.Inputs.Parameters) {
@@ -4857,16 +4956,18 @@ func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 	wf.Status.StartedAt = metav1.Now()
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	t.Run("Before Deadline", func(t *testing.T) {
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	})
 	time.Sleep(3 * time.Second)
 	t.Run("After Deadline", func(t *testing.T) {
 		woc = newWorkflowOperationCtx(woc.wf, controller)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodeFailed, node.Phase)
 		}
@@ -4878,10 +4979,12 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	t.Run("After Shutdown", func(t *testing.T) {
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodeFailed, node.Phase)
 		}
@@ -4969,28 +5072,32 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		wf := unmarshalWF(stepTimeoutWf)
 		cancel, controller := newController(wf)
 		defer cancel()
+
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 		time.Sleep(6 * time.Second)
-		makePodsPhase(woc, apiv1.PodPending)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("step1").Phase)
 	})
 	t.Run("DAG Template Deadline", func(t *testing.T) {
 		wf := unmarshalWF(dagTimeoutWf)
 		cancel, controller := newController(wf)
 		defer cancel()
-		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-		time.Sleep(6 * time.Second)
-		makePodsPhase(woc, apiv1.PodPending)
-		woc = newWorkflowOperationCtx(woc.wf, controller)
-		woc.operate()
 
-		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+		time.Sleep(6 * time.Second)
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		woc = newWorkflowOperationCtx(woc.wf, controller)
+		woc.operate(ctx)
+
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 	t.Run("Invalid timeout format", func(t *testing.T) {
@@ -5000,9 +5107,11 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		wf.Spec.Templates[1] = tmpl
 		cancel, controller := newController(wf)
 		defer cancel()
+
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		jsonByte, err := json.Marshal(woc.wf)
 		assert.NoError(t, err)
 		assert.Contains(t, string(jsonByte), "has invalid duration format in timeout")
@@ -5015,9 +5124,11 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		wf.Spec.Templates[0] = tmpl
 		cancel, controller := newController(wf)
 		defer cancel()
+
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		jsonByte, err := json.Marshal(woc.wf)
 		assert.NoError(t, err)
 		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
@@ -5056,17 +5167,18 @@ func TestStorageQuota(t *testing.T) {
 		return true, nil, apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
 	})
 
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowUnknown, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
 	assert.Contains(t, woc.wf.Status.Message, "Waiting for a PVC to be created.")
 
 	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierr.NewBadRequest("BadRequest")
 	})
 
-	woc.operate()
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Contains(t, woc.wf.Status.Message, "BadRequest")
 }
 
@@ -5220,30 +5332,31 @@ spec:
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
 
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	assert.True(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 		return node.Phase == wfv1.NodePending
 	}))
 
-	deletePods(woc)
+	deletePods(ctx, woc)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	assert.True(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 		return node.Phase == wfv1.NodePending
 	}))
 
-	makePodsPhase(woc, apiv1.PodSucceeded)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 var wfRetryWithParam = `
@@ -5309,9 +5422,11 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		wf := unmarshalWF(wfRetryWithParam)
 		cancel, controller := newController(wf)
 		defer cancel()
+
+		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+		woc.operate(ctx)
+		pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		assert.True(t, len(pods.Items) > 0)
 		for _, pod := range pods.Items {
@@ -5507,8 +5622,10 @@ func TestParamAggregation(t *testing.T) {
 	wf := unmarshalWF(paramAggregation)
 	cancel, controller := newController(wf)
 	defer cancel()
+
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	evenNode := woc.wf.Status.Nodes.FindByDisplayName("print-evenness")
 	if assert.NotNil(t, evenNode) {
