@@ -36,7 +36,8 @@ function nodeLabel(n: NodeStatus) {
         genre: n.type,
         icon: icons[phase] || icons.Pending,
         progress: phase === 'Running' && progress(n),
-        classNames: phase
+        classNames: phase,
+        tags: new Set([n.templateName])
     };
 }
 
@@ -61,12 +62,17 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     public render() {
         this.prepareGraph();
+
+        const tags: {[key: string]: boolean} = {};
+        Object.values(this.props.nodes).forEach(n => (tags[n.templateName] = true));
+
         return (
             <GraphPanel
                 storageScope='workflow-dag'
                 graph={this.graph}
                 nodeGenres={genres}
                 nodeClassNames={classNames}
+                nodeTags={tags}
                 nodeSize={this.props.nodeSize || 32}
                 defaultIconShape='circle'
                 hideNodeTypes={true}

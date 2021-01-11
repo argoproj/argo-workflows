@@ -19,6 +19,9 @@ interface NodeGenres {
 interface NodeClassNames {
     [type: string]: boolean;
 }
+interface NodeTags {
+    [key: string]: boolean;
+}
 
 interface Props {
     graph: Graph;
@@ -27,6 +30,7 @@ interface Props {
     classNames?: string;
     nodeGenres: NodeGenres;
     nodeClassNames?: NodeClassNames;
+    nodeTags?: NodeTags;
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
     hideNodeTypes?: boolean; // default "false"
@@ -44,6 +48,7 @@ export const GraphPanel = (props: Props) => {
     const [fast, setFast] = React.useState<boolean>(storage.getItem('fast', false));
     const [nodeGenres, setNodeGenres] = React.useState<NodeGenres>(storage.getItem('nodeGenres', props.nodeGenres));
     const [nodeClassNames, setNodeClassNames] = React.useState<NodeClassNames>(storage.getItem('nodeClassNames', props.nodeClassNames));
+    const [nodeTags, setNodeTags] = React.useState<NodeTags>(props.nodeTags);
 
     useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
     useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
@@ -55,7 +60,8 @@ export const GraphPanel = (props: Props) => {
         const label = props.graph.nodes.get(id);
         return (
             nodeGenres[label.genre] &&
-            (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className)))
+            (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
+            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => checked && label.tags.has(tag)))
         );
     };
 
@@ -83,6 +89,18 @@ export const GraphPanel = (props: Props) => {
                             values={nodeClassNames}
                             onChange={(label, checked) => {
                                 setNodeClassNames(v => {
+                                    v[label] = checked;
+                                    return Object.assign({}, v);
+                                });
+                            }}
+                        />
+                    )}
+                    {nodeTags && (
+                        <FilterDropDown
+                            key='annotations'
+                            values={nodeTags}
+                            onChange={(label, checked) => {
+                                setNodeTags(v => {
                                     v[label] = checked;
                                     return Object.assign({}, v);
                                 });
