@@ -2,9 +2,6 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
-  creationTimestamp: null
   name: clusterworkflowtemplates.argoproj.io
 spec:
   group: argoproj.io
@@ -2374,7 +2371,7 @@ spec:
                         workingDir:
                           type: string
                       required:
-                      - name
+                      - image
                       type: object
                     daemon:
                       type: boolean
@@ -4769,7 +4766,7 @@ spec:
                         workingDir:
                           type: string
                       required:
-                      - name
+                      - image
                       - source
                       type: object
                     securityContext:
@@ -5386,6 +5383,8 @@ spec:
                       type: array
                     steps:
                       items:
+                        items:
+                          type: object
                         type: array
                       type: array
                     suspend:
@@ -6963,19 +6962,10 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
-  creationTimestamp: null
   name: cronworkflows.argoproj.io
 spec:
   group: argoproj.io
@@ -9366,7 +9356,7 @@ spec:
                             workingDir:
                               type: string
                           required:
-                          - name
+                          - image
                           type: object
                         daemon:
                           type: boolean
@@ -11761,7 +11751,7 @@ spec:
                             workingDir:
                               type: string
                           required:
-                          - name
+                          - image
                           - source
                           type: object
                         securityContext:
@@ -12378,6 +12368,8 @@ spec:
                           type: array
                         steps:
                           items:
+                            items:
+                              type: object
                             type: array
                           type: array
                         suspend:
@@ -13997,19 +13989,10 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
-  creationTimestamp: null
   name: workfloweventbindings.argoproj.io
 spec:
   group: argoproj.io
@@ -14411,19 +14394,10 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
-  creationTimestamp: null
   name: workflows.argoproj.io
 spec:
   group: argoproj.io
@@ -16802,7 +16776,7 @@ spec:
                         workingDir:
                           type: string
                       required:
-                      - name
+                      - image
                       type: object
                     daemon:
                       type: boolean
@@ -19197,7 +19171,7 @@ spec:
                         workingDir:
                           type: string
                       required:
-                      - name
+                      - image
                       - source
                       type: object
                     securityContext:
@@ -19814,6 +19788,8 @@ spec:
                       type: array
                     steps:
                       items:
+                        items:
+                          type: object
                         type: array
                       type: array
                     suspend:
@@ -27687,6 +27663,8 @@ spec:
                       type: array
                     steps:
                       items:
+                        items:
+                          type: object
                         type: array
                       type: array
                     suspend:
@@ -33781,6 +33759,8 @@ spec:
                           type: array
                         steps:
                           items:
+                            items:
+                              type: object
                             type: array
                           type: array
                         suspend:
@@ -35411,19 +35391,10 @@ spec:
     served: true
     storage: true
     subresources: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
-  creationTimestamp: null
   name: workflowtemplates.argoproj.io
 spec:
   group: argoproj.io
@@ -37792,7 +37763,7 @@ spec:
                         workingDir:
                           type: string
                       required:
-                      - name
+                      - image
                       type: object
                     daemon:
                       type: boolean
@@ -40187,7 +40158,7 @@ spec:
                         workingDir:
                           type: string
                       required:
-                      - name
+                      - image
                       - source
                       type: object
                     securityContext:
@@ -40804,6 +40775,8 @@ spec:
                       type: array
                     steps:
                       items:
+                        items:
+                          type: object
                         type: array
                       type: array
                     suspend:
@@ -42381,12 +42354,6 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -42846,7 +42813,7 @@ stringData:
   github.com: |
     type: github
     secret: "shh!"
-  gitlab.com: |
+  gitlab.com: |-
     type: gitlab
     secret: "shh!"
 ---
