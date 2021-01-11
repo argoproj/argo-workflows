@@ -32,7 +32,7 @@ export const EventSourceLogsViewer = ({
         }
         setError(null);
         setLogLoaded(false);
-        confirm(selectedEvent)
+
         if (selectedEvent != null) {
             const parts = selectedEvent.split('-');
             setEventType(parts[0]);
