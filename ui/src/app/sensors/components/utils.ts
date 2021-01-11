@@ -20,7 +20,7 @@ export const Utils = {
             } else if (isRunning) {
                 classes = ['fa-circle', 'status-icon--spin'];
             } else {
-                classes = ['fa-circle', 'status-icon--success'];
+                classes = ['fa-circle', 'status-icon--running'];
             }
         }
         return classes.join(' ');
