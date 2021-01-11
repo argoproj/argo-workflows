@@ -5056,8 +5056,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					"phase": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
-							Type:        []string{"string"},
-							Format:      "",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"startedAt": {

@@ -423,7 +423,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			switch onExitNode.Phase {
 			case wfv1.NodeFailed:
 				woc.markWorkflowFailed(ctx, onExitNode.Message)
-			case wfv1.NodeError:
+			default:
 				woc.markWorkflowError(ctx, fmt.Errorf(onExitNode.Message))
 			}
 		} else {
@@ -1367,7 +1367,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 }
 
 func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
-	if !(woc.wf.Status.Phase == wfv1.WorkflowUnknown || woc.wf.Status.Phase == wfv1.WorkflowRunning) {
+	if !(woc.wf.Status.Phase == wfv1.WorkflowPending || woc.wf.Status.Phase == wfv1.WorkflowRunning) {
 		// Only attempt to create PVCs if workflow is in Pending or Running state
 		// (e.g. passed validation, or didn't already complete)
 		return nil
