@@ -29,7 +29,7 @@ export const SensorSidePanel = ({
             {!!sensor && (
                 <div>
                     <h4>
-                        Sensor/{sensor.metadata.name}
+                        {sensor.metadata.name}
                         {selectedTrigger ? '/' + selectedTrigger : ''}
                     </h4>
                     <Tabs
