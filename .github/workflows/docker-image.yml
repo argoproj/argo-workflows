@@ -213,7 +213,7 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             docker manifest create $image_name ${image_name}-linux-amd64
-            docker manifest create quay.io/$image_name ${image_name}-linux-amd64
+            docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64
 
             docker manifest push $image_name
             docker manifest push quay.io/$image_name
