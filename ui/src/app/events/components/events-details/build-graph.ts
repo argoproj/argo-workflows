@@ -10,6 +10,9 @@ const status = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
+    if (!!r.status.conditions.find(c => c.status === 'False')) {
+        return 'Failed';
+    }
     return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Ready';
 };
 

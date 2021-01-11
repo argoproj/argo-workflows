@@ -630,7 +630,7 @@ export interface Condition {
 }
 
 export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
-export type ConditionStatus = 'True' | 'False' | 'Unknown;';
+export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
 /**
  * WorkflowList is list of Workflow resources

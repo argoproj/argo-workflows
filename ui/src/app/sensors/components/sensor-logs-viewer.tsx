@@ -19,7 +19,7 @@ export const SensorLogsViewer = ({
     namespace: string;
     selectedTrigger: string;
     sensor: Sensor;
-    onClick: (selectedNdoe: string) => void;
+    onClick: (selectedNode: string) => void;
 }) => {
     const [error, setError] = useState<Error>();
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
@@ -52,7 +52,6 @@ export const SensorLogsViewer = ({
             <div className='row'>
                 <div className='columns small-3 medium-2'>
                     <p>Triggers</p>
-                    {error && <ErrorNotice error={error} />}
                     <div style={{marginBottom: '1em'}}>
                         <div
                             key='all'
@@ -80,6 +79,7 @@ export const SensorLogsViewer = ({
                                 </div>
                             ))}
                     </div>
+                    {error && <ErrorNotice error={error} />}
                 </div>
                 <div className='columns small-9 medium-10' style={{height: 600}}>
                     {!logLoaded ? (
