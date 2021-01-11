@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -16,7 +17,7 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
+func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, clusterName wfv1.ClusterName, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
 	if pod == nil {
 		return nil
 	}
@@ -36,7 +37,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
-				err := k.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := k.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -55,7 +56,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := k.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				err := k.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -87,7 +88,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 			podExecCtl.Deadline = &time.Time{}
 			woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
-			return woc.updateExecutionControl(clusterName, pod.Namespace, pod.Name, podExecCtl, containerName)
+			return woc.updateExecutionControl(ctx, clusterName, pod.Namespace, pod.Name, podExecCtl, containerName)
 		}
 	}
 
@@ -95,7 +96,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 		if podExecCtl.Deadline == nil || woc.workflowDeadline.Before(*podExecCtl.Deadline) {
 			podExecCtl.Deadline = woc.workflowDeadline
 			woc.log.Infof("Applying sooner Workflow Deadline for pod %s at: %v", pod.Name, woc.workflowDeadline)
-			return woc.updateExecutionControl(clusterName, pod.Namespace, pod.Name, podExecCtl, containerName)
+			return woc.updateExecutionControl(ctx, clusterName, pod.Namespace, pod.Name, podExecCtl, containerName)
 		}
 	}
 
@@ -103,7 +104,7 @@ func (woc *wfOperationCtx) applyExecutionControl(clusterName wfv1.ClusterName, p
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
-func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
+func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID string) error {
 	woc.log.Infof("Checking daemoned children of %s", nodeID)
 	var firstErr error
 	execCtl := common.ExecutionControl{
@@ -119,7 +120,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
 		clusterName := tmpl.ClusterName
 		namespace := wfv1.NamespaceOr(tmpl.Namespace, woc.wf.Namespace)
-		err := woc.updateExecutionControl(clusterName, namespace, childNode.ID, execCtl, common.WaitContainerName)
+		err := woc.updateExecutionControl(ctx, clusterName, namespace, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {
 			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)
 			if firstErr == nil {
@@ -131,7 +132,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 }
 
 // updateExecutionControl updates the execution control parameters
-func (woc *wfOperationCtx) updateExecutionControl(clusterName wfv1.ClusterName, namespace, podName string, execCtl common.ExecutionControl, containerName string) error {
+func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterName wfv1.ClusterName, namespace, podName string, execCtl common.ExecutionControl, containerName string) error {
 	execCtlBytes, err := json.Marshal(execCtl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -143,6 +144,7 @@ func (woc *wfOperationCtx) updateExecutionControl(clusterName wfv1.ClusterName, 
 		return err
 	}
 	err = common.AddPodAnnotation(
+		ctx,
 		k,
 		podName,
 		namespace,

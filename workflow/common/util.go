@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -448,7 +449,7 @@ var defaultPatchBackoff = wait.Backoff{
 }
 
 // AddPodAnnotation adds an annotation to pod
-func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value string, options ...interface{}) error {
+func AddPodAnnotation(ctx context.Context, c kubernetes.Interface, podName, namespace, key, value string, options ...interface{}) error {
 	backoff := defaultPatchBackoff
 	for _, option := range options {
 		switch v := option.(type) {
@@ -458,16 +459,16 @@ func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value str
 			panic("unknown option type")
 		}
 	}
-	return addPodMetadata(c, "annotations", podName, namespace, key, value, backoff)
+	return addPodMetadata(ctx, c, "annotations", podName, namespace, key, value, backoff)
 }
 
 // AddPodLabel adds an label to pod
-func AddPodLabel(c kubernetes.Interface, podName, namespace, key, value string) error {
-	return addPodMetadata(c, "labels", podName, namespace, key, value, defaultPatchBackoff)
+func AddPodLabel(ctx context.Context, c kubernetes.Interface, podName, namespace, key, value string) error {
+	return addPodMetadata(ctx, c, "labels", podName, namespace, key, value, defaultPatchBackoff)
 }
 
 // addPodMetadata is helper to either add a pod label or annotation to the pod
-func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
+func addPodMetadata(ctx context.Context, c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
 	metadata := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			field: map[string]string{
@@ -480,7 +481,7 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 		return errors.InternalWrapError(err)
 	}
 	return wait.ExponentialBackoff(backoff, func() (bool, error) {
-		_, err = c.CoreV1().Pods(namespace).Patch(podName, types.MergePatchType, patch)
+		_, err = c.CoreV1().Pods(namespace).Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
 		return err == nil, err
 	})
 }
@@ -488,10 +489,10 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 const deleteRetries = 3
 
 // DeletePod deletes a pod. Ignores NotFound error
-func DeletePod(c kubernetes.Interface, podName, namespace string) error {
+func DeletePod(ctx context.Context, c kubernetes.Interface, podName, namespace string) error {
 	var err error
 	for attempt := 0; attempt < deleteRetries; attempt++ {
-		err = c.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{})
+		err = c.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 		if err == nil || apierr.IsNotFound(err) {
 			return nil
 		}

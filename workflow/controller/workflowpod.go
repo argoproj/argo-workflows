@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -128,7 +129,7 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
@@ -244,7 +245,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	err = woc.setupServiceAccount(clusterName, pod, tmpl)
+	err = woc.setupServiceAccount(ctx, clusterName, pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +393,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if err != nil {
 		return nil, err
 	}
-	created, err := k.CoreV1().Pods(namespace).Create(pod)
+	created, err := k.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil && !apierr.IsAlreadyExists(err) {
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
@@ -1044,7 +1045,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 }
 
 // setupServiceAccount sets up service account and token.
-func (woc *wfOperationCtx) setupServiceAccount(clusterName wfv1.ClusterName, pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, clusterName wfv1.ClusterName, pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
 	} else if woc.execWf.Spec.ServiceAccountName != "" {
@@ -1072,7 +1073,7 @@ func (woc *wfOperationCtx) setupServiceAccount(clusterName wfv1.ClusterName, pod
 		if err != nil {
 			return err
 		}
-		tokenName, err := common.GetServiceAccountTokenName(k, pod.Namespace, executorServiceAccountName)
+		tokenName, err := common.GetServiceAccountTokenName(ctx, k, pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}

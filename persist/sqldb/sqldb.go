@@ -1,6 +1,7 @@
 package sqldb
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,11 +39,12 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", errors.InternalError("tableName is empty")
 	}
 
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	ctx := context.Background()
+	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
@@ -83,11 +85,12 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		return nil, "", errors.InternalError("tableName is empty")
 	}
 
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	ctx := context.Background()
+	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}

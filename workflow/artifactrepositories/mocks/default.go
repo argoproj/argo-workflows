@@ -9,7 +9,7 @@ import (
 
 func DummyArtifactRepositories(repo *config.ArtifactRepository) *Interface {
 	i := &Interface{}
-	i.On("Resolve", mock.Anything, mock.Anything).Return(wfv1.DefaultArtifactRepositoryRefStatus, nil)
-	i.On("Get", mock.Anything).Return(repo, nil)
+	i.On("Resolve", mock.Anything, mock.Anything, mock.Anything).Return(wfv1.DefaultArtifactRepositoryRefStatus, nil)
+	i.On("Get", mock.Anything, mock.Anything).Return(repo, nil)
 	return i
 }

@@ -1,6 +1,7 @@
 package clusters
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -13,14 +14,14 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func GetConfigs(restConfig *rest.Config, kubeclientset kubernetes.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, error) {
+func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, error) {
 	clusterNamespace := wfv1.NewClusterNamespaceKey(clusterName, managedNamespace)
 	restConfigs := map[wfv1.ClusterNamespaceKey]*rest.Config{}
 	if restConfig != nil {
 		restConfigs[clusterNamespace] = restConfig
 	}
 	kubernetesInterfaces := map[wfv1.ClusterNamespaceKey]kubernetes.Interface{clusterNamespace: kubeclientset}
-	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get("rest-config", metav1.GetOptions{})
+	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get(ctx, "rest-config", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 	} else if err != nil {
 		return nil, nil, fmt.Errorf("failed to get secret/clusters: %w", err)

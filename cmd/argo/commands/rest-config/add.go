@@ -1,6 +1,7 @@
 package rest_config
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -37,13 +39,13 @@ argo rest-config add other/argo k3s-default
 			contextName := args[1]
 			startingConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()
 			errors.CheckError(err)
-			context, ok := startingConfig.Contexts[contextName]
+			kubeContext, ok := startingConfig.Contexts[contextName]
 			if !ok {
 				log.Fatalf("context named \"%s\" not found, you can list contexts with: `kubectl config get-contexts`", contextName)
 			}
-			user := startingConfig.AuthInfos[context.AuthInfo]
+			user := startingConfig.AuthInfos[kubeContext.AuthInfo]
 			log.Debug(user)
-			c, err := clientcmd.NewDefaultClientConfig(*startingConfig, &clientcmd.ConfigOverrides{Context: *context}).ClientConfig()
+			c, err := clientcmd.NewDefaultClientConfig(*startingConfig, &clientcmd.ConfigOverrides{Context: *kubeContext}).ClientConfig()
 			errors.CheckError(err)
 			log.Debug(c.String())
 			data, err := json.Marshal(&clusters.Config{
@@ -70,7 +72,7 @@ argo rest-config add other/argo k3s-default
 			restConfig, err := client.GetConfig().ClientConfig()
 			errors.CheckError(err)
 			_, err = kubernetes.NewForConfigOrDie(restConfig).CoreV1().Secrets(client.Namespace()).
-				Patch("rest-config", types.MergePatchType, data)
+				Patch(context.Background(), "rest-config", types.MergePatchType, data, metav1.PatchOptions{})
 			errors.CheckError(err)
 			fmt.Printf("added cluster/namespace \"%v\" from context \"%s\"\n", clusterNamespace, contextName)
 		},

@@ -1,12 +1,14 @@
 package rest_config
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
@@ -33,7 +35,7 @@ func NewRMCommand() *cobra.Command {
 			restConfig, err := client.GetConfig().ClientConfig()
 			errors.CheckError(err)
 			_, err = kubernetes.NewForConfigOrDie(restConfig).CoreV1().Secrets(client.Namespace()).
-				Patch("rest-config", types.MergePatchType, data)
+				Patch(context.Background(), "rest-config", types.MergePatchType, data, metav1.PatchOptions{})
 			errors.CheckError(err)
 			fmt.Printf("removed cluster/namespace \"%v\"\n", clusterNamespace)
 		},

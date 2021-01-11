@@ -91,11 +91,11 @@ type ArgoServerOpts struct {
 	XFrameOptions           string
 }
 
-func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
+func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset, emptyConfigFunc)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get()
+		c, err := configController.Get(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	v, err := as.configController.Get()
+	v, err := as.configController.Get(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
