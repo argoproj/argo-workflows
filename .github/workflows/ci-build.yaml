@@ -73,7 +73,8 @@ jobs:
           echo /usr/local/bin >> $GITHUB_PATH
       - name: Install and start K3S v1.18.8+k3s1
         run: |
-          x=$([ ${{matrix.containerRuntimeExecutor}} !!= pns ] && echo -- --docker || echo)
+          set -eux -o pipefail
+          x=$([ ${{matrix.containerRuntimeExecutor}} != pns ] && echo -- --docker || echo)
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=$x K3S_KUBECONFIG_MODE=644 sh - &
       - name: Pre-pull images
         env:
