@@ -41,6 +41,13 @@ jobs:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
+
       - name: Docker Buildx
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
@@ -63,7 +70,13 @@ jobs:
             --target $TARGET \
             --tag $image_name .
 
-          docker tag $image_name quay.io/$image_name
+          docker buildx build \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --output "type=image,push=true" \
+            --platform="${PLATFORM}" \
+            --target $TARGET \
+            --tag quay.io/$image_name .
 
   build-linux-arm64:
     name: Build & push linux/arm64
@@ -98,6 +111,13 @@ jobs:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
+
       - name: Docker Buildx
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
@@ -120,7 +140,13 @@ jobs:
             --target $TARGET \
             --tag $image_name .
 
-          docker tag $image_name quay.io/$image_name
+          docker buildx build \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --output "type=image,push=true" \
+            --platform="${PLATFORM}" \
+            --target $TARGET \
+            --tag quay.io/$image_name .
 
   build-windows:
     name: Build & push windows
