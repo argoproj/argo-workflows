@@ -424,7 +424,7 @@ func (s *CLISuite) TestRoot() {
 			WaitForWorkflow(createdWorkflowName).
 			Then().
 			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+				assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			})
 	})
 }
@@ -449,7 +449,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -480,7 +480,7 @@ func (s *CLISuite) TestNodeSuspendResume() {
 		}), "suspended node").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if assert.Equal(t, wfv1.NodeFailed, status.Phase) {
+			if assert.Equal(t, wfv1.WorkflowFailed, status.Phase) {
 				r := regexp.MustCompile(`child '(node-suspend-[0-9]+)' failed`)
 				res := r.FindStringSubmatch(status.Message)
 				assert.Equal(t, len(res), 2)
@@ -1190,7 +1190,7 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -1446,7 +1446,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("release")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
