@@ -12,27 +12,34 @@ function identity<T>(value: T) {
 
 export const EventSourceLogsViewer = ({
     namespace,
-    selectedTrigger,
+    selectedEvent: selectedEvent,
     eventSource,
     onClick
 }: {
     namespace: string;
-    selectedTrigger: string;
+    selectedEvent: string;
     eventSource: EventSource;
     onClick: (selectedNode: string) => void;
 }) => {
     const [error, setError] = useState<Error>();
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
     const [logLoaded, setLogLoaded] = useState(false);
-
+    const [eventType, setEventType] = useState('');
+    const [eventName, setEventName] = useState('');
     useEffect(() => {
         if (!eventSource) {
             return;
         }
         setError(null);
         setLogLoaded(false);
+        confirm(selectedEvent)
+        if (selectedEvent != null) {
+            const parts = selectedEvent.split('-');
+            setEventType(parts[0]);
+            setEventName(parts[1]);
+        }
         const source = services.eventSource
-            .eventSourcesLogs(namespace, eventSource.metadata.name, 'calender', selectedTrigger, `50`)
+            .eventSourcesLogs(namespace, eventSource.metadata.name, eventType, eventName, '', 50)
             .filter(e => !!e)
             .map(
                 e =>
@@ -45,7 +52,7 @@ export const EventSourceLogsViewer = ({
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [namespace, eventSource, selectedTrigger]);
+    }, [namespace, eventSource, selectedEvent]);
 
     // @ts-ignore
     return (
@@ -58,26 +65,31 @@ export const EventSourceLogsViewer = ({
                         <div
                             key='all'
                             onClick={() => {
-                                onClick(`${namespace}/event-sources/${eventSource.metadata.name}`);
+                                onClick(`${eventSource.metadata.namespace}/event-sources/${eventSource.metadata.name}`);
                             }}>
-                            {!selectedTrigger && <i className='fa fa-angle-right' />}
-                            {!!selectedTrigger && <span>&nbsp;&nbsp;</span>}
+                            {!selectedEvent && <i className='fa fa-angle-right' />}
+                            {!!selectedEvent && <span>&nbsp;&nbsp;</span>}
                             <a>
                                 <span title='all'>all</span>
                             </a>
                         </div>
                         {!!eventSource &&
-                        Object.entries(eventSource.spec.calendar).map(([key, value]) => (
-                                <div
-                                    key={key}
-                                    onClick={() => {
-                                        onClick(`${namespace}/event-sources/${eventSource.metadata.name}/${key}`);
-                                    }}>
-                                    {selectedTrigger === key && <i className='fa fa-angle-right' />}
-                                    {selectedTrigger !== key && <span>&nbsp;&nbsp;</span>}
-                                    <a>
-                                        <span title={key}>{key}</span>
-                                    </a>
+                            Object.entries(eventSource.spec).map(([key, value]) => (
+                                <div key={{key}}>
+                                    <span title={key}>&nbsp;{key}</span>
+                                    {Object.entries(value).map(([name, eventValue]) => (
+                                        <div
+                                            key={name}
+                                            onClick={() => {
+                                                onClick(`${namespace}/event-sources/${eventSource.metadata.name}/${key}-${name}`);
+                                            }}>
+                                            {selectedEvent === key + '-' + name && <i className='fa fa-angle-right' />}
+                                            {selectedEvent !== key + '-' + name && <span>&nbsp;&nbsp;</span>}
+                                            <a>
+                                                <span title={name}>&nbsp;&nbsp;{name}</span>
+                                            </a>
+                                        </div>
+                                    ))}
                                 </div>
                             ))}
                     </div>

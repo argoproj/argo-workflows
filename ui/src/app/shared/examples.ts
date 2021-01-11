@@ -1,4 +1,4 @@
-import {ClusterWorkflowTemplate, CronWorkflow, Sensor, Template, Workflow, WorkflowTemplate, EventSource} from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, EventSource, Sensor, Template, Workflow, WorkflowTemplate} from '../../models';
 
 const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely', 'sparkly', 'omniscient'];
@@ -98,15 +98,15 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
 const calender = {example: {interval: '10s'}};
 
 export const exampleEventSource = (namespace: string): EventSource => ({
-  metadata: {
-      name: randomSillyName(),
-      namespace,
-      labels
-  },
-  spec: {
-      calendar: calender
+    metadata: {
+        name: randomSillyName(),
+        namespace,
+        labels
+    },
+    spec: {
+        calendar: calender
     }
-  });
+});
 
 export const exampleSensor = (namespace: string): Sensor => ({
     metadata: {
@@ -114,7 +114,7 @@ export const exampleSensor = (namespace: string): Sensor => ({
         namespace,
         labels
     },
-
+    spec: {
         dependencies: [
             {
                 name: 'dep01',

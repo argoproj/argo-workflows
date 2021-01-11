@@ -148,12 +148,12 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                                 {
                                     title: 'LOGS',
                                     key: 'logs',
-                                    content: <EventSourceLogsViewer namespace={namespace} selectedTrigger={selected.key} eventSource={selected.value} onClick={setSelectedNode} />
+                                    content: <EventSourceLogsViewer namespace={namespace} selectedEvent={selected.key} eventSource={selected.value} onClick={setSelectedNode} />
                                 },
                                 {
                                     title: 'EVENTS',
                                     key: 'events',
-                                    content: <EventsPanel kind='Sensor' namespace={selected.namespace} name={selected.name} />
+                                    content: <EventsPanel kind='EventSources' namespace={selected.namespace} name={selected.name} />
                                 }
                             ]}
                         />
