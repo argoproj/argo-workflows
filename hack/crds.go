@@ -31,26 +31,36 @@ func cleanCRD(filename string) {
 		properties := schema["properties"].(obj)["spec"].(obj)["properties"].(obj)["workflowSpec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
 		properties.(obj)["container"].(obj)["required"] = []string{"image"}
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
-		// properties.(obj)["steps"].(obj)["required"] = []string{"items"}
+		properties.(obj)["steps"].(obj)["items"].(obj)["items"] = map[string]interface{}{
+			"type": "object",
+		}
 	case "clusterworkflowtemplates.argoproj.io", "workflowtemplates.argoproj.io":
 		properties := schema["properties"].(obj)["spec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
 		properties.(obj)["container"].(obj)["required"] = []string{"image"}
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
-		// properties.(obj)["steps"].(obj)["required"] = []string{"items"}
+		properties.(obj)["steps"].(obj)["items"].(obj)["items"] = map[string]interface{}{
+			"type": "object",
+		}
 	case "workfloweventbindings.argoproj.io":
 		// noop
 	case "workflows.argoproj.io":
 		properties := schema["properties"].(obj)["spec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
 		properties.(obj)["container"].(obj)["required"] = []string{"image"}
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
-		// properties.(obj)["steps"].(obj)["required"] = []string{"items"}
+		properties.(obj)["steps"].(obj)["items"].(obj)["items"] = map[string]interface{}{
+			"type": "object",
+		}
 
-		// status := schema["properties"].(obj)["status"]
-		// additional := status.(obj)["properties"].(obj)["storedTemplates"].(obj)["additionalProperties"].(obj)["properties"]
-		// additional.(obj)["steps"].(obj)["required"] = []string{"items"}
+		status := schema["properties"].(obj)["status"]
+		additional := status.(obj)["properties"].(obj)["storedTemplates"].(obj)["additionalProperties"].(obj)["properties"]
+		additional.(obj)["steps"].(obj)["items"].(obj)["items"] = map[string]interface{}{
+			"type": "object",
+		}
 
-		// stored := status.(obj)["properties"].(obj)["storedWorkflowTemplateSpec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
-		// stored.(obj)["steps"].(obj)["required"] = []string{"items"}
+		stored := status.(obj)["properties"].(obj)["storedWorkflowTemplateSpec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
+		stored.(obj)["steps"].(obj)["items"].(obj)["items"] = map[string]interface{}{
+			"type": "object",
+		}
 	default:
 		panic(name)
 	}
