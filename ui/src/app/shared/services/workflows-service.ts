@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import * as models from '../../../models';
-import {Event, NodeStatus, Workflow, WorkflowList} from '../../../models';
+import {Event, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {Pagination} from '../pagination';
 import requests from './requests';
@@ -20,7 +20,7 @@ export class WorkflowsService {
 
     public list(
         namespace: string,
-        phases: string[],
+        phases: WorkflowPhase[],
         labels: string[],
         pagination: Pagination,
         fields = [
@@ -55,7 +55,7 @@ export class WorkflowsService {
     public watch(filter: {
         namespace?: string;
         name?: string;
-        phases?: Array<string>;
+        phases?: Array<WorkflowPhase>;
         labels?: Array<string>;
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
@@ -70,7 +70,7 @@ export class WorkflowsService {
     public watchFields(filter: {
         namespace?: string;
         name?: string;
-        phases?: Array<string>;
+        phases?: Array<WorkflowPhase>;
         labels?: Array<string>;
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
@@ -207,7 +207,7 @@ export class WorkflowsService {
         return node.outputs.artifacts.findIndex(a => a.name === `${container}-logs`) !== -1;
     }
 
-    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>; resourceVersion?: string}) {
+    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<WorkflowPhase>; labels?: Array<string>; resourceVersion?: string}) {
         const queryParams: string[] = [];
         if (filter.name) {
             queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
@@ -222,7 +222,7 @@ export class WorkflowsService {
         return queryParams;
     }
 
-    private labelSelectorParams(phases?: Array<string>, labels?: Array<string>) {
+    private labelSelectorParams(phases?: Array<WorkflowPhase>, labels?: Array<string>) {
         let labelSelector = '';
         if (phases && phases.length > 0) {
             labelSelector = `workflows.argoproj.io/phase in (${phases.join(',')})`;

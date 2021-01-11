@@ -2288,26 +2288,6 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 	return false, nil
 }
 
-// WorkflowStatus returns a human readable inferred workflow status based on workflow phase and conditions
-func (wf Workflow) WorkflowStatusString() string {
-	switch {
-	case wf.Status.Phase == WorkflowRunning && wf.IsWorkflowSuspended():
-		return "Running (Suspended)"
-	case wf.Status.Phase == WorkflowFailed && wf.Spec.Shutdown != "":
-		return "Failed (Terminated)"
-	default:
-		return wf.Status.Phase.String()
-	}
-}
-
-func (wf Workflow) IsWorkflowSuspended() bool {
-	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-		return true
-	}
-	return wf.Status.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
-
-}
-
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
 // if it should be stored
 func resolveTemplateReference(callerScope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {

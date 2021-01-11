@@ -19,7 +19,7 @@ func TestStepsFailedRetries(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/steps-failed-retries.yaml")
 	woc := newWoc(*wf)
 	woc.operate(ctx)
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var artifactResolutionWhenSkipped = `
@@ -78,7 +78,7 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var stepsWithParamAndGlobalParam = `
@@ -124,7 +124,7 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 func TestResourceDurationMetric(t *testing.T) {
@@ -296,5 +296,5 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }

@@ -185,7 +185,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			if rerr, ok := r.(error); ok {
 				woc.markWorkflowError(ctx, rerr)
 			} else {
-				woc.markWorkflowPhase(ctx, wfv1.NodeError, fmt.Sprintf("%v", r))
+				woc.markWorkflowError(ctx, fmt.Errorf("%v", r))
 			}
 			woc.controller.metrics.OperationPanic()
 		}
@@ -246,7 +246,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 
 	// Perform one-time workflow validation
-	if woc.wf.Status.Phase == "" {
+	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
 		err := woc.createPDBResource(ctx)
 		if err != nil {
@@ -329,7 +329,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		if errorsutil.IsTransientErr(err) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
-			woc.markWorkflowPhase(ctx, wfv1.NodePending, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
+			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
 			woc.requeue()
 			return
 		}
@@ -422,9 +422,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			// the workflow is now considered unsuccessful.
 			switch onExitNode.Phase {
 			case wfv1.NodeFailed:
-				woc.markWorkflowFailed(onExitNode.Message)
+				woc.markWorkflowFailed(ctx, onExitNode.Message)
 			case wfv1.NodeError:
-				woc.markWorkflowError(fmt.Errorf(onExitNode.Message))
+				woc.markWorkflowError(ctx, fmt.Errorf(onExitNode.Message))
 			}
 		} else {
 			woc.markWorkflowSuccess(ctx)
@@ -432,7 +432,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	case wfv1.NodeFailed:
 		woc.markWorkflowFailed(ctx, workflowMessage)
 	case wfv1.NodeError:
-		woc.markWorkflowPhase(wfv1.WorkflowError, workflowMessage)
+		woc.markWorkflowPhase(ctx, wfv1.WorkflowError, workflowMessage)
 	default:
 		// NOTE: we should never make it here because if the node was 'Running' we should have
 		// returned earlier.
@@ -1366,7 +1366,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	return wfv1.NodeSucceeded, ""
 }
 
-func (woc *wfOperationCtx) createPVCs() error {
+func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 	if !(woc.wf.Status.Phase == wfv1.WorkflowUnknown || woc.wf.Status.Phase == wfv1.WorkflowRunning) {
 		// Only attempt to create PVCs if workflow is in Pending or Running state
 		// (e.g. passed validation, or didn't already complete)
@@ -1829,7 +1829,7 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
-func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.WorkflowPhase, message string) {
+func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.WorkflowPhase, message string) {
 	markCompleted := false
 	if woc.wf.Status.Phase != phase {
 		if woc.wf.Status.Fulfilled() {
@@ -1931,20 +1931,20 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-func (woc *wfOperationCtx) markWorkflowRunning() {
-	woc.markWorkflowPhase(wfv1.WorkflowRunning, "")
+func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) {
+	woc.markWorkflowPhase(ctx, wfv1.WorkflowRunning, "")
 }
 
-func (woc *wfOperationCtx) markWorkflowSuccess() {
-	woc.markWorkflowPhase(wfv1.WorkflowSucceeded, "")
+func (woc *wfOperationCtx) markWorkflowSuccess(ctx context.Context) {
+	woc.markWorkflowPhase(ctx, wfv1.WorkflowSucceeded, "")
 }
 
-func (woc *wfOperationCtx) markWorkflowFailed(message string) {
-	woc.markWorkflowPhase(wfv1.WorkflowFailed, message)
+func (woc *wfOperationCtx) markWorkflowFailed(ctx context.Context, message string) {
+	woc.markWorkflowPhase(ctx, wfv1.WorkflowFailed, message)
 }
 
-func (woc *wfOperationCtx) markWorkflowError(err error) {
-	woc.markWorkflowPhase(wfv1.WorkflowError, err.Error())
+func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
+	woc.markWorkflowPhase(ctx, wfv1.WorkflowError, err.Error())
 }
 
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from

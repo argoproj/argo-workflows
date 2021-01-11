@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {labels, Workflow} from '../../../../models';
+import {labels, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -32,7 +32,7 @@ require('./workflows-list.scss');
 interface State {
     namespace: string;
     pagination: Pagination;
-    selectedPhases: string[];
+    selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
     selectedWorkflows: Map<string, models.Workflow>;
     workflows?: Workflow[];
@@ -42,7 +42,7 @@ interface State {
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
-    selectedPhases: string[];
+    selectedPhases: WorkflowPhase[];
 }
 
 const allBatchActionsEnabled: Actions.OperationDisabled = {
@@ -113,7 +113,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit
             },
             namespace: this.props.match.params.namespace || '',
-            selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
+            selectedPhases: this.queryParams('phase').length > 0 ? (this.queryParams('phase') as WorkflowPhase[]) : savedOptions.selectedPhases,
             selectedLabels: this.queryParams('label'),
             selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled}
@@ -168,7 +168,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <WorkflowFilters
                                         workflows={this.state.workflows || []}
                                         namespace={this.state.namespace}
-                                        phaseItems={Object.values(models.NODE_PHASE)}
+                                        phaseItems={WorkflowPhases}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
                                         onChange={(namespace, selectedPhases, selectedLabels) =>
@@ -207,7 +207,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
     }
 
-    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination): void {
+    private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination): void {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
@@ -264,7 +264,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             .catch(error => this.setState({error}));
     }
 
-    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination) {
+    private changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination) {
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
 

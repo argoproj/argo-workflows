@@ -834,6 +834,18 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 
 var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")
 
+// IsWorkflowSuspended returns whether or not a workflow is considered suspended
+func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
+	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+		return true
+	}
+	for _, node := range wf.Status.Nodes {
+		if node.IsActiveSuspendNode() {
+			return true
+		}
+	}
+	return false
+}
 
 // TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
 func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string) error {

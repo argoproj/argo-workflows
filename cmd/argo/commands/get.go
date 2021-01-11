@@ -20,6 +20,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	argoutil "github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/printer"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -124,7 +125,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		serviceAccount = "default"
 	}
 	out += fmt.Sprintf(fmtStr, "ServiceAccount:", serviceAccount)
-	out += fmt.Sprintf(fmtStr, "Status:", wf.WorkflowStatusString())
+	out += fmt.Sprintf(fmtStr, "Status:", printer.WorkflowStatus(wf))
 	if wf.Status.Message != "" {
 		out += fmt.Sprintf(fmtStr, "Message:", wf.Status.Message)
 	}
