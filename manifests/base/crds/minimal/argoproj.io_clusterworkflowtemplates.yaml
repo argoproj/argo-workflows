@@ -5382,7 +5382,7 @@ spec:
                       type: array
                     steps:
                       items:
-                        type: array
+                        type: string
                       type: array
                     suspend:
                       properties:

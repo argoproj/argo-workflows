@@ -31,10 +31,12 @@ func cleanCRD(filename string) {
 		properties := schema["properties"].(obj)["spec"].(obj)["properties"].(obj)["workflowSpec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
 		properties.(obj)["container"].(obj)["required"] = []string{"image"}
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
+		properties.(obj)["steps"].(obj)["items"].(obj)["type"] = "string"
 	case "clusterworkflowtemplates.argoproj.io", "workflows.argoproj.io", "workflowtemplates.argoproj.io":
 		properties := schema["properties"].(obj)["spec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
 		properties.(obj)["container"].(obj)["required"] = []string{"image"}
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
+		properties.(obj)["steps"].(obj)["items"].(obj)["type"] = "string"
 	case "workfloweventbindings.argoproj.io":
 		// noop
 	default:
