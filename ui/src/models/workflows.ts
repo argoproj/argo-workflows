@@ -850,6 +850,8 @@ export interface MemoizationStatus {
 
 export type NodePhase = '' | 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error' | 'Omitted';
 
+export const WorkflowPhases: NodePhase[] = ['Pending', 'Running', 'Succeeded', 'Failed', 'Error'];
+
 export const NODE_PHASE = {
     PENDING: 'Pending',
     RUNNING: 'Running',
