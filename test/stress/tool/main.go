@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
 
@@ -41,8 +44,9 @@ spec:
 		panic(err)
 	}
 
+	ctx := context.Background()
 	for i := 0; i < 100; i++ {
-		_, err := w.Create(wf)
+		_, err := w.Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			panic(err)
 		}

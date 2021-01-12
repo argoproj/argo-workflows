@@ -8,12 +8,12 @@ import (
 )
 
 // GetConditions returns the conditions, excluding the `message` field.
-func GetConditions(un *unstructured.Unstructured) []wfv1.Condition {
+func GetConditions(un *unstructured.Unstructured) wfv1.Conditions {
 	if un == nil {
 		return nil
 	}
 	items, _, _ := unstructured.NestedSlice(un.Object, "status", "conditions")
-	var x []wfv1.Condition
+	var x wfv1.Conditions
 	for _, item := range items {
 		m, ok := item.(map[string]interface{})
 		if !ok {
