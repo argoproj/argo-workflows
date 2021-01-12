@@ -3,10 +3,6 @@ import requests from './requests';
 
 export class EventSourceService {
     public create(eventSource: EventSource, namespace: string) {
-        const str = JSON.stringify(eventSource, null, 4);
-        // tslint:disable-next-line:no-console
-        confirm(str)
-
         return requests
             .post(`api/v1/event-sources/${namespace}`)
             .send({eventSource})

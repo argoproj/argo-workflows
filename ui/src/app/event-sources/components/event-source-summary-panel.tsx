@@ -1,11 +1,10 @@
 import * as React from 'react';
 
+import {EventSource} from '../../../models';
 import {ExampleManifests} from '../../shared/components/example-manifests';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
 import {services} from '../../shared/services';
-// @ts-ignore
-import {EventSource} from '../../../models';
 
 interface Props {
     eventSource: EventSource;
@@ -40,9 +39,6 @@ export const EventSourceSummaryPanel = (props: Props) => {
                             services.eventSource.update(value, props.eventSource.metadata.namespace).then(eventSource => props.onChange(eventSource))
                         }
                     />
-                    <p>
-                        <ExampleManifests />
-                    </p>
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
-import {EventSource} from '../../../models';
+import {EventSource, kubernetes} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
 import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
@@ -24,22 +24,15 @@ export const EventSourceLogsViewer = ({
     const [error, setError] = useState<Error>();
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
     const [logLoaded, setLogLoaded] = useState(false);
-    const [eventType, setEventType] = useState('');
-    const [eventName, setEventName] = useState('');
     useEffect(() => {
         if (!eventSource) {
             return;
         }
+        const parts = selectedEvent != null ? selectedEvent.split('-') : ['', ''];
         setError(null);
         setLogLoaded(false);
-
-        if (selectedEvent != null) {
-            const parts = selectedEvent.split('-');
-            setEventType(parts[0]);
-            setEventName(parts[1]);
-        }
         const source = services.eventSource
-            .eventSourcesLogs(namespace, eventSource.metadata.name, eventType, eventName, '', 50)
+            .eventSourcesLogs(namespace, eventSource.metadata.name, parts[0], parts[1], '', 50)
             .filter(e => !!e)
             .map(
                 e =>
@@ -74,17 +67,17 @@ export const EventSourceLogsViewer = ({
                             </a>
                         </div>
                         {!!eventSource &&
-                            Object.entries(eventSource.spec).map(([key, value]) => (
-                                <div key={{key}}>
-                                    <span title={key}>&nbsp;{key}</span>
+                            Object.entries(eventSource.spec).map(([type, value]) => (
+                                <div key={{type}}>
+                                    <span title={type}>&nbsp;{type}</span>
                                     {Object.entries(value).map(([name, eventValue]) => (
                                         <div
-                                            key={name}
+                                            id={`${type}-${name}`}
                                             onClick={() => {
-                                                onClick(`${namespace}/event-sources/${eventSource.metadata.name}/${key}-${name}`);
+                                                onClick(`${namespace}/event-sources/${eventSource.metadata.name}/${type}-${name}`);
                                             }}>
-                                            {selectedEvent === key + '-' + name && <i className='fa fa-angle-right' />}
-                                            {selectedEvent !== key + '-' + name && <span>&nbsp;&nbsp;</span>}
+                                            {selectedEvent === type + '-' + name && <i className='fa fa-angle-right' />}
+                                            {selectedEvent !== type + '-' + name && <span>&nbsp;&nbsp;</span>}
                                             <a>
                                                 <span title={name}>&nbsp;&nbsp;{name}</span>
                                             </a>

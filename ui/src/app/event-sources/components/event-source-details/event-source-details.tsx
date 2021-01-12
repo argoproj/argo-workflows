@@ -17,13 +17,14 @@ import {EventSourceLogsViewer} from "../event-source-log-viewer";
 
 export const EventSourceDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {notifications, navigation} = useContext(Context);
+    const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
     const namespace = match.params.namespace;
     const name = match.params.name;
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
+    const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
 
     useEffect(
         () =>
@@ -32,22 +33,21 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                     namespace,
                     name,
                     tab,
-                    selectedLogNode
+                    selectedNode
                 })
             ),
-        [namespace, name, tab, selectedLogNode]
+        [namespace, name, tab, selectedNode]
     );
 
     const [edited, setEdited] = useState(false);
     const [error, setError] = useState<Error>();
     const [eventSource, setEventSource] = useState<EventSource>();
-    const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
 
     const selected = (() => {
-        if (!selectedLogNode) {
+        if (!selectedNode) {
             return;
         }
-        const x = ID.split(selectedLogNode);
+        const x = ID.split(selectedNode);
         const value = eventSource;
         return {value, ...x};
     })();
@@ -97,7 +97,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                             iconClassName: 'fa fa-trash',
                             disabled: edited,
                             action: () => {
-                                if (!confirm('Are you sure you want to delete this event source?\nThere is no undo.')) {
+                                if (!popup.confirm('Confirmation', 'Are you sure you want to delete this event source?\nThere is no undo.')) {
                                     return;
                                 }
                                 services.eventSource
@@ -112,7 +112,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                             iconClassName: 'fa fa-file-alt',
                             disabled: false,
                             action: () => {
-                                setSelectedLogNode(`${namespace}/event-sources/${eventSource.metadata.name}`);
+                                setSelectedNode(`${namespace}/event-sources/${eventSource.metadata.name}`);
                             }
                         }
                     ]
@@ -127,8 +127,8 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                                        onTabSelected={setTab} selectedTabKey={tab}/>
                 )}
             </>
-            <SlidingPanel isShown={!!selected} onClose={() => setSelectedLogNode(null)}>
-                {!!selectedLogNode && (
+            <SlidingPanel isShown={!!selected} onClose={() => setSelectedNode(null)}>
+                {!!selectedNode && (
                     <div>
                         <h4>
                             EventSource/{selected.name}
@@ -144,7 +144,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                                     key: 'logs',
                                     content: <EventSourceLogsViewer namespace={namespace} selectedEvent={selected.key}
                                                                     eventSource={selected.value}
-                                                                    onClick={setSelectedLogNode}/>
+                                                                    onClick={setSelectedNode}/>
                                 },
                                 {
                                     title: 'EVENTS',
