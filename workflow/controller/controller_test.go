@@ -157,7 +157,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		}),
 		kubeclientset:        kube,
 		dynamicInterface:     dynamicClient,
-		dynamicInterfaces:    map[wfv1.ClusterNamespaceKey]dynamic.Interface{"..v1.pods.": dynamicClient},
+		dynamicInterfaces:    map[wfv1.RestConfigKey]dynamic.Interface{"..v1.pods.": dynamicClient},
 		wfclientset:          wfclientset,
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
@@ -313,13 +313,13 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 }
 
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
-	for _, obj := range woc.controller.podInformer["."].GetStore().List() {
-		pod := obj.(*apiv1.Pod)
-		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+	for _, obj := range woc.controller.podInformer["..v1.pods."].GetStore().List() {
+		pod := obj.(*unstructured.Unstructured)
+		err := woc.controller.dynamicInterfaces["..v1.pods."].Resource(common.PodGVR).Namespace(pod.GetNamespace()).Delete(ctx, pod.GetName(), metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
-		err = woc.controller.podInformer["."].GetStore().Delete(obj)
+		err = woc.controller.podInformer["..v1.pods."].GetStore().Delete(obj)
 		if err != nil {
 			panic(err)
 		}

@@ -28,13 +28,16 @@ argo rest-config add other..v1.pods. k3s-default
 
 # just one namespace
 argo rest-config add other..v1.pods.argo k3s-default
+
+# workflows
+argo rest-config add other.argoproj.io.v1alpha1.workflows.argo k3s-default
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			clusterNamespace, err := wfv1.ParseClusterNamespaceKey(args[0])
+			clusterNamespace, err := wfv1.ParseRestConfigKey(args[0])
 			errors.CheckError(err)
 			contextName := args[1]
 			startingConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()

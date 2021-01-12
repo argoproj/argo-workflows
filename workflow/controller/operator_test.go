@@ -1202,9 +1202,9 @@ func TestWorkflowStepRetry(t *testing.T) {
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	uns, err := controller.dynamicInterfaces["..v1.pods."].Resource(common.PodGVR).Namespace("").List(ctx, metav1.ListOptions{})
+	pods, err := listPods(woc)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(uns.Items))
+	assert.Equal(t, 1, len(pods.Items))
 
 	//complete the first pod
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1219,18 +1219,14 @@ func TestWorkflowStepRetry(t *testing.T) {
 	assert.Nil(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	uns, err = controller.dynamicInterfaces["..v1.pods."].Resource(common.PodGVR).Namespace("").List(ctx, metav1.ListOptions{})
+	pods, err = listPods(woc)
 	assert.Nil(t, err)
-	pods := make([]*apiv1.Pod, len(uns.Items))
-	for i, item := range uns.Items {
-		pods[i], _ = util.PodFromUnstructured(&item)
-	}
-	if assert.Equal(t, 3, len(pods)) {
-		assert.Equal(t, "cowsay success", pods[0].Spec.Containers[1].Args[0])
-		assert.Equal(t, "cowsay failure", pods[1].Spec.Containers[1].Args[0])
+	if assert.Equal(t, 3, len(pods.Items)) {
+		assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
+		assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
 
 		//verify that after the cowsay failure pod failed, we are retrying cowsay success
-		assert.Equal(t, "cowsay success", pods[2].Spec.Containers[1].Args[0])
+		assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
 	}
 }
 

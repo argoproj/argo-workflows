@@ -42,7 +42,7 @@ type sender interface {
 	Send(entry *workflowpkg.LogEntry) error
 }
 
-func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClient versioned.Interface, kubeClient map[wfv1.ClusterNamespaceKey]kubernetes.Interface, hydrator hydrator.Interface, req request, sender sender) error {
+func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClient versioned.Interface, kubeClient map[wfv1.RestConfigKey]kubernetes.Interface, hydrator hydrator.Interface, req request, sender sender) error {
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
 	wf, err := wfInterface.Get(ctx, req.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -52,8 +52,8 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 	logCtx := log.WithFields(log.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()})
 
 	// make sure we don't start logging twice
-	clusterNamespaces := sync.Map{} // map[wfv1.ClusterNamespaceKey]bool
-	pods := sync.Map{}              // map[wfv1.PodKey]bool
+	clusterNamespaces := sync.Map{} // map[wfv1.RestConfigKey]bool
+	pods := sync.Map{}              // map[wfv1.ResourceKey]bool
 
 	// wait for everything to finish
 	var wg sync.WaitGroup
@@ -72,15 +72,15 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 	podLogStreamOptions.Timestamps = true
 
 	kube := func(clusterName wfv1.ClusterName, namespace string) kubernetes.Interface {
-		if x, ok := kubeClient[wfv1.NewClusterNamespaceKey(clusterName, common.PodGVR, namespace)]; ok {
+		if x, ok := kubeClient[wfv1.NewRestConfigKey(clusterName, common.PodGVR, namespace)]; ok {
 			return x
 		}
-		return kubeClient[wfv1.NewClusterNamespaceKey(clusterName, common.PodGVR, corev1.NamespaceAll)]
+		return kubeClient[wfv1.NewRestConfigKey(clusterName, common.PodGVR, corev1.NamespaceAll)]
 	}
 
 	// this func start a stream if one is not already running
 	logPod := func(clusterName wfv1.ClusterName, namespace, podName string) {
-		podKey := wfv1.NewPodKey(clusterName, common.PodGVR, namespace, podName)
+		podKey := wfv1.NewResourceKey(clusterName, common.PodGVR, namespace, podName)
 		logCtx := log.WithField("podKey", podKey)
 		_, alreadyLogging := pods.LoadOrStore(podKey, true)
 		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging pod")
@@ -134,7 +134,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 
 	stopLoggingClusterNamespace := make(chan struct{})
 	logClusterNamespace := func(clusterName wfv1.ClusterName, instanceID, namespace string) {
-		clusterNamespaceKey := wfv1.NewClusterNamespaceKey(clusterName, common.PodGVR, namespace)
+		clusterNamespaceKey := wfv1.NewRestConfigKey(clusterName, common.PodGVR, namespace)
 		logCtx := log.WithField("clusterNamespaceKey", clusterNamespaceKey)
 		_, alreadyLogging := clusterNamespaces.LoadOrStore(clusterNamespaceKey, true)
 		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging cluster-namespace")

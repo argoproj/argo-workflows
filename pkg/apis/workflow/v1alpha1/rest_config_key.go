@@ -8,10 +8,10 @@ import (
 )
 
 // controller-level unique key for a cluster's namespace
-type ClusterNamespaceKey string
+type RestConfigKey string
 
-func ParseClusterNamespaceKey(s string) (ClusterNamespaceKey, error) {
-	x := ClusterNamespaceKey(s)
+func ParseRestConfigKey(s string) (RestConfigKey, error) {
+	x := RestConfigKey(s)
 	clusterName, gvr, _ := x.Split()
 	if clusterName == "" || gvr.Empty() { // TODO - validate more
 		return "nil", fmt.Errorf("must be dot-delimited: \"clusterName.group.version.resource.namespace\", e.g. \"main.v1.pods.argo\"; only namespace maybe empty string: %s", s)
@@ -19,11 +19,11 @@ func ParseClusterNamespaceKey(s string) (ClusterNamespaceKey, error) {
 	return x, nil
 }
 
-func NewClusterNamespaceKey(clusterName ClusterName, gvr schema.GroupVersionResource, namespace string) ClusterNamespaceKey {
-	return ClusterNamespaceKey(fmt.Sprintf("%v.%s.%s.%s.%s", clusterName, gvr.Group, gvr.Version, gvr.Resource, namespace))
+func NewRestConfigKey(clusterName ClusterName, gvr schema.GroupVersionResource, namespace string) RestConfigKey {
+	return RestConfigKey(fmt.Sprintf("%v.%s.%s.%s.%s", clusterName, gvr.Group, gvr.Version, gvr.Resource, namespace))
 }
 
-func (x ClusterNamespaceKey) Split() (clusterName ClusterName, gvr schema.GroupVersionResource, namespace string) {
+func (x RestConfigKey) Split() (clusterName ClusterName, gvr schema.GroupVersionResource, namespace string) {
 	parts := strings.Split(string(x), ".")
 	if len(parts) != 5 {
 		return "", schema.GroupVersionResource{}, ""

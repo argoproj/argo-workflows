@@ -1,5 +1,4 @@
 export SHELL:=/bin/bash
-export SHELL:=/bin/bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
@@ -69,7 +68,7 @@ endif
 RUN_MODE              := local
 CI                    := false
 K3D                   := $(shell [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3d-*" ] && echo true || echo false)
-LOG_LEVEL             := info
+LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
@@ -497,7 +496,6 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	# set-up bad user for e2e tests
 	$(GOTEST) -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-cli
@@ -522,7 +520,7 @@ smoke:
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor dist/* ui/dist go-diagrams
+	rm -Rf test-results node_modules vendor dist/* ui/dist
 
 # swagger
 

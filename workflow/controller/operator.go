@@ -80,9 +80,9 @@ type wfOperationCtx struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *config.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
-	completedPods map[wfv1.PodKey]bool
+	completedPods map[wfv1.ResourceKey]bool
 	// map of pods which is identified as succeeded=true
-	succeededPods map[wfv1.PodKey]bool
+	succeededPods map[wfv1.ResourceKey]bool
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -151,8 +151,8 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		completedPods:          make(map[wfv1.PodKey]bool),
-		succeededPods:          make(map[wfv1.PodKey]bool),
+		completedPods:          make(map[wfv1.ResourceKey]bool),
+		succeededPods:          make(map[wfv1.ResourceKey]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
@@ -881,7 +881,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			}
 			node := woc.wf.Status.Nodes[pod.GetName()]
 			// TODO - bad way to do resourceName
-			podKey := wfv1.NewPodKey(clusterName, schema.GroupVersionResource{Group: pod.GroupVersionKind().Group, Version: pod.GetAPIVersion(), Resource: strings.ToLower(pod.GetKind()) + "s"}, pod.GetNamespace(), pod.GetName())
+			podKey := wfv1.NewResourceKey(clusterName, schema.GroupVersionResource{Group: pod.GroupVersionKind().Group, Version: pod.GetAPIVersion(), Resource: strings.ToLower(pod.GetKind()) + "s"}, pod.GetNamespace(), pod.GetName())
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.GetLabels()[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {

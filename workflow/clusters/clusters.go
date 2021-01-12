@@ -16,9 +16,9 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
-func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, map[wfv1.ClusterNamespaceKey]dynamic.Interface, error) {
-	clusterNamespace := wfv1.NewClusterNamespaceKey(clusterName, common.PodGVR, managedNamespace)
-	restConfigs := map[wfv1.ClusterNamespaceKey]*rest.Config{}
+func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.RestConfigKey]*rest.Config, map[wfv1.RestConfigKey]kubernetes.Interface, map[wfv1.RestConfigKey]dynamic.Interface, error) {
+	clusterNamespace := wfv1.NewRestConfigKey(clusterName, common.PodGVR, managedNamespace)
+	restConfigs := map[wfv1.RestConfigKey]*rest.Config{}
 	if restConfig != nil {
 		restConfigs[clusterNamespace] = restConfig
 	}
@@ -26,15 +26,15 @@ func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kube
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	kubernetesInterfaces := map[wfv1.ClusterNamespaceKey]kubernetes.Interface{clusterNamespace: kubeclientset}
-	dynamicInterfaces := map[wfv1.ClusterNamespaceKey]dynamic.Interface{clusterNamespace: dynamicInterface}
+	kubernetesInterfaces := map[wfv1.RestConfigKey]kubernetes.Interface{clusterNamespace: kubeclientset}
+	dynamicInterfaces := map[wfv1.RestConfigKey]dynamic.Interface{clusterNamespace: dynamicInterface}
 	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get(ctx, "rest-config", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 	} else if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get secret/clusters: %w", err)
 	} else {
 		for key, data := range secret.Data {
-			clusterNamespace, err := wfv1.ParseClusterNamespaceKey(key)
+			clusterNamespace, err := wfv1.ParseRestConfigKey(key)
 			if err != nil {
 				return nil, nil, nil, fmt.Errorf("failed parse key %s: %w", key, err)
 			}
