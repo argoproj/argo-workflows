@@ -15,8 +15,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
@@ -192,13 +190,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: nodeID,
-			Labels: map[string]string{
-				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
-				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
-			},
-			Annotations: map[string]string{
-				common.AnnotationKeyNodeName: nodeName,
-			},
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
@@ -208,16 +199,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		},
 	}
 
-	if clusterName == woc.clusterName() && namespace == woc.wf.Namespace {
-		pod.SetOwnerReferences([]metav1.OwnerReference{*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))})
-	} else {
-		if clusterName != woc.clusterName() {
-			pod.Labels[common.LabelKeyWorkflowClusterName] = string(woc.clusterName())
-		}
-		if namespace != woc.wf.Namespace {
-			pod.Labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
-		}
-	}
+	woc.addCoreMetadata(pod, nodeName, clusterName, namespace)
+
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
 		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
@@ -235,9 +218,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
 	}
 
-	if woc.controller.Config.InstanceID != "" {
-		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
-	}
 	if woc.controller.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
@@ -395,12 +375,15 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if err != nil {
 		return nil, err
 	}
-	un, err := runtime.DefaultUnstructuredConverter.ToUnstructured(pod)
+	un, err := util.PodToUnstructured(pod)
 	if err != nil {
 		return nil, err
 	}
-	created, err := k.Namespace(namespace).Create(ctx, &unstructured.Unstructured{Object: un}, metav1.CreateOptions{})
-	if err != nil && !apierr.IsAlreadyExists(err) {
+	created, err := k.Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
+	switch {
+	case apierr.IsAlreadyExists(err):
+		return pod, nil
+	case err != nil:
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
 		}
@@ -409,7 +392,43 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, clusterName, namespace, pod.Name)
 	woc.activePods++
-	return pod, runtime.DefaultUnstructuredConverter.FromUnstructured(created.Object, pod)
+	return util.PodFromUnstructured(created)
+}
+
+func (woc *wfOperationCtx) addCoreMetadata(m metav1.Object, nodeName string, clusterName wfv1.ClusterName, namespace string) {
+
+	labels := m.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
+	labels[common.LabelKeyWorkflow] = woc.wf.Name
+	labels[common.LabelKeyCompleted] = "false"
+
+	if clusterName == woc.clusterName() && namespace == woc.wf.Namespace {
+		m.SetOwnerReferences([]metav1.OwnerReference{*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))})
+	} else {
+		if clusterName != woc.clusterName() {
+			labels[common.LabelKeyWorkflowClusterName] = string(woc.clusterName())
+		}
+		if namespace != woc.wf.Namespace {
+			labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
+		}
+	}
+	if woc.controller.Config.InstanceID != "" {
+		labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+	}
+
+	m.SetLabels(labels)
+
+	annotations := m.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+
+	annotations[common.AnnotationKeyNodeName] = nodeName
+
+	m.SetAnnotations(annotations)
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
@@ -1079,7 +1098,11 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, clusterName 
 		if err != nil {
 			return err
 		}
-		tokenName, err := common.GetServiceAccountTokenName(ctx, k, pod.Namespace, executorServiceAccountName)
+		un, err := k.Namespace(pod.Namespace).Get(ctx, executorServiceAccountName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		serviceAccount, err := util.ServiceAccountFromUnstructured(un)
 		if err != nil {
 			return err
 		}
@@ -1087,7 +1110,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, clusterName 
 			Name: common.ServiceAccountTokenVolumeName,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
-					SecretName: tokenName,
+					SecretName: serviceAccount.Secrets[0].Name,
 				},
 			},
 		})

@@ -8,6 +8,7 @@ import (
 	"github.com/argoproj/pkg/sync"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/dynamic"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -154,8 +155,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		kubeclientset:        map[wfv1.ClusterNamespaceKey]kubernetes.Interface{".": kube},
+		kubeclientset:        kube,
 		dynamicInterface:     dynamicClient,
+		dynamicInterfaces:    map[wfv1.ClusterNamespaceKey]dynamic.Interface{"..v1.pods.": dynamicClient},
 		wfclientset:          wfclientset,
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
@@ -188,7 +190,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
-		wfc.podInformer = wfc.newResourceInformers(ctx)
+		wfc.podInformer = wfc.newResourceInformers()
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		for _, i := range wfc.podInformer {
@@ -276,25 +278,33 @@ func withAnnotation(key, val string) with {
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.dynamicInterface.Resource(common.PodGVR).Namespace(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
-	for _, pod := range pods.Items {
+	for _, un := range pods.Items {
+		pod, err := util.PodFromUnstructured(&un)
+		if err != nil {
+			panic(err)
+		}
 		if pod.Status.Phase == "" {
 			pod.Status.Phase = phase
 			if phase == apiv1.PodFailed {
 				pod.Status.Message = "Pod failed"
 			}
 			for _, w := range with {
-				w(&pod)
+				w(pod)
 			}
-			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
+			un, err := util.PodToUnstructured(pod)
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformer["."].GetStore().Update(updatedPod)
+			updatedPod, err := podcs.Update(ctx, un, metav1.UpdateOptions{})
+			if err != nil {
+				panic(err)
+			}
+			err = woc.controller.podInformer["..v1.pods."].GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -388,7 +398,7 @@ func TestNamespacedController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubeclientset = map[wfv1.ClusterNamespaceKey]kubernetes.Interface{".": kubernetes.Interface(&kubeClient)}
+	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
@@ -405,7 +415,7 @@ func TestClusterController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubeclientset = map[wfv1.ClusterNamespaceKey]kubernetes.Interface{".": kubernetes.Interface(&kubeClient)}
+	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)

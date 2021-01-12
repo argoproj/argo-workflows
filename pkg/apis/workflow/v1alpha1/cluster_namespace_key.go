@@ -14,7 +14,7 @@ func ParseClusterNamespaceKey(s string) (ClusterNamespaceKey, error) {
 	x := ClusterNamespaceKey(s)
 	clusterName, gvr, _ := x.Split()
 	if clusterName == "" || gvr.Empty() { // TODO - validate more
-		return "nil", fmt.Errorf("must be 4 dot-delimited: \"clusterName.group.version.resource.namespace\", e.g. \"main.v1.pods.argo\"; only namespace maybe empty string")
+		return "nil", fmt.Errorf("must be dot-delimited: \"clusterName.group.version.resource.namespace\", e.g. \"main.v1.pods.argo\"; only namespace maybe empty string: %s", s)
 	}
 	return x, nil
 }

@@ -4203,6 +4203,8 @@ spec:
                     required:
                     - action
                     type: object
+                  resource2:
+                    type: object
                   retryStrategy:
                     properties:
                       affinity:
@@ -12082,6 +12084,8 @@ spec:
                     required:
                     - action
                     type: object
+                  resource2:
+                    type: object
                   retryStrategy:
                     properties:
                       affinity:
@@ -18177,6 +18181,8 @@ spec:
                             type: string
                         required:
                         - action
+                        type: object
+                      resource2:
                         type: object
                       retryStrategy:
                         properties:

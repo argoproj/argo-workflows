@@ -26,7 +26,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -849,15 +848,11 @@ type seenPod struct {
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
 func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
-	podList, err := woc.getAllWorkflowPods()
-	if err != nil {
-		return err
-	}
 	seenPods := make(map[string]seenPod)
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 
-	performAssessment := func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
+	performAssessment := func(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, pod *unstructured.Unstructured) {
 		if pod == nil {
 			return
 		}
@@ -871,7 +866,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := woc.assessNodeStatus(clusterName, pod, &node); newState != nil {
+			if newState := woc.assessNodeStatus(clusterName, gvr, pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
@@ -895,7 +890,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				}
 				woc.completedPods[podKey] = true
 				if woc.shouldPrintPodSpec(node) {
-					woc.printPodSpecLog(pod, woc.wf.Name)
+					woc.printPodSpecLog(pod)
 				}
 				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
 					woc.onNodeComplete(&node)
@@ -909,20 +904,28 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
-
-	for clusterName, pods := range podList {
-		for _, pod := range pods {
-			parallelPodNum <- pod.GetName()
+	for clusterNamespace, i := range woc.controller.podInformer {
+		clusterName, gvr, _ := clusterNamespace.Split()
+		objs, err := i.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+		if err != nil {
+			return err
+		}
+		for _, obj := range objs {
+			un, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				return fmt.Errorf("not unstructured")
+			}
+			parallelPodNum <- un.GetName()
 			wg.Add(1)
-			go func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
+			go func(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, pod *unstructured.Unstructured) {
 				defer wg.Done()
-				performAssessment(clusterName, pod)
+				performAssessment(clusterName, gvr, un)
 				err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
 				if err != nil {
 					woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
 				}
 				<-parallelPodNum
-			}(clusterName, pod)
+			}(clusterName, gvr, un)
 		}
 	}
 
@@ -1053,30 +1056,7 @@ func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
 	return activeChildren
 }
 
-// getAllWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getAllWorkflowPods() (map[wfv1.ClusterName][]*unstructured.Unstructured, error) {
-	pods := make(map[wfv1.ClusterName][]*unstructured.Unstructured)
-	for clusterNamespace, i := range woc.controller.podInformer {
-		clusterName, _, _ := clusterNamespace.Split()
-		if _, exists := pods[clusterName]; !exists {
-			pods[clusterName] = make([]*unstructured.Unstructured, 0)
-		}
-		objs, err := i.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
-		if err != nil {
-			return nil, err
-		}
-		for _, obj := range objs {
-			pod, ok := obj.(*unstructured.Unstructured)
-			if !ok {
-				return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
-			}
-			pods[clusterName] = append(pods[clusterName], pod)
-		}
-	}
-	return pods, nil
-}
-
-func (woc *wfOperationCtx) printPodSpecLog(pod *unstructured.Unstructured, wfName string) {
+func (woc *wfOperationCtx) printPodSpecLog(pod *unstructured.Unstructured) {
 	podSpecByte, err := json.Marshal(pod)
 	if err != nil {
 		woc.log.Warnf("Unable to mashal pod spec. %v", err)
@@ -1086,10 +1066,9 @@ func (woc *wfOperationCtx) printPodSpecLog(pod *unstructured.Unstructured, wfNam
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, un *unstructured.Unstructured, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	if un.GetKind() == "Pod" {
-		pod := &apiv1.Pod{}
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, pod)
+func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, un *unstructured.Unstructured, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+	if gvr.Resource == "pods" {
+		pod, err := wfutil.PodFromUnstructured(un)
 		if err != nil {
 			node.Phase = wfv1.NodeError
 			node.Message = err.Error()
@@ -1098,8 +1077,21 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, un *un
 		return woc.assessPodNodeStatus(clusterName, pod, node)
 	} else {
 		phase, _, _ := unstructured.NestedString(un.Object, "status", "phase")
+		switch phase {
+		case "Pending":
+			node.Phase = wfv1.NodePending
+		case "Running":
+			node.Phase = wfv1.NodeRunning
+		case "Succeeded":
+			node.Phase = wfv1.NodeSucceeded
+		case "Failed":
+			node.Phase = wfv1.NodeFailed
+		case "Error":
+			node.Phase = wfv1.NodeError
+		default:
+			node.Phase = wfv1.NodeSucceeded // otherwise, we assume it is good
+		}
 		message, _, _ := unstructured.NestedString(un.Object, "status", "message")
-		node.Phase = wfv1.NodePhase(phase)
 		node.Message = message
 		return node
 	}
@@ -1782,6 +1774,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeScript(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeResource:
 		node, err = woc.executeResource(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeResource2:
+		node, err = woc.executeResource2(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeDAG:
 		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:

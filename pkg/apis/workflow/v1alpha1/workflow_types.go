@@ -27,6 +27,7 @@ const (
 	TemplateTypeSteps     TemplateType = "Steps"
 	TemplateTypeScript    TemplateType = "Script"
 	TemplateTypeResource  TemplateType = "Resource"
+	TemplateTypeResource2 TemplateType = "Resource2"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
 	TemplateTypeUnknown   TemplateType = "Unknown"
@@ -536,6 +537,8 @@ type Template struct {
 
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty" protobuf:"bytes,14,opt,name=resource"`
+
+	Resource2 *Item `json:"resource2,omitempty" protobuf:"bytes,41,opt,name=resource2"`
 
 	// DAG template subtype which runs a DAG
 	DAG *DAGTemplate `json:"dag,omitempty" protobuf:"bytes,15,opt,name=dag"`
@@ -1243,6 +1246,19 @@ func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
 		values[node.ID] = f(node)
 	}
 	return values
+}
+
+func (n Nodes) GetClusterNamespaces() map[ClusterName]map[string]bool {
+	out := make(map[ClusterName]map[string]bool)
+	for _, s := range n {
+		x, exists := out[s.ClusterName]
+		if !exists {
+			x = make(map[string]bool)
+			out[s.ClusterName] = x
+		}
+		x[s.Namespace] = true
+	}
+	return out
 }
 
 // UserContainer is a container specified by a user.
@@ -2046,6 +2062,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
+	if tmpl.Resource2 != nil {
+		return TemplateTypeResource2
+	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
@@ -2064,7 +2083,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeResource2:
 		return true
 	}
 	return false

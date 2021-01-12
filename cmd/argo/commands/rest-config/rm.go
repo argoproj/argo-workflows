@@ -18,7 +18,7 @@ import (
 
 func NewRMCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "rm CLUSTER_NAME/NAMESPACE",
+		Use: "rm CLUSTER_NAME.GROUP.VERSION.RESOURCE.NAMESPACE",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)

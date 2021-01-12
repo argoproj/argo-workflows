@@ -30,5 +30,5 @@ func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, gvr sche
 	if len(parts) != 7 {
 		return "", schema.GroupVersionResource{}, "", "", ""
 	}
-	return wfv1.ClusterName(parts[0]), schema.GroupVersionResource{parts[1], parts[2], parts[3]}, parts[4], parts[5], parts[6]
+	return wfv1.ClusterName(parts[0]), schema.GroupVersionResource{Group: parts[1], Version: parts[2], Resource: parts[3]}, parts[4], parts[5], parts[6]
 }

@@ -1104,6 +1104,8 @@ message Template {
   // Resource template subtype which can run k8s resources
   optional ResourceTemplate resource = 14;
 
+  optional Item resource2 = 41;
+
   // DAG template subtype which runs a DAG
   optional DAGTemplate dag = 15;
 

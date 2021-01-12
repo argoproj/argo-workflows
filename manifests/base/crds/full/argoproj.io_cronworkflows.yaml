@@ -4214,6 +4214,8 @@ spec:
                         required:
                         - action
                         type: object
+                      resource2:
+                        type: object
                       retryStrategy:
                         properties:
                           affinity:

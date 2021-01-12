@@ -10,20 +10,19 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending pods when workflow has reached it's deadline
 func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, clusterName wfv1.ClusterName, un *unstructured.Unstructured, wfNodesLock *sync.RWMutex) error {
 	if un.GetKind() == "Pod" {
-		pod := &apiv1.Pod{}
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, pod)
+		pod, err := util.PodFromUnstructured(un)
 		if err != nil {
 			return fmt.Errorf("failed to convert unstructured to pod: %w", err)
 		}

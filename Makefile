@@ -1,4 +1,5 @@
 export SHELL:=/bin/bash
+export SHELL:=/bin/bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
@@ -410,9 +411,10 @@ endif
 	kubectl config use-context `cat dist/main-context`
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f -
+	./dist/argo -n $(KUBE_NAMESPACE) rest-config add main..v1.configmaps. k3d-k3s-default
 ifeq ($(MULTI_CLUSTER),true)
 	kubectl -n $(KUBE_NAMESPACE) create secret generic rest-config --dry-run=client -o yaml | kubectl apply -f -
-	./dist/argo -n $(KUBE_NAMESPACE) rest-config add other. k3d-other
+	./dist/argo -n $(KUBE_NAMESPACE) rest-config add other..v1.pods. k3d-other
 else
 	kubectl -n $(KUBE_NAMESPACE) delete secret rest-config --ignore-not-found
 endif
