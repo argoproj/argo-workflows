@@ -3,13 +3,16 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {Sensor} from '../../../../models';
+import {ID} from '../../../events/components/events-details/id';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {SensorEditor} from '../sensor-editor';
+import {SensorSidePanel} from '../sensor-side-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -24,6 +27,7 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
 
     const [sensor, setSensor] = useState<Sensor>();
     const [edited, setEdited] = useState(false);
+    const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
     useEffect(
@@ -32,10 +36,11 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                 historyUrl('sensors/{namespace}/{name}', {
                     namespace,
                     name,
-                    tab
+                    tab,
+                    selectedLogNode
                 })
             ),
-        [namespace, name, tab]
+        [namespace, name, tab, selectedLogNode]
     );
 
     useEffect(() => {
@@ -48,6 +53,14 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
     }, [namespace, name]);
 
     useEffect(() => setEdited(true), [sensor]);
+
+    const selected = (() => {
+        if (!selectedLogNode) {
+            return;
+        }
+        const x = ID.split(selectedLogNode);
+        return {...x};
+    })();
 
     return (
         <Page
@@ -88,6 +101,14 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                                     }
                                 });
                             }
+                        },
+                        {
+                            title: 'Logs',
+                            iconClassName: 'fa fa-file-alt',
+                            disabled: false,
+                            action: () => {
+                                setSelectedLogNode(`${namespace}/Sensor/${sensor.metadata.name}`);
+                            }
                         }
                     ]
                 }
@@ -96,6 +117,16 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                 <ErrorNotice error={error} />
                 {!sensor ? <Loading /> : <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />}
             </>
+            {!!selectedLogNode && (
+                <SensorSidePanel
+                    isShown={!!selectedLogNode}
+                    namespace={namespace}
+                    sensor={sensor}
+                    selectedTrigger={selected.key}
+                    onTriggerClicked={setSelectedLogNode}
+                    onClose={() => setSelectedLogNode(null)}
+                />
+            )}
         </Page>
     );
 };

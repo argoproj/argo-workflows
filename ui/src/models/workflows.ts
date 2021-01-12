@@ -630,7 +630,7 @@ export interface Condition {
 }
 
 export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
-export type ConditionStatus = 'True' | 'False' | 'Unknown;';
+export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
 /**
  * WorkflowList is list of Workflow resources
@@ -849,6 +849,8 @@ export interface MemoizationStatus {
 }
 
 export type NodePhase = '' | 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error' | 'Omitted';
+
+export const WorkflowPhases: NodePhase[] = ['Pending', 'Running', 'Succeeded', 'Failed', 'Error'];
 
 export const NODE_PHASE = {
     PENDING: 'Pending',

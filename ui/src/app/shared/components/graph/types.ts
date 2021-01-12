@@ -8,6 +8,7 @@ export interface NodeLabel {
     genre: string; // the class or type of the node, displayed below the icon
     icon?: Icon;
     classNames?: string;
+    tags?: Set<string>; // completely generic tags for filtering nodes
     progress?: number; // progress between 0..1
     x?: number;
     y?: number;

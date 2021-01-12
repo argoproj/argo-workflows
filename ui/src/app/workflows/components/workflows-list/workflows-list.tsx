@@ -2,7 +2,7 @@ import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {labels, Workflow} from '../../../../models';
+import {labels, Workflow, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {BasePage} from '../../../shared/components/base-page';
@@ -169,7 +169,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <WorkflowFilters
                                         workflows={this.state.workflows || []}
                                         namespace={this.state.namespace}
-                                        phaseItems={Object.values(models.NODE_PHASE)}
+                                        phaseItems={WorkflowPhases}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
                                         onChange={(namespace, selectedPhases, selectedLabels) =>
