@@ -1,14 +1,14 @@
 package indexes
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func PodPhaseIndexFunc(obj interface{}) ([]string, error) {
-	pod, ok := obj.(*corev1.Pod)
-
+	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return nil, nil
 	}
-	return []string{string(pod.Status.Phase)}, nil
+	value, _, _ := unstructured.NestedString(un.Object, "status", "phase")
+	return []string{value}, nil
 }

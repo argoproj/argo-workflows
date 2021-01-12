@@ -127,12 +127,12 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset0()), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset0().CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("TmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -190,12 +190,12 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset0()), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset0().CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -252,12 +252,12 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset0()), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset0().CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -315,7 +315,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset0()), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	})
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
@@ -372,7 +372,7 @@ func TestMutexInDAG(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset0()), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	})
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := unmarshalWF(DAGWithMutex)

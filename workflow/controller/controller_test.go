@@ -188,7 +188,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
-		wfc.podInformer = wfc.newPodInformer(ctx)
+		wfc.podInformer = wfc.newResourceInformers(ctx)
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		for _, i := range wfc.podInformer {
@@ -276,7 +276,7 @@ func withAnnotation(key, val string) with {
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	podcs := woc.controller.kubeclientset0().CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
@@ -305,7 +305,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
 	for _, obj := range woc.controller.podInformer["."].GetStore().List() {
 		pod := obj.(*apiv1.Pod)
-		err := woc.controller.kubeclientset0().CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}

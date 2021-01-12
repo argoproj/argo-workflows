@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -19,15 +21,14 @@ const (
 	labelPodCompleted podCleanupAction = "labelPodCompleted"
 )
 
-func newPodCleanupKey(clusterName wfv1.ClusterName, namespace string, podName string, action podCleanupAction) podCleanupKey {
-	return fmt.Sprintf("%s/%s/%s/%v", clusterName, namespace, podName, action)
+func newPodCleanupKey(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string, podName string, action podCleanupAction) podCleanupKey {
+	return fmt.Sprintf("%s/%s/%s/%s/%s/%s/%v", clusterName, gvr.Group, gvr.Version, gvr.Resource, namespace, podName, action)
 }
 
-func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, namespace string, podName string, action podCleanupAction) {
+func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string, podName string, action podCleanupAction) {
 	parts := strings.Split(k, "/")
-	if len(parts) != 4 {
-		return "", "", "", ""
+	if len(parts) != 7 {
+		return "", schema.GroupVersionResource{}, "", "", ""
 	}
-	return wfv1.ClusterName(parts[0]), parts[1], parts[2], parts[3]
-
+	return wfv1.ClusterName(parts[0]), schema.GroupVersionResource{parts[1], parts[2], parts[3]}, parts[4], parts[5], parts[6]
 }

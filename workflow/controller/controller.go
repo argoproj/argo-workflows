@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	v1Label "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -78,10 +79,11 @@ type WorkflowController struct {
 	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig       map[wfv1.ClusterNamespaceKey]*rest.Config
-	kubeclientset    map[wfv1.ClusterNamespaceKey]kubernetes.Interface
-	dynamicInterface dynamic.Interface
-	wfclientset      wfclientset.Interface
+	restConfig        map[wfv1.ClusterNamespaceKey]*rest.Config
+	kubeclientset     kubernetes.Interface
+	dynamicInterface  dynamic.Interface
+	dynamicInterfaces map[wfv1.ClusterNamespaceKey]dynamic.Interface
+	wfclientset       wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -124,7 +126,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	if err != nil {
 		return nil, err
 	}
-	restConfigs, kubeclientsets, err := clusters.GetConfigs(ctx, restConfig, kubeclientset, initConfig.ClusterName, namespace, managedNamespace)
+	restConfigs, dynamicInterfaces, err := clusters.GetConfigs(ctx, restConfig, kubeclientset, initConfig.ClusterName, namespace, managedNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +139,9 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 
 	wfc := WorkflowController{
 		restConfig:                 restConfigs,
-		kubeclientset:              kubeclientsets,
+		kubeclientset:              kubeclientset,
 		dynamicInterface:           dynamicInterface,
+		dynamicInterfaces:          dynamicInterfaces,
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
@@ -203,7 +206,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers(ctx)
-	wfc.podInformer = wfc.newPodInformer(ctx)
+	wfc.podInformer = wfc.newResourceInformers(ctx)
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -240,7 +243,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset0().CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
 		},
 		ReleaseOnCancel: true,
@@ -303,7 +306,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset0().CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -337,51 +340,38 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	return nil
 }
 
-// system client - used for reading configuration etc
-func (wfc *WorkflowController) kubeclientset0() kubernetes.Interface {
-	return wfc.kubeclientsetX0(wfc.Config.ClusterName, wfc.managedNamespace)
-}
-
-func (wfc *WorkflowController) kubeclientsetX0(clusterName wfv1.ClusterName, namespace string) kubernetes.Interface {
-	x, err := wfc.kubeclientsetX(clusterName, namespace)
-	if err != nil {
-		panic(err)
-	}
-	return x
-}
-
-func (wfc *WorkflowController) kubeclientsetX(clusterName wfv1.ClusterName, namespace string) (kubernetes.Interface, error) {
+func (wfc *WorkflowController) dynamicInterfaceX(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string) (dynamic.NamespaceableResourceInterface, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.kubeclientset[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
+		if x, ok := wfc.dynamicInterfaces[wfv1.NewClusterNamespaceKey(clusterName, gvr, y)]; ok {
+			return x.Resource(schema.GroupVersionResource{}), nil
+		}
+	}
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, gvr, namespace))
+}
+
+func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string) (*rest.Config, error) {
+	for _, y := range []string{namespace, apiv1.NamespaceAll} {
+		if x, ok := wfc.restConfig[wfv1.NewClusterNamespaceKey(clusterName, gvr, y)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%s/%s" not configured`, clusterName, namespace)
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, gvr, namespace))
 }
 
-func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, namespace string) (*rest.Config, error) {
+func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string) (cache.SharedIndexInformer, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.restConfig[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
+		if x, ok := wfc.podInformer[wfv1.NewClusterNamespaceKey(clusterName, gvr, y)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%s/%s" not configured`, clusterName, namespace)
-}
-
-func (wfc *WorkflowController) podInformerX(clusterName wfv1.ClusterName, namespace string) (cache.SharedIndexInformer, error) {
-	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.podInformer[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
-			return x, nil
-		}
-	}
-	return nil, fmt.Errorf(`cluster-namespace "%s/%s" not configured`, clusterName, namespace)
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, gvr, namespace))
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	ctx := context.Background()
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset0().CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
 		},
 	})
 	if err != nil {
@@ -425,11 +415,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset0(), "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset0(), "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset0(), "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -452,8 +442,8 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) queuePodForCleanup(key wfv1.PodKey, action podCleanupAction) {
-	clusterName, namespace, podName := key.Split()
-	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(clusterName, namespace, podName, action))
+	clusterName, gvr, namespace, podName := key.Split()
+	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(clusterName, gvr, namespace, podName, action))
 }
 
 func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
@@ -468,15 +458,15 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		return false
 	}
 	defer wfc.podCleanupQueue.Done(key)
-	clusterName, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
+	clusterName, gvr, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		k, err := wfc.kubeclientsetX(clusterName, namespace)
+		k, err := wfc.dynamicInterfaceX(clusterName, gvr, namespace)
 		if err != nil {
 			return err
 		}
-		pods := k.CoreV1().Pods(namespace)
+		pods := k.Namespace(namespace)
 		switch action {
 		case labelPodCompleted:
 			_, err := pods.Patch(
@@ -716,11 +706,12 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 // enqueue workflow for processing
 func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) {
 	err := func() error {
-		pod, ok := obj.(*apiv1.Pod)
+		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
-			return fmt.Errorf("key in index is not a pod")
+			return fmt.Errorf("key in index is not a unstructured")
 		}
-		wfc.wfQueue.AddRateLimited(wfv1.NamespaceOr(pod.Labels[common.LabelKeyWorkflowNamespace], pod.Namespace) + "/" + pod.Labels[common.LabelKeyWorkflow])
+		labels := un.GetLabels()
+		wfc.wfQueue.AddRateLimited(wfv1.NamespaceOr(labels[common.LabelKeyWorkflowNamespace], un.GetNamespace()) + "/" + labels[common.LabelKeyWorkflow])
 		return nil
 	}()
 	if err != nil {
@@ -815,32 +806,26 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			}
 			propagationBackground := metav1.DeletePropagationBackground
 			key := wf.Namespace + "/" + wf.Name
-			for clusterName, namespaces := range wf.Status.Nodes.GetClusterNamespaces() {
-				for namespace := range namespaces {
-					clusterName = wfv1.ClusterNameOr(clusterName, wfc.Config.ClusterName)
-					namespace = wfv1.NamespaceOr(namespace, wf.Namespace)
-					k, err := wfc.kubeclientsetX(clusterName, namespace)
-					if err != nil {
-						return err
-					}
-					err = k.CoreV1().Pods(namespace).DeleteCollection(
-						ctx,
-						metav1.DeleteOptions{
-							PropagationPolicy: &propagationBackground,
-						},
-						metav1.ListOptions{
-							LabelSelector: labels.NewSelector().
-								Add(wfc.clusterNameRequirement(clusterName)).
-								Add(wfc.instanceIdRequirement()).
-								Add(util.WorkflowNamespaceRequirement(wf.GetNamespace())).
-								Add(util.WorkflowNameRequirement(wf.GetName())).
-								String(),
-						},
-					)
-					if err != nil {
-						return fmt.Errorf("failed to delete pods from %s for %s: %w", clusterName, key, err)
-					}
+			for clusterNamespace, dy := range wfc.dynamicInterfaces {
+				clusterName, gvr, namespace := clusterNamespace.Split()
+				err = dy.Resource(gvr).Namespace(namespace).DeleteCollection(
+					ctx,
+					metav1.DeleteOptions{
+						PropagationPolicy: &propagationBackground,
+					},
+					metav1.ListOptions{
+						LabelSelector: labels.NewSelector().
+							Add(wfc.clusterNameRequirement(clusterName)).
+							Add(wfc.instanceIdRequirement()).
+							Add(util.WorkflowNamespaceRequirement(wf.GetNamespace())).
+							Add(util.WorkflowNameRequirement(wf.GetName())).
+							String(),
+					},
+				)
+				if err != nil {
+					return fmt.Errorf("failed to delete pods from %s for %s: %w", clusterName, key, err)
 				}
+
 			}
 			_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte(`{"metadata": {"finalizers": []}}`), metav1.PatchOptions{})
 			if err != nil {
@@ -932,8 +917,10 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	return nil
 }
 func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context, clusterNamespace wfv1.ClusterNamespaceKey) *cache.ListWatch {
-	clusterName, namespace := clusterNamespace.Split()
-	c := wfc.kubeclientsetX0(clusterName, namespace).CoreV1().Pods(namespace)
+	clusterName, gvr, namespace := clusterNamespace.Split()
+	dy, err := wfc.dynamicInterfaceX(clusterName, gvr, namespace)
+	errors.CheckError(err)
+	c := dy.Namespace(namespace)
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
@@ -965,9 +952,9 @@ func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newPodInformer(ctx context.Context) map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer {
+func (wfc *WorkflowController) newResourceInformers(ctx context.Context) map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer {
 	out := make(map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer)
-	for clusterNamespace := range wfc.kubeclientset {
+	for clusterNamespace := range wfc.dynamicInterfaces {
 		source := wfc.newWorkflowPodWatch(ctx, clusterNamespace)
 		informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
@@ -1100,7 +1087,7 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 }
 
 func (wfc *WorkflowController) syncPodPhaseMetrics() {
-	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
+	for _, phase := range []apiv1.PodPhase{"", apiv1.PodRunning, apiv1.PodPending} {
 		count := 0
 		for _, i := range wfc.podInformer {
 			objs, err := i.GetIndexer().ByIndex(indexes.PodPhaseIndex, string(phase))

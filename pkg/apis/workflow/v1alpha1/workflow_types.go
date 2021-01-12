@@ -1245,19 +1245,6 @@ func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
 	return values
 }
 
-func (n Nodes) GetClusterNamespaces() map[ClusterName]map[string]bool {
-	out := make(map[ClusterName]map[string]bool)
-	for _, s := range n {
-		x, exists := out[s.ClusterName]
-		if !exists {
-			x = make(map[string]bool)
-			out[s.ClusterName] = x
-		}
-		x[s.Namespace] = true
-	}
-	return out
-}
-
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`

@@ -72,15 +72,15 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 	podLogStreamOptions.Timestamps = true
 
 	kube := func(clusterName wfv1.ClusterName, namespace string) kubernetes.Interface {
-		if x, ok := kubeClient[wfv1.NewClusterNamespaceKey(clusterName, namespace)]; ok {
+		if x, ok := kubeClient[wfv1.NewClusterNamespaceKey(clusterName, common.PodGVR, namespace)]; ok {
 			return x
 		}
-		return kubeClient[wfv1.NewClusterNamespaceKey(clusterName, corev1.NamespaceAll)]
+		return kubeClient[wfv1.NewClusterNamespaceKey(clusterName, common.PodGVR, corev1.NamespaceAll)]
 	}
 
 	// this func start a stream if one is not already running
 	logPod := func(clusterName wfv1.ClusterName, namespace, podName string) {
-		podKey := wfv1.NewPodKey(clusterName, namespace, podName)
+		podKey := wfv1.NewPodKey(clusterName, common.PodGVR, namespace, podName)
 		logCtx := log.WithField("podKey", podKey)
 		_, alreadyLogging := pods.LoadOrStore(podKey, true)
 		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging pod")
@@ -134,7 +134,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 
 	stopLoggingClusterNamespace := make(chan struct{})
 	logClusterNamespace := func(clusterName wfv1.ClusterName, instanceID, namespace string) {
-		clusterNamespaceKey := wfv1.NewClusterNamespaceKey(clusterName, namespace)
+		clusterNamespaceKey := wfv1.NewClusterNamespaceKey(clusterName, common.PodGVR, namespace)
 		logCtx := log.WithField("clusterNamespaceKey", clusterNamespaceKey)
 		_, alreadyLogging := clusterNamespaces.LoadOrStore(clusterNamespaceKey, true)
 		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging cluster-namespace")
@@ -209,10 +209,9 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 		if err != nil {
 			return err
 		}
-		for clusterName, namespaces := range wf.Status.Nodes.GetClusterNamespaces() {
-			for namespace := range namespaces {
-				logClusterNamespace(wfv1.ClusterNameOr(clusterName, thisClusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOr(namespace, wf.Namespace))
-			}
+		for clusterNamespace := range kubeClient {
+			clusterName, _, namespace := clusterNamespace.Split()
+			logClusterNamespace(wfv1.ClusterNameOr(clusterName, thisClusterName), wf.Labels[common.LabelKeyControllerInstanceID], wfv1.NamespaceOr(namespace, wf.Namespace))
 		}
 		return nil
 	}

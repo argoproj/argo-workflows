@@ -9,6 +9,9 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -17,7 +20,20 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, clusterName wfv1.ClusterName, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
+func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, clusterName wfv1.ClusterName, un *unstructured.Unstructured, wfNodesLock *sync.RWMutex) error {
+	if un.GetKind() == "Pod" {
+		pod := &apiv1.Pod{}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, pod)
+		if err != nil {
+			return fmt.Errorf("failed to convert unstructured to pod: %w", err)
+		}
+		return woc.applyPodExecutionControl(ctx, clusterName, pod, wfNodesLock)
+	} else {
+		return nil
+	}
+}
+
+func (woc *wfOperationCtx) applyPodExecutionControl(ctx context.Context, clusterName wfv1.ClusterName, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
 	if pod == nil {
 		return nil
 	}
@@ -27,7 +43,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, clusterNam
 		return nil
 	case apiv1.PodPending:
 		// Check if we are currently shutting down
-		k, err := woc.controller.kubeclientsetX(clusterName, pod.Namespace)
+		k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, pod.Namespace)
 		if err != nil {
 			return err
 		}
@@ -37,7 +53,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, clusterNam
 
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
-				err := k.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := k.Namespace(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -56,7 +72,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, clusterNam
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := k.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := k.Namespace(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -139,18 +155,11 @@ func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterNa
 	}
 
 	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
-	k, err := woc.controller.kubeclientsetX(clusterName, namespace)
+	k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, namespace)
 	if err != nil {
 		return err
 	}
-	err = common.AddPodAnnotation(
-		ctx,
-		k,
-		podName,
-		namespace,
-		common.AnnotationKeyExecutionControl,
-		string(execCtlBytes),
-	)
+	_, err = k.Namespace(namespace).Patch(ctx, podName, types.MergePatchType, []byte(fmt.Sprintf(`{"metadata": {"annotations": {"%s": "%s"}}}`, common.AnnotationKeyExecutionControl, string(execCtlBytes))), metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}
@@ -161,7 +170,7 @@ func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterNa
 	// propagate (minutes). The following code fast-tracks this by signaling the executor
 	// using SIGUSR2 that something changed.
 	woc.log.Infof("Signalling %s of updates", podName)
-	restConfig, err := woc.controller.restConfigX(clusterName, namespace)
+	restConfig, err := woc.controller.restConfigX(clusterName, common.PodGVR, namespace)
 	if err != nil {
 		return err
 	}

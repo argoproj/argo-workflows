@@ -4,20 +4,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func TestMetaPodPhaseIndexFunc(t *testing.T) {
+func TestPhaseIndexFunc(t *testing.T) {
 	t.Run("NoPhase", func(t *testing.T) {
-		values, err := PodPhaseIndexFunc(&corev1.Pod{})
+		values, err := PodPhaseIndexFunc(&unstructured.Unstructured{})
 		assert.NoError(t, err)
 		assert.Equal(t, []string{""}, values)
 	})
 	t.Run("Phase", func(t *testing.T) {
-		values, err := PodPhaseIndexFunc(&corev1.Pod{
-			Status: corev1.PodStatus{Phase: corev1.PodRunning},
+		values, err := PodPhaseIndexFunc(&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"status": map[string]interface{}{"phase": "Running"},
+			},
 		})
 		assert.NoError(t, err)
-		assert.ElementsMatch(t, values, []string{string(corev1.PodRunning)})
+		assert.ElementsMatch(t, values, []string{"Running"})
 	})
 }

@@ -15,6 +15,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
@@ -139,7 +141,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	informer, err := woc.controller.podInformerX(clusterName, namespace)
+	informer, err := woc.controller.resourceInformer(clusterName, common.PodGVR, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -389,11 +391,15 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	k, err := woc.controller.kubeclientsetX(clusterName, namespace)
+	k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, namespace)
 	if err != nil {
 		return nil, err
 	}
-	created, err := k.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
+	un, err := runtime.DefaultUnstructuredConverter.ToUnstructured(pod)
+	if err != nil {
+		return nil, err
+	}
+	created, err := k.Namespace(namespace).Create(ctx, &unstructured.Unstructured{Object: un}, metav1.CreateOptions{})
 	if err != nil && !apierr.IsAlreadyExists(err) {
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
@@ -403,7 +409,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	woc.log.Infof("Created pod: %s (%s/%s/%s)", nodeName, clusterName, namespace, pod.Name)
 	woc.activePods++
-	return created, nil
+	return pod, runtime.DefaultUnstructuredConverter.FromUnstructured(created.Object, pod)
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
@@ -1069,7 +1075,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, clusterName 
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		k, err := woc.controller.kubeclientsetX(clusterName, pod.Namespace)
+		k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, pod.Namespace)
 		if err != nil {
 			return err
 		}
