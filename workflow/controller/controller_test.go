@@ -268,6 +268,30 @@ func expectWorkflow(ctx context.Context, controller *WorkflowController, name st
 	test(wf)
 }
 
+func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
+	un, err := woc.controller.dynamicInterfaces["..v1.pods."].Resource(common.PodGVR).Namespace(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return util.PodFromUnstructured(un)
+}
+
+func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
+	list, err := woc.controller.dynamicInterfaces["..v1.pods."].Resource(common.PodGVR).Namespace(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	podList := &apiv1.PodList{Items: make([]apiv1.Pod, len(list.Items))}
+	for i, un := range list.Items {
+		pod, err := util.PodFromUnstructured(&un)
+		if err != nil {
+			return nil, err
+		}
+		podList.Items[i] = *pod
+	}
+	return podList, err
+}
+
 type with func(pod *apiv1.Pod)
 
 func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }

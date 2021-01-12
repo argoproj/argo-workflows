@@ -1292,29 +1292,6 @@ func TestWorkflowParallelismLimit(t *testing.T) {
 	assert.Equal(t, 2, len(pods.Items))
 }
 
-func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	un, err := woc.controller.dynamicInterfaces["..v1.pods."].Resource(common.PodGVR).Namespace(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return util.PodFromUnstructured(un)
-}
-
-func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
-	list, err := woc.controller.dynamicInterfaces["..v1.pods."].Resource(common.PodGVR).Namespace(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	podList := &apiv1.PodList{Items: make([]apiv1.Pod, len(list.Items))}
-	for i, un := range list.Items {
-		pod, err := util.PodFromUnstructured(&un)
-		if err != nil {
-			return nil, err
-		}
-		podList.Items[i] = *pod
-	}
-	return podList, err
-}
 
 var stepsTemplateParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
@@ -2382,7 +2359,7 @@ func TestMetadataPassing(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -2454,7 +2431,7 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	woc := newWoc(*wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -2484,7 +2461,7 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	woc := newWoc(*wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -2522,7 +2499,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 	woc := newWoc(*wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
@@ -3733,7 +3710,7 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	woc := newWoc(*wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
