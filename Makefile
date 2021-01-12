@@ -81,12 +81,6 @@ RUN_MODE              := kubernetes
 endif
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
-ifeq ($(PROFILE),mysql)
-ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
-ifeq ($(PROFILE),postgres)
-ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
 
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \
@@ -358,22 +352,21 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
 	./hack/crdgen.sh
 
-/usr/local/bin/kustomize:
+dist/kustomize:
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
-	./dist/install_kustomize.sh 3.8.8
-	sudo mv kustomize /usr/local/bin/
-	kustomize version
+	cd dist && ./install_kustomize.sh 3.8.8
+	dist/kustomize version
 
 # generates several installation files
-manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
+manifests/install.yaml: $(CRDS) dist/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
-	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
-	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-	kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
-	kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-	kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+	dist/kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
+	dist/kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -401,7 +394,7 @@ dist/main-context:
 	kubectl config current-context > dist/main-context
 
 .PHONY: install
-install: /usr/local/bin/kustomize dist/argo dist/main-context dist/argo
+install: dist/kustomize dist/argo dist/main-context dist/argo
 ifeq ($(MULTI_CLUSTER),true)
 	# create other cluster (if not exists)
 	k3d cluster get other || k3d cluster create other --no-lb --wait --update-default-kubeconfig
@@ -416,7 +409,7 @@ endif
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/image: argoproj/image: $(IMAGE_NAMESPACE)/' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
+	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/image: argoproj/image: $(IMAGE_NAMESPACE)/' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	./dist/argo -n $(KUBE_NAMESPACE) rest-config add main..v1.configmaps. k3d-k3s-default
 ifeq ($(MULTI_CLUSTER),true)
