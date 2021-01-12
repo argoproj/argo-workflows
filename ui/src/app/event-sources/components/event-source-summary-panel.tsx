@@ -1,7 +1,6 @@
 import * as React from 'react';
 
 import {EventSource} from '../../../models';
-import {ExampleManifests} from '../../shared/components/example-manifests';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
 import {services} from '../../shared/services';
@@ -35,8 +34,10 @@ export const EventSourceSummaryPanel = (props: Props) => {
                         kind='Eventsource'
                         title='Update Event source'
                         value={props.eventSource}
-                        onSubmit={(value: EventSource ) =>
-                            services.eventSource.update(value, props.eventSource.metadata.namespace).then(eventSource => props.onChange(eventSource))
+                        onSubmit={(value: EventSource) =>
+                            services.eventSource
+                                .update(value, props.eventSource.metadata.name, props.eventSource.metadata.namespace)
+                                .then(eventSource => props.onChange(eventSource))
                         }
                     />
                 </div>

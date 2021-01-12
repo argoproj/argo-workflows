@@ -20,7 +20,7 @@ type eventSourceServer struct{}
 
 func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsourcepkg.CreateEventSourceRequest) (*esv1.EventSource, error) {
 	client := auth.GetEventSourceClient(ctx)
-	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(in.EventSource)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(ctx, in.EventSource, *in.CreateOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcep
 	if getOption == nil {
 		getOption = &metav1.GetOptions{}
 	}
-	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Get(in.Name, *getOption)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Get(ctx, in.Name, *getOption)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcep
 
 func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsourcepkg.DeleteEventSourceRequest) (*eventsourcepkg.EventSourceDeletedResponse, error) {
 	client := auth.GetEventSourceClient(ctx)
-	err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Delete(in.Name, &metav1.DeleteOptions{})
+	err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Delete(ctx, in.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsour
 
 func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsourcepkg.UpdateEventSourceRequest) (*esv1.EventSource, error) {
 	client := auth.GetEventSourceClient(ctx)
-	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Update(in.EventSource)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Update(ctx, in.EventSource, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
-import {EventSource, kubernetes} from '../../../models';
+import {EventSource} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
 import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
@@ -68,11 +68,11 @@ export const EventSourceLogsViewer = ({
                         </div>
                         {!!eventSource &&
                             Object.entries(eventSource.spec).map(([type, value]) => (
-                                <div key={{type}}>
+                                <div>
                                     <span title={type}>&nbsp;{type}</span>
                                     {Object.entries(value).map(([name, eventValue]) => (
                                         <div
-                                            id={`${type}-${name}`}
+                                            key={`${type}-${name}`}
                                             onClick={() => {
                                                 onClick(`${namespace}/event-sources/${eventSource.metadata.name}/${type}-${name}`);
                                             }}>

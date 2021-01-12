@@ -2,7 +2,7 @@ import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {EventSource,EventSourceList} from '../../../../models';
+import {EventSource} from '../../../../models';
 import {kubernetes} from '../../../../models';
 import {ID} from '../../../events/components/events-details/id';
 import {uiUrl} from '../../../shared/base';

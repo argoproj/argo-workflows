@@ -1,19 +1,19 @@
 import {NotificationType, Page} from 'argo-ui';
-import {SlidingPanel, Tabs} from "argo-ui/src/index";
+import {SlidingPanel, Tabs} from 'argo-ui/src/index';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {EventSource, kubernetes} from '../../../../models';
-import {ID} from "../../../events/components/events-details/id";
+import {EventSource} from '../../../../models';
+import {ID} from '../../../events/components/events-details/id';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
-import {EventsPanel} from "../../../workflows/components/events-panel";
+import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceEditor} from '../event-source-editor';
-import {EventSourceLogsViewer} from "../event-source-log-viewer";
+import {EventSourceLogsViewer} from '../event-source-log-viewer';
 
 export const EventSourceDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
@@ -24,7 +24,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
     const namespace = match.params.namespace;
     const name = match.params.name;
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
-    const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
+    const [selectedNode, setSelectedNode] = useState<string>(queryParams.get('selectedNode'));
 
     useEffect(
         () =>
@@ -123,8 +123,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                 {!eventSource ? (
                     <Loading />
                 ) : (
-                    <EventSourceEditor eventSource={eventSource} onChange={setEventSource} onError={setError}
-                                       onTabSelected={setTab} selectedTabKey={tab}/>
+                    <EventSourceEditor eventSource={eventSource} onChange={setEventSource} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />
                 )}
             </>
             <SlidingPanel isShown={!!selected} onClose={() => setSelectedNode(null)}>
