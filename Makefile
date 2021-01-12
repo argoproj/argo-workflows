@@ -79,12 +79,6 @@ RUN_MODE              := kubernetes
 endif
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
-ifeq ($(PROFILE),mysql)
-ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
-ifeq ($(PROFILE),postgres)
-ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
 
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \
