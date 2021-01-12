@@ -101,8 +101,8 @@ type Config struct {
 
 	// Resources to listen to, in the format, `clusterName.namespace: group.version.resource`
 	// Examples:
-	// * main.: .v1.pods
-	// * other.argo: argoproj.io.v1alpha1.workflows
+	// * main.: pods.v1.
+	// * other.argo: workflows.v1alpha1.argoproj.io
 	// See schema.ParseResourceArg
 	Resources map[wfv1.ClusterNamespaceKey][]string `json:"resources,omitempty"`
 }
@@ -113,7 +113,7 @@ func (c Config) GetResources(managedNamespace string, clusterNamespace wfv1.Clus
 			return c.Resources
 		}
 		return map[wfv1.ClusterNamespaceKey][]string{
-			wfv1.NewClusterNamespaceKey(c.ClusterName, managedNamespace): {".v1.pods"},
+			wfv1.NewClusterNamespaceKey(c.ClusterName, managedNamespace): {"pods.v1."},
 		}
 	}()
 

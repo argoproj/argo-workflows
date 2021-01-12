@@ -23,7 +23,7 @@ func NewClusterNamespaceKey(clusterName ClusterName, namespace string) ClusterNa
 
 func (x ClusterNamespaceKey) Split() (clusterName ClusterName, namespace string) {
 	parts := strings.Split(string(x), ".")
-	if len(parts) != 5 {
+	if len(parts) != 2 {
 		return "", ""
 	}
 	return ClusterName(parts[0]), parts[1]

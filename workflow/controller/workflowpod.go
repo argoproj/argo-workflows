@@ -16,7 +16,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
@@ -143,7 +142,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if err != nil {
 		return nil, err
 	}
-	obj, exists, err := informer.GetStore().Get(cache.ExplicitKey(namespace + "/" + nodeID))
+	obj, exists, err := informer.GetStore().GetByKey(namespace + "/" + nodeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
@@ -1098,13 +1097,16 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, clusterName 
 		if err != nil {
 			return err
 		}
-		un, err := k.Resource(common.PodGVR).Namespace(pod.Namespace).Get(ctx, executorServiceAccountName, metav1.GetOptions{})
+		un, err := k.Resource(common.ServiceAccountGVR).Namespace(pod.Namespace).Get(ctx, executorServiceAccountName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		serviceAccount, err := util.ServiceAccountFromUnstructured(un)
 		if err != nil {
 			return err
+		}
+		if len(serviceAccount.Secrets) == 0 {
+			return fmt.Errorf("expect > 0 secrets")
 		}
 		pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{
 			Name: common.ServiceAccountTokenVolumeName,

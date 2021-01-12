@@ -411,10 +411,9 @@ endif
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
 	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/image: argoproj/image: $(IMAGE_NAMESPACE)/' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
-	./dist/argo -n $(KUBE_NAMESPACE) rest-config add main..v1.configmaps. k3d-k3s-default
 ifeq ($(MULTI_CLUSTER),true)
 	kubectl -n $(KUBE_NAMESPACE) create secret generic rest-config --dry-run=client -o yaml | kubectl apply -f -
-	./dist/argo -n $(KUBE_NAMESPACE) rest-config add other..v1.pods. k3d-other
+	./dist/argo -n $(KUBE_NAMESPACE) rest-config add other. k3d-other
 else
 	kubectl -n $(KUBE_NAMESPACE) delete secret rest-config --ignore-not-found
 endif
@@ -450,13 +449,6 @@ test-images:
 
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
-
-.PHONY: pre-start
-ifeq ($(RUN_MODE),kubernetes)
-pre-start: stop install executor-image controller-image cli-image
-else
-pre-start: stop install executor-image controller cli $(GOPATH)/bin/goreman
-endif
 
 .PHONY: start
 ifeq ($(RUN_MODE),kubernetes)

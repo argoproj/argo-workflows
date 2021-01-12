@@ -1080,9 +1080,9 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, gvr sc
 		if err != nil {
 			node.Phase = wfv1.NodeError
 			node.Message = err.Error()
-			return node
+		} else {
+			node = woc.assessPodNodeStatus(pod, node)
 		}
-		return woc.assessPodNodeStatus(clusterName, pod, node)
 	} else {
 		phase, _, _ := unstructured.NestedString(un.Object, "status", "phase")
 		switch phase {
@@ -1101,11 +1101,20 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, gvr sc
 		}
 		message, _, _ := unstructured.NestedString(un.Object, "status", "message")
 		node.Message = message
-		return node
 	}
+
+	if node != nil {
+		// we only update the clusterName and namespace once we're sure the resource has actually been scheduled
+		// this prevents there being a NodeStatus pointing to an invalid clusterName or namespace
+		// which would prevent us deleting the pods during the finalization of the workflow
+		node.ClusterName = wfv1.ClusterNameIfNot(clusterName, woc.clusterName())
+		node.Namespace = wfv1.NamespaceIfNot(un.GetNamespace(), woc.wf.Namespace)
+	}
+
+	return node
 }
 
-func (woc *wfOperationCtx) assessPodNodeStatus(clusterName wfv1.ClusterName, pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) assessPodNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	var newPhase wfv1.NodePhase
 	var newDaemonStatus *bool
 	var message string
@@ -1185,13 +1194,6 @@ func (woc *wfOperationCtx) assessPodNodeStatus(clusterName wfv1.ClusterName, pod
 			}
 		}
 	}
-
-	// we only update the clusterName and namespace once we're sure the pod has actually been scheduled
-	// this prevents there being a NodeStatus pointing to an invalid clusterName or namespace
-	// which would prevent us deleting the pods during the finalization of the workflow
-	node.ClusterName = wfv1.ClusterNameIfNot(clusterName, woc.clusterName())
-	node.Namespace = wfv1.NamespaceIfNot(pod.Namespace, woc.wf.Namespace)
-
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
 		updated = true
@@ -1420,7 +1422,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.Namespace)
+	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)

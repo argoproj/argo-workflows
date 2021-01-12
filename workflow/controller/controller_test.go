@@ -269,7 +269,7 @@ func expectWorkflow(ctx context.Context, controller *WorkflowController, name st
 }
 
 func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	un, err := woc.controller.dynamicInterfaces["."].Resource(common.PodGVR).Namespace(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+	un, err := woc.controller.dynamicInterface.Resource(common.PodGVR).Namespace(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
 }
 
 func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
-	list, err := woc.controller.dynamicInterfaces["."].Resource(common.PodGVR).Namespace(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	list, err := woc.controller.dynamicInterface.Resource(common.PodGVR).Namespace(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -302,8 +302,7 @@ func withAnnotation(key, val string) with {
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	clusterName := woc.controller.Config.ClusterName
-	dy, err := woc.controller.dynamicInterfaceX(clusterName, woc.wf.Namespace)
+	dy, err := woc.controller.dynamicInterfaceX("", woc.wf.Namespace)
 	if err != nil {
 		panic(err)
 	}
@@ -333,7 +332,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformer[wfv1.NewClusterNamespaceKey(clusterName, woc.controller.managedNamespace)].GetStore().Update(updatedPod)
+			err = woc.controller.podInformer["."].GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -346,17 +345,16 @@ func deletePods(ctx context.Context, woc *wfOperationCtx) {
 	if err != nil {
 		panic(err)
 	}
-	clusterName := woc.controller.Config.ClusterName
 	for _, pod := range pods.Items {
-		dy, err := woc.controller.dynamicInterfaceX(clusterName, pod.GetNamespace())
+		dy, err := woc.controller.dynamicInterfaceX("", pod.GetNamespace())
 		if err != nil {
 			panic(err)
 		}
-		err = dy.Resource(common.PodGVR).Namespace(pod.GetName()).Delete(ctx, pod.GetName(), metav1.DeleteOptions{})
+		err = dy.Resource(common.PodGVR).Namespace(pod.GetNamespace()).Delete(ctx, pod.GetName(), metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
-		err = woc.controller.podInformer[wfv1.NewClusterNamespaceKey(clusterName, woc.controller.managedNamespace)].GetStore().Delete(pod)
+		err = woc.controller.podInformer["."].GetStore().Delete(&pod)
 		if err != nil {
 			panic(err)
 		}

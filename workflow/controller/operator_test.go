@@ -117,6 +117,7 @@ func TestResourcesDuration(t *testing.T) {
 	wf := unmarshalWF(`
 metadata:
   name: my-wf
+  namespace: my-ns
 spec:
   entrypoint: main
   templates:
@@ -1290,7 +1291,6 @@ func TestWorkflowParallelismLimit(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 }
-
 
 var stepsTemplateParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
@@ -2601,7 +2601,7 @@ func TestResourceTemplate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
 
-	pod, err := controller.kubeclientset.CoreV1().Pods("").Get(ctx, "resource-template", metav1.GetOptions{})
+	pod, err := getPod(woc, "resource-template")
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -5473,7 +5473,7 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+		pods, err := listPods(woc)
 		assert.NoError(t, err)
 		assert.True(t, len(pods.Items) > 0)
 		for _, pod := range pods.Items {

@@ -24,13 +24,11 @@ func NewAddCommand() *cobra.Command {
 		Use: "add CLUSTER_NAME.GROUP.VERSION.RESOURCE.NAMESPACE CONTEXT_NAME",
 		Example: `
 # whole cluster
-argo rest-config add other..v1.pods. k3s-default
+argo rest-config add other. k3s-default
 
 # just one namespace
-argo rest-config add other..v1.pods.argo k3s-default
+argo rest-config add other.argo k3s-default
 
-# workflows
-argo rest-config add other.argoproj.io.v1alpha1.workflows.argo k3s-default
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {

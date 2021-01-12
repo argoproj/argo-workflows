@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
@@ -263,7 +262,7 @@ func TestTmplServiceAccount(t *testing.T) {
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	falseValue := false
@@ -276,16 +275,17 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	assert.NoError(t, err)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-	pod := pods.Items[0]
-	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	if assert.Len(t, pods.Items, 1) {
+		pod := pods.Items[0]
+		assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	}
 }
 
 // TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	trueValue := true
@@ -298,11 +298,12 @@ func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &woc.execWf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
+	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-	pod := pods.Items[0]
-	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	if assert.Len(t, pods.Items, 1) {
+		pod := pods.Items[0]
+		assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	}
 }
 
 // verifyServiceAccountTokenVolumeMount is a helper function to verify service account token volume in a container.
@@ -319,7 +320,7 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -343,9 +344,9 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	err = util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "tmpl", "tmpl-token")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -371,9 +372,9 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	 err = util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "tmpl", "tmpl-token")
 	assert.NoError(t, err)
 
 	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}
