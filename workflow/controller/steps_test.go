@@ -168,6 +168,7 @@ func TestResourceDurationMetric(t *testing.T) {
 		localScope, _ := woc.prepareMetricScope(&node)
 		assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
 		assert.Equal(t, "24", localScope["resourcesDuration.memory"])
+		assert.Equal(t, "0", localScope["exitCode"])
 	}
 }
 
