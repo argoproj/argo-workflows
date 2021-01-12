@@ -107,7 +107,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                 key={`${s.metadata.namespace}/${s.metadata.name}`}
                                 to={uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i className={classNames('fa', EventsUtils.statusIconClasses(s))} aria-hidden='true' />
+                                    <i className={classNames('fa', EventsUtils.statusIconClasses(s.status != null ? s.status.conditions : [], 'fa-circle'))} aria-hidden='true' />
                                 </div>
                                 <div className='columns small-4'>{s.metadata.name}</div>
                                 <div className='columns small-3'>{s.metadata.namespace}</div>
