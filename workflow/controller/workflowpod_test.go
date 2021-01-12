@@ -12,7 +12,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
@@ -264,7 +263,7 @@ func TestTmplServiceAccount(t *testing.T) {
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	falseValue := false

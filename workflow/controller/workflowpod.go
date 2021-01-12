@@ -371,7 +371,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, namespace)
+	k, err := woc.controller.dynamicInterfaceX(clusterName, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +379,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if err != nil {
 		return nil, err
 	}
-	created, err := k.Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
+	created, err := k.Resource(common.PodGVR).Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
 	switch {
 	case apierr.IsAlreadyExists(err):
 		return pod, nil
@@ -1094,11 +1094,11 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, clusterName 
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, pod.Namespace)
+		k, err := woc.controller.dynamicInterfaceX(clusterName, pod.Namespace)
 		if err != nil {
 			return err
 		}
-		un, err := k.Namespace(pod.Namespace).Get(ctx, executorServiceAccountName, metav1.GetOptions{})
+		un, err := k.Resource(common.PodGVR).Namespace(pod.Namespace).Get(ctx, executorServiceAccountName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}

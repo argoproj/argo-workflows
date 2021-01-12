@@ -117,7 +117,6 @@ func TestResourcesDuration(t *testing.T) {
 	wf := unmarshalWF(`
 metadata:
   name: my-wf
-  namespace: my-ns
 spec:
   entrypoint: main
   templates:

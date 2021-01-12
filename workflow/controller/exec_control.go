@@ -42,7 +42,7 @@ func (woc *wfOperationCtx) applyPodExecutionControl(ctx context.Context, cluster
 		return nil
 	case apiv1.PodPending:
 		// Check if we are currently shutting down
-		k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, pod.Namespace)
+		k, err := woc.controller.dynamicInterfaceX(clusterName, pod.Namespace)
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (woc *wfOperationCtx) applyPodExecutionControl(ctx context.Context, cluster
 
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
-				err := k.Namespace(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := k.Resource(common.PodGVR).Namespace(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -71,7 +71,7 @@ func (woc *wfOperationCtx) applyPodExecutionControl(ctx context.Context, cluster
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := k.Namespace(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := k.Resource(common.PodGVR).Namespace(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
@@ -154,11 +154,11 @@ func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterNa
 	}
 
 	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
-	k, err := woc.controller.dynamicInterfaceX(clusterName, common.PodGVR, namespace)
+	k, err := woc.controller.dynamicInterfaceX(clusterName,  namespace)
 	if err != nil {
 		return err
 	}
-	_, err = k.Namespace(namespace).Patch(ctx, podName, types.MergePatchType, []byte(fmt.Sprintf(`{"metadata": {"annotations": {"%s": "%s"}}}`, common.AnnotationKeyExecutionControl, string(execCtlBytes))), metav1.PatchOptions{})
+	_, err = k.Resource(common.PodGVR).Namespace(namespace).Patch(ctx, podName, types.MergePatchType, []byte(fmt.Sprintf(`{"metadata": {"annotations": {"%s": "%s"}}}`, common.AnnotationKeyExecutionControl, string(execCtlBytes))), metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}

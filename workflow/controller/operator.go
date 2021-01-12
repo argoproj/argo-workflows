@@ -908,27 +908,30 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
 	for clusterNamespace, i := range woc.controller.podInformer {
-		clusterName, gvr, _ := clusterNamespace.Split()
+		clusterName, _ := clusterNamespace.Split()
 		objs, err := i.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 		if err != nil {
 			return err
 		}
-		for _, obj := range objs {
-			un, ok := obj.(*unstructured.Unstructured)
-			if !ok {
-				return fmt.Errorf("not unstructured")
-			}
-			parallelPodNum <- un.GetName()
-			wg.Add(1)
-			go func(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, pod *unstructured.Unstructured) {
-				defer wg.Done()
-				performAssessment(clusterName, gvr, un)
-				err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
-				if err != nil {
-					woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
+		for _, resource := range woc.controller.Config.GetResources(woc.controller.managedNamespace, clusterNamespace) {
+			gvr, _ := schema.ParseResourceArg(resource)
+			for _, obj := range objs {
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					return fmt.Errorf("not unstructured")
 				}
-				<-parallelPodNum
-			}(clusterName, gvr, un)
+				parallelPodNum <- un.GetName()
+				wg.Add(1)
+				go func(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, pod *unstructured.Unstructured) {
+					defer wg.Done()
+					performAssessment(clusterName, gvr, un)
+					err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
+					if err != nil {
+						woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
+					}
+					<-parallelPodNum
+				}(clusterName, *gvr, un)
+			}
 		}
 	}
 

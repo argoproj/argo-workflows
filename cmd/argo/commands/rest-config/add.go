@@ -37,7 +37,7 @@ argo rest-config add other.argoproj.io.v1alpha1.workflows.argo k3s-default
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			clusterNamespace, err := wfv1.ParseRestConfigKey(args[0])
+			clusterNamespace, err := wfv1.ParseClusterNamespaceKey(args[0])
 			errors.CheckError(err)
 			contextName := args[1]
 			startingConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()

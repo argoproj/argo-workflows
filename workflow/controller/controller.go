@@ -79,17 +79,17 @@ type WorkflowController struct {
 	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig        map[wfv1.RestConfigKey]*rest.Config
+	restConfig        map[wfv1.ClusterNamespaceKey]*rest.Config
 	kubeclientset     kubernetes.Interface
 	dynamicInterface  dynamic.Interface
-	dynamicInterfaces map[wfv1.RestConfigKey]dynamic.Interface
+	dynamicInterfaces map[wfv1.ClusterNamespaceKey]dynamic.Interface
 	wfclientset       wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	podInformer           map[wfv1.RestConfigKey]cache.SharedIndexInformer
+	podInformer           map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface // wfv1.WorkflowKey
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // wfv1.ResourceKey -  pods to be deleted or labelled depend on GC strategy
@@ -341,31 +341,31 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	return nil
 }
 
-func (wfc *WorkflowController) dynamicInterfaceX(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string) (dynamic.NamespaceableResourceInterface, error) {
+func (wfc *WorkflowController) dynamicInterfaceX(clusterName wfv1.ClusterName, namespace string) (dynamic.Interface, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.dynamicInterfaces[wfv1.NewRestConfigKey(clusterName, y)]; ok {
-			return x.Resource(gvr), nil
+		if x, ok := wfc.dynamicInterfaces[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
+			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, namespace))
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, namespace))
 }
 
 func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, namespace string) (*rest.Config, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.restConfig[wfv1.NewRestConfigKey(clusterName, y)]; ok {
+		if x, ok := wfc.restConfig[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, namespace))
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, namespace))
 }
 
 func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, namespace string) (cache.SharedIndexInformer, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.podInformer[wfv1.NewRestConfigKey(clusterName, y)]; ok {
+		if x, ok := wfc.podInformer[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, namespace))
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, namespace))
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
@@ -463,11 +463,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		k, err := wfc.dynamicInterfaceX(clusterName, gvr, namespace)
+		k, err := wfc.dynamicInterfaceX(clusterName, namespace)
 		if err != nil {
 			return err
 		}
-		pods := k.Namespace(namespace)
+		pods := k.Resource(gvr).Namespace(namespace)
 		switch action {
 		case labelPodCompleted:
 			_, err := pods.Patch(
@@ -807,15 +807,17 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			}
 			propagationBackground := metav1.DeletePropagationBackground
 			key := wf.Namespace + "/" + wf.Name
-			for clusterName, namespaces := range wf.Status.Nodes.GetClusterNamespaces() {
-				for namespace := range namespaces {
-					clusterName := wfv1.ClusterNameOr(clusterName, wfc.Config.ClusterName)
-					namespace := wfv1.NamespaceOr(namespace, wf.Namespace)
-					dy, err := wfc.dynamicInterfaceX(clusterName, common.PodGVR, namespace)
+			for clusterNamespace := range wf.Status.Nodes.GetClusterNamespaces() {
+				clusterName, namespace := clusterNamespace.Split()
+				clusterName = wfv1.ClusterNameOr(clusterName, wfc.Config.ClusterName)
+				namespace = wfv1.NamespaceOr(namespace, wf.Namespace)
+				for _, resource := range wfc.Config.GetResources(wfc.managedNamespace, clusterNamespace) {
+					gvr, _ := schema.ParseResourceArg(resource)
+					dy, err := wfc.dynamicInterfaceX(clusterName, namespace)
 					if err != nil {
 						return fmt.Errorf("failed to get dynamic interface: %w", err)
 					}
-					err = dy.Namespace(namespace).DeleteCollection(
+					err = dy.Resource(*gvr).Namespace(namespace).DeleteCollection(
 						ctx,
 						metav1.DeleteOptions{
 							PropagationPolicy: &propagationBackground,
@@ -932,8 +934,8 @@ func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newResourceInformers() map[wfv1.RestConfigKey]cache.SharedIndexInformer {
-	out := make(map[wfv1.RestConfigKey]cache.SharedIndexInformer)
+func (wfc *WorkflowController) newResourceInformers() map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer {
+	out := make(map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer)
 	for clusterNamespace, dy := range wfc.dynamicInterfaces {
 		clusterName, namespace := clusterNamespace.Split()
 		incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
@@ -947,8 +949,12 @@ func (wfc *WorkflowController) newResourceInformers() map[wfv1.RestConfigKey]cac
 		informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dy, podResyncPeriod, namespace, func(o *metav1.ListOptions) {
 			o.LabelSelector = labelSelector
 		})
-		for _, resource := range wfc.Config.GetResources() {
+		resources := wfc.Config.GetResources(wfc.managedNamespace, clusterNamespace)
+		for _, resource := range resources {
 			gvr, _ := schema.ParseResourceArg(resource)
+			if gvr == nil {
+				panic(fmt.Errorf("invalid resource: %s", resource))
+			}
 			i := informerFactory.ForResource(*gvr)
 			err := i.Informer().AddIndexers(cache.Indexers{
 				indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,

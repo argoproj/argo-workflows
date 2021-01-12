@@ -62,14 +62,14 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 		return node, nil
 	}
 
-	dy, err := woc.controller.dynamicInterfaceX(clusterName, gvr, namespace)
+	dy, err := woc.controller.dynamicInterfaceX(clusterName, namespace)
 	if err != nil {
 		return node, err
 	}
 
 	woc.log.WithFields(log.Fields{"gvr": gvr, "name": un.GetName()}).Info("creating resource2")
 
-	_, err = dy.Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
+	_, err = dy.Resource(gvr).Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
 	switch {
 	case apierr.IsAlreadyExists(err):
 		woc.log.Debugf("Failed resource2 %s (%s) creation: already exists", node.Name, node.ID)

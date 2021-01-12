@@ -24,7 +24,7 @@ func NewRMCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			clusterNamespace, err := wfv1.ParseRestConfigKey(args[0])
+			clusterNamespace, err := wfv1.ParseClusterNamespaceKey(args[0])
 			errors.CheckError(err)
 			data, err := json.Marshal(map[string]map[string]interface{}{
 				"data": {
