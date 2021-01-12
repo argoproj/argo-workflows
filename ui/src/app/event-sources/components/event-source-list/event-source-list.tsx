@@ -1,10 +1,12 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui';
+import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {EventSource} from '../../../../models';
 import {kubernetes} from '../../../../models';
 import {ID} from '../../../events/components/events-details/id';
+import {Utils as EventsUtils} from '../../../sensors/components/utils';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Node} from '../../../shared/components/graph/types';
@@ -18,12 +20,9 @@ import {services} from '../../../shared/services';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceCreator} from '../event-source-creator';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
-import * as classNames from "classnames";
-import {Utils as EventsUtils} from "../../../sensors/components/utils";
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/eventsource/'>Learn more</a>;
 
-// @ts-ignore
 export const EventSourceList = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
     const queryParams = new URLSearchParams(location.search);
@@ -111,7 +110,11 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                                 key={`${es.metadata.namespace}/${es.metadata.name}`}
                                 to={uiUrl(`event-sources/${es.metadata.namespace}/${es.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i className={classNames('fa', EventsUtils.statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))} aria-hidden='true' />
+                                    {/* tslint:disable-next-line:max-line-length */}
+                                    <i
+                                        className={classNames('fa', EventsUtils.statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))}
+                                        aria-hidden='true'
+                                    />
                                 </div>
                                 <div className='columns small-4'>{es.metadata.name}</div>
                                 <div className='columns small-3'>{es.metadata.namespace}</div>
