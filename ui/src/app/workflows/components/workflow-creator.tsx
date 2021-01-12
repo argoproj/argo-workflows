@@ -14,6 +14,7 @@ import {WorkflowEditor} from './workflow-editor';
 export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) => {
     const [workflow, setWorkflow] = useState<Workflow>(exampleWorkflow(Utils.getNamespace(namespace)));
     const [error, setError] = useState<Error>();
+    const [displayWorkflowEditor, setDisplayWorkflowEditor] = useState<boolean>(true);
     return (
         <>
             <div>
@@ -29,9 +30,22 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                     Create
                 </Button>
             </div>
-            <FromWorkflowTemplate namespace={namespace} onError={setError} onTemplateSelect={setWorkflow} />
+            <FromWorkflowTemplate
+                namespace={namespace}
+                onError={setError}
+                onTemplateSelect={workflowSelected => {
+                    setWorkflow(workflowSelected);
+                    setDisplayWorkflowEditor(false);
+                }}
+            />
             <ErrorNotice error={error} />
-            <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
+            {displayWorkflowEditor ? (
+                <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
+            ) : (
+                <a onClick={() => setDisplayWorkflowEditor(true)} style={{cursor: 'pointer'}}>
+                    Full workflow options
+                </a>
+            )}
             <div>
                 <ExampleManifests />.
             </div>

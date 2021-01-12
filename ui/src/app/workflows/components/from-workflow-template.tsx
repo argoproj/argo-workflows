@@ -1,8 +1,10 @@
 import {Select} from 'argo-ui/src/components/select/select';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {useEffect, useState} from 'react';
 import * as React from 'react';
 import {Workflow, WorkflowTemplate} from '../../../models';
 import {services} from '../../shared/services';
+import {SubmitWorkflowPanel} from './submit-workflow-panel';
 
 const workflowFromWorkflowTemplateName = (templateName: string, namespace: string): Workflow => {
     return {
@@ -31,6 +33,7 @@ export const FromWorkflowTemplate = ({
     onTemplateSelect: (workflowWithTemplate: Workflow) => void;
 }) => {
     const [workflowTemplates, setWorkflowTemplates] = useState<WorkflowTemplate[]>();
+    const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>();
 
     useEffect(() => {
         services.workflowTemplate
@@ -40,12 +43,30 @@ export const FromWorkflowTemplate = ({
     }, []);
 
     return (
-        <div className={'white-box'}>
-            <label>Submit From Workflow Template</label>
-            <Select
-                options={workflowTemplates && workflowTemplates.length > 0 ? workflowTemplates.map(tmpl => tmpl.metadata.name) : []}
-                onChange={templateName => onTemplateSelect(workflowFromWorkflowTemplateName(templateName.title, namespace))}
-            />
-        </div>
+        <>
+            <div className={'white-box'}>
+                <label>Submit From Workflow Template</label>
+                <Select
+                    options={workflowTemplates && workflowTemplates.length > 0 ? workflowTemplates.map(tmpl => tmpl.metadata.name) : []}
+                    value={workflowTemplate ? workflowTemplate.metadata.name : ''}
+                    onChange={templateName => {
+                        setWorkflowTemplate(workflowTemplates.find(template => template.metadata.name === templateName.title));
+                        onTemplateSelect(workflowFromWorkflowTemplateName(templateName.title, namespace));
+                    }}
+                />
+            </div>
+            <div>
+                {workflowTemplate && (
+                    <SubmitWorkflowPanel
+                        kind='WorkflowTemplate'
+                        namespace={workflowTemplate.metadata.namespace}
+                        name={workflowTemplate.metadata.name}
+                        entrypoint={workflowTemplate.spec.entrypoint}
+                        entrypoints={(workflowTemplate.spec.templates || []).map(t => t.name)}
+                        parameters={workflowTemplate.spec.arguments.parameters || []}
+                    />
+                )}
+            </div>
+        </>
     );
 };
