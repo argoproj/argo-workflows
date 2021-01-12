@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -47,7 +48,9 @@ func TestSaveParameters(t *testing.T) {
 		mainContainerID:    fakeContainerID,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("has a newline\n", nil)
-	err := we.SaveParameters()
+
+	ctx := context.Background()
+	err := we.SaveParameters(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
 }
@@ -135,7 +138,9 @@ func TestDefaultParameters(t *testing.T) {
 		mainContainerID:    fakeContainerID,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
-	err := we.SaveParameters()
+
+	ctx := context.Background()
+	err := we.SaveParameters(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, we.Template.Outputs.Parameters[0].Value.String(), "Default Value")
 }
@@ -167,7 +172,9 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		mainContainerID:    fakeContainerID,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
-	err := we.SaveParameters()
+
+	ctx := context.Background()
+	err := we.SaveParameters(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
 }
@@ -324,9 +331,12 @@ func TestSaveArtifacts(t *testing.T) {
 		RuntimeExecutor:    &mockRuntimeExecutor,
 		mainContainerID:    fakeContainerID,
 	}
-	err := we.SaveArtifacts()
+
+	ctx := context.Background()
+	err := we.SaveArtifacts(ctx)
 	assert.NoError(t, err)
+
 	we.Template.Outputs.Artifacts[0].Optional = false
-	err = we.SaveArtifacts()
+	err = we.SaveArtifacts(ctx)
 	assert.Error(t, err)
 }

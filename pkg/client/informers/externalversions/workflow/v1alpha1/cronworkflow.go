@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	workflowv1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -45,13 +46,13 @@ func NewFilteredCronWorkflowInformer(client versioned.Interface, namespace strin
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().CronWorkflows(namespace).List(options)
+				return client.ArgoprojV1alpha1().CronWorkflows(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().CronWorkflows(namespace).Watch(options)
+				return client.ArgoprojV1alpha1().CronWorkflows(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&workflowv1alpha1.CronWorkflow{},

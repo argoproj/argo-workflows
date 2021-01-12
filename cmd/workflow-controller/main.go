@@ -56,7 +56,7 @@ func NewRootCommand() *cobra.Command {
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
-			cli.SetGLogLevel(glogLevel)
+			cmdutil.SetGLogLevel(glogLevel)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
@@ -86,10 +86,11 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// start a controller on instances of our custom resource
-			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
-			errors.CheckError(err)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			errors.CheckError(err)
 
 			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
 
