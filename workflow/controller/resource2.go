@@ -48,7 +48,7 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 
 	gvr, _ := meta.UnsafeGuessKindToResource(un.GroupVersionKind())
 
-	informer, err := woc.controller.resourceInformer(clusterName, gvr, namespace)
+	informer, err := woc.controller.resourceInformer(clusterName, namespace)
 	if err != nil {
 		return nil, err
 	}

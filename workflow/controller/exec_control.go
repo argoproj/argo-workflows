@@ -169,7 +169,7 @@ func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterNa
 	// propagate (minutes). The following code fast-tracks this by signaling the executor
 	// using SIGUSR2 that something changed.
 	woc.log.Infof("Signalling %s of updates", podName)
-	restConfig, err := woc.controller.restConfigX(clusterName, common.PodGVR, namespace)
+	restConfig, err := woc.controller.restConfigX(clusterName, namespace)
 	if err != nil {
 		return err
 	}

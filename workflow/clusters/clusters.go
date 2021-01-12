@@ -13,11 +13,10 @@ import (
 
 	"github.com/argoproj/argo/config/clusters"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
 )
 
 func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.RestConfigKey]*rest.Config, map[wfv1.RestConfigKey]kubernetes.Interface, map[wfv1.RestConfigKey]dynamic.Interface, error) {
-	clusterNamespace := wfv1.NewRestConfigKey(clusterName, common.PodGVR, managedNamespace)
+	clusterNamespace := wfv1.NewRestConfigKey(clusterName, managedNamespace)
 	restConfigs := map[wfv1.RestConfigKey]*rest.Config{}
 	if restConfig != nil {
 		restConfigs[clusterNamespace] = restConfig

@@ -98,6 +98,17 @@ type Config struct {
 
 	// The name of the cluster, mandatory for multi-cluster set-up.
 	ClusterName wfv1.ClusterName `json:"clusterName,omitempty"`
+
+	// Resources to listen to, in the format, `group.version.resource` (e.g. `argoproj.io.v1alpha1.workflows`) or `version.resource` (e.g. `v1.pods`)
+	// See schema.ParseResourceArg
+	Resources []string `json:"resources,omitempty"`
+}
+
+func (c Config) GetResources() []string {
+	if c.Resources != nil {
+		return c.Resources
+	}
+	return []string{"v1.pods"}
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

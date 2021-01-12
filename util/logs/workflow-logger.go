@@ -72,10 +72,10 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 	podLogStreamOptions.Timestamps = true
 
 	kube := func(clusterName wfv1.ClusterName, namespace string) kubernetes.Interface {
-		if x, ok := kubeClient[wfv1.NewRestConfigKey(clusterName, common.PodGVR, namespace)]; ok {
+		if x, ok := kubeClient[wfv1.NewRestConfigKey(clusterName, namespace)]; ok {
 			return x
 		}
-		return kubeClient[wfv1.NewRestConfigKey(clusterName, common.PodGVR, corev1.NamespaceAll)]
+		return kubeClient[wfv1.NewRestConfigKey(clusterName, corev1.NamespaceAll)]
 	}
 
 	// this func start a stream if one is not already running
@@ -134,7 +134,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 
 	stopLoggingClusterNamespace := make(chan struct{})
 	logClusterNamespace := func(clusterName wfv1.ClusterName, instanceID, namespace string) {
-		clusterNamespaceKey := wfv1.NewRestConfigKey(clusterName, common.PodGVR, namespace)
+		clusterNamespaceKey := wfv1.NewRestConfigKey(clusterName, namespace)
 		logCtx := log.WithField("clusterNamespaceKey", clusterNamespaceKey)
 		_, alreadyLogging := clusterNamespaces.LoadOrStore(clusterNamespaceKey, true)
 		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging cluster-namespace")

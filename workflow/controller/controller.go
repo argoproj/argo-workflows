@@ -343,29 +343,29 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 
 func (wfc *WorkflowController) dynamicInterfaceX(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string) (dynamic.NamespaceableResourceInterface, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.dynamicInterfaces[wfv1.NewRestConfigKey(clusterName, gvr, y)]; ok {
+		if x, ok := wfc.dynamicInterfaces[wfv1.NewRestConfigKey(clusterName, y)]; ok {
 			return x.Resource(gvr), nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, gvr, namespace))
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, namespace))
 }
 
-func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string) (*rest.Config, error) {
+func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, namespace string) (*rest.Config, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.restConfig[wfv1.NewRestConfigKey(clusterName, gvr, y)]; ok {
+		if x, ok := wfc.restConfig[wfv1.NewRestConfigKey(clusterName, y)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, gvr, namespace))
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, namespace))
 }
 
-func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string) (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, namespace string) (cache.SharedIndexInformer, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.podInformer[wfv1.NewRestConfigKey(clusterName, gvr, y)]; ok {
+		if x, ok := wfc.podInformer[wfv1.NewRestConfigKey(clusterName, y)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, gvr, namespace))
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewRestConfigKey(clusterName, namespace))
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
@@ -935,7 +935,7 @@ func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {
 func (wfc *WorkflowController) newResourceInformers() map[wfv1.RestConfigKey]cache.SharedIndexInformer {
 	out := make(map[wfv1.RestConfigKey]cache.SharedIndexInformer)
 	for clusterNamespace, dy := range wfc.dynamicInterfaces {
-		clusterName, gvr, namespace := clusterNamespace.Split()
+		clusterName, namespace := clusterNamespace.Split()
 		incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 		workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
 		labelSelector := labels.NewSelector().
@@ -947,38 +947,42 @@ func (wfc *WorkflowController) newResourceInformers() map[wfv1.RestConfigKey]cac
 		informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dy, podResyncPeriod, namespace, func(o *metav1.ListOptions) {
 			o.LabelSelector = labelSelector
 		})
-		i := informerFactory.ForResource(gvr)
-		err := i.Informer().AddIndexers(cache.Indexers{
-			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
-			indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
-		})
-		errors.CheckError(err)
-		i.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc: wfc.enqueueWfFromPodLabel,
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err != nil {
-					return
-				}
-				oldUn, newUn := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
-				if oldUn.GetResourceVersion() == newUn.GetResourceVersion() {
-					return
-				}
-				if oldUn.GetKind() == "Pod" {
-					oldPod, _ := util.PodFromUnstructured(oldUn)
-					newPod, _ := util.PodFromUnstructured(newUn)
-					if !pod.SignificantPodChange(oldPod, newPod) {
-						log.WithField("key", key).Info("insignificant pod change")
-						pod.LogChanges(oldPod, newPod)
+		for _, resource := range wfc.Config.GetResources() {
+			gvr, _ := schema.ParseResourceArg(resource)
+			i := informerFactory.ForResource(*gvr)
+			err := i.Informer().AddIndexers(cache.Indexers{
+				indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+				indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
+			})
+			errors.CheckError(err)
+			i.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc: wfc.enqueueWfFromPodLabel,
+				UpdateFunc: func(old, new interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(new)
+					if err != nil {
 						return
 					}
-				}
-				wfc.enqueueWfFromPodLabel(new)
+					oldUn, newUn := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+					if oldUn.GetResourceVersion() == newUn.GetResourceVersion() {
+						return
+					}
+					if oldUn.GetKind() == "Pod" {
+						oldPod, _ := util.PodFromUnstructured(oldUn)
+						newPod, _ := util.PodFromUnstructured(newUn)
+						if !pod.SignificantPodChange(oldPod, newPod) {
+							log.WithField("key", key).Info("insignificant pod change")
+							pod.LogChanges(oldPod, newPod)
+							return
+						}
+					}
+					wfc.enqueueWfFromPodLabel(new)
+				},
+				DeleteFunc: wfc.enqueueWfFromPodLabel,
 			},
-			DeleteFunc: wfc.enqueueWfFromPodLabel,
-		},
-		)
-		out[clusterNamespace] = i.Informer()
+			)
+			out[clusterNamespace] = i.Informer()
+
+		}
 	}
 	return out
 }
