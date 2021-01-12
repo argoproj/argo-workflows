@@ -1005,7 +1005,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		Wait(10 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("print-hello")
