@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
 import {Sensor} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
+import {Links} from '../../shared/components/links';
 import {services} from '../../shared/services';
 import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 
@@ -81,7 +82,7 @@ export const SensorLogsViewer = ({
                     </div>
                     {error && <ErrorNotice error={error} />}
                 </div>
-                <div className='columns small-9 medium-10' style={{height: 600}}>
+                <div className='columns small-9 medium-10'>
                     {!logLoaded ? (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
@@ -95,6 +96,7 @@ export const SensorLogsViewer = ({
                             }}
                         />
                     )}
+                    <Links scope='sensor-logs' object={sensor} />
                 </div>
             </div>
         </div>

@@ -91,7 +91,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
         items.push({
             action: () => setSidePanel('logs'),
-            iconClassName: 'fa fa-file-alt',
+            iconClassName: 'fa fa-bars',
             title: 'Logs'
         });
 
@@ -107,7 +107,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 .forEach(link => {
                     items.push({
                         title: link.name,
-                        iconClassName: 'fa fa-link',
+                        iconClassName: 'fa fa-external-link-alt',
                         action: () => openLink(link)
                     });
                 });

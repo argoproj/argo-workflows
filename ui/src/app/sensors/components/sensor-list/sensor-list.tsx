@@ -120,7 +120,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                             e.preventDefault();
                                             setSelectedNode(`${s.metadata.namespace}/Sensor/${s.metadata.name}`);
                                         }}>
-                                        <i className='fa fa-file-alt' />
+                                        <i className='fa fa-bars' />
                                     </div>
                                 </div>
                             </Link>

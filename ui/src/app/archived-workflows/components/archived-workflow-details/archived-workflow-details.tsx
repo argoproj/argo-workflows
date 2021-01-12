@@ -104,7 +104,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 .forEach(link =>
                     items.push({
                         title: link.name,
-                        iconClassName: 'fa fa-link',
+                        iconClassName: 'fa fa-external-link-alt',
                         action: () => this.openLink(link)
                     })
                 );

@@ -7,9 +7,11 @@ import {kubernetes, Workflow} from '../../../../models';
 import {EventSource} from '../../../../models/event-source';
 import {Sensor} from '../../../../models/sensor';
 import {uiUrl} from '../../../shared/base';
+import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Node} from '../../../shared/components/graph/types';
+import {Links} from '../../../shared/components/links';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
@@ -255,6 +257,11 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
                             {selected.kind}/{selected.name}
                         </h4>
                         <h5>{selected.key}</h5>
+                        <Button
+                            outline={true}
+                            onClick={() => navigation.goto(uiUrl(`${selected.kind === 'EventSource' ? 'event-sources' : 'sensors'}/${selected.namespace}/${selected.name}`))}>
+                            Open/edit
+                        </Button>
                         <Tabs
                             navTransparent={true}
                             selectedTabKey={tab}
@@ -269,7 +276,7 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
                                     title: 'LOGS',
                                     key: 'logs',
                                     content: (
-                                        <div className='white-box' style={{height: 600}}>
+                                        <>
                                             <FullHeightLogsViewer
                                                 source={{
                                                     key: 'logs',
@@ -287,7 +294,8 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
                                                     shouldRepeat: () => false
                                                 }}
                                             />
-                                        </div>
+                                            {selected.value && <Links scope={selected.kind === 'Sensor' ? 'sensor-logs' : 'event-source-logs'} object={selected.value} />}
+                                        </>
                                     )
                                 },
                                 {

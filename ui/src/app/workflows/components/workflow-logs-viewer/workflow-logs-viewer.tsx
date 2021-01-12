@@ -7,10 +7,9 @@ import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
+import {Links} from '../../../shared/components/links';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
-
-require('./workflow-logs-viewer.scss');
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
@@ -60,7 +59,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             )}
             <p>
                 <i className='fa fa-box' />{' '}
-                <Autocomplete items={podNameOptions} value={podNameOptions.find(x => x.value === podName).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
+                <Autocomplete items={podNameOptions} value={(podNameOptions.find(x => x.value === podName) || {}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
                 <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
             </p>
             <ErrorNotice error={error} />
@@ -75,23 +74,19 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                     (including archived logs).
                 </p>
             )}
-            <div className='white-box'>
-                {!loaded ? (
-                    <p>
-                        <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
-                    </p>
-                ) : (
-                    <div className='log-box'>
-                        <FullHeightLogsViewer
-                            source={{
-                                key: `${workflow.metadata.name}-${podName}-${selectedContainer}`,
-                                loadLogs: identity(logsObservable),
-                                shouldRepeat: () => false
-                            }}
-                        />
-                    </div>
-                )}
-            </div>
+            {!loaded ? (
+                <p className='white-box'>
+                    <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
+                </p>
+            ) : (
+                <FullHeightLogsViewer
+                    source={{
+                        key: `${workflow.metadata.name}-${podName}-${selectedContainer}`,
+                        loadLogs: identity(logsObservable),
+                        shouldRepeat: () => false
+                    }}
+                />
+            )}
             <p>
                 {podName && (
                     <>
@@ -104,7 +99,24 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                         <WarningIcon /> You pod GC settings will delete pods and their logs immediately on completion.
                     </>
                 )}{' '}
-                Logs do not appear for pods that are deleted.
+                Logs do not appear for pods that are deleted.{' '}
+                {podName ? (
+                    <Links
+                        object={{
+                            metadata: {
+                                namespace: workflow.metadata.namespace,
+                                name: podName
+                            },
+                            status: {
+                                startedAt: workflow.status.startedAt,
+                                finishedAt: workflow.status.finishedAt
+                            }
+                        }}
+                        scope='pod-logs'
+                    />
+                ) : (
+                    <Links object={workflow} scope='workflow' />
+                )}
             </p>
         </div>
     );

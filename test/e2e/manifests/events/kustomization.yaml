@@ -7,7 +7,7 @@ resources:
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/examples/eventbus/native.yaml
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/examples/event-sources/calendar.yaml
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/examples/sensors/calendar.yaml
-- https://raw.githubusercontent.com/argoproj/argo-events/stable/examples/sensors/log.yaml
+- https://raw.githubusercontent.com/argoproj/argo-events/master/examples/sensors/log.yaml
 
 patchesStrategicMerge:
 - ../mixins/argo-server-deployment.yaml
