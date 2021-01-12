@@ -6,7 +6,6 @@ on:
       - v*
     branches:
       - master
-      - test-quay
 
 defaults:
   run:
@@ -36,10 +35,17 @@ jobs:
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
       - name: Docker Login
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
+
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
 
       - name: Docker Buildx
         env:
@@ -62,6 +68,14 @@ jobs:
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
+
+          docker buildx build \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --output "type=image,push=true" \
+            --platform="${PLATFORM}" \
+            --target $TARGET \
+            --tag quay.io/$image_name .
 
   build-linux-arm64:
     name: Build & push linux/arm64
@@ -91,10 +105,17 @@ jobs:
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
       - name: Docker Login
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
+
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
 
       - name: Docker Buildx
         env:
@@ -118,6 +139,14 @@ jobs:
             --target $TARGET \
             --tag $image_name .
 
+          docker buildx build \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --output "type=image,push=true" \
+            --platform="${PLATFORM}" \
+            --target $TARGET \
+            --tag quay.io/$image_name .
+
   build-windows:
     name: Build & push windows
     runs-on: windows-2019
@@ -128,6 +157,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
+
+      - name: Login to Quay
+        uses: Azure/docker-login@v1
+        with:
+          login-server: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
+
       - name: Build & Push Windows Docker Images
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
@@ -144,6 +181,9 @@ jobs:
             image_name="${docker_org}/${target}:${tag}-windows"
             docker build --target $target -t $image_name -f Dockerfile.windows .
             docker push $image_name
+
+            docker tag $image_name quay.io/$image_name
+            docker push quay.io/$image_name
           done
 
   push-linux-amd64-images:
@@ -183,7 +223,7 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             docker manifest create $image_name ${image_name}-linux-amd64
-            docker manifest create quay.io/$image_name ${image_name}-linux-amd64
+            docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64
 
             docker manifest push $image_name
             docker manifest push quay.io/$image_name
@@ -227,7 +267,7 @@ jobs:
 
             if [ $target = "argoexec" ]; then
               docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
-              docker manifest create quay.io/$image_name ${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
+              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
               docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64

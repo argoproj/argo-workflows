@@ -288,7 +288,8 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 		if err != nil {
 			panic(err)
 		}
-		if pod.Status.Phase == "" {
+
+		if pod.Status.Phase != phase {
 			pod.Status.Phase = phase
 			if phase == apiv1.PodFailed {
 				pod.Status.Message = "Pod failed"

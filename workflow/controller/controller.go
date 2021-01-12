@@ -191,6 +191,7 @@ var indexers = cache.Indexers{
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
 	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
 	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
+	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
 }
 
 // Run starts an Workflow resource controller
@@ -1073,12 +1074,17 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 
 func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
-		objs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.WorkflowPhaseIndex, string(phase))
-		if err != nil {
-			log.WithError(err).Errorf("failed to list workflows by '%s'", phase)
-			continue
-		}
-		wfc.metrics.SetWorkflowPhaseGauge(phase, len(objs))
+		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
+		errors.CheckError(err)
+		wfc.metrics.SetWorkflowPhaseGauge(phase, len(keys))
+	}
+	for _, x := range []wfv1.Condition{
+		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionTrue},
+		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
+	} {
+		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
+		errors.CheckError(err)
+		metrics.WorkflowConditionMetric.WithLabelValues(string(x.Type), string(x.Status)).Set(float64(len(keys)))
 	}
 }
 
@@ -1086,7 +1092,7 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
 		count := 0
 		for _, i := range wfc.podInformer {
-			objs, err := i.GetIndexer().ByIndex(indexes.PodPhaseIndex, string(phase))
+			objs, err := i.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
 			if err != nil {
 				log.WithError(err).Error("failed to list active pods")
 				return

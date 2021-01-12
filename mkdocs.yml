@@ -148,6 +148,7 @@ nav:
       - versioning.md
       - public-api.md
       - static-code-analysis.md
+      - stress-testing.md
       - releasing.md
   - Releases ⧉: https://github.com/argoproj/argo/releases
   - Roadmap: roadmap.md
