@@ -1,5 +1,10 @@
 apiVersion: v1
 data:
+  executor: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
   artifactRepository: |
     archiveLogs: true
     s3:
@@ -18,11 +23,20 @@ data:
     path: /metrics
     port: 9090
   links: |
-    - name: Example Workflow Link
+    - name: Workflow Link
       scope: workflow
       url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
-    - name: Example Pod Link
+    - name: Pod Link
       scope: pod
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Pod Logs Link
+      scope: pod-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Event Source Logs Link
+      scope: event-source-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Sensor Logs Link
+      scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
 kind: ConfigMap
 metadata:

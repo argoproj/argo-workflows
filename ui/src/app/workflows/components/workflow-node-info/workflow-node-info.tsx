@@ -7,6 +7,7 @@ import {Button} from '../../../shared/components/button';
 import {DropDownButton} from '../../../shared/components/drop-down-button';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
+import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
@@ -138,25 +139,22 @@ const WorkflowNodeSummary = (props: Props) => {
                             {onClick: () => showLogs('init'), value: 'init logs'},
                             {onClick: () => showLogs('wait'), value: 'wait logs'}
                         ]}>
-                        main logs
+                        <i className='fa fa-bars' /> main logs
                     </DropDownButton>
                 )}{' '}
-                {props.links &&
-                    props.links
-                        .filter(link => link.scope === 'pod')
-                        .map(link => (
-                            <Button
-                                icon='link'
-                                onClick={() => {
-                                    document.location.href = link.url
-                                        .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
-                                        .replace(/\${metadata\.name}/g, props.node.id)
-                                        .replace(/\${status\.startedAt}/g, props.node.startedAt)
-                                        .replace(/\${status\.finishedAt}/g, props.node.finishedAt);
-                                }}>
-                                {link.name}
-                            </Button>
-                        ))}
+                <Links
+                    object={{
+                        metadata: {
+                            namespace: props.workflow.metadata.namespace,
+                            name: props.node.id
+                        },
+                        status: {
+                            startedAt: props.node.startedAt,
+                            finishedAt: props.node.finishedAt
+                        }
+                    }}
+                    scope='pod'
+                />
             </div>
         </div>
     );
@@ -253,9 +251,9 @@ const WorkflowNodeContainer = (props: {
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
+                <Button outline={true} icon='bars' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
                     LOGS
-                </button>
+                </Button>
             </div>
         </div>
     );

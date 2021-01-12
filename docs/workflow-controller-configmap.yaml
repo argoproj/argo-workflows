@@ -48,6 +48,15 @@ data:
       - name: Example Pod Link
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+      - name: Pod Logs
+        scope: pod-logs
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+      - name: Event Source Logs
+        scope: event-source-logs
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+      - name: Sensor Logs
+        scope: sensor-logs
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
       # Adds a button to the bottom right of every page to link to your organisation help or chat.
       - name: Get help
         scope: chat

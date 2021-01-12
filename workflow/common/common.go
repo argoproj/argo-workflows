@@ -160,6 +160,8 @@ const (
 	LocalVarStatus = "status"
 	// LocalVarResourcesDuration is a step level variable (currently only available in metric emission) that tracks the resources duration of the step
 	LocalVarResourcesDuration = "resourcesDuration"
+	// LocalVarExitCode is a step level variable (currently only available in metric emission) that tracks the step's exit code
+	LocalVarExitCode = "exitCode"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"

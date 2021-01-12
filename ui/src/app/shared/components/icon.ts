@@ -1,6 +1,7 @@
 export type Icon =
     | 'arrow-left'
     | 'arrow-right'
+    | 'bars'
     | 'bell'
     | 'box'
     | 'calendar'

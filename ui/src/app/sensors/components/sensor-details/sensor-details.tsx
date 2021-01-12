@@ -104,7 +104,7 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                         },
                         {
                             title: 'Logs',
-                            iconClassName: 'fa fa-file-alt',
+                            iconClassName: 'fa fa-bars',
                             disabled: false,
                             action: () => {
                                 setSelectedLogNode(`${namespace}/Sensor/${sensor.metadata.name}`);
