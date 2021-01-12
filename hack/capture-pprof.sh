@@ -3,7 +3,7 @@ set -eu -o pipefail
 
 echo "  https://blog.golang.org/pprof"
 
-cd $(dirname $0)/../pprof
+cd $(dirname $0)/..
 
 n=$(date +%s)
 
