@@ -20,7 +20,11 @@ type eventSourceServer struct{}
 
 func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsourcepkg.CreateEventSourceRequest) (*esv1.EventSource, error) {
 	client := auth.GetEventSourceClient(ctx)
-	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(ctx, in.EventSource, *in.CreateOptions)
+	createOption := in.CreateOptions
+	if createOption == nil {
+		createOption = &metav1.CreateOptions{}
+	}
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(ctx, in.EventSource, *createOption)
 	if err != nil {
 		return nil, err
 	}

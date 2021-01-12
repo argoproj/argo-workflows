@@ -1,5 +1,4 @@
 import {Select} from 'argo-ui/src/components/select/select';
-import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {useEffect, useState} from 'react';
 import * as React from 'react';
 import {Workflow, WorkflowTemplate} from '../../../models';

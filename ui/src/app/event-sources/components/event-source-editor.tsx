@@ -26,15 +26,15 @@ export const EventSourceEditor = ({
             onTabSelected={onTabSelected}
             tabs={[
                 {
-                    key: 'metadata',
-                    title: 'MetaData',
-                    content: <MetadataEditor value={eventSource.metadata} onChange={metadata => onChange({...eventSource, metadata})} />
-                },
-
-                {
                     key: 'manifest',
                     title: 'Manifest',
                     content: <ObjectEditor type='io.argoproj.eventsource.v1alpha1.EventSource' value={eventSource} onChange={x => onChange({...x})} />
+                },
+
+                {
+                    key: 'metadata',
+                    title: 'MetaData',
+                    content: <MetadataEditor value={eventSource.metadata} onChange={metadata => onChange({...eventSource, metadata})} />
                 }
             ]}
         />

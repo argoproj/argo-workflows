@@ -97,14 +97,15 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                             iconClassName: 'fa fa-trash',
                             disabled: edited,
                             action: () => {
-                                if (!popup.confirm('Confirmation', 'Are you sure you want to delete this event source?\nThere is no undo.')) {
-                                    return;
-                                }
-                                services.eventSource
-                                    .delete(name, namespace)
-                                    .then(() => navigation.goto(uiUrl('event-sources/' + namespace)))
-                                    .then(() => setError(null))
-                                    .catch(setError);
+                                popup.confirm('Confirm', 'Are you sure you want to delete this event source?\nThere is no undo.').then(yes => {
+                                    if (yes) {
+                                        services.eventSource
+                                            .delete(name, namespace)
+                                            .then(() => navigation.goto(uiUrl('event-sources/' + namespace)))
+                                            .then(() => setError(null))
+                                            .catch(setError);
+                                    }
+                                });
                             }
                         },
                         {
@@ -141,15 +142,12 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                                 {
                                     title: 'LOGS',
                                     key: 'logs',
-                                    content: <EventSourceLogsViewer namespace={namespace} selectedEvent={selected.key}
-                                                                    eventSource={selected.value}
-                                                                    onClick={setSelectedNode}/>
+                                    content: <EventSourceLogsViewer namespace={namespace} selectedEvent={selected.key} eventSource={selected.value} onClick={setSelectedNode} />
                                 },
                                 {
                                     title: 'EVENTS',
                                     key: 'events',
-                                    content: <EventsPanel kind='EventSources' namespace={selected.namespace}
-                                                          name={selected.name}/>
+                                    content: <EventsPanel kind='EventSources' namespace={selected.namespace} name={selected.name} />
                                 }
                             ]}
                         />

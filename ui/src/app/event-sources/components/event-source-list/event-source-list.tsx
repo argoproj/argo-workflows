@@ -110,11 +110,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                                 key={`${es.metadata.namespace}/${es.metadata.name}`}
                                 to={uiUrl(`event-sources/${es.metadata.namespace}/${es.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    {/* tslint:disable-next-line:max-line-length */}
-                                    <i
-                                        className={classNames('fa', EventsUtils.statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))}
-                                        aria-hidden='true'
-                                    />
+                                    <i className={classNames('fa', EventsUtils.statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))} />
                                 </div>
                                 <div className='columns small-4'>{es.metadata.name}</div>
                                 <div className='columns small-3'>{es.metadata.namespace}</div>
@@ -124,7 +120,6 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                                 <div className='columns small-2'>
                                     <div
                                         onClick={e => {
-                                            e.preventDefault();
                                             setSelectedNode(`${es.metadata.namespace}/event-sources/${es.metadata.name}`);
                                         }}>
                                         <i className='fa fa-bars' />
@@ -142,7 +137,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                 {!!selectedNode && (
                     <div>
                         <h4>
-                            EventSource/{selected.name}
+                            {selected.name}
                             {selected.key ? '/' + selected.key : ''}
                         </h4>
                         <Tabs
