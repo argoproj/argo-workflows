@@ -86,6 +86,10 @@ func (woc *cronWfOperationCtx) run(scheduledRuntime time.Time) {
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
+		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
+		if errors.IsAlreadyExists(err) {
+			return
+		}
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
 		return
 	}
