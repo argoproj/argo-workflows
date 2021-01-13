@@ -71,7 +71,7 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("argo")
 		json.
 			Path("$.links[0].name").
-			Equal("Example Workflow Link")
+			Equal("Workflow Link")
 		json.
 			Path("$.links[0].scope").
 			Equal("workflow")
