@@ -913,7 +913,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
 	// we can re-submit it.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() {
+		if node.Type != wfv1.NodeTypePod || node.Phase.Fulfilled() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
@@ -937,6 +937,10 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				continue
 			}
 
+			if node.Daemoned != nil && *node.Daemoned {
+				node.Daemoned = nil
+				woc.updated = true
+			}
 			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
@@ -1087,6 +1091,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		if pod.DeletionTimestamp != nil {
 			// pod is being terminated
 			newPhase = wfv1.NodeError
+			newDaemonStatus = pointer.BoolPtr(false)
 			message = "pod deleted during operation"
 			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
 				WithField("pod", pod.Name).Error(message)
