@@ -5,6 +5,10 @@ metadata:
 data:
   containerRuntimeExecutor: pns
   clusterName: main
+  resources: |
+    main.:
+      - pods.v1.
+      - configmaps.v1.
   executor: |
     imagePullPolicy: IfNotPresent
     resources:

@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource2
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: deploy
+          template: deploy
+  - name: deploy
+    resource2:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: hello
+      spec:
+        selector:
+          matchLabels:
+            app: hello
+        template:
+          metadata:
+            labels:
+              app: hello
+          spec:
+            containers:
+              - name: dex
+                image: nginxdemos/hello:plain-text
+                ports:
+                  - name: http
+                    containerPort: 8080

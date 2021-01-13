@@ -207,7 +207,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers(ctx)
-	wfc.podInformer = wfc.newResourceInformers()
+	wfc.podInformer = wfc.newPodInformers()
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -460,8 +460,8 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	}
 	defer wfc.podCleanupQueue.Done(key)
 	clusterName, gvr, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
-	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
-	logCtx.Info("cleaning up pod")
+	logCtx := log.WithFields(log.Fields{"key": key})
+	logCtx.Info("cleaning up resource")
 	err := func() error {
 		k, err := wfc.dynamicInterfaceX(clusterName, namespace)
 		if err != nil {
@@ -811,7 +811,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				clusterName, namespace := clusterNamespace.Split()
 				clusterName = wfv1.ClusterNameOr(clusterName, wfc.Config.ClusterName)
 				namespace = wfv1.NamespaceOr(namespace, wf.Namespace)
-				for _, resource := range wfc.Config.GetResources(wfc.managedNamespace, clusterNamespace) {
+				for _, resource := range wfc.Config.GetResources(clusterNamespace) {
 					gvr, _ := schema.ParseResourceArg(resource)
 					dy, err := wfc.dynamicInterfaceX(clusterName, namespace)
 					if err != nil {
@@ -836,8 +836,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 				}
 			}
-			_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte(`{"metadata": {"finalizers": []}}`), metav1.PatchOptions{})
-			if err != nil {
+			_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte(`{"metadata": {"finalizers": null}}`), metav1.PatchOptions{})
+			if err != nil && !apierr.IsNotFound(err) {
 				return fmt.Errorf("failed to remove finalizer from %s: %w", key, err)
 			}
 			return nil
@@ -934,7 +934,7 @@ func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newResourceInformers() map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer {
+func (wfc *WorkflowController) newPodInformers() map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer {
 	out := make(map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer)
 	for clusterNamespace, dy := range wfc.dynamicInterfaces {
 		clusterName, namespace := clusterNamespace.Split()
@@ -949,12 +949,13 @@ func (wfc *WorkflowController) newResourceInformers() map[wfv1.ClusterNamespaceK
 		informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dy, podResyncPeriod, namespace, func(o *metav1.ListOptions) {
 			o.LabelSelector = labelSelector
 		})
-		resources := wfc.Config.GetResources(wfc.managedNamespace, clusterNamespace)
+		resources := wfc.Config.GetResources(clusterNamespace)
 		for _, resource := range resources {
 			gvr, _ := schema.ParseResourceArg(resource)
 			if gvr == nil {
 				panic(fmt.Errorf("invalid resource: %s", resource))
 			}
+			log.WithFields(log.Fields{"clusterNamespace": clusterNamespace, "resource": resource}).Info("creating informer")
 			i := informerFactory.ForResource(*gvr)
 			err := i.Informer().AddIndexers(cache.Indexers{
 				indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,

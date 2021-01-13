@@ -7,7 +7,7 @@
 
 
 ```
-argo rest-config rm CLUSTER_NAME.GROUP.VERSION.RESOURCE.NAMESPACE [flags]
+argo rest-config rm CLUSTER_NAME.NAMESPACE [flags]
 ```
 
 ### Options

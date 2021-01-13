@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -53,7 +52,7 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 		return nil, err
 	}
 
-	_, exists, err := informer.GetStore().Get(cache.ExplicitKey(namespace + "/" + un.GetName()))
+	_, exists, err := informer.GetStore().GetByKey(namespace + "/" + un.GetName())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource from informer store: %w", err)
 	}

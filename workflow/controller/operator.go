@@ -24,6 +24,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -852,7 +853,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 	podRunningCondition := wfv1.Condition{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}
-	performAssessment := func(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, pod *unstructured.Unstructured) {
+	performAssessment := func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
 		if pod == nil {
 			return
 		}
@@ -866,7 +867,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := woc.assessNodeStatus(clusterName, gvr, pod, &node); newState != nil {
+			if newState := woc.assessNodeStatus(clusterName, pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
@@ -913,25 +914,22 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		for _, resource := range woc.controller.Config.GetResources(woc.controller.managedNamespace, clusterNamespace) {
-			gvr, _ := schema.ParseResourceArg(resource)
-			for _, obj := range objs {
-				un, ok := obj.(*unstructured.Unstructured)
-				if !ok {
-					return fmt.Errorf("not unstructured")
-				}
-				parallelPodNum <- un.GetName()
-				wg.Add(1)
-				go func(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, pod *unstructured.Unstructured) {
-					defer wg.Done()
-					performAssessment(clusterName, gvr, un)
-					err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
-					if err != nil {
-						woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
-					}
-					<-parallelPodNum
-				}(clusterName, *gvr, un)
+		for _, obj := range objs {
+			un, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				return fmt.Errorf("not unstructured")
 			}
+			parallelPodNum <- un.GetName()
+			wg.Add(1)
+			go func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
+				defer wg.Done()
+				performAssessment(clusterName, un)
+				err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
+				if err != nil {
+					woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
+				}
+				<-parallelPodNum
+			}(clusterName, un)
 		}
 	}
 
@@ -1074,8 +1072,12 @@ func (woc *wfOperationCtx) printPodSpecLog(pod *unstructured.Unstructured) {
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, un *unstructured.Unstructured, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	if gvr.Resource == "pods" {
+func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, un *unstructured.Unstructured, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+	gvr, _ := meta.UnsafeGuessKindToResource(un.GroupVersionKind())
+	if gvr.Empty() {
+		node.Phase = wfv1.NodeError
+		node.Message = "group-version-resource not guessable"
+	} else if gvr.Resource == "pods" {
 		pod, err := wfutil.PodFromUnstructured(un)
 		if err != nil {
 			node.Phase = wfv1.NodeError
@@ -1101,6 +1103,9 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, gvr sc
 		}
 		message, _, _ := unstructured.NestedString(un.Object, "status", "message")
 		node.Message = message
+		if node.Completed() && node.FinishedAt.IsZero() {
+			node.FinishedAt = metav1.Now()
+		}
 	}
 
 	if node != nil {

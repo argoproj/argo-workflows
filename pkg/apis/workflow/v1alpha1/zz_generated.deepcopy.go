@@ -2002,6 +2002,10 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(ResourceTemplate)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Resource2 != nil {
+		in, out := &in.Resource2, &out.Resource2
+		*out = (*in).DeepCopy()
+	}
 	if in.DAG != nil {
 		in, out := &in.DAG, &out.DAG
 		*out = new(DAGTemplate)

@@ -107,22 +107,17 @@ type Config struct {
 	Resources map[wfv1.ClusterNamespaceKey][]string `json:"resources,omitempty"`
 }
 
-func (c Config) GetResources(managedNamespace string, clusterNamespace wfv1.ClusterNamespaceKey) []string {
-	r := func() map[wfv1.ClusterNamespaceKey][]string {
-		if c.Resources != nil {
-			return c.Resources
+func (c Config) GetResources(clusterNamespace wfv1.ClusterNamespaceKey) []string {
+	if c.Resources != nil {
+		if resources, ok := c.Resources[clusterNamespace]; ok {
+			return resources
 		}
-		return map[wfv1.ClusterNamespaceKey][]string{
-			wfv1.NewClusterNamespaceKey(c.ClusterName, managedNamespace): {"pods.v1."},
+		clusterName, _ := clusterNamespace.Split()
+		if resources, ok := c.Resources[wfv1.NewClusterNamespaceKey(clusterName, apiv1.NamespaceAll)]; ok {
+			return resources
 		}
-	}()
-
-	if resources, ok := r[clusterNamespace]; ok {
-		return resources
 	}
-
-	clusterName, _ := clusterNamespace.Split()
-	return r[wfv1.NewClusterNamespaceKey(clusterName, apiv1.NamespaceAll)]
+	return []string{"pods.v1."}
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
