@@ -21,7 +21,7 @@ import (
 
 func NewAddCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "add CLUSTER_NAME.GROUP.VERSION.RESOURCE.NAMESPACE CONTEXT_NAME",
+		Use: "add CLUSTER_NAME.NAMESPACE CONTEXT_NAME",
 		Example: `
 # whole cluster
 argo rest-config add other. k3s-default
