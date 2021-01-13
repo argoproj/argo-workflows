@@ -11,14 +11,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/util"
 	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
+	wfutil "github.com/argoproj/argo/workflow/util"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {
@@ -262,7 +264,7 @@ func TestTmplServiceAccount(t *testing.T) {
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
+	err := CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	falseValue := false
@@ -281,11 +283,56 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	}
 }
 
+// CreateServiceAccountWithToken creates a service account with a given name with a service account token.
+// Need to use this function to simulate the actual behavior of Kubernetes API server with the fake client.
+func CreateServiceAccountWithToken(ctx context.Context, dy dynamic.Interface, namespace, name, tokenName string) error {
+	un, err := wfutil.ServiceAccountToUnstructured(&apiv1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}})
+	if err != nil {
+		return err
+	}
+	un, err = dy.Resource(common.ServiceAccountGVR).Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	secret := &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: tokenName,
+			Annotations: map[string]string{
+				apiv1.ServiceAccountNameKey: un.GetName(),
+				apiv1.ServiceAccountUIDKey:  string(un.GetUID()),
+			},
+		},
+		Type: apiv1.SecretTypeServiceAccountToken,
+	}
+
+	un1, err := wfutil.SecretToUnstructured(secret)
+	if err != nil {
+		return err
+	}
+	token, err := dy.Resource(common.SecretsGVR).Namespace(namespace).Create(ctx, un1, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	sa, err := wfutil.ServiceAccountFromUnstructured(un)
+	if err != nil {
+		return err
+	}
+	sa.Secrets = []apiv1.ObjectReference{{Name: token.GetName()}}
+	un, err = wfutil.ServiceAccountToUnstructured(sa)
+	if err != nil {
+		return err
+	}
+	_, err = dy.Resource(common.ServiceAccountGVR).Namespace(namespace).Update(ctx, un, metav1.UpdateOptions{})
+	return err
+}
+
 // TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
+	err := CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	trueValue := true
@@ -320,7 +367,7 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
+	err := CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -344,9 +391,9 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
+	err := CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
-	err = util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "tmpl", "tmpl-token")
+	err = CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "tmpl", "tmpl-token")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -372,9 +419,9 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
-	 err := util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
+	err := CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "foo", "foo-token")
 	assert.NoError(t, err)
-	 err = util.CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "tmpl", "tmpl-token")
+	err = CreateServiceAccountWithToken(ctx, woc.controller.dynamicInterface, "", "tmpl", "tmpl-token")
 	assert.NoError(t, err)
 
 	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}

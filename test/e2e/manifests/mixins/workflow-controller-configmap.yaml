@@ -9,6 +9,8 @@ data:
     main.:
       - pods.v1.
       - configmaps.v1.
+      - deployments.v1.apps
+      - services.v1.
   executor: |
     imagePullPolicy: IfNotPresent
     resources:

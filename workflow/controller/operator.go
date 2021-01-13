@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -348,12 +347,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	node, err := woc.executeTemplate(ctx, woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
+		// the error are handled in the callee so just log it.
+		msg := "error in entry template execution"
+		woc.log.WithError(err).Error(msg)
+		msg = fmt.Sprintf("%s %s: %+v", woc.wf.Name, msg, err)
 		switch err {
 		case ErrDeadlineExceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err))
-		}
-		if !woc.wf.Status.Phase.Completed() {
-			woc.markWorkflowError(ctx, err)
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", msg)
 		}
 		return
 	}
@@ -854,9 +854,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	wfNodesLock := &sync.RWMutex{}
 	podRunningCondition := wfv1.Condition{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}
 	performAssessment := func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
-		if pod == nil {
-			return
-		}
 		nodeNameForPod := pod.GetAnnotations()[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
 		seenPodLock.Lock()
@@ -883,9 +880,10 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				}
 				woc.updated = true
 			}
-			node := woc.wf.Status.Nodes[pod.GetName()]
-			// TODO - bad way to do resourceName
-			podKey := wfv1.NewResourceKey(clusterName, schema.GroupVersionResource{Group: pod.GroupVersionKind().Group, Version: pod.GetAPIVersion(), Resource: strings.ToLower(pod.GetKind()) + "s"}, pod.GetNamespace(), pod.GetName())
+			node := woc.wf.Status.Nodes[nodeID]
+			gvk := pod.GroupVersionKind()
+			gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+			podKey := wfv1.NewResourceKey(clusterName, gvr, pod.GetNamespace(), pod.GetName())
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.GetLabels()[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
@@ -909,7 +907,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
 	for clusterNamespace, i := range woc.controller.podInformer {
-		clusterName, _ := clusterNamespace.Split()
+		clusterName := clusterNamespace.Split()
 		objs, err := i.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 		if err != nil {
 			return err
@@ -1073,10 +1071,11 @@ func (woc *wfOperationCtx) printPodSpecLog(pod *unstructured.Unstructured) {
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, un *unstructured.Unstructured, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	gvr, _ := meta.UnsafeGuessKindToResource(un.GroupVersionKind())
+	gvk := un.GroupVersionKind()
+	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
 	if gvr.Empty() {
 		node.Phase = wfv1.NodeError
-		node.Message = "group-version-resource not guessable"
+		node.Message = fmt.Sprintf("unable to guest group-version-resource from \"%v\"", gvk)
 	} else if gvr.Resource == "pods" {
 		pod, err := wfutil.PodFromUnstructured(un)
 		if err != nil {
@@ -1099,7 +1098,17 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, un *un
 		case "Error":
 			node.Phase = wfv1.NodeError
 		default:
-			node.Phase = wfv1.NodeSucceeded // otherwise, we assume it is good
+			node.Phase = wfv1.NodeSucceeded // otherwise, we assume it is good, unless...
+			items, _, _ := unstructured.NestedSlice(un.Object, "status", "conditions")
+			for _, item := range items {
+				m, ok := item.(map[string]interface{})
+				if !ok {
+					return nil
+				}
+				if m["status"].(string) == "False" {
+					node.Phase = wfv1.NodeRunning // ...we have false conditions
+				}
+			}
 		}
 		message, _, _ := unstructured.NestedString(un.Object, "status", "message")
 		node.Message = message

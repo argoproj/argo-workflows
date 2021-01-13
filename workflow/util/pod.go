@@ -8,7 +8,10 @@ import (
 
 func PodToUnstructured(pod *corev1.Pod) (*unstructured.Unstructured, error) {
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(pod)
-	return &unstructured.Unstructured{Object: obj}, err
+	un := &unstructured.Unstructured{Object: obj}
+	un.SetKind("Pod")
+	un.SetAPIVersion("v1")
+	return un, err
 }
 
 func PodFromUnstructured(un *unstructured.Unstructured) (*corev1.Pod, error) {

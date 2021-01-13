@@ -89,7 +89,7 @@ type WorkflowController struct {
 	wfInformer            cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	podInformer           map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer
+	podInformer           map[informerKey]cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface // wfv1.WorkflowKey
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // wfv1.ResourceKey -  pods to be deleted or labelled depend on GC strategy
@@ -359,13 +359,13 @@ func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, namespa
 	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, namespace))
 }
 
-func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, namespace string) (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, namespace string, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
-		if x, ok := wfc.podInformer[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
+		if x, ok := wfc.podInformer[joinInformerKey(wfv1.NewClusterNamespaceKey(clusterName, y), gvr)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, namespace))
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured for \"%v\"`, wfv1.NewClusterNamespaceKey(clusterName, namespace), gvr)
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
@@ -934,8 +934,8 @@ func (wfc *WorkflowController) instanceIdRequirement() v1Label.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newPodInformers() map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer {
-	out := make(map[wfv1.ClusterNamespaceKey]cache.SharedIndexInformer)
+func (wfc *WorkflowController) newPodInformers() map[informerKey]cache.SharedIndexInformer {
+	out := make(map[informerKey]cache.SharedIndexInformer)
 	for clusterNamespace, dy := range wfc.dynamicInterfaces {
 		clusterName, namespace := clusterNamespace.Split()
 		incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
@@ -955,7 +955,8 @@ func (wfc *WorkflowController) newPodInformers() map[wfv1.ClusterNamespaceKey]ca
 			if gvr == nil {
 				panic(fmt.Errorf("invalid resource: %s", resource))
 			}
-			log.WithFields(log.Fields{"clusterNamespace": clusterNamespace, "resource": resource}).Info("creating informer")
+			key := joinInformerKey(clusterNamespace, *gvr)
+			log.WithFields(log.Fields{"key": key}).Info("creating informer")
 			i := informerFactory.ForResource(*gvr)
 			err := i.Informer().AddIndexers(cache.Indexers{
 				indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
@@ -985,10 +986,8 @@ func (wfc *WorkflowController) newPodInformers() map[wfv1.ClusterNamespaceKey]ca
 					wfc.enqueueWfFromPodLabel(new)
 				},
 				DeleteFunc: wfc.enqueueWfFromPodLabel,
-			},
-			)
-			out[clusterNamespace] = i.Informer()
-
+			})
+			out[key] = i.Informer()
 		}
 	}
 	return out

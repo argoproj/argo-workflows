@@ -138,7 +138,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	informer, err := woc.controller.resourceInformer(clusterName, namespace)
+	informer, err := woc.controller.resourceInformer(clusterName, namespace, common.PodGVR)
 	if err != nil {
 		return nil, err
 	}

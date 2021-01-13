@@ -154,7 +154,7 @@ func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterNa
 	}
 
 	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
-	k, err := woc.controller.dynamicInterfaceX(clusterName,  namespace)
+	k, err := woc.controller.dynamicInterfaceX(clusterName, namespace)
 	if err != nil {
 		return err
 	}

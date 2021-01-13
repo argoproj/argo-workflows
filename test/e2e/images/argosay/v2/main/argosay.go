@@ -34,10 +34,14 @@ func argosay(args ...string) error {
 		return echo(args[1:])
 	case "exit":
 		return exit(args[1:])
+	case "http":
+		return http(args[1:])
+	case "server":
+		return server()
 	case "sleep":
 		return sleep(args[1:])
 	}
-	return errors.New("usage: argosay [assert_contains file string|cat [file...]|echo [string] [file]|sleep duration|exit [code]]")
+	return errors.New("usage: argosay [assert_contains file string|cat [file...]|echo [string] [file]|http get url|server|sleep duration|exit [code]]")
 }
 
 func assertContains(args []string) error {

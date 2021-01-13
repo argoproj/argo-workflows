@@ -6,15 +6,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func SecretFromUnstructured(un *unstructured.Unstructured) (*apiv1.Secret, error) {
-	serviceAccount := &apiv1.Secret{}
-	return serviceAccount, runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, serviceAccount)
-}
-
-func SecretToUnstructured(serviceAccount *apiv1.Secret ) (*unstructured.Unstructured, error) {
+func SecretToUnstructured(serviceAccount *apiv1.Secret) (*unstructured.Unstructured, error) {
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(serviceAccount)
 	if err != nil {
 		return nil, err
 	}
-	return &unstructured.Unstructured{Object: obj}, nil
+	un := &unstructured.Unstructured{Object: obj}
+	un.SetKind("Secret")
+	un.SetAPIVersion("v1")
+	return un, nil
 }

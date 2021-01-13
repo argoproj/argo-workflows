@@ -21,12 +21,15 @@ func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kube
 	if restConfig != nil {
 		restConfigs[clusterNamespace] = restConfig
 	}
-	dynamicInterface, err := dynamic.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, nil, err
-	}
 	kubernetesInterfaces := map[wfv1.ClusterNamespaceKey]kubernetes.Interface{clusterNamespace: kubeclientset}
-	dynamicInterfaces := map[wfv1.ClusterNamespaceKey]dynamic.Interface{clusterNamespace: dynamicInterface}
+	dynamicInterfaces := map[wfv1.ClusterNamespaceKey]dynamic.Interface{}
+	if restConfig != nil {
+		dynamicInterface, err := dynamic.NewForConfig(restConfig)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		dynamicInterfaces[clusterNamespace] = dynamicInterface
+	}
 	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get(ctx, "rest-config", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 	} else if err != nil {

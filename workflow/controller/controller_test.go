@@ -41,6 +41,8 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
+const testInformerKey = "///v1/pods"
+
 var helloWorldWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -332,7 +334,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformer["."].GetStore().Update(updatedPod)
+			err = woc.controller.podInformer[testInformerKey].GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -354,7 +356,7 @@ func deletePods(ctx context.Context, woc *wfOperationCtx) {
 		if err != nil {
 			panic(err)
 		}
-		err = woc.controller.podInformer["."].GetStore().Delete(&pod)
+		err = woc.controller.podInformer[testInformerKey].GetStore().Delete(&pod)
 		if err != nil {
 			panic(err)
 		}
