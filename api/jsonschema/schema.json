@@ -2092,6 +2092,9 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate",
           "description": "Resource template subtype which can run k8s resources"
         },
+        "resource2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
+        },
         "retryStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy",
           "description": "RetryStrategy describes how to retry a template when it fails"

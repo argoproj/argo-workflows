@@ -200,6 +200,8 @@ Workflow is the definition of a workflow resource
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
@@ -534,6 +536,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -886,6 +890,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
@@ -1194,6 +1200,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -1530,6 +1538,8 @@ PodGC describes how to delete completed pods as they complete
 <br>
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 </details>
 
 ### Fields
@@ -1797,6 +1807,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
@@ -1898,6 +1910,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`priority`|`integer`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
+|`resource2`|[`Item`](#item)|_No description available_|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy describes how to retry a template when it fails|
 |`schedulerName`|`string`|If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.|
 |`script`|[`ScriptTemplate`](#scripttemplate)|Script runs a portion of code against an interpreter|
@@ -2524,6 +2537,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -2949,6 +2964,8 @@ Pod metdata
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
@@ -3073,6 +3090,10 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 |`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic" Must be one of: strategic, merge, json|
 |`setOwnerReference`|`boolean`|SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.|
 |`successCondition`|`string`|SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step|
+
+## Item
+
+Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number
 
 ## ScriptTemplate
 
@@ -3560,6 +3581,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
@@ -3746,6 +3769,8 @@ MetricLabel is a single label for a prometheus metric
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 </details>
 
 ### Fields
@@ -3805,6 +3830,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -3871,39 +3898,6 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 |:----------:|:----------:|---------------|
 |`error`|`boolean`|_No description available_|
 |`failed`|`boolean`|_No description available_|
-
-## Item
-
-Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
-
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
-
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
-
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
-
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
-
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
-
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
-
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
-
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
-
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
-
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
-
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
-</details>
 
 ## Sequence
 
@@ -4238,6 +4232,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -4756,6 +4752,8 @@ A single application container that you want to run within a pod.
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
@@ -4933,6 +4931,8 @@ ContainerPort represents a network port in a single container.
 <br>
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 </details>
 
 ### Fields
@@ -5166,6 +5166,8 @@ A label selector is a label query over a set of resources. The result of matchLa
 <br>
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 </details>
 
 ### Fields
@@ -5412,6 +5414,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -5995,6 +5999,8 @@ HTTPGetAction describes an action based on HTTP Get requests.
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
+
+- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 </details>
 
 ### Fields
