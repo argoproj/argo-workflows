@@ -1693,7 +1693,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				// The statement "(!ok || !prevNodeStatus.Fulfilled())" checks for this behavior and represents the material conditional
 				// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
 				if prevNodeStatus, ok := woc.preExecutionNodePhases[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
-					localScope, realTimeScope := woc.prepareMetricScope(node)
+					localScope, realTimeScope := woc.prepareMetricScope(processedRetryParentNode)
 					woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 				}
 			}
