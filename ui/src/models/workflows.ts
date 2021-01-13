@@ -1,4 +1,5 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
+import {ObjectMeta} from 'argo-ui/src/models/kubernetes';
 
 export const labels = {
     clusterWorkflowTemplate: 'workflows.argoproj.io/cluster-workflow-template',
@@ -879,6 +880,16 @@ export function getColorForNodePhase(p: NodePhase) {
         default:
             return '#6D7F8B';
     }
+}
+
+export interface Resource {
+    apiVersion: string;
+    kind: string;
+    metadata: ObjectMeta;
+    status: {
+        phase: string;
+        message: string;
+    };
 }
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';

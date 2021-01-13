@@ -41,6 +41,10 @@ interface Props {
     onNodeSelect?: (id: Node) => void;
 }
 
+const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => {
+    return Object.assign(Object.assign({}, b), a);
+};
+
 export const GraphPanel = (props: Props) => {
     const storage = new ScopedLocalStorage('graph/' + props.storageScope);
     const [nodeSize, setNodeSize] = React.useState<number>(storage.getItem('nodeSize', props.nodeSize));
@@ -53,8 +57,12 @@ export const GraphPanel = (props: Props) => {
     useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
     useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
     useEffect(() => storage.setItem('fast', fast, false), [fast]);
-    useEffect(() => storage.setItem('nodeGenres', nodeGenres, props.nodeGenres), [nodeGenres]);
-    useEffect(() => storage.setItem('nodeClassNames', nodeClassNames, props.nodeClassNames), [nodeClassNames]);
+    useEffect(() => storage.setItem('nodeGenres', nodeGenres, props.nodeGenres), [nodeGenres, props.nodeGenres]);
+    useEffect(() => storage.setItem('nodeClassNames', nodeClassNames, props.nodeClassNames), [nodeClassNames, props.nodeClassNames]);
+
+    // patch these if they change
+    useEffect(() => setNodeGenres(merge(nodeGenres, props.nodeGenres)), [props.nodeGenres]);
+    useEffect(() => setNodeClassNames(merge(nodeClassNames, props.nodeClassNames)), [props.nodeClassNames]);
 
     const visible = (id: Node) => {
         const label = props.graph.nodes.get(id);
@@ -150,6 +158,7 @@ export const GraphPanel = (props: Props) => {
                                 return (
                                     <g key={`group/${g}`} className='group' transform={`translate(${r.x1 - nodeSize},${r.y1 - nodeSize})`}>
                                         <rect width={r.x2 - r.x1 + 2 * nodeSize} height={r.y2 - r.y1 + 2 * nodeSize} />
+                                        <text className='label'>{g}</text>
                                     </g>
                                 );
                             })}

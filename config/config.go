@@ -109,13 +109,13 @@ type Config struct {
 	Resources Resources `json:"resources,omitempty"`
 }
 
-func (c Config) GetResources(clusterNamespace wfv1.ClusterNamespaceKey) []string {
-	if c.Resources != nil {
-		if resources, ok := c.Resources[clusterNamespace]; ok {
+func (c Resources) Get(clusterNamespace wfv1.ClusterNamespaceKey) []string {
+	if c != nil {
+		if resources, ok := c[clusterNamespace]; ok {
 			return resources
 		}
 		clusterName, _ := clusterNamespace.Split()
-		if resources, ok := c.Resources[wfv1.NewClusterNamespaceKey(clusterName, apiv1.NamespaceAll)]; ok {
+		if resources, ok := c[wfv1.NewClusterNamespaceKey(clusterName, apiv1.NamespaceAll)]; ok {
 			return resources
 		}
 	}

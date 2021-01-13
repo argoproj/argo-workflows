@@ -54,6 +54,11 @@
       stroke: $argo-color-gray-4;
       stroke-dasharray: 4;
     }
+    .label {
+      fill: $argo-color-gray-6;
+      text-anchor: start;
+      dominant-baseline: hanging;
+    }
   }
 
   text {
@@ -103,10 +108,6 @@
     &.Running {
       .bg {
         fill: $argo-running-color;
-      }
-
-      text.icon {
-        animation: spin 1s linear infinite;
       }
     }
 

@@ -126,15 +126,15 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	if err != nil {
 		return nil, err
 	}
-	restConfigs, _, dynamicInterfaces, err := clusters.GetConfigs(ctx, restConfig, kubeclientset, initConfig.ClusterName, namespace, managedNamespace)
+	restConfigs, _, dynamicInterfaces, err := clusters.GetConfigs(ctx, restConfig, kubeclientset, dynamicInterface, initConfig.ClusterName, namespace, managedNamespace)
 	if err != nil {
 		return nil, err
 	}
 
 	log.WithFields(log.Fields{"namespace": namespace, "managedNamespace": managedNamespace}).Info()
 
-	for key := range restConfigs {
-		log.WithField("clusterNamespace", key).Info()
+	for key := range dynamicInterfaces {
+		log.WithField("clusterNamespace", key).Info("created dynamic interface")
 	}
 
 	wfc := WorkflowController{
@@ -495,6 +495,8 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		default:
+			panic("unknown pod clean-up action: " + action)
 		}
 		return nil
 	}()
@@ -820,7 +822,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				clusterName, namespace := clusterNamespace.Split()
 				clusterName = wfv1.ClusterNameOr(clusterName, wfc.Config.ClusterName)
 				namespace = wfv1.NamespaceOr(namespace, wf.Namespace)
-				for _, resource := range wfc.Config.GetResources(clusterNamespace) {
+				for _, resource := range wfc.Config.Resources.Get(clusterNamespace) {
 					gvr, _ := schema.ParseResourceArg(resource)
 					dy, err := wfc.dynamicInterfaceX(clusterName, namespace)
 					if err != nil {
@@ -963,7 +965,7 @@ func (wfc *WorkflowController) newPodInformers() map[informerKey]cache.SharedInd
 		informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dy, podResyncPeriod, namespace, func(o *metav1.ListOptions) {
 			o.LabelSelector = labelSelector
 		})
-		resources := wfc.Config.GetResources(clusterNamespace)
+		resources := wfc.Config.Resources.Get(clusterNamespace)
 		for _, resource := range resources {
 			gvr, _ := schema.ParseResourceArg(resource)
 			if gvr == nil {

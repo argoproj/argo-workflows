@@ -405,7 +405,7 @@ dist/main-context:
 install: dist/kustomize dist/argo dist/main-context dist/argo
 ifeq ($(MULTI_CLUSTER),true)
 	# create other cluster (if not exists)
-	k3d cluster get other || k3d cluster create other --no-lb --wait --update-default-kubeconfig
+	k3d cluster get other || k3d cluster create other -p "8081:80@loadbalancer" --wait --update-default-kubeconfig
 	# configure other cluster
 	kubectl config use-context k3d-other
 	kustomize build --load_restrictor=none test/e2e/manifests/other-cluster | kubectl apply --force -f-

@@ -23,6 +23,7 @@ import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
 import {WorkflowPanel} from '../workflow-panel/workflow-panel';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
+import {WorkflowResourcesGraph} from '../workflow-resources-graph/workflow-resources-graph';
 import {WorkflowSummaryPanel} from '../workflow-summary-panel';
 import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
@@ -227,6 +228,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                             <i className='fa fa-columns' />
                             {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
                         </a>
+                        <a className={classNames({active: tab === 'resources'})} onClick={() => setTab('resources')}>
+                            <i className='fa fa-th' />
+                        </a>
                         <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')}>
                             <i className='fa argo-icon-notification' />
                         </a>
@@ -248,6 +252,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                 {(tab === 'workflow' && (
                                     <WorkflowPanel workflowMetadata={workflow.metadata} workflowStatus={workflow.status} selectedNodeId={nodeId} nodeClicked={setNodeId} />
                                 )) ||
+                                    (tab === 'resources' && <WorkflowResourcesGraph namespace={workflow.metadata.namespace} name={workflow.metadata.name} />) ||
                                     (tab === 'events' && <EventsPanel namespace={workflow.metadata.namespace} kind='Workflow' name={workflow.metadata.name} />) || (
                                         <WorkflowTimeline workflow={workflow} selectedNodeId={nodeId} nodeClicked={node => setNodeId(node.id)} />
                                     )}

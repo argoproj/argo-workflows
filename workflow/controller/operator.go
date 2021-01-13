@@ -45,6 +45,7 @@ import (
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
+	"github.com/argoproj/argo/util/unstructured/status"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -1083,32 +1084,8 @@ func (woc *wfOperationCtx) assessNodeStatus(un *unstructured.Unstructured, node 
 			node = woc.assessPodNodeStatus(pod, node)
 		}
 	} else {
-		phase, _, _ := unstructured.NestedString(un.Object, "status", "phase")
-		switch phase {
-		case "Pending":
-			node.Phase = wfv1.NodePending
-		case "Running":
-			node.Phase = wfv1.NodeRunning
-		case "Succeeded":
-			node.Phase = wfv1.NodeSucceeded
-		case "Failed":
-			node.Phase = wfv1.NodeFailed
-		case "Error":
-			node.Phase = wfv1.NodeError
-		default:
-			node.Phase = wfv1.NodeSucceeded // otherwise, we assume it is good, unless...
-			items, _, _ := unstructured.NestedSlice(un.Object, "status", "conditions")
-			for _, item := range items {
-				m, ok := item.(map[string]interface{})
-				if !ok {
-					return nil
-				}
-				if m["status"].(string) == "False" {
-					node.Phase = wfv1.NodeRunning // ...we have false conditions
-				}
-			}
-		}
-		message, _, _ := unstructured.NestedString(un.Object, "status", "message")
+		phase, message := status.Infer(un)
+		node.Phase = wfv1.NodePhase(phase)
 		node.Message = message
 		if node.Completed() && node.FinishedAt.IsZero() {
 			node.FinishedAt = metav1.Now()

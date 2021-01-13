@@ -15,21 +15,16 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, map[wfv1.ClusterNamespaceKey]dynamic.Interface, error) {
+func GetConfigs(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, dynamicInterface dynamic.Interface, clusterName wfv1.ClusterName, namespace, managedNamespace string) (map[wfv1.ClusterNamespaceKey]*rest.Config, map[wfv1.ClusterNamespaceKey]kubernetes.Interface, map[wfv1.ClusterNamespaceKey]dynamic.Interface, error) {
 	clusterNamespace := wfv1.NewClusterNamespaceKey(clusterName, managedNamespace)
+
 	restConfigs := map[wfv1.ClusterNamespaceKey]*rest.Config{}
 	if restConfig != nil {
 		restConfigs[clusterNamespace] = restConfig
 	}
 	kubernetesInterfaces := map[wfv1.ClusterNamespaceKey]kubernetes.Interface{clusterNamespace: kubeclientset}
-	dynamicInterfaces := map[wfv1.ClusterNamespaceKey]dynamic.Interface{}
-	if restConfig != nil {
-		dynamicInterface, err := dynamic.NewForConfig(restConfig)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		dynamicInterfaces[clusterNamespace] = dynamicInterface
-	}
+	dynamicInterfaces := map[wfv1.ClusterNamespaceKey]dynamic.Interface{clusterNamespace: dynamicInterface}
+
 	secret, err := kubeclientset.CoreV1().Secrets(namespace).Get(ctx, "rest-config", metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 	} else if err != nil {

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: curl-
+  generateName: resource2-
 spec:
   podGC:
     strategy: OnWorkflowCompletion
@@ -20,6 +20,8 @@ spec:
           template: curl
           dependencies:
             - svc
+        - name: sleep
+          template: sleep
   - name: deploy
     resource2:
       apiVersion: apps/v1
@@ -32,6 +34,7 @@ spec:
           metadata:
             labels:
               app: hello
+              workflows.argoproj.io/workflows: "{{workflow.name}}"
           spec:
             containers:
               - name: main
@@ -64,3 +67,10 @@ spec:
         - http
         - get
         - "http://{{workflow.name}}-svc:8080"
+
+  - name: sleep
+    container:
+      image: argoproj/argosay:v2
+      args:
+        - sleep
+        - 3m
