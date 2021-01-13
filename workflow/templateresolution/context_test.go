@@ -1,6 +1,7 @@
 package templateresolution
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,8 +15,9 @@ import (
 )
 
 func createWorkflowTemplate(wfClientset wfclientset.Interface, yamlStr string) error {
+	ctx := context.Background()
 	wftmpl := unmarshalWftmpl(yamlStr)
-	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(wftmpl)
+	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(ctx, wftmpl, metav1.CreateOptions{})
 	if err != nil && apierr.IsAlreadyExists(err) {
 		return nil
 	}

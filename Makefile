@@ -27,6 +27,7 @@ KUBE_NAMESPACE        ?= argo
 
 VERSION               := latest
 DEV_IMAGE             := true
+DOCKER_PUSH           := false
 
 # VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
 # we assume HEAD means you are on a tag
@@ -73,14 +74,11 @@ NAMESPACED            := true
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
 endif
+ifeq ($(PROFILE),stress)
+RUN_MODE              := kubernetes
+endif
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
-ifeq ($(PROFILE),mysql)
-ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
-ifeq ($(PROFILE),postgres)
-ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
 
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \
@@ -131,11 +129,11 @@ define protoc
       -I ./vendor \
       -I ${GOPATH}/src \
       -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
-      -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.2/third_party/googleapis \
+      -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
       --gogofast_out=plugins=grpc:${GOPATH}/src \
       --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
-      $(1) 2>&1 | grep -v 'warning: Import .* is unused'
+      $(1)
 endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -144,6 +142,7 @@ define docker_build
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 	touch $(3)
 endef
 define docker_pull
@@ -321,7 +320,7 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
-		--proto-import ./vendor 2>&1 | grep -v 'warning: Import .* is unused'
+		--proto-import ./vendor
 	touch pkg/apis/workflow/v1alpha1/generated.proto
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
@@ -351,27 +350,26 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
 	./hack/crdgen.sh
 
-/usr/local/bin/kustomize:
+dist/kustomize:
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
-	./dist/install_kustomize.sh 3.8.8
-	sudo mv kustomize /usr/local/bin/
-	kustomize version
+	cd dist && ./install_kustomize.sh 3.8.8
+	dist/kustomize version
 
 # generates several installation files
-manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
+manifests/install.yaml: $(CRDS) dist/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
-	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
-	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-	kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
-	kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-	kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+	dist/kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
+	dist/kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.27.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.33.2
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -390,15 +388,21 @@ endif
 test: server/static/files.go
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
-	mkdir -p dist
-	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
-
 .PHONY: install
-install: dist/$(PROFILE).yaml
-	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
-	kubectl apply -f dist/argo-ns.yaml
-	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
+install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
+	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
+	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
+	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
+	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/image: argoproj/image: $(IMAGE_NAMESPACE)/' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
+	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
+	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
+	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
+	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
+ifeq ($(RUN_MODE),kubernetes)
+	# scale to 2 replicas so we touch upon leader election
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
+endif
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -421,29 +425,25 @@ test-images:
 	$(call docker_pull,argoproj/argosay:v2)
 	$(call docker_pull,python:alpine3.6)
 
-.PHONY: stop
-stop:
-	killall argo workflow-controller kubectl || true
-
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
-start: stop install controller cli executor-image $(GOPATH)/bin/goreman
-	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 ifeq ($(RUN_MODE),kubernetes)
-	$(MAKE) controller-image cli-image
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
+start: controller-image cli-image install executor-image
+else
+start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
 ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=argo-server --timeout 1m
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=workflow-controller --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
 endif
 ifeq ($(PROFILE),prometheus)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod -l app=prometheus --timeout 1m
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
 endif
-	./hack/port-forward.sh
+ifeq ($(PROFILE),stress)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
+endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -451,6 +451,9 @@ endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
+	# allow time for pods to terminate
+	sleep 10s
+	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 endif
@@ -504,7 +507,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
-	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.17.5/generate-groups.sh \
+	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
 		github.com/argoproj/argo/pkg/client github.com/argoproj/argo/pkg/apis \
 		workflow:v1alpha1 \

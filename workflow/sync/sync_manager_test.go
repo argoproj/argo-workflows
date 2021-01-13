@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -319,7 +320,8 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
 		}
 
-		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(items[2], metav1.GetOptions{})
+		ctx := context.Background()
+		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
 
 		if err != nil {
 			return 0, err
@@ -340,8 +342,11 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
@@ -349,7 +354,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf := unmarshalWF(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
-		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
+		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
@@ -362,7 +367,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
 		wf.Status.Synchronization.Semaphore.Holding = invalidSync
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
-		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
+		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 0, len(concurrenyMgr.syncLockMap))
@@ -457,8 +462,11 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
@@ -491,10 +499,10 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Increase the semaphore Size
-		cm, err := kube.CoreV1().ConfigMaps("default").Get("my-config", metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps("default").Get(ctx, "my-config", metav1.GetOptions{})
 		assert.NoError(t, err)
 		cm.Data["workflow"] = "3"
-		_, err = kube.CoreV1().ConfigMaps("default").Update(cm)
+		_, err = kube.CoreV1().ConfigMaps("default").Update(ctx, cm, metav1.UpdateOptions{})
 		assert.NoError(t, err)
 
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
@@ -523,8 +531,11 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		//var nextKey string
@@ -580,8 +591,11 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "3"
 	assert.NoError(err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TriggerWfsWithAvailableLocks", func(t *testing.T) {
 		triggerCount := 0
@@ -658,7 +672,5 @@ func TestMutexWfLevel(t *testing.T) {
 		assert.Len(t, mutex.mutex.pending.items, 1)
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Len(t, mutex.mutex.pending.items, 0)
-
 	})
-
 }
