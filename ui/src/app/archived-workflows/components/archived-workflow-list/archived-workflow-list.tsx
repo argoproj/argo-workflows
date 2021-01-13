@@ -60,7 +60,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             <Page
                 title='Archived Workflows'
                 toolbar={{
-                    breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}]
+                    breadcrumbs: [
+                        {title: 'Archived Workflows', path: uiUrl('archived-workflows')},
+                        {title: this.state.namespace, path: uiUrl('archived-workflows/' + this.state.namespace)}
+                    ]
                 }}>
                 <div className='row'>
                     <div className='columns small-12 xlarge-2'>

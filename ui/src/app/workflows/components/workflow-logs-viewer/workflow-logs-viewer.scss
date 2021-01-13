@@ -2,11 +2,12 @@
   .select {
     width: auto;
   }
-  .log-box {
-    white-space: pre;
-    font-family: monospace;
-    overflow: scroll;
-    min-height: 500px;
-    max-height: 800px;
-  }
+}
+
+.log-box {
+  min-height: 500px;
+  max-height: 800px;
+  padding: 10px;
+  margin: 10px;
+  background-color: white;
 }

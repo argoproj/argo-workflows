@@ -28,6 +28,7 @@ export class WorkflowsService {
             'items.metadata.uid',
             'items.metadata.name',
             'items.metadata.namespace',
+            'items.metadata.creationTimestamp',
             'items.metadata.labels',
             'items.status.phase',
             'items.status.finishedAt',
@@ -38,11 +39,13 @@ export class WorkflowsService {
         ]
     ) {
         const params = this.queryParams({phases, labels});
-        if (pagination.offset) {
-            params.push(`listOptions.continue=${pagination.offset}`);
-        }
-        if (pagination.limit) {
-            params.push(`listOptions.limit=${pagination.limit}`);
+        if (pagination) {
+            if (pagination.offset) {
+                params.push(`listOptions.continue=${pagination.offset}`);
+            }
+            if (pagination.limit) {
+                params.push(`listOptions.limit=${pagination.limit}`);
+            }
         }
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
@@ -60,11 +63,11 @@ export class WorkflowsService {
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
-        return requests.loadEventSource(url).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
+        return requests.loadEventSource(url).map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>));
     }
 
     public watchEvents(namespace: string, fieldSelector: string): Observable<Event> {
-        return requests.loadEventSource(`api/v1/stream/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`).map(data => JSON.parse(data).result as Event);
+        return requests.loadEventSource(`api/v1/stream/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`).map(data => data && (JSON.parse(data).result as Event));
     }
 
     public watchFields(filter: {
@@ -79,6 +82,7 @@ export class WorkflowsService {
             'result.object.metadata.name',
             'result.object.metadata.namespace',
             'result.object.metadata.resourceVersion',
+            'result.object.metadata.creationTimestamp',
             'result.object.metadata.uid',
             'result.object.status.finishedAt',
             'result.object.status.phase',
@@ -91,7 +95,7 @@ export class WorkflowsService {
         ];
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
-        return requests.loadEventSource(url).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
+        return requests.loadEventSource(url).map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>));
     }
 
     public retry(name: string, namespace: string) {
@@ -135,6 +139,7 @@ export class WorkflowsService {
         const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&logOptions.follow=true${nodeId ? `&podName=${nodeId}` : ''}`;
         return requests
             .loadEventSource(podLogsURL)
+            .filter(line => !!line)
             .map(line => JSON.parse(line).result as LogEntry)
             .filter(e => isString(e.content))
             .catch(() => {

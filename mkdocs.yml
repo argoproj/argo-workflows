@@ -50,6 +50,7 @@ nav:
           - workflow-of-workflows.md
           - memoization.md
           - tolerating-pod-deletion.md
+          - widgets.md
       # all other topics, including API access
       - Advanced:
           - workflow-requirements.md
