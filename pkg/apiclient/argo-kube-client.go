@@ -6,6 +6,7 @@ import (
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -56,7 +57,17 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 	if err != nil {
 		return nil, nil, err
 	}
-	clients := &types.Clients{Workflow: wfClient, EventSource: eventSourceInterface, Sensor: sensorInterface, Kubernetes: kubeClient}
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	clients := &types.Clients{
+		Workflow:    wfClient,
+		EventSource: eventSourceInterface,
+		Sensor:      sensorInterface,
+		Kubernetes:  kubeClient,
+		Dynamic:     dynamicClient,
+	}
 	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused")
 	if err != nil {
 		return nil, nil, err
@@ -73,7 +84,7 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer("", a.namespace, "", a.instanceIDService, argoKubeOffloadNodeStatusRepo)}}
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer("", a.namespace, "", nil, a.instanceIDService, argoKubeOffloadNodeStatusRepo)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {

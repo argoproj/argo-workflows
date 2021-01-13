@@ -52,6 +52,8 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 		return nil, fmt.Errorf("unable to guess group version resource from \"%v\"", gvk)
 	}
 
+	node.Resource = fmt.Sprintf("%s.%s.%s", gvr.Resource, gvr.Version, gvr.Group)
+
 	informer, err := woc.controller.resourceInformer(clusterName, namespace, gvr)
 	if err != nil {
 		return nil, err
@@ -71,7 +73,7 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 		return node, err
 	}
 
-	woc.log.WithFields(log.Fields{"gvr": gvr, "name": un.GetName()}).Info("creating resource2")
+	woc.log.WithFields(log.Fields{"resource": node.Resource, "name": un.GetName()}).Info("creating resource2")
 
 	existing, err := dy.Resource(gvr).Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
 	switch {

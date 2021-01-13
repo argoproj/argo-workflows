@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
+	pkgerrors "github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -341,13 +341,22 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	return nil
 }
 
+// TODO - own file
+type clusterNamespaceNotConfiguredErr struct {
+	clusterNamespace wfv1.ClusterNamespaceKey
+}
+
+func (e clusterNamespaceNotConfiguredErr) Error() string {
+	return fmt.Sprintf(`cluster-namespace "%v" not configured`, e.clusterNamespace)
+}
+
 func (wfc *WorkflowController) dynamicInterfaceX(clusterName wfv1.ClusterName, namespace string) (dynamic.Interface, error) {
 	for _, y := range []string{namespace, apiv1.NamespaceAll} {
 		if x, ok := wfc.dynamicInterfaces[wfv1.NewClusterNamespaceKey(clusterName, y)]; ok {
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, namespace))
+	return nil, clusterNamespaceNotConfiguredErr{wfv1.NewClusterNamespaceKey(clusterName, namespace)}
 }
 
 func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, namespace string) (*rest.Config, error) {
@@ -356,7 +365,7 @@ func (wfc *WorkflowController) restConfigX(clusterName wfv1.ClusterName, namespa
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured`, wfv1.NewClusterNamespaceKey(clusterName, namespace))
+	return nil, clusterNamespaceNotConfiguredErr{wfv1.NewClusterNamespaceKey(clusterName, namespace)}
 }
 
 func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, namespace string, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, error) {
@@ -417,11 +426,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	pkgerrors.CheckError(err)
 	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	pkgerrors.CheckError(err)
 	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
-	errors.CheckError(err)
+	pkgerrors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
@@ -815,6 +824,11 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					gvr, _ := schema.ParseResourceArg(resource)
 					dy, err := wfc.dynamicInterfaceX(clusterName, namespace)
 					if err != nil {
+						if _, ok := err.(clusterNamespaceNotConfiguredErr); ok {
+							log.WithError(err).Warn("cannot clean-up resource - this is likely to be a user having miss-configured their workflow")
+							continue
+
+						}
 						return fmt.Errorf("failed to get dynamic interface: %w", err)
 					}
 					err = dy.Resource(*gvr).Namespace(namespace).DeleteCollection(
@@ -962,7 +976,7 @@ func (wfc *WorkflowController) newPodInformers() map[informerKey]cache.SharedInd
 				indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 				indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 			})
-			errors.CheckError(err)
+			pkgerrors.CheckError(err)
 			i.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 				AddFunc: wfc.enqueueWfFromPodLabel,
 				UpdateFunc: func(old, new interface{}) {
@@ -1085,7 +1099,7 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
 		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
-		errors.CheckError(err)
+		pkgerrors.CheckError(err)
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(keys))
 	}
 	for _, x := range []wfv1.Condition{
@@ -1093,7 +1107,7 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
 	} {
 		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.ConditionsIndex, indexes.ConditionValue(x))
-		errors.CheckError(err)
+		pkgerrors.CheckError(err)
 		metrics.WorkflowConditionMetric.WithLabelValues(string(x.Type), string(x.Status)).Set(float64(len(keys)))
 	}
 }

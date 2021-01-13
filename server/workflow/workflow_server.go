@@ -12,6 +12,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -36,6 +37,7 @@ type workflowServer struct {
 	clusterName           wfv1.ClusterName
 	namespace             string
 	managedNamespace      string
+	resources             config.Resources
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
@@ -44,8 +46,16 @@ type workflowServer struct {
 const latestAlias = "@latest"
 
 // NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(clusterName wfv1.ClusterName, namespace, managedNamespace string, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{clusterName, namespace, managedNamespace, instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
+func NewWorkflowServer(clusterName wfv1.ClusterName, namespace, managedNamespace string, resources config.Resources, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
+	return &workflowServer{
+		clusterName,
+		namespace,
+		managedNamespace,
+		resources,
+		instanceIDService,
+		offloadNodeStatusRepo,
+		hydrator.New(offloadNodeStatusRepo),
+	}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {
@@ -235,6 +245,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			}
 		}
 	}
+}
+
+func (s *workflowServer) WatchWorkflowsResources(req *workflowpkg.WatchWorkflowsResourcesRequest, ws workflowpkg.WorkflowService_WatchWorkflowsResourcesServer) error {
+	panic("TODO")
 }
 
 func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws workflowpkg.WorkflowService_WatchEventsServer) error {

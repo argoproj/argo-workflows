@@ -15,6 +15,7 @@ import (
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -62,6 +63,7 @@ See %s`, help.ArgoSever),
 				EventSource: eventsource.NewForConfigOrDie(config),
 				Sensor:      sensor.NewForConfigOrDie(config),
 				Kubernetes:  kubernetes.NewForConfigOrDie(config),
+				Dynamic:     dynamic.NewForConfigOrDie(config),
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -38,6 +39,7 @@ const (
 	SensorKey      ContextKey = "sensor.Interface"
 	EventSourceKey ContextKey = "eventsource.Interface"
 	KubeKey        ContextKey = "kubernetes.Interface"
+	DynamicKey     ContextKey = "dynamic.Interface"
 	ClaimsKey      ContextKey = "types.Claims"
 )
 
@@ -100,6 +102,7 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	ctx = context.WithValue(ctx, EventSourceKey, clients.EventSource)
 	ctx = context.WithValue(ctx, SensorKey, clients.Sensor)
 	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
+	ctx = context.WithValue(ctx, DynamicKey, clients.Dynamic)
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 	return ctx, nil
 }
@@ -118,6 +121,10 @@ func GetSensorClient(ctx context.Context) sensor.Interface {
 
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
+}
+
+func GetDynamicClient(ctx context.Context) dynamic.Interface {
+	return ctx.Value(DynamicKey).(dynamic.Interface)
 }
 
 func GetClaims(ctx context.Context) *types.Claims {
@@ -271,5 +278,15 @@ func DefaultClientForAuthorization(authorization string) (*rest.Config, *servert
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create kubernetes client: %w", err)
 	}
-	return restConfig, &servertypes.Clients{Workflow: wfClient, EventSource: eventSourceClient, Sensor: sensorClient, Kubernetes: kubeClient}, nil
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
+	}
+	return restConfig, &servertypes.Clients{
+		Workflow:    wfClient,
+		EventSource: eventSourceClient,
+		Sensor:      sensorClient,
+		Kubernetes:  kubeClient,
+		Dynamic:     dynamicClient,
+	}, nil
 }

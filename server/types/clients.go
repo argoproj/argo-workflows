@@ -1,6 +1,7 @@
 package types
 
 import (
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -14,4 +15,5 @@ type Clients struct {
 	Sensor      sensor.Interface
 	EventSource eventsource.Interface
 	Kubernetes  kubernetes.Interface
+	Dynamic     dynamic.Interface
 }

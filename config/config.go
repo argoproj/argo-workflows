@@ -12,6 +12,8 @@ import (
 
 var EmptyConfigFunc = func() interface{} { return &Config{} }
 
+type Resources map[wfv1.ClusterNamespaceKey][]string
+
 // Config contain the configuration settings for the workflow controller
 type Config struct {
 
@@ -104,7 +106,7 @@ type Config struct {
 	// * main.: pods.v1.
 	// * other.argo: workflows.v1alpha1.argoproj.io
 	// See schema.ParseResourceArg
-	Resources map[wfv1.ClusterNamespaceKey][]string `json:"resources,omitempty"`
+	Resources Resources `json:"resources,omitempty"`
 }
 
 func (c Config) GetResources(clusterNamespace wfv1.ClusterNamespaceKey) []string {

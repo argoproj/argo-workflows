@@ -840,11 +840,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	return node, true, nil
 }
 
-type seenPod struct {
-	nodeName    string
-	clusterName wfv1.ClusterName
-	namespace   string
-}
+type seenPod struct{ nodeName string }
 
 // podReconciliation is the process by which a workflow will examine all its related
 // pods and update the node state before continuing the evaluation of the workflow.
@@ -858,7 +854,9 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		nodeNameForPod := pod.GetAnnotations()[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
 		nodeName, _, _ := unstructured.NestedString(pod.Object, "spec", "nodeName")
-		seenPods[nodeID] = seenPod{nodeName, clusterName, pod.GetNamespace()}
+		gvk := pod.GroupVersionKind()
+		gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+		seenPods[nodeID] = seenPod{nodeName}
 
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
@@ -878,8 +876,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[nodeID]
-			gvk := pod.GroupVersionKind()
-			gvr, _ := meta.UnsafeGuessKindToResource(gvk)
 			podKey := wfv1.NewResourceKey(clusterName, pod.GetNamespace(), pod.GetName(), gvr)
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
@@ -971,8 +967,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			// it is safe to extract the k8s-node information given this knowledge.
 			if node.HostNodeName != seenPod.nodeName {
 				node.HostNodeName = seenPod.nodeName
-				node.ClusterName = wfv1.ClusterNameIfNot(seenPod.clusterName, woc.clusterName())
-				node.Namespace = wfv1.NamespaceIfNot(seenPod.namespace, woc.wf.Namespace)
 				woc.wf.Status.Nodes[nodeID] = node
 				woc.updated = true
 			}
@@ -2024,6 +2018,9 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 	if len(messages) > 0 {
 		node.Message = messages[0]
 	}
+
+	node.ClusterName = wfv1.ClusterNameIfNot(executeTmpl.ClusterName, woc.clusterName())
+	node.Namespace = wfv1.NamespaceIfNot(executeTmpl.Namespace, woc.wf.Namespace)
 
 	// Update the node
 	woc.wf.Status.Nodes[node.ID] = *node

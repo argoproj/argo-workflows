@@ -43,6 +43,10 @@ func (c *argoKubeWorkflowServiceClient) WatchWorkflows(ctx context.Context, req 
 	return intermediary, nil
 }
 
+func (c *argoKubeWorkflowServiceClient) WatchWorkflowsResources(ctx context.Context, req *workflowpkg.WatchWorkflowsResourcesRequest, opts ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsResourcesClient, error) {
+	panic("implement me")
+}
+
 func (c *argoKubeWorkflowServiceClient) WatchEvents(context.Context, *workflowpkg.WatchEventsRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
 	return nil, errors.New("not implemented")
 }

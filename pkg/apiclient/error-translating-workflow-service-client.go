@@ -36,6 +36,11 @@ func (c *errorTranslatingWorkflowServiceClient) WatchWorkflows(ctx context.Conte
 	return workflows, grpcutil.TranslateError(err)
 }
 
+func (c *errorTranslatingWorkflowServiceClient) WatchWorkflowsResources(ctx context.Context, req *workflowpkg.WatchWorkflowsResourcesRequest, opts ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsResourcesClient, error) {
+	workflows, err := c.delegate.WatchWorkflowsResources(ctx, req)
+	return workflows, grpcutil.TranslateError(err)
+}
+
 func (c *errorTranslatingWorkflowServiceClient) WatchEvents(ctx context.Context, req *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
 	events, err := c.delegate.WatchEvents(ctx, req)
 	return events, grpcutil.TranslateError(err)

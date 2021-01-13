@@ -21,7 +21,7 @@ func (s *Resource2Suite) TestResource2() {
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: my-ns-
+  generateName: resource2-
   labels:
     argo-e2e: true
 spec:
@@ -36,8 +36,9 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, "configmaps.v1.", status.Nodes[m.Name].Resource)
 		})
 }
 

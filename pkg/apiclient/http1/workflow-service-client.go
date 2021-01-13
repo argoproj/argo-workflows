@@ -34,6 +34,14 @@ func (h WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflowp
 	return watchWorkflowsClient{serverSentEventsClient{ctx, reader}}, nil
 }
 
+func (h Facade) WatchWorkflowsResources(ctx context.Context, in *workflowpkg.WatchWorkflowsResourcesRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsResourcesClient, error) {
+	reader, err := h.EventStreamReader(in, "/api/v1/stream/workflow-resources/{namespace}")
+	if err != nil {
+		return nil, err
+	}
+	return watchWorkflowsResourcesClient{serverSentEventsClient{ctx, reader}}, nil
+}
+
 func (h WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
 	reader, err := h.EventStreamReader(in, "/api/v1/stream/events/{namespace}")
 	if err != nil {

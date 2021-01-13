@@ -1564,7 +1564,7 @@ type NodeStatus struct {
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,28,opt,name=namespace"`
 
 	// The type of this resource in the format `resource.group.version`.
-	// When empty, it can be infered as `pods.v1.` for a pod node.
+	// When empty, and this is a pod node, it should be infered to be `pods.v1.`.
 	Resource string `json:"resource,omitempty" protobuf:"bytes,29,opt,name=resource"`
 
 	// Time at which this node started

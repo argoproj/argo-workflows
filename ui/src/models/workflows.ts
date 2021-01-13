@@ -537,6 +537,7 @@ export interface NodeStatus {
      */
     templateScope?: string;
 
+    resource?: string;
     clusterName?: string;
     namespace?: string;
 
