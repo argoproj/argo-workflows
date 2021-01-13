@@ -39,9 +39,7 @@ export const EventSourceLogsViewer = ({
                     Object.entries(e)
                         .map(([key, value]) => key + '=' + value)
                         .join(', ') + '\n'
-            )
-            .publishReplay()
-            .refCount();
+            );
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
@@ -87,7 +85,7 @@ export const EventSourceLogsViewer = ({
                             ))}
                     </div>
                 </div>
-                <div className='columns small-9 medium-10' style={{height: 600}}>
+                <div className='columns small-9 medium-10'>
                     {!logLoaded ? (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...

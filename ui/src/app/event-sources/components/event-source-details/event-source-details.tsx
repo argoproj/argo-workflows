@@ -110,7 +110,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                         },
                         {
                             title: 'Logs',
-                            iconClassName: 'fa fa-file-alt',
+                            iconClassName: 'fa fa-bars',
                             disabled: false,
                             action: () => {
                                 setSelectedNode(`${namespace}/event-sources/${eventSource.metadata.name}`);
@@ -131,7 +131,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                 {!!selectedNode && (
                     <div>
                         <h4>
-                            EventSource/{selected.name}
+                            {selected.name}
                             {selected.key ? '/' + selected.key : ''}
                         </h4>
                         <Tabs
