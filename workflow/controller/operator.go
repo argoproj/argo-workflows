@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -2003,8 +2004,8 @@ func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
 // initializeExecutableNode initializes a node and stores the template.
-func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase)
+func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, opts ...interface{}) *wfv1.NodeStatus {
+	node := woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase, opts...)
 
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
@@ -2013,10 +2014,6 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 
 	if nodeType == wfv1.NodeTypeSuspend {
 		node = addRawOutputFields(node, executeTmpl)
-	}
-
-	if len(messages) > 0 {
-		node.Message = messages[0]
 	}
 
 	node.ClusterName = wfv1.ClusterNameIfNot(executeTmpl.ClusterName, woc.clusterName())
@@ -2038,28 +2035,36 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 }
 
 // Creates a node status that is or will be chaced
-func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
 		err := fmt.Errorf("cannot initialize a cached node from a non-memoized template")
 		woc.log.WithFields(log.Fields{"namespace": woc.wf.Namespace, "wfName": woc.wf.Name}).WithError(err)
 		panic(err)
 	}
 	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
-	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, messages...)
+	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending)
 	node.MemoizationStatus = memStat
 	return node
 }
 
 // Creates a node status that has been cached, completely initialized, and marked as finished
-func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeCacheNode(nodeName, resolvedTmpl, templateScope, orgTmpl, boundaryID, memStat, messages...)
+func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus) *wfv1.NodeStatus {
+	node := woc.initializeCacheNode(nodeName, resolvedTmpl, templateScope, orgTmpl, boundaryID, memStat)
 	node.Phase = wfv1.NodeSucceeded
 	node.Outputs = outputs
 	node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 	return node
 }
 
-func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
+type nodeWith func(*wfv1.NodeStatus)
+
+func nodeWithGVR(gvr schema.GroupVersionResource) nodeWith {
+	return func(node *wfv1.NodeStatus) {
+		node.Resource = fmt.Sprintf("%s.%s.%s", gvr.Resource, gvr.Version, gvr.Group)
+	}
+}
+
+func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, opts ...interface{}) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	nodeID := woc.wf.NodeID(nodeName)
@@ -2093,13 +2098,18 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = node.StartedAt
 	}
-	var message string
-	if len(messages) > 0 {
-		message = fmt.Sprintf(" (message: %s)", messages[0])
-		node.Message = messages[0]
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case string:
+			node.Message = v
+		case nodeWith:
+			v(&node)
+		default:
+			panic("unknown option")
+		}
 	}
 	woc.wf.Status.Nodes[nodeID] = node
-	woc.log.Infof("%s node %v initialized %s%s", node.Type, node.ID, node.Phase, message)
+	woc.log.Infof("%s node %v initialized %s%s", node.Type, node.ID, node.Phase, node.Message)
 	woc.updated = true
 	return &node
 }

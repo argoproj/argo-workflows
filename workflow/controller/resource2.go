@@ -19,13 +19,9 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 
 	node := woc.wf.GetNodeByName(nodeName)
 
-	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if !node.Pending() {
+	if node != nil && !node.Pending() {
 		return node, nil
 	}
-
-	tmpl = tmpl.DeepCopy()
 
 	un := &unstructured.Unstructured{}
 	data, err := yaml.Marshal(tmpl.Resource2)
@@ -37,6 +33,23 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 		return nil, err
 	}
 
+	gvk := un.GroupVersionKind()
+	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+	if gvr.Empty() {
+		return nil, fmt.Errorf("unable to guess group version resource from \"%v\"", gvk)
+	}
+
+	node = woc.initializeExecutableNode(
+		nodeName,
+		wfv1.NodeTypePod,
+		templateScope,
+		tmpl,
+		orgTmpl,
+		opts.boundaryID,
+		wfv1.NodePending,
+		nodeWithGVR(gvr),
+	)
+
 	if un.GetName() == "" && un.GetGenerateName() == "" {
 		un.SetName(node.ID)
 	}
@@ -45,14 +58,6 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 	namespace := wfv1.NamespaceOr(tmpl.Namespace, woc.wf.Namespace)
 
 	woc.addCoreMetadata(un, nodeName, clusterName, namespace)
-
-	gvk := un.GroupVersionKind()
-	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
-	if gvr.Empty() {
-		return nil, fmt.Errorf("unable to guess group version resource from \"%v\"", gvk)
-	}
-
-	node.Resource = fmt.Sprintf("%s.%s.%s", gvr.Resource, gvr.Version, gvr.Group)
 
 	informer, err := woc.controller.resourceInformer(clusterName, namespace, gvr)
 	if err != nil {
