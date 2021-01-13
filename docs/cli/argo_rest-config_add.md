@@ -7,7 +7,7 @@
 
 
 ```
-argo rest-config add CLUSTER_NAME.GROUP.VERSION.RESOURCE.NAMESPACE CONTEXT_NAME [flags]
+argo rest-config add CLUSTER_NAME.NAMESPACE CONTEXT_NAME [flags]
 ```
 
 ### Examples
