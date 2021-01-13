@@ -7746,6 +7746,8 @@ spec:
                     type: string
                   progress:
                     type: string
+                  resource:
+                    type: string
                   resourcesDuration:
                     additionalProperties:
                       format: int64

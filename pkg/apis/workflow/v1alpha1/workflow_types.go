@@ -1563,6 +1563,10 @@ type NodeStatus struct {
 	// Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the workflow.
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,28,opt,name=namespace"`
 
+	// The type of this resource in the format `resource.group.version`.
+	// When empty, it can be infered as `pods.v1.` for a pod node.
+	Resource string `json:"resource,omitempty" protobuf:"bytes,29,opt,name=resource"`
+
 	// Time at which this node started
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,10,opt,name=startedAt"`
 
@@ -1748,6 +1752,13 @@ func (n NodeStatus) GetDuration() time.Duration {
 		return 0
 	}
 	return n.FinishedAt.Sub(n.StartedAt.Time)
+}
+
+func (n NodeStatus) GetResource() string {
+	if n.Type == NodeTypePod && n.Resource == "" {
+		return "pods.v1."
+	}
+	return n.Resource
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
