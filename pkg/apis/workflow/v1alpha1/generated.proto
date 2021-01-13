@@ -652,7 +652,7 @@ message NodeStatus {
   optional string namespace = 28;
 
   // The type of this resource in the format `resource.group.version`.
-  // When empty, it can be infered as `pods.v1.` for a pod node.
+  // When empty, and this is a pod node, it should be infered to be `pods.v1.`.
   optional string resource = 29;
 
   // Time at which this node started
