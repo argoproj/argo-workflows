@@ -80,7 +80,7 @@ func WorkflowLogs(ctx context.Context, thisClusterName wfv1.ClusterName, wfClien
 
 	// this func start a stream if one is not already running
 	logPod := func(clusterName wfv1.ClusterName, namespace, podName string) {
-		podKey := wfv1.NewResourceKey(clusterName, common.PodGVR, namespace, podName)
+		podKey := wfv1.NewResourceKey(clusterName, namespace, podName, common.PodGVR)
 		logCtx := log.WithField("podKey", podKey)
 		_, alreadyLogging := pods.LoadOrStore(podKey, true)
 		logCtx.WithField("alreadyLogging", alreadyLogging).Debug("logging pod")

@@ -22,7 +22,7 @@ const (
 )
 
 func newPodCleanupKey(clusterName wfv1.ClusterName, namespace, name string, gvr schema.GroupVersionResource, action podCleanupAction) podCleanupKey {
-	return fmt.Sprintf("%s/%s/%s.%s.%s/%s/%v", clusterName, namespace, gvr.Resource, gvr.Version, gvr.Group, name, action)
+	return fmt.Sprintf("%s/%s/%s/%s.%s.%s/%v", clusterName, namespace, name, gvr.Resource, gvr.Version, gvr.Group, action)
 }
 
 func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, namespace, name string, gvr schema.GroupVersionResource, action podCleanupAction) {
@@ -30,9 +30,9 @@ func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, namespac
 	if len(parts) != 5 {
 		return "", "", "", schema.GroupVersionResource{}, ""
 	}
-	gvr1, _ := schema.ParseResourceArg(parts[3])
-	if gvr.Empty() {
-		return "", "", "", schema.GroupVersionResource{}, ""
+	x, _ := schema.ParseResourceArg(parts[3])
+	if x.Empty() {
+		return "err: gvr empty", "", "", schema.GroupVersionResource{}, ""
 	}
-	return wfv1.ClusterName(parts[0]), parts[4], parts[5], *gvr1, parts[6]
+	return wfv1.ClusterName(parts[0]), parts[1], parts[2], *x, parts[4]
 }

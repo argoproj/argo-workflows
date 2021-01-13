@@ -880,7 +880,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			node := woc.wf.Status.Nodes[nodeID]
 			gvk := pod.GroupVersionKind()
 			gvr, _ := meta.UnsafeGuessKindToResource(gvk)
-			podKey := wfv1.NewResourceKey(clusterName, gvr, pod.GetNamespace(), pod.GetName())
+			podKey := wfv1.NewResourceKey(clusterName, pod.GetNamespace(), pod.GetName(), gvr)
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 					return
@@ -920,7 +920,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					defer wg.Done()
 					err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
 					if err != nil {
-						woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
+						woc.log.WithError(err).Errorf("Failed to apply execution control to pod %s", pod.GetName())
 					}
 					<-parallelPodNum
 				}(clusterName, un)

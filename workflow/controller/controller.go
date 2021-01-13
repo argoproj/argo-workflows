@@ -443,7 +443,7 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) queuePodForCleanup(key wfv1.ResourceKey, action podCleanupAction) {
-	clusterName, gvr, namespace, podName := key.Split()
+	clusterName, namespace, podName, gvr := key.Split()
 	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(clusterName, namespace, podName, gvr, action))
 }
 
@@ -459,7 +459,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		return false
 	}
 	defer wfc.podCleanupQueue.Done(key)
-	clusterName, namespace, podName, gvr, action := parsePodCleanupKey(key.(podCleanupKey))
+	clusterName, namespace, name, gvr, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key})
 	logCtx.Info("cleaning up resource")
 	err := func() error {
@@ -472,7 +472,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		case labelPodCompleted:
 			_, err := pods.Patch(
 				ctx,
-				podName,
+				name,
 				types.MergePatchType,
 				[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`),
 				metav1.PatchOptions{},
@@ -482,7 +482,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 		case deletePod:
 			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(ctx, podName, metav1.DeleteOptions{PropagationPolicy: &propagation})
+			err := pods.Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: &propagation})
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}

@@ -126,7 +126,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID stri
 			continue
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
-		clusterName := tmpl.ClusterName
+		clusterName := wfv1.ClusterNameOr(tmpl.ClusterName, woc.clusterName())
 		namespace := wfv1.NamespaceOr(tmpl.Namespace, woc.wf.Namespace)
 		err := woc.updateExecutionControl(ctx, clusterName, namespace, childNode.ID, execCtl, common.WaitContainerName)
 		if err != nil {
@@ -151,7 +151,13 @@ func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterNa
 	if err != nil {
 		return err
 	}
-	_, err = k.Resource(common.PodGVR).Namespace(namespace).Patch(ctx, podName, types.MergePatchType, []byte(fmt.Sprintf(`{"metadata": {"annotations": {"%s": "%s"}}}`, common.AnnotationKeyExecutionControl, string(execCtlBytes))), metav1.PatchOptions{})
+	un := &unstructured.Unstructured{}
+	un.SetAnnotations(map[string]string{common.AnnotationKeyExecutionControl: string(execCtlBytes)})
+	data, err := json.Marshal(un)
+	if err != nil {
+		return err
+	}
+	_, err = k.Resource(common.PodGVR).Namespace(namespace).Patch(ctx, podName, types.MergePatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}
@@ -167,7 +173,7 @@ func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, clusterNa
 		return err
 	}
 	exec, err := common.ExecPodContainer(
-		restConfig, woc.wf.ObjectMeta.Namespace, podName,
+		restConfig, namespace, podName,
 		containerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
 	)
 	if err != nil {
