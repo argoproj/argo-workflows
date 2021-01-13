@@ -1148,7 +1148,7 @@ func TestAssessNodeStatus(t *testing.T) {
 			woc := newWorkflowOperationCtx(wf, controller)
 			un, err := util.PodToUnstructured(tt.pod)
 			assert.NoError(t, err)
-			got := woc.assessNodeStatus("", un, tt.node)
+			got := woc.assessNodeStatus(un, tt.node)
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
@@ -4174,7 +4174,7 @@ func TestValidReferenceMode(t *testing.T) {
 	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 }
 
 var workflowStatusMetric = `

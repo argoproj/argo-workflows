@@ -50,6 +50,8 @@ jobs:
           # only use alwaysOffloadNodeStatus=true for test-e2e
           - test: smoke
             alwaysOffloadNodeStatus: "true"
+          - test: test-e2e-mc
+            alwaysOffloadNodeStatus: "true"
           - test: test-cli
             alwaysOffloadNodeStatus: "true"
           - test: test-e2e-cron

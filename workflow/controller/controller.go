@@ -365,7 +365,7 @@ func (wfc *WorkflowController) resourceInformer(clusterName wfv1.ClusterName, na
 			return x, nil
 		}
 	}
-	return nil, fmt.Errorf(`cluster-namespace "%v" not configured for \"%v\"`, wfv1.NewClusterNamespaceKey(clusterName, namespace), gvr)
+	return nil, fmt.Errorf(`cluster-namespace "%v" not configured for "%s.%s.%s"`, wfv1.NewClusterNamespaceKey(clusterName, namespace), gvr.Resource, gvr.Version, gvr.Group)
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
@@ -444,7 +444,7 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 
 func (wfc *WorkflowController) queuePodForCleanup(key wfv1.ResourceKey, action podCleanupAction) {
 	clusterName, gvr, namespace, podName := key.Split()
-	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(clusterName, gvr, namespace, podName, action))
+	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(clusterName, namespace, podName, gvr, action))
 }
 
 func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
@@ -459,7 +459,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		return false
 	}
 	defer wfc.podCleanupQueue.Done(key)
-	clusterName, gvr, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
+	clusterName, namespace, podName, gvr, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key})
 	logCtx.Info("cleaning up resource")
 	err := func() error {

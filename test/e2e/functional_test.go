@@ -564,6 +564,9 @@ func (s *FunctionalSuite) TestGlobalScope() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
+	if s.Config.ContainerRuntimeExecutor == "kubelet" || s.Config.ContainerRuntimeExecutor == "k8sapi" {
+		s.T().Skip("`stop` not working on K3d for kubelet and k8sapi executors")
+	}
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
@@ -589,6 +592,9 @@ func (s *FunctionalSuite) TestStopBehavior() {
 }
 
 func (s *FunctionalSuite) TestTerminateBehavior() {
+	if s.Config.ContainerRuntimeExecutor == "kubelet" || s.Config.ContainerRuntimeExecutor == "k8sapi" {
+		s.T().Skip("`terminate` not working  on K3d for kubelet and k8sapi executors")
+	}
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().

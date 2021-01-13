@@ -348,12 +348,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	node, err := woc.executeTemplate(ctx, woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
 		// the error are handled in the callee so just log it.
-		msg := "error in entry template execution"
-		woc.log.WithError(err).Error(msg)
-		msg = fmt.Sprintf("%s %s: %+v", woc.wf.Name, msg, err)
 		switch err {
 		case ErrDeadlineExceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", msg)
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err))
+		}
+		if !woc.wf.Status.Phase.Completed() {
+			woc.markWorkflowError(ctx, err)
 		}
 		return
 	}
@@ -841,7 +841,9 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 }
 
 type seenPod struct {
-	nodeName string
+	nodeName    string
+	clusterName wfv1.ClusterName
+	namespace   string
 }
 
 // podReconciliation is the process by which a workflow will examine all its related
@@ -850,21 +852,16 @@ type seenPod struct {
 // after successful persist of the workflow.
 func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	seenPods := make(map[string]seenPod)
-	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 	podRunningCondition := wfv1.Condition{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}
 	performAssessment := func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
 		nodeNameForPod := pod.GetAnnotations()[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
-		seenPodLock.Lock()
 		nodeName, _, _ := unstructured.NestedString(pod.Object, "spec", "nodeName")
-		seenPods[nodeID] = seenPod{nodeName}
-		seenPodLock.Unlock()
+		seenPods[nodeID] = seenPod{nodeName, clusterName, pod.GetNamespace()}
 
-		wfNodesLock.Lock()
-		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := woc.assessNodeStatus(clusterName, pod, &node); newState != nil {
+			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
@@ -885,10 +882,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			gvr, _ := meta.UnsafeGuessKindToResource(gvk)
 			podKey := wfv1.NewResourceKey(clusterName, gvr, pod.GetNamespace(), pod.GetName())
 			if node.Fulfilled() && !node.IsDaemoned() {
-				if tmpVal, tmpOk := pod.GetLabels()[common.LabelKeyCompleted]; tmpOk {
-					if tmpVal == "true" {
-						return
-					}
+				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
+					return
 				}
 				woc.completedPods[podKey] = true
 				if woc.shouldPrintPodSpec(node) {
@@ -904,7 +899,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		}
 	}
 
-	parallelPodNum := make(chan string, 500)
+	parallelPodNum := make(chan bool, 500)
 	var wg sync.WaitGroup
 	for clusterNamespace, i := range woc.controller.podInformer {
 		clusterName := clusterNamespace.Split()
@@ -917,17 +912,19 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			if !ok {
 				return fmt.Errorf("not unstructured")
 			}
-			parallelPodNum <- un.GetName()
-			wg.Add(1)
-			go func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
-				defer wg.Done()
-				performAssessment(clusterName, un)
-				err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
-				if err != nil {
-					woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
-				}
-				<-parallelPodNum
-			}(clusterName, un)
+			performAssessment(clusterName, un)
+			if un.GetKind() == "Pod" {
+				parallelPodNum <- true
+				wg.Add(1)
+				go func(clusterName wfv1.ClusterName, pod *unstructured.Unstructured) {
+					defer wg.Done()
+					err = woc.applyExecutionControl(ctx, clusterName, pod, wfNodesLock)
+					if err != nil {
+						woc.log.Warnf("Failed to apply execution control to pod %s", pod.GetName())
+					}
+					<-parallelPodNum
+				}(clusterName, un)
+			}
 		}
 	}
 
@@ -970,6 +967,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			// it is safe to extract the k8s-node information given this knowledge.
 			if node.HostNodeName != seenPod.nodeName {
 				node.HostNodeName = seenPod.nodeName
+				node.ClusterName = wfv1.ClusterNameIfNot(seenPod.clusterName, woc.clusterName())
+				node.Namespace = wfv1.NamespaceIfNot(seenPod.namespace, woc.wf.Namespace)
 				woc.wf.Status.Nodes[nodeID] = node
 				woc.updated = true
 			}
@@ -1070,7 +1069,7 @@ func (woc *wfOperationCtx) printPodSpecLog(pod *unstructured.Unstructured) {
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, un *unstructured.Unstructured, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) assessNodeStatus(un *unstructured.Unstructured, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	gvk := un.GroupVersionKind()
 	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
 	if gvr.Empty() {
@@ -1115,14 +1114,6 @@ func (woc *wfOperationCtx) assessNodeStatus(clusterName wfv1.ClusterName, un *un
 		if node.Completed() && node.FinishedAt.IsZero() {
 			node.FinishedAt = metav1.Now()
 		}
-	}
-
-	if node != nil {
-		// we only update the clusterName and namespace once we're sure the resource has actually been scheduled
-		// this prevents there being a NodeStatus pointing to an invalid clusterName or namespace
-		// which would prevent us deleting the pods during the finalization of the workflow
-		node.ClusterName = wfv1.ClusterNameIfNot(clusterName, woc.clusterName())
-		node.Namespace = wfv1.NamespaceIfNot(un.GetNamespace(), woc.wf.Namespace)
 	}
 
 	return node

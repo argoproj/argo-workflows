@@ -48,7 +48,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "cluster-namespace \"main/default\" not configured", status.Message)
+			assert.Equal(t, "cluster-namespace \"main.default\" not configured for \"pods.v1.\"", status.Message)
 		})
 }
 
@@ -73,7 +73,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "cluster-namespace \"denied/argo\" not configured", status.Message)
+			assert.Equal(t, "cluster-namespace \"denied.argo\" not configured for \"pods.v1.\"", status.Message)
 		})
 }
 
@@ -98,7 +98,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "cluster-namespace \"not-found/argo\" not configured", status.Message)
+			assert.Equal(t, "cluster-namespace \"not-found.argo\" not configured for \"pods.v1.\"", status.Message)
 		})
 }
 

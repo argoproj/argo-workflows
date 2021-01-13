@@ -21,14 +21,18 @@ const (
 	labelPodCompleted podCleanupAction = "labelPodCompleted"
 )
 
-func newPodCleanupKey(clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string, podName string, action podCleanupAction) podCleanupKey {
-	return fmt.Sprintf("%s/%s/%s/%s/%s/%s/%v", clusterName, gvr.Group, gvr.Version, gvr.Resource, namespace, podName, action)
+func newPodCleanupKey(clusterName wfv1.ClusterName, namespace, name string, gvr schema.GroupVersionResource, action podCleanupAction) podCleanupKey {
+	return fmt.Sprintf("%s/%s/%s.%s.%s/%s/%v", clusterName, namespace, gvr.Resource, gvr.Version, gvr.Group, name, action)
 }
 
-func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, gvr schema.GroupVersionResource, namespace string, podName string, action podCleanupAction) {
+func parsePodCleanupKey(k podCleanupKey) (clusterName wfv1.ClusterName, namespace, name string, gvr schema.GroupVersionResource, action podCleanupAction) {
 	parts := strings.Split(k, "/")
-	if len(parts) != 7 {
-		return "", schema.GroupVersionResource{}, "", "", ""
+	if len(parts) != 5 {
+		return "", "", "", schema.GroupVersionResource{}, ""
 	}
-	return wfv1.ClusterName(parts[0]), schema.GroupVersionResource{Group: parts[1], Version: parts[2], Resource: parts[3]}, parts[4], parts[5], parts[6]
+	gvr1, _ := schema.ParseResourceArg(parts[3])
+	if gvr.Empty() {
+		return "", "", "", schema.GroupVersionResource{}, ""
+	}
+	return wfv1.ClusterName(parts[0]), parts[4], parts[5], *gvr1, parts[6]
 }

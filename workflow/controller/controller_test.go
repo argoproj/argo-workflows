@@ -41,7 +41,7 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
-const testInformerKey = "///v1/pods"
+const testInformerKey = "//pods.v1."
 
 var helloWorldWf = `
 apiVersion: argoproj.io/v1alpha1
