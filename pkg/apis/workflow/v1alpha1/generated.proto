@@ -651,7 +651,8 @@ message NodeStatus {
   // Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the workflow.
   optional string namespace = 28;
 
-  // The type of this resource in the format `resource.group.version`
+  // The type of this resource in the format `resource.group.version`.
+  // When empty, it can be infered as `pods.v1.` for a pod node.
   optional string resource = 29;
 
   // Time at which this node started

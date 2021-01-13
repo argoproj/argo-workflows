@@ -3696,6 +3696,10 @@
           "description": "Progress to completion",
           "type": "string"
         },
+        "resource": {
+          "description": "The type of this resource in the format `resource.group.version`. When empty, it can be infered as `pods.v1.` for a pod node.",
+          "type": "string"
+        },
         "resourcesDuration": {
           "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
           "type": "object",

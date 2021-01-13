@@ -1272,6 +1272,10 @@
           "description": "Progress to completion",
           "type": "string"
         },
+        "resource": {
+          "description": "The type of this resource in the format `resource.group.version`. When empty, it can be infered as `pods.v1.` for a pod node.",
+          "type": "string"
+        },
         "resourcesDuration": {
           "additionalProperties": {
             "format": "int64",
