@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import * as models from '../../../models';
-import {Event, LogEntry, NodeStatus, Resource, Workflow, WorkflowList} from '../../../models';
+import {Event, LogEntry, NodeStatus, Workflow, WorkflowList} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {Pagination} from '../pagination';
 import requests from './requests';
@@ -96,12 +96,6 @@ export class WorkflowsService {
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
         return requests.loadEventSource(url).map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>));
-    }
-
-    public watchResources(namespace: string, labelSelector: string) {
-        return requests
-            .loadEventSource(`api/v1/stream/workflow-resources/${namespace}?listOptions.labelSelector=${labelSelector}`)
-            .map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Resource>));
     }
 
     public retry(name: string, namespace: string) {

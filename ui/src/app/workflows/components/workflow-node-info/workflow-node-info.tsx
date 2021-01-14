@@ -58,7 +58,6 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
 
 const WorkflowNodeSummary = (props: Props) => {
     const attributes = [
-        {title: 'ID', value: props.node.id},
         {title: 'NAME', value: props.node.name},
         {title: 'TYPE', value: props.node.type},
         {
@@ -110,9 +109,9 @@ const WorkflowNodeSummary = (props: Props) => {
         attributes.splice(
             2,
             0,
+            {title: 'POD NAME', value: props.node.id},
             {title: 'CLUSTER NAME', value: props.node.clusterName || '-'},
             {title: 'NAMESPACE', value: props.node.namespace || '-'},
-            {title: 'RESOURCE', value: props.node.resource || 'pods.v1.'},
             {
                 title: 'HOST NODE NAME',
                 value: props.node.hostNodeName

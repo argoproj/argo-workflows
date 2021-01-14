@@ -9,8 +9,6 @@ import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from '
 import {icons} from './icons';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
-require('./workflow-dag.scss');
-
 export interface WorkflowDagRenderOptions {
     expandNodes: Set<string>;
 }
@@ -70,7 +68,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
         return (
             <GraphPanel
-                classNames='workflow-dag'
                 storageScope='workflow-dag'
                 graph={this.graph}
                 nodeGenres={genres}

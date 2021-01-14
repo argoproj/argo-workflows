@@ -9,7 +9,7 @@ import {parse, stringify} from '../object-parser';
 import {ToggleButton} from '../toggle-button';
 
 interface Props<T> {
-    type?: string;
+    type: string;
     value: T;
     buttons?: React.ReactNode;
     onChange?: (value: T) => void;
