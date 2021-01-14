@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -18,7 +19,8 @@ func (r *nullWorkflowArchive) IsEnabled() bool {
 	return false
 }
 
-func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
+func (r *nullWorkflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
+	log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf, "uid": wf.UID}).Info("Logging workflow in lieu of archiving")
 	return nil
 }
 
