@@ -16,7 +16,7 @@ import {WorkflowTemplateEditor} from '../workflow-template-editor';
 
 export const WorkflowTemplateDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {notifications, navigation} = useContext(Context);
+    const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
@@ -87,14 +87,15 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
                             action: () => {
-                                if (!confirm('Are you sure you want to delete this workflow template?\nThere is no undo.')) {
-                                    return;
-                                }
-                                services.workflowTemplate
-                                    .delete(name, namespace)
-                                    .then(() => navigation.goto(uiUrl('workflow-templates/' + namespace)))
-                                    .then(() => setError(null))
-                                    .catch(setError);
+                                popup.confirm('confirm', 'Are you sure you want to delete this workflow template?').then(yes => {
+                                    if (yes) {
+                                        services.workflowTemplate
+                                            .delete(name, namespace)
+                                            .then(() => navigation.goto(uiUrl('workflow-templates/' + namespace)))
+                                            .then(() => setError(null))
+                                            .catch(setError);
+                                    }
+                                });
                             }
                         },
                         {
