@@ -9,6 +9,7 @@ import apidocs from './apidocs';
 import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
+import eventSources from './event-sources';
 import events from './events';
 import help from './help';
 import login from './login';
@@ -33,6 +34,7 @@ const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowsUrl = uiUrl('cron-workflows');
 const archivedWorkflowsUrl = uiUrl('archived-workflows');
+const eventSourceUrl = uiUrl('event-sources')
 const helpUrl = uiUrl('help');
 const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
@@ -98,6 +100,11 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-broadcast-tower'
                             },
                             {
+                                title: 'Event Sources',
+                                path: eventSourceUrl + '/' + namespace,
+                                iconClassName: 'fas fa-bolt'
+                            },
+                            {
                                 title: 'Sensors',
                                 path: sensorUrl + '/' + namespace,
                                 iconClassName: 'fa fa-circle'
@@ -142,6 +149,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 </Route>
                                 <Route path={eventsUrl} component={events.component} />
                                 <Route path={sensorUrl} component={sensors.component} />
+                                <Route path={eventSourceUrl} component={eventSources.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />
                                 <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />

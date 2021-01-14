@@ -18,6 +18,44 @@ import (
 
 type eventSourceServer struct{}
 
+func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsourcepkg.CreateEventSourceRequest) (*esv1.EventSource, error) {
+	client := auth.GetEventSourceClient(ctx)
+
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(ctx, in.EventSource, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return es, nil
+}
+
+func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcepkg.GetEventSourceRequest) (*esv1.EventSource, error) {
+	client := auth.GetEventSourceClient(ctx)
+
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Get(ctx, in.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return es, nil
+}
+
+func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsourcepkg.DeleteEventSourceRequest) (*eventsourcepkg.EventSourceDeletedResponse, error) {
+	client := auth.GetEventSourceClient(ctx)
+	err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Delete(ctx, in.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return &eventsourcepkg.EventSourceDeletedResponse{}, nil
+}
+
+func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsourcepkg.UpdateEventSourceRequest) (*esv1.EventSource, error) {
+	client := auth.GetEventSourceClient(ctx)
+	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Update(ctx, in.EventSource, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return es, nil
+}
+
 func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourcepkg.ListEventSourcesRequest) (*esv1.EventSourceList, error) {
 	client := auth.GetEventSourceClient(ctx)
 	list, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).List(ctx, metav1.ListOptions{})

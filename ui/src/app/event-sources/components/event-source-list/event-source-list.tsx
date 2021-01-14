@@ -1,11 +1,12 @@
-import {Page, SlidingPanel} from 'argo-ui';
+import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Sensor} from '../../../../models';
+import {EventSource} from '../../../../models';
 import {kubernetes} from '../../../../models';
 import {ID} from '../../../events/components/events-details/id';
+import {Utils as EventsUtils} from '../../../sensors/components/utils';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Node} from '../../../shared/components/graph/types';
@@ -16,13 +17,13 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
-import {SensorCreator} from '../sensor-creator';
-import {SensorSidePanel} from '../sensor-side-panel';
-import {Utils as EventsUtils} from '../utils';
+import {EventsPanel} from '../../../workflows/components/events-panel';
+import {EventSourceCreator} from '../event-source-creator';
+import {EventSourceLogsViewer} from '../event-source-log-viewer';
 
-const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
+const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/eventsource/'>Learn more</a>;
 
-export const SensorList = ({match, location, history}: RouteComponentProps<any>) => {
+export const EventSourceList = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
@@ -31,26 +32,28 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
+    const [tab, setTab] = useState<Node>(queryParams.get('tab'));
     useEffect(
         () =>
             history.push(
-                historyUrl('sensors/{namespace}', {
+                historyUrl('event-sources/{namespace}', {
                     namespace,
                     sidePanel,
-                    selectedNode
+                    selectedNode,
+                    tab
                 })
             ),
-        [namespace, sidePanel, selectedNode]
+        [namespace, sidePanel, selectedNode, tab]
     );
 
     // internal state
     const [error, setError] = useState<Error>();
-    const [sensors, setSensors] = useState<Sensor[]>();
+    const [eventSources, setEventSources] = useState<EventSource[]>();
 
     useEffect(() => {
-        services.sensor
+        services.eventSource
             .list(namespace)
-            .then(l => setSensors(l.items ? l.items : []))
+            .then(l => setEventSources(l.items ? l.items : []))
             .then(() => setError(null))
             .catch(setError);
     }, [namespace]);
@@ -60,22 +63,22 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
             return;
         }
         const x = ID.split(selectedNode);
-        const value = (sensors || []).find((y: {metadata: kubernetes.ObjectMeta}) => y.metadata.namespace === x.namespace && y.metadata.name === x.name);
+        const value = (eventSources || []).find((y: {metadata: kubernetes.ObjectMeta}) => y.metadata.namespace === x.namespace && y.metadata.name === x.name);
         return {value, ...x};
     })();
 
     return (
         <Page
-            title='Sensors'
+            title='EventSources'
             toolbar={{
                 breadcrumbs: [
-                    {title: 'Sensors', path: uiUrl('sensors')},
-                    {title: namespace, path: uiUrl('sensors/' + namespace)}
+                    {title: 'EventSource', path: uiUrl('event-sources')},
+                    {title: namespace, path: uiUrl('event-sources/' + namespace)}
                 ],
                 actionMenu: {
                     items: [
                         {
-                            title: 'Create New Sensor',
+                            title: 'Create New EventSource',
                             iconClassName: 'fa fa-plus',
                             action: () => setSidePanel(true)
                         }
@@ -84,11 +87,11 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
             <ErrorNotice error={error} />
-            {!sensors ? (
+            {!eventSources ? (
                 <Loading />
-            ) : sensors.length === 0 ? (
-                <ZeroState title='No sensors'>
-                    <p>You can create new sensors here.</p>
+            ) : eventSources.length === 0 ? (
+                <ZeroState title='No eventsources'>
+                    <p>You can create new EventSource here.</p>
                     <p>{learnMore}.</p>
                 </ZeroState>
             ) : (
@@ -101,24 +104,23 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                             <div className='columns small-2'>CREATED</div>
                             <div className='columns small-2'>LOGS</div>
                         </div>
-                        {sensors.map(s => (
+                        {eventSources.map(es => (
                             <Link
                                 className='row argo-table-list__row'
-                                key={`${s.metadata.namespace}/${s.metadata.name}`}
-                                to={uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`)}>
+                                key={`${es.metadata.namespace}/${es.metadata.name}`}
+                                to={uiUrl(`event-sources/${es.metadata.namespace}/${es.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i className={classNames('fa', EventsUtils.statusIconClasses(s.status != null ? s.status.conditions : [], 'fa-circle'))} aria-hidden='true' />
+                                    <i className={classNames('fa', EventsUtils.statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))} />
                                 </div>
-                                <div className='columns small-4'>{s.metadata.name}</div>
-                                <div className='columns small-3'>{s.metadata.namespace}</div>
+                                <div className='columns small-4'>{es.metadata.name}</div>
+                                <div className='columns small-3'>{es.metadata.namespace}</div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={s.metadata.creationTimestamp} />
+                                    <Timestamp date={es.metadata.creationTimestamp} />
                                 </div>
                                 <div className='columns small-2'>
                                     <div
                                         onClick={e => {
-                                            e.preventDefault();
-                                            setSelectedNode(`${s.metadata.namespace}/Sensor/${s.metadata.name}`);
+                                            setSelectedNode(`${es.metadata.namespace}/event-sources/${es.metadata.name}`);
                                         }}>
                                         <i className='fa fa-bars' />
                                     </div>
@@ -129,18 +131,35 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                 </>
             )}
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
-                <SensorCreator namespace={namespace} onCreate={s => navigation.goto(uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`))} />
+                <EventSourceCreator namespace={namespace} onCreate={es => navigation.goto(uiUrl(`event-sources/${es.metadata.namespace}/${es.metadata.name}`))} />
             </SlidingPanel>
-            {!!selectedNode && (
-                <SensorSidePanel
-                    isShown={!!selectedNode}
-                    namespace={namespace}
-                    sensor={selected.value}
-                    selectedTrigger={selected.key}
-                    onTriggerClicked={setSelectedNode}
-                    onClose={() => setSelectedNode(null)}
-                />
-            )}
+            <SlidingPanel isShown={!!selectedNode} onClose={() => setSelectedNode(null)}>
+                {!!selectedNode && (
+                    <div>
+                        <h4>
+                            {selected.name}
+                            {selected.key ? '/' + selected.key : ''}
+                        </h4>
+                        <Tabs
+                            navTransparent={true}
+                            selectedTabKey={tab}
+                            onTabSelected={setTab}
+                            tabs={[
+                                {
+                                    title: 'LOGS',
+                                    key: 'logs',
+                                    content: <EventSourceLogsViewer namespace={namespace} selectedEvent={selected.key} eventSource={selected.value} onClick={setSelectedNode} />
+                                },
+                                {
+                                    title: 'EVENTS',
+                                    key: 'events',
+                                    content: <EventsPanel kind='EventSources' namespace={selected.namespace} name={selected.name} />
+                                }
+                            ]}
+                        />
+                    </div>
+                )}
+            </SlidingPanel>
         </Page>
     );
 };

@@ -21,7 +21,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_ListArchivedWorkflows",
+        "operationId": "ListArchivedWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -37,12 +37,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -86,12 +88,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -101,7 +97,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_GetArchivedWorkflow",
+        "operationId": "GetArchivedWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -116,12 +112,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -129,7 +119,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_DeleteArchivedWorkflow",
+        "operationId": "DeleteArchivedWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -144,12 +134,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchivedWorkflowDeletedResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -159,7 +143,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_ListClusterWorkflowTemplates",
+        "operationId": "ListClusterWorkflowTemplates",
         "parameters": [
           {
             "type": "string",
@@ -175,12 +159,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -224,12 +210,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -237,7 +217,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_CreateClusterWorkflowTemplate",
+        "operationId": "CreateClusterWorkflowTemplate",
         "parameters": [
           {
             "name": "body",
@@ -254,12 +234,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -269,7 +243,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_LintClusterWorkflowTemplate",
+        "operationId": "LintClusterWorkflowTemplate",
         "parameters": [
           {
             "name": "body",
@@ -286,12 +260,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -301,7 +269,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_GetClusterWorkflowTemplate",
+        "operationId": "GetClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -322,12 +290,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -335,7 +297,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_UpdateClusterWorkflowTemplate",
+        "operationId": "UpdateClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -359,12 +321,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -372,7 +328,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_DeleteClusterWorkflowTemplate",
+        "operationId": "DeleteClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -401,6 +357,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -428,12 +385,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateDeleteResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -443,7 +394,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_ListCronWorkflows",
+        "operationId": "ListCronWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -465,12 +416,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -514,12 +467,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -527,7 +474,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_CreateCronWorkflow",
+        "operationId": "CreateCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -550,12 +497,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -565,7 +506,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_LintCronWorkflow",
+        "operationId": "LintCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -588,12 +529,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -603,7 +538,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_GetCronWorkflow",
+        "operationId": "GetCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -630,12 +565,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -643,7 +572,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_UpdateCronWorkflow",
+        "operationId": "UpdateCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -673,12 +602,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -686,7 +609,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_DeleteCronWorkflow",
+        "operationId": "DeleteCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -721,6 +644,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -748,12 +672,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -763,7 +681,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_ResumeCronWorkflow",
+        "operationId": "ResumeCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -792,12 +710,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -807,7 +719,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_SuspendCronWorkflow",
+        "operationId": "SuspendCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -836,12 +748,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -851,7 +757,7 @@
         "tags": [
           "EventService"
         ],
-        "operationId": "EventService_ReceiveEvent",
+        "operationId": "ReceiveEvent",
         "parameters": [
           {
             "type": "string",
@@ -883,12 +789,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -898,18 +798,12 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "InfoService_GetInfo",
+        "operationId": "GetInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.InfoResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -920,7 +814,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_WatchEvents",
+        "operationId": "WatchEvents",
         "parameters": [
           {
             "type": "string",
@@ -942,12 +836,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -1000,12 +896,6 @@
                 }
               }
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1015,18 +905,12 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "InfoService_GetUserInfo",
+        "operationId": "GetUserInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GetUserInfoResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -1037,18 +921,12 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "InfoService_GetVersion",
+        "operationId": "GetVersion",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Version"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -1059,7 +937,7 @@
         "tags": [
           "EventService"
         ],
-        "operationId": "EventService_ListWorkflowEventBindings",
+        "operationId": "ListWorkflowEventBindings",
         "parameters": [
           {
             "type": "string",
@@ -1081,12 +959,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -1130,12 +1010,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventBindingList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1145,7 +1019,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_WatchWorkflows",
+        "operationId": "WatchWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -1167,12 +1041,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -1225,12 +1101,6 @@
                 }
               }
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1240,7 +1110,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_ListWorkflowTemplates",
+        "operationId": "ListWorkflowTemplates",
         "parameters": [
           {
             "type": "string",
@@ -1262,12 +1132,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -1311,12 +1183,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1324,7 +1190,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_CreateWorkflowTemplate",
+        "operationId": "CreateWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1347,12 +1213,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1362,7 +1222,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_LintWorkflowTemplate",
+        "operationId": "LintWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1385,12 +1245,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1400,7 +1254,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_GetWorkflowTemplate",
+        "operationId": "GetWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1427,12 +1281,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1440,7 +1288,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_UpdateWorkflowTemplate",
+        "operationId": "UpdateWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1470,12 +1318,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1483,7 +1325,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_DeleteWorkflowTemplate",
+        "operationId": "DeleteWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1518,6 +1360,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -1545,12 +1388,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateDeleteResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1560,7 +1397,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_ListWorkflows",
+        "operationId": "ListWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -1582,12 +1419,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
             "name": "listOptions.watch",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
@@ -1637,12 +1476,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1650,7 +1483,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_CreateWorkflow",
+        "operationId": "CreateWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1673,12 +1506,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1688,7 +1515,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_LintWorkflow",
+        "operationId": "LintWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1711,12 +1538,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1726,7 +1547,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_SubmitWorkflow",
+        "operationId": "SubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1749,12 +1570,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1764,7 +1579,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_GetWorkflow",
+        "operationId": "GetWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1797,12 +1612,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1810,7 +1619,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_DeleteWorkflow",
+        "operationId": "DeleteWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1845,6 +1654,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "name": "deleteOptions.orphanDependents",
             "in": "query"
@@ -1872,12 +1682,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1887,7 +1691,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_WorkflowLogs",
+        "operationId": "WorkflowLogs",
         "parameters": [
           {
             "type": "string",
@@ -1914,12 +1718,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
             "name": "logOptions.follow",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
             "name": "logOptions.previous",
             "in": "query"
@@ -1947,6 +1753,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
             "name": "logOptions.timestamps",
             "in": "query"
@@ -1967,6 +1774,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
@@ -1987,12 +1795,6 @@
                 }
               }
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2002,7 +1804,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_ResubmitWorkflow",
+        "operationId": "ResubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -2031,12 +1833,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2046,7 +1842,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_ResumeWorkflow",
+        "operationId": "ResumeWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -2075,12 +1871,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2090,7 +1880,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_RetryWorkflow",
+        "operationId": "RetryWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -2119,12 +1909,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2134,7 +1918,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_SetWorkflow",
+        "operationId": "SetWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -2163,12 +1947,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2178,7 +1956,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_StopWorkflow",
+        "operationId": "StopWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -2207,12 +1985,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2222,7 +1994,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_SuspendWorkflow",
+        "operationId": "SuspendWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -2251,12 +2023,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2266,7 +2032,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_TerminateWorkflow",
+        "operationId": "TerminateWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -2295,12 +2061,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2311,7 +2071,7 @@
           "WorkflowService"
         ],
         "summary": "DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.",
-        "operationId": "WorkflowService_PodLogs",
+        "operationId": "PodLogs",
         "parameters": [
           {
             "type": "string",
@@ -2339,12 +2099,14 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
             "name": "logOptions.follow",
             "in": "query"
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
             "name": "logOptions.previous",
             "in": "query"
@@ -2372,6 +2134,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
             "name": "logOptions.timestamps",
             "in": "query"
@@ -2392,6 +2155,7 @@
           },
           {
             "type": "boolean",
+            "format": "boolean",
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
@@ -2412,12 +2176,6 @@
                 }
               }
             }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2433,26 +2191,6 @@
         "value": {
           "type": "string",
           "format": "byte"
-        }
-      }
-    },
-    "grpc.gateway.runtime.Error": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          }
-        },
-        "error": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
         }
       }
     },
@@ -3203,7 +2941,8 @@
           "type": "string"
         },
         "emailVerified": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         },
         "groups": {
           "type": "array",
@@ -4870,7 +4609,8 @@
           "type": "string"
         },
         "serverDryRun": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         },
         "workflow": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
@@ -4989,7 +4729,8 @@
       "type": "object",
       "properties": {
         "memoized": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         },
         "name": {
           "type": "string"
@@ -5026,7 +4767,8 @@
           "type": "string"
         },
         "restartSuccessful": {
-          "type": "boolean"
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
@@ -6341,6 +6083,7 @@
       "properties": {
         "readOnly": {
           "type": "boolean",
+          "format": "boolean",
           "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional"
         },
         "volumeClaimTemplate": {
