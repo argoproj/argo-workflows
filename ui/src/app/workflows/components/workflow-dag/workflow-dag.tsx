@@ -64,7 +64,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.prepareGraph();
 
         const tags: {[key: string]: boolean} = {};
-        Object.values(this.props.nodes).forEach(n => (tags[n.templateName] = true));
+        Object.values(this.props.nodes || {}).forEach(n => (tags[n.templateName] = true));
 
         return (
             <GraphPanel
