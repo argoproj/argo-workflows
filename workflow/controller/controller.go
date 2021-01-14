@@ -849,7 +849,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					deleteOptions := metav1.DeleteOptions{PropagationPolicy: &propagationBackground}
 					err = ri.Namespace(namespace).DeleteCollection(ctx, deleteOptions, listOptions)
 					if err != nil {
-						log.Warnf("failed to delete resources from %s for %s (falling back to list+delete): %s", clusterName, key, err)
+						log.Warnf("failed to delet resources from %s for %s (falling back to list+delete): %s", clusterName, key, err)
 						list, err := ri.List(ctx, listOptions)
 						if err != nil {
 							return fmt.Errorf("failed to list resources from %s for %s: %w", clusterName, key, err)

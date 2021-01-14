@@ -1273,7 +1273,7 @@
           "type": "string"
         },
         "resource": {
-          "description": "The type of this resource in the format `resource.group.version`. When empty, it can be infered as `pods.v1.` for a pod node.",
+          "description": "The type of this resource in the format `resource.group.version`. When empty, and this is a pod node, it should be infered to be `pods.v1.`.",
           "type": "string"
         },
         "resourcesDuration": {

@@ -2221,7 +2221,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"resource": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The type of this resource in the format `resource.group.version`. When empty, it can be infered as `pods.v1.` for a pod node.",
+							Description: "The type of this resource in the format `resource.group.version`. When empty, and this is a pod node, it should be infered to be `pods.v1.`.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

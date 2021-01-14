@@ -200,7 +200,7 @@ Workflow is the definition of a workflow resource
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -537,7 +537,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -890,7 +890,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -1201,7 +1201,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -1538,8 +1538,6 @@ PodGC describes how to delete completed pods as they complete
 <br>
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
-
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
 </details>
 
 ### Fields
@@ -1807,7 +1805,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -2036,7 +2034,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
 |`progress`|`string`|Progress to completion|
-|`resource`|`string`|The type of this resource in the format `resource.group.version`. When empty, it can be infered as `pods.v1.` for a pod node.|
+|`resource`|`string`|The type of this resource in the format `resource.group.version`. When empty, and this is a pod node, it should be infered to be `pods.v1.`.|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
@@ -2538,7 +2536,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -2965,7 +2963,7 @@ Pod metdata
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -3582,7 +3580,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
@@ -3771,7 +3769,7 @@ MetricLabel is a single label for a prometheus metric
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 </details>
 
 ### Fields
@@ -3832,7 +3830,7 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -4234,7 +4232,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -4753,7 +4751,7 @@ A single application container that you want to run within a pod.
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -4933,7 +4931,7 @@ ContainerPort represents a network port in a single container.
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 </details>
 
 ### Fields
@@ -5168,7 +5166,7 @@ A label selector is a label query over a set of resources. The result of matchLa
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 </details>
 
 ### Fields
@@ -5416,7 +5414,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -6001,7 +5999,7 @@ HTTPGetAction describes an action based on HTTP Get requests.
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`curl.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2/curl.yaml)
+- [`resource2.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource2.yaml)
 </details>
 
 ### Fields
