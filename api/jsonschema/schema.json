@@ -14,6 +14,26 @@
       },
       "type": "object"
     },
+    "grpc.gateway.runtime.Error": {
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          },
+          "type": "array"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "grpc.gateway.runtime.StreamError": {
       "properties": {
         "details": {
@@ -764,7 +784,6 @@
           "type": "string"
         },
         "emailVerified": {
-          "format": "boolean",
           "type": "boolean"
         },
         "groups": {
@@ -2434,7 +2453,6 @@
           "type": "string"
         },
         "serverDryRun": {
-          "format": "boolean",
           "type": "boolean"
         },
         "workflow": {
@@ -2556,7 +2574,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowResubmitRequest": {
       "properties": {
         "memoized": {
-          "format": "boolean",
           "type": "boolean"
         },
         "name": {
@@ -2594,7 +2611,6 @@
           "type": "string"
         },
         "restartSuccessful": {
-          "format": "boolean",
           "type": "boolean"
         }
       },
@@ -3911,7 +3927,6 @@
       "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
       "properties": {
         "readOnly": {
-          "format": "boolean",
           "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional",
           "type": "boolean"
         },

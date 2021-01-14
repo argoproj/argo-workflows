@@ -27,7 +27,8 @@ message GetSensorRequest {
 
 message UpdateSensorRequest {
     string namespace = 1;
-    github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor sensor = 2;
+    string name = 2;
+    github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor sensor = 3;
 }
 
 message DeleteSensorRequest {
@@ -88,7 +89,7 @@ service SensorService {
     }
     rpc UpdateSensor (UpdateSensorRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor) {
         option (google.api.http) = {
-            put: "/api/v1/sensors/{namespace}"
+            put: "/api/v1/sensors/{namespace}/{name}"
             body: "*"
         };
     }
