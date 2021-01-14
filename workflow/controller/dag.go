@@ -461,17 +461,17 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 
 		// Finally execute the template
-		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		_, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
 				return
 			case ErrParallelismReached:
 			case ErrTimeout:
-				woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
+				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return
 			default:
-				woc.markNodeError(taskNodeName, err)
+				_ = woc.markNodeError(taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
 				return
 			}
 		}
