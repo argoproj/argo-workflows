@@ -471,8 +471,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return
 			default:
-				woc.log.Infof("DAG %s deemed errored due to task %s error: %s", node.ID, taskNodeName, err.Error())
-				_ = woc.markNodePhase(taskNodeName, wfv1.NodeError, fmt.Sprintf("task '%s' errored", taskNodeName))
+				err := fmt.Errorf("task '%s' errored: %w", taskNodeName, err)
+				woc.log.Infof("DAG %s deemed errored due to task %s error: %s", node.ID, taskNodeName, err)
+				woc.markNodeError(taskNodeName, err)
 				return
 			}
 		}

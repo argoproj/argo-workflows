@@ -31,30 +31,48 @@ export const WorkflowResourcesGraph = ({namespace, name}: {namespace: string; na
 
     const g = new Graph();
     const nodeGenres: {[genre: string]: boolean} = {Workflow: true};
-    const nodeClassNames: {[className: string]: boolean} = {};
+    const nodeClassNames: {[className: string]: boolean} = {'': true};
 
-    g.nodes.set('main/' + namespace + '/' + name + '/argoproj.io/v1alpha1/Workflow', {genre: 'Workflow', label: name, icon: icons.Workflow});
+    const clusterName = 'main';
+    g.nodes.set(clusterName + '/' + namespace + '/' + name + '/argoproj.io/v1alpha1/Workflow', {genre: 'Workflow', label: name, icon: icons.Workflow});
 
-    (resources || []).forEach(r => {
-        const m = r.metadata;
-        const node = m.clusterName + '/' + m.namespace + '/' + m.name + '/' + r.apiVersion + '/' + r.kind;
-        const genre = r.kind;
-        const classNames = r.status.phase;
-        g.nodes.set(node, {genre, label: m.name, icon: icons[r.kind] || 'box', classNames});
-        nodeGenres[genre] = true;
-        nodeClassNames[classNames] = true;
+    (resources || [])
+        .sort((a, b) => a.metadata.clusterName.localeCompare(b.metadata.clusterName))
+        .forEach(r => {
+            const m = r.metadata;
+            const node = m.clusterName + '/' + m.namespace + '/' + m.name + '/' + r.apiVersion + '/' + r.kind;
+            const genre = r.kind;
+            const classNames = r.status.phase;
+            g.nodes.set(node, {genre, label: m.name, icon: icons[r.kind] || 'box', classNames});
+            nodeGenres[genre] = true;
+            nodeClassNames[classNames] = true;
 
-        const group = m.clusterName + '/' + m.namespace;
+            const group = m.clusterName + '/' + m.namespace;
 
-        if (!g.nodeGroups.has(group)) {
-            g.nodeGroups.set(group, new Set());
-        }
-        g.nodeGroups.get(group).add(node);
+            if (!g.nodeGroups.has(group)) {
+                g.nodeGroups.set(group, new Set());
+            }
+            g.nodeGroups.get(group).add(node);
 
-        (m.ownerReferences || []).forEach((o: {apiVersion: string; kind: string; name: string}) => {
-            g.edges.set({v: m.clusterName + '/' + m.namespace + '/' + o.name + '/' + o.apiVersion + '/' + o.kind, w: node}, {});
+            const labels = m.labels || {};
+            const wf = {
+                name: labels['workflows.argoproj.io/workflow'],
+                namespace: labels['workflows.argoproj.io/workflow-namespace'],
+                clusterName: labels['workflows.argoproj.io/workflow-cluster-name']
+            };
+            if (wf.name) {
+                g.edges.set({v: (wf.clusterName || clusterName) + '/' + (wf.namespace || r.metadata.namespace) + '/' + wf.name + '/argoproj.io/v1alpha1/Workflow', w: node}, {});
+            } else {
+                (m.ownerReferences || []).forEach((o: {apiVersion: string; kind: string; name: string}) => {
+                    g.edges.set(
+                        {v: (m.clusterName || clusterName) + '/' + m.namespace + '/' + o.name + '/' + o.apiVersion + '/' + o.kind, w: node},
+                        {
+                            label: 'ref'
+                        }
+                    );
+                });
+            }
         });
-    });
 
     return (
         <>

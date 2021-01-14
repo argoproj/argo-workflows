@@ -247,10 +247,10 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			case ErrTimeout:
 				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
-				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
-				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
+				err := fmt.Errorf("child '%s' errored: %w", childNodeName, err)
+				woc.log.Infof("Step group node %s deemed errored due to child %s error: %v", node.ID, childNodeName, err)
 				woc.addChildNode(sgNodeName, childNodeName)
-				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
+				return woc.markNodeError(node.Name, err)
 			}
 		}
 		if childNode != nil {

@@ -12,10 +12,14 @@ data:
   clusterName: main
   resources: |
     main.:
-      - pods.v1.
+      - services.v1.
       - configmaps.v1.
       - deployments.v1.apps
+      - pods.v1.
+    other.:
+      - ingresses.v1.networking.k8s.io
       - services.v1.
+      - deployments.v1.apps
   executor: |
     imagePullPolicy: IfNotPresent
     resources:

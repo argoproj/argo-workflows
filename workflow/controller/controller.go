@@ -823,7 +823,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				clusterName = wfv1.ClusterNameOr(clusterName, wfc.Config.ClusterName)
 				namespace = wfv1.NamespaceOr(namespace, wf.Namespace)
 				for _, resource := range wfc.Config.Resources.Get(clusterNamespace) {
-					gvr, _ := schema.ParseResourceArg(resource)
 					dy, err := wfc.dynamicInterfaceX(clusterName, namespace)
 					if err != nil {
 						if _, ok := err.(clusterNamespaceNotConfiguredErr); ok {
@@ -833,22 +832,34 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						}
 						return fmt.Errorf("failed to get dynamic interface: %w", err)
 					}
-					err = dy.Resource(*gvr).Namespace(namespace).DeleteCollection(
-						ctx,
-						metav1.DeleteOptions{
-							PropagationPolicy: &propagationBackground,
-						},
-						metav1.ListOptions{
-							LabelSelector: labels.NewSelector().
-								Add(wfc.clusterNameRequirement(clusterName)).
-								Add(wfc.instanceIdRequirement()).
-								Add(util.WorkflowNamespaceRequirement(wf.GetNamespace())).
-								Add(util.WorkflowNameRequirement(wf.GetName())).
-								String(),
-						},
-					)
+					gvr, _ := schema.ParseResourceArg(resource)
+					if gvr == nil {
+						return fmt.Errorf("failed to get parse resource: %s", resource)
+					}
+					log.Debugf("deleting all %s from %s.%s", resource, clusterName, namespace)
+					ri := dy.Resource(*gvr)
+					listOptions := metav1.ListOptions{
+						LabelSelector: labels.NewSelector().
+							Add(wfc.clusterNameRequirement(clusterName)).
+							Add(wfc.instanceIdRequirement()).
+							Add(util.WorkflowNamespaceRequirement(wf.GetNamespace())).
+							Add(util.WorkflowNameRequirement(wf.GetName())).
+							String(),
+					}
+					deleteOptions := metav1.DeleteOptions{PropagationPolicy: &propagationBackground}
+					err = ri.Namespace(namespace).DeleteCollection(ctx, deleteOptions, listOptions)
 					if err != nil {
-						return fmt.Errorf("failed to delete resources from %s for %s: %w", clusterName, key, err)
+						log.Warnf("failed to delete resources from %s for %s (falling back to list+delete): %s", clusterName, key, err)
+						list, err := ri.List(ctx, listOptions)
+						if err != nil {
+							return fmt.Errorf("failed to list resources from %s for %s: %w", clusterName, key, err)
+						}
+						for _, item := range list.Items {
+							err = ri.Namespace(namespace).Delete(ctx, item.GetName(), deleteOptions)
+							if err != nil {
+								return fmt.Errorf("failed to delete %s from %s for %s: %w", item.GetName(), clusterName, key, err)
+							}
+						}
 					}
 				}
 			}

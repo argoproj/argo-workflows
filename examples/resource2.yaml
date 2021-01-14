@@ -3,74 +3,104 @@ kind: Workflow
 metadata:
   generateName: resource2-
 spec:
-  podGC:
-    strategy: OnWorkflowCompletion
   entrypoint: main
   templates:
-  - name: main
-    dag:
-      tasks:
-        - name: deploy
-          template: deploy
-        - name: svc
-          template: svc
-          dependencies:
-            - deploy
-        - name: curl
-          template: curl
-          dependencies:
-            - svc
-        - name: sleep
-          template: sleep
-  - name: deploy
-    resource2:
-      apiVersion: apps/v1
-      kind: Deployment
-      spec:
-        selector:
-          matchLabels:
-            app: hello
-        template:
-          metadata:
-            labels:
+    - name: main
+      dag:
+        failFast: true
+        tasks:
+          - name: deploy
+            template: deploy
+          - name: svc
+            template: svc
+            dependencies:
+              - deploy
+          - name: ing
+            template: ing
+            dependencies:
+              - svc
+          - name: curl
+            template: curl
+            dependencies:
+              - ing
+          - name: sleep
+            template: sleep
+
+    - name: deploy
+      clusterName: other
+      namespace: default
+      resource2:
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          selector:
+            matchLabels:
               app: hello
-              workflows.argoproj.io/workflows: "{{workflow.name}}"
-          spec:
-            containers:
-              - name: main
-                image: argoproj/argosay:v2
-                args:
-                  - server
-                ports:
-                  - name: http
-                    containerPort: 8080
-                readinessProbe:
-                  httpGet:
-                    port: 8080
-  - name: svc
-    resource2:
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: "{{workflow.name}}-svc"
-      spec:
-        ports:
-          - name: http
-            port: 8080
-        selector:
-          app: hello
+          template:
+            metadata:
+              labels:
+                app: hello
+                workflows.argoproj.io/workflow: "{{workflow.name}}"
+            spec:
+              containers:
+                - name: main
+                  image: argoproj/argosay:v2
+                  args:
+                    - server
+                  ports:
+                    - name: http
+                      containerPort: 8080
+                  readinessProbe:
+                    httpGet:
+                      port: 8080
 
-  - name: curl
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - http
-        - get
-        - "http://{{workflow.name}}-svc:8080"
+    - name: svc
+      clusterName: other
+      namespace: default
+      resource2:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: "{{workflow.name}}"
+        spec:
+          ports:
+            - name: http
+              port: 8080
+          selector:
+            app: hello
 
-  - name: sleep
-    container:
-      image: argoproj/argosay:v2
-      args:
-        - sleep
-        - 3m
+    - name: ing
+      clusterName: other
+      namespace: default
+      resource2:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          annotations:
+            ingress.kubernetes.io/ssl-redirect: "false"
+        spec:
+          rules:
+            - http:
+                paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: "{{workflow.name}}"
+                        port:
+                          number: 8080
+
+    - name: curl
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - http
+          - get
+          - "http://host.k3d.internal:8081"
+
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - sleep
+          - 3m

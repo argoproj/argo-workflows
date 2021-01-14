@@ -12,7 +12,7 @@ export const icons: {[kind: string]: Icon} = {
     Endpoints: 'sitemap',
     Group: 'users',
     HorizontalPodAutoscaler: 'microchip',
-    Ingress: 'random',
+    Ingress: 'cloud',
     Job: 'th',
     LimitRange: 'box',
     NetworkPolicy: 'lock',

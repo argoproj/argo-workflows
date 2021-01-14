@@ -76,6 +76,7 @@ export const GraphPanel = (props: Props) => {
     layout(props.graph, nodeSize, horizontal, id => !visible(id), fast);
     const width = props.graph.width;
     const height = props.graph.height;
+    const fontSize = (12 * nodeSize) / GraphPanel.defaultProps.nodeSize;
 
     return (
         <div>
@@ -158,7 +159,9 @@ export const GraphPanel = (props: Props) => {
                                 return (
                                     <g key={`group/${g}`} className='group' transform={`translate(${r.x1 - nodeSize},${r.y1 - nodeSize})`}>
                                         <rect width={r.x2 - r.x1 + 2 * nodeSize} height={r.y2 - r.y1 + 2 * nodeSize} />
-                                        <text className='label'>{g}</text>
+                                        <text className='label' fontSize={1.5 * fontSize}>
+                                            {g}
+                                        </text>
                                     </g>
                                 );
                             })}
@@ -180,31 +183,33 @@ export const GraphPanel = (props: Props) => {
                                 ))}
                             {Array.from(props.graph.nodes)
                                 .filter(([n, label]) => label.x !== null && visible(n))
-                                .map(([n, label]) => (
-                                    <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`}>
-                                        <title>{n}</title>
-                                        <g
-                                            className={`node ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
-                                            onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
-                                            {((props.iconShapes || {})[label.genre] || props.defaultIconShape) === 'circle' ? (
-                                                <circle r={nodeSize / 2} className='bg' />
-                                            ) : (
-                                                <rect x={-nodeSize / 2} y={-nodeSize / 2} width={nodeSize} height={nodeSize} className='bg' rx={nodeSize / 4} />
-                                            )}
-                                            <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
-                                            {props.hideNodeTypes || (
-                                                <text y={nodeSize * 0.33} className='type' fontSize={(12 * nodeSize) / GraphPanel.defaultProps.nodeSize}>
-                                                    {label.genre}
+                                .map(([n, label]) => {
+                                    return (
+                                        <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`}>
+                                            <title>{n}</title>
+                                            <g
+                                                className={`node ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
+                                                onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
+                                                {((props.iconShapes || {})[label.genre] || props.defaultIconShape) === 'circle' ? (
+                                                    <circle r={nodeSize / 2} className='bg' />
+                                                ) : (
+                                                    <rect x={-nodeSize / 2} y={-nodeSize / 2} width={nodeSize} height={nodeSize} className='bg' rx={nodeSize / 4} />
+                                                )}
+                                                <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
+                                                {props.hideNodeTypes || (
+                                                    <text y={nodeSize * 0.33} className='type' fontSize={fontSize}>
+                                                        {label.genre}
+                                                    </text>
+                                                )}
+                                            </g>
+                                            <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
+                                                <text className='node-label' fontSize={(18 * nodeSize) / GraphPanel.defaultProps.nodeSize}>
+                                                    {formatLabel(label.label)}
                                                 </text>
-                                            )}
+                                            </g>
                                         </g>
-                                        <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
-                                            <text className='node-label' fontSize={(18 * nodeSize) / GraphPanel.defaultProps.nodeSize}>
-                                                {formatLabel(label.label)}
-                                            </text>
-                                        </g>
-                                    </g>
-                                ))}
+                                    );
+                                })}
                         </g>
                     </svg>
                 )}
