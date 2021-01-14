@@ -435,7 +435,8 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	assert := assert.New(t)
 	cancel, controller := newController()
 	defer cancel()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	ctx := context.Background()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
@@ -447,7 +448,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "hello1" {
 				assert.Equal(wfv1.NodePending, node.Phase)
@@ -455,11 +456,11 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		}
 
 		// Updating Pod state
-		makePodsPhase(woc, v1.PodSucceeded)
+		makePodsPhase(ctx, woc, v1.PodSucceeded)
 
 		// Release the lock from hello1
 		woc = newWorkflowOperationCtx(woc.wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "hello1" {
 				assert.Equal(wfv1.NodeSucceeded, node.Phase)
@@ -469,11 +470,11 @@ func TestSynchronizationWithRetry(t *testing.T) {
 			}
 		}
 		// Updating Pod state
-		makePodsPhase(woc, v1.PodSucceeded)
+		makePodsPhase(ctx, woc, v1.PodSucceeded)
 
 		// Release the lock  from hello2
 		woc = newWorkflowOperationCtx(woc.wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		// Nobody is waiting for the lock
 		assert.Empty(woc.wf.Status.Synchronization.Semaphore.Waiting)
 		// Nobody is holding the lock
