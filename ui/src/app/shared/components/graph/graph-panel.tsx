@@ -41,9 +41,7 @@ interface Props {
     onNodeSelect?: (id: Node) => void;
 }
 
-const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => {
-    return Object.assign(Object.assign({}, b), a);
-};
+const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => b && Object.assign(Object.assign({}, b), a);
 
 export const GraphPanel = (props: Props) => {
     const storage = new ScopedLocalStorage('graph/' + props.storageScope);

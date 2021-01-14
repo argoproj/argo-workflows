@@ -95,11 +95,11 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     }
 });
 
-const calender = {example: {interval: '10s'}};
+const calender = {'example-with-interval': {interval: '10s'}};
 
 export const exampleEventSource = (namespace: string): EventSource => ({
     metadata: {
-        name: randomSillyName(),
+        name: 'calendar',
         namespace,
         labels
     },
@@ -110,32 +110,55 @@ export const exampleEventSource = (namespace: string): EventSource => ({
 
 export const exampleSensor = (namespace: string): Sensor => ({
     metadata: {
-        name: randomSillyName(),
+        name: 'workflow',
         namespace,
         labels
     },
     spec: {
         dependencies: [
             {
-                name: 'dep01',
-                eventSourceName: 'eventSource01',
-                eventName: 'event01'
+                name: 'dependency-1',
+                eventSourceName: 'calendar',
+                eventName: 'example-with-interval'
             }
         ],
         triggers: [
             {
                 template: {
-                    name: 'trigger01',
+                    name: 'workflow-trigger-1',
                     k8s: {
                         group: 'argoproj.io',
                         version: 'v1alpha1',
                         resource: 'workflows',
                         operation: 'create',
                         source: {
-                            resource: exampleWorkflow(namespace)
+                            resource: {
+                                "metadata": {
+                                    "generateName": "workflow-from-sensor-"
+                                },
+                                "spec": {
+                                    "entrypoint": "main",
+                                    "templates": [
+                                        {
+                                            "name": "main",
+                                            "container": {
+                                                "image": "argoproj/argosay:v2"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
                         }
-                    }
-                }
+                    },
+
+                },
+
+
+            },{
+            template:{
+                name: 'log-1',
+                log: {                    }
+            }
             }
         ]
     }

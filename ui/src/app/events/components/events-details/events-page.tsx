@@ -191,6 +191,16 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
                 actionMenu: {
                     items: [
                         {
+                            action: () => navigation.goto(uiUrl('event-sources/' + namespace + "?sidePanel=true")),
+                            iconClassName: 'fa fa-bolt',
+                            title: 'Create event source'
+                        },
+                        {
+                            action: () => navigation.goto(uiUrl('sensors/' + namespace + "?sidePanel=true")),
+                            iconClassName: 'fa fa-satellite-dish',
+                            title: 'Create sensor'
+                        },
+                        {
                             action: () => setShowFlow(!showFlow),
                             iconClassName: showFlow ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
                             disabled: emptyGraph,

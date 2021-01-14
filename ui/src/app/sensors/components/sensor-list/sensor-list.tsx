@@ -88,7 +88,12 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                 <Loading />
             ) : sensors.length === 0 ? (
                 <ZeroState title='No sensors'>
-                    <p>You can create new sensors here.</p>
+                    <p>
+                        A sensor defines what actions to trigger when certain events occur.
+                        Typical events are a Git push, a file dropped into a bucket, or a message on a queue or topic.
+                        Typical triggers are start a workflow, creating a Kubernetes resource, or sending a message to another queue or topic.
+                        Each sensor listens for events from the event bus, checks to see if they're the right one, and then triggers some actions.
+                    </p>
                     <p>{learnMore}.</p>
                 </ZeroState>
             ) : (
@@ -107,7 +112,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                                 key={`${s.metadata.namespace}/${s.metadata.name}`}
                                 to={uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i className={classNames('fa', EventsUtils.statusIconClasses(s.status != null ? s.status.conditions : [], 'fa-circle'))} aria-hidden='true' />
+                                    <i className={classNames('fa', EventsUtils.statusIconClasses(s.status != null ? s.status.conditions : [], 'fa-satellite-dish'))} aria-hidden='true' />
                                 </div>
                                 <div className='columns small-4'>{s.metadata.name}</div>
                                 <div className='columns small-3'>{s.metadata.namespace}</div>
@@ -126,6 +131,9 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                             </Link>
                         ))}
                     </div>
+                    <div style={{margin:20}}><a onClick={() => navigation.goto(uiUrl("events/" + namespace))}>
+                        Show event-flow page
+                    </a></div>
                 </>
             )}
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>

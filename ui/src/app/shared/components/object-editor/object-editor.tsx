@@ -80,12 +80,13 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                     key='editor'
                     value={text}
                     language={lang}
-                    height='600px'
+                    height='400px'
                     options={{
                         readOnly: onChange === null,
                         minimap: {enabled: false},
                         lineNumbers: 'off',
-                        renderIndentGuides: false
+                        renderIndentGuides: false,
+                        scrollBeyondLastLine:true,
                     }}
                 />
             </div>

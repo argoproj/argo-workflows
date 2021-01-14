@@ -40,6 +40,7 @@ export type Icon =
     | 'pause-circle'
     | 'plus'
     | 'redo-alt'
+    | 'satellite-dish'
     | 'save'
     | 'sign-out-alt'
     | 'sitemap'

@@ -110,7 +110,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             {
                                 title: 'Sensors',
                                 path: sensorUrl + '/' + namespace,
-                                iconClassName: 'fa fa-circle'
+                                iconClassName: 'fa fa-satellite-dish'
                             },
                             {
                                 title: 'Workflow Event Bindings',

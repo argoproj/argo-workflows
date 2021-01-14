@@ -29,6 +29,9 @@ export const EventSourceCreator = ({onCreate, namespace}: {namespace: string; on
             </div>
             <ErrorNotice error={error} />
             <EventSourceEditor eventSource={eventSource} onChange={setEventSource} onError={setError} />
+            <p><a href='https://github.com/argoproj/argo-events/tree/stable/examples/event-sources'>
+                Example event sources <i className='fa fa-external-link-alt'/>
+            </a></p>
         </>
     );
 };

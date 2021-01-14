@@ -21,7 +21,7 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceCreator} from '../event-source-creator';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
 
-const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/eventsource/'>Learn more</a>;
+const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
 
 export const EventSourceList = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
@@ -72,7 +72,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
             title='EventSources'
             toolbar={{
                 breadcrumbs: [
-                    {title: 'EventSource', path: uiUrl('event-sources')},
+                    {title: 'Event Sources', path: uiUrl('event-sources')},
                     {title: namespace, path: uiUrl('event-sources/' + namespace)}
                 ],
                 actionMenu: {
@@ -90,8 +90,12 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
             {!eventSources ? (
                 <Loading />
             ) : eventSources.length === 0 ? (
-                <ZeroState title='No eventsources'>
-                    <p>You can create new EventSource here.</p>
+                <ZeroState title='No event sources'>
+                    <p>
+                        An event source defines what events can be used to trigger actions.
+                        Typical event sources are calender (to create events on schedule) GitHub or GitLab (to create events for Git pushes), or MinIO (to create events for file drops).
+                        Each event source publishes messages to the event bus so that sensors can listen for them.
+                    </p>
                     <p>{learnMore}.</p>
                 </ZeroState>
             ) : (
@@ -128,6 +132,10 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                             </Link>
                         ))}
                     </div>
+
+                    <div style={{margin:20}}><a onClick={() => navigation.goto(uiUrl("events/" + namespace))}>
+                        Show events-flow page
+                    </a></div>
                 </>
             )}
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>

@@ -29,6 +29,9 @@ export const SensorCreator = ({namespace, onCreate}: {namespace: string; onCreat
             </div>
             <ErrorNotice error={error} />
             <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} />
+            <p><a href='https://github.com/argoproj/argo-events/tree/stable/examples/sensors'>
+                Example sensors <i className='fa fa-external-link-alt'/>
+            </a></p>
         </>
     );
 };

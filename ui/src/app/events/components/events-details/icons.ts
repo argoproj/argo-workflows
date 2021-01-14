@@ -41,7 +41,7 @@ export const icons: {[type: string]: Icon} = {
     resourceEventSource: manifest,
     snsEventSource: queue,
     sqsEventSource: queue,
-    sensor: 'circle', // resource type
+    sensor: 'satellite-dish', // resource type
     slackEventSource: chat,
     slackTrigger: chat,
     storageGridEventSource: grid,

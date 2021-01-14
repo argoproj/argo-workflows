@@ -35,7 +35,7 @@ export const buildGraph = (eventSources: EventSource[], sensors: Sensor[], workf
 
     (sensors || []).forEach(sensor => {
         const sensorId = ID.join('Sensor', sensor.metadata.namespace, sensor.metadata.name);
-        graph.nodes.set(sensorId, {genre: 'sensor', label: sensor.metadata.name, icon: icons.sensor, classNames: status(sensor)});
+        graph.nodes.set(sensorId, {genre: 'sensor', label: sensor.metadata.name, icon: icons.sensor || 'circle', classNames: status(sensor)});
         (sensor.spec.dependencies || []).forEach(d => {
             const eventId = ID.join('EventSource', sensor.metadata.namespace, d.eventSourceName, d.eventName);
             graph.edges.set({v: eventId, w: sensorId}, {label: edgeLabel(eventId, d.name), classNames: edgeClassNames(eventId)});
