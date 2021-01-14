@@ -133,6 +133,8 @@ export const exampleSensor = (namespace: string): Sensor => ({
                         operation: 'create',
                         source: {
                             resource: {
+                                apiVersion: 'argoproj.io/v1alpha1',
+                                kind: 'Workflow',
                                 metadata: {
                                     generateName: 'workflow-from-sensor-'
                                 },
