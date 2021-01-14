@@ -16,7 +16,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 export const CronWorkflowDetails = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {navigation, notifications} = useContext(Context);
+    const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
@@ -132,14 +132,15 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                             iconClassName: 'fa fa-trash',
                             disabled: edited,
                             action: () => {
-                                if (!confirm('Are you sure you want to delete this cron workflow?\nThere is no undo.')) {
-                                    return;
-                                }
-                                services.cronWorkflows
-                                    .delete(name, namespace)
-                                    .then(() => navigation.goto(uiUrl('cron-workflows/' + namespace)))
-                                    .then(() => setError(null))
-                                    .catch(setError);
+                                popup.confirm('confirm', 'Are you sure you want to delete this cron workflow?').then(yes => {
+                                    if (yes) {
+                                        services.cronWorkflows
+                                            .delete(name, namespace)
+                                            .then(() => navigation.goto(uiUrl('cron-workflows/' + namespace)))
+                                            .then(() => setError(null))
+                                            .catch(setError);
+                                    }
+                                });
                             }
                         },
                         {

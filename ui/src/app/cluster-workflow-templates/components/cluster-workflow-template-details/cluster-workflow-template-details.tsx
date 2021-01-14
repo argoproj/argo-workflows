@@ -18,7 +18,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 export const ClusterWorkflowTemplateDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
-    const {navigation, notifications} = useContext(Context);
+    const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     const name = match.params.name;
@@ -91,14 +91,15 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
                             action: () => {
-                                if (!confirm('Are you sure you want to delete this cluster workflow template?\nThere is no undo.')) {
-                                    return;
-                                }
-                                services.clusterWorkflowTemplate
-                                    .delete(name)
-                                    .then(() => navigation.goto(uiUrl('cluster-workflow-templates')))
-                                    .then(() => setError(null))
-                                    .catch(setError);
+                                popup.confirm('confirm', 'Are you sure you want to delete this cluster workflow template?').then(yes => {
+                                    if (yes) {
+                                        services.clusterWorkflowTemplate
+                                            .delete(name)
+                                            .then(() => navigation.goto(uiUrl('cluster-workflow-templates')))
+                                            .then(() => setError(null))
+                                            .catch(setError);
+                                    }
+                                });
                             }
                         }
                     ]
