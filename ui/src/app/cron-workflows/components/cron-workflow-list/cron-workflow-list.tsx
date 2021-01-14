@@ -7,12 +7,14 @@ import {BasePage} from '../../../shared/components/base-page';
 import {DurationFromNow} from '../../../shared/components/duration-panel';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {getNextScheduledTime} from '../../../shared/cron';
+import {Footnote} from '../../../shared/footnote';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {CronWorkflowCreator} from '../cron-workflow-creator';
@@ -73,9 +75,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             },
                             tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                         }}>
-                        <div className='row'>
-                            <div className='columns small-12'>{this.renderCronWorkflows()}</div>
-                        </div>
+                        {this.renderCronWorkflows()}
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <CronWorkflowCreator
                                 namespace={this.namespace}
@@ -147,10 +147,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                         </Link>
                     ))}
                 </div>
-                <p>
-                    <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. Next scheduled run assumes workflow-controller is in UTC.{' '}
-                    <ExampleManifests />. {learnMore}.
-                </p>
+                <Footnote>
+                    <InfoIcon /> Cron workflows are workflows that run on a preset schedule. Next scheduled run assumes workflow-controller is in UTC. <ExampleManifests />.{' '}
+                    {learnMore}.
+                </Footnote>
             </>
         );
     }

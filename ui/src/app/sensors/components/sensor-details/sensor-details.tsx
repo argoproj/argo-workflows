@@ -3,7 +3,7 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {Sensor} from '../../../../models';
-import {ID} from '../../../events/components/events-details/id';
+import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Node} from '../../../shared/components/graph/types';

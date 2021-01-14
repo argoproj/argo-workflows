@@ -19,7 +19,7 @@ export class SensorService {
 
     public update(sensor: Sensor, namespace: string) {
         return requests
-            .put(`api/v1/sensors/${namespace}`)
+            .put(`api/v1/sensors/${namespace}/${sensor.metadata.name}`)
             .send({sensor})
             .then(res => res.body as Sensor);
     }

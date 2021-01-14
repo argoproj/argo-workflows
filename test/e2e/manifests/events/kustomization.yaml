@@ -3,8 +3,8 @@ kind: Kustomization
 
 resources:
 - ../../../../manifests/quick-start/minimal
-- https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/install.yaml
-- https://raw.githubusercontent.com/argoproj/argo-events/stable/examples/eventbus/native.yaml
+- https://raw.githubusercontent.com/argoproj/argo-events/v1.2.0/manifests/install.yaml
+- https://raw.githubusercontent.com/argoproj/argo-events/v1.2.0/examples/eventbus/native.yaml
 
 patchesStrategicMerge:
 - ../mixins/argo-server-deployment.yaml

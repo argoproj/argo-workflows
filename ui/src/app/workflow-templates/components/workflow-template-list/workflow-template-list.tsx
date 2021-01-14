@@ -6,11 +6,13 @@ import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
+import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {WorkflowTemplateCreator} from '../workflow-template-creator';
@@ -104,9 +106,9 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
                             </Link>
                         ))}
                     </div>
-                    <p>
-                        <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
-                    </p>
+                    <Footnote>
+                        <InfoIcon /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
+                    </Footnote>
                 </>
             )}
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>

@@ -5,6 +5,7 @@ import {RouteComponentProps} from 'react-router-dom';
 import {WorkflowEventBinding} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {InfoIcon} from '../../../shared/components/fa-icons';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
@@ -12,9 +13,18 @@ import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
+import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {ID} from './id';
+
+const introductionText = (
+    <>
+        Workflow event bindings allow you to trigger workflows when a webhook event is received. For example, start a build on a Git commit, or start a machine learning pipeline
+        from a remote system.
+    </>
+);
+const learnMore = <a href={'https://argoproj.github.io/argo/events/'}>Learn more</a>;
 
 export const WorkflowEventBindings = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
@@ -80,10 +90,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                 <Loading />
             ) : workflowEventBindings.length === 0 ? (
                 <ZeroState>
-                    <p>
-                        Workflow event bindings allow you to trigger workflows when a webhook event is received. For example, start a build on a Git commit, or start a machine
-                        learning pipeline from a remote system.
-                    </p>
+                    <p>{introductionText}</p>
                     <p>
                         Once you've created a a workflow event binding, you can test it from the CLI using <code>curl</code>, for example:
                     </p>
@@ -96,9 +103,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     <p>
                         You'll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for "EventService.
                     </p>
-                    <p>
-                        <a href='https://argoproj.github.io/argo/events/'>Learn more</a>
-                    </p>
+                    <p>{learnMore}</p>
                 </ZeroState>
             ) : (
                 <>
@@ -118,6 +123,9 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                             }
                         }}
                     />
+                    <Footnote>
+                        <InfoIcon /> {introductionText} {learnMore}.
+                    </Footnote>
                     <SlidingPanel isShown={!!selectedWorkflowEventBinding} onClose={() => setSelectedWorkflowEventBinding(null)}>
                         {selected && <ResourceEditor value={selected} />}
                     </SlidingPanel>

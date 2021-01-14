@@ -31,8 +31,8 @@
   background-color: white;
   box-shadow: 1px 1px 3px $argo-color-gray-5;
 
-  a {
-    padding: 10px;
+  div.argo-dropdown, a {
+    padding: 5px;
     color: $argo-color-gray-6;
     border: 1px solid transparent;
     border-radius: 5px;

@@ -133,32 +133,30 @@ export const exampleSensor = (namespace: string): Sensor => ({
                         operation: 'create',
                         source: {
                             resource: {
-                                "metadata": {
-                                    "generateName": "workflow-from-sensor-"
+                                metadata: {
+                                    generateName: 'workflow-from-sensor-'
                                 },
-                                "spec": {
-                                    "entrypoint": "main",
-                                    "templates": [
+                                spec: {
+                                    entrypoint: 'main',
+                                    templates: [
                                         {
-                                            "name": "main",
-                                            "container": {
-                                                "image": "argoproj/argosay:v2"
+                                            name: 'main',
+                                            container: {
+                                                image: 'argoproj/argosay:v2'
                                             }
                                         }
                                     ]
                                 }
                             }
                         }
-                    },
-
-                },
-
-
-            },{
-            template:{
-                name: 'log-1',
-                log: {                    }
-            }
+                    }
+                }
+            },
+            {
+                template: {
+                    name: 'log-1',
+                    log: {}
+                }
             }
         ]
     }

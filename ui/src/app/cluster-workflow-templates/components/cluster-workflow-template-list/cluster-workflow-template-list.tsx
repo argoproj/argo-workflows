@@ -6,10 +6,12 @@ import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
+import {Footnote} from '../../../shared/footnote';
 import {services} from '../../../shared/services';
 import {ClusterWorkflowTemplateCreator} from '../cluster-workflow-template-creator';
 
@@ -92,32 +94,29 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
             );
         }
         return (
-            <div className='row'>
-                <div className='columns small-12'>
-                    <div className='argo-table-list'>
-                        <div className='row argo-table-list__head'>
-                            <div className='columns small-1' />
-                            <div className='columns small-5'>NAME</div>
-                            <div className='columns small-3'>CREATED</div>
-                        </div>
-                        {this.state.templates.map(t => (
-                            <Link className='row argo-table-list__row' key={t.metadata.uid} to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
-                                <div className='columns small-1'>
-                                    <i className='fa fa-clone' />
-                                </div>
-                                <div className='columns small-5'>{t.metadata.name}</div>
-                                <div className='columns small-3'>
-                                    <Timestamp date={t.metadata.creationTimestamp} />
-                                </div>
-                            </Link>
-                        ))}
+            <>
+                <div className='argo-table-list'>
+                    <div className='row argo-table-list__head'>
+                        <div className='columns small-1' />
+                        <div className='columns small-5'>NAME</div>
+                        <div className='columns small-3'>CREATED</div>
                     </div>
-                    <p>
-                        <i className='fa fa-info-circle' /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />.{' '}
-                        {learnMore}.
-                    </p>
+                    {this.state.templates.map(t => (
+                        <Link className='row argo-table-list__row' key={t.metadata.uid} to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
+                            <div className='columns small-1'>
+                                <i className='fa fa-clone' />
+                            </div>
+                            <div className='columns small-5'>{t.metadata.name}</div>
+                            <div className='columns small-3'>
+                                <Timestamp date={t.metadata.creationTimestamp} />
+                            </div>
+                        </Link>
+                    ))}
                 </div>
-            </div>
+                <Footnote>
+                    <InfoIcon /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
+                </Footnote>
+            </>
         );
     }
 }

@@ -86,7 +86,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         minimap: {enabled: false},
                         lineNumbers: 'off',
                         renderIndentGuides: false,
-                        scrollBeyondLastLine:true,
+                        scrollBeyondLastLine: true
                     }}
                 />
             </div>

@@ -9,6 +9,7 @@ import {Sensor} from '../../../../models/sensor';
 import {uiUrl} from '../../../shared/base';
 import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {InfoIcon} from '../../../shared/components/fa-icons';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Node} from '../../../shared/components/graph/types';
 import {Links} from '../../../shared/components/links';
@@ -16,6 +17,7 @@ import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
+import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
@@ -25,9 +27,9 @@ import {buildGraph} from './build-graph';
 import {genres} from './genres';
 import {ID} from './id';
 
-require('./event-page.scss');
+require('./event-flow-page.scss');
 
-export const EventsPage = ({history, location, match}: RouteComponentProps<any>) => {
+export const EventFlowPage = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
     const {navigation} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -42,7 +44,7 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
     useEffect(
         () =>
             history.push(
-                historyUrl('events/{namespace}', {
+                historyUrl('event-flow/{namespace}', {
                     namespace,
                     showFlow,
                     showWorkflows,
@@ -182,21 +184,21 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
     const emptyGraph = graph.nodes.size === 0;
     return (
         <Page
-            title='Events'
+            title='Event Flow'
             toolbar={{
                 breadcrumbs: [
-                    {title: 'Events', path: uiUrl('events')},
-                    {title: namespace, path: uiUrl('events/' + namespace)}
+                    {title: 'Event Flow', path: uiUrl('event-flow')},
+                    {title: namespace, path: uiUrl('event-flow/' + namespace)}
                 ],
                 actionMenu: {
                     items: [
                         {
-                            action: () => navigation.goto(uiUrl('event-sources/' + namespace + "?sidePanel=true")),
+                            action: () => navigation.goto(uiUrl('event-sources/' + namespace + '?sidePanel=true')),
                             iconClassName: 'fa fa-bolt',
                             title: 'Create event source'
                         },
                         {
-                            action: () => navigation.goto(uiUrl('sensors/' + namespace + "?sidePanel=true")),
+                            action: () => navigation.goto(uiUrl('sensors/' + namespace + '?sidePanel=true')),
                             iconClassName: 'fa fa-satellite-dish',
                             title: 'Create sensor'
                         },
@@ -253,10 +255,12 @@ export const EventsPage = ({history, location, match}: RouteComponentProps<any>)
                         }}
                     />
                     {showFlow && (
-                        <p className='argo-container'>
-                            <i className='fa fa-info-circle' /> Event-flow is proxy for events. It is based on the pod logs of the event sources and sensors, so should be treated
-                            only as indicative of activity.
-                        </p>
+                        <div className='argo-container'>
+                            <Footnote>
+                                <InfoIcon /> Event-flow is proxy for events. It is based on the pod logs of the event sources and sensors, so should be treated only as indicative
+                                of activity.
+                            </Footnote>
+                        </div>
                     )}
                 </>
             )}

@@ -5,7 +5,7 @@ import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {EventSource} from '../../../../models';
 import {kubernetes} from '../../../../models';
-import {ID} from '../../../events/components/events-details/id';
+import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {Utils as EventsUtils} from '../../../sensors/components/utils';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -15,6 +15,7 @@ import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
+import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {EventsPanel} from '../../../workflows/components/events-panel';
@@ -92,9 +93,9 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
             ) : eventSources.length === 0 ? (
                 <ZeroState title='No event sources'>
                     <p>
-                        An event source defines what events can be used to trigger actions.
-                        Typical event sources are calender (to create events on schedule) GitHub or GitLab (to create events for Git pushes), or MinIO (to create events for file drops).
-                        Each event source publishes messages to the event bus so that sensors can listen for them.
+                        An event source defines what events can be used to trigger actions. Typical event sources are calender (to create events on schedule) GitHub or GitLab (to
+                        create events for Git pushes), or MinIO (to create events for file drops). Each event source publishes messages to the event bus so that sensors can listen
+                        for them.
                     </p>
                     <p>{learnMore}.</p>
                 </ZeroState>
@@ -132,10 +133,9 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                             </Link>
                         ))}
                     </div>
-
-                    <div style={{margin:20}}><a onClick={() => navigation.goto(uiUrl("events/" + namespace))}>
-                        Show events-flow page
-                    </a></div>
+                    <Footnote>
+                        <a onClick={() => navigation.goto(uiUrl('event-flow/' + namespace))}>Show events-flow page</a>
+                    </Footnote>
                 </>
             )}
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>

@@ -9,8 +9,8 @@ import apidocs from './apidocs';
 import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
+import eventflow from './event-flow';
 import eventSources from './event-sources';
-import events from './events';
 import help from './help';
 import login from './login';
 import reports from './reports';
@@ -26,7 +26,7 @@ import workflowEventBindings from './workflow-event-bindings';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
-const eventsUrl = uiUrl('events');
+const eventFlowUrl = uiUrl('event-flow');
 const sensorUrl = uiUrl('sensors');
 const workflowsUrl = uiUrl('workflows');
 const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
@@ -98,8 +98,8 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-clock'
                             },
                             {
-                                title: 'Events',
-                                path: eventsUrl + '/' + namespace,
+                                title: 'Event Flow',
+                                path: eventFlowUrl + '/' + namespace,
                                 iconClassName: 'fa fa-broadcast-tower'
                             },
                             {
@@ -115,7 +115,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             {
                                 title: 'Workflow Event Bindings',
                                 path: workflowsEventBindingsUrl + '/' + namespace,
-                                iconClassName: 'fa fa-cloud'
+                                iconClassName: 'fa fa-link'
                             },
                             {
                                 title: 'Archived Workflows',
@@ -150,7 +150,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 <Route exact={true} strict={true} path={timelineUrl}>
                                     <Redirect to={workflowsUrl} />
                                 </Route>
-                                <Route path={eventsUrl} component={events.component} />
+                                <Route path={eventFlowUrl} component={eventflow.component} />
                                 <Route path={sensorUrl} component={sensors.component} />
                                 <Route path={eventSourceUrl} component={eventSources.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />

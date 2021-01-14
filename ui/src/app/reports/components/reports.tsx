@@ -15,6 +15,7 @@ import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {ZeroState} from '../../shared/components/zero-state';
 import {Consumer, ContextApis} from '../../shared/context';
 import {denominator} from '../../shared/duration';
+import {Footnote} from '../../shared/footnote';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 
@@ -343,11 +344,9 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                         </div>
                     </div>
                 ))}
-                <p>
-                    <small>
-                        <InfoIcon /> {this.state.charts[0].data.labels.length} records.
-                    </small>
-                </p>
+                <Footnote>
+                    <InfoIcon /> {this.state.charts[0].data.labels.length} records.
+                </Footnote>
             </>
         );
     }

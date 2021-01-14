@@ -73,18 +73,20 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
-                        popup
-                            .confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`)
-                            .then(() => workflowOperation.action(workflow))
-                            .then((wf: Workflow) => {
-                                if (workflowOperation.title === 'DELETE') {
-                                    navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                } else {
-                                    // TODO - should fix this
-                                    document.location.href = uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`);
-                                }
-                            })
-                            .catch(setError);
+                        popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
+                            if (yes) {
+                                workflowOperation
+                                    .action(workflow)
+                                    .then((wf: Workflow) => {
+                                        if (workflowOperation.title === 'DELETE') {
+                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                        } else {
+                                            navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                        }
+                                    })
+                                    .catch(setError);
+                            }
+                        });
                     }
                 };
             });

@@ -32,6 +32,7 @@ export const icons: {[key: string]: string} = {
     'pause': '\uf04c',
     'pause-circle': '\uf28b',
     'redo-alt': '\uf2f9',
+    'satellite-dish': '\uf7c0',
     'save': '\uf0c7',
     'sign-out-alt': '\uf2f5',
     'sitemap': '\uf0e8',
