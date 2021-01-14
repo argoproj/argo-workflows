@@ -11,6 +11,8 @@ export type Icon =
     | 'clock'
     | 'code'
     | 'comment'
+    | 'caret-left'
+    | 'caret-right'
     | 'code-branch'
     | 'credit-card'
     | 'check'

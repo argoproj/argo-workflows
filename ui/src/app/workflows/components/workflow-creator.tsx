@@ -1,6 +1,7 @@
+import {Select} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
-import {useState} from 'react';
-import {Workflow} from '../../../models';
+import {useEffect, useState} from 'react';
+import {Workflow, WorkflowTemplate} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ExampleManifests} from '../../shared/components/example-manifests';
@@ -8,47 +9,117 @@ import {UploadButton} from '../../shared/components/upload-button';
 import {exampleWorkflow} from '../../shared/examples';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
-import {FromWorkflowTemplate} from './from-workflow-template';
+import {SubmitWorkflowPanel} from './submit-workflow-panel';
 import {WorkflowEditor} from './workflow-editor';
 
+type Stage = 'choose-method' | 'submit-workflow' | 'full-editor';
+
 export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) => {
-    const [workflow, setWorkflow] = useState<Workflow>(exampleWorkflow(Utils.getNamespace(namespace)));
+    const [workflowTemplates, setWorkflowTemplates] = useState<WorkflowTemplate[]>();
+    const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>();
+    const [stage, setStage] = useState<Stage>('choose-method');
+    const [workflow, setWorkflow] = useState<Workflow>();
     const [error, setError] = useState<Error>();
-    const [displayWorkflowEditor, setDisplayWorkflowEditor] = useState<boolean>(true);
+
+    useEffect(() => {
+        services.workflowTemplate
+            .list(namespace)
+            .then(setWorkflowTemplates)
+            .catch(setError);
+    }, []);
+
+    useEffect(() => {
+        switch (stage) {
+            case 'full-editor':
+                if (workflowTemplate) {
+                    setWorkflow({
+                        metadata: {
+                            generateName: workflowTemplate.metadata.name + '-',
+                            namespace,
+                            labels: {
+                                'workflows.argoproj.io/workflow-template': workflowTemplate.metadata.name,
+                                'submit-from-ui': 'true'
+                            }
+                        },
+                        spec: {
+                            arguments: workflowTemplate.spec.arguments,
+                            workflowTemplateRef: {
+                                name: workflowTemplate.metadata.name
+                            }
+                        }
+                    });
+                } else {
+                    setWorkflow(exampleWorkflow(Utils.getNamespace(namespace)));
+                }
+                break;
+        }
+    }, [stage]);
+
+    useEffect(() => {
+        if (workflowTemplate) {
+            setStage('submit-workflow');
+        }
+    }, [workflowTemplate]);
+
     return (
         <>
-            <div>
-                <UploadButton onUpload={setWorkflow} onError={setError} />
-                <Button
-                    icon='plus'
-                    onClick={() => {
-                        services.workflows
-                            .create(workflow, workflow.metadata.namespace)
-                            .then(onCreate)
-                            .catch(setError);
-                    }}>
-                    Create
-                </Button>
-            </div>
-            <FromWorkflowTemplate
-                namespace={namespace}
-                onError={setError}
-                onTemplateSelect={workflowSelected => {
-                    setWorkflow(workflowSelected);
-                    setDisplayWorkflowEditor(false);
-                }}
-            />
-            <ErrorNotice error={error} />
-            {displayWorkflowEditor ? (
-                <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
-            ) : (
-                <a onClick={() => setDisplayWorkflowEditor(true)} style={{cursor: 'pointer'}}>
-                    Full workflow options
-                </a>
+            {stage === 'choose-method' && (
+                <div className='white-box'>
+                    <h4>Submit new workflow</h4>
+                    <p>Either:</p>
+                    <div style={{margin: 10, marginLeft: 20}}>
+                        <label>Choose a workflow template</label>
+                        <Select
+                            options={workflowTemplates && workflowTemplates.length > 0 ? workflowTemplates.map(tmpl => tmpl.metadata.name) : []}
+                            value={workflowTemplate && workflowTemplate.metadata.name}
+                            onChange={templateName => setWorkflowTemplate((workflowTemplates || []).find(template => template.metadata.name === templateName.title))}
+                        />
+                    </div>
+                    <p>or</p>
+                    <div style={{margin: 10, marginLeft: 20}}>
+                        <a onClick={() => setStage('full-editor')}>
+                            Edit using full workflow options <i className='fa fa-caret-right' />
+                        </a>
+                    </div>
+                </div>
             )}
-            <div>
-                <ExampleManifests />.
-            </div>
+            {stage === 'submit-workflow' && workflowTemplate && (
+                <>
+                    <SubmitWorkflowPanel
+                        kind='WorkflowTemplate'
+                        namespace={workflowTemplate.metadata.namespace}
+                        name={workflowTemplate.metadata.name}
+                        entrypoint={workflowTemplate.spec.entrypoint}
+                        entrypoints={(workflowTemplate.spec.templates || []).map(t => t.name)}
+                        parameters={workflowTemplate.spec.arguments.parameters || []}
+                    />
+                    <Button outline={true} onClick={() => setStage('full-editor')}>
+                        Edit using full workflow options
+                    </Button>
+                </>
+            )}
+            {stage === 'full-editor' && workflow && (
+                <>
+                    <div>
+                        <UploadButton onUpload={setWorkflow} onError={setError} />
+                        <Button
+                            icon='plus'
+                            onClick={() => {
+                                services.workflows
+                                    .create(workflow, workflow.metadata.namespace)
+                                    .then(onCreate)
+                                    .catch(setError);
+                            }}>
+                            Create
+                        </Button>
+                    </div>
+                    <ErrorNotice error={error} />
+                    <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
+                    <div>
+                        <ExampleManifests />.
+                    </div>
+                </>
+            )}
         </>
     );
 };
