@@ -344,19 +344,20 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	node, err := woc.executeTemplate(ctx, woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
-		err := fmt.Errorf("error in entry template execution: %w", err)
 		woc.log.WithError(err).Error("error in entry template execution")
+		// we wrap this error up to report a clear message
+		x := fmt.Errorf("error in entry template execution: %w", err)
 		switch err {
 		case ErrDeadlineExceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", err.Error())
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 		case ErrParallelismReached:
 		case ErrTimeout:
 			if !woc.wf.Status.Phase.Completed() {
-				woc.markWorkflowFailed(ctx, err.Error())
+				woc.markWorkflowFailed(ctx, x.Error())
 			}
 		default:
 			if !woc.wf.Status.Phase.Completed() {
-				woc.markWorkflowError(ctx, err)
+				woc.markWorkflowError(ctx, x)
 			}
 		}
 		return
