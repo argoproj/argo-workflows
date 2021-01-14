@@ -179,7 +179,7 @@ else
 endif
 
 $(GOPATH)/bin/staticfiles:
-	go get bou.ke/staticfiles
+	go install bou.ke/staticfiles
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
@@ -314,7 +314,7 @@ $(GOPATH)/bin/swagger:
 	$(call go_install,github.com/go-swagger/go-swagger/cmd/swagger)
 
 $(GOPATH)/bin/goimports:
-	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
+	go install golang.org/x/tools/cmd/goimports
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor
@@ -440,7 +440,7 @@ test-images:
 	$(call docker_pull,python:alpine3.6)
 
 $(GOPATH)/bin/goreman:
-	go get github.com/mattn/goreman
+	go install github.com/mattn/goreman
 
 .PHONY: start
 ifeq ($(RUN_MODE),kubernetes)
