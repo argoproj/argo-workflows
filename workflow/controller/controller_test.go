@@ -264,6 +264,14 @@ func expectWorkflow(ctx context.Context, controller *WorkflowController, name st
 	test(wf)
 }
 
+func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+}
+
+func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+}
+
 type with func(pod *apiv1.Pod)
 
 func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }

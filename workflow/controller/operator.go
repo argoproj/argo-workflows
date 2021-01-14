@@ -344,13 +344,18 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	node, err := woc.executeTemplate(ctx, woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
-		// the error are handled in the callee so just log it.
-		msg := "error in entry template execution"
-		woc.log.WithError(err).Error(msg)
-		msg = fmt.Sprintf("%s %s: %+v", woc.wf.Name, msg, err)
 		switch err {
 		case ErrDeadlineExceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", msg)
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err))
+		case ErrParallelismReached:
+		case ErrTimeout:
+			if !woc.wf.Status.Phase.Completed() {
+				woc.markWorkflowFailed(ctx, err.Error())
+			}
+		default:
+			if !woc.wf.Status.Phase.Completed() {
+				woc.markWorkflowError(ctx, err)
+			}
 		}
 		return
 	}
@@ -881,10 +886,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Fulfilled() && !node.IsDaemoned() {
-				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
-					if tmpVal == "true" {
-						return
-					}
+				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
+					return
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
 				if woc.shouldPrintPodSpec(node) {

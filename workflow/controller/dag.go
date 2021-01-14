@@ -468,11 +468,10 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				return
 			case ErrParallelismReached:
 			case ErrTimeout:
-				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
+				woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return
 			default:
-				woc.log.Infof("DAG %s deemed errored due to task %s error: %s", node.ID, taskNodeName, err.Error())
-				_ = woc.markNodePhase(taskNodeName, wfv1.NodeError, fmt.Sprintf("task '%s' errored", taskNodeName))
+				woc.markNodeError(taskNodeName, err)
 				return
 			}
 		}
