@@ -228,7 +228,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private saveHistory() {
         WorkflowsList.saveOptions(this.options);
         this.url = uiUrl('workflows/' + this.state.namespace || '' + '?' + this.filterParams.toString());
-        Utils.setCurrentNamespace(this.state.namespace);
+        Utils.currentNamespace = this.state.namespace;
     }
 
     private countsByCompleted() {
@@ -312,6 +312,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <PaginationPanel
                             onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
                             pagination={this.state.pagination}
+                            numRecords={(this.state.workflows || []).length}
                         />
                     </>
                 )}

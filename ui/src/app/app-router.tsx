@@ -60,7 +60,10 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
     useEffect(() => {
         services.info
             .getInfo()
-            .then(info => setNamespace(info.managedNamespace || Utils.getCurrentNamespace() || ''))
+            .then(info => {
+                Utils.managedNamespace = info.managedNamespace;
+                setNamespace(Utils.currentNamespace);
+            })
             .then(() => services.info.getVersion())
             .then(setVersion)
             .catch(setError);

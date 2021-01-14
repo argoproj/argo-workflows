@@ -41,6 +41,10 @@ interface Props {
     onNodeSelect?: (id: Node) => void;
 }
 
+const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => {
+    return Object.assign(Object.assign({}, b), a);
+};
+
 export const GraphPanel = (props: Props) => {
     const storage = new ScopedLocalStorage('graph/' + props.storageScope);
     const [nodeSize, setNodeSize] = React.useState<number>(storage.getItem('nodeSize', props.nodeSize));
@@ -53,8 +57,14 @@ export const GraphPanel = (props: Props) => {
     useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
     useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
     useEffect(() => storage.setItem('fast', fast, false), [fast]);
-    useEffect(() => storage.setItem('nodeGenres', nodeGenres, props.nodeGenres), [nodeGenres]);
-    useEffect(() => storage.setItem('nodeClassNames', nodeClassNames, props.nodeClassNames), [nodeClassNames]);
+    useEffect(() => storage.setItem('nodeGenres', nodeGenres, props.nodeGenres), [nodeGenres, props.nodeGenres]);
+    useEffect(() => storage.setItem('nodeClassNames', nodeClassNames, props.nodeClassNames), [nodeClassNames, props.nodeClassNames]);
+
+    // we must make sure we have all values in the state, this can change between renders
+    // so this code patches them up
+    useEffect(() => setNodeGenres(merge(nodeGenres, props.nodeGenres)), [props.nodeGenres]);
+    useEffect(() => setNodeClassNames(merge(nodeClassNames, props.nodeClassNames)), [props.nodeClassNames]);
+    useEffect(() => setNodeTags(merge(nodeTags, props.nodeTags)), [props.nodeTags]);
 
     const visible = (id: Node) => {
         const label = props.graph.nodes.get(id);

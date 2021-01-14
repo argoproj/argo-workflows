@@ -133,7 +133,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private saveHistory() {
         this.url = uiUrl('archived-workflows/' + (this.state.namespace || '') + '?' + this.filterParams.toString());
-        Utils.setCurrentNamespace(this.state.namespace);
+        Utils.currentNamespace = this.state.namespace;
     }
 
     private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
@@ -211,6 +211,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, pagination)
                     }
                     pagination={this.state.pagination}
+                    numRecords={(this.state.workflows || []).length}
                 />
                 <p>
                     <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes. {learnMore}.

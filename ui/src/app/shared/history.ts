@@ -17,7 +17,7 @@ export const historyUrl = (path: string, params: {[key: string]: any}) => {
                 queryParams.push(k + '=' + v);
             }
             if (k === 'namespace') {
-                Utils.setCurrentNamespace(v);
+                Utils.currentNamespace = v;
             }
         });
     return uiUrl(path.replace(/{[^}]*}/g, '')) + '?' + queryParams.join('&');

@@ -2,7 +2,7 @@ import * as React from 'react';
 import {Pagination, parseLimit} from '../pagination';
 import {WarningIcon} from './fa-icons';
 
-export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void}> {
+export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void; numRecords: number}> {
     public render() {
         return (
             <p>
@@ -23,7 +23,7 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                     }>
                     Next page <i className='fa fa-chevron-right' />
                 </button>
-                {this.props.pagination.limit ? (
+                {this.props.pagination.limit <= this.props.numRecords ? (
                     <>
                         <WarningIcon /> Workflows cannot be globally sorted when paginated
                     </>

@@ -90,7 +90,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
 
     private saveHistory() {
         this.url = uiUrl('cron-workflows/' + this.state.namespace || '');
-        Utils.setCurrentNamespace(this.state.namespace);
+        Utils.currentNamespace = this.state.namespace;
     }
 
     private fetchCronWorkflows(namespace: string): void {

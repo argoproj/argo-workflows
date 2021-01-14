@@ -125,7 +125,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 this.state.labels.join(',') +
                 (this.state.archivedWorkflows ? '&archivedWorkflows=' + this.state.archivedWorkflows : '')
         );
-        Utils.setCurrentNamespace(this.state.namespace);
+        Utils.currentNamespace = this.state.namespace;
     }
 
     private getExtractDatasets(workflows: Workflow[]) {
