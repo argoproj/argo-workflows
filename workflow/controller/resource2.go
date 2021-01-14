@@ -39,16 +39,7 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 		return nil, fmt.Errorf("unable to guess group version resource from \"%v\"", gvk)
 	}
 
-	node = woc.initializeExecutableNode(
-		nodeName,
-		wfv1.NodeTypePod,
-		templateScope,
-		tmpl,
-		orgTmpl,
-		opts.boundaryID,
-		wfv1.NodePending,
-		nodeWithGVR(gvr),
-	)
+	node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 
 	if un.GetName() == "" && un.GetGenerateName() == "" {
 		un.SetName(node.ID)
@@ -78,7 +69,7 @@ func (woc *wfOperationCtx) executeResource2(ctx context.Context, nodeName string
 		return node, err
 	}
 
-	woc.log.WithFields(log.Fields{"resource": node.Resource, "name": un.GetName()}).Info("creating resource2")
+	woc.log.WithFields(log.Fields{"name": un.GetName()}).Info("creating resource2")
 
 	existing, err := dy.Resource(gvr).Namespace(namespace).Create(ctx, un, metav1.CreateOptions{})
 	switch {

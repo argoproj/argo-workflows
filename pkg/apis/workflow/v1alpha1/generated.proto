@@ -651,10 +651,6 @@ message NodeStatus {
   // Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the workflow.
   optional string namespace = 28;
 
-  // The type of this resource in the format `resource.group.version`.
-  // When empty, and this is a pod node, it should be infered to be `pods.v1.`.
-  optional string resource = 29;
-
   // Time at which this node started
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 10;
 

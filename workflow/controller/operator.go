@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -2033,14 +2032,6 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl 
 	return node
 }
 
-type nodeWith func(*wfv1.NodeStatus)
-
-func nodeWithGVR(gvr schema.GroupVersionResource) nodeWith {
-	return func(node *wfv1.NodeStatus) {
-		node.Resource = fmt.Sprintf("%s.%s.%s", gvr.Resource, gvr.Version, gvr.Group)
-	}
-}
-
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, opts ...interface{}) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
@@ -2079,8 +2070,6 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		switch v := opt.(type) {
 		case string:
 			node.Message = v
-		case nodeWith:
-			v(&node)
 		default:
 			panic("unknown option")
 		}

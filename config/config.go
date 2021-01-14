@@ -102,10 +102,8 @@ type Config struct {
 	ClusterName wfv1.ClusterName `json:"clusterName,omitempty"`
 
 	// Resources to listen to, in the format, `clusterName.namespace: group.version.resource`
-	// Examples:
 	// * main.: pods.v1.
 	// * other.argo: workflows.v1alpha1.argoproj.io
-	// See schema.ParseResourceArg
 	Resources Resources `json:"resources,omitempty"`
 }
 

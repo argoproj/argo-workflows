@@ -836,7 +836,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					if gvr == nil {
 						return fmt.Errorf("failed to get parse resource: %s", resource)
 					}
-					log.Debugf("deleting all %s from %s.%s", resource, clusterName, namespace)
 					ri := dy.Resource(*gvr)
 					listOptions := metav1.ListOptions{
 						LabelSelector: labels.NewSelector().
@@ -849,7 +848,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					deleteOptions := metav1.DeleteOptions{PropagationPolicy: &propagationBackground}
 					err = ri.Namespace(namespace).DeleteCollection(ctx, deleteOptions, listOptions)
 					if err != nil {
-						log.Warnf("failed to delet resources from %s for %s (falling back to list+delete): %s", clusterName, key, err)
+						log.Warnf("failed to delete collection of resources from %s for %s; falling back to list+delete: %s", clusterName, key, err)
 						list, err := ri.List(ctx, listOptions)
 						if err != nil {
 							return fmt.Errorf("failed to list resources from %s for %s: %w", clusterName, key, err)

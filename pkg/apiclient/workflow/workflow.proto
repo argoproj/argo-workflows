@@ -107,18 +107,6 @@ message WorkflowWatchEvent {
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow object = 2;
 }
 
-message WatchWorkflowsResourcesRequest {
-    string namespace = 1;
-    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
-}
-
-message WorkflowResourceWatchEvent {
-    // the type of change
-    string type = 1;
-    // the resource
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item object = 2;
-}
-
 message WatchEventsRequest {
     string namespace = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
@@ -160,10 +148,6 @@ service WorkflowService {
 
     rpc WatchWorkflows (WatchWorkflowsRequest) returns (stream WorkflowWatchEvent) {
         option (google.api.http).get = "/api/v1/workflow-events/{namespace}";
-    }
-
-    rpc WatchWorkflowsResources (WatchWorkflowsResourcesRequest) returns (stream WorkflowResourceWatchEvent) {
-        option (google.api.http).get = "/api/v1/stream/workflow-resources/{namespace}";
     }
 
     rpc WatchEvents (WatchEventsRequest) returns (stream k8s.io.api.core.v1.Event) {

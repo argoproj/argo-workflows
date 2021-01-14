@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"io"
 	"sort"
-	"sync"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
@@ -27,7 +24,6 @@ import (
 	"github.com/argoproj/argo/util/fields"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/logs"
-	"github.com/argoproj/argo/util/unstructured/status"
 	"github.com/argoproj/argo/workflow/clusters"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/creator"
@@ -249,90 +245,6 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			}
 		}
 	}
-}
-
-func (s *workflowServer) WatchWorkflowsResources(req *workflowpkg.WatchWorkflowsResourcesRequest, ws workflowpkg.WorkflowService_WatchWorkflowsResourcesServer) error {
-	ctx := ws.Context()
-	_, _, dynamicClients, err := clusters.GetConfigs(
-		ctx,
-		nil,
-		auth.GetKubeClient(ctx),
-		auth.GetDynamicClient(ctx),
-		s.clusterName,
-		s.namespace,
-		s.managedNamespace,
-	)
-	if err != nil {
-		return err
-	}
-	listOptions := req.ListOptions
-	if listOptions == nil {
-		listOptions = &metav1.ListOptions{}
-	}
-	var wg sync.WaitGroup
-	for clusterNamespace, dy := range dynamicClients {
-		log.WithFields(log.Fields{"clusterNamespace": clusterNamespace}).Debug("watching cluster-namespace")
-		clusterName, namespace := clusterNamespace.Split()
-		for _, resource := range s.resources.Get(clusterNamespace) {
-			gvr, _ := schema.ParseResourceArg(resource)
-			if gvr == nil {
-				return fmt.Errorf("invalid resource: %s", resource)
-			}
-			log.WithFields(log.Fields{"resource": resource}).Debug("watching resource")
-			watch, err := dy.Resource(*gvr).Namespace(namespace).Watch(ctx, *listOptions)
-			if err != nil {
-				return err
-			}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				err := func() error {
-					for event := range watch.ResultChan() {
-						log.WithFields(log.Fields{"event": event}).Debug("resource event")
-						un, ok := event.Object.(*unstructured.Unstructured)
-						if !ok {
-							return apierr.FromObject(event.Object)
-						}
-						// TODO begin hack
-						un.SetClusterName(string(clusterName))
-						phase, message := status.Infer(un)
-						err := unstructured.SetNestedField(un.Object, phase, "status", "phase")
-						if err != nil {
-							return err
-						}
-						err = unstructured.SetNestedField(un.Object, message, "status", "message")
-						if err != nil {
-							return err
-						}
-						// TODO end hack
-						data, err := json.Marshal(un)
-						if err != nil {
-							return err
-						}
-						obj := &wfv1.Item{}
-						err = json.Unmarshal(data, obj)
-						if err != nil {
-							return err
-						}
-						err = ws.Send(&workflowpkg.WorkflowResourceWatchEvent{
-							Type:   string(event.Type),
-							Object: obj,
-						})
-						if err != nil {
-							return err
-						}
-					}
-					return nil
-				}()
-				if err != nil {
-					log.WithError(err).Error("failed to watch event")
-				}
-			}()
-		}
-	}
-	wg.Wait()
-	return nil
-
 }
 
 func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws workflowpkg.WorkflowService_WatchEventsServer) error {
