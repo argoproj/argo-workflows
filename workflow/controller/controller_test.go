@@ -187,8 +187,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-		wfc.addWorkflowInformerHandlers()
-		wfc.podInformer = wfc.newPodInformer()
+		wfc.addWorkflowInformerHandlers(ctx)
+		wfc.podInformer = wfc.newPodInformer(ctx)
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
@@ -256,8 +256,8 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 	return &artifact
 }
 
-func expectWorkflow(controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(name, metav1.GetOptions{})
+func expectWorkflow(ctx context.Context, controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -273,14 +273,14 @@ func withAnnotation(key, val string) with {
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
-func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
+func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
-	pods, err := podcs.List(metav1.ListOptions{})
+	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	for _, pod := range pods.Items {
-		if pod.Status.Phase == "" {
+		if pod.Status.Phase != phase {
 			pod.Status.Phase = phase
 			if phase == apiv1.PodFailed {
 				pod.Status.Message = "Pod failed"
@@ -288,7 +288,7 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 			for _, w := range with {
 				w(&pod)
 			}
-			updatedPod, err := podcs.Update(&pod)
+			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
 			if err != nil {
 				panic(err)
 			}
@@ -300,10 +300,10 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 	}
 }
 
-func deletePods(woc *wfOperationCtx) {
+func deletePods(ctx context.Context, woc *wfOperationCtx) {
 	for _, obj := range woc.controller.podInformer.GetStore().List() {
 		pod := obj.(*apiv1.Pod)
-		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
+		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
@@ -434,15 +434,16 @@ spec:
 		func(controller *WorkflowController) { controller.Config.Parallelism = 1 },
 	)
 	defer cancel()
-	assert.True(t, controller.processNextItem())
-	assert.True(t, controller.processNextItem())
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
 
-	expectWorkflow(controller, "my-wf-0", func(wf *wfv1.Workflow) {
+	expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
 		if assert.NotNil(t, wf) {
 			assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
 		}
 	})
-	expectWorkflow(controller, "my-wf-1", func(wf *wfv1.Workflow) {
+	expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
 		if assert.NotNil(t, wf) {
 			assert.Empty(t, wf.Status.Phase)
 		}

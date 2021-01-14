@@ -20,7 +20,9 @@ func cleanCRD(filename string) {
 	metadata := crd["metadata"].(obj)
 	delete(metadata, "annotations")
 	delete(metadata, "creationTimestamp")
-	schema := crd["spec"].(obj)["validation"].(obj)["openAPIV3Schema"].(obj)
+	spec := crd["spec"].(obj)
+	validation := spec["validation"].(obj)
+	schema := validation["openAPIV3Schema"].(obj)
 	name := crd["metadata"].(obj)["name"].(string)
 	switch name {
 	case "cronworkflows.argoproj.io":

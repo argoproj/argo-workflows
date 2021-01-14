@@ -434,7 +434,7 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 
 // +kubebuilder:validation:Type=array
 type ParallelSteps struct {
-	Steps []WorkflowStep `json:",inline" protobuf:"bytes,1,rep,name=steps"`
+	Steps []WorkflowStep `json:"-" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -1475,6 +1475,8 @@ type ConditionType string
 const (
 	// ConditionTypeCompleted is a signifies the workflow has completed
 	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypePodRunning any workflow pods are currently running
+	ConditionTypePodRunning ConditionType = "PodRunning"
 	// ConditionTypeSpecWarning is a warning on the current application spec
 	ConditionTypeSpecWarning ConditionType = "SpecWarning"
 	// ConditionTypeSpecWarning is an error on the current application spec

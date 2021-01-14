@@ -21,7 +21,11 @@ info() {
     echo '[INFO] ' "$@"
 }
 
-pf MinIO pod/minio 9000
+killall kubectl || true
+
+if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
+  pf MinIO deploy/minio 9000
+fi
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
@@ -39,13 +43,15 @@ if [[ "$mysql" != "" ]]; then
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
-  pf "Argo Server" deploy/argo-server 2746
+  pf "Argo Server" svc/argo-server 2746
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
-  pf "Workflow Controller" deploy/workflow-controller 9090
+  pf "Workflow Controller Metrics" svc/workflow-controller-metrics 9090
+  pf "Workflow Controller PProf" svc/workflow-controller-pprof 6060
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
-  pf "Prometheus Server" deploy/prometheus 9091 9090
+  pf "Prometheus Server" svc/prometheus 9091 9090
 fi
+
