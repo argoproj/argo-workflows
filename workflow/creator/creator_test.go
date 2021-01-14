@@ -36,4 +36,11 @@ func TestLabel(t *testing.T) {
 			assert.Equal(t, "y", wf.Labels[common.LabelKeyCreator])
 		}
 	})
+	t.Run("InvalidDNSNames", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}}), wf)
+		if assert.NotEmpty(t, wf.Labels) {
+			assert.Equal(t, strings.Repeat("y", 35), wf.Labels[common.LabelKeyCreator])
+		}
+	})
 }
