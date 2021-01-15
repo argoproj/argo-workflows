@@ -46,7 +46,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to list workflows by index: %v", err)
 			}
-			var newestWf *wfv1.Workflow
+			var newestUn *unstructured.Unstructured
 			for _, obj := range objs {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
@@ -55,16 +55,16 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 				if un.GetLabels()[common.LabelKeyPhase] != string(wfv1.NodeSucceeded) {
 					continue
 				}
-				candidateWf, err := util.FromUnstructured(un)
+				// we use `creationTimestamp` because it's fast
+				if newestUn == nil || un.GetCreationTimestamp().After(newestUn.GetCreationTimestamp().Time) {
+					newestUn = un
+				}
+			}
+			if newestUn != nil {
+				newestWf, err := util.FromUnstructured(newestUn)
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", err)
 				}
-				// we use `startedAt` because that's same as how the archive sorts
-				if newestWf == nil || candidateWf.Status.StartedAt.Time.After(newestWf.Status.StartedAt.Time) {
-					newestWf = candidateWf
-				}
-			}
-			if newestWf != nil {
 				err = f.hydrator.Hydrate(newestWf)
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed hydrate last workflow: %w", err)
@@ -78,7 +78,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 			}
 			workflows, err := f.wfArchive.ListWorkflows(wf.Namespace, time.Time{}, time.Time{}, requirements, 1, 0)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list archived workflows: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to list archived workflows: %v", err)
 			}
 			if len(workflows) > 0 {
 				return &estimator{wf, &workflows[0]}, nil

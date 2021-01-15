@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -13,14 +15,15 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+
+	// load authentication plugin for obtaining credentials from cloud providers.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/controller"
+	"github.com/argoproj/argo/workflow/metrics"
 )
 
 const (
@@ -53,7 +56,7 @@ func NewRootCommand() *cobra.Command {
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
-			cli.SetGLogLevel(glogLevel)
+			cmdutil.SetGLogLevel(glogLevel)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
@@ -63,6 +66,8 @@ func NewRootCommand() *cobra.Command {
 			}
 			config.Burst = burst
 			config.QPS = qps
+
+			metrics.AddMetricsTransportWrapper(config)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
@@ -81,12 +86,17 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// start a controller on instances of our custom resource
-			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
-			errors.CheckError(err)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			errors.CheckError(err)
+
 			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
+
+			go func() {
+				log.Println(http.ListenAndServe("localhost:6060", nil))
+			}()
 
 			// Wait forever
 			select {}

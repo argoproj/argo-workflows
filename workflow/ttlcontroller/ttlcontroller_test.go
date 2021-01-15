@@ -1,6 +1,7 @@
 package ttlcontroller
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -44,8 +46,9 @@ spec:
       image: docker/whalesay:latest
     name: whalesay
 status:
-  phase: Running
+  phase: Succeeded
   startedAt: 2018-08-27T20:41:38Z
+  finishedAt: 2018-08-27T20:41:38Z
 `
 
 var succeededWf = `
@@ -344,17 +347,17 @@ func newTTLController() *Controller {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	return &Controller{
-		wfclientset:  wfclientset,
-		wfInformer:   wfInformer,
-		resyncPeriod: workflowTTLResyncPeriod,
-		clock:        clock,
-		workqueue:    workqueue.NewDelayingQueue(),
+		wfclientset: wfclientset,
+		wfInformer:  wfInformer,
+		clock:       clock,
+		workqueue:   workqueue.NewDelayingQueue(),
+		metrics:     metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
 }
 
 func enqueueWF(controller *Controller, un *unstructured.Unstructured) {
 	controller.enqueueWF(un)
-	time.Sleep(100*time.Millisecond + enoughTimeForInformerSync)
+	time.Sleep(100*time.Millisecond + time.Second)
 }
 
 func TestEnqueueWF(t *testing.T) {
@@ -416,20 +419,23 @@ func TestTTLStrategySucceded(t *testing.T) {
 	wf2.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf2)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf2)
+
+	ctx := context.Background()
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf2, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
-	controller.processNextWorkItem()
+	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 	wf3 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
 	wf3.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf3)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf3)
+
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf3, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
-	controller.processNextWorkItem()
+	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 }

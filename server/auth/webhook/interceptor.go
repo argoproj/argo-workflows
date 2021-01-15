@@ -58,7 +58,9 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 	}
 	namespace := parts[0]
 	secretsInterface := kube.CoreV1().Secrets(namespace)
-	webhookClients, err := secretsInterface.Get("argo-workflows-webhook-clients", metav1.GetOptions{})
+	ctx := r.Context()
+
+	webhookClients, err := secretsInterface.Get(ctx, "argo-workflows-webhook-clients", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get webhook clients: %w", err)
 	}
@@ -78,14 +80,14 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 		ok := webhookParsers[client.Type](client.Secret, r)
 		if ok {
 			log.WithField("serviceAccountName", serviceAccountName).Debug("Matched webhook request")
-			serviceAccount, err := serviceAccountInterface.Get(serviceAccountName, metav1.GetOptions{})
+			serviceAccount, err := serviceAccountInterface.Get(ctx, serviceAccountName, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to get service account \"%s\": %w", serviceAccountName, err)
 			}
 			if len(serviceAccount.Secrets) == 0 {
 				return fmt.Errorf("failed to get secret for service account \"%s\": no secrets", serviceAccountName)
 			}
-			tokenSecret, err := secretsInterface.Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+			tokenSecret, err := secretsInterface.Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to get token secret \"%s\": %w", tokenSecret, err)
 			}

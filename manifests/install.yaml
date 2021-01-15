@@ -369,6 +369,8 @@ rules:
 - apiGroups:
   - argoproj.io
   resources:
+  - eventsources
+  - sensors
   - workflows
   - workfloweventbindings
   - workflowtemplates
@@ -523,7 +525,16 @@ spec:
               apiVersion: v1
               fieldPath: metadata.name
         image: argoproj/workflow-controller:latest
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
         name: workflow-controller
+        ports:
+        - containerPort: 9090
+          name: metrics
         securityContext:
           capabilities:
             drop:

@@ -10,7 +10,7 @@ export class Nudge extends React.Component<{key: string}, {closed: boolean}> {
     public render() {
         return (
             !this.state.closed && (
-                <Notice>
+                <Notice style={{marginLeft: 0, marginRight: 0}}>
                     {this.props.children}
                     <span className='fa-pull-right'>
                         <a onClick={() => this.close()}>

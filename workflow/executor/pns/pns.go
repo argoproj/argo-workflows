@@ -2,6 +2,7 @@ package pns
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util/archive"
+	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
 	argowait "github.com/argoproj/argo/workflow/executor/common/wait"
@@ -160,7 +162,7 @@ func (p *PNSExecutor) WaitInit() error {
 }
 
 // Wait for the container to complete
-func (p *PNSExecutor) Wait(containerID string) error {
+func (p *PNSExecutor) Wait(ctx context.Context, containerID string) error {
 	mainPID, err := p.getContainerPID(containerID)
 	if err != nil {
 		log.Warnf("Failed to get main PID: %v", err)
@@ -168,7 +170,7 @@ func (p *PNSExecutor) Wait(containerID string) error {
 			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
 			return nil
 		}
-		return argowait.UntilTerminated(p.clientset, p.namespace, p.podName, containerID)
+		return argowait.UntilTerminated(ctx, p.clientset, p.namespace, p.podName, containerID)
 	}
 	log.Infof("Main pid identified as %d", mainPID)
 	for pid, f := range p.pidFileHandles {
@@ -216,7 +218,7 @@ func (p *PNSExecutor) pollRootProcesses(timeout time.Duration) {
 	}
 }
 
-func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (p *PNSExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	if !combinedOutput {
 		log.Warn("non combined output unsupported")
 	}
@@ -224,12 +226,12 @@ func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (
 		Container: common.MainContainerName,
 		Follow:    true,
 	}
-	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream()
+	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream(ctx)
 }
 
-func (p *PNSExecutor) GetExitCode(containerID string) (string, error) {
+func (p *PNSExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
-	_, containerStatus, err := p.GetTerminatedContainerStatus(containerID)
+	_, containerStatus, err := p.GetTerminatedContainerStatus(ctx, containerID)
 	if err != nil {
 		return "", fmt.Errorf("could not get container status: %s", err)
 	}
@@ -240,7 +242,7 @@ func (p *PNSExecutor) GetExitCode(containerID string) (string, error) {
 }
 
 // Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (p *PNSExecutor) Kill(containerIDs []string) error {
+func (p *PNSExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	var asyncErr error
 	wg := sync.WaitGroup{}
 	for _, cid := range containerIDs {
@@ -369,13 +371,21 @@ func (p *PNSExecutor) updateCtrIDMap() {
 	}
 }
 
-func (p *PNSExecutor) GetTerminatedContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+var backoffOver30s = wait.Backoff{
+	Duration: 1 * time.Second,
+	Steps:    7,
+	Factor:   2,
+}
+
+func (p *PNSExecutor) GetTerminatedContainerStatus(ctx context.Context, containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
 	var pod *corev1.Pod
 	var containerStatus *corev1.ContainerStatus
-	err := wait.Poll(1*time.Second, 3*time.Second, func() (bool, error) {
-		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
+	// Under high load, the Kubernetes API may be unresponsive for some time (30s). This would have failed the workflow
+	// previously (<=v2.11) but a 30s back-off mitigates this.
+	err := wait.ExponentialBackoff(backoffOver30s, func() (bool, error) {
+		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(ctx, p.podName, metav1.GetOptions{})
 		if err != nil {
-			return false, fmt.Errorf("could not get pod: %s", err)
+			return !errorsutil.IsTransientErr(err), fmt.Errorf("could not get pod: %w", err)
 		}
 		for _, containerStatusRes := range podRes.Status.ContainerStatuses {
 			if execcommon.GetContainerID(&containerStatusRes) != containerID {

@@ -28,7 +28,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         super(props);
         this.state = {
             entrypoint: this.props.entrypoint || (this.props.entrypoints.length > 0 && this.props.entrypoints[0]),
-            parameters: this.props.parameters,
+            parameters: this.props.parameters || [],
             labels: ['submit-from-ui=true']
         };
     }

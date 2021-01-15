@@ -18,6 +18,7 @@ import (
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -114,7 +115,8 @@ func newSso(
 	if c.RedirectURL == "" {
 		return nil, fmt.Errorf("redirectUrl empty")
 	}
-	clientSecretObj, err := secretsIf.Get(c.ClientSecret.Name, metav1.GetOptions{})
+	ctx := context.Background()
+	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +128,7 @@ func newSso(
 	if c.ClientID.Name == c.ClientSecret.Name {
 		clientIDObj = clientSecretObj
 	} else {
-		clientIDObj, err = secretsIf.Get(c.ClientID.Name, metav1.GetOptions{})
+		clientIDObj, err = secretsIf.Get(ctx, c.ClientID.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -139,11 +141,14 @@ func newSso(
 	// if it fails, then the get will fail, and the pod restart
 	// it may fail due to race condition with another pod - which is fine,
 	// when it restart it'll get the new key
-	_, _ = secretsIf.Create(&apiv1.Secret{
+	_, err = secretsIf.Create(ctx, &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
-	})
-	secret, err := secretsIf.Get(secretName, metav1.GetOptions{})
+	}, metav1.CreateOptions{})
+	if err != nil && !apierr.IsAlreadyExists(err) {
+		return nil, fmt.Errorf("failed to create secret: %w", err)
+	}
+	secret, err := secretsIf.Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to read secret: %w", err)
 	}

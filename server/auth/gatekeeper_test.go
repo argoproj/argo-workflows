@@ -13,14 +13,13 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	ssomocks "github.com/argoproj/argo/server/auth/sso/mocks"
 	"github.com/argoproj/argo/server/auth/types"
+	servertypes "github.com/argoproj/argo/server/types"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -57,29 +56,30 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 		},
 	)
-	var clientForAuthorization ClientForAuthorization = func(authorization string) (*rest.Config, versioned.Interface, kubernetes.Interface, error) {
-		return &rest.Config{}, &fakewfclientset.Clientset{}, &kubefake.Clientset{}, nil
+	var clientForAuthorization ClientForAuthorization = func(authorization string) (*rest.Config, *servertypes.Clients, error) {
+		return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
 	}
+	clients := &servertypes.Clients{Workflow: wfClient, Kubernetes: kubeClient}
 	t.Run("None", func(t *testing.T) {
-		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil, clientForAuthorization, "")
+		_, err := NewGatekeeper(Modes{}, clients, nil, nil, clientForAuthorization, "")
 		assert.Error(t, err)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{Client: true}, clients, nil, nil, clientForAuthorization, "")
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("invalid"))
 			assert.Error(t, err)
 		}
 	})
 	t.Run("NotAllowed", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, nil, clientForAuthorization, "")
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer "))
 			assert.Error(t, err)
 		}
 	})
 	t.Run("Client", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
 		assert.NoError(t, err)
 		ctx, err := g.Context(x("Bearer "))
 		if assert.NoError(t, err) {
@@ -89,7 +89,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("Server", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
 		assert.NoError(t, err)
 		ctx, err := g.Context(x(""))
 		if assert.NoError(t, err) {
@@ -102,7 +102,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(false)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"))
 			if assert.NoError(t, err) {
@@ -121,11 +121,11 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"))
 			if assert.NoError(t, err) {
-				assert.NotEqual(t, wfClient, GetWfClient(ctx))
+				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 				if assert.NotNil(t, GetClaims(ctx)) {
 					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
@@ -138,7 +138,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer v2:whatever"))
 			if assert.NoError(t, err) {
@@ -150,7 +150,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer v2:whatever"))
 			assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
