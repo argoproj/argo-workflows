@@ -9,11 +9,13 @@ export interface CronWorkflow {
     status?: CronWorkflowStatus;
 }
 
+export type ConcurrencyPolicy = 'Allow' | 'Forbid' | 'Replace';
+
 export interface CronWorkflowSpec {
     workflowSpec: WorkflowSpec;
     workflowMetadata?: kubernetes.ObjectMeta;
     schedule: string;
-    concurrencyPolicy?: string;
+    concurrencyPolicy?: ConcurrencyPolicy;
     suspend?: boolean;
     startingDeadlineSeconds?: number;
     successfulJobsHistoryLimit?: number;
