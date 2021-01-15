@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
 
-export interface TagsInputProps {
+interface TagsInputProps {
     tags: string[];
     autocomplete?: (AutocompleteOption | string)[];
     onChange?: (tags: string[]) => void;
