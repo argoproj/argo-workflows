@@ -179,6 +179,8 @@ data:
       archive: false
       # the number of days to keep archived workflows (the default is forever)
       archiveTTL: 180d
+      # skip database migration if needed.
+      # skipMigration: true
 
       # LabelSelector determines the workflow that matches with the matchlabels or matchrequirements, will be archived.
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
