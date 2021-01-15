@@ -79,7 +79,7 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(namespace).Get(ctx, configMap, metav1.GetOptions{})
-		return err == nil || !errorsutil.IsTransientErr(err, ""), err
+		return err == nil || !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return nil, nil, err

@@ -3,6 +3,7 @@ package errors
 import (
 	"net"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 
@@ -11,11 +12,14 @@ import (
 	argoerrs "github.com/argoproj/argo/errors"
 )
 
-func IsTransientErr(err error, pattern string) bool {
+func IsTransientErr(err error) bool {
 	if err == nil {
 		return false
 	}
 	err = argoerrs.Cause(err)
+	// TRANSIENT_ERROR_PATTERN allows to specify the pattern to match for errors that can be seen as transient
+	// and retryable.
+	pattern, _ := os.LookupEnv("TRANSIENT_ERROR_PATTERN")
 	return isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err, pattern)
 }
 

@@ -433,7 +433,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	}()
 	if err != nil {
 		logCtx.WithError(err).Warn("failed to clean-up pod")
-		if errorsutil.IsTransientErr(err, wfc.Config.TransientErrorPattern) {
+		if errorsutil.IsTransientErr(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
 		}
 	}
@@ -606,7 +606,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
-		transientErr := errorsutil.IsTransientErr(err, wfc.Config.TransientErrorPattern)
+		transientErr := errorsutil.IsTransientErr(err)
 		woc.log.WithField("transientErr", transientErr).Errorf("hydration failed: %v", err)
 		if !transientErr {
 			woc.markWorkflowError(ctx, err)

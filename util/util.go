@@ -42,7 +42,7 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get secret '%s': %v", name, err)
-			if !errorsutil.IsTransientErr(err, "") {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
