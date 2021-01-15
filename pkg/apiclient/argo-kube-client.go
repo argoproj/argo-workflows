@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -14,10 +16,11 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	workflow "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/auth"
 	clusterworkflowtmplserver "github.com/argoproj/argo/server/clusterworkflowtemplate"
 	cronworkflowserver "github.com/argoproj/argo/server/cronworkflow"
+	"github.com/argoproj/argo/server/types"
 	workflowserver "github.com/argoproj/argo/server/workflow"
 	workflowtemplateserver "github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/util/help"
@@ -36,7 +39,15 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 	if err != nil {
 		return nil, nil, err
 	}
-	wfClient, err := versioned.NewForConfig(restConfig)
+	wfClient, err := workflow.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	eventSourceInterface, err := eventsource.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	sensorInterface, err := sensor.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -44,7 +55,8 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 	if err != nil {
 		return nil, nil, err
 	}
-	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, wfClient, kubeClient, restConfig, nil, auth.DefaultClientForAuthorization, "unused")
+	clients := &types.Clients{Workflow: wfClient, EventSource: eventSourceInterface, Sensor: sensorInterface, Kubernetes: kubeClient}
+	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused")
 	if err != nil {
 		return nil, nil, err
 	}

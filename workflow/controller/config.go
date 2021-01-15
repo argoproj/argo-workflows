@@ -46,9 +46,13 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 			return err
 		}
 		log.Info("Persistence Session created successfully")
-		err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
-		if err != nil {
-			return err
+		if !persistence.SkipMigration {
+			err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Info("DB migration is disabled")
 		}
 
 		wfc.session = session

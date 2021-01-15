@@ -86,6 +86,8 @@ func (s *E2ESuite) DeleteResources() {
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: "sensors"},
+		{Group: workflow.Group, Version: workflow.Version, Resource: "eventsources"},
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
