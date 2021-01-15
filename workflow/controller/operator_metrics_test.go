@@ -477,3 +477,104 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
 }
+
+var testProcessedRetryNode = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: metrics-eg-lq4nj
+spec:
+  entrypoint: my-dag
+  templates:
+  - dag:
+      tasks:
+      - name: A
+        template: A
+    name: my-dag
+  - container:
+      args:
+      - hello from A
+      command:
+      - cowsay
+      image: docker/whalesay
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: Number of argo workflows
+        labels:
+        - key: work_unit
+          value: metrics-eg::A
+        - key: workflow_result
+          value: '{{status}}'
+        name: result_counter
+    name: A
+    retryStrategy:
+      backoff:
+        duration: 2s
+        factor: 1
+        maxDuration: 6m
+      limit: 2
+      retryPolicy: Always
+status:
+  nodes:
+    metrics-eg-lq4nj:
+      children:
+      - metrics-eg-lq4nj-4266717436
+      displayName: metrics-eg-lq4nj
+      finishedAt: "2021-01-13T16:14:03Z"
+      id: metrics-eg-lq4nj
+      name: metrics-eg-lq4nj
+      outboundNodes:
+      - metrics-eg-lq4nj-2568729143
+      phase: Running
+      startedAt: "2021-01-13T16:13:53Z"
+      templateName: my-dag
+      templateScope: local/metrics-eg-lq4nj
+      type: DAG
+    metrics-eg-lq4nj-2568729143:
+      boundaryID: metrics-eg-lq4nj
+      displayName: A(0)
+      finishedAt: "2021-01-13T16:13:57Z"
+      id: metrics-eg-lq4nj-2568729143
+      name: metrics-eg-lq4nj.A(0)
+      phase: Succeeded
+      startedAt: "2021-01-13T16:13:53Z"
+      templateName: A
+      templateScope: local/metrics-eg-lq4nj
+      type: Pod
+    metrics-eg-lq4nj-4266717436:
+      boundaryID: metrics-eg-lq4nj
+      children:
+      - metrics-eg-lq4nj-2568729143
+      displayName: A
+      finishedAt: "2021-01-13T16:14:03Z"
+      id: metrics-eg-lq4nj-4266717436
+      name: metrics-eg-lq4nj.A
+      phase: Running
+      startedAt: "2021-01-13T16:13:53Z"
+      templateName: A
+      templateScope: local/metrics-eg-lq4nj
+      type: Retry
+  phase: Running
+  startedAt: "2021-01-13T16:13:53Z"
+`
+
+func TestProcessedRetryNode(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(testProcessedRetryNode)
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	metric := controller.metrics.GetCustomMetric("result_counter{work_unit=metrics-eg::A,workflow_result=Succeeded,}")
+	assert.NotNil(t, metric)
+	metricErrorCounterString, err := getMetricStringValue(metric)
+	assert.NoError(t, err)
+	assert.Contains(t, metricErrorCounterString, `value:1`)
+}
