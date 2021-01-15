@@ -1641,7 +1641,7 @@ func (s *ArgoServerSuite) TestSensorService() {
 		String().
 		Raw()
 	s.Run("UpdateSensor", func() {
-		s.e().PUT("/api/v1/sensors/argo").
+		s.e().PUT("/api/v1/sensors/argo/test-sensor").
 			WithBytes([]byte(`{
 	"sensor":{
 		"apiVersion":"argoproj.io/v1alpha1",
