@@ -1610,6 +1610,7 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 		})
 	})
 	s.Run("EventSourcesLogs", func() {
+		s.T().Skip("we do not install the controllers, so we won't get any logs")
 		s.stream("/api/v1/stream/event-sources/argo/logs", func(t *testing.T, line string) (done bool) {
 			assert.Contains(t, line, "test-event-source")
 			return true
@@ -1719,6 +1720,7 @@ func (s *ArgoServerSuite) TestSensorService() {
 		})
 	})
 	s.Run("SensorsLogs", func() {
+		s.T().Skip("we do not install the controllers, so we won't get any logs")
 		s.stream("/api/v1/stream/sensors/argo/logs", func(t *testing.T, line string) (done bool) {
 			assert.Contains(t, line, "test-sensor")
 			return true
