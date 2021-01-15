@@ -318,6 +318,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
@@ -596,6 +598,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -948,6 +954,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -1257,6 +1267,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -1459,6 +1473,10 @@ Arguments to a template
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -1857,6 +1875,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -1951,6 +1971,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -2340,6 +2362,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -2710,6 +2736,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
@@ -3007,6 +3035,10 @@ Pod metdata
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -3275,6 +3307,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -3662,6 +3696,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -4297,6 +4333,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -4810,6 +4850,8 @@ A single application container that you want to run within a pod.
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
@@ -5162,6 +5204,8 @@ A label selector is a label query over a set of resources. The result of matchLa
 <br>
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -5470,6 +5514,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -5926,6 +5974,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields

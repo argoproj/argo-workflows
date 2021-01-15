@@ -1,4 +1,4 @@
-import {kubernetes} from './index';
+import {Arguments, kubernetes, WorkflowTemplateRef} from './index';
 
 export interface Event {
     metadata: kubernetes.ObjectMeta;
@@ -10,4 +10,20 @@ export interface Event {
     message: string;
     lastTimestamp: kubernetes.Time;
     type: string;
+}
+
+export interface WorkflowEventBindingList {
+    metadata: kubernetes.ListMeta;
+    items: WorkflowEventBinding[];
+}
+
+export interface WorkflowEventBinding {
+    metadata: kubernetes.ObjectMeta;
+    spec: {
+        event: {selector: string};
+        submit?: {
+            workflowTemplateRef: WorkflowTemplateRef;
+            arguments?: Arguments;
+        };
+    };
 }
