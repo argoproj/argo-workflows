@@ -326,7 +326,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	err = woc.createPVCs(ctx)
 	if err != nil {
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(err, woc.controller.Config.TransientErrorPattern) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(ctx, wfv1.NodePending, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
@@ -2374,7 +2374,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 }
 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
-	if errorsutil.IsTransientErr(err) {
+	if errorsutil.IsTransientErr(err, woc.controller.Config.TransientErrorPattern) {
 		// Our error was most likely caused by a lack of resources.
 		woc.requeue()
 		return woc.markNodePending(nodeName, err), nil
@@ -3085,7 +3085,7 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !errorsutil.IsTransientErr(err) {
+			if !errorsutil.IsTransientErr(err, woc.controller.Config.TransientErrorPattern) {
 				return false, err
 			}
 			return false, nil

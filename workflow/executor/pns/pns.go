@@ -385,7 +385,7 @@ func (p *PNSExecutor) GetTerminatedContainerStatus(ctx context.Context, containe
 	err := wait.ExponentialBackoff(backoffOver30s, func() (bool, error) {
 		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(ctx, p.podName, metav1.GetOptions{})
 		if err != nil {
-			return !errorsutil.IsTransientErr(err), fmt.Errorf("could not get pod: %w", err)
+			return !errorsutil.IsTransientErr(err, ""), fmt.Errorf("could not get pod: %w", err)
 		}
 		for _, containerStatusRes := range podRes.Status.ContainerStatuses {
 			if execcommon.GetContainerID(&containerStatusRes) != containerID {

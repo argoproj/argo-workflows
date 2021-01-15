@@ -145,7 +145,7 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 	err = wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
 		if err != nil {
-			if argoerr.IsTransientErr(err) {
+			if argoerr.IsTransientErr(err, "") {
 				return false, nil
 			}
 			return false, err

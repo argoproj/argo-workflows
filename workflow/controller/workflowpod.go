@@ -384,7 +384,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(err, woc.controller.Config.TransientErrorPattern) {
 			return nil, err
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)

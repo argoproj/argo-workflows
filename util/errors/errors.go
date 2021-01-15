@@ -3,6 +3,7 @@ package errors
 import (
 	"net"
 	"net/url"
+	"regexp"
 	"strings"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -10,12 +11,20 @@ import (
 	argoerrs "github.com/argoproj/argo/errors"
 )
 
-func IsTransientErr(err error) bool {
+func IsTransientErr(err error, pattern string) bool {
 	if err == nil {
 		return false
 	}
 	err = argoerrs.Cause(err)
-	return isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err)
+	return isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err, pattern)
+}
+
+func matchTransientErrPattern(err error, pattern string) bool {
+	if pattern == "" {
+		return false
+	}
+	match, _ := regexp.MatchString(pattern, err.Error())
+	return match
 }
 
 func isExceededQuotaErr(err error) bool {
