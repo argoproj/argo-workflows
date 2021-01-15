@@ -6,7 +6,6 @@ on:
       - v*
     branches:
       - master
-      - ui-v3
 
 defaults:
   run:
