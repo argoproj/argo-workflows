@@ -107,7 +107,9 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
+	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
+	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
