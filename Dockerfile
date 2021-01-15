@@ -105,7 +105,8 @@ RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
 RUN git diff --exit-code
 RUN . hack/image_arch.sh && make argo-server.crt argo-server.key dist/argo-${IMAGE_OS}-${IMAGE_ARCH}
-RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 
+RUN git diff --exit-code
+RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version
 RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 2>&1 | grep clean
 
 ####################################################################################################
