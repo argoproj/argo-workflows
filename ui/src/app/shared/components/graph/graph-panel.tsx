@@ -69,7 +69,7 @@ export const GraphPanel = (props: Props) => {
         return (
             nodeGenres[label.genre] &&
             (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
-            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => (checked && !label.tags) || label.tags.has(tag)))
+            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag))))
         );
     };
 
