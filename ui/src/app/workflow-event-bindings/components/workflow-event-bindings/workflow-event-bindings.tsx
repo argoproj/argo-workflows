@@ -96,7 +96,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     </p>
                     <p>
                         <code>
-                            curl '{document.location.protocol}://{document.location.host}/api/v1/events/{namespace}/-' -H 'Content-Type: application/json' -H 'Authorization:
+                            curl '{document.location.protocol}//{document.location.host}/api/v1/events/{namespace}/-' -H 'Content-Type: application/json' -H 'Authorization:
                             $ARGO_TOKEN' -d '&#123;&#125;'
                         </code>
                     </p>
