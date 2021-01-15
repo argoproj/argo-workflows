@@ -97,21 +97,15 @@ COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
 
-# controller image
-RUN . hack/image_arch.sh && make dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH}
-RUN . hack/image_arch.sh && ./dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH} version | grep clean
-
-# executor image
-RUN . hack/image_arch.sh && make dist/argoexec-${IMAGE_OS}-${IMAGE_ARCH}
-RUN . hack/image_arch.sh && ./dist/argoexec-${IMAGE_OS}-${IMAGE_ARCH} version | grep clean
-
 # cli image
 RUN mkdir -p ui/dist
 COPY --from=argo-ui ui/dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
+RUN git diff --exit-code
 RUN . hack/image_arch.sh && make argo-server.crt argo-server.key dist/argo-${IMAGE_OS}-${IMAGE_ARCH}
+RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 
 RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 2>&1 | grep clean
 
 ####################################################################################################

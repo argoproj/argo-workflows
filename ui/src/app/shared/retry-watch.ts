@@ -1,58 +1,35 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {Observable, Subscription} from 'rxjs';
+import {WatchEvent} from 'argo-ui/src/models/kubernetes';
+import {Observable} from 'rxjs';
+import {RetryObservable} from "./retry-observable";
 
 interface Resource {
     metadata: kubernetes.ObjectMeta;
 }
 
-const reconnectAfterMs = 5000;
-
 /**
  * RetryWatch allows you to watch for changes, automatically reconnecting on error.
+ *
+ * See @RetryObservable
  */
 export class RetryWatch<T extends Resource> {
-    private readonly watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>;
-    private readonly onOpen: () => void;
-    private readonly onItem: (event: kubernetes.WatchEvent<T>) => void;
-    private readonly onError: (error: Error) => void;
-    private subscription: Subscription;
-    private timeout: any; // should be `number`
+    private readonly ro: RetryObservable<WatchEvent<T>, string>;
 
     constructor(
-        watch: (resourceVersion?: string) => Observable<kubernetes.WatchEvent<T>>,
-        onOpen: () => void, //  called when watches (re-)established after error, so should clear any errors
-        onEvent: (event: kubernetes.WatchEvent<T>) => void, // called whenever item is received,
+        watch: (resourceVersion?: string) => Observable<WatchEvent<T>>,
+        onOpen: () => void,
+        onEvent: (event: WatchEvent<T>) => void,
         onError: (error: Error) => void
     ) {
-        this.watch = watch;
-        this.onOpen = onOpen;
-        this.onItem = onEvent;
-        this.onError = onError;
+        this.ro = new RetryObservable<kubernetes.WatchEvent<T>, string>(watch, onOpen, onEvent, onError);
     }
 
     public start(resourceVersion?: string) {
-        this.stop();
-        this.subscription = this.watch(resourceVersion).subscribe(
-            next => {
-                if (next) {
-                    this.onItem(next);
-                } else {
-                    this.onOpen();
-                }
-            },
-            e => {
-                clearTimeout(this.timeout);
-                this.onError(e);
-                this.timeout = setTimeout(() => this.start(null), reconnectAfterMs);
-            }
-        );
+        this.ro.start(resourceVersion)
     }
 
     // Must invoke on component unload.
     public stop() {
-        clearTimeout(this.timeout);
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
+        this.ro.stop()
     }
 }
