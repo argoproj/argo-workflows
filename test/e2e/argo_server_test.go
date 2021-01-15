@@ -1564,28 +1564,106 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 }
 
 func (s *ArgoServerSuite) TestEventSourcesService() {
+	s.Run("CreateEventSource", func() {
+		s.e().POST("/api/v1/event-sources/argo").
+			WithBytes([]byte(`
+{
+  "eventsource": {
+    "metadata": {
+      "name": "test-event-source", 
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "calendar": {
+        "example-with-interval": {
+          "interval": "10s"
+        }
+      }
+    }
+  }
+}
+`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.resourceVersion").
+			NotNull().
+			String().
+			Raw()
+	})
 	s.Run("ListEventSources", func() {
 		s.e().GET("/api/v1/event-sources/argo").
 			Expect().
-			Status(200)
-	})
-	s.Run("EventSourcesLogs", func() {
-		s.T().Skip("TODO")
-		s.stream("/api/v1/stream/event-sources/argo/logs", nil)
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
 	})
 	s.Run("WatchEventSources", func() {
-		s.T().Skip("TODO")
-		s.stream("/api/v1/stream/event-sources/argo", nil)
+		s.stream("/api/v1/stream/event-sources/argo", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-event-source")
+			return true
+		})
+	})
+	s.Run("EventSourcesLogs", func() {
+		s.stream("/api/v1/stream/event-sources/argo/logs", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-event-source")
+			return true
+		})
+	})
+	var resourceVersion string
+	s.Run("GetEventSource", func() {
+		resourceVersion = s.e().GET("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.resourceVersion").
+			NotNull().
+			String().
+			Raw()
+	})
+	s.Run("UpdateEventSource", func() {
+		s.e().PUT("/api/v1/event-sources/argo/test-event-source").
+			WithBytes([]byte(`
+{
+  "eventsource": {
+    "metadata": {
+      "name": "test-event-source", 
+      "resourceVersion": "` + resourceVersion + `",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "calendar": {
+        "example-with-interval": {
+          "interval": "10s"
+        }
+      }
+    }
+  }
+}
+`)).
+			Expect().
+			Status(200)
+	})
+	s.Run("DeleteEventSource", func() {
+		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200)
 	})
 }
 
 func (s *ArgoServerSuite) TestSensorService() {
 	s.Run("CreateSensor", func() {
 		s.e().POST("/api/v1/sensors/argo").
-			WithBytes([]byte(`{
+			WithBytes([]byte(`
+{
 	"sensor":{
-		"apiVersion":"argoproj.io/v1alpha1",
-		"kind":"Sensor",
 		"metadata":{
 			"name":"test-sensor",
 			"labels": {
@@ -1612,7 +1690,8 @@ func (s *ArgoServerSuite) TestSensorService() {
 			]
 		}
 	}
-}`)).Expect().
+}
+`)).Expect().
 			Status(200)
 	})
 	s.Run("ListSensors", func() {
@@ -1633,6 +1712,18 @@ func (s *ArgoServerSuite) TestSensorService() {
 			Path("$.metadata.name").
 			Equal("test-sensor")
 	})
+	s.Run("WatchSensors", func() {
+		s.stream("/api/v1/stream/sensors/argo", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-sensor")
+			return true
+		})
+	})
+	s.Run("SensorsLogs", func() {
+		s.stream("/api/v1/stream/sensors/argo/logs", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-sensor")
+			return true
+		})
+	})
 	resourceVersion := s.e().GET("/api/v1/sensors/argo/test-sensor").
 		Expect().
 		Status(200).
@@ -1642,10 +1733,9 @@ func (s *ArgoServerSuite) TestSensorService() {
 		Raw()
 	s.Run("UpdateSensor", func() {
 		s.e().PUT("/api/v1/sensors/argo/test-sensor").
-			WithBytes([]byte(`{
+			WithBytes([]byte(`
+{
 	"sensor":{
-		"apiVersion":"argoproj.io/v1alpha1",
-		"kind":"Sensor",
 		"metadata":{
 			"name":"test-sensor",
 			"resourceVersion": "` + resourceVersion + `",
@@ -1676,7 +1766,8 @@ func (s *ArgoServerSuite) TestSensorService() {
 			]
 		}
 	}
-		}`)).
+}
+`)).
 			Expect().
 			Status(200)
 	})
@@ -1688,23 +1779,10 @@ func (s *ArgoServerSuite) TestSensorService() {
 			Path("$.spec.template.serviceAccountName").
 			Equal("default")
 	})
-	s.Run("SensorsLogs", func() {
-		s.T().Skip("TODO")
-		s.stream("/api/v1/stream/sensors/argo/logs", nil)
-	})
-	s.Run("WatchSensors", func() {
-		s.T().Skip("TODO")
-		s.stream("/api/v1/stream/sensors/argo", nil)
-	})
 	s.Run("DeleteSensor", func() {
 		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
 			Expect().
 			Status(200)
-	})
-	s.Run("GetSensorAfterDeletion", func() {
-		s.e().GET("/api/v1/sensors/argo/test-sensor").
-			Expect().
-			Status(404)
 	})
 }
 

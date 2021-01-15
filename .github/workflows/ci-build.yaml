@@ -100,7 +100,7 @@ jobs:
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
-          PROFILE: minimal
+          PROFILE: mysql
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
@@ -108,8 +108,8 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          if [ ${{matrix.test}} == test-e2e ]; then
-            PROFILE=mysql
+          if [ ${{matrix.test}} == smoke ] || [ ${{matrix.test}} == test-e2e-cron ] ; then
+            PROFILE=minimal
           fi
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
