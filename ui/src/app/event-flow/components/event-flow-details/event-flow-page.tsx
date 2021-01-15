@@ -20,6 +20,7 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
+import {RetryObservable} from '../../../shared/retry-observable';
 import {services} from '../../../shared/services';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
@@ -146,26 +147,36 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
         if (!showFlow) {
             return;
         }
-        const sub = services.eventSource
-            .eventSourcesLogs(namespace, '', '', '', 'dispatching.*event', 0)
-            .filter(e => !!e && !!e.eventSourceName)
-            .subscribe(e => markFlowing(ID.join('EventSource', e.namespace, e.eventSourceName, e.eventName)), setError);
-        return () => sub.unsubscribe();
+        const ro = new RetryObservable(
+            () => services.eventSource.eventSourcesLogs(namespace, '', '', '', 'dispatching.*event', 0),
+            () => setError(null),
+            e => {
+                if (e.eventSourceName) {
+                    markFlowing(ID.join('EventSource', e.namespace, e.eventSourceName, e.eventName));
+                }
+            },
+            setError
+        );
+        ro.start();
+        return () => ro.stop();
     }, [namespace, showFlow]);
     useEffect(() => {
         if (!showFlow) {
             return;
         }
-        const sub = services.sensor
-            .sensorsLogs(namespace, '', '', 'successfully processed', 0)
-            .filter(e => !!e)
-            .subscribe(e => {
+        const ro = new RetryObservable(
+            () => services.sensor.sensorsLogs(namespace, '', '', 'successfully processed', 0),
+            () => setError(null),
+            e => {
                 markFlowing(ID.join('Sensor', e.namespace, e.sensorName));
                 if (e.triggerName) {
                     markFlowing(ID.join('Trigger', e.namespace, e.sensorName, e.triggerName));
                 }
-            }, setError);
-        return () => sub.unsubscribe();
+            },
+            setError
+        );
+        ro.start();
+        return () => ro.stop();
     }, [namespace, showFlow]);
 
     const graph = buildGraph(eventSources, sensors, workflows, flow, expanded);

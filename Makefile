@@ -400,11 +400,6 @@ endif
 test: server/static/files.go
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
-	mkdir -p dist
-	cd test/e2e/manifests/$(PROFILE) && kustomize edit set namespace $(KUBE_NAMESPACE)
-	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
-
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)

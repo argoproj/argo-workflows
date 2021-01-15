@@ -1,7 +1,7 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import {WatchEvent} from 'argo-ui/src/models/kubernetes';
 import {Observable} from 'rxjs';
-import {RetryObservable} from "./retry-observable";
+import {RetryObservable} from './retry-observable';
 
 interface Resource {
     metadata: kubernetes.ObjectMeta;
@@ -15,21 +15,16 @@ interface Resource {
 export class RetryWatch<T extends Resource> {
     private readonly ro: RetryObservable<WatchEvent<T>, string>;
 
-    constructor(
-        watch: (resourceVersion?: string) => Observable<WatchEvent<T>>,
-        onOpen: () => void,
-        onEvent: (event: WatchEvent<T>) => void,
-        onError: (error: Error) => void
-    ) {
+    constructor(watch: (resourceVersion?: string) => Observable<WatchEvent<T>>, onOpen: () => void, onEvent: (event: WatchEvent<T>) => void, onError: (error: Error) => void) {
         this.ro = new RetryObservable<kubernetes.WatchEvent<T>, string>(watch, onOpen, onEvent, onError);
     }
 
     public start(resourceVersion?: string) {
-        this.ro.start(resourceVersion)
+        this.ro.start(resourceVersion);
     }
 
     // Must invoke on component unload.
     public stop() {
-        this.ro.stop()
+        this.ro.stop();
     }
 }
