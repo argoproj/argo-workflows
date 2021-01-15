@@ -37,7 +37,7 @@ type Config struct {
 	MainContainer *apiv1.Container `json:"mainContainer,omitempty"`
 
 	// TransientErrorPattern specifies the pattern to match for errors that can be seen as transient
-	// and should be retried when happening.
+	// and retryable.
 	TransientErrorPattern string `json:"transientErrorPattern,omitempty"`
 
 	// KubeConfig specifies a kube config file for the wait & init containers
