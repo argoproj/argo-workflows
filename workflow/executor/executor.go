@@ -299,11 +299,11 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, mainCtrID string, 
 		}
 		return err
 	}
-	return we.saveArtifactFromFile(art, fileName, localArtPath)
+	return we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
 }
 
 // fileBase is probably path.Base(filePath), but can be something else
-func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileName, localArtPath string) error {
+func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.Artifact, fileName, localArtPath string) error {
 	if !art.HasKey() {
 		key, err := we.Template.ArchiveLocation.GetKey()
 		if err != nil {
@@ -320,14 +320,14 @@ func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileName, l
 	if err != nil {
 		return err
 	}
-	artDriver, err := we.InitDriver(driverArt)
+	artDriver, err := we.InitDriver(ctx, driverArt)
 	if err != nil {
 		return err
 	}
 	err = artDriver.Save(localArtPath, driverArt)
-		if err != nil {
+	if err != nil {
 		return err
-		}
+	}
 	we.maybeDeleteLocalArtPath(localArtPath)
 	log.Infof("Successfully saved file: %s", localArtPath)
 	return nil
@@ -534,7 +534,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 }
 
 // SaveLogs saves logs
-func (we *WorkflowExecutor) SaveLogs(ctx context.Context)) (*wfv1.Artifact, error) {
+func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error) {
 	if !we.Template.ArchiveLocation.IsArchiveLogs() {
 		return nil, nil
 	}
@@ -555,7 +555,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context)) (*wfv1.Artifact, erro
 		return nil, err
 	}
 	art := &wfv1.Artifact{Name: "main-logs"}
-	err = we.saveArtifactFromFile(art, fileName, mainLog)
+	err = we.saveArtifactFromFile(ctx, art, fileName, mainLog)
 	if err != nil {
 		return nil, err
 	}

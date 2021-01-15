@@ -134,11 +134,11 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("artifact not found")
 	}
 
-	ref, err := a.artifactRepositories.Resolve(wf.Spec.ArtifactRepositoryRef, wf.Namespace)
+	ref, err := a.artifactRepositories.Resolve(ctx, wf.Spec.ArtifactRepositoryRef, wf.Namespace)
 	if err != nil {
 		return err
 	}
-	ar, err := a.artifactRepositories.Get(ref)
+	ar, err := a.artifactRepositories.Get(ctx, ref)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	driver, err := a.artDriverFactory(art, resources{kubeClient, wf.Namespace})
+	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
 		return err
 	}
