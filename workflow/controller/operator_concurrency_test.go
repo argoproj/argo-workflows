@@ -441,11 +441,11 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
 		wf := unmarshalWF(RetryWfWithSemaphore)
-		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
