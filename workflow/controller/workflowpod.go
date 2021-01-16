@@ -376,6 +376,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
+	if limit := woc.controller.Config.ResourceLimit; limit > 0 && len(woc.controller.podInformer.GetIndexer().ListKeys())+woc.createdResources >= limit {
+		return nil, ErrResourceLimitReached
+	}
+
+	if rl := woc.controller.rateLimiter; rl != nil && !rl.Allow() {
+		return nil, ErrResourceRateLimitReached
+	}
+
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
@@ -392,6 +400,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
+	woc.createdResources++
 	return created, nil
 }
 

@@ -12,6 +12,11 @@ import (
 
 var EmptyConfigFunc = func() interface{} { return &Config{} }
 
+type ResourceRateLimit struct {
+	Limit float64 `json:"limit"`
+	Burst int     `json:"burst"`
+}
+
 // Config contain the configuration settings for the workflow controller
 type Config struct {
 
@@ -74,6 +79,10 @@ type Config struct {
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
+
+	ResourceLimit int `json:"resourceLimit,omitempty"`
+
+	ResourceRateLimit *ResourceRateLimit `json:"resourceRateLimit,omitempty"`
 
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`

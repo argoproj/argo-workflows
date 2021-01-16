@@ -4,6 +4,12 @@ metadata:
   name: workflow-controller-configmap
 data:
   containerRuntimeExecutor: pns
+  # total number of pending + running resources (i.e. pods)
+  resourceLimit: "5"
+  # limit or creation of resources (i.e. pods)
+  resourceRateLimit: |
+    limit: 0.01
+    burst: 1
   workflowDefaults: |
     spec:
       activeDeadlineSeconds: 300

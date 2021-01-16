@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make test STATIC_FILES=false
+        run: make test
 
   e2e-tests:
     name: E2E Tests
@@ -111,7 +111,8 @@ jobs:
           if [ ${{matrix.test}} == smoke ] || [ ${{matrix.test}} == test-e2e-cron ] ; then
             PROFILE=minimal
           fi
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
@@ -123,10 +124,10 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
       - name: Upload logs
-        if: ${{ always() }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{matrix.alwaysOffloadNodeStatus}}-${{ github.run_id }}-argo.log
           path: /tmp/log/argo-e2e/argo.log
 
   codegen:
@@ -171,15 +172,15 @@ jobs:
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
 
           # we use -B to force make to always make targets
-          make -B codegen STATIC_FILES=false
+          make -B codegen
       - name: Make lint
         env:
           GOPATH: /home/runner/go
-        run: make lint STATIC_FILES=false
+        run: make lint
       - name: Make validate-examples
         env:
           GOPATH: /home/runner/go
-        run: make validate-examples STATIC_FILES=false
+        run: make validate-examples
       - name: Ensure nothing changed
         run: git diff --exit-code
 

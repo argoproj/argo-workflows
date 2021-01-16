@@ -89,7 +89,8 @@ type wfOperationCtx struct {
 	deadline time.Time
 	// activePods tracks the number of active (Running/Pending) pods for controlling
 	// parallelism
-	activePods int64
+	activePods       int64
+	createdResources int // we need to count how many resources we created in this operation
 	// workflowDeadline is the deadline which the workflow is expected to complete before we
 	// terminate the workflow.
 	workflowDeadline *time.Time
@@ -111,7 +112,9 @@ var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
-	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrParallelismReached       = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrResourceRateLimitReached = errors.New(errors.CodeForbidden, "rate-limit for resource creation reached")
+	ErrResourceLimitReached     = errors.New(errors.CodeForbidden, "limiting for max resources reached")
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 )
@@ -883,7 +886,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
-						return
+					return
 					}
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
