@@ -173,17 +173,15 @@ images: cli-image executor-image controller-image
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
+ifeq ($(STATIC_FILES),true)
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
-	# Build UI
-	@mkdir -p ui/dist/app
-ifeq ($(YARN),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
-endif
-ifeq ($(STATIC_FILES),true)
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
 else
+ui/dist/app/index.html:
+	@mkdir -p ui/dist/app
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 

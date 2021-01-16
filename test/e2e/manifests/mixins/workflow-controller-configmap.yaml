@@ -4,11 +4,14 @@ metadata:
   name: workflow-controller-configmap
 data:
   containerRuntimeExecutor: pns
-  # total number of pending + running resources (i.e. pods)
-  resourceLimit: "5"
-  # limit or creation of resources (i.e. pods)
+  # The maximum number number of incomplete pods.
+  resourceLimit: "3"
+  # Rate-limit or creation of resources (i.e. pods)
+  # In this example, we throttle to 10 per second.
+  # When pod creation is throttled by this, the workflow will get re-queued.
+  # This means the workflow may not be reconciled for 10s (by default), therefore no more pods may be created.
   resourceRateLimit: |
-    limit: 0.01
+    limit: 10
     burst: 1
   workflowDefaults: |
     spec:

@@ -131,7 +131,6 @@ type createWorkflowPodOpts struct {
 
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
-	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
@@ -383,6 +382,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if rl := woc.controller.rateLimiter; rl != nil && !rl.Allow() {
 		return nil, ErrResourceRateLimitReached
 	}
+
+	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
