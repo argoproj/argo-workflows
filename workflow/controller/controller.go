@@ -896,7 +896,6 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 				}
 				if !pod.SignificantPodChange(oldPod, newPod) {
 					log.WithField("key", key).Info("insignificant pod change")
-					pod.LogChanges(oldPod, newPod)
 					return
 				}
 				wfc.podQueue.Add(key)

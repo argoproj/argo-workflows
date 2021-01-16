@@ -375,8 +375,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
-	// ListKeys is >= the number of pending or running pods, because there is period of time between a pod completing and it being labelled as complete.
-	if limit := woc.controller.Config.ResourceLimit; limit > 0 && len(woc.controller.podInformer.GetIndexer().ListKeys())+woc.createdResources >= limit {
+	if woc.resourcesBudget <= 0 {
 		return nil, ErrResourceLimitReached
 	}
 
@@ -402,7 +401,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
-	woc.createdResources++
+	woc.resourcesBudget--
 	return created, nil
 }
 

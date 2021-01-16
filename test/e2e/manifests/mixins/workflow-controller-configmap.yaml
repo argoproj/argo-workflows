@@ -4,14 +4,20 @@ metadata:
   name: workflow-controller-configmap
 data:
   containerRuntimeExecutor: pns
-  # The maximum number number of pods not yet labelled as complete.
-  # Because there is always a delay between a pod completing, and the controller labelling it as complete,
-  # there will often be fewer running pods than the limit.
-  resourceLimit: "3"
-  # Rate-limit or creation of resources (i.e. pods).
-  # In this example, we throttle to 10 per second.
+  # Soft-limit for the maximum number of pods in each phase.
+  # The actual enforced limit maybe actually be a bit lower or higher:
+  # * Under high-load, the pod informer that we rely on for pod phase data will get out of date.
+  # * If two workflows reconcile at the same time, this can result in excess pods being created.
+  # When happens, future scheduling will be limited, until the number of pods drops below the limit.
+  # The start-up cost of a pod is higher than running costs. So you should typically be looking to set
+  # the pending limit to control this, and it should probably be a lower than the running limit.
+  resourceLimits: |
+    Pending: 3
+    Running: 10
+  # Soft rate-limit for creation of pods.
   # When pod creation is throttled by this, the workflow will get re-queued.
-  # This means the workflow may not be reconciled for 10s (by default), therefore no more pods may be created.
+  # The workflow may not be reconciled for up to 10s (by default), therefore no more pods may be created for 10s.
+  # In this example, we throttle to 10 creates per second.
   resourceRateLimit: |
     limit: 10
     burst: 1
@@ -24,8 +30,8 @@ data:
     imagePullPolicy: IfNotPresent
     resources:
       requests:
-        cpu: 0.1
+        cpu: 10m
         memory: 64Mi
       limits:
-        cpu: 0.5
+        cpu: 500m
         memory: 128Mi

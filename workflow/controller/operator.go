@@ -89,8 +89,9 @@ type wfOperationCtx struct {
 	deadline time.Time
 	// activePods tracks the number of active (Running/Pending) pods for controlling
 	// parallelism
-	activePods       int64
-	createdResources int // we need to count how many resources we created in this operation
+	activePods int64
+	// how many resources we can created in this operation
+	resourcesBudget int
 	// workflowDeadline is the deadline which the workflow is expected to complete before we
 	// terminate the workflow.
 	workflowDeadline *time.Time
@@ -153,6 +154,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
+		resourcesBudget:        math.MaxUint32,
 		completedPods:          make(map[string]bool),
 		succeededPods:          make(map[string]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
@@ -311,6 +313,24 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.execWf.Spec.Parallelism != nil {
 		woc.activePods = woc.countActivePods()
 	}
+
+	if limits := woc.controller.Config.ResourceLimits; limits != nil {
+		for phase, limit := range limits {
+			// Keys is not always going contain all pods in that phase. Under high-load the informer will get behind
+			// and contain pods that have been completed, or exclude some that have not been created yet.
+			// Over time, it will get to a steady state.
+			keys, err := woc.controller.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, phase)
+			if err != nil {
+				woc.log.WithError(err).WithField("phase", phase).Errorf("failed to list pods in phase for budgetting")
+				return
+			}
+			budget := limit - len(keys)
+			if woc.resourcesBudget > budget {
+				woc.resourcesBudget = budget
+			}
+		}
+	}
+	woc.log.WithField("resourcesBudget", woc.resourcesBudget).Info("resource budget")
 
 	// Create a starting template context.
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
@@ -507,6 +527,14 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if !woc.updated {
 		return
 	}
+
+	if log.IsLevelEnabled(log.DebugLevel) {
+		a, _ := json.Marshal(woc.orig)
+		b, _ := json.Marshal(woc.wf)
+		patch, _ := jsonpatch.CreateMergePatch(a, b)
+		log.Debug(string(patch))
+	}
+
 	resource.UpdateResourceDurations(woc.wf)
 	progress.UpdateProgress(woc.wf)
 	// You MUST not call `persistUpdates` twice.

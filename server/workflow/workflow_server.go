@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"sort"
 
 	log "github.com/sirupsen/logrus"
@@ -202,8 +203,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	}
 	defer watch.Stop()
 
-	log.Debug("Piping events to channel")
-	defer log.Debug("Result channel done")
+	logCtx := log.WithFields(log.Fields{"watchId": rand.Int()})
+
+	logCtx.Debug("Piping events to channel")
+	defer logCtx.Debug("Result channel done")
 
 	for {
 		select {
@@ -213,18 +216,18 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			if !open {
 				return io.EOF
 			}
-			log.Debug("Received workflow event")
+			logCtx.Debug("Received workflow event")
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if !ok {
 				// object is probably metav1.Status, `FromObject` can deal with anything
 				return apierr.FromObject(event.Object)
 			}
-			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
 			err := s.hydrator.Hydrate(wf)
 			if err != nil {
 				return err
 			}
-			logCtx.Debug("Sending workflow event")
+			logCtx.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase, "resourceVersion": wf.ResourceVersion}).
+				Debug("Sending workflow event")
 			err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(event.Type), Object: wf})
 			if err != nil {
 				return err

@@ -81,6 +81,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         if (workflowOperation.title === 'DELETE') {
                                             navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
                                         } else {
+                                            // TODO - navigation doesn't seem to work anymore
                                             navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
                                         }
                                     })

@@ -80,7 +80,7 @@ type Config struct {
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
-	ResourceLimit int `json:"resourceLimit,omitempty"`
+	ResourceLimits map[string]int `json:"resourceLimits,omitempty"`
 
 	ResourceRateLimit *ResourceRateLimit `json:"resourceRateLimit,omitempty"`
 

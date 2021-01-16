@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -240,6 +241,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	} else {
 		targetTasks = strings.Split(tmpl.DAG.Target, " ")
 	}
+
 
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
@@ -627,6 +629,7 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 			leafTaskNames = append(leafTaskNames, taskName)
 		}
 	}
+	sort.Strings(leafTaskNames)
 	return leafTaskNames
 }
 
