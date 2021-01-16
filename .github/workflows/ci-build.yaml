@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make test
+        run: make test STATIC_FILES=false
 
   e2e-tests:
     name: E2E Tests
@@ -111,8 +111,8 @@ jobs:
           if [ ${{matrix.test}} == smoke ] || [ ${{matrix.test}} == test-e2e-cron ] ; then
             PROFILE=minimal
           fi
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
@@ -172,15 +172,15 @@ jobs:
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
 
           # we use -B to force make to always make targets
-          make -B codegen
+          make -B codegen STATIC_FILES=false
       - name: Make lint
         env:
           GOPATH: /home/runner/go
-        run: make lint
+        run: make lint STATIC_FILES=false
       - name: Make validate-examples
         env:
           GOPATH: /home/runner/go
-        run: make validate-examples
+        run: make validate-examples STATIC_FILES=false
       - name: Ensure nothing changed
         run: git diff --exit-code
 
