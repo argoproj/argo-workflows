@@ -38,6 +38,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/diff"
 	envutil "github.com/argoproj/argo/util/env"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
@@ -528,12 +529,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		return
 	}
 
-	if log.IsLevelEnabled(log.DebugLevel) {
-		a, _ := json.Marshal(woc.orig)
-		b, _ := json.Marshal(woc.wf)
-		patch, _ := jsonpatch.CreateMergePatch(a, b)
-		log.Debug(string(patch))
-	}
+	diff.LogChanges(woc.orig, woc.wf)
 
 	resource.UpdateResourceDurations(woc.wf)
 	progress.UpdateProgress(woc.wf)
@@ -2153,7 +2149,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 // markNodePending is a convenience method to mark a node and set the message from the error
 func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.NodeStatus {
 	woc.log.Infof("Mark node %s as Pending, due to: %v", nodeName, err)
-	return woc.markNodePhase(nodeName, wfv1.NodePending, err.Error())
+	return woc.markNodePhase(nodeName, wfv1.NodePending, err.Error()) // we should try to set the message to one that won't change, that prevents excessive reconcillations
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
