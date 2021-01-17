@@ -14,8 +14,7 @@ GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
 GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
-# if we are on a dev branch
-DEV_BRANCH             = $(shell [[ $(GIT_BRANCH) =~ 'master|release-.*' ]] && echo false || echo true)
+DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] && echo false || echo true)
 
 export DOCKER_BUILDKIT = 1
 
@@ -451,7 +450,7 @@ start: controller-image cli-image install executor-image
 else
 start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
-	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
+	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
