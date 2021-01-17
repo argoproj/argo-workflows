@@ -72,19 +72,15 @@ func NewStopCommand() *cobra.Command {
 				log.Fatalf("Unable to parse node field selector '%s': %s", o.nodeFieldSelector, err)
 			}
 
-			var workflows wfv1.Workflows
+			workflows := o.convertToWorkflows(args)
 
-			if o.isList() {
-				listed, err := listWorkflows(ctx, serviceClient, listFlags{
-					namespace: o.namespace,
-					fields:    o.fieldSelector,
-					labels:    o.labelSelector,
-				})
-				errors.CheckError(err)
-				workflows = append(workflows, listed...)
-			} else {
-				workflows = o.convertToWorkflows(args)
-			}
+			listed, err := listWorkflows(ctx, serviceClient, listFlags{
+				namespace: o.namespace,
+				fields:    o.fieldSelector,
+				labels:    o.labelSelector,
+			})
+			errors.CheckError(err)
+			workflows = append(workflows, listed...)
 
 			for _, w := range workflows {
 				if o.dryRun {
