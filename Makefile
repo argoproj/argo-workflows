@@ -13,13 +13,9 @@ GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
 GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
-GIT_TREE_STATE         = $(shell [ -z "`git status --porcelain`" ] && echo clean || echo dirty)
-
-# this is automatically set on CI
-CI                     =
-YARN                   = $(shell [ "`command -v yarn`" != '' ] && echo true || echo false)
-K3D                    = $(shell [ "`command -v kubectl`" != '' ] && [ "`kubectl config current-context`" == "k3d-"* ] && echo true || echo false)
-DEV_MACHINE            = $(shell [ "`uname -s`" = Darwin ] && echo true || echo false)
+GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+# if we are on a dev branch
+DEV_BRANCH             = $(shell [[ $(GIT_BRANCH) =~ 'master|release-.*' ]] && echo false || echo true)
 
 export DOCKER_BUILDKIT = 1
 
@@ -54,7 +50,8 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 
 # perform static compilation
 STATIC_BUILD          ?= true
-STATIC_FILES          ?= $(shell [ $YARN = true ] && [ $DEV_MACHINE = true ] && echo true || echo false)
+# should we build the static files?
+STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 GOTEST                ?= go test
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -72,6 +69,7 @@ endif
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
+K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
@@ -396,7 +394,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Lint Go files
 	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
-ifeq ($(YARN),true)
+ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui lint
 endif
 
@@ -453,7 +451,7 @@ start: controller-image cli-image install executor-image
 else
 start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
-	@echo "starting STATIC_FILES=$(STATIC_FILES), YARN=$(YARN), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
+	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
@@ -475,7 +473,7 @@ endif
 	sleep 10s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(YARN) = true ] && echo ui || echo)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(STATIC_FILES) = false ] && echo ui || echo)
 endif
 
 .PHONY: wait
