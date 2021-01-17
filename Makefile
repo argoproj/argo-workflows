@@ -13,7 +13,13 @@ GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
 GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
-GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+GIT_TREE_STATE         = $(shell [ -z "`git status --porcelain`" ] && echo clean || echo dirty)
+
+# this is automatically set on CI
+CI                     =
+YARN                   = $(shell [ "`command -v yarn`" != '' ] && echo true || echo false)
+K3D                    = $(shell [ "`command -v kubectl`" != '' ] && [ "`kubectl config current-context`" == "k3d-"* ] && echo true || echo false)
+DEV_MACHINE            = $(shell [ "`uname -s`" = Darwin ] && echo true || echo false)
 
 export DOCKER_BUILDKIT = 1
 
@@ -48,7 +54,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 
 # perform static compilation
 STATIC_BUILD          ?= true
-STATIC_FILES          ?= true
+STATIC_FILES          ?= $(shell [ $YARN = true ] && [ $DEV_MACHINE = true ] && echo true || echo false)
 GOTEST                ?= go test
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -59,14 +65,13 @@ AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
 endif
-ifeq ($(STATIC_FILES),false)
+ifneq ($(CI),)
 AUTH_MODE             := client
 endif
 # Which mode to run in:
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
-K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
@@ -168,15 +173,15 @@ images: cli-image executor-image controller-image
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
-ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
-	# Build UI
-	@mkdir -p ui/dist/app
 ifeq ($(STATIC_FILES),true)
+ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
 else
+ui/dist/app/index.html:
+	@mkdir -p ui/dist/app
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
@@ -391,7 +396,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Lint Go files
 	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
-ifeq ($(STATIC_FILES),true)
+ifeq ($(YARN),true)
 	yarn --cwd ui lint
 endif
 
@@ -426,7 +431,9 @@ argosay: test/e2e/images/argosay/v2/argosay
 ifeq ($(K3D),true)
 	k3d image import argoproj/argosay:v2
 endif
+ifeq ($(DOCKER_PUSH),true)
 	docker push argoproj/argosay:v2
+endif
 
 test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
 	cd test/e2e/images/argosay/v2 && GOOS=linux CGO_ENABLED=0 go build -ldflags '-w -s' -o argosay ./main
@@ -446,6 +453,7 @@ start: controller-image cli-image install executor-image
 else
 start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
+	@echo "starting STATIC_FILES=$(STATIC_FILES), YARN=$(YARN), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
@@ -467,7 +475,7 @@ endif
 	sleep 10s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(YARN) = true ] && echo ui || echo)
 endif
 
 .PHONY: wait
