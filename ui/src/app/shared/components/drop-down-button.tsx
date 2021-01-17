@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {ReactNode, useState} from 'react';
+import {Button} from './button';
 
 require('./drop-down-button.scss');
 
@@ -7,15 +8,15 @@ export const DropDownButton = ({onClick, items, children}: {onClick: () => void;
     const [dropped, setDropped] = useState(false);
     return (
         <div className='drop-down-button' onMouseEnter={() => setDropped(true)} onMouseLeave={() => setDropped(false)}>
-            <button onClick={onClick} className='argo-button argo-button--base'>
+            <Button onClick={onClick}>
                 {children} <i className='fa fa-angle-down' />
-            </button>
+            </Button>
             <div className='items' style={{display: !dropped && 'none'}}>
                 {items.map(option => (
                     <div key={option.value}>
-                        <button className='argo-button argo-button--base item' onClick={option.onClick}>
+                        <Button className='item' onClick={option.onClick}>
                             {option.value}
-                        </button>
+                        </Button>
                     </div>
                 ))}
             </div>

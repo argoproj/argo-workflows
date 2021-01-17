@@ -2,6 +2,7 @@ syntax = "proto3";
 option go_package = "github.com/argoproj/argo/pkg/apiclient/event";
 
 import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
 
 package event;
@@ -23,11 +24,19 @@ message EventRequest {
 message EventResponse {
 }
 
+message ListWorkflowEventBindingsRequest {
+    string namespace = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+}
+
 service EventService {
     rpc ReceiveEvent (EventRequest) returns (EventResponse) {
         option (google.api.http) = {
 			post: "/api/v1/events/{namespace}/{discriminator}"
 			body: "payload"
 		};
+    }
+    rpc ListWorkflowEventBindings (ListWorkflowEventBindingsRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowEventBindingList) {
+        option (google.api.http).get = "/api/v1/workflow-event-bindings/{namespace}";
     }
 }

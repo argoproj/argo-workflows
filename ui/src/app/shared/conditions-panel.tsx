@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {Condition, ConditionType} from '../../models';
+import {ErrorIcon, WarningIcon} from './components/fa-icons';
 
 interface Props {
     conditions: Condition[];
@@ -28,10 +29,10 @@ export function hasWarningConditionBadge(conditions: Condition[]): boolean {
 function getConditionIcon(condition: ConditionType): JSX.Element {
     let icon;
     if (WarningConditions.includes(condition as ConditionType)) {
-        icon = <span className={'fa fa-exclamation-triangle'} style={{color: '#d7b700'}} />;
+        icon = <WarningIcon />;
     }
     if (ErrorConditions.includes(condition as ConditionType)) {
-        icon = <span className={'fa fa-exclamation-circle'} style={{color: '#d70022'}} />;
+        icon = <ErrorIcon />;
     }
     if (!icon) {
         return <span />;

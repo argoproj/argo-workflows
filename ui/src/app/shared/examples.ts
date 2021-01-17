@@ -1,4 +1,4 @@
-import {ClusterWorkflowTemplate, CronWorkflow, Template, Workflow, WorkflowTemplate} from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, EventSource, Sensor, Template, Workflow, WorkflowTemplate} from '../../models';
 
 const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely', 'sparkly', 'omniscient'];
@@ -14,25 +14,26 @@ const labels = {example: 'true'};
 const ttlStrategy = {secondsAfterCompletion: 5 * 60};
 const podGC = {strategy: 'OnPodCompletion'};
 
-const templates: Template[] = [
-    {
-        name: entrypoint,
-        inputs: {
-            parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
-        },
-        container: {
-            name: 'main',
-            image: 'argoproj/argosay:v2',
-            command: ['/argosay'],
-            args: ['echo', '{{inputs.parameters.message}}']
-        }
+const exampleTemplate = (name: string): Template => ({
+    name,
+    inputs: {
+        parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
+    },
+    container: {
+        name: 'main',
+        image: 'argoproj/argosay:v2',
+        command: ['/argosay'],
+        args: ['echo', '{{inputs.parameters.message}}']
     }
-];
+});
 
-export const exampleWorkflow = (): Workflow => {
+const templates: Template[] = [exampleTemplate(entrypoint)];
+
+export const exampleWorkflow = (namespace: string): Workflow => {
     return {
         metadata: {
             name: randomSillyName(),
+            namespace,
             labels
         },
         spec: {
@@ -59,9 +60,10 @@ export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
     }
 });
 
-export const exampleWorkflowTemplate = (): WorkflowTemplate => ({
+export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => ({
     metadata: {
         name: randomSillyName(),
+        namespace,
         labels
     },
     spec: {
@@ -74,9 +76,10 @@ export const exampleWorkflowTemplate = (): WorkflowTemplate => ({
     }
 });
 
-export const exampleCronWorkflow = (): CronWorkflow => ({
+export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     metadata: {
         name: randomSillyName(),
+        namespace,
         labels
     },
     spec: {
@@ -89,5 +92,74 @@ export const exampleCronWorkflow = (): CronWorkflow => ({
             ttlStrategy,
             podGC
         }
+    }
+});
+
+const calender = {'example-with-interval': {interval: '10s'}};
+
+export const exampleEventSource = (namespace: string): EventSource => ({
+    metadata: {
+        name: 'calendar',
+        namespace,
+        labels
+    },
+    spec: {
+        calendar: calender
+    }
+});
+
+export const exampleSensor = (namespace: string): Sensor => ({
+    metadata: {
+        name: 'workflow',
+        namespace,
+        labels
+    },
+    spec: {
+        dependencies: [
+            {
+                name: 'dependency-1',
+                eventSourceName: 'calendar',
+                eventName: 'example-with-interval'
+            }
+        ],
+        triggers: [
+            {
+                template: {
+                    name: 'workflow-trigger-1',
+                    k8s: {
+                        group: 'argoproj.io',
+                        version: 'v1alpha1',
+                        resource: 'workflows',
+                        operation: 'create',
+                        source: {
+                            resource: {
+                                apiVersion: 'argoproj.io/v1alpha1',
+                                kind: 'Workflow',
+                                metadata: {
+                                    generateName: 'workflow-from-sensor-'
+                                },
+                                spec: {
+                                    entrypoint: 'main',
+                                    templates: [
+                                        {
+                                            name: 'main',
+                                            container: {
+                                                image: 'argoproj/argosay:v2'
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                template: {
+                    name: 'log-1',
+                    log: {}
+                }
+            }
+        ]
     }
 });
