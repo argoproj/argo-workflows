@@ -360,15 +360,19 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	workflowStatus := node.Phase
+	workflowStatus := map[wfv1.NodePhase]wfv1.WorkflowPhase{
+		wfv1.NodePending:   wfv1.WorkflowPending,
+		wfv1.NodeRunning:   wfv1.WorkflowRunning,
+		wfv1.NodeSucceeded: wfv1.WorkflowSucceeded,
+		wfv1.NodeSkipped:   wfv1.WorkflowSucceeded,
+		wfv1.NodeFailed:    wfv1.WorkflowFailed,
+		wfv1.NodeError:     wfv1.WorkflowError,
+		wfv1.NodeOmitted:   wfv1.WorkflowSucceeded,
+	}[node.Phase]
+
 	var onExitNode *wfv1.NodeStatus
 	if woc.execWf.Spec.OnExit != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
-		if workflowStatus == wfv1.NodeSkipped {
-			// treat skipped the same as Succeeded for workflow.status
-			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
-		} else {
-			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
-		}
+		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
 		var failures []failedNodeStatus
 		for _, node := range woc.wf.Status.Nodes {
@@ -416,7 +420,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// exit handlers were executed. We now need to infer the workflow phase from the
 	// node phase.
 	switch workflowStatus {
-	case wfv1.NodeSucceeded, wfv1.NodeSkipped:
+	case wfv1.WorkflowSucceeded:
 		if onExitNode != nil && onExitNode.FailedOrError() {
 			// if main workflow succeeded, but the exit node was unsuccessful
 			// the workflow is now considered unsuccessful.
@@ -429,9 +433,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		} else {
 			woc.markWorkflowSuccess(ctx)
 		}
-	case wfv1.NodeFailed:
+	case wfv1.WorkflowFailed:
 		woc.markWorkflowFailed(ctx, workflowMessage)
-	case wfv1.NodeError:
+	case wfv1.WorkflowError:
 		woc.markWorkflowPhase(ctx, wfv1.WorkflowError, workflowMessage)
 	default:
 		// NOTE: we should never make it here because if the node was 'Running' we should have
