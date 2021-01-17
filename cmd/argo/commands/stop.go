@@ -17,15 +17,15 @@ import (
 
 type stopOps struct {
 	namespace         string
-	labels            string
-	fields            string
+	labelSelector     string
+	fieldSelector     string
 	message           string // --message
 	nodeFieldSelector string // --node-field-selector
 	dryRun            bool
 }
 
 func (o *stopOps) isList() bool {
-	if o.labels != "" || o.fields != "" {
+	if o.labelSelector != "" || o.fieldSelector != "" {
 		return true
 	}
 
@@ -77,8 +77,8 @@ func NewStopCommand() *cobra.Command {
 			if o.isList() {
 				listed, err := listWorkflows(ctx, serviceClient, listFlags{
 					namespace: o.namespace,
-					fields:    o.fields,
-					labels:    o.labels,
+					fields:    o.fieldSelector,
+					labels:    o.labelSelector,
 				})
 				errors.CheckError(err)
 				workflows = append(workflows, listed...)
@@ -103,8 +103,8 @@ func NewStopCommand() *cobra.Command {
 			}
 		},
 	}
-	command.Flags().StringVarP(&o.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
-	command.Flags().StringVar(&o.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
+	command.Flags().StringVarP(&o.labelSelector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
+	command.Flags().StringVar(&o.fieldSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().StringVar(&o.message, "message", "", "Message to add to previously running nodes")
 	command.Flags().StringVar(&o.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
 	command.Flags().BoolVar(&o.dryRun, "dry-run", false, "Do not stop the workflow, only print what would happen")
