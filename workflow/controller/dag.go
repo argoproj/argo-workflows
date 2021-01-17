@@ -242,7 +242,6 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		targetTasks = strings.Split(tmpl.DAG.Target, " ")
 	}
 
-
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
