@@ -25,9 +25,12 @@ argo stop WORKFLOW WORKFLOW2... [flags]
 ### Options
 
 ```
+      --dry-run                      Do not stop the workflow, only print what would happen
+      --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for stop
       --message string               Message to add to previously running nodes
       --node-field-selector string   selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+  -l, --selector string              Selector (label query) to filter on, not including uninitialized ones
 ```
 
 ### Options inherited from parent commands

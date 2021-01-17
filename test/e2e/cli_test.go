@@ -784,6 +784,54 @@ func (s *CLISuite) TestWorkflowRetry() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowStop() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"stop", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic stopped", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopDryRun() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"stop", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic stopped \\(dry-run\\)", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopBySelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"stop", "--selector", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic stopped", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"stop", "--field-selector", "metadata.name=basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic stopped", output)
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowTerminate() {
 	var name string
 	s.Given().

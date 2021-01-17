@@ -7,7 +7,7 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: argoNamespace,
 			Name:      "pod_missing",
-			Help:      "Incidents of pod missing",
+			Help:      "Incidents of pod missing. https://argoproj.github.io/argo/metrics/#argo_pod_missing",
 		},
 		[]string{"recently_started", "node_phase"},
 	)
