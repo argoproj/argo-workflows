@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../../../manifests/quick-start/mysql
+  - https://github.com/argoproj/argo-events/manifests/base/crds?ref=stable
 
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml
@@ -11,4 +12,5 @@ patchesStrategicMerge:
   - ../mixins/cluster-workflow-template-rbac.yaml
 
 commonLabels:
-  "app.kubernetes.io/part-of": "argo"
+  app.kubernetes.io/part-of: argo
+namespace: argo

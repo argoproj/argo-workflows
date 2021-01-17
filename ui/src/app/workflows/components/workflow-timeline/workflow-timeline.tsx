@@ -12,13 +12,13 @@ const ROUND_START_DIFF_MS = 1000;
 const NODE_NAME_WIDTH = 250;
 const MIN_WIDTH = 800;
 
-export interface WorkflowTimelineProps {
+interface WorkflowTimelineProps {
     workflow: models.Workflow;
     selectedNodeId: string;
     nodeClicked?: (node: models.NodeStatus) => any;
 }
 
-export interface WorkflowTimelineState {
+interface WorkflowTimelineState {
     parentWidth: number;
     now: moment.Moment;
 }

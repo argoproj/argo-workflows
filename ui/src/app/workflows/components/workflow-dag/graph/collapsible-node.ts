@@ -26,7 +26,3 @@ export function getNodeParent(id: string): string {
 export function getMessage(id: string): string {
     return (JSON.parse(id) as CollapsedNode).message;
 }
-
-export function getType(id: string): NodeType {
-    return (JSON.parse(id) as CollapsedNode).type;
-}
