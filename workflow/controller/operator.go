@@ -350,6 +350,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		switch err {
 		case ErrDeadlineExceeded:
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
+		case ErrParallelismReached:
+		case ErrTimeout:
+			woc.markWorkflowFailed(ctx, x.Error())
+			return
 		default:
 			if !woc.wf.Status.Phase.Completed() {
 				woc.markWorkflowError(ctx, x)
