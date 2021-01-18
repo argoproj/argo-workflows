@@ -26,7 +26,7 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
             .list(namespace)
             .then(setWorkflowTemplates)
             .catch(setError);
-    }, []);
+    }, [namespace]);
 
     useEffect(() => {
         switch (stage) {
