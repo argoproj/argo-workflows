@@ -26,7 +26,7 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
             .list(namespace)
             .then(setWorkflowTemplates)
             .catch(setError);
-    }, []);
+    }, [namespace]);
 
     useEffect(() => {
         switch (stage) {
@@ -68,14 +68,14 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                     <h4>Submit new workflow</h4>
                     <p>Either:</p>
                     <div style={{margin: 10, marginLeft: 20}}>
-                        <label>Choose a workflow template</label>
                         <Select
+                            placeholder='Select a workflow template...'
                             options={workflowTemplates && workflowTemplates.length > 0 ? workflowTemplates.map(tmpl => tmpl.metadata.name) : []}
                             value={workflowTemplate && workflowTemplate.metadata.name}
                             onChange={templateName => setWorkflowTemplate((workflowTemplates || []).find(template => template.metadata.name === templateName.title))}
                         />
                     </div>
-                    <p>or</p>
+                    <p>Or:</p>
                     <div style={{margin: 10, marginLeft: 20}}>
                         <a onClick={() => setStage('full-editor')}>
                             Edit using full workflow options <i className='fa fa-caret-right' />

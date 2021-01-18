@@ -36,7 +36,7 @@ export class RetryObservable<E, V> {
                 }
             },
             e => {
-                clearTimeout(this.timeout);
+                this.stop();
                 this.onError(e);
                 this.timeout = setTimeout(() => this.start(null), reconnectAfterMs);
             }
