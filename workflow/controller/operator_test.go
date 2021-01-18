@@ -4175,8 +4175,6 @@ func TestValidReferenceMode(t *testing.T) {
 }
 
 var workflowStatusMetric = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
 metadata:
   name: retry-to-completion-rngcr
 spec:
@@ -4281,8 +4279,54 @@ func TestWorkflowStatusMetric(t *testing.T) {
 	wf := unmarshalWF(workflowStatusMetric)
 	woc := newWoc(*wf)
 	woc.operate(ctx)
-	// Must only be one (completed: true)
-	assert.Len(t, woc.wf.Status.Conditions, 1)
+	// Must only be two (completed: true), (podRunning: true)
+	assert.Len(t, woc.wf.Status.Conditions, 2)
+}
+
+func TestWorkflowConditions(t *testing.T) {
+	ctx := context.Background()
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - container:
+      image: whalesay
+    name: main
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Nil(t, woc.wf.Status.Conditions, "zero conditions on first reconciliation")
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Conditions{{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}}, woc.wf.Status.Conditions)
+
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Conditions{{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionTrue}}, woc.wf.Status.Conditions)
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Conditions{
+		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse},
+		{Type: wfv1.ConditionTypeCompleted, Status: metav1.ConditionTrue},
+	}, woc.wf.Status.Conditions)
 }
 
 var workflowCached = `

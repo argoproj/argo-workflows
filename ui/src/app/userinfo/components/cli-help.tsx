@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {createRef, useState} from 'react';
+import {Notice} from '../../shared/components/notice';
 
 export const CliHelp = () => {
     const argoSecure = document.location.protocol === 'https:';
@@ -28,7 +29,7 @@ argo list`;
     const [copied, setCopied] = useState(false);
     const hiddenText = createRef<HTMLTextAreaElement>();
     return (
-        <div className='white-box'>
+        <Notice>
             <h4>Using Your Login With The CLI</h4>
             <p>Download the latest CLI before you start.</p>
             <div style={{fontFamily: 'monospace', whiteSpace: 'pre', margin: 20}}>{argoToken ? text.replace(argoToken, '[REDACTED]') : text}</div>
@@ -58,6 +59,6 @@ argo list`;
             <textarea ref={hiddenText} style={{width: 0, height: 0, opacity: 0}}>
                 {text}
             </textarea>
-        </div>
+        </Notice>
     );
 };

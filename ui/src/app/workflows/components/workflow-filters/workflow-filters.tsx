@@ -68,7 +68,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                             onChange={value => (this.cronWorkflow = value)}
                         />
                     </div>
-                    <div className='columns small-6 xlarge-12'>
+                    <div className='columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Phases</p>
                         <CheckboxFilter
                             selected={this.props.selectedPhases}
