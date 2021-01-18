@@ -55,6 +55,7 @@ export class ListWatch<T extends Resource> {
     // Start watching
     // Idempotent.
     public start() {
+        this.stop();
         this.list()
             .then(x => {
                 this.items = (x.items || []).sort(this.sorter);
@@ -63,7 +64,7 @@ export class ListWatch<T extends Resource> {
                 this.retryWatch.start(x.metadata.resourceVersion);
             })
             .catch(e => {
-                clearTimeout(this.timeout);
+                this.stop();
                 this.onError(e);
                 this.timeout = setTimeout(() => this.start(), reconnectAfterMs);
             });

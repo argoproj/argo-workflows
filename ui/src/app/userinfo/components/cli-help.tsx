@@ -29,36 +29,36 @@ argo list`;
     const [copied, setCopied] = useState(false);
     const hiddenText = createRef<HTMLTextAreaElement>();
     return (
-        <Notice>
-            <h4>Using Your Login With The CLI</h4>
-            <p>Download the latest CLI before you start.</p>
-            <div style={{fontFamily: 'monospace', whiteSpace: 'pre', margin: 20}}>{argoToken ? text.replace(argoToken, '[REDACTED]') : text}</div>
-            <p>For help with options such as ARGO_INSECURE_SKIP_VERIFY, ARGO_NAMESPACE and ARGO_INSTANCEID, run: `argo --help`.</p>
-            <div>
-                <button
-                    className='argo-button argo-button--base-o'
-                    disabled={copied}
-                    onClick={() => {
-                        const x = hiddenText.current;
-                        x.select();
-                        x.setSelectionRange(0, 99999);
-                        document.execCommand('copy');
-                        setCopied(true);
-                    }}>
-                    {copied ? (
-                        <>
-                            <i className='fa fa-check' /> Copied to clipboard
-                        </>
-                    ) : (
-                        <>
-                            <i className='fa fa-copy' /> Copy to clipboard
-                        </>
-                    )}
-                </button>
-            </div>
-            <textarea ref={hiddenText} style={{width: 0, height: 0, opacity: 0}}>
-                {text}
-            </textarea>
-        </Notice>
+        <>
+            <Notice>
+                <h4>Using Your Login With The CLI</h4>
+                <p>Download the latest CLI before you start.</p>
+                <div style={{fontFamily: 'monospace', whiteSpace: 'pre', margin: 20}}>{argoToken ? text.replace(argoToken, '[REDACTED]') : text}</div>
+                <p>For help with options such as ARGO_INSECURE_SKIP_VERIFY, ARGO_NAMESPACE and ARGO_INSTANCEID, run: `argo --help`.</p>
+                <div>
+                    <button
+                        className='argo-button argo-button--base-o'
+                        disabled={copied}
+                        onClick={() => {
+                            const x = hiddenText.current;
+                            x.select();
+                            x.setSelectionRange(0, 99999);
+                            document.execCommand('copy');
+                            setCopied(true);
+                        }}>
+                        {copied ? (
+                            <>
+                                <i className='fa fa-check' /> Copied to clipboard
+                            </>
+                        ) : (
+                            <>
+                                <i className='fa fa-copy' /> Copy to clipboard
+                            </>
+                        )}
+                    </button>
+                </div>
+            </Notice>
+            <textarea ref={hiddenText} style={{width: 0, height: 0, opacity: 0}} defaultValue={text} />
+        </>
     );
 };
