@@ -106,7 +106,7 @@ jobs:
           echo "    token: xxxxxx" >> ~/.kube/config
           docker pull argoproj/argoexec:latest
           sudo chmod a+rw /run/k3s/containerd/containerd.sock
-          docker save argoproj/argoexec:latest | k3s ctr images import
+          docker save argoproj/argoexec:latest | k3s ctr images import -
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
