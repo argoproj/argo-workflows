@@ -50,15 +50,23 @@ jobs:
           # only use alwaysOffloadNodeStatus=true for test-e2e
           - test: smoke
             alwaysOffloadNodeStatus: "true"
-          - test: test-cli
-            alwaysOffloadNodeStatus: "true"
           - test: test-e2e-cron
             alwaysOffloadNodeStatus: "true"
-          # only containerRuntimeExecutor=docker for smoke and test-e2e
+          - test: test-cli
+            alwaysOffloadNodeStatus: "true"
+
           - test: test-cli
             containerRuntimeExecutor: k8sapi
           - test: test-cli
             containerRuntimeExecutor: pns
+
+          - test: test-e2e
+            containerRuntimeExecutor: k8sapi
+            alwaysOffloadNodeStatus: "true"
+          - test: test-e2e
+            containerRuntimeExecutor: pns
+            alwaysOffloadNodeStatus: "true"
+
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi
           - test: test-e2e-cron
@@ -111,6 +119,8 @@ jobs:
             PROFILE=minimal
           fi
           KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
+          docker save argoproj/argoexec:latest -o argoexec.tar
+          k3s ctr images import argoexec.tar
           KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum

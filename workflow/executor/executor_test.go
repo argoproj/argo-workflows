@@ -243,7 +243,6 @@ func TestChmod(t *testing.T) {
 }
 
 func TestSaveArtifacts(t *testing.T) {
-	t.Skip("TODO")
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	mockRuntimeExecutor.On("CopyFile", "abc123", "/samedir", "/tmp/argo/outputs/artifacts/samedir.tgz", -1).Return(fmt.Errorf("boom"))
