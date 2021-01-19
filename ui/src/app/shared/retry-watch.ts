@@ -20,6 +20,7 @@ export class RetryWatch<T extends Resource> {
     }
 
     public start(resourceVersion?: string) {
+        this.stop();
         this.ro.start(resourceVersion);
     }
 
