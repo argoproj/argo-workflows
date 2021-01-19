@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/executor/mocks"
 )
@@ -245,23 +246,16 @@ func TestChmod(t *testing.T) {
 func TestSaveArtifacts(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockRuntimeExecutor.On("CopyFile", "abc123", "/samedir", "/tmp/argo/outputs/artifacts/samedir.tgz", -1).Return(fmt.Errorf("boom"))
+	mockRuntimeExecutor.On("CopyFile", "abc123", "/samedir", "/tmp/argo/outputs/artifacts/samedir.tgz", -1).Return(errors.New(errors.CodeNotFound, "not found"))
 	templateWithOutParam := wfv1.Template{
 		Inputs: wfv1.Inputs{
 			Artifacts: []wfv1.Artifact{
-				{
-					Name: "samedir",
-					Path: "/samedir",
-				},
+				{Name: "samedir", Path: "/samedir"},
 			},
 		},
 		Outputs: wfv1.Outputs{
 			Artifacts: []wfv1.Artifact{
-				{
-					Name:     "samedir",
-					Path:     "/samedir",
-					Optional: true,
-				},
+				{Name: "samedir", Path: "/samedir", Optional: true},
 			},
 		},
 	}
