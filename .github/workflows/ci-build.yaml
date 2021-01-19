@@ -131,7 +131,7 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
       - name: Upload logs
-        if: ${{ failure() }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{matrix.alwaysOffloadNodeStatus}}-${{ github.run_id }}-argo.log

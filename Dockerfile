@@ -6,6 +6,7 @@
 FROM golang:1.13.4 as builder
 
 ARG IMAGE_OS=linux
+ARG IMAGE_ARCH=amd64
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
@@ -129,7 +130,7 @@ FROM scratch as workflow-controller
 USER 8737
 ARG IMAGE_OS=linux
 # Add timezone data
-COPY --from=argo-build /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=argoexec-base /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-${IMAGE_OS}-* /bin/workflow-controller
 ENTRYPOINT [ "workflow-controller" ]
 

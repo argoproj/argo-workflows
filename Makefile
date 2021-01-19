@@ -436,11 +436,11 @@ test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
 
 .PHONY: test-images
 test-images:
-	 docker_pull argoproj/argosay:v1
+	 docker pull argoproj/argosay:v1
 	 $(call import_image,argoproj/argosay:v1)
-	 docker_pull argoproj/argosay:v2
+	 docker pull argoproj/argosay:v2
 	 $(call import_image,argoproj/argosay:v2)
-	 docker_pull python:alpine3.6
+	 docker pull python:alpine3.6
 	 $(call import_image,python:alpine3.6)
 
 $(GOPATH)/bin/goreman:
