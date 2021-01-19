@@ -15,7 +15,7 @@ metadata:
     # if you want to use this config map by default - name it "artifact-repositories" 
   name: artifact-repositories
   annotations:
-    # if you want to use a specific key, put that's key into this annotation 
+    # v3.0 and after - if you want to use a specific key, put that's key into this annotation 
     workflows.argoproj.io/default-artifact-repository: default-v1
 data:
   default-v1: |
@@ -39,5 +39,7 @@ spec:
     configMap: my-cm # default is "artifact-repositories"
     key: my-key # default can be set by the annotation
 ```
+
+This feature gives maximum benefit when used with [key-only artifacts](key-only-artifacts.md).
 
 Reference: [fields.md#artifactrepositoryref](fields.md#artifactrepositoryref).
