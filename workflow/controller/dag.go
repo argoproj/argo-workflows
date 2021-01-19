@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -626,6 +627,7 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 			leafTaskNames = append(leafTaskNames, taskName)
 		}
 	}
+	sort.Strings(leafTaskNames) // execute tasks in a predictable order
 	return leafTaskNames
 }
 

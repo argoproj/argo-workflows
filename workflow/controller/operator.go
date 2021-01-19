@@ -38,6 +38,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/diff"
 	envutil "github.com/argoproj/argo/util/env"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
@@ -352,10 +353,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 		case ErrParallelismReached:
 		case ErrTimeout:
-			woc.markWorkflowFailed(ctx, x.Error())
-			return
-		default:
 			if !woc.wf.Status.Phase.Completed() {
+				woc.markWorkflowFailed(ctx, x.Error())
+			}
+		default:
+			if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() {
 				woc.markWorkflowError(ctx, x)
 			}
 		}
@@ -511,6 +513,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if !woc.updated {
 		return
 	}
+
+	diff.LogChanges(woc.orig, woc.wf)
+
 	resource.UpdateResourceDurations(woc.wf)
 	progress.UpdateProgress(woc.wf)
 	// You MUST not call `persistUpdates` twice.
