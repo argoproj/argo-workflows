@@ -47,7 +47,7 @@ export const WidgetGallery = ({namespace, name, label}: {namespace: string; name
                 </div>
                 <ul>
                     {parameters.map(p => (
-                        <li>
+                        <li key={p.name}>
                             {p.name}: {p.description} {!!p.defaultValue && '(default "' + p.defaultValue + '")'}
                         </li>
                     ))}
