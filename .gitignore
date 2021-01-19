@@ -32,5 +32,7 @@ git-ask-pass.sh
 /site/
 /.brew_home
 /go-diagrams/
+/.run/
+pprof
 pkg/apiclient/sensor/sensor.swagger.json
 pkg/apiclient/eventsource/eventsource.swagger.json
