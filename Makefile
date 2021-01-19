@@ -141,8 +141,7 @@ define protoc
       $(1)
 endef
 define import_image
-	if [ $(K3S) = true ]; then docker save $(1) -o dist/image.tar; fi
-	if [ $(K3S) = true ]; then k3s ctr images import dist/image.tar; fi
+	if [ $(K3S) = true ]; then docker save $(1) | k3s ctr images import -; fi
 	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 # docker_build,image_name,binary_name,marker_file_name
