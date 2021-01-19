@@ -182,6 +182,8 @@ Workflow is the definition of a workflow resource
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
@@ -518,6 +520,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
@@ -874,6 +878,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
@@ -1187,6 +1193,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
@@ -1441,6 +1449,8 @@ Arguments to a template
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -1796,6 +1806,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
@@ -2330,6 +2342,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
@@ -2414,6 +2428,13 @@ Prometheus is a prometheus metric to be emitted
 ## RetryAffinity
 
 RetryAffinity prevents running steps on the same host.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -2543,6 +2564,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
@@ -2713,6 +2736,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -2955,6 +2980,8 @@ Pod metdata
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
@@ -3127,6 +3154,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
@@ -3836,6 +3865,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
@@ -3952,6 +3983,8 @@ Sequence expands a workflow step into numeric range
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
@@ -4253,6 +4286,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
@@ -4377,6 +4412,13 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 ## Affinity
 
 Affinity is a group of affinity scheduling rules.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -4531,6 +4573,8 @@ Volume represents a named volume in a pod that may be accessed by any container 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
@@ -5002,6 +5046,8 @@ ResourceRequirements describes the compute resource requirements.
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
@@ -5071,6 +5117,8 @@ VolumeMount describes a mounting of a Volume within a container.
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
 - [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
@@ -5161,6 +5209,13 @@ Node affinity is a group of node affinity scheduling rules.
 ## PodAffinity
 
 Pod affinity is a group of inter pod affinity scheduling rules.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -5434,6 +5489,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
@@ -5756,6 +5813,13 @@ Represents a Glusterfs mount that lasts the lifetime of a pod. Glusterfs volumes
 ## HostPathVolumeSource
 
 Represents a host path mapped into a pod. Host path volumes do not support ownership management or SELinux relabeling.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -6105,6 +6169,13 @@ An empty preferred scheduling term matches all objects with implicit weight 0 (i
 
 A node selector represents the union of the results of one or more label queries over a set of nodes; that is, it represents the OR of the selectors represented by the node selector terms.
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -6124,6 +6195,13 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 
 Defines a set of pods (namely those matching the labelSelector relative to the given namespace(s)) that this pod should be co-located (affinity) or not co-located (anti-affinity) with, where co-located is defined as running on a node whose value of the label with key <topologyKey> matches that of any node on which a pod of the set of pods is running
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -6134,6 +6212,13 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 ## LabelSelectorRequirement
 
 A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -6304,6 +6389,13 @@ ServiceAccountTokenProjection represents a projected service account token volum
 ## NodeSelectorRequirement
 
 A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`pod-affinity.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-affinity.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |

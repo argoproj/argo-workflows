@@ -1,0 +1,81 @@
+# This examples uses pod-affinity to get all work to happen on a single node.
+# This means we can use a single empty-dir volume on that host to share files, instead of using artifacts.
+# This example intentionally sets the resource request to 1000m so that it schedules more pods than a node can contain.
+# This shows how these would not start pending more resources becoming available.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-affinity-
+spec:
+  entrypoint: main
+  volumes:
+    - name: work
+      hostPath:
+        path: /tmp/{{workflow.name}}/work
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: generate
+            arguments:
+              parameters:
+                - name: item
+                  value: "{{item}}"
+            withSequence:
+              count: 5
+          - name: b
+            template: consume
+            arguments:
+              parameters:
+                - name: item
+                  value: "{{item}}"
+            dependencies:
+              - a
+
+    - name: generate
+      inputs:
+        parameters:
+          - name: item
+      script:
+        image: alpine:3.7
+        command: [ sh ]
+        source: echo hello > "/work/{{inputs.parameters.item}}"
+        volumeMounts:
+          - name: work
+            mountPath: /work
+        resources:
+          requests:
+            cpu: 1000m
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                  - key: workflows.argoproj.io/workflow
+                    operator: In
+                    values:
+                      - "{{workflow.name}}"
+
+    - name: consume
+      inputs:
+        parameters:
+          - name: item
+      script:
+        image: alpine:3.7
+        command: [ sh ]
+        source: ls /work
+        volumeMounts:
+          - name: work
+            mountPath: /work
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                  - key: workflows.argoproj.io/workflow
+                    operator: In
+                    values:
+                      - "{{workflow.name}}"
