@@ -101,12 +101,10 @@ jobs:
           mkdir -p ~/.kube
           until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
           cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
+          sudo chmod a+rw /run/k3s/containerd/containerd.sock
           echo "- name: fake_token_user" >> ~/.kube/config
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
-          docker pull argoproj/argoexec:latest
-          sudo chmod a+rw /run/k3s/containerd/containerd.sock
-          docker save argoproj/argoexec:latest | k3s ctr images import -
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
