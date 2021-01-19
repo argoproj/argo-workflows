@@ -352,12 +352,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		case ErrDeadlineExceeded:
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 		case ErrParallelismReached:
-		case ErrTimeout:
-			if !woc.wf.Status.Phase.Completed() {
-				woc.markWorkflowFailed(ctx, x.Error())
-			}
 		default:
-			if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() {
+			if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 				woc.markWorkflowError(ctx, x)
 			}
 		}
