@@ -173,28 +173,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     };
 
     useEffect(() => {
-        services.workflows
-            .get(namespace, name)
-            .then(setWorkflow)
-            .catch(setError);
-    }, [namespace, name]);
-
-    useEffect(() => {
-        if (!workflow) {
-            return;
-        }
         const retryWatch = new RetryWatch<Workflow>(
-            resourceVersion =>
-                services.workflows.watch({
-                    name: workflow.metadata.name,
-                    namespace: workflow.metadata.namespace,
-                    resourceVersion
-                }),
+            () => services.workflows.watch({name, namespace}),
             () => setError(null),
             e => setWorkflow(e.object),
             setError
         );
-        retryWatch.start(workflow.metadata.resourceVersion);
+        retryWatch.start();
         return () => retryWatch.stop();
     }, [namespace, name]);
 
