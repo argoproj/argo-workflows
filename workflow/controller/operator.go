@@ -2131,8 +2131,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 // markNodePending is a convenience method to mark a node and set the message from the error
 func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.NodeStatus {
 	woc.log.Infof("Mark node %s as Pending, due to: %+v", nodeName, err)
-	node := woc.wf.GetNodeByName(nodeName)
-	return woc.markNodePhase(nodeName, wfv1.NodePending, fmt.Sprintf("Pending %s", time.Since(node.StartedAt.Time)))
+	return woc.markNodePhase(nodeName, wfv1.NodePending, err.Error()) // this error message will not change often
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
