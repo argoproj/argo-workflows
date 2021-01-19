@@ -635,7 +635,7 @@ spec:
         - server
         - --auth-mode
         - client
-        image: argoproj/argocli:v2.12.3
+        image: argoproj/argocli:v2.12.5
         name: argo-server
         ports:
         - containerPort: 2746
@@ -656,7 +656,8 @@ spec:
         runAsNonRoot: true
       serviceAccountName: argo-server
       volumes:
-      - name: tmp
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -721,11 +722,11 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.12.3
+        - argoproj/argoexec:v2.12.5
         - --namespaced
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.12.3
+        image: argoproj/workflow-controller:v2.12.5
         livenessProbe:
           httpGet:
             path: /metrics
