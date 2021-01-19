@@ -99,7 +99,7 @@ func newServer() *ArtifactServer {
 	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
 
-	fakeArtifactDriverFactory := func(_ *wfv1.Artifact, _ resource.Interface) (artifact.ArtifactDriver, error) {
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifact.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
 	}
 

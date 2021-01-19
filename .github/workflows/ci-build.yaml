@@ -45,8 +45,16 @@ jobs:
         # kubelet is not included because it'd take ages to get it working methinks
         test: [ "smoke", "test-e2e", "test-cli", "test-e2e-cron" ]
         containerRuntimeExecutor: [ "docker", "k8sapi", "pns" ]
-        # ok, so we're only running `smoke` for all CREs,
+        alwaysOffloadNodeStatus: ["true", "false"]
         exclude:
+          # only use alwaysOffloadNodeStatus=true for test-e2e
+          - test: smoke
+            alwaysOffloadNodeStatus: "true"
+          - test: test-cli
+            alwaysOffloadNodeStatus: "true"
+          - test: test-e2e-cron
+            alwaysOffloadNodeStatus: "true"
+          # only containerRuntimeExecutor=docker for smoke and test-e2e
           - test: test-e2e
             containerRuntimeExecutor: k8sapi
           - test: test-e2e
@@ -100,7 +108,11 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          if [ ${{matrix.test}} == smoke ] || [ ${{matrix.test}} == test-e2e-cron ] ; then
+            PROFILE=minimal
+          fi
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
@@ -112,10 +124,10 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
       - name: Upload logs
-        if: ${{ always() }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{matrix.alwaysOffloadNodeStatus}}-${{ github.run_id }}-argo.log
           path: /tmp/log/argo-e2e/argo.log
 
   codegen:
@@ -193,6 +205,7 @@ jobs:
         run: |
           yarn --cwd ui install
           yarn --cwd ui build
+          yarn --cwd ui test
           yarn --cwd ui lint
       - name: Ensure nothing changed
         run: git diff --exit-code

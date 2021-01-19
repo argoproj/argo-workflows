@@ -1204,6 +1204,41 @@ func SucceededPodNode(n NodeStatus) bool {
 	return n.Type == NodeTypePod && n.Phase == NodeSucceeded
 }
 
+// Children returns the children of the parent.
+func (s Nodes) Children(parentNodeId string) Nodes {
+	var childNodes = make(Nodes)
+	parentNode, ok := s[parentNodeId]
+	if !ok {
+		return childNodes
+	}
+	for _, childID := range parentNode.Children {
+		if childNode, ok := s[childID]; ok {
+			childNodes[childID] = childNode
+		}
+	}
+	return childNodes
+}
+
+// Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
+func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
+	var filteredNodes = make(Nodes)
+	for _, node := range s {
+		if predicate(node) {
+			filteredNodes[node.ID] = node
+		}
+	}
+	return filteredNodes
+}
+
+// Map maps the nodes to new values, e.g. `x.Hostname`
+func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
+	var values = make(map[string]interface{})
+	for _, node := range s {
+		values[node.ID] = f(node)
+	}
+	return values
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -1301,6 +1336,16 @@ type Backoff struct {
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
+// RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
+// In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+type RetryNodeAntiAffinity struct {
+}
+
+// RetryAffinity prevents running steps on the same host.
+type RetryAffinity struct {
+	NodeAntiAffinity *RetryNodeAntiAffinity `json:"nodeAntiAffinity,omitempty" protobuf:"bytes,1,opt,name=nodeAntiAffinity"`
+}
+
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
@@ -1311,6 +1356,9 @@ type RetryStrategy struct {
 
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
+
+	// Affinity prevents running workflow's step on the same host
+	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -1427,6 +1475,8 @@ type ConditionType string
 const (
 	// ConditionTypeCompleted is a signifies the workflow has completed
 	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypePodRunning any workflow pods are currently running
+	ConditionTypePodRunning ConditionType = "PodRunning"
 	// ConditionTypeSpecWarning is a warning on the current application spec
 	ConditionTypeSpecWarning ConditionType = "SpecWarning"
 	// ConditionTypeSpecWarning is an error on the current application spec

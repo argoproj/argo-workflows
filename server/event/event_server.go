@@ -5,10 +5,11 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	eventpkg "github.com/argoproj/argo/pkg/apiclient/event"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/server/event/dispatch"
 	"github.com/argoproj/argo/util/instanceid"
@@ -46,7 +47,8 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		go func() {
 			defer wg.Done()
 			for operation := range s.operationQueue {
-				operation.Dispatch()
+				ctx := context.Background()
+				operation.Dispatch(ctx)
 			}
 		}()
 		wg.Add(1)
@@ -68,7 +70,7 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	options := metav1.ListOptions{}
 	s.instanceIDService.With(&options)
 
-	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(req.Namespace).List(options)
+	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(req.Namespace).List(ctx, options)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +84,14 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	case s.operationQueue <- *operation:
 		return &eventpkg.EventResponse{}, nil
 	default:
-		return nil, errors.NewServiceUnavailable("operation queue full")
+		return nil, apierrors.NewServiceUnavailable("operation queue full")
 	}
+}
+
+func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg.ListWorkflowEventBindingsRequest) (*wfv1.WorkflowEventBindingList, error) {
+	listOptions := metav1.ListOptions{}
+	if in.ListOptions != nil {
+		listOptions = *in.ListOptions
+	}
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(ctx, listOptions)
 }

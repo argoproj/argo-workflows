@@ -678,7 +678,7 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 func TestGetLatestWorkflow(t *testing.T) {
 	_, ctx := getWorkflowServer()
 	wfClient := ctx.Value(auth.WfKey).(versioned.Interface)
-	wf, err := getLatestWorkflow(wfClient, "test")
+	wf, err := getLatestWorkflow(ctx, wfClient, "test")
 	if assert.NoError(t, err) {
 		assert.Equal(t, wf.Name, "hello-world-9tql2-test")
 	}
@@ -688,7 +688,7 @@ func TestGetWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
 	}
@@ -698,7 +698,7 @@ func TestValidateWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
 	if assert.NoError(t, err) {
 		assert.NoError(t, s.validateWorkflow(wf))
 	}

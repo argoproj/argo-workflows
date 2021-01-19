@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"regexp"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
 
 type MemoizationCache interface {
-	Load(key string) (*Entry, error)
-	Save(key string, nodeId string, value *wfv1.Outputs) error
+	Load(ctx context.Context, key string) (*Entry, error)
+	Save(ctx context.Context, key string, nodeId string, value *wfv1.Outputs) error
 }
 
 type Entry struct {

@@ -71,6 +71,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Prometheus":                  schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":                 schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate":            schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryAffinity":               schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity":       schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy":               schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":                  schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket":                    schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
@@ -171,7 +173,8 @@ func schema_pkg_apis_workflow_v1alpha1_Arguments(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -190,7 +193,8 @@ func schema_pkg_apis_workflow_v1alpha1_Arguments(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -214,6 +218,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "name of the artifact. must be unique within a template's inputs/outputs.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -483,6 +488,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref common.ReferenceC
 					"url": {
 						SchemaProps: spec.SchemaProps{
 							Description: "URL of the artifact",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -615,12 +621,14 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref common.Refere
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec"),
 						},
 					},
 				},
@@ -655,7 +663,8 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref common.Re
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -664,7 +673,8 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref common.Re
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate"),
 									},
 								},
 							},
@@ -747,6 +757,7 @@ func schema_pkg_apis_workflow_v1alpha1_Counter(ref common.ReferenceCallback) com
 					"value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Value is the value of the metric",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -801,17 +812,20 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref common.ReferenceCallback
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus"),
 						},
 					},
 				},
@@ -846,7 +860,8 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref common.ReferenceCall
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -855,7 +870,8 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref common.ReferenceCall
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow"),
 									},
 								},
 							},
@@ -880,12 +896,14 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					"workflowSpec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowSpec is the spec of the workflow to be run",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
 					"schedule": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Schedule is a schedule to run the Workflow in Cron format",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -961,7 +979,8 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 									},
 								},
 							},
@@ -980,7 +999,8 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -1005,6 +1025,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is the name of the target",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1019,6 +1040,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments are the parameter and artifact arguments to the template",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
@@ -1035,8 +1057,9 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1049,7 +1072,8 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"),
 									},
 								},
 							},
@@ -1131,7 +1155,8 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"),
 									},
 								},
 							},
@@ -1162,6 +1187,7 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 					"selector": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1203,6 +1229,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1210,12 +1237,14 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 					"serviceAccountKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the path in the bucket where the artifact resides",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1239,6 +1268,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref common.ReferenceCallback) c
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1246,6 +1276,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref common.ReferenceCallback) c
 					"serviceAccountKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -1268,6 +1299,7 @@ func schema_pkg_apis_workflow_v1alpha1_Gauge(ref common.ReferenceCallback) commo
 					"value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Value is the value of the metric",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1296,6 +1328,7 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 					"repo": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Repo is the git repository",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1321,8 +1354,9 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1415,8 +1449,9 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1432,6 +1467,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 					"path": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Path is a file path in HDFS",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1505,8 +1541,9 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1592,6 +1629,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 					"url": {
 						SchemaProps: spec.SchemaProps{
 							Description: "URL of the artifact",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1603,7 +1641,8 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Header"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Header"),
 									},
 								},
 							},
@@ -1628,6 +1667,7 @@ func schema_pkg_apis_workflow_v1alpha1_Header(ref common.ReferenceCallback) comm
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is the header name",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1635,6 +1675,7 @@ func schema_pkg_apis_workflow_v1alpha1_Header(ref common.ReferenceCallback) comm
 					"value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Value is the literal value to use for the header",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1656,6 +1697,7 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 					"value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Value is the value of the metric",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1667,7 +1709,8 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Amount"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Amount"),
 									},
 								},
 							},
@@ -1702,7 +1745,8 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -1721,7 +1765,8 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -1757,6 +1802,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1764,6 +1810,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 					"scope": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Either \"workflow\" or \"pod\"",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1771,6 +1818,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 					"url": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The URL. May contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\" and \"${status.finishedAt}\".",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1798,6 +1846,7 @@ func schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref common.ReferenceCal
 					"hit": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Hit indicates whether this node was created from a cache entry",
+							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -1805,6 +1854,7 @@ func schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref common.ReferenceCal
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the name of the key used for this node's cache",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1812,6 +1862,7 @@ func schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref common.ReferenceCal
 					"cacheName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Cache is the name of the cache that was used",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1833,6 +1884,7 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key to use as the caching key",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1846,6 +1898,7 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 					"maxAge": {
 						SchemaProps: spec.SchemaProps{
 							Description: "MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1873,8 +1926,9 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1887,8 +1941,9 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1909,14 +1964,16 @@ func schema_pkg_apis_workflow_v1alpha1_MetricLabel(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -2021,7 +2078,8 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MutexHolding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MutexHolding"),
 									},
 								},
 							},
@@ -2039,7 +2097,8 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MutexHolding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MutexHolding"),
 									},
 								},
 							},
@@ -2063,6 +2122,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					"id": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2070,6 +2130,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is unique name in the node tree used to generate the node ID",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2084,6 +2145,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					"type": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Type indicates type of node",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2146,12 +2208,14 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					"startedAt": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Time at which this node started",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
 					"finishedAt": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Time at which this node completed",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
@@ -2177,8 +2241,9 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"integer"},
-										Format: "int64",
+										Default: 0,
+										Type:    []string{"integer"},
+										Format:  "int64",
 									},
 								},
 							},
@@ -2217,8 +2282,9 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2231,8 +2297,9 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2307,6 +2374,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2314,6 +2382,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2321,18 +2390,21 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the path in the bucket where the artifact resides",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2356,6 +2428,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2363,6 +2436,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2370,12 +2444,14 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -2408,7 +2484,8 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -2427,7 +2504,8 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -2476,6 +2554,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is the parameter name",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2514,8 +2593,9 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2560,6 +2640,7 @@ func schema_pkg_apis_workflow_v1alpha1_Prometheus(ref common.ReferenceCallback) 
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is the name of the metric",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2580,6 +2661,7 @@ func schema_pkg_apis_workflow_v1alpha1_Prometheus(ref common.ReferenceCallback) 
 					"help": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Help is a string that describes the metric",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2628,6 +2710,7 @@ func schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref common.ReferenceCallback)
 					"data": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Data is the string contents of the artifact",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2649,6 +2732,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 					"action": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2695,8 +2779,9 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2704,6 +2789,37 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 					},
 				},
 				Required: []string{"action"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RetryAffinity prevents running steps on the same host.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"nodeAntiAffinity": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses \"kubernetes.io/hostname\".",
+				Type:        []string{"object"},
 			},
 		},
 	}
@@ -2735,11 +2851,17 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff"),
 						},
 					},
+					"affinity": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Affinity prevents running workflow's step on the same host",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryAffinity"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryAffinity", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -2753,6 +2875,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2760,6 +2883,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2781,12 +2905,14 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -2813,6 +2939,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2836,6 +2963,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2843,6 +2971,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2864,12 +2993,14 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -2912,6 +3043,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2930,8 +3062,9 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2944,8 +3077,9 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2976,7 +3110,8 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.ContainerPort"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerPort"),
 									},
 								},
 							},
@@ -2989,7 +3124,8 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvFromSource"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvFromSource"),
 									},
 								},
 							},
@@ -3008,7 +3144,8 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -3017,6 +3154,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					"resources": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
@@ -3033,7 +3171,8 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.VolumeMount"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeMount"),
 									},
 								},
 							},
@@ -3047,12 +3186,13 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "volumeDevices is the list of block devices to be used by the container. This is a beta feature.",
+							Description: "volumeDevices is the list of block devices to be used by the container.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.VolumeDevice"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeDevice"),
 									},
 								},
 							},
@@ -3072,7 +3212,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					},
 					"startupProbe": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+							Description: "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
 							Ref:         ref("k8s.io/api/core/v1.Probe"),
 						},
 					},
@@ -3133,6 +3273,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					"source": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Source contains the source code of the script to execute",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3171,8 +3312,9 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref common.ReferenceCall
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3218,7 +3360,8 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
 									},
 								},
 							},
@@ -3231,7 +3374,8 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
 									},
 								},
 							},
@@ -3294,12 +3438,14 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 					"workflowTemplateRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowTemplateRef the workflow template to submit",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Metadata optional means to customize select fields of the workflow metadata",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
@@ -3353,8 +3499,9 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3558,6 +3705,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is the name of the template",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3572,6 +3720,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments hold arguments to the template. DEPRECATED: This field is not used.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
@@ -3584,12 +3733,14 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"inputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs"),
 						},
 					},
 					"outputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Outputs describe the parameters and artifacts that this template produces",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
@@ -3601,8 +3752,9 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3617,6 +3769,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
 					},
@@ -3634,7 +3787,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps"),
 									},
 								},
 							},
@@ -3683,7 +3837,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Volume"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
 									},
 								},
 							},
@@ -3702,7 +3857,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer"),
 									},
 								},
 							},
@@ -3721,7 +3877,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer"),
 									},
 								},
 							},
@@ -3765,7 +3922,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Toleration"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -3825,7 +3983,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.HostAlias"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.HostAlias"),
 									},
 								},
 							},
@@ -3929,6 +4088,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3947,8 +4107,9 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3961,8 +4122,9 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3993,7 +4155,8 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.ContainerPort"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerPort"),
 									},
 								},
 							},
@@ -4006,7 +4169,8 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvFromSource"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvFromSource"),
 									},
 								},
 							},
@@ -4025,7 +4189,8 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -4034,6 +4199,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 					"resources": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
@@ -4050,7 +4216,8 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.VolumeMount"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeMount"),
 									},
 								},
 							},
@@ -4064,12 +4231,13 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "volumeDevices is the list of block devices to be used by the container. This is a beta feature.",
+							Description: "volumeDevices is the list of block devices to be used by the container.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.VolumeDevice"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeDevice"),
 									},
 								},
 							},
@@ -4089,7 +4257,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 					},
 					"startupProbe": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+							Description: "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
 							Ref:         ref("k8s.io/api/core/v1.Probe"),
 						},
 					},
@@ -4234,50 +4402,58 @@ func schema_pkg_apis_workflow_v1alpha1_Version(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"version": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"buildDate": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"gitCommit": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"gitTag": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"gitTreeState": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"goVersion": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"compiler": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"platform": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -4330,17 +4506,20 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStatus"),
 						},
 					},
 				},
@@ -4375,12 +4554,14 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref common.Reference
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec"),
 						},
 					},
 				},
@@ -4415,7 +4596,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref common.Refer
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -4424,7 +4606,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref common.Refer
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowEventBinding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowEventBinding"),
 									},
 								},
 							},
@@ -4448,6 +4631,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref common.Refer
 					"event": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Event is the event to bind to",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event"),
 						},
 					},
@@ -4489,7 +4673,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref common.ReferenceCallback
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -4498,7 +4683,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow"),
 									},
 								},
 							},
@@ -4533,7 +4719,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template"),
 									},
 								},
 							},
@@ -4549,6 +4736,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
@@ -4585,7 +4773,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Volume"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
 									},
 								},
 							},
@@ -4604,7 +4793,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.PersistentVolumeClaim"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.PersistentVolumeClaim"),
 									},
 								},
 							},
@@ -4638,8 +4828,9 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -4664,7 +4855,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Toleration"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -4683,7 +4875,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -4782,7 +4975,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.HostAlias"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.HostAlias"),
 									},
 								},
 							},
@@ -4869,12 +5063,14 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					"startedAt": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Time at which this workflow started",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
 					"finishedAt": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Time at which this workflow completed",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
@@ -4914,7 +5110,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus"),
 									},
 								},
 							},
@@ -4935,7 +5132,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template"),
 									},
 								},
 							},
@@ -4948,7 +5146,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Volume"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
 									},
 								},
 							},
@@ -4967,7 +5166,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -4981,8 +5181,9 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"integer"},
-										Format: "int64",
+										Default: 0,
+										Type:    []string{"integer"},
+										Format:  "int64",
 									},
 								},
 							},
@@ -5038,6 +5239,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments hold arguments to the template",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
@@ -5054,7 +5256,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"),
 									},
 								},
 							},
@@ -5124,12 +5327,14 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref common.ReferenceCall
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec"),
 						},
 					},
 				},
@@ -5164,7 +5369,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref common.Reference
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -5173,7 +5379,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplate"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplate"),
 									},
 								},
 							},
@@ -5235,7 +5442,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template"),
 									},
 								},
 							},
@@ -5251,6 +5459,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
@@ -5287,7 +5496,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Volume"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
 									},
 								},
 							},
@@ -5306,7 +5516,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.PersistentVolumeClaim"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.PersistentVolumeClaim"),
 									},
 								},
 							},
@@ -5340,8 +5551,9 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -5366,7 +5578,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Toleration"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -5385,7 +5598,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -5484,7 +5698,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.HostAlias"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.HostAlias"),
 									},
 								},
 							},

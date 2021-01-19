@@ -24,9 +24,10 @@ func Label(ctx context.Context, obj metav1.Object) {
 
 func dnsFriendly(s string) string {
 	value := regexp.MustCompile("[^-_.a-z0-9A-Z]").ReplaceAllString(s, "-")
+	value = regexp.MustCompile("^[^a-z0-9A-Z]*").ReplaceAllString(value, "")
+	value = regexp.MustCompile("[^a-z0-9A-Z]*$").ReplaceAllString(value, "")
 	if len(value) > 63 {
 		value = value[len(value)-63:]
 	}
-	value = strings.TrimLeft(value, "-")
 	return value
 }

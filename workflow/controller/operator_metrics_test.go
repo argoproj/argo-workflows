@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var basicMetric = `
@@ -47,19 +49,20 @@ func TestBasicMetric(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(basicMetric)
-	_, err := wfcset.Create(wf)
+	ctx := context.Background()
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	// Schedule first pod and mark completed
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	// Process first metrics
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
@@ -107,13 +110,14 @@ func TestCounterMetric(t *testing.T) {
 	defer cancel()
 
 	// Schedule first pod and mark completed
+	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodFailed)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 	// Process first metrics
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	metricTotalDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricTotalDesc))
@@ -203,13 +207,14 @@ status:
 func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(testMetricEmissionSameOperationCreationAndFailure)
-	_, err := wfcset.Create(wf)
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 
 	metricErrorDesc := wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
@@ -277,7 +282,8 @@ func TestRetryStrategyMetric(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	ctx := context.Background()
+	woc.operate(ctx)
 
 	// Ensure no metrics have been emitted yet
 	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
@@ -290,7 +296,7 @@ func TestRetryStrategyMetric(t *testing.T) {
 	podNode.Phase = v1alpha1.NodeSucceeded
 	woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"] = podNode
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	metricErrorDesc = wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
 	if assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc)) {
@@ -398,15 +404,16 @@ spec:
 func TestDAGTmplMetrics(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(dagTmplMetrics)
-	_, err := wfcset.Create(wf)
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	makePodsPhase(woc, apiv1.PodSucceeded)
-	woc.operate()
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
 	tmpl := woc.wf.GetTemplateByName("random-int")
 	assert.NotNil(t, tmpl)
 	metricDesc := tmpl.Metrics.Prometheus[0].GetDesc()
@@ -462,13 +469,14 @@ spec:
 func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(testRealtimeWorkflowMetricWithGlobalParameters)
-	_, err := wfcset.Create(wf)
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 
 	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
@@ -476,4 +484,105 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
+}
+
+var testProcessedRetryNode = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: metrics-eg-lq4nj
+spec:
+  entrypoint: my-dag
+  templates:
+  - dag:
+      tasks:
+      - name: A
+        template: A
+    name: my-dag
+  - container:
+      args:
+      - hello from A
+      command:
+      - cowsay
+      image: docker/whalesay
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: Number of argo workflows
+        labels:
+        - key: work_unit
+          value: metrics-eg::A
+        - key: workflow_result
+          value: '{{status}}'
+        name: result_counter
+    name: A
+    retryStrategy:
+      backoff:
+        duration: 2s
+        factor: 1
+        maxDuration: 6m
+      limit: 2
+      retryPolicy: Always
+status:
+  nodes:
+    metrics-eg-lq4nj:
+      children:
+      - metrics-eg-lq4nj-4266717436
+      displayName: metrics-eg-lq4nj
+      finishedAt: "2021-01-13T16:14:03Z"
+      id: metrics-eg-lq4nj
+      name: metrics-eg-lq4nj
+      outboundNodes:
+      - metrics-eg-lq4nj-2568729143
+      phase: Running
+      startedAt: "2021-01-13T16:13:53Z"
+      templateName: my-dag
+      templateScope: local/metrics-eg-lq4nj
+      type: DAG
+    metrics-eg-lq4nj-2568729143:
+      boundaryID: metrics-eg-lq4nj
+      displayName: A(0)
+      finishedAt: "2021-01-13T16:13:57Z"
+      id: metrics-eg-lq4nj-2568729143
+      name: metrics-eg-lq4nj.A(0)
+      phase: Succeeded
+      startedAt: "2021-01-13T16:13:53Z"
+      templateName: A
+      templateScope: local/metrics-eg-lq4nj
+      type: Pod
+    metrics-eg-lq4nj-4266717436:
+      boundaryID: metrics-eg-lq4nj
+      children:
+      - metrics-eg-lq4nj-2568729143
+      displayName: A
+      finishedAt: "2021-01-13T16:14:03Z"
+      id: metrics-eg-lq4nj-4266717436
+      name: metrics-eg-lq4nj.A
+      phase: Running
+      startedAt: "2021-01-13T16:13:53Z"
+      templateName: A
+      templateScope: local/metrics-eg-lq4nj
+      type: Retry
+  phase: Running
+  startedAt: "2021-01-13T16:13:53Z"
+`
+
+func TestProcessedRetryNode(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(testProcessedRetryNode)
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	metric := controller.metrics.GetCustomMetric("result_counter{work_unit=metrics-eg::A,workflow_result=Succeeded,}")
+	assert.NotNil(t, metric)
+	metricErrorCounterString, err := getMetricStringValue(metric)
+	assert.NoError(t, err)
+	assert.Contains(t, metricErrorCounterString, `value:1`)
 }
