@@ -563,14 +563,13 @@ status:
 func TestProcessedRetryNode(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(testProcessedRetryNode)
-	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate(ctx)
+	woc.operate()
 
 	metric := controller.metrics.GetCustomMetric("result_counter{work_unit=metrics-eg::A,workflow_result=Succeeded,}")
 	assert.NotNil(t, metric)
