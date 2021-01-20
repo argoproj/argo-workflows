@@ -416,6 +416,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 		"displayName":  node.DisplayName,
 		"templateName": node.TemplateName,
 		"phase":        string(node.Phase),
+		"name":         node.Name,
 	}
 	if node.TemplateRef != nil {
 		nodeFields["templateRef.name"] = node.TemplateRef.Name
