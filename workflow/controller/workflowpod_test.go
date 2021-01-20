@@ -140,20 +140,6 @@ script:
     ls -al
 `
 
-var scriptTemplateWithOptionalInputArtifactNotProvided = `
-name: script-with-input-artifact
-inputs:
-  artifacts:
-  - name: manifest
-    path: /manifest
-    optional: true
-script:
-  image: alpine:latest
-  command: [sh]
-  source: |
-    ls -al
-`
-
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	volumeMount := apiv1.VolumeMount{
@@ -209,16 +195,6 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
 	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, customVolumeMount)
 	assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, customVolumeMountForInit)
-
-	// Ensure that volume mount is not created when artifact is not provided
-	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactNotProvided)
-	woc = newWoc()
-	mainCtr = tmpl.Script.Container
-	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-
-	pod, err = woc.createWorkflowPod(ctx, tmpl.Name, mainCtr, tmpl, &createWorkflowPodOpts{})
-	assert.NoError(t, err)
-	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
 }
 
 // TestWFLevelServiceAccount verifies the ability to carry forward the service account name
