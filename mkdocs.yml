@@ -41,6 +41,7 @@ nav:
           - work-avoidance.md
           - enhanced-depends-logic.md
           - artifact-repository-ref.md
+          - key-only-artifacts.md
           - resource-duration.md
           - estimated-duration.md
           - workflow-pod-security-context.md

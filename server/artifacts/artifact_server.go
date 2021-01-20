@@ -134,6 +134,20 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("artifact not found")
 	}
 
+	ref, err := a.artifactRepositories.Resolve(ctx, wf.Spec.ArtifactRepositoryRef, wf.Namespace)
+	if err != nil {
+		return err
+	}
+	ar, err := a.artifactRepositories.Get(ctx, ref)
+	if err != nil {
+		return err
+	}
+	l := ar.ToArtifactLocation()
+	err = art.Relocate(l)
+	if err != nil {
+		return err
+	}
+
 	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
 		return err
@@ -167,7 +181,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	contentLength := strconv.FormatInt(stats.Size(), 10)
 	log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
 
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(art.GetKey())))
+	key, _ := art.GetKey()
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 	w.WriteHeader(200)
 
 	http.ServeContent(w, r, "", time.Time{}, file)
