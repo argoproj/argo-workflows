@@ -6741,7 +6741,6 @@
       "description": "GCSArtifact is the location of a GCS artifact",
       "type": "object",
       "required": [
-        "bucket",
         "key"
       ],
       "properties": {
@@ -6848,7 +6847,6 @@
       "description": "HDFSArtifact is the location of an HDFS artifact",
       "type": "object",
       "required": [
-        "addresses",
         "path"
       ],
       "properties": {
@@ -7329,10 +7327,6 @@
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
       "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
         "key"
       ],
       "properties": {
@@ -7575,10 +7569,6 @@
       "description": "S3Artifact is the location of an S3 artifact",
       "type": "object",
       "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
         "key"
       ],
       "properties": {
