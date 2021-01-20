@@ -3,10 +3,10 @@ package info
 import (
 	"context"
 
-	"github.com/argoproj/argo"
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/v2"
+	infopkg "github.com/argoproj/argo/v2/pkg/apiclient/info"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/auth"
 )
 
 type infoServer struct {

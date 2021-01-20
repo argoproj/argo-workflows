@@ -1,6 +1,8 @@
-module github.com/argoproj/argo
+module github.com/argoproj/argo/v2
 
 go 1.13
+
+replace github.com/argoproj/argo/v2 => ./
 
 require (
 	bou.ke/staticfiles v0.0.0-20210106104248-dd04075d4104
@@ -11,6 +13,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible
 	github.com/antonmedv/expr v1.8.8
+	github.com/argoproj/argo v2.5.2+incompatible
 	github.com/argoproj/argo-events v1.2.0
 	github.com/argoproj/pkg v0.3.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect

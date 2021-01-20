@@ -15,11 +15,11 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/util"
-	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/config"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/util"
+	armocks "github.com/argoproj/argo/v2/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {

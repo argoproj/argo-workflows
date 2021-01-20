@@ -83,10 +83,10 @@ endif
 ALWAYS_OFFLOAD_NODE_STATUS := false
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo.version=$(VERSION) \
-  -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo/v3.version=$(VERSION) \
+  -X github.com/argoproj/argo/v3.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo/v3.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo/v3.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
@@ -96,9 +96,9 @@ ifneq ($(GIT_TAG),)
 override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
 endif
 
-ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/' | cut -c 26-)
-CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo/' | cut -c 26-)
-CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo/' | cut -c 26-)
+ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/' | cut -c 29-)
+CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo/' | cut -c 29-)
+CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo/' | cut -c 29-)
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
