@@ -26,15 +26,18 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
     useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
     useEffect(() => setText(stringify(value, lang)), [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
-    if (onChange) {
-        useEffect(() => {
-            try {
-                onChange(parse(text));
-            } catch (e) {
-                setError(e);
+    const updateText = (newValue: string) => {
+        if (onChange) {
+            {
+                setText(newValue);
+                try {
+                    onChange(parse(newValue));
+                } catch (e) {
+                    setError(e);
+                }
             }
-        }, [text]);
-    }
+        }
+    };
 
     useEffect(() => {
         if (type && lang === 'json') {
@@ -88,6 +91,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         renderIndentGuides: false,
                         scrollBeyondLastLine: true
                     }}
+                    onChange={newValue => updateText(newValue)}
                 />
             </div>
             <div style={{paddingTop: '1em'}}>
