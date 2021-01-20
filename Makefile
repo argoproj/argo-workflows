@@ -83,10 +83,10 @@ endif
 ALWAYS_OFFLOAD_NODE_STATUS := false
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo/v3.version=$(VERSION) \
-  -X github.com/argoproj/argo/v3.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo/v3.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo/v3.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo/v2.version=$(VERSION) \
+  -X github.com/argoproj/argo/v2.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo/v2.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo/v2.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
