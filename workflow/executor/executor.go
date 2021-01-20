@@ -56,7 +56,7 @@ var ExecutorRetry = wait.Backoff{
 	Jitter:   0.5,
 }
 
-const (
+var (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
 	tempOutArtDir = "/var/argo/outputs/artifacts"
 )
