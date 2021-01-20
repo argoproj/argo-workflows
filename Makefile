@@ -69,7 +69,6 @@ endif
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
 K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
-K3S                   := $(shell [ "`command -v k3s`" != '' ] && echo true || echo false)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
@@ -141,7 +140,6 @@ define protoc
       $(1)
 endef
 define import_image
-	if [ $(K3S) = true ]; then docker save $(1) | k3s ctr images import -; fi
 	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 # docker_build,image_name,binary_name,marker_file_name
