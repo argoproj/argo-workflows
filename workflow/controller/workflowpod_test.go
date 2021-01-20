@@ -332,8 +332,8 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "foo-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[3].Name)
+	assert.Equal(t, "foo-token", pod.Spec.Volumes[3].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -359,8 +359,8 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[3].Name)
+	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[3].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")

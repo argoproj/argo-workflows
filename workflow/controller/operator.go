@@ -254,7 +254,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.markWorkflowFailed(ctx, msg)
 			return
 		}
-		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
+		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
@@ -447,6 +447,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
+}
+
+func (woc *wfOperationCtx) GetContainerRuntimeExecutor() string {
+	return woc.controller.GetContainerRuntimeExecutor()
 }
 
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {

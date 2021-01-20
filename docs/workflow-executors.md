@@ -16,7 +16,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
     * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
     * It can escape the privileges of the pod's service account
     * It cannot [`runAsNonRoot`](workflow-pod-security-context.md).
-* Most scalable:
+* Second most scalable:
     * It communicates directly with the local Docker daemon.
 * Artifacts:
     * Output artifacts can be located on the base layer (e.g. `/tmp`).
@@ -26,8 +26,8 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 ## Kubelet (kubelet)
 
 * Reliability:
-    * Least well-tested
-    * Least popular
+    * Second least well-tested
+    * Second least popular
 * Secure
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
@@ -77,3 +77,28 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * [Doesn't work for Windows containers](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod).
 
 [https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)
+
+## Inline (inline)
+
+This is the most fully featured executor.
+
+This executor works very differently to the others. It does not use an `init` container to get artifacts, or need a `wait` container.
+
+To do this, additional secrets and environment variables are made available to the pod. These might not be available with other executors.
+
+* Reliability:
+  * Least well-tested.
+  * Least popular.
+  * Simplest executor code-wise. 
+* More secure:
+  * No `privileged` access
+  * Cannot escape the privileges of the pod's service account
+  * Can [`runAsNonRoot`](workflow-pod-security-context.md).
+  * But, the executor's service account token must be mounted onto the main container. The main container can do anything the wait/init containers can do, including modifying pod specs.
+* Most scalable:
+  * It reads and writes directly to and from container's disk.
+  * Does not use resources for any wait container.
+* Artifacts:
+  * Output artifacts can be located on the base layer (e.g. `/tmp`).
+* Configuration:
+  * `command` must be specified for containers. 

@@ -31,60 +31,18 @@ func waitContainer(ctx context.Context) error {
 	stats.StartStatsTicker(5 * time.Minute)
 
 	defer func() {
-		// Killing sidecar containers
-		err := wfExecutor.KillSidecars(ctx)
-		if err != nil {
+		if err := wfExecutor.Close(ctx); err != nil {
+			wfExecutor.AddError(err)
+		}
+		if err := wfExecutor.KillSidecars(ctx); err != nil {
 			wfExecutor.AddError(err)
 		}
 	}()
 
-	// Wait for main container to complete
-	waitErr := wfExecutor.Wait(ctx)
-	if waitErr != nil {
-		wfExecutor.AddError(waitErr)
+	err := wfExecutor.Wait(ctx)
+	if err != nil {
+		wfExecutor.AddError(err)
 		// do not return here so we can still try to kill sidecars & save outputs
 	}
-
-	// Capture output script result
-	err := wfExecutor.CaptureScriptResult(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	// Capture output script exit code
-	err = wfExecutor.CaptureScriptExitCode(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	// Saving logs
-	logArt, err := wfExecutor.SaveLogs(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	// Saving output parameters
-	err = wfExecutor.SaveParameters(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	// Saving output artifacts
-	err = wfExecutor.SaveArtifacts(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	err = wfExecutor.AnnotateOutputs(ctx, logArt)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-
-	// To prevent the workflow step from completing successfully, return the error occurred during wait.
-	if waitErr != nil {
-		return waitErr
-	}
-
-	return nil
+	return err
 }
