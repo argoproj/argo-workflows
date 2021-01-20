@@ -3340,7 +3340,6 @@
         }
       },
       "required": [
-        "bucket",
         "key"
       ],
       "type": "object"
@@ -3478,7 +3477,6 @@
         }
       },
       "required": [
-        "addresses",
         "path"
       ],
       "type": "object"
@@ -3936,10 +3934,6 @@
         }
       },
       "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
         "key"
       ],
       "type": "object"
@@ -4202,10 +4196,6 @@
         }
       },
       "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
         "key"
       ],
       "type": "object"

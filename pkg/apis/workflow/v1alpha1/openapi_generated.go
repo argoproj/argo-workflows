@@ -1229,7 +1229,6 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1237,7 +1236,6 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 					"serviceAccountKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -1250,7 +1248,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"bucket", "key"},
+				Required: []string{"key"},
 			},
 		},
 		Dependencies: []string{
@@ -1268,7 +1266,6 @@ func schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref common.ReferenceCallback) c
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1276,12 +1273,10 @@ func schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref common.ReferenceCallback) c
 					"serviceAccountKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 				},
-				Required: []string{"bucket"},
 			},
 		},
 		Dependencies: []string{
@@ -1480,7 +1475,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"addresses", "path"},
+				Required: []string{"path"},
 			},
 		},
 		Dependencies: []string{
@@ -1557,7 +1552,6 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"addresses"},
 			},
 		},
 		Dependencies: []string{
@@ -2374,7 +2368,6 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2382,7 +2375,6 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2390,14 +2382,12 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -2410,7 +2400,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
+				Required: []string{"key"},
 			},
 		},
 		Dependencies: []string{
@@ -2428,7 +2418,6 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2436,7 +2425,6 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2444,19 +2432,16 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 				},
-				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
@@ -2875,7 +2860,6 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2883,7 +2867,6 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2905,14 +2888,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -2945,7 +2926,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
+				Required: []string{"key"},
 			},
 		},
 		Dependencies: []string{
@@ -2963,7 +2944,6 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"endpoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Endpoint is the hostname of the bucket endpoint",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2971,7 +2951,6 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"bucket": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Bucket is the name of the bucket",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2993,14 +2972,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"accessKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AccessKeySecret is the secret selector to the bucket's access key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
-							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -3025,7 +3002,6 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
