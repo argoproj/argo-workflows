@@ -9,7 +9,6 @@ import (
 	"sync"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -66,7 +65,6 @@ func Test_run(t *testing.T) {
 			err := run(x, []string{"sleep", "10s"})
 			assert.EqualError(t, err, "signal: terminated")
 		}()
-		time.Sleep(2 * time.Second)
 		err := ioutil.WriteFile(varArgo("signal"), []byte(strconv.Itoa(int(syscall.SIGTERM))), 0600)
 		assert.NoError(t, err)
 		wg.Wait()
