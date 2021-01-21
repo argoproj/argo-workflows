@@ -14,5 +14,5 @@ func LogChanges(old, new interface{}) {
 	a, _ := json.Marshal(old)
 	b, _ := json.Marshal(new)
 	patch, _ := jsonpatch.CreateMergePatch(a, b)
-	log.Debug(string(patch))
+	log.Debugf("Log changes patch: %s", string(patch))
 }
