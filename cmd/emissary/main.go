@@ -85,15 +85,12 @@ func run(name string, args []string) error {
 	go func() {
 		t := time.NewTicker(2 * time.Second)
 		defer t.Stop()
-		for {
-			select {
-			case <-t.C:
-				data, _ := ioutil.ReadFile(varArgo("signal"))
-				_ = os.Remove(varArgo("signal"))
-				s, _ := strconv.Atoi(string(data))
-				if s > 0 {
-					_ = syscall.Kill(cmd.Process.Pid, syscall.Signal(s))
-				}
+		for range t.C {
+			data, _ := ioutil.ReadFile(varArgo("signal"))
+			_ = os.Remove(varArgo("signal"))
+			s, _ := strconv.Atoi(string(data))
+			if s > 0 {
+				_ = syscall.Kill(cmd.Process.Pid, syscall.Signal(s))
 			}
 		}
 	}()
