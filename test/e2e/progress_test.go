@@ -25,7 +25,7 @@ func (s *ProgressSuite) TestDefaultProgress() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.Equal(t, wfv1.Progress("1/1"), status.Progress)
 			assert.Equal(t, wfv1.Progress("1/1"), status.Nodes[metadata.Name].Progress)
 		})
