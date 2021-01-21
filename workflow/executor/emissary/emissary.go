@@ -1,6 +1,7 @@
 package emissary
 
 import (
+	"compress/gzip"
 	"context"
 	"io"
 	"io/ioutil"
@@ -10,20 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo/workflow/executor"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
 )
 
-/**
-
-* The controller replaces the command with `/var/argo/emissary ${command}`.
-* The init container copies `entrypoint` to `/var/argo/`.
-* Entrypoint binary runs the original command as a sub-process, capturing stdout/stderr
-* If it `signal` appears in `/var/argo/` than the signal from that file is sent to the sub-process
-* On completion it writes `exitcode`, `stdout` and `stderr` to `/var/argo/`.
-* If there are parameters or artifacts that needs copying, they're copied to `/var/argo/outputs/${path}`.
-* This executor uses those files to coordinate.
- */
 type emissary struct{}
 
 func New() (executor.ContainerRuntimeExecutor, error) {
@@ -31,7 +24,16 @@ func New() (executor.ContainerRuntimeExecutor, error) {
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	data, err := ioutil.ReadFile(sourcePath)
+	sourceFile := filepath.Join("/var/argo/outputs", sourcePath+".tgz")
+	log.Infof("%s -> ", sourceFile)
+	src, err := os.Open(sourceFile)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = src.Close() }()
+	r, err := gzip.NewReader(src)
+	defer func() { _ = r.Close() }()
+	data, err := ioutil.ReadAll(r)
 	return string(data), err
 }
 
@@ -39,7 +41,9 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 	// this implementation is very different, because we expect the emissary binary has already compressed the file
 	// so no compression can or needs to be implemented here
 	// TODO - warn the user we ignored compression
-	src, err := os.Open(filepath.Join("/var/argo/outputs", sourcePath))
+	sourceFile := filepath.Join("/var/argo/outputs", sourcePath+".tgz")
+	log.Infof("%s -> %s", sourceFile, destPath)
+	src, err := os.Open(sourceFile)
 	if err != nil {
 		return err
 	}

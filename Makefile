@@ -260,7 +260,7 @@ dist/emissary-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/emissary-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/emissary-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/emissary-%: $(ENTRYPOINT_PKGS)
+dist/emissary-%: $(EMISSARY_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/emissary
 
 .PHONY: executor-image

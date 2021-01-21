@@ -129,21 +129,29 @@ func run(name string, args []string) error {
 		}
 	}
 
-	for _, x := range paths {
-		if _, err := os.Stat(x); os.IsNotExist(err) { // might be optional, so we ignore
+	for _, src := range paths {
+		if _, err := os.Stat(src); os.IsNotExist(err) { // might be optional, so we ignore
 			continue
 		}
-		y := filepath.Join(varArgo("outputs"), x)
-		z := filepath.Dir(y)
+		dst := filepath.Join(varArgo("outputs"), src+".tgz")
+		println(src, "->", dst)
+		z := filepath.Dir(dst)
 		if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
 			return fmt.Errorf("failed to create directory %s: %w", z, err)
 		}
-		out, err := os.Create(y)
+		err := func() error {
+			out, err := os.Create(dst)
+			if err != nil {
+				return fmt.Errorf("failed to create destination %s: %w", dst, err)
+			}
+			defer func() { _ = out.Close() }()
+			if err = archive.TarGzToWriter(src, gzip.DefaultCompression, out); err != nil {
+				return fmt.Errorf("failed to tarball the output %s to %s: %w", src, dst, err)
+			}
+			return nil
+		}()
 		if err != nil {
-			return fmt.Errorf("failed to create targget %s: %w", y, err)
-		}
-		if err = archive.TarGzToWriter(x, gzip.DefaultCompression, out); err != nil {
-			return fmt.Errorf("failed to tarball the output %s to %s: %w", x, y, err)
+			return err
 		}
 	}
 
