@@ -22,10 +22,6 @@ const (
 	fakeContainerID = "abc123"
 )
 
-func init() {
-	tempOutArtDir = "/tmp/" + tempOutArtDir
-}
-
 func TestSaveParameters(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}

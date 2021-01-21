@@ -44,7 +44,7 @@ jobs:
       matrix:
         # kubelet is not included because it'd take ages to get it working methinks
         test: [ "smoke", "test-e2e", "test-cli", "test-e2e-cron" ]
-        containerRuntimeExecutor: [ "docker", "k8sapi", "pns", "inline" ]
+        containerRuntimeExecutor: [ "docker", "k8sapi", "pns", "entrypoint" ]
         alwaysOffloadNodeStatus: ["true", "false"]
         exclude:
           # only use alwaysOffloadNodeStatus=true for test-e2e
@@ -60,20 +60,20 @@ jobs:
           - test: test-e2e
             containerRuntimeExecutor: pns
           - test: test-e2e
-            containerRuntimeExecutor: inline
+            containerRuntimeExecutor: entrypoint
 
           - test: test-cli
             containerRuntimeExecutor: k8sapi
           - test: test-cli
             containerRuntimeExecutor: pns
           - test: test-cli
-            containerRuntimeExecutor: inline
+            containerRuntimeExecutor: entrypoint
 
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi
           - test: test-e2e-cron
             containerRuntimeExecutor: pns
-          - test: test-e2e-cron
+          - test: test-e2e-entrypoint
             containerRuntimeExecutor: inline
     steps:
       - name: Checkout code

@@ -12,13 +12,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"syscall"
 	"time"
 
 	argofile "github.com/argoproj/pkg/file"
@@ -38,7 +36,6 @@ import (
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
-	pathutil "github.com/argoproj/argo/workflow/util/path"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -55,9 +52,9 @@ var ExecutorRetry = wait.Backoff{
 	Jitter:   0.5,
 }
 
-var (
+const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
-	tempOutArtDir = "/var/argo/outputs/artifacts"
+	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
 // WorkflowExecutor is program which runs as the init/wait container
@@ -168,8 +165,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
 		}
 		var artPath string
-
-		if os.Getenv(common.EnvVarContainerRuntimeExecutor) == common.ContainerRuntimeExecutorInline {
+		if os.Getenv(common.EnvVarContainerRuntimeExecutor) == common.ContainerRuntimeExecutorEntrypoint {
 			artPath = art.Path
 		} else if mnt := common.FindOverlappingVolume(&we.Template, art.Path); mnt == nil {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
@@ -548,7 +544,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 	if err != nil {
 		return nil, err
 	}
-	tempLogsDir := "/var/argo/outputs/logs"
+	tempLogsDir := "/tmp/argo/outputs/logs"
 	err = os.MkdirAll(tempLogsDir, os.ModePerm)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -840,46 +836,9 @@ func isTarball(filePath string) (bool, error) {
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
-		r, err := os.Open(src)
-		if err != nil {
+		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
 			return err
 		}
-		gzr, err := gzip.NewReader(r)
-		if err != nil {
-			return err
-		}
-		defer gzr.Close()
-		tr := tar.NewReader(gzr)
-		for {
-			header, err := tr.Next()
-			switch {
-			case err == io.EOF:
-				return nil
-			case err != nil:
-				return err
-			case header == nil:
-				continue
-			}
-			target := filepath.Join(dest, header.Name)
-			switch header.Typeflag {
-			case tar.TypeDir:
-				if _, err := os.Stat(target); err != nil {
-					if err := os.MkdirAll(target, 0755); err != nil {
-						return err
-					}
-				}
-			case tar.TypeReg:
-				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-				if err != nil {
-					return err
-				}
-				if _, err := io.Copy(f, tr); err != nil {
-					return err
-				}
-				return f.Close()
-			}
-		}
-	}
 
 	return unpack(tarPath, destPath, decompressor)
 }
@@ -1284,100 +1243,6 @@ func (we *WorkflowExecutor) LoadExecutionControl() error {
 		if errors.IsCode(errors.CodeNotFound, err) {
 			return nil
 		}
-		return err
-	}
-	return nil
-}
-
-func (we *WorkflowExecutor) Run(ctx context.Context, name string, args []string) error {
-
-	var err error
-	name, err = pathutil.Search(name)
-	if err != nil {
-		return err
-	}
-
-	signals := make(chan os.Signal, 1)
-
-	defer close(signals)
-	signal.Notify(signals)
-	defer signal.Reset()
-
-	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Env = os.Environ()
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Stdout, err = os.Create("/var/argo/stdout")
-	if err != nil {
-		return fmt.Errorf("failed to open stdout: %w", err)
-	}
-	cmd.Stdout, err = os.Create("/var/argo/stderr")
-	if err != nil {
-		return fmt.Errorf("failed to open stderr: %w", err)
-	}
-	err = tail("/var/argo/stdout", os.Stdout)
-	if err != nil {
-		return fmt.Errorf("failed to tail stdout: %w", err)
-	}
-	err = tail("/var/argo/stderr", os.Stderr)
-	if err != nil {
-		return fmt.Errorf("failed to tail stderr: %w", err)
-	}
-
-	log.WithField("name", name).WithField("args", args).Info()
-
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	go func() {
-		for s := range signals {
-			if s != syscall.SIGCHLD {
-				_ = syscall.Kill(-cmd.Process.Pid, s.(syscall.Signal))
-			}
-		}
-	}()
-
-	err = cmd.Wait()
-
-	exitCode := 129 // TODO - is this a good default?
-	if err == nil {
-		exitCode = 0
-	} else if exitError, ok := err.(*exec.ExitError); ok {
-		exitCode = exitError.ExitCode()
-	}
-
-	log.WithError(err).WithField("exitCode", exitCode).Info()
-
-	if err := ioutil.WriteFile("/var/argo/exitcode", []byte(fmt.Sprintf(`%d`, exitCode)), 0600); err != nil { // 600 = rw-------
-		return fmt.Errorf("failed to capture exit code %d: %w", exitCode, err)
-	}
-
-	return err
-}
-
-func (we *WorkflowExecutor) Close(ctx context.Context) error {
-	err := we.CaptureScriptResult(ctx)
-	if err != nil {
-		return err
-	}
-	err = we.CaptureScriptExitCode(ctx)
-	if err != nil {
-		return err
-	}
-	logArt, err := we.SaveLogs(ctx)
-	if err != nil {
-		return err
-	}
-	err = we.SaveParameters(ctx)
-	if err != nil {
-		return err
-	}
-	err = we.SaveArtifacts(ctx)
-	if err != nil {
-		return err
-	}
-	err = we.AnnotateOutputs(ctx, logArt)
-	if err != nil {
 		return err
 	}
 	return nil

@@ -74,6 +74,7 @@ COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 ####################################################################################################
 FROM argoexec-base as argoexec
 COPY argoexec /usr/local/bin/
+COPY entrypoint /usr/local/bin/
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################

@@ -62,20 +62,6 @@ var (
 		Name:      volumeVarArgo.Name,
 		MountPath: "/var/argo",
 	}
-	volumeMountServiceAccountToken = apiv1.VolumeMount{
-		Name:      common.ServiceAccountTokenVolumeName,
-		MountPath: common.ServiceAccountTokenMountPath,
-		ReadOnly:  true,
-	}
-	podNameEnvVar = apiv1.EnvVar{
-		Name: common.EnvVarPodName,
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.name",
-			},
-		},
-	}
 	hostPathSocket = apiv1.HostPathSocket
 )
 
@@ -264,12 +250,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if err != nil {
 			return nil, err
 		}
-		if waitCtr != nil {
-			pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
-		}
+		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 
-	if woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorInline {
+	if woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEntrypoint {
 		if len(mainCtr.Command) == 0 {
 			mainCtr.Command = map[string][]string{
 				"argoproj/argosay:v1": {"cowsay"},
@@ -278,15 +262,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			}[mainCtr.Image] // TODO remove this hack
 		}
 		if len(mainCtr.Command) == 0 {
-			return nil, fmt.Errorf("must specify the command when using the inline executor; determine this using `docker image inspect -f '{{.Config.Cmd}}' %s` or `docker image inspect -f '{{.Config.Entrypoint}}' %s`", mainCtr.Image, mainCtr.Image)
+			return nil, fmt.Errorf("must specify the command when using the entrypoint executor; determine this using `docker image inspect -f '{{.Config.Cmd}}' %s` or `docker image inspect -f '{{.Config.Entrypoint}}' %s`", mainCtr.Image, mainCtr.Image)
 		}
-		mainCtr.Command = append([]string{"/var/argo/argoexec", "run", "--"}, mainCtr.Command...)
-		mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volumeMountVarArgo, volumeMountPodMetadata)
-		executorServiceAccountName := woc.getExecutorServiceAccountName(tmpl)
-		if executorServiceAccountName != "" {
-			mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volumeMountServiceAccountToken)
-		}
-		mainCtr.Env = append(mainCtr.Env, podNameEnvVar, woc.getContainerRuntimeExecutorEnvVar())
+		mainCtr.Command = append([]string{"/var/argo/entrypoint"}, mainCtr.Command...)
+		mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volumeMountVarArgo)
 	}
 
 	// NOTE: the order of the container list is significant. kubelet will pull, create, and start
@@ -297,7 +276,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
-	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorInline {
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEntrypoint {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
@@ -489,8 +468,6 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 			// in order to SIGTERM/SIGKILL the pid
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
-	case common.ContainerRuntimeExecutorInline:
-		return nil, nil
 	case "", common.ContainerRuntimeExecutorDocker:
 		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
@@ -518,16 +495,33 @@ func containerIsPrivileged(ctr *apiv1.Container) bool {
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
-	execEnvVars := []apiv1.EnvVar{
-		woc.getContainerRuntimeExecutorEnvVar(),
-		podNameEnvVar,
-	}
+	var execEnvVars []apiv1.EnvVar
+	execEnvVars = append(execEnvVars, apiv1.EnvVar{
+		Name: common.EnvVarPodName,
+		ValueFrom: &apiv1.EnvVarSource{
+			FieldRef: &apiv1.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "metadata.name",
+			},
+		},
+	})
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
-	switch woc.GetContainerRuntimeExecutor() {
+	switch woc.controller.GetContainerRuntimeExecutor() {
+	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorEntrypoint:
+		execEnvVars = append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
+			},
+		)
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
+			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
 				ValueFrom: &apiv1.EnvVarSource{
@@ -547,10 +541,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		)
 	}
 	return execEnvVars
-}
-
-func (woc *wfOperationCtx) getContainerRuntimeExecutorEnvVar() apiv1.EnvVar {
-	return apiv1.EnvVar{Name: common.EnvVarContainerRuntimeExecutor, Value: woc.GetContainerRuntimeExecutor()}
 }
 
 func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
@@ -573,7 +563,7 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 		})
 	}
 	switch woc.GetContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorInline:
+	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorEntrypoint:
 		return volumes
 	default:
 		return append(volumes, woc.getVolumeDockerSock(tmpl))
@@ -619,20 +609,20 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
-	if woc.getExecutorServiceAccountName(tmpl) != "" {
-		exec.VolumeMounts = append(exec.VolumeMounts, volumeMountServiceAccountToken)
-	}
-	return &exec
-}
-
-func (woc *wfOperationCtx) getExecutorServiceAccountName(tmpl *wfv1.Template) string {
 	executorServiceAccountName := ""
 	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
 		executorServiceAccountName = tmpl.Executor.ServiceAccountName
 	} else if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
-	return executorServiceAccountName
+	if executorServiceAccountName != "" {
+		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
+			Name:      common.ServiceAccountTokenVolumeName,
+			MountPath: common.ServiceAccountTokenMountPath,
+			ReadOnly:  true,
+		})
+	}
+	return &exec
 }
 
 func isResourcesSpecified(ctr *apiv1.Container) bool {
@@ -810,7 +800,7 @@ func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volu
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
 
 	for idx, container := range pod.Spec.Containers {
-		if container.Name == common.WaitContainerName || (container.Name == common.MainContainerName && woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorInline) {
+		if container.Name == common.WaitContainerName {
 			pod.Spec.Containers[idx].VolumeMounts = append(pod.Spec.Containers[idx].VolumeMounts, volumeMounts...)
 			break
 		}
@@ -900,9 +890,6 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 				art.Name, art.Path)
 			continue
 		}
-		if woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorInline {
-			continue
-		}
 		overlap := common.FindOverlappingVolume(tmpl, art.Path)
 		if overlap != nil {
 			// artifact path overlaps with a mounted volume. do not mount the
@@ -932,7 +919,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 // them to the wait sidecar. In order for this to work, we mirror all volume mounts in the main
 // container under a well-known path.
 func (woc *wfOperationCtx) addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if tmpl.GetType() == wfv1.TemplateTypeResource || woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorInline {
+	if tmpl.GetType() == wfv1.TemplateTypeResource {
 		return
 	}
 	mainCtrIndex := -1
@@ -1001,7 +988,12 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
 	}
 
-	executorServiceAccountName := woc.getExecutorServiceAccountName(tmpl)
+	executorServiceAccountName := ""
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
+	}
 	if executorServiceAccountName != "" {
 		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
 		if err != nil {

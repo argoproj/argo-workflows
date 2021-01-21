@@ -104,6 +104,7 @@ RUN . hack/image_arch.sh && ./dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH}
 # executor image
 RUN . hack/image_arch.sh && make dist/argoexec-${IMAGE_OS}-${IMAGE_ARCH}
 RUN . hack/image_arch.sh && ./dist/argoexec-${IMAGE_OS}-${IMAGE_ARCH} version | grep clean
+RUN . hack/image_arch.sh && make dist/entrypoint-${IMAGE_OS}-${IMAGE_ARCH}
 
 # cli image
 RUN mkdir -p ui/dist
@@ -120,6 +121,7 @@ RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 2>&1 |
 FROM argoexec-base as argoexec
 ARG IMAGE_OS=linux
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec-${IMAGE_OS}-* /usr/local/bin/argoexec
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/entrypoint-${IMAGE_OS}-* /usr/local/bin/entrypoint
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
