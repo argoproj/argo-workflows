@@ -1,4 +1,4 @@
-// +build e2e
+// +build api
 
 package e2e
 

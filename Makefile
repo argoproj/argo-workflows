@@ -508,19 +508,19 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	$(GOTEST) -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags e2e,api -p 1 ./test/e2e
 
 .PHONY: test-cli
 test-cli:
-	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	$(GOTEST) -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
+	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: smoke
 smoke:
-	$(GOTEST) -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
+	$(GOTEST) -count 1 --tags smoke -p 1 ./test/e2e
 
 # clean
 
