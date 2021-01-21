@@ -48,7 +48,7 @@ func waitContainer(ctx context.Context) error {
 	// Capture output script result
 	err := wfExecutor.CaptureScriptResult(ctx)
 	if err != nil {
-			wfExecutor.AddError(err)
+		wfExecutor.AddError(err)
 		return err
 	}
 	// Capture output script exit code
@@ -56,7 +56,7 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
-		}
+	}
 	// Saving logs
 	logArt, err := wfExecutor.SaveLogs(ctx)
 	if err != nil {
@@ -72,14 +72,14 @@ func waitContainer(ctx context.Context) error {
 	// Saving output artifacts
 	err = wfExecutor.SaveArtifacts(ctx)
 	if err != nil {
-			wfExecutor.AddError(err)
+		wfExecutor.AddError(err)
 		return err
-		}
+	}
 	err = wfExecutor.AnnotateOutputs(ctx, logArt)
 	if err != nil {
 		wfExecutor.AddError(err)
-	return err
-}
+		return err
+	}
 
 	// To prevent the workflow step from completing successfully, return the error occurred during wait.
 	if waitErr != nil {
