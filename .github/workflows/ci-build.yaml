@@ -59,11 +59,15 @@ jobs:
             containerRuntimeExecutor: k8sapi
           - test: test-e2e
             containerRuntimeExecutor: pns
+          - test: test-e2e
+            containerRuntimeExecutor: emissary
+            alwaysOffloadNodeStatus: "true"
 
           - test: test-cli
             containerRuntimeExecutor: k8sapi
           - test: test-cli
             containerRuntimeExecutor: pns
+          # TODO - enable
           - test: test-cli
             containerRuntimeExecutor: emissary
 
@@ -71,6 +75,7 @@ jobs:
             containerRuntimeExecutor: k8sapi
           - test: test-e2e-cron
             containerRuntimeExecutor: pns
+          # TODO - enable
           - test: test-e2e-cron
             containerRuntimeExecutor: emissary
     steps:

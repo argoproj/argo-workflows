@@ -252,13 +252,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 
-	if woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
+	if woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && tmpl.GetType() != wfv1.TemplateTypeResource {
 		if len(mainCtr.Command) == 0 {
-			mainCtr.Command = map[string][]string{
-				"argoproj/argosay:v1": {"cowsay"},
-				"argoproj/argosay:v2": {"/argosay"},
-				"python:alpine3.6":    {"python3"},
-			}[mainCtr.Image] // TODO remove this hack
+			mainCtr.Command = imageCommandIndex[mainCtr.Image] // TODO remove this hack
 		}
 		if len(mainCtr.Command) == 0 {
 			return nil, fmt.Errorf("must specify the command when using the entrypoint executor; determine this using `docker image inspect -f '{{.Config.Cmd}}' %s` or `docker image inspect -f '{{.Config.Entrypoint}}' %s`", mainCtr.Image, mainCtr.Image)
