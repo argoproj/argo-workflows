@@ -740,7 +740,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				UpdateFunc: func(old, new interface{}) {
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
-					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
+					// additionally, as we only check the generation, we skip any update we cause ourself
+					// by updating the workflow, reducing reconciliations by up to 50%
+					if oldWf.GetGeneration() == newWf.GetGeneration() {
 						return
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
