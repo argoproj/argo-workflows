@@ -4164,7 +4164,7 @@ func TestValidReferenceMode(t *testing.T) {
 	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 var workflowStatusMetric = `
