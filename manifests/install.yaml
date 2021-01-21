@@ -408,7 +408,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
-  namespace: argo
+  namespace: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -421,7 +421,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-server
-  namespace: argo
+  namespace: default
 ---
 apiVersion: v1
 kind: ConfigMap
