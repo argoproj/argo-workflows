@@ -125,7 +125,7 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	})
 }
 

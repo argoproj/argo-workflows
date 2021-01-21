@@ -22,7 +22,7 @@ func TestDagXfail(t *testing.T) {
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 // TestDagRetrySucceeded verifies a DAG will be marked Succeeded if retry was successful
@@ -31,7 +31,7 @@ func TestDagRetrySucceeded(t *testing.T) {
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
-	assert.Equal(t, string(wfv1.NodeSucceeded), string(woc.wf.Status.Phase))
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 // TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
@@ -40,7 +40,7 @@ func TestDagRetryExhaustedXfail(t *testing.T) {
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 // TestDagDisableFailFast test disable fail fast function
@@ -49,7 +49,7 @@ func TestDagDisableFailFast(t *testing.T) {
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var dynamicSingleDag = `
@@ -197,7 +197,7 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 func TestEvaluateDependsLogic(t *testing.T) {
@@ -779,7 +779,7 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	woc.operate(ctx)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var dagAssessPhaseContinueOnExpandedTask = `
@@ -1002,7 +1002,7 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	woc.operate(ctx)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var dagWithParamAndGlobalParam = `
@@ -1049,7 +1049,7 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var terminatingDAGWithRetryStrategyNodes = `
@@ -1287,7 +1287,7 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts = `
@@ -1456,7 +1456,7 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	woc.operate(ctx)
 
 	// This is the crucial part of the test
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var testRetryStrategyNodes = `
@@ -1644,7 +1644,7 @@ func TestRetryStrategyNodes(t *testing.T) {
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var testOnExitNodeDAGPhase = `
@@ -1809,7 +1809,7 @@ func TestOnExitDAGPhase(t *testing.T) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var testOnExitNonLeaf = `
@@ -1944,7 +1944,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var testDagOptionalInputArtifacts = `
@@ -2040,7 +2040,7 @@ func TestDagOptionalInputArtifacts(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	ctx := context.Background()
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	optionalInputArtifactsNode := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
 	if assert.NotNil(t, optionalInputArtifactsNode) {
 		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
@@ -2349,7 +2349,7 @@ func TestEmptyWithParamDAG(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var testFailsWithParamDAG = `
@@ -3026,7 +3026,7 @@ func TestFailsWithParamDAG(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var testLeafContinueOn = `
@@ -3151,5 +3151,5 @@ func TestLeafContinueOn(t *testing.T) {
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
