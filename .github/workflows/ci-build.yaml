@@ -59,8 +59,6 @@ jobs:
             containerRuntimeExecutor: k8sapi
           - test: test-e2e
             containerRuntimeExecutor: pns
-          - test: test-e2e
-            containerRuntimeExecutor: emissary
 
           - test: test-cli
             containerRuntimeExecutor: k8sapi
