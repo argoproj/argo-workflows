@@ -38,6 +38,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/diff"
 	envutil "github.com/argoproj/argo/util/env"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
@@ -344,13 +345,17 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	node, err := woc.executeTemplate(ctx, woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
-		// the error are handled in the callee so just log it.
-		msg := "error in entry template execution"
-		woc.log.WithError(err).Error(msg)
-		msg = fmt.Sprintf("%s %s: %+v", woc.wf.Name, msg, err)
+		woc.log.WithError(err).Error("error in entry template execution")
+		// we wrap this error up to report a clear message
+		x := fmt.Errorf("error in entry template execution: %w", err)
 		switch err {
 		case ErrDeadlineExceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", msg)
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
+		case ErrParallelismReached:
+		default:
+			if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+				woc.markWorkflowError(ctx, x)
+			}
 		}
 		return
 	}
@@ -513,6 +518,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if !woc.updated {
 		return
 	}
+
+	diff.LogChanges(woc.orig, woc.wf)
+
 	resource.UpdateResourceDurations(woc.wf)
 	progress.UpdateProgress(woc.wf)
 	// You MUST not call `persistUpdates` twice.
@@ -890,10 +898,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Fulfilled() && !node.IsDaemoned() {
-				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
-					if tmpVal == "true" {
-						return
-					}
+				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
+					return
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
 				if woc.shouldPrintPodSpec(node) {
@@ -1711,6 +1717,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 					woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 				}
 			}
+			if processedTmpl.Synchronization != nil {
+				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			}
 			return retryParentNode, nil
 		}
 		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
@@ -2131,8 +2140,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 // markNodePending is a convenience method to mark a node and set the message from the error
 func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.NodeStatus {
 	woc.log.Infof("Mark node %s as Pending, due to: %+v", nodeName, err)
-	node := woc.wf.GetNodeByName(nodeName)
-	return woc.markNodePhase(nodeName, wfv1.NodePending, fmt.Sprintf("Pending %s", time.Since(node.StartedAt.Time)))
+	return woc.markNodePhase(nodeName, wfv1.NodePending, err.Error()) // this error message will not change often
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock

@@ -81,7 +81,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         if (workflowOperation.title === 'DELETE') {
                                             navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
                                         } else {
-                                            navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                            // navigation.goto does not seem to work here
+                                            document.location.href = uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`);
                                         }
                                     })
                                     .catch(setError);
@@ -172,30 +173,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     };
 
     useEffect(() => {
-        services.workflows
-            .get(namespace, name)
-            .then(setWorkflow)
-            .catch(setError);
-    }, [namespace, name]);
-
-    useEffect(() => {
-        if (!workflow) {
-            return;
-        }
         const retryWatch = new RetryWatch<Workflow>(
-            resourceVersion =>
-                services.workflows.watch({
-                    name: workflow.metadata.name,
-                    namespace: workflow.metadata.namespace,
-                    resourceVersion
-                }),
+            () => services.workflows.watch({name, namespace}),
             () => setError(null),
             e => setWorkflow(e.object),
             setError
         );
-        retryWatch.start(workflow.metadata.resourceVersion);
+        retryWatch.start();
         return () => retryWatch.stop();
-    }, [workflow]);
+    }, [namespace, name]);
 
     const openLink = (link: Link) => {
         const url = link.url

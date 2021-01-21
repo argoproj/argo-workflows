@@ -1,13 +1,11 @@
+# this example shows how to use key-only artifacts - introduced in v3.0
+# https://argoproj.github.io/argo/key-only-artifacts/
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: artifact-repository-ref
-  labels:
-    argo-e2e: "true"
+  generateName: key-only-artifacts-
 spec:
   entrypoint: main
-  artifactRepositoryRef:
-    key: my-key
   templates:
     - name: main
       dag:
@@ -21,10 +19,7 @@ spec:
     - name: generate
       container:
         image: argoproj/argosay:v2
-        args:
-          - echo
-          - hello
-          - /mnt/file
+        args: [ echo, hello, /mnt/file ]
       outputs:
         artifacts:
           - name: file
@@ -34,9 +29,7 @@ spec:
     - name: consume
       container:
         image: argoproj/argosay:v2
-        args:
-          - cat
-          - /tmp/file
+        args: [cat, /tmp/file]
       inputs:
         artifacts:
           - name: file
