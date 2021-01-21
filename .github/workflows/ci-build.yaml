@@ -50,23 +50,19 @@ jobs:
           # only use alwaysOffloadNodeStatus=true for test-e2e
           - test: smoke
             alwaysOffloadNodeStatus: "true"
+          - test: test-cli
+            alwaysOffloadNodeStatus: "true"
           - test: test-e2e-cron
             alwaysOffloadNodeStatus: "true"
-          - test: test-cli
-            alwaysOffloadNodeStatus: "true"
-
+          # only containerRuntimeExecutor=docker for smoke and test-e2e
+          - test: test-e2e
+            containerRuntimeExecutor: k8sapi
+          - test: test-e2e
+            containerRuntimeExecutor: pns
           - test: test-cli
             containerRuntimeExecutor: k8sapi
           - test: test-cli
             containerRuntimeExecutor: pns
-
-          - test: test-e2e
-            containerRuntimeExecutor: k8sapi
-            alwaysOffloadNodeStatus: "true"
-          - test: test-e2e
-            containerRuntimeExecutor: pns
-            alwaysOffloadNodeStatus: "true"
-
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi
           - test: test-e2e-cron
@@ -88,9 +84,7 @@ jobs:
           echo /home/runner/go/bin >> $GITHUB_PATH
           echo /usr/local/bin >> $GITHUB_PATH
       - name: Install and start K3S v1.18.8+k3s1
-        run: |
-          set -eux -o pipefail
-          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
+        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go

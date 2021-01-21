@@ -139,18 +139,19 @@ define protoc
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
 endef
-define import_image
-	if [ $(K3D) = true ]; then k3d image import $(1); fi
-endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
-	$(call import_image,$(IMAGE_NAMESPACE)/$(1):$(VERSION))
+	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 	touch $(3)
+endef
+define docker_pull
+	docker pull $(1)
+	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
 ifndef $(GOPATH)
@@ -424,7 +425,9 @@ pull-build-images:
 .PHONY: argosay
 argosay: test/e2e/images/argosay/v2/argosay
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
-	$(call import_image,argoproj/argosay:v2)
+ifeq ($(K3D),true)
+	k3d image import argoproj/argosay:v2
+endif
 ifeq ($(DOCKER_PUSH),true)
 	docker push argoproj/argosay:v2
 endif
@@ -434,12 +437,9 @@ test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
 
 .PHONY: test-images
 test-images:
-	 docker pull argoproj/argosay:v1
-	 $(call import_image,argoproj/argosay:v1)
-	 docker pull argoproj/argosay:v2
-	 $(call import_image,argoproj/argosay:v2)
-	 docker pull python:alpine3.6
-	 $(call import_image,python:alpine3.6)
+	$(call docker_pull,argoproj/argosay:v1)
+	$(call docker_pull,argoproj/argosay:v2)
+	$(call docker_pull,python:alpine3.6)
 
 $(GOPATH)/bin/goreman:
 	$(call go_install,github.com/mattn/goreman)
