@@ -2662,14 +2662,13 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	tmpl = tmpl.DeepCopy()
 
-	// Try to unmarshal the given manifest.
-	obj := unstructured.Unstructured{}
-	err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-	if err != nil {
-		return node, err
-	}
-
 	if tmpl.Resource.SetOwnerReference {
+		obj := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+		if err != nil {
+			return node, err
+		}
+
 		ownerReferences := obj.GetOwnerReferences()
 		obj.SetOwnerReferences(append(ownerReferences, *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
 		bytes, err := yaml.Marshal(obj.Object)
@@ -2681,7 +2680,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
+	_, err := woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
