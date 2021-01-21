@@ -14,7 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
@@ -684,8 +683,8 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			}
 		}
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
-			// Try to unmarshal the given manifest.
-			obj := unstructured.Unstructured{}
+			// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
+			var obj interface{}
 			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)

@@ -29,7 +29,7 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.NodeSucceeded)
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		})
 }
 
@@ -68,7 +68,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
 
 }

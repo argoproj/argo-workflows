@@ -30,7 +30,7 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -46,7 +46,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 1)
 		})
 }
@@ -66,9 +66,9 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 			// the outcome could be either of these, depending on time
 			// this is due to the grace period recently deleted pods get
 			switch status.Phase {
-			case wfv1.NodeError:
+			case wfv1.WorkflowError:
 				assert.Equal(t, "pod deleted during operation", status.Nodes[metadata.Name].Message)
-			case wfv1.NodeFailed:
+			case wfv1.WorkflowFailed:
 				assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
 			default:
 				assert.Fail(t, "expected error of failed")
@@ -88,7 +88,7 @@ func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 2)
 		})
 }
@@ -106,7 +106,7 @@ func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -119,7 +119,7 @@ func (s *FunctionalSuite) TestTemplateLevelMutex() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -158,7 +158,7 @@ func (s *FunctionalSuite) TestResourceQuota() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -208,7 +208,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 7)
 			nodeStatus := status.Nodes.FindByDisplayName("B")
 			if assert.NotNil(t, nodeStatus) {
@@ -276,7 +276,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 6)
 
 			bStatus := status.Nodes.FindByDisplayName("B")
@@ -302,7 +302,7 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 		WaitForWorkflow(120 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
 			assert.Len(t, status.Nodes, 4)
 			nodeStatus := status.Nodes.FindByDisplayName("sleep")
 			assert.Equal(t, wfv1.NodeError, nodeStatus.Phase)
@@ -408,7 +408,20 @@ func (s *FunctionalSuite) TestArtifactRepositoryRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			if assert.NotEmpty(t, status.ArtifactRepositoryRef) {
+				assert.Equal(t, "argo", status.ArtifactRepositoryRef.Namespace)
+				assert.Equal(t, "artifact-repositories", status.ArtifactRepositoryRef.ConfigMap)
+				assert.Equal(t, "my-key", status.ArtifactRepositoryRef.Key)
+				assert.False(t, status.ArtifactRepositoryRef.Default)
+			}
+			// these should never be set because we must get them from the artifactRepositoryRef
+			generated := status.Nodes.FindByDisplayName("generate").Outputs.Artifacts[0].S3
+			assert.Empty(t, generated.Bucket)
+			assert.NotEmpty(t, generated.Key)
+			consumed := status.Nodes.FindByDisplayName("consume").Inputs.Artifacts[0].S3
+			assert.Empty(t, consumed.Bucket)
+			assert.NotEmpty(t, consumed.Key)
 		})
 }
 
@@ -420,7 +433,7 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			if assert.Len(t, status.Nodes, 5) {
 				nodeStatus := status.Nodes.FindByDisplayName("sleep")
 				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
@@ -529,7 +542,7 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		WaitForWorkflow(60 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("print(0:res:1)")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -545,7 +558,7 @@ func (s *FunctionalSuite) TestGlobalScope() {
 		WaitForWorkflow(60 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("consume-global-parameter-1")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -585,7 +598,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -613,7 +626,7 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
 			assert.Nil(t, nodeStatus)
 			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
@@ -629,7 +642,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -695,7 +708,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				if node.Outputs != nil {
 					for _, param := range node.Outputs.Parameters {
@@ -717,7 +730,7 @@ func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -729,7 +742,7 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -741,7 +754,7 @@ func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -756,7 +769,7 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.Empty(t, status.Message)
 		})
 }
@@ -792,8 +805,12 @@ spec:
 		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
-			assert.Equal(t, "Max duration limit exceeded", status.Message)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Len(t, status.Nodes, 3)
+			node := status.Nodes.FindByDisplayName("retry-backoff-2(1)")
+			if assert.NotNil(t, node) {
+				assert.Equal(t, "Step exceeded its deadline", node.Message)
+			}
 		})
 }
 
@@ -827,7 +844,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			if node := status.Nodes.FindByDisplayName("param-ads"); assert.NotNil(t, node) {
 				assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
 			}
@@ -865,7 +882,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			if node := status.Nodes.FindByDisplayName("param-limit"); assert.NotNil(t, node) {
 				assert.Contains(t, node.Message, "No more retries left")
 			}
@@ -891,7 +908,7 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -934,7 +951,7 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "Waiting for timeout", 30*time.Second)
 }
 
@@ -981,7 +998,7 @@ spec:
 		MemoryQuota("130M").
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "Waiting for timeout", 30*time.Second).
 		DeleteMemoryQuota()
 }
@@ -1015,6 +1032,18 @@ spec:
 			if assert.NotNil(t, node) && assert.NotNil(t, node.Outputs) && assert.NotNil(t, node.Outputs.ExitCode) {
 				assert.Equal(t, "0", *node.Outputs.ExitCode)
 			}
+		})
+}
+
+func (s *FunctionalSuite) TestK8SJSONPatch() {
+	s.Given().
+		Workflow("@functional/k8s-patch.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
