@@ -26,7 +26,7 @@ var varArgo = func(x string) string {
 }
 
 func run(name string, args []string) error {
-	exitCode := 130 // special error to indicate problem with entrypoint binary itself
+	exitCode := 130 // special error to indicate problem with emissary itself
 	defer func() {
 		// write the exit code last, which infos the wait car we are done
 		if err := ioutil.WriteFile(varArgo("exitcode"), []byte(strconv.Itoa(exitCode)), 0600); err != nil { // 600 = rw-------
@@ -154,7 +154,7 @@ func main() {
 	err := run(os.Args[1], os.Args[2:])
 	if exitError, ok := err.(*exec.ExitError); ok {
 		os.Exit(exitError.ExitCode())
-	} else if err != nil { // this is probably an error related to the entrypoint itself, and we use code 129 for those errors
+	} else if err != nil { // this is probably an error related to the emissary itself, and we use code 129 for those errors
 		println(err.Error())
 		os.Exit(129)
 	}

@@ -128,8 +128,8 @@ const (
 	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
 	ContainerRuntimeExecutorPNS = "pns"
 
-	// ContainerRuntimeExecutorEntrypoint indicates to use entrypoint container runtime executor
-	ContainerRuntimeExecutorEntrypoint = "entrypoint"
+	// ContainerRuntimeExecutorEmissary indicates to use emissary container runtime executor
+	ContainerRuntimeExecutorEmissary = "emissary"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 

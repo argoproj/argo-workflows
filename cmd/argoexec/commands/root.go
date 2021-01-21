@@ -17,7 +17,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"
 	"github.com/argoproj/argo/workflow/executor/docker"
-	"github.com/argoproj/argo/workflow/executor/entrypoint"
+	"github.com/argoproj/argo/workflow/executor/emissary"
 	"github.com/argoproj/argo/workflow/executor/k8sapi"
 	"github.com/argoproj/argo/workflow/executor/kubelet"
 	"github.com/argoproj/argo/workflow/executor/pns"
@@ -97,8 +97,8 @@ func initExecutor() *executor.WorkflowExecutor {
 		cre, err = kubelet.NewKubeletExecutor()
 	case common.ContainerRuntimeExecutorPNS:
 		cre, err = pns.NewPNSExecutor(clientset, podName, namespace, tmpl.Outputs.HasOutputs())
-	case common.ContainerRuntimeExecutorEntrypoint:
-		cre, err = entrypoint.NewEntrypointExecutor()
+	case common.ContainerRuntimeExecutorEmissary:
+		cre, err = emissary.New()
 	default:
 		cre, err = docker.NewDockerExecutor()
 	}

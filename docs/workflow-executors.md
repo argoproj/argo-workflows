@@ -16,7 +16,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
     * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
     * It can escape the privileges of the pod's service account
     * It cannot [`runAsNonRoot`](workflow-pod-security-context.md).
-* Second most scalable:
+* Equal most scalable:
     * It communicates directly with the local Docker daemon.
 * Artifacts:
     * Output artifacts can be located on the base layer (e.g. `/tmp`).
@@ -78,18 +78,18 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 [https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)
 
-## Entrypoint (entrypoint)
+## Emissary (emissary)
 
 This is the most fully featured executor.
 
-This executor works very differently to the others. It mounts and empty-dir on all containers at `/var/argo`. The main container command is replaces by a new binary `entrypoint` which starts the original command in a sub-process and when it is finished, captures the outputs:
+This executor works very differently to the others. It mounts and empty-dir on all containers at `/var/argo`. The main container command is replaces by a new binary `emissary` which starts the original command in a sub-process and when it is finished, captures the outputs:
 
 The init container creates these files:
 
-* `/var/argo/entrypoint` The entrypoint binary, copied from the `argoexec` image.
+* `/var/argo/emissary` The emissary binary, copied from the `argoexec` image.
 * `/var/argo/template` A JSON encoding of the template.
 
-In the main container, the entrypoint binary creates these files: 
+In the main container, the emissary creates these files: 
 
 * `/var/argo/exitcode` Will the sub-processes exit code (once process complete and all clean-up done).
 * `/var/argo/outputs/${path}` All output artifacts are moved here, e.g. `/tmp/message` is moved to /var/argo/outputs/tmp/message`.  
@@ -98,18 +98,17 @@ In the main container, the entrypoint binary creates these files:
 
 The wait container can create one file itself, used for terminating the sub-process.
 
-* `/var/argo/signal` The entrypoint binary listens to changes in this file, and signals the sub-process with the signal found in this file.
+* `/var/argo/signal` The emissary binary listens to changes in this file, and signals the sub-process with the signal found in this file.
 
 * Reliability:
   * Least well-tested.
   * Least popular.
-  * Simplest executor code-wise. 
 * More secure:
   * No `privileged` access
   * Cannot escape the privileges of the pod's service account
   * Can [`runAsNonRoot`](workflow-pod-security-context.md).
-* Most scalable:
-  * It reads and writes directly to and from container's disk.
+* Scalable:
+  * It reads and writes to and from the container's disk and does not use any network APIs.
 * Artifacts:
   * Output artifacts can be located on the base layer (e.g. `/tmp`).
 * Configuration:

@@ -97,7 +97,7 @@ override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/' | cut -c 26-)
-ENTRYPOINT_PKGS  := $(shell echo cmd/entrypoint          && go list -f '{{ join .Deps "\n" }}' ./cmd/entrypoint/          | grep 'argoproj/argo/' | cut -c 26-)
+EMISSARY_PKGS    := $(shell echo cmd/emissary            && go list -f '{{ join .Deps "\n" }}' ./cmd/emissary/            | grep 'argoproj/argo/' | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo/' | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo/' | cut -c 26-)
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
@@ -144,10 +144,10 @@ endef
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
-	if [ $(DEV_IMAGE) = true ] && [ $(1) = argoexec ]; then $(MAKE) dist/entrypoint-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/entrypoint-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) entrypoint; fi
+	if [ $(DEV_IMAGE) = true ] && [ $(1) = argoexec ]; then $(MAKE) dist/emissary-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/emissary-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) emissary; fi
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
-	if [ $(DEV_IMAGE) = true ] && [ $(1) = argoexec ]; then mv entrypoint dist/entrypoint-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
+	if [ $(DEV_IMAGE) = true ] && [ $(1) = argoexec ]; then mv emissary dist/emissary-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 	touch $(3)
@@ -254,19 +254,19 @@ dist/argoexec-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argoexec-%: $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
 
-dist/entrypoint-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
-dist/entrypoint-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
-dist/entrypoint-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
-dist/entrypoint-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
-dist/entrypoint-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
+dist/emissary-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/emissary-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
+dist/emissary-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/emissary-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/emissary-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/entrypoint-%: $(ENTRYPOINT_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/entrypoint
+dist/emissary-%: $(ENTRYPOINT_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/emissary
 
 .PHONY: executor-image
 executor-image: $(EXECUTOR_IMAGE_FILE)
 
-$(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS) $(ENTRYPOINT_PKGS)
+$(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS) $(EMISSARY_PKGS)
 	# Create executor image
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 

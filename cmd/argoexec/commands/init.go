@@ -35,7 +35,7 @@ func loadArtifacts(ctx context.Context) error {
 	defer wfExecutor.HandleError(ctx)
 	defer stats.LogStats()
 
-	if err := copyEntrypoint(); err != nil {
+	if err := copyEmissary(); err != nil {
 		wfExecutor.AddError(err)
 		return err
 	}
@@ -67,8 +67,8 @@ func writeTemplate(wfExecutor *executor.WorkflowExecutor) error {
 	return ioutil.WriteFile("/var/argo/template", data, 0400) // chmod -r--------
 }
 
-func copyEntrypoint() error {
-	name, err := path.Search("entrypoint")
+func copyEmissary() error {
+	name, err := path.Search("emissary")
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func copyEntrypoint() error {
 		return err
 	}
 	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile("/var/argo/entrypoint", os.O_RDWR|os.O_CREATE, 0500) // r-x------
+	out, err := os.OpenFile("/var/argo/emissary", os.O_RDWR|os.O_CREATE, 0500) // r-x------
 	if err != nil {
 		return err
 	}

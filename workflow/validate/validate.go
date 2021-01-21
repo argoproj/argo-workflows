@@ -1019,7 +1019,7 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 		return nil
 	}
 	switch ctx.ContainerRuntimeExecutor {
-	case "", common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEntrypoint:
+	case "", common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEmissary:
 		// docker executor supports all modes of artifact outputs
 	case common.ContainerRuntimeExecutorPNS:
 		// pns supports copying from the base image, but only if there is no volume mount underneath it
