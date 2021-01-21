@@ -98,7 +98,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	case common.ContainerRuntimeExecutorPNS:
 		cre, err = pns.NewPNSExecutor(clientset, podName, namespace, tmpl.Outputs.HasOutputs())
 	case common.ContainerRuntimeExecutorEmissary:
-		cre, err = emissary.New()
+		cre, err = emissary.New(tmpl)
 	default:
 		cre, err = docker.NewDockerExecutor()
 	}

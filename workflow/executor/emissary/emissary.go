@@ -2,6 +2,7 @@ package emissary
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,14 +13,54 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/executor"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
+	"github.com/argoproj/argo/workflow/util/path"
 )
 
-type emissary struct{}
+type emissary struct {
+	template *wfv1.Template
+}
 
-func New() (executor.ContainerRuntimeExecutor, error) {
-	return &emissary{}, nil
+func New(t *wfv1.Template) (executor.ContainerRuntimeExecutor, error) {
+	return &emissary{t}, nil
+}
+
+func (e *emissary) Init() error {
+	if err := copyEmissaryBinary(); err != nil {
+		return err
+	}
+	if err := e.writeTemplate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func copyEmissaryBinary() error {
+	name, err := path.Search("emissary")
+	if err != nil {
+		return err
+	}
+	in, err := os.Open(name)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	out, err := os.OpenFile("/var/argo/emissary", os.O_RDWR|os.O_CREATE, 0500) // r-x------
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, in)
+	return err
+}
+
+func (e emissary) writeTemplate() error {
+	data, err := json.Marshal(e.template)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile("/var/argo/template", data, 0400) // chmod -r--------
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {

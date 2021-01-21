@@ -78,6 +78,10 @@ type WorkflowExecutor struct {
 	errors []error
 }
 
+type Initializer interface {
+	Init() error
+}
+
 //go:generate mockery -name ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
@@ -1243,6 +1247,13 @@ func (we *WorkflowExecutor) LoadExecutionControl() error {
 			return nil
 		}
 		return err
+	}
+	return nil
+}
+
+func (we *WorkflowExecutor) Init() error {
+	if i, ok := we.RuntimeExecutor.(Initializer); ok {
+		return i.Init()
 	}
 	return nil
 }

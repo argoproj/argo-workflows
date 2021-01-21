@@ -56,14 +56,19 @@ func run(name string, args []string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Env = os.Environ()
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Stdout, err = os.Create(varArgo("stdout"))
+	stdout, err := os.Create(varArgo("stdout"))
 	if err != nil {
 		return fmt.Errorf("failed to open stdout: %w", err)
 	}
-	cmd.Stderr, err = os.Create(varArgo("stderr"))
+	defer func() { _ = stdout.Close() }()
+	cmd.Stdout = stdout
+	stderr, err := os.Create(varArgo("stderr"))
 	if err != nil {
 		return fmt.Errorf("failed to open stderr: %w", err)
 	}
+	defer func() { _ = stderr.Close() }()
+	cmd.Stderr = stderr
+
 	go func() {
 		_ = tail(varArgo("stdout"), os.Stdout)
 	}()
