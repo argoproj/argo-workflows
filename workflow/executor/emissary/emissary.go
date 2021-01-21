@@ -88,8 +88,33 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 	return err
 }
 
-func (e emissary) GetOutputStream(_ context.Context, _ string, _ bool) (io.ReadCloser, error) {
-	return os.Open("/var/argo/stdout") // TODO - we could support if we wanted combinedOutput
+type multiReaderCloser struct {
+	io.Reader
+	closer []io.Closer
+}
+
+func (m *multiReaderCloser) Close() error {
+	for _, c := range m.closer {
+		if err := c.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e emissary) GetOutputStream(_ context.Context, _ string, combinedOutput bool) (io.ReadCloser, error) {
+	stdout, err := os.Open("/var/argo/stdout")
+	if !combinedOutput {
+		return stdout, err
+	}
+	if err != nil {
+		return nil, err
+	}
+	stderr, err := os.Open("/var/argo/stderr")
+	if err != nil {
+		return nil, err
+	}
+	return &multiReaderCloser{Reader: io.MultiReader(stdout, stderr), closer: []io.Closer{stdout, stderr}}, err
 }
 
 func (e emissary) GetExitCode(_ context.Context, _ string) (string, error) {

@@ -131,6 +131,9 @@ func run(name string, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to copy %s to %s: %w", srcPath, dstPath, err)
 		}
+		if err = dst.Close(); err != nil {
+			return fmt.Errorf("failed to close %s: %w", dstPath, err)
+		}
 	}
 	for _, x := range template.Outputs.Artifacts {
 		src := x.Path
@@ -140,25 +143,21 @@ func run(name string, args []string) error {
 		if _, err := os.Stat(src); os.IsNotExist(err) { // might be optional, so we ignore
 			continue
 		}
-		dst := filepath.Join(varArgo("outputs/artifacts"), src+".tgz")
-		println(src, "->", dst)
-		z := filepath.Dir(dst)
+		dstPath := filepath.Join(varArgo("outputs/artifacts"), src+".tgz")
+		println(src, "->", dstPath)
+		z := filepath.Dir(dstPath)
 		if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
 			return fmt.Errorf("failed to create directory %s: %w", z, err)
 		}
-		err := func() error {
-			out, err := os.Create(dst)
-			if err != nil {
-				return fmt.Errorf("failed to create destination %s: %w", dst, err)
-			}
-			defer func() { _ = out.Close() }()
-			if err = archive.TarGzToWriter(src, gzip.DefaultCompression, out); err != nil {
-				return fmt.Errorf("failed to tarball the output %s to %s: %w", src, dst, err)
-			}
-			return nil
-		}()
+		dst, err := os.Create(dstPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create destination %s: %w", dstPath, err)
+		}
+		if err = archive.TarGzToWriter(src, gzip.DefaultCompression, dst); err != nil {
+			return fmt.Errorf("failed to tarball the output %s to %s: %w", src, dstPath, err)
+		}
+		if err := dst.Close(); err != nil {
+			return fmt.Errorf("failed to close %s: %w", dstPath, err)
 		}
 	}
 

@@ -13,6 +13,7 @@ func tail(name string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	defer func() { _ = file.Close() }()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
