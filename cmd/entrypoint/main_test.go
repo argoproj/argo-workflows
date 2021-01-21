@@ -18,8 +18,6 @@ func Test_run(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "")
 	assert.NoError(t, err)
 
-	println(tmp)
-
 	varArgo = func(x string) string {
 		return filepath.Join(tmp, x)
 	}
@@ -74,11 +72,18 @@ func Test_run(t *testing.T) {
 		assert.Equal(t, "hello", string(data))
 	})
 	t.Run("Artifact", func(t *testing.T) {
+		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
+		assert.NoError(t, err)
+		data, err := ioutil.ReadFile(varArgo("outputs/tmp/artifact"))
+		assert.NoError(t, err)
+		assert.NotEmpty(t, string(data))
+	})
+	t.Run("Parameter", func(t *testing.T) {
 		err := run(x, []string{"echo", "hello", "/tmp/parameter"})
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varArgo("outputs/tmp/parameter"))
 		assert.NoError(t, err)
-		assert.Equal(t, "hello", string(data))
+		assert.NotEmpty(t, string(data))
 	})
 	t.Run("Signal", func(t *testing.T) {
 		var wg sync.WaitGroup

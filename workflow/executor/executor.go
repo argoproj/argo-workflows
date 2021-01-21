@@ -169,13 +169,13 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		if mnt == nil {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
 		} else {
-			 // If we get here, it means the input artifact path overlaps with an user specified
-			 // volumeMount in the container. Because we also implement input artifacts as volume
-			 // mounts, we need to load the artifact into the user specified volume mount,
-			 // as opposed to the `input-artifacts` volume that is an implementation detail
-			 // unbeknownst to the user.
-			 log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
-			 artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
+			// If we get here, it means the input artifact path overlaps with an user specified
+			// volumeMount in the container. Because we also implement input artifacts as volume
+			// mounts, we need to load the artifact into the user specified volume mount,
+			// as opposed to the `input-artifacts` volume that is an implementation detail
+			// unbeknownst to the user.
+			log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
+			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
 		}
 
 		// The artifact is downloaded to a temporary location, after which we determine if
@@ -836,8 +836,8 @@ func isTarball(filePath string) (bool, error) {
 func untar(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
 		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
-			return err
-		}
+		return err
+	}
 
 	return unpack(tarPath, destPath, decompressor)
 }

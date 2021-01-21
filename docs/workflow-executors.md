@@ -82,7 +82,23 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 This is the most fully featured executor.
 
-This executor works very differently to the others. 
+This executor works very differently to the others. It mounts and empty-dir on all containers at `/var/argo`. The main container command is replaces by a new binary `entrypoint` which starts the original command in a sub-process and when it is finished, captures the outputs:
+
+The init container creates these files:
+
+* `/var/argo/entrypoint` The entrypoint binary, copied from the `argoexec` image.
+* `/var/argo/template` A JSON encoding of the template.
+
+In the main container, the entrypoint binary creates these files: 
+
+* `/var/argo/exitcode` Will the sub-processes exit code (once process complete and all clean-up done).
+* `/var/argo/outputs/${path}` All output artifacts are moved here, e.g. `/tmp/message` is moved to /var/argo/outputs/tmp/message`.  
+* `/var/argo/stderr` A copy of stderr. 
+* `/var/argo/stdout`  A copy of stdout.
+
+The wait container can create one file itself, used for terminating the sub-process.
+
+* `/var/argo/signal` The entrypoint binary listens to changes in this file, and signals the sub-process with the signal found in this file.
 
 * Reliability:
   * Least well-tested.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/archive"
 	"github.com/argoproj/argo/workflow/util/path"
 )
 
@@ -24,7 +26,7 @@ var varArgo = func(x string) string {
 }
 
 func run(name string, args []string) error {
-	exitCode := 129 // TODO - is this a good default?
+	exitCode := 130 // special error to indicate problem with entrypoint binary itself
 	defer func() {
 		// write the exit code last, which infos the wait car we are done
 		if err := ioutil.WriteFile(varArgo("exitcode"), []byte(strconv.Itoa(exitCode)), 0600); err != nil { // 600 = rw-------
@@ -121,7 +123,6 @@ func run(name string, args []string) error {
 			paths = append(paths, x.ValueFrom.Path)
 		}
 	}
-
 	for _, x := range template.Outputs.Artifacts {
 		if x.Path != "" {
 			paths = append(paths, x.Path)
@@ -129,26 +130,32 @@ func run(name string, args []string) error {
 	}
 
 	for _, x := range paths {
+		if _, err := os.Stat(x); os.IsNotExist(err) { // might be optional, so we ignore
+			continue
+		}
 		y := filepath.Join(varArgo("outputs"), x)
 		z := filepath.Dir(y)
 		if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
 			return fmt.Errorf("failed to create directory %s: %w", z, err)
 		}
-		err = os.Rename(x, y)
-		switch {
-		case os.IsNotExist(err):
-			// might be optional
-		case err != nil:
-			return fmt.Errorf("failed to copy file to outputs to %s: %w", y, err)
+		out, err := os.Create(y)
+		if err != nil {
+			return fmt.Errorf("failed to create targget %s: %w", y, err)
+		}
+		if err = archive.TarGzToWriter(x, gzip.DefaultCompression, out); err != nil {
+			return fmt.Errorf("failed to tarball the output %s to %s: %w", x, y, err)
 		}
 	}
 
-	return err
+	return err // this is the error returned from cmd.Wait(), which maybe an exitError
 }
 
 func main() {
 	err := run(os.Args[1], os.Args[2:])
 	if exitError, ok := err.(*exec.ExitError); ok {
 		os.Exit(exitError.ExitCode())
+	} else if err != nil { // this is probably an error related to the entrypoint itself, and we use code 129 for those errors
+		println(err.Error())
+		os.Exit(129)
 	}
 }
