@@ -944,7 +944,7 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	waitCtr := &pod.Spec.Containers[waitCtrIndex]
 
 	for _, mnt := range mainCtr.VolumeMounts {
-		if mnt.Name == "var-argo" {
+		if mnt.MountPath == "/var/argo" {
 			continue
 		}
 		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)

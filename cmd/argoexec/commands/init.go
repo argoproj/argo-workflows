@@ -35,14 +35,16 @@ func loadArtifacts(ctx context.Context) error {
 	defer wfExecutor.HandleError(ctx)
 	defer stats.LogStats()
 
-	if err := copyEmissary(); err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
+	if _, err := os.Stat("/var/argo"); !os.IsNotExist(err) { // we only need to set-up the emissary if /var/argo is mounted
+		if err := copyEmissary(); err != nil {
+			wfExecutor.AddError(err)
+			return err
+		}
 
-	if err := writeTemplate(wfExecutor); err != nil {
-		wfExecutor.AddError(err)
-		return err
+		if err := writeTemplate(wfExecutor); err != nil {
+			wfExecutor.AddError(err)
+			return err
+		}
 	}
 
 	// Download input artifacts
