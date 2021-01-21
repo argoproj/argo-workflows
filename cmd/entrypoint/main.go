@@ -130,13 +130,16 @@ func run(name string, args []string) error {
 
 	for _, x := range paths {
 		y := filepath.Join(varArgo("outputs"), x)
-		_ = os.MkdirAll(filepath.Dir(y), 0700) // chmod rwx------
-		err := os.Rename(x, y)
+		z := filepath.Dir(y)
+		if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
+			return fmt.Errorf("failed to create directory %s: %w", z, err)
+		}
+		err = os.Rename(x, y)
 		switch {
 		case os.IsNotExist(err):
 			// might be optional
 		case err != nil:
-			return fmt.Errorf("failed to copy file to outputs: %w", err)
+			return fmt.Errorf("failed to copy file to outputs to %s: %w", y, err)
 		}
 	}
 

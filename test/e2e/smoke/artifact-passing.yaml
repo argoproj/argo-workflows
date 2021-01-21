@@ -24,7 +24,7 @@ spec:
     - name: generate-message
       container:
         image: argoproj/argosay:v2
-        args: [ "echo", "hello world", "/mnt/out/message" ]
+        args: [ "sleep", "10s" ]
       outputs:
         artifacts:
           - name: out

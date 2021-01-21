@@ -307,7 +307,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if err != nil {
 		return nil, err
 	}
-	woc.addOutputArtifactsVolumes(pod, tmpl)
+	addOutputArtifactsVolumes(pod, tmpl)
 
 	// Set the container template JSON in pod annotations, which executor examines for things like
 	// artifact location/path.
@@ -919,7 +919,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 // wait container will collect the artifacts directly from volumeMount instead of `docker cp`-ing
 // them to the wait sidecar. In order for this to work, we mirror all volume mounts in the main
 // container under a well-known path.
-func (woc *wfOperationCtx) addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if tmpl.GetType() == wfv1.TemplateTypeResource {
 		return
 	}
@@ -941,6 +941,9 @@ func (woc *wfOperationCtx) addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.
 	waitCtr := &pod.Spec.Containers[waitCtrIndex]
 
 	for _, mnt := range mainCtr.VolumeMounts {
+		if mnt.MountPath == "/var/argo" {
+			continue
+		}
 		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
 		// ReadOnly is needed to be false for overlapping volume mounts
 		mnt.ReadOnly = false

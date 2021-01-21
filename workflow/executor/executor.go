@@ -165,18 +165,17 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
 		}
 		var artPath string
-		if os.Getenv(common.EnvVarContainerRuntimeExecutor) == common.ContainerRuntimeExecutorEntrypoint {
-			artPath = art.Path
-		} else if mnt := common.FindOverlappingVolume(&we.Template, art.Path); mnt == nil {
+		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
+		if mnt == nil {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
 		} else {
-			// If we get here, it means the input artifact path overlaps with an user specified
-			// volumeMount in the container. Because we also implement input artifacts as volume
-			// mounts, we need to load the artifact into the user specified volume mount,
-			// as opposed to the `input-artifacts` volume that is an implementation detail
-			// unbeknownst to the user.
-			log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
-			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
+			 // If we get here, it means the input artifact path overlaps with an user specified
+			 // volumeMount in the container. Because we also implement input artifacts as volume
+			 // mounts, we need to load the artifact into the user specified volume mount,
+			 // as opposed to the `input-artifacts` volume that is an implementation detail
+			 // unbeknownst to the user.
+			 log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
+			 artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
 		}
 
 		// The artifact is downloaded to a temporary location, after which we determine if
