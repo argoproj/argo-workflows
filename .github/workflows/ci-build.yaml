@@ -67,17 +67,11 @@ jobs:
             containerRuntimeExecutor: k8sapi
           - test: test-cli
             containerRuntimeExecutor: pns
-          # TODO - enable
-          - test: test-cli
-            containerRuntimeExecutor: emissary
 
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi
           - test: test-e2e-cron
             containerRuntimeExecutor: pns
-          # TODO - enable
-          - test: test-e2e-cron
-            containerRuntimeExecutor: emissary
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
