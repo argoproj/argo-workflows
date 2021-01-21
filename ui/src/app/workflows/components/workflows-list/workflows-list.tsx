@@ -2,7 +2,7 @@ import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {labels, Workflow, WorkflowPhases} from '../../../../models';
+import {labels, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {BasePage} from '../../../shared/components/base-page';
@@ -30,7 +30,7 @@ require('./workflows-list.scss');
 interface State {
     namespace: string;
     pagination: Pagination;
-    selectedPhases: string[];
+    selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
     selectedWorkflows: Map<string, models.Workflow>;
     workflows?: Workflow[];
@@ -41,7 +41,7 @@ interface State {
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
-    selectedPhases: string[];
+    selectedPhases: WorkflowPhase[];
 }
 
 const allBatchActionsEnabled: Actions.OperationDisabled = {
@@ -112,7 +112,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 500
             },
             namespace: this.props.match.params.namespace || '',
-            selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
+            selectedPhases: this.queryParams('phase').length > 0 ? (this.queryParams('phase') as WorkflowPhase[]) : savedOptions.selectedPhases,
             selectedLabels: this.queryParams('label'),
             selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled}
@@ -194,7 +194,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination): void {
+    private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination): void {
         if (this.listWatch) {
             this.listWatch.stop();
         }
@@ -221,7 +221,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.listWatch.start();
     }
 
-    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination) {
+    private changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination) {
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
 
