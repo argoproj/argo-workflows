@@ -74,7 +74,7 @@ jobs:
           - test: test-e2e-cron
             containerRuntimeExecutor: pns
           - test: test-e2e-entrypoint
-            containerRuntimeExecutor: inline
+            containerRuntimeExecutor: entrypoint
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
