@@ -40,6 +40,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
+	"github.com/argoproj/argo/util/diff"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/common"
@@ -894,7 +895,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 				}
 				if !pod.SignificantPodChange(oldPod, newPod) {
 					log.WithField("key", key).Info("insignificant pod change")
-					pod.LogChanges(oldPod, newPod)
+					diff.LogChanges(oldPod, newPod)
 					return
 				}
 				wfc.podQueue.Add(key)
