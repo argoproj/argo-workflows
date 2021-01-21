@@ -92,7 +92,8 @@ The init container creates these files:
 In the main container, the emissary creates these files: 
 
 * `/var/argo/exitcode` Will the sub-processes exit code (once process complete and all clean-up done).
-* `/var/argo/outputs/${path}` All output artifacts are moved here, e.g. `/tmp/message` is moved to /var/argo/outputs/tmp/message`.  
+* `/var/argo/outputs/parameters/${path}` All output parameters are copied here, e.g. `/tmp/message` is moved to /var/argo/outputs/parameters/tmp/message`.  
+* `/var/argo/outputs/artifacts/${path}.tgz` All output artifacts are copied here, e.g. `/tmp/message` is moved to /var/argo/outputs/artifacts/tmp/message.tgz`.  
 * `/var/argo/stderr` A copy of stderr. 
 * `/var/argo/stdout`  A copy of stdout.
 

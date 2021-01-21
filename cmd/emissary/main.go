@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,8 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
-
-	"github.com/fsnotify/fsnotify"
+	"time"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/archive"
@@ -29,7 +29,7 @@ func run(name string, args []string) error {
 	exitCode := 130 // special error to indicate problem with emissary itself
 	defer func() {
 		// write the exit code last, which infos the wait car we are done
-		if err := ioutil.WriteFile(varArgo("exitcode"), []byte(strconv.Itoa(exitCode)), 0600); err != nil { // 600 = rw-------
+		if err := ioutil.WriteFile(varArgo("exitcode"), []byte(strconv.Itoa(exitCode)), 0600); err != nil {
 			println(fmt.Sprintf("failed to capture exit code %d: %v", exitCode, err))
 		}
 	}()
@@ -71,32 +71,6 @@ func run(name string, args []string) error {
 		_ = tail(varArgo("stderr"), os.Stderr)
 	}()
 
-	w, err := fsnotify.NewWatcher()
-	if err != nil {
-		return fmt.Errorf("failed to create signal watcher: %w", err)
-	}
-	defer func() { _ = w.Close() }()
-	if err := ioutil.WriteFile(varArgo("signal"), nil, 0600); err != nil { // fsnotify can only listen to changes to files
-		return fmt.Errorf("failed to create signal file: %w", err)
-	}
-	if err := w.Add(varArgo("signal")); err != nil {
-		return err
-	}
-	go func() {
-		for {
-			select {
-			case <-w.Events:
-				data, _ := ioutil.ReadFile(varArgo("signal"))
-				s, _ := strconv.Atoi(string(data))
-				if s > 0 {
-					signals <- syscall.Signal(s)
-				}
-			case <-w.Errors:
-				return
-			}
-		}
-	}()
-
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -105,6 +79,21 @@ func run(name string, args []string) error {
 		for s := range signals {
 			if s != syscall.SIGCHLD {
 				_ = syscall.Kill(-cmd.Process.Pid, s.(syscall.Signal))
+			}
+		}
+	}()
+	go func() {
+		t := time.NewTicker(2 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-t.C:
+				data, _ := ioutil.ReadFile(varArgo("signal"))
+				_ = os.Remove(varArgo("signal"))
+				s, _ := strconv.Atoi(string(data))
+				if s > 0 {
+					_ = syscall.Kill(cmd.Process.Pid, syscall.Signal(s))
+				}
 			}
 		}
 	}()
@@ -117,23 +106,39 @@ func run(name string, args []string) error {
 		exitCode = exitError.ExitCode()
 	}
 
-	var paths []string
 	for _, x := range template.Outputs.Parameters {
-		if x.ValueFrom != nil && x.ValueFrom.Path != "" {
-			paths = append(paths, x.ValueFrom.Path)
+		if x.ValueFrom == nil || x.ValueFrom.Path == "" {
+			continue
+		}
+		srcPath := x.ValueFrom.Path
+		src, err := os.Open(srcPath)
+		if err != nil {
+			return fmt.Errorf("failed to open %s: %w", srcPath, err)
+		}
+		dstPath := filepath.Join(varArgo("outputs/parameters"), srcPath)
+		println(src, "->", dstPath)
+		z := filepath.Dir(dstPath)
+		if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
+			return fmt.Errorf("failed to create directory %s: %w", z, err)
+		}
+		dst, err := os.Create(dstPath)
+		if err != nil {
+			return fmt.Errorf("failed to create %s: %w", srcPath, err)
+		}
+		_, err = io.Copy(dst, src)
+		if err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", srcPath, dstPath, err)
 		}
 	}
 	for _, x := range template.Outputs.Artifacts {
-		if x.Path != "" {
-			paths = append(paths, x.Path)
+		src := x.Path
+		if x.Path == "" {
+			continue
 		}
-	}
-
-	for _, src := range paths {
 		if _, err := os.Stat(src); os.IsNotExist(err) { // might be optional, so we ignore
 			continue
 		}
-		dst := filepath.Join(varArgo("outputs"), src+".tgz")
+		dst := filepath.Join(varArgo("outputs/artifacts"), src+".tgz")
 		println(src, "->", dst)
 		z := filepath.Dir(dst)
 		if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------

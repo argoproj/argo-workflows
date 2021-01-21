@@ -27,20 +27,7 @@ func Test_run(t *testing.T) {
 
 	x := filepath.Join(wd, "../../dist/argosay")
 
-	err = ioutil.WriteFile(varArgo("template"), []byte(`
-{
-	"outputs": {
-		"parameters": [
-			{
-				"valueFrom": {"path": "/tmp/parameter"}
-			}
-		],
-		"artifacts": [
-			{"path": "/tmp/artifact"}
-		]
-	}
-}
-`), 0600)
+	err = ioutil.WriteFile(varArgo("template"), []byte(`{}`), 0600)
 	assert.NoError(t, err)
 
 	t.Run("Exit0", func(t *testing.T) {
@@ -71,20 +58,6 @@ func Test_run(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "hello", string(data))
 	})
-	t.Run("Artifact", func(t *testing.T) {
-		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
-		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varArgo("outputs/tmp/artifact"))
-		assert.NoError(t, err)
-		assert.NotEmpty(t, string(data))
-	})
-	t.Run("Parameter", func(t *testing.T) {
-		err := run(x, []string{"echo", "hello", "/tmp/parameter"})
-		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varArgo("outputs/tmp/parameter"))
-		assert.NoError(t, err)
-		assert.NotEmpty(t, string(data))
-	})
 	t.Run("Signal", func(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(1)
@@ -98,5 +71,40 @@ func Test_run(t *testing.T) {
 		assert.NoError(t, err)
 		wg.Wait()
 	})
-
+	t.Run("Artifact", func(t *testing.T) {
+		err = ioutil.WriteFile(varArgo("template"), []byte(`
+{
+	"outputs": {
+		"artifacts": [
+			{"path": "/tmp/artifact"}
+		]
+	}
+}
+`), 0600)
+		assert.NoError(t, err)
+		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
+		assert.NoError(t, err)
+		data, err := ioutil.ReadFile(varArgo("outputs/artifacts/tmp/artifact.tgz"))
+		assert.NoError(t, err)
+		assert.NotEmpty(t, string(data)) // data is tgz format
+	})
+	t.Run("Parameter", func(t *testing.T) {
+		err = ioutil.WriteFile(varArgo("template"), []byte(`
+{
+	"outputs": {
+		"parameters": [
+			{
+				"valueFrom": {"path": "/tmp/parameter"}
+			}
+		]
+	}
+}
+`), 0600)
+		assert.NoError(t, err)
+		err := run(x, []string{"echo", "hello", "/tmp/parameter"})
+		assert.NoError(t, err)
+		data, err := ioutil.ReadFile(varArgo("outputs/parameters/tmp/parameter"))
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", string(data))
+	})
 }

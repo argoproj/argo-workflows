@@ -1,7 +1,6 @@
 package emissary
 
 import (
-	"compress/gzip"
 	"context"
 	"io"
 	"io/ioutil"
@@ -24,16 +23,7 @@ func New() (executor.ContainerRuntimeExecutor, error) {
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	sourceFile := filepath.Join("/var/argo/outputs", sourcePath+".tgz")
-	log.Infof("%s -> ", sourceFile)
-	src, err := os.Open(sourceFile)
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = src.Close() }()
-	r, err := gzip.NewReader(src)
-	defer func() { _ = r.Close() }()
-	data, err := ioutil.ReadAll(r)
+	data, err := ioutil.ReadFile(filepath.Join("/var/argo/outputs/parameters", sourcePath))
 	return string(data), err
 }
 
@@ -41,7 +31,7 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 	// this implementation is very different, because we expect the emissary binary has already compressed the file
 	// so no compression can or needs to be implemented here
 	// TODO - warn the user we ignored compression
-	sourceFile := filepath.Join("/var/argo/outputs", sourcePath+".tgz")
+	sourceFile := filepath.Join("/var/argo/outputs/artifacts", sourcePath+".tgz")
 	log.Infof("%s -> %s", sourceFile, destPath)
 	src, err := os.Open(sourceFile)
 	if err != nil {
@@ -76,7 +66,7 @@ func (e emissary) WaitInit() error {
 }
 
 func (e emissary) Wait(ctx context.Context, _ string) error {
-	t := time.NewTimer(3 * time.Second)
+	t := time.NewTicker(2 * time.Second)
 	defer t.Stop()
 	for {
 		select {
@@ -91,18 +81,16 @@ func (e emissary) Wait(ctx context.Context, _ string) error {
 }
 
 func (e emissary) Kill(ctx context.Context, _ []string) error {
-	for _, signal := range []syscall.Signal{syscall.SIGTERM, syscall.SIGKILL} {
-		if err := ioutil.WriteFile("/var/argo/signal", []byte(strconv.Itoa(int(signal))), 0600); err != nil {
-			return err
-		}
-		ctx, cancel := context.WithCancel(ctx)
-		time.AfterFunc(execcommon.KillGracePeriod*time.Second, cancel)
-		err := e.Wait(ctx, "")
-		if err == nil {
-			return nil
-		} else if err != context.Canceled {
-			return err
-		}
+	if err := ioutil.WriteFile("/var/argo/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0600); err != nil {
+		return err
 	}
-	panic("should not be possible")
+	ctx, cancel := context.WithCancel(ctx)
+	time.AfterFunc(execcommon.KillGracePeriod*time.Second, cancel)
+	err := e.Wait(ctx, "")
+	if err == nil {
+		return nil
+	} else if err != context.Canceled {
+		return err
+	}
+	return ioutil.WriteFile("/var/argo/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0600)
 }
