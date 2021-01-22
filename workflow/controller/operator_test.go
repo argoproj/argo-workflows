@@ -5351,6 +5351,392 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	assert.Contains(t, msg, "Pod failed before")
 }
 
+var podWithWaitContainerOOM = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    workflows.argoproj.io/execution: '{"deadline":"2021-01-22T09:55:15Z"}'
+    workflows.argoproj.io/node-name: massive-ggrx6.sleep(0:0)
+    workflows.argoproj.io/template: '{"name":"sleep","arguments":{},"inputs":{},"outputs":{},"metadata":{"labels":{"stress":"true"}},"container":{"name":"","image":"argoproj/argosay:v2","args":["sleep","1s"],"resources":{"requests":{"cpu":"10m","memory":"2Mi"}},"imagePullPolicy":"IfNotPresent"},"archiveLocation":{"archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"massive-ggrx6/massive-ggrx6-1644561352"}}}'
+  creationTimestamp: "2021-01-22T09:50:15Z"
+  labels:
+    stress: "true"
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/workflow: massive-ggrx6
+  name: massive-ggrx6-1644561352
+  namespace: argo
+  resourceVersion: "35312"
+  selfLink: /api/v1/namespaces/argo/pods/massive-ggrx6-1644561352
+  uid: 74668cac-b43f-4f09-acac-fede1abbcca3
+spec:
+  activeDeadlineSeconds: 299
+  containers:
+  - command:
+    - argoexec
+    - wait
+    env:
+    - name: ARGO_POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: ARGO_CONTAINER_RUNTIME_EXECUTOR
+      value: pns
+    image: argoproj/argoexec:latest
+    imagePullPolicy: IfNotPresent
+    name: wait
+    resources:
+      limits:
+        cpu: 500m
+        memory: 10Mi
+      requests:
+        cpu: 100m
+        memory: 10Mi
+    securityContext:
+      capabilities:
+        add:
+        - SYS_PTRACE
+        - SYS_CHROOT
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /argo/podmetadata
+      name: podmetadata
+    - mountPath: /argo/secret/my-minio-cred
+      name: my-minio-cred
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-k7rr8
+      readOnly: true
+  - args:
+    - sleep
+    - 1s
+    image: argoproj/argosay:v2
+    imagePullPolicy: IfNotPresent
+    name: main
+    resources:
+      requests:
+        cpu: 10m
+        memory: 2Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-k7rr8
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: k3d-k3s-default-server-0
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  shareProcessNamespace: true
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - downwardAPI:
+      defaultMode: 420
+      items:
+      - fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.annotations
+        path: annotations
+    name: podmetadata
+  - name: my-minio-cred
+    secret:
+      defaultMode: 420
+      items:
+      - key: accesskey
+        path: accesskey
+      - key: secretkey
+        path: secretkey
+      secretName: my-minio-cred
+  - name: default-token-k7rr8
+    secret:
+      defaultMode: 420
+      secretName: default-token-k7rr8
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T09:50:15Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T09:50:17Z"
+    message: 'containers with unready status: [wait main]'
+    reason: ContainersNotReady
+    status: "False"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T09:50:17Z"
+    message: 'containers with unready status: [wait main]'
+    reason: ContainersNotReady
+    status: "False"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T09:50:15Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
+    image: docker.io/argoproj/argosay:v2
+    imageID: docker.io/argoproj/argosay@sha256:3d2d553a462cfe3288833a010c1d91454bd05a0e02937f2f82050d68ca57a580
+    lastState: {}
+    name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
+        exitCode: 0
+        finishedAt: "2021-01-22T09:50:17Z"
+        reason: Completed
+        startedAt: "2021-01-22T09:50:16Z"
+  - containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
+    image: docker.io/argoproj/argoexec:latest
+    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
+    lastState: {}
+    name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
+        exitCode: 137
+        finishedAt: "2021-01-22T09:50:17Z"
+        reason: OOMKilled
+        startedAt: "2021-01-22T09:50:16Z"
+  hostIP: 172.19.0.2
+  phase: Failed
+  podIP: 10.42.0.74
+  podIPs:
+  - ip: 10.42.0.74
+  qosClass: Burstable
+  startTime: "2021-01-22T09:50:15Z"
+`
+
+var podWithMainContainerOOM = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    workflows.argoproj.io/execution: '{"deadline":"2021-01-22T10:33:12Z"}'
+    workflows.argoproj.io/node-name: membomb
+    workflows.argoproj.io/outputs: '{"artifacts":[{"name":"main-logs","s3":{"key":"membomb/membomb/main.log"}}],"exitCode":"137"}'
+    workflows.argoproj.io/template: '{"name":"membomb","arguments":{},"inputs":{},"outputs":{},"metadata":{},"container":{"name":"main","image":"monitoringartist/docker-killer","args":["membomb"],"resources":{"limits":{"cpu":"100m","memory":"50Mi"},"requests":{"cpu":"100m","memory":"50Mi"}}},"archiveLocation":{"archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"membomb/membomb"}}}'
+  creationTimestamp: "2021-01-22T10:28:12Z"
+  labels:
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/workflow: membomb
+  name: membomb
+  namespace: argo
+  ownerReferences:
+  - apiVersion: argoproj.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Workflow
+    name: membomb
+    uid: fff6dd19-2d1f-4989-a2a0-f828fdc97ea3
+  resourceVersion: "37744"
+  selfLink: /api/v1/namespaces/argo/pods/membomb
+  uid: 8822b065-cfd2-4dca-8ccb-9ab9551af3fb
+spec:
+  activeDeadlineSeconds: 299
+  containers:
+  - command:
+    - argoexec
+    - wait
+    env:
+    - name: ARGO_POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: ARGO_CONTAINER_RUNTIME_EXECUTOR
+      value: pns
+    image: argoproj/argoexec:latest
+    imagePullPolicy: IfNotPresent
+    name: wait
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 64Mi
+    securityContext:
+      capabilities:
+        add:
+        - SYS_PTRACE
+        - SYS_CHROOT
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /argo/podmetadata
+      name: podmetadata
+    - mountPath: /argo/secret/my-minio-cred
+      name: my-minio-cred
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-k7rr8
+      readOnly: true
+  - args:
+    - membomb
+    image: monitoringartist/docker-killer
+    imagePullPolicy: Always
+    name: main
+    resources:
+      limits:
+        cpu: 100m
+        memory: 50Mi
+      requests:
+        cpu: 100m
+        memory: 50Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-k7rr8
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: k3d-k3s-default-server-0
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  shareProcessNamespace: true
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - downwardAPI:
+      defaultMode: 420
+      items:
+      - fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.annotations
+        path: annotations
+    name: podmetadata
+  - name: my-minio-cred
+    secret:
+      defaultMode: 420
+      items:
+      - key: accesskey
+        path: accesskey
+      - key: secretkey
+        path: secretkey
+      secretName: my-minio-cred
+  - name: default-token-k7rr8
+    secret:
+      defaultMode: 420
+      secretName: default-token-k7rr8
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T10:28:12Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T10:28:14Z"
+    message: 'containers with unready status: [wait main]'
+    reason: ContainersNotReady
+    status: "False"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T10:28:14Z"
+    message: 'containers with unready status: [wait main]'
+    reason: ContainersNotReady
+    status: "False"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2021-01-22T10:28:12Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
+    image: docker.io/monitoringartist/docker-killer:latest
+    imageID: docker.io/monitoringartist/docker-killer@sha256:85ba7f17a5ef691eb4a3dff7fdab406369085c6ee6e74dc4527db9fe9e448fa1
+    lastState: {}
+    name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
+        exitCode: 137
+        finishedAt: "2021-01-22T10:28:13Z"
+        reason: OOMKilled
+        startedAt: "2021-01-22T10:28:13Z"
+  - containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
+    image: docker.io/argoproj/argoexec:latest
+    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
+    lastState: {}
+    name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
+        exitCode: 0
+        finishedAt: "2021-01-22T10:28:14Z"
+        reason: Completed
+        startedAt: "2021-01-22T10:28:12Z"
+  hostIP: 172.19.0.2
+  phase: Failed
+  podIP: 10.42.0.87
+  podIPs:
+  - ip: 10.42.0.87
+  qosClass: Burstable
+  startTime: "2021-01-22T10:28:12Z"
+`
+
+func TestPodFailureWithContainerOOM(t *testing.T) {
+	tests := []struct {
+		podDetail string
+		phase     wfv1.NodePhase
+	}{{
+		podDetail: podWithWaitContainerOOM,
+		phase:     wfv1.NodeError,
+	}, {
+		podDetail: podWithMainContainerOOM,
+		phase:     wfv1.NodeFailed,
+	}}
+	var pod apiv1.Pod
+	for _, tt := range tests {
+		testutil.MustUnmarshallYAML(tt.podDetail, &pod)
+		assert.NotNil(t, pod)
+		nodeStatus, msg := inferFailedReason(&pod)
+		assert.Equal(t, tt.phase, nodeStatus)
+		assert.Equal(t, msg, "OOMKilled")
+	}
+}
+
 func TestResubmitPendingPods(t *testing.T) {
 	wf := unmarshalWF(`
 apiVersion: argoproj.io/v1alpha1
