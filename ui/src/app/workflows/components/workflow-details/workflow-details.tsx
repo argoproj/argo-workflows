@@ -176,7 +176,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         const retryWatch = new RetryWatch<Workflow>(
             () => services.workflows.watch({name, namespace}),
             () => setError(null),
-            e => setWorkflow(e.object),
+            e => {
+                if (e.type === 'DELETED') {
+                    setError(new Error('Workflow deleted'));
+                } else {
+                    setWorkflow(e.object);
+                }
+            },
             setError
         );
         retryWatch.start();
@@ -250,6 +256,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         workflow={workflow}
                                         links={links}
                                         onShowContainerLogs={(_, container) => setSidePanel(`logs:${nodeId}:${container}`)}
+                                        onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
                                         archived={false}
                                     />
@@ -263,6 +270,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'logs' && (
                         <WorkflowLogsViewer workflow={workflow} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
                     )}
+                    {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={parsedSidePanel.nodeId} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
                     {!parsedSidePanel}
