@@ -79,6 +79,9 @@ const config = {
     historyApiFallback: {
       disableDotRule: true
     },
+    watchOptions: {
+      ignored: [/dist/, /node_modules/]
+    },
     headers: {
       'X-Frame-Options': 'SAMEORIGIN'
     },
