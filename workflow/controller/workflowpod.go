@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -227,10 +226,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
-	err = woc.addArchiveLocation(tmpl)
-	if err != nil {
-		return nil, err
-	}
+	woc.addArchiveLocation(tmpl)
 
 	err = woc.setupServiceAccount(ctx, pod, tmpl)
 	if err != nil {
@@ -869,7 +865,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		if art.Path == "" {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
-		if !art.HasLocation() && art.Optional {
+		if !art.HasLocationOrKey() && art.Optional {
 			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
 				art.Name, art.Path)
 			continue
@@ -936,101 +932,22 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // information configured in the controller, for the purposes of archiving outputs. This is skipped
 // for templates which do not need to archive anything, or have explicitly set an archive location
 // in the template.
-func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
-	// needLocation keeps track if the workflow needs to have an archive location set.
-	// If so, and one was not supplied (or defaulted), we will return error
-	var needLocation bool
-
-	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil {
-			// User explicitly set the location. nothing else to do.
-			return nil
-		}
-		if tmpl.ArchiveLocation.ArchiveLogs != nil && *tmpl.ArchiveLocation.ArchiveLogs {
-			needLocation = true
-		}
+func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
+	if tmpl.ArchiveLocation.HasLocation() {
+		// User explicitly set the location. nothing else to do.
+		return
 	}
-	for _, art := range tmpl.Outputs.Artifacts {
+	needLocation := woc.artifactRepository.IsArchiveLogs()
+	for _, art := range append(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts...) {
 		if !art.HasLocation() {
 			needLocation = true
-			break
 		}
 	}
-	if woc.artifactRepository.IsArchiveLogs() {
-		needLocation = true
-	}
+	woc.log.WithField("needLocation", needLocation).Debug()
 	if !needLocation {
-		woc.log.Debugf("archive location unnecessary")
-		return nil
+		return
 	}
-	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
-		ArchiveLogs: woc.artifactRepository.ArchiveLogs,
-	}
-	// artifact location is defaulted using the following formula:
-	// <worflow_name>/<pod_name>/<artifact_name>.tgz
-	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
-	if s3Location := woc.artifactRepository.S3; s3Location != nil {
-		woc.log.Debugf("Setting s3 artifact repository information")
-		artLocationKey := s3Location.KeyFormat
-		// NOTE: we use unresolved variables, will get substituted later
-		if artLocationKey == "" {
-			artLocationKey = path.Join(s3Location.KeyPrefix, common.DefaultArchivePattern)
-		}
-		tmpl.ArchiveLocation.S3 = &wfv1.S3Artifact{
-			S3Bucket: s3Location.S3Bucket,
-			Key:      artLocationKey,
-		}
-	} else if woc.artifactRepository.Artifactory != nil {
-		woc.log.Debugf("Setting artifactory artifact repository information")
-		repoURL := ""
-		if woc.artifactRepository.Artifactory.RepoURL != "" {
-			repoURL = woc.artifactRepository.Artifactory.RepoURL + "/"
-		}
-		artURL := fmt.Sprintf("%s%s", repoURL, common.DefaultArchivePattern)
-		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
-			ArtifactoryAuth: woc.artifactRepository.Artifactory.ArtifactoryAuth,
-			URL:             artURL,
-		}
-	} else if hdfsLocation := woc.artifactRepository.HDFS; hdfsLocation != nil {
-		woc.log.Debugf("Setting HDFS artifact repository information")
-		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
-			HDFSConfig: hdfsLocation.HDFSConfig,
-			Path:       hdfsLocation.PathFormat,
-			Force:      hdfsLocation.Force,
-		}
-	} else if ossLocation := woc.artifactRepository.OSS; ossLocation != nil {
-		woc.log.Debugf("Setting OSS artifact repository information")
-		artLocationKey := ossLocation.KeyFormat
-		// NOTE: we use unresolved variables, will get substituted later
-		if artLocationKey == "" {
-			artLocationKey = path.Join(ossLocation.KeyFormat, common.DefaultArchivePattern)
-		}
-		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
-			OSSBucket: wfv1.OSSBucket{
-				Bucket:          ossLocation.Bucket,
-				Endpoint:        ossLocation.Endpoint,
-				AccessKeySecret: ossLocation.AccessKeySecret,
-				SecretKeySecret: ossLocation.SecretKeySecret,
-			},
-			Key: artLocationKey,
-		}
-	} else if gcsLocation := woc.artifactRepository.GCS; gcsLocation != nil {
-		woc.log.Debugf("Setting GCS artifact repository information")
-		artLocationKey := gcsLocation.KeyFormat
-		if artLocationKey == "" {
-			artLocationKey = common.DefaultArchivePattern
-		}
-		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{
-			GCSBucket: wfv1.GCSBucket{
-				Bucket:                  gcsLocation.Bucket,
-				ServiceAccountKeySecret: gcsLocation.ServiceAccountKeySecret,
-			},
-			Key: artLocationKey,
-		}
-	} else {
-		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
-	}
-	return nil
+	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
 }
 
 // setupServiceAccount sets up service account and token.
@@ -1208,8 +1125,8 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		return
 	}
 	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
-		createSecretVal(volMap, &s3ArtRepo.AccessKeySecret, uniqueKeyMap)
-		createSecretVal(volMap, &s3ArtRepo.SecretKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, s3ArtRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, s3ArtRepo.SecretKeySecret, uniqueKeyMap)
 	} else if hdfsArtRepo := tmpl.ArchiveLocation.HDFS; hdfsArtRepo != nil {
 		createSecretVal(volMap, hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
 		createSecretVal(volMap, hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
@@ -1221,17 +1138,17 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, gitRepo.PasswordSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
 	} else if ossRepo := tmpl.ArchiveLocation.OSS; ossRepo != nil {
-		createSecretVal(volMap, &ossRepo.AccessKeySecret, uniqueKeyMap)
-		createSecretVal(volMap, &ossRepo.SecretKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, ossRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, ossRepo.SecretKeySecret, uniqueKeyMap)
 	} else if gcsRepo := tmpl.ArchiveLocation.GCS; gcsRepo != nil {
-		createSecretVal(volMap, &gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
 	}
 }
 
 func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
 	if art.S3 != nil {
-		createSecretVal(volMap, &art.S3.AccessKeySecret, keyMap)
-		createSecretVal(volMap, &art.S3.SecretKeySecret, keyMap)
+		createSecretVal(volMap, art.S3.AccessKeySecret, keyMap)
+		createSecretVal(volMap, art.S3.SecretKeySecret, keyMap)
 	} else if art.Git != nil {
 		createSecretVal(volMap, art.Git.UsernameSecret, keyMap)
 		createSecretVal(volMap, art.Git.PasswordSecret, keyMap)
@@ -1243,10 +1160,10 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 		createSecretVal(volMap, art.HDFS.KrbCCacheSecret, keyMap)
 		createSecretVal(volMap, art.HDFS.KrbKeytabSecret, keyMap)
 	} else if art.OSS != nil {
-		createSecretVal(volMap, &art.OSS.AccessKeySecret, keyMap)
-		createSecretVal(volMap, &art.OSS.SecretKeySecret, keyMap)
+		createSecretVal(volMap, art.OSS.AccessKeySecret, keyMap)
+		createSecretVal(volMap, art.OSS.SecretKeySecret, keyMap)
 	} else if art.GCS != nil {
-		createSecretVal(volMap, &art.GCS.ServiceAccountKeySecret, keyMap)
+		createSecretVal(volMap, art.GCS.ServiceAccountKeySecret, keyMap)
 	}
 }
 
