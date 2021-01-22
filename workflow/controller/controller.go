@@ -42,6 +42,7 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/util/diff"
 	errorsutil "github.com/argoproj/argo/util/errors"
+	unwf "github.com/argoproj/argo/util/unstructured/workflow"
 	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
@@ -741,6 +742,11 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
+						return
+					}
+					if !unwf.UserModified(oldWf, newWf) {
+						log.Info("workflow spec unchanged, skipping")
+						diff.LogChanges(old, new)
 						return
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
