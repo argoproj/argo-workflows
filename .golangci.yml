@@ -7,8 +7,11 @@ run:
   skip-files:
     - server/static/files.go
   build-tags:
-    - e2e
+    - api
     - cli
+    - cron
+    - e2e
+    - smoke
 linters:
   enable:
     - goimports
