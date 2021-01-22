@@ -526,9 +526,6 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 	  --input-dirs github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	# sed -i '' 's|argoproj/argo/v2/v2/|argoproj/argo/v2/|g' pkg/apis/workflow/v1alpha1/openapi_generated.go
-	# sed -i '' '/v1alpha1 "github.com\/argoproj\/argo\/v2\/pkg\/apis\/workflow\/v1alpha1"/d' pkg/apis/workflow/v1alpha1/openapi_generated.go
-	# sed -i '' 's/ v1alpha1\./ /g' pkg/apis/workflow/v1alpha1/openapi_generated.go
 	rm -rf v2
 
 
