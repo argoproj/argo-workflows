@@ -51,6 +51,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 STATIC_BUILD          ?= true
 # should we build the static files?
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
+START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -472,7 +473,7 @@ endif
 	sleep 10s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(STATIC_FILES) = false ] && echo ui || echo)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
 
 .PHONY: wait
@@ -492,19 +493,19 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	$(GOTEST) -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags e2e,api -p 1 ./test/e2e
 
 .PHONY: test-cli
 test-cli:
-	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	$(GOTEST) -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
+	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: smoke
 smoke:
-	$(GOTEST) -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
+	$(GOTEST) -count 1 --tags smoke -p 1 ./test/e2e
 
 # clean
 
