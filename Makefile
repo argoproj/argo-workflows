@@ -325,12 +325,14 @@ $(GOPATH)/bin/goimports:
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor
+	[ -e v2 ] || ln -s . v2
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import ./vendor
 	touch pkg/apis/workflow/v1alpha1/generated.proto
+	rm -rf v2
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
@@ -518,20 +520,27 @@ clean:
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
+	[ -e v2 ] || ln -s . v2
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	sed -i '' 's|argoproj/argo/v2/v2/|argoproj/argo/v2/|g' pkg/apis/workflow/v1alpha1/openapi_generated.go
+	# sed -i '' 's|argoproj/argo/v2/v2/|argoproj/argo/v2/|g' pkg/apis/workflow/v1alpha1/openapi_generated.go
+	# sed -i '' '/v1alpha1 "github.com\/argoproj\/argo\/v2\/pkg\/apis\/workflow\/v1alpha1"/d' pkg/apis/workflow/v1alpha1/openapi_generated.go
+	# sed -i '' 's/ v1alpha1\./ /g' pkg/apis/workflow/v1alpha1/openapi_generated.go
+	rm -rf v2
+
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+	[ -e v2 ] || ln -s . v2
 	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
 		github.com/argoproj/argo/v2/pkg/client github.com/argoproj/argo/v2/pkg/apis \
 		workflow:v1alpha1 \
 		--go-header-file ./hack/custom-boilerplate.go.txt
+	rm -rf v2
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
