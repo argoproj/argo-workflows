@@ -170,8 +170,6 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	creationTime := wf.CreationTimestamp
 	lock.addToQueue(holderKey, priority, creationTime.Time)
 
-	fmt.Println("Pending :", lock.getCurrentPending())
-	fmt.Println("Holding:", lock.getCurrentHolders())
 	ensureInit(wf, syncLockRef.GetType())
 	currentHolders := cm.getCurrentLockHolders(lockKey)
 	acquired, msg := lock.tryAcquire(holderKey)
