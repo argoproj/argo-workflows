@@ -110,7 +110,7 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
-	workflowExistenceCheckPeriod		= 20 * time.Minute
+	workflowExistenceCheckPeriod        = 1 * time.Minute
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -244,7 +244,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
-				go wait.Until(wfc.syncManager.CheckWorkflowStatus, workflowExistenceCheckPeriod, ctx.Done())
+				go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
 
 				for i := 0; i < wfWorkers; i++ {
 					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
@@ -769,7 +769,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
 						// no need to add to the queue - this workflow is done
-						//wfc.throttler.Remove(key)
+						wfc.throttler.Remove(key)
 					}
 				},
 			},
@@ -1006,7 +1006,7 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 		return
 	}
 	if wf.Status.Synchronization != nil {
-		//wfc.syncManager.ReleaseAll(wf)
+		wfc.syncManager.ReleaseAll(wf)
 	}
 }
 

@@ -3,7 +3,6 @@ package sync
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"sync"
 	"time"
@@ -54,7 +53,7 @@ func (cm *Manager) getWorkflowKey(key string) (string, error) {
 	}
 }
 
-func (cm *Manager) CheckWorkflowStatus() {
+func (cm *Manager) CheckWorkflowExistence() {
 	log.Infof("Check the workflow existence")
 	for _, lock := range cm.syncLockMap {
 		keys := lock.getCurrentHolders()
