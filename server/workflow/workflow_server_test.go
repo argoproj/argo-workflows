@@ -631,7 +631,7 @@ func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 func TestWatchWorkflows(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf := &v1alpha1.Workflow{
-		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.NodeSucceeded},
+		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
 	}
 	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
 	ctx, cancel := context.WithCancel(ctx)
@@ -645,7 +645,7 @@ func TestWatchWorkflows(t *testing.T) {
 func TestWatchLatestWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf := &v1alpha1.Workflow{
-		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.NodeSucceeded},
+		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
 	}
 	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
 	ctx, cancel := context.WithCancel(ctx)
@@ -818,7 +818,7 @@ func TestStopWorkflow(t *testing.T) {
 	wf, err = server.StopWorkflow(ctx, &rsmWfReq)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
-		assert.Equal(t, v1alpha1.NodeRunning, wf.Status.Phase)
+		assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
 	}
 }
 

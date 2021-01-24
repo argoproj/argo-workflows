@@ -555,7 +555,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// The following simulates the behavior of generateName
 	if memoized {
 		switch wf.Status.Phase {
-		case wfv1.NodeFailed, wfv1.NodeError:
+		case wfv1.WorkflowFailed, wfv1.WorkflowError:
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
@@ -654,7 +654,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 
 	newWF.Status.Conditions = wfv1.Conditions{{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted}}
-	newWF.Status.Phase = ""
+	newWF.Status.Phase = wfv1.WorkflowUnknown
 
 	return &newWF, nil
 }
@@ -686,7 +686,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		return nil, err
 	}
 	switch wf.Status.Phase {
-	case wfv1.NodeFailed, wfv1.NodeError:
+	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
@@ -703,7 +703,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
-	newWF.Status.Phase = wfv1.NodeRunning
+	newWF.Status.Phase = wfv1.WorkflowRunning
 	newWF.Status.Nodes = make(wfv1.Nodes)
 	newWF.Status.Message = ""
 	newWF.Status.FinishedAt = metav1.Time{}

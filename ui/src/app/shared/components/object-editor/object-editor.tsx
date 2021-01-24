@@ -22,22 +22,22 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
     const [error, setError] = useState<Error>();
     const [lang, setLang] = useState<string>(storage.getItem('lang', defaultLang));
     const [text, setText] = useState<string>(stringify(value, lang));
+    const [isModified, setIsModified] = useState<boolean>(false);
 
     useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
     useEffect(() => setText(stringify(value, lang)), [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
-    const updateText = (newValue: string) => {
-        if (onChange) {
-            {
-                setText(newValue);
+    if (onChange) {
+        useEffect(() => {
+            if (isModified) {
                 try {
-                    onChange(parse(newValue));
+                    onChange(parse(text));
                 } catch (e) {
                     setError(e);
                 }
             }
-        }
-    };
+        }, [text, isModified]);
+    }
 
     useEffect(() => {
         if (type && lang === 'json') {
@@ -91,7 +91,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         renderIndentGuides: false,
                         scrollBeyondLastLine: true
                     }}
-                    onChange={newValue => updateText(newValue)}
+                    onChange={() => setIsModified(true)}
                 />
             </div>
             <div style={{paddingTop: '1em'}}>

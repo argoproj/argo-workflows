@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/v2/util/slice"
-
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/argoproj/argo/v2/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -1291,7 +1291,7 @@ type UserContainer struct {
 // WorkflowStatus contains overall status information about a workflow
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
-	Phase NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
+	Phase WorkflowPhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=WorkflowPhase"`
 
 	// Time at which this workflow started
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`
@@ -1646,19 +1646,19 @@ func (phase NodePhase) FailedOrError() bool {
 	return phase == NodeFailed || phase == NodeError
 }
 
-// Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
+// Fulfilled returns whether or not the workflow has fulfilled its execution
 func (ws WorkflowStatus) Fulfilled() bool {
-	return ws.Phase.Fulfilled()
+	return ws.Phase.Completed()
 }
 
 // Successful return whether or not the workflow has succeeded
 func (ws WorkflowStatus) Successful() bool {
-	return ws.Phase == NodeSucceeded
+	return ws.Phase == WorkflowSucceeded
 }
 
 // Failed return whether or not the workflow has failed
 func (ws WorkflowStatus) Failed() bool {
-	return ws.Phase == NodeFailed
+	return ws.Phase == WorkflowFailed
 }
 
 func (ws WorkflowStatus) StartTime() *metav1.Time {

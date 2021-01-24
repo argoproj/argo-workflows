@@ -1,4 +1,4 @@
-// +build e2e
+// +build cron
 
 package e2e
 

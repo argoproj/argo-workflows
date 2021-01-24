@@ -28,7 +28,7 @@ func (s *EstimatedDurationSuite) TestWorkflowTemplate() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.NotEmpty(t, status.EstimatedDuration)
 			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
 		})
@@ -45,7 +45,7 @@ func (s *EstimatedDurationSuite) TestClusterWorkflowTemplate() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.NotEmpty(t, status.EstimatedDuration)
 			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
 		})
@@ -62,7 +62,7 @@ func (s *EstimatedDurationSuite) TestCronWorkflow() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.NotEmpty(t, status.EstimatedDuration)
 			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
 		})
