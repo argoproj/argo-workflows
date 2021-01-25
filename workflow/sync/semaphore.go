@@ -46,6 +46,14 @@ func (s *PrioritySemaphore) getLimit() int {
 	return s.limit
 }
 
+func (s *PrioritySemaphore) getCurrentPending() []string {
+	var keys []string
+	for _, item := range s.pending.items {
+		keys = append(keys, item.key)
+	}
+	return keys
+}
+
 func (s *PrioritySemaphore) getCurrentHolders() []string {
 	var keys []string
 	for k := range s.lockHolder {
