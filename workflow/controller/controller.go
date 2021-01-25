@@ -110,6 +110,7 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
+	workflowExistenceCheckPeriod        = 1 * time.Minute
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -243,6 +244,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
+				go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
+
 				for i := 0; i < wfWorkers; i++ {
 					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
 				}
@@ -297,7 +300,16 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		wfc.wfQueue.AddRateLimited(key)
 	}
 
-	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
+	isWFDeleted := func(key string) bool {
+		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+		if err != nil {
+			log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+			return false
+		}
+		return exists
+	}
+
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
 
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
