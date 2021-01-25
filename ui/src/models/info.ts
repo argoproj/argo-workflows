@@ -19,5 +19,5 @@ export interface GetUserInfoResponse {
     groups?: string[];
     email?: string;
     emailVerified?: boolean;
-    serviceAccount?: string;
+    serviceAccountName?: string;
 }

@@ -3379,7 +3379,7 @@
         "issuer": {
           "type": "string"
         },
-        "serviceAccount": {
+        "serviceAccountName": {
           "type": "string"
         },
         "subject": {
