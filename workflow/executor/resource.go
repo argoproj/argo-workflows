@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	argoerr "github.com/argoproj/argo/util/errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -238,6 +239,9 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 		jsonBytes, err := readJSON(reader)
 
 		if err != nil {
+			if argoerr.IsTransientErr(err) {
+				return true, err
+			}
 			resultErr := err
 			log.Warnf("Json reader returned error %v. Calling kill (usually superfluous)", err)
 			// We don't want to write OS specific code so we don't want to call syscall package code. But that means
