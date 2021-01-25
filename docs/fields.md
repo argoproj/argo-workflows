@@ -2398,7 +2398,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 |:----------:|:----------:|---------------|
 |`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
 |`enum`|`Array< string >`|Enum holds a list of string values to choose from, for the actual value of the parameter|
-|`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
+|`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.outputs.parameters.XXXX where XXXX is the globalName given|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
