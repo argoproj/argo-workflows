@@ -6,13 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	argoerr "github.com/argoproj/argo/util/errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strings"
 	"time"
+
+	argoerr "github.com/argoproj/argo/util/errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
