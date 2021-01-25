@@ -101,7 +101,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre, *tmpl)
+	wfExecutor := executor.NewExecutor(clientset, podName, namespace, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	vers := argo.GetVersion()
 	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", vers.Version, vers.BuildDate, namespace, podName, string(yamlBytes))

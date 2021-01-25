@@ -25,7 +25,6 @@ import (
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
-	argowait "github.com/argoproj/argo/workflow/executor/common/wait"
 	osspecific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
@@ -161,16 +160,13 @@ func (p *PNSExecutor) WaitInit() error {
 	return nil
 }
 
-// Wait for the container to complete
-func (p *PNSExecutor) Wait(ctx context.Context, containerID string) error {
+func (p *PNSExecutor) Wait(_ context.Context, containerID string) error {
+	if !p.hasOutputs {
+		return nil
+	}
 	mainPID, err := p.getContainerPID(containerID)
 	if err != nil {
-		log.Warnf("Failed to get main PID: %v", err)
-		if !p.hasOutputs {
-			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
-			return nil
-		}
-		return argowait.UntilTerminated(ctx, p.clientset, p.namespace, p.podName, containerID)
+		return err
 	}
 	log.Infof("Main pid identified as %d", mainPID)
 	for pid, f := range p.pidFileHandles {
@@ -185,14 +181,6 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerID string) error {
 	if p.mainFS == nil {
 		log.Warn("Failed to secure file handle on main container's root filesystem. Output artifacts from base image layer will fail")
 	}
-
-	// wait for pid to complete
-	log.Infof("Waiting for main pid %d to complete", mainPID)
-	err = executil.WaitPID(mainPID)
-	if err != nil {
-		return err
-	}
-	log.Infof("Main pid %d completed", mainPID)
 	return nil
 }
 

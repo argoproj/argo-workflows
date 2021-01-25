@@ -166,10 +166,8 @@ func (d *DockerExecutor) WaitInit() error {
 	return nil
 }
 
-// Wait for the container to complete
-func (d *DockerExecutor) Wait(ctx context.Context, containerID string) error {
-	_, err := common.RunCommand("docker", "wait", containerID)
-	return err
+func (d *DockerExecutor) Wait(context.Context, string) error {
+	return nil
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period

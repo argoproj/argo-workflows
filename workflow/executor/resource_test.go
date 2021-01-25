@@ -26,14 +26,13 @@ func TestResourceFlags(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           template,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
+		PodName:          fakePodName,
+		Template:         template,
+		ClientSet:        fakeClientset,
+		Namespace:        fakeNamespace,
+		ExecutionControl: nil,
+		RuntimeExecutor:  &mockRuntimeExecutor,
+		mainContainerID:  fakeContainerID,
 	}
 	args, err := we.getKubectlArguments("fake", "../../examples/hello-world.yaml", fakeFlags)
 

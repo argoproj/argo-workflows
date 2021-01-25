@@ -280,11 +280,6 @@ func (k *kubeletClient) getCommandOutput(containerID, command string) (*bytes.Bu
 	return nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
 }
 
-// WaitForTermination of the given containerID, set the timeout to 0 to discard it
-func (k *kubeletClient) WaitForTermination(ctx context.Context, containerID string, timeout time.Duration) error {
-	return execcommon.WaitForTermination(ctx, k, containerID, timeout)
-}
-
 func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
 	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?command=/bin/sh&&command=-c&command=kill+-%d+1&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, sig))
 	if err != nil {
