@@ -1,11 +1,9 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -34,10 +32,6 @@ func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDe
 	}
 }
 
-func (cm *Manager) Run(ctx context.Context, workflowExistenceCheckPeriod time.Duration) {
-
-}
-
 func (cm *Manager) getWorkflowKey(key string) (string, error) {
 	if key == "" {
 		return "", fmt.Errorf("holderkey is empty")
@@ -46,11 +40,7 @@ func (cm *Manager) getWorkflowKey(key string) (string, error) {
 	if len(items) < 2 {
 		return "", fmt.Errorf("invalid holderkey format")
 	}
-	if len(items) > 2 {
-		return fmt.Sprintf("%s/%s", items[0], items[1]), nil
-	} else {
-		return fmt.Sprintf("%s/%s", items[0], items[1]), nil
-	}
+	return fmt.Sprintf("%s/%s", items[0], items[1]), nil
 }
 
 func (cm *Manager) CheckWorkflowExistence() {
