@@ -229,6 +229,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		if err != nil {
 			return nil, err
 		}
+		claims.ServiceAccount = serviceAccount.Name
 		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
 		return clients, nil
 	}

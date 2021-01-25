@@ -6794,6 +6794,9 @@
         "issuer": {
           "type": "string"
         },
+        "serviceAccount": {
+          "type": "string"
+        },
         "subject": {
           "type": "string"
         }
