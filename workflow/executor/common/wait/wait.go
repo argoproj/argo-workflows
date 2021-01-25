@@ -3,6 +3,7 @@ package wait
 import (
 	"context"
 	"fmt"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +18,8 @@ import (
 func UntilTerminated(ctx context.Context, kubernetesInterface kubernetes.Interface, namespace, podName, containerID string) error {
 	log.Infof("Waiting for container %s to be terminated", containerID)
 	podInterface := kubernetesInterface.CoreV1().Pods(namespace)
-	listOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + podName}
+	resourceVersion, _ := os.LookupEnv("EXECUTOR_OPTION_RESOURCE_VERSION")
+	listOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + podName, ResourceVersion: resourceVersion}
 	for {
 		done, err := untilTerminatedAux(ctx, podInterface, containerID, listOptions)
 		if done {

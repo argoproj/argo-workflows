@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"syscall"
 
 	corev1 "k8s.io/api/core/v1"
@@ -62,7 +63,8 @@ func (c *k8sAPIClient) getLogsAsStream(ctx context.Context, containerID string) 
 }
 
 func (c *k8sAPIClient) getPod(ctx context.Context) (*corev1.Pod, error) {
-	return c.clientset.CoreV1().Pods(c.namespace).Get(ctx, c.podName, metav1.GetOptions{})
+	resourceVersion, _ := os.LookupEnv("EXECUTOR_OPTION_RESOURCE_VERSION")
+	return c.clientset.CoreV1().Pods(c.namespace).Get(ctx, c.podName, metav1.GetOptions{ResourceVersion: resourceVersion})
 }
 
 func (c *k8sAPIClient) GetContainerStatus(ctx context.Context, containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
