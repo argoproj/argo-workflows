@@ -224,6 +224,9 @@ func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool 
 func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
 
 	cmd, reader, err := startKubectlWaitCmd(resourceNamespace, resourceName)
+	if argoerr.IsTransientErr(err) {
+		return true, err
+	}
 	if err != nil {
 		return false, err
 	}
@@ -239,9 +242,6 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 		jsonBytes, err := readJSON(reader)
 
 		if err != nil {
-			if argoerr.IsTransientErr(err) {
-				return true, err
-			}
 			resultErr := err
 			log.Warnf("Json reader returned error %v. Calling kill (usually superfluous)", err)
 			// We don't want to write OS specific code so we don't want to call syscall package code. But that means
