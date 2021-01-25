@@ -94,7 +94,7 @@ override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo/v2.gitTag=${GIT_TAG}
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/v2/' | cut -c 29-)
