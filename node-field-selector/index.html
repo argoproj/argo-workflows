@@ -2074,27 +2074,31 @@
 </thead>
 <tbody>
 <tr>
-<td>displayName</td>
-<td>Display name of the node</td>
+<td><code>displayName</code></td>
+<td>Display name of the node. This is the name of the node as it is displayed on the CLI or UI, without considering its ancestors (see example below). This is a useful shortcut if there is only one node with the same <code>displayName</code></td>
 </tr>
 <tr>
-<td>templateName</td>
+<td><code>name</code></td>
+<td>Full name of the node. This is the full name of the node, including its ancestors (see example below). Using <code>name</code> is necessary when two or more nodes share the same <code>displayName</code> and disambiguation is required.</td>
+</tr>
+<tr>
+<td><code>templateName</code></td>
 <td>Template name of the node</td>
 </tr>
 <tr>
-<td>phase</td>
+<td><code>phase</code></td>
 <td>Phase status of the node - eg Running</td>
 </tr>
 <tr>
-<td>templateRef.name</td>
+<td><code>templateRef.name</code></td>
 <td>The name of the WorkflowTemplate the node is referring to</td>
 </tr>
 <tr>
-<td>templateRef.template</td>
+<td><code>templateRef.template</code></td>
 <td>The template within the WorkflowTemplate the node is referring to</td>
 </tr>
 <tr>
-<td>inputs.parameters.<NAME>.value</td>
+<td><code>inputs.parameters.&lt;NAME&gt;.value</code></td>
 <td>The value of input parameter NAME</td>
 </tr>
 </tbody>
@@ -2105,6 +2109,41 @@
 <p><code>--node-field-selector=inputs.parameters.foo.value=bar</code></p>
 <p>To filter for nodes where the input parameter 'foo' is equal to 'bar' and phase is not running:</p>
 <p><code>--node-field-selector=foo1=bar1,phase!=Running</code></p>
+<p>Consider the following workflow:</p>
+<div class="highlight"><pre><span></span><code> ● appr-promotion-ffsv4    code-release
+ ├─✔ start                 sample-template/email                 appr-promotion-ffsv4-3704914002  2s
+ ├─● app1                  wftempl1/approval-and-promotion
+ │ ├─✔ notification-email  sample-template/email                 appr-promotion-ffsv4-524476380   2s
+ │ └─ǁ wait-approval       sample-template/waiting-for-approval
+ ├─✔ app2                  wftempl2/promotion
+ │ ├─✔ notification-email  sample-template/email                 appr-promotion-ffsv4-2580536603  2s
+ │ ├─✔ pr-approval         sample-template/approval              appr-promotion-ffsv4-3445567645  2s
+ │ └─✔ deployment          sample-template/promote               appr-promotion-ffsv4-970728982   1s
+ └─● app3                  wftempl1/approval-and-promotion
+   ├─✔ notification-email  sample-template/email                 appr-promotion-ffsv4-388318034   2s
+   └─ǁ wait-approval       sample-template/waiting-for-approval
+</code></pre></div>
+<p>Here we have two steps with the same <code>displayName</code>: <code>wait-approval</code>. To select one to suspend, we need to use their
+<code>name</code>, either <code>appr-promotion-ffsv4.app1.wait-approval</code> or <code>appr-promotion-ffsv4.app2.wait-approval</code>. If it is not clear
+what the full name of a done is, it can be found using <code>kubectl</code>:</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get wf appr-promotion-ffsv4 -o yaml
+
+...
+    appr-promotion-ffsv4-3235686597:
+      boundaryID: appr-promotion-ffsv4-3079407832
+      displayName: wait-approval                        # &lt;- Display Name
+      finishedAt: null
+      id: appr-promotion-ffsv4-3235686597
+      name: appr-promotion-ffsv4.app1.wait-approval     # &lt;- Full Name
+      phase: Running
+      startedAt: &quot;2021-01-20T17:00:25Z&quot;
+      templateRef:
+        name: sample-template
+        template: waiting-for-approval
+      templateScope: namespaced/wftempl1
+      type: Suspend
+...
+</code></pre></div>
                 
                   
                 
