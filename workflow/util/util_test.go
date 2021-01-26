@@ -431,6 +431,9 @@ status:
         - name: message
           valueFrom:
             supplied: {}
+        - name: message2
+          valueFrom:
+            supplied: {}
       phase: Running
       startedAt: "2020-06-25T18:01:56Z"
       templateName: approve
@@ -454,6 +457,8 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
 		assert.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		assert.NoError(t, err)
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 		assert.NoError(t, err)
 	}
 
