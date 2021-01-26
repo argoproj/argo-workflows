@@ -11,6 +11,10 @@ type PriorityMutex struct {
 	lock  *sync.Mutex
 }
 
+func (m *PriorityMutex) getCurrentPending() []string {
+	return m.mutex.getCurrentPending()
+}
+
 var _ Semaphore = &PriorityMutex{}
 
 // NewMutex creates new mutex lock object

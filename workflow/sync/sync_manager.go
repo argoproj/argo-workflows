@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -11,20 +12,52 @@ import (
 
 type NextWorkflow func(string)
 type GetSyncLimit func(string) (int, error)
+type IsWorkflowDeleted func(string) bool
 
 type Manager struct {
 	syncLockMap  map[string]Semaphore
 	lock         *sync.Mutex
 	nextWorkflow NextWorkflow
 	getSyncLimit GetSyncLimit
+	isWFDeleted  IsWorkflowDeleted
 }
 
-func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow) *Manager {
+func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	return &Manager{
 		syncLockMap:  make(map[string]Semaphore),
 		lock:         &sync.Mutex{},
 		nextWorkflow: nextWorkflow,
 		getSyncLimit: getSyncLimit,
+		isWFDeleted:  isWFDeleted,
+	}
+}
+
+func (cm *Manager) getWorkflowKey(key string) (string, error) {
+	if key == "" {
+		return "", fmt.Errorf("holderkey is empty")
+	}
+	items := strings.Split(key, "/")
+	if len(items) < 2 {
+		return "", fmt.Errorf("invalid holderkey format")
+	}
+	return fmt.Sprintf("%s/%s", items[0], items[1]), nil
+}
+
+func (cm *Manager) CheckWorkflowExistence() {
+	log.Infof("Check the workflow existence")
+	for _, lock := range cm.syncLockMap {
+		keys := lock.getCurrentHolders()
+		keys = append(keys, lock.getCurrentPending()...)
+		for _, holderKeys := range keys {
+			wfKey, err := cm.getWorkflowKey(holderKeys)
+			if err != nil {
+				continue
+			}
+			if !cm.isWFDeleted(wfKey) {
+				lock.release(holderKeys)
+				lock.removeFromQueue(holderKeys)
+			}
+		}
 	}
 }
 

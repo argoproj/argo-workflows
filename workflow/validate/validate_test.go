@@ -1169,11 +1169,11 @@ spec:
 func TestInvalidArgumentNoFromOrLocation(t *testing.T) {
 	_, err := validate(invalidStepsArgumentNoFromOrLocation)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from or artifact location is required")
+		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
 	}
 	_, err = validate(invalidDAGArgumentNoFromOrLocation)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from or artifact location is required")
+		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
 	}
 }
 
