@@ -632,55 +632,6 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 	return leafTaskNames
 }
 
-// expandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
-//func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
-//	var err error
-//	var items []wfv1.Item
-//	if len(task.WithItems) > 0 {
-//		items = task.WithItems
-//	} else if task.WithParam != "" {
-//		err = json.Unmarshal([]byte(task.WithParam), &items)
-//		if err != nil {
-//			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(task.WithParam))
-//		}
-//	} else if task.WithSequence != nil {
-//		items, err = expandSequence(task.WithSequence)
-//		if err != nil {
-//			return nil, err
-//		}
-//	} else {
-//		return []wfv1.DAGTask{task}, nil
-//	}
-//
-//	taskBytes, err := json.Marshal(task)
-//	if err != nil {
-//		return nil, errors.InternalWrapError(err)
-//	}
-//
-//	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
-//	// very poor performance, so we just nil them out
-//	task.WithItems = nil
-//	task.WithParam = ""
-//	task.WithSequence = nil
-//
-//	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
-//	if err != nil {
-//		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
-//	}
-//	expandedTasks := make([]wfv1.DAGTask, 0)
-//	for i, item := range items {
-//		var newTask wfv1.DAGTask
-//		newTaskName, err := processItem(fstTmpl, task.Name, i, item, &newTask)
-//		if err != nil {
-//			return nil, err
-//		}
-//		newTask.Name = newTaskName
-//		newTask.Template = task.Template
-//		expandedTasks = append(expandedTasks, newTask)
-//	}
-//	return expandedTasks, nil
-//}
-
 type TaskResults struct {
 	Succeeded    bool `json:"Succeeded"`
 	Failed       bool `json:"Failed"`
