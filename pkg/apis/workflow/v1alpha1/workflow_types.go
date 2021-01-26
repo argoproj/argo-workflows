@@ -2325,7 +2325,9 @@ func (t *DAGTask) GetWithSequence() *Sequence {
 }
 
 func (t *DAGTask) NilFields() {
-	panic("implement me")
+	t.WithItems = nil
+	t.WithParam = ""
+	t.WithSequence = nil
 }
 
 func (t *DAGTask) GetName() string {

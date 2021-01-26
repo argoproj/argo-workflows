@@ -3,17 +3,16 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/argoproj/argo/errors"
 	"github.com/valyala/fasttemplate"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-type ExpandableCollector func(template *fasttemplate.Template, expandable wfv1.Expandable, i int, item wfv1.Item) error
+type expandableCollector func(template *fasttemplate.Template, expandable wfv1.Expandable, i int, item wfv1.Item) error
 
-func getStepCollector(expandedSteps *[]wfv1.WorkflowStep) ExpandableCollector {
+func getStepCollector(expandedSteps *[]wfv1.WorkflowStep) expandableCollector {
 	return func(template *fasttemplate.Template, expandable wfv1.Expandable, i int, item wfv1.Item) error {
 		var newStep wfv1.WorkflowStep
 		newName, err := processItem(template, expandable.GetName(), i, item, &newStep)
@@ -27,37 +26,42 @@ func getStepCollector(expandedSteps *[]wfv1.WorkflowStep) ExpandableCollector {
 	}
 }
 
-func getTaskCollector(expandedTasks *[]wfv1.DAGTask) ExpandableCollector {
+func getTaskCollector(expandedTasks *[]wfv1.DAGTask) expandableCollector {
 	return func(template *fasttemplate.Template, expandable wfv1.Expandable, i int, item wfv1.Item) error {
-		var newStep wfv1.DAGTask
-		newName, err := processItem(template, expandable.GetName(), i, item, &newStep)
+		var newTask wfv1.DAGTask
+		newName, err := processItem(template, expandable.GetName(), i, item, &newTask)
 		if err != nil {
 			return err
 		}
-		newStep.Name = newName
-		newStep.Template = expandable.GetTemplate()
-		*expandedTasks = append(*expandedTasks, newStep)
+		newTask.Name = newName
+		newTask.Template = expandable.GetTemplate()
+		*expandedTasks = append(*expandedTasks, newTask)
 		return nil
 	}
 }
 
 // expandStep expands a step containing withItems or withParams into multiple parallel steps
-func expand(expandable wfv1.Expandable, collector ExpandableCollector) error {
+func expand(expandable wfv1.Expandable, collector expandableCollector) error {
 	var err error
 	var items []wfv1.Item
-	if len(expandable.GetWithItems()) > 0 {
+
+	switch {
+	case len(expandable.GetWithItems()) > 0:
 		items = expandable.GetWithItems()
-	} else if expandable.GetWithParam() != "" {
+
+	case expandable.GetWithParam() != "":
 		err = json.Unmarshal([]byte(expandable.GetWithParam()), &items)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(expandable.GetWithParam()))
 		}
-	} else if expandable.GetWithSequence() != nil {
+
+	case expandable.GetWithSequence() != nil:
 		items, err = expandSequence(expandable.GetWithSequence())
 		if err != nil {
 			return err
 		}
-	} else {
+
+	default:
 		// this should have been prevented in expandStepGroup()
 		return errors.InternalError("expandStep() was called with withItems and withParam empty")
 	}
