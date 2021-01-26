@@ -1071,6 +1071,9 @@ type WorkflowStep struct {
 	// WithSequence expands a step into a numeric sequence
 	WithSequence *Sequence `json:"withSequence,omitempty" protobuf:"bytes,7,opt,name=withSequence"`
 
+	// WithArtifacts expands a step from a collection of artifacts
+	WithArtifacts *WithArtifacts `json:"withArtifacts,omitempty"`
+
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty" protobuf:"bytes,8,opt,name=when"`
 
@@ -1085,6 +1088,7 @@ type WorkflowStep struct {
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
+var _ Expandable = &WorkflowStep{}
 
 func (step *WorkflowStep) GetTemplateName() string {
 	return step.Template
@@ -1094,9 +1098,37 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return step.TemplateRef
 }
 
-func (step *WorkflowStep) ShouldExpand() bool {
-	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
+func (step WorkflowStep) ShouldExpand() bool {
+	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil || step.WithArtifacts != nil
 }
+
+func (step *WorkflowStep) GetWithItems() []Item {
+	return step.WithItems
+}
+
+func (step *WorkflowStep) GetWithParam() string {
+	return step.WithParam
+}
+
+func (step *WorkflowStep) GetWithSequence() *Sequence {
+	return step.WithSequence
+}
+
+func (step *WorkflowStep) NilFields() {
+	step.WithItems = nil
+	step.WithParam = ""
+	step.WithSequence = nil
+}
+
+func (step *WorkflowStep) GetName() string {
+	return step.Name
+}
+
+func (step *WorkflowStep) GetTemplate() string {
+	return step.Template
+}
+
+
 
 // Sequence expands a workflow step into numeric range
 type Sequence struct {
@@ -1111,6 +1143,24 @@ type Sequence struct {
 
 	// Format is a printf format string to format the value in the sequence
 	Format string `json:"format,omitempty" protobuf:"bytes,4,opt,name=format"`
+}
+
+// WithArtifacts expands a step from a collection of artifacts
+type WithArtifacts struct {
+
+	// Aggregator is the strategy in how to aggregate files
+	Aggregator *Aggregator `json:"aggregator,omitempty"`
+
+	// Artifact is the artifact location from which to source the artifacts, it can be a directory
+	Artifact *Artifact `json:"artifact,omitempty"`
+}
+
+type Aggregator struct {
+	Directory *Directory `json:"directory,omitempty"`
+}
+
+type Directory struct {
+	Recursive bool `json:"recursive,omitempty"`
 }
 
 // TemplateRef is a reference of template resource.
@@ -2248,6 +2298,7 @@ type DAGTask struct {
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
+var _ Expandable = &DAGTask{}
 
 func (t *DAGTask) GetTemplateName() string {
 	return t.Template
@@ -2259,6 +2310,30 @@ func (t *DAGTask) GetTemplateRef() *TemplateRef {
 
 func (t *DAGTask) ShouldExpand() bool {
 	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithSequence != nil
+}
+
+func (t *DAGTask) GetWithItems() []Item {
+	return t.WithItems
+}
+
+func (t *DAGTask) GetWithParam() string {
+	return t.WithParam
+}
+
+func (t *DAGTask) GetWithSequence() *Sequence {
+	return t.WithSequence
+}
+
+func (t *DAGTask) NilFields() {
+	panic("implement me")
+}
+
+func (t *DAGTask) GetName() string {
+	return t.Name
+}
+
+func (t *DAGTask) GetTemplate() string {
+	return t.Template
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

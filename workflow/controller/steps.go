@@ -419,7 +419,9 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
-		expandedStep, err := woc.expandStep(step)
+
+		expandedStep := make([]wfv1.WorkflowStep, 0)
+		err := expand(&step, getStepCollector(&expandedStep))
 		if err != nil {
 			return nil, err
 		}
@@ -440,54 +442,54 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 }
 
 // expandStep expands a step containing withItems or withParams into multiple parallel steps
-func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
-	var err error
-	expandedStep := make([]wfv1.WorkflowStep, 0)
-	var items []wfv1.Item
-	if len(step.WithItems) > 0 {
-		items = step.WithItems
-	} else if step.WithParam != "" {
-		err = json.Unmarshal([]byte(step.WithParam), &items)
-		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(step.WithParam))
-		}
-	} else if step.WithSequence != nil {
-		items, err = expandSequence(step.WithSequence)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// this should have been prevented in expandStepGroup()
-		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
-	}
-
-	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
-	// very poor performance, so we just nil them out
-	step.WithItems = nil
-	step.WithParam = ""
-	step.WithSequence = nil
-
-	stepBytes, err := json.Marshal(step)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
-	}
-
-	for i, item := range items {
-		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(fstTmpl, step.Name, i, item, &newStep)
-		if err != nil {
-			return nil, err
-		}
-		newStep.Name = newStepName
-		newStep.Template = step.Template
-		expandedStep = append(expandedStep, newStep)
-	}
-	return expandedStep, nil
-}
+//func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
+//	var err error
+//	expandedStep := make([]wfv1.WorkflowStep, 0)
+//	var items []wfv1.Item
+//	if len(step.WithItems) > 0 {
+//		items = step.WithItems
+//	} else if step.WithParam != "" {
+//		err = json.Unmarshal([]byte(step.WithParam), &items)
+//		if err != nil {
+//			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(step.WithParam))
+//		}
+//	} else if step.WithSequence != nil {
+//		items, err = expandSequence(step.WithSequence)
+//		if err != nil {
+//			return nil, err
+//		}
+//	} else {
+//		// this should have been prevented in expandStepGroup()
+//		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
+//	}
+//
+//	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
+//	// very poor performance, so we just nil them out
+//	step.WithItems = nil
+//	step.WithParam = ""
+//	step.WithSequence = nil
+//
+//	stepBytes, err := json.Marshal(step)
+//	if err != nil {
+//		return nil, errors.InternalWrapError(err)
+//	}
+//	fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
+//	if err != nil {
+//		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+//	}
+//
+//	for i, item := range items {
+//		var newStep wfv1.WorkflowStep
+//		newStepName, err := processItem(fstTmpl, step.Name, i, item, &newStep)
+//		if err != nil {
+//			return nil, err
+//		}
+//		newStep.Name = newStepName
+//		newStep.Template = step.Template
+//		expandedStep = append(expandedStep, newStep)
+//	}
+//	return expandedStep, nil
+//}
 
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	realTimeScope := make(map[string]func() float64)

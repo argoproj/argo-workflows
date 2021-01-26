@@ -35,6 +35,15 @@ type TemplateReferenceHolder interface {
 	GetTemplateRef() *TemplateRef
 }
 
+type Expandable interface {
+	GetWithItems() []Item
+	GetWithParam() string
+	GetWithSequence() *Sequence
+	NilFields()
+	GetName() string
+	GetTemplate() string
+}
+
 // SubmitOpts are workflow submission options
 type SubmitOpts struct {
 	// Name overrides metadata.name
