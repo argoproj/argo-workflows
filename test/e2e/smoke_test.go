@@ -46,7 +46,7 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	s.Need(fixtures.Artifacts)
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().

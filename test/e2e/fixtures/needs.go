@@ -16,7 +16,7 @@ var (
 	CI Need = func(s *E2ESuite) (bool, string) {
 		return os.Getenv("CI") != "", "CI"
 	}
-	Artifacts Need = func(s *E2ESuite) (bool, string) {
+	BaseLayerArtifacts Need = func(s *E2ESuite) (bool, string) {
 		met, _ := Any(Docker, All(None(CI), PNS))(s)
 		return met, "artifacts"
 	}

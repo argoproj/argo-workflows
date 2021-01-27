@@ -23,7 +23,7 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestArchiveStrategies() {
-	s.Need(fixtures.Artifacts)
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().
@@ -403,7 +403,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 }
 
 func (s *FunctionalSuite) TestArtifactRepositoryRef() {
-	s.Need(fixtures.Artifacts)
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/artifact-repository-ref.yaml").
 		When().
@@ -538,7 +538,7 @@ spec:
 }
 
 func (s *FunctionalSuite) TestParameterAggregation() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@functional/param-aggregation.yaml").
 		When().
@@ -555,7 +555,7 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 }
 
 func (s *FunctionalSuite) TestGlobalScope() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@functional/global-scope.yaml").
 		When().
@@ -588,7 +588,7 @@ func (s *FunctionalSuite) TestGlobalScope() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
@@ -614,7 +614,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 }
 
 func (s *FunctionalSuite) TestTerminateBehavior() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
@@ -669,7 +669,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 }
 
 func (s *FunctionalSuite) TestDefaultParameterOutputs() {
-	s.Need(fixtures.Artifacts)
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -725,7 +725,7 @@ spec:
 }
 
 func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/same-input-output-path-optional.yaml").
 		When().
@@ -750,7 +750,7 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 }
 
 func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
-	s.Need(fixtures.Artifacts)
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
 		When().
@@ -779,7 +779,7 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 }
 
 func (s *FunctionalSuite) TestPropagateMaxDuration() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
