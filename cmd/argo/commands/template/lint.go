@@ -9,11 +9,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo/v2/util/cmd"
+	"github.com/argoproj/argo/v2/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {

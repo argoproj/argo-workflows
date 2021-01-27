@@ -11,9 +11,9 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	eventsourcepkg "github.com/argoproj/argo/pkg/apiclient/eventsource"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/logs"
+	eventsourcepkg "github.com/argoproj/argo/v2/pkg/apiclient/eventsource"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/util/logs"
 )
 
 type eventSourceServer struct{}

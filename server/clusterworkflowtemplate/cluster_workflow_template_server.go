@@ -7,13 +7,13 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterwftmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/creator"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/validate"
+	clusterwftmplpkg "github.com/argoproj/argo/v2/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/util/instanceid"
+	"github.com/argoproj/argo/v2/workflow/creator"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/workflow/validate"
 )
 
 type ClusterWorkflowTemplateServer struct {
