@@ -501,7 +501,9 @@ test-e2e:
 
 .PHONY: test-cli
 test-cli:
-	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=GRPC  $(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=HTTP1 $(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=KUBE  $(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:

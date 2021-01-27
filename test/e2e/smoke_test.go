@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/v2/test/e2e/fixtures"
-	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 type SmokeSuite struct {
@@ -35,9 +33,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 }
 
 func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
-	if s.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
-		s.T().Skip("docker not supported")
-	}
+	s.Need(fixtures.Not(fixtures.Docker))
 	s.Given().
 		Workflow("@smoke/runasnonroot-workflow.yaml").
 		When().
@@ -50,16 +46,7 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-
-	switch s.Config.ContainerRuntimeExecutor {
-	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI:
-		s.T().Skip("non-docker not supported")
-	case common.ContainerRuntimeExecutorPNS:
-		if os.Getenv("CI") == "true" {
-			s.T().Skip("non-docker not supported")
-		}
-	}
-
+	s.Need(fixtures.Or(fixtures.Docker, fixtures.PNS))
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().

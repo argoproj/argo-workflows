@@ -93,6 +93,7 @@ func (s *ArgoServerSuite) TestVersion() {
 }
 
 func (s *ArgoServerSuite) TestMetrics() {
+	s.Need(fixtures.TODO)
 	s.e().GET("/metrics").
 		Expect().
 		Status(200).
@@ -332,6 +333,7 @@ func (s *ArgoServerSuite) TestOauth() {
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {
+	s.Need(fixtures.CI)
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = "test-token"
@@ -490,6 +492,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test creating workflow with bad token
 	s.bearerToken = badToken
 	s.Run("CreateWFBadToken", func() {
+		s.Need(fixtures.CI)
 		s.e().POST("/api/v1/workflows/" + nsName).
 			WithBytes([]byte(`{
   "workflow": {
@@ -522,6 +525,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test list workflows with bad token
 	s.bearerToken = badToken
 	s.Run("ListWFsBadToken", func() {
+		s.Need(fixtures.CI)
 		s.e().GET("/api/v1/workflows/" + nsName).
 			Expect().
 			Status(403)
@@ -849,6 +853,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Terminate", func() {
+		s.Need(fixtures.Not(fixtures.K8SAPI))
 		s.e().PUT("/api/v1/workflows/argo/" + name + "/terminate").
 			Expect().
 			Status(200)
@@ -867,6 +872,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Resubmit", func() {
+		s.Need(fixtures.Not(fixtures.K8SAPI))
 		s.e().PUT("/api/v1/workflows/argo/" + name + "/resubmit").
 			WithBytes([]byte(`{"memoized": true}`)).
 			Expect().
