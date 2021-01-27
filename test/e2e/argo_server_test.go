@@ -878,7 +878,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Resubmit", func() {
-		s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
+		s.Need(fixtures.Artifacts)
 		s.e().PUT("/api/v1/workflows/argo/" + name + "/resubmit").
 			WithBytes([]byte(`{"memoized": true}`)).
 			Expect().

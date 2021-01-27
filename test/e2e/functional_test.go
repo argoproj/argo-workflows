@@ -23,7 +23,7 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestArchiveStrategies() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.Artifacts)
 	s.Given().
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().
@@ -403,7 +403,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 }
 
 func (s *FunctionalSuite) TestArtifactRepositoryRef() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.Artifacts)
 	s.Given().
 		Workflow("@testdata/artifact-repository-ref.yaml").
 		When().
@@ -669,7 +669,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 }
 
 func (s *FunctionalSuite) TestDefaultParameterOutputs() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.Artifacts)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -750,7 +750,7 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 }
 
 func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
-	s.Need(fixtures.None(fixtures.K8SAPI))
+	s.Need(fixtures.Artifacts)
 	s.Given().
 		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
 		When().

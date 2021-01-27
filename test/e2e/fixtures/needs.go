@@ -13,6 +13,13 @@ var (
 	RBAC Need = func(s *E2ESuite) (bool, string) {
 		return os.Getenv("CI") != "", "RBAC (and therefore CI)"
 	}
+	CI Need = func(s *E2ESuite) (bool, string) {
+		return os.Getenv("CI") != "", "CI"
+	}
+	Artifacts Need = func(s *E2ESuite) (bool, string) {
+		met, _ := Any(Docker, All(None(CI), PNS))(s)
+		return met, "artifacts"
+	}
 	Offloading Need = func(s *E2ESuite) (bool, string) {
 		return s.Persistence.IsEnabled(), "offloading"
 	}
@@ -38,6 +45,18 @@ func None(needs ...Need) Need {
 			}
 		}
 		return true, ""
+	}
+}
+
+func Any(needs ...Need) Need {
+	return func(s *E2ESuite) (bool, string) {
+		for _, n := range needs {
+			met, _ := n(s)
+			if met {
+				return true, ""
+			}
+		}
+		return false, ""
 	}
 }
 
