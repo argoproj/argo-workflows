@@ -18,8 +18,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/e2e/fixtures"
 )
 
 type CLISuite struct {
@@ -424,7 +424,7 @@ func (s *CLISuite) TestRoot() {
 			WaitForWorkflow(createdWorkflowName).
 			Then().
 			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+				assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			})
 	})
 }
@@ -449,7 +449,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -476,11 +476,11 @@ func (s *CLISuite) TestNodeSuspendResume() {
 			}
 		}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "suspended node").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if assert.Equal(t, wfv1.NodeFailed, status.Phase) {
+			if assert.Equal(t, wfv1.WorkflowFailed, status.Phase) {
 				r := regexp.MustCompile(`child '(node-suspend-[0-9]+)' failed`)
 				res := r.FindStringSubmatch(status.Message)
 				assert.Equal(t, len(res), 2)
@@ -762,7 +762,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			retryTime = wf.Status.FinishedAt
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "is terminated", 20*time.Second).
 		Wait(3*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
@@ -1184,13 +1184,13 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 		}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == ""
+			return wf.Status.Phase == wfv1.WorkflowUnknown
 		}), "Workflow is waiting for lock").
 		WaitForWorkflow().
 		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -1206,7 +1206,7 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeRunning
+			return wf.Status.Phase == wfv1.WorkflowRunning
 		}), "waiting for Workflow to run", 10*time.Second).
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
@@ -1446,7 +1446,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("release")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())

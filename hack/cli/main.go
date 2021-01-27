@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra/doc"
 
-	"github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/argoproj/argo/v2/cmd/argo/commands"
 )
 
 func main() {

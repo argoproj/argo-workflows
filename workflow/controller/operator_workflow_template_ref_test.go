@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -125,7 +125,7 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	})
 }
 

@@ -13,22 +13,22 @@ import (
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/instanceid"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util/instanceid"
 )
 
 const archiveTableName = "argo_archived_workflows"
 const archiveLabelsTableName = archiveTableName + "_labels"
 
 type archivedWorkflowMetadata struct {
-	ClusterName string         `db:"clustername"`
-	InstanceID  string         `db:"instanceid"`
-	UID         string         `db:"uid"`
-	Name        string         `db:"name"`
-	Namespace   string         `db:"namespace"`
-	Phase       wfv1.NodePhase `db:"phase"`
-	StartedAt   time.Time      `db:"startedat"`
-	FinishedAt  time.Time      `db:"finishedat"`
+	ClusterName string             `db:"clustername"`
+	InstanceID  string             `db:"instanceid"`
+	UID         string             `db:"uid"`
+	Name        string             `db:"name"`
+	Namespace   string             `db:"namespace"`
+	Phase       wfv1.WorkflowPhase `db:"phase"`
+	StartedAt   time.Time          `db:"startedat"`
+	FinishedAt  time.Time          `db:"finishedat"`
 }
 
 type archivedWorkflowRecord struct {

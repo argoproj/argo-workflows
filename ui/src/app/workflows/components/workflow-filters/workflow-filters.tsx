@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as models from '../../../../models';
+import {WorkflowPhase} from '../../../../models';
 import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
 import {DataLoaderDropdown} from '../../../shared/components/data-loader-dropdown';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
@@ -11,10 +12,10 @@ require('./workflow-filters.scss');
 interface WorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
-    phaseItems: string[];
-    selectedPhases: string[];
+    phaseItems: WorkflowPhase[];
+    selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
-    onChange: (namespace: string, selectedPhases: string[], labels: string[]) => void;
+    onChange: (namespace: string, selectedPhases: WorkflowPhase[], labels: string[]) => void;
 }
 
 export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
@@ -68,12 +69,16 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                             onChange={value => (this.cronWorkflow = value)}
                         />
                     </div>
-                    <div className='columns small-6 xlarge-12'>
+                    <div className='columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Phases</p>
                         <CheckboxFilter
                             selected={this.props.selectedPhases}
                             onChange={selected => {
-                                this.props.onChange(this.props.namespace, selected, this.props.selectedLabels);
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    selected.map(x => x as WorkflowPhase),
+                                    this.props.selectedLabels
+                                );
                             }}
                             items={this.getPhaseItems(this.props.workflows)}
                             type='phase'

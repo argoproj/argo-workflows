@@ -1,4 +1,4 @@
-// +build cli
+// +build api
 
 package e2e
 
@@ -21,10 +21,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/e2e/fixtures"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -71,7 +71,7 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("argo")
 		json.
 			Path("$.links[0].name").
-			Equal("Example Workflow Link")
+			Equal("Workflow Link")
 		json.
 			Path("$.links[0].scope").
 			Equal("workflow")
@@ -90,6 +90,23 @@ func (s *ArgoServerSuite) TestVersion() {
 			Path("$.version").
 			NotNull()
 	})
+}
+
+func (s *ArgoServerSuite) TestMetrics() {
+	s.e().GET("/metrics").
+		Expect().
+		Status(200).
+		Body().
+		// https://blog.netsil.com/the-4-golden-signals-of-api-health-and-performance-in-cloud-native-applications-a6e87526e74
+		// Latency: The time it takes to service a request, with a focus on distinguishing between the latency of successful requests and the latency of failed requests
+		Contains(`grpc_server_handling_seconds_bucket`).
+		// Traffic: A measure of how much demand is being placed on the service. This is measured using a high-level service-specific metric, like HTTP requests per second in the case of an HTTP REST API.
+		Contains(`promhttp_metric_handler_requests_in_flight`).
+		// Errors: The rate of requests that fail. The failures can be explicit (e.g., HTTP 500 errors) or implicit (e.g., an HTTP 200 OK response with a response body having too few items).
+		Contains(`promhttp_metric_handler_requests_total{code="500"}`).
+		// Saturation: How “full” is the service. This is a measure of the system utilization, emphasizing the resources that are most constrained (e.g., memory, I/O or CPU). Services degrade in performance as they approach high saturation.
+		Contains(`process_cpu_seconds_total`).
+		Contains(`process_resident_memory_bytes`)
 }
 
 func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
@@ -1069,6 +1086,42 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 }
 
+func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
+	t := s.T()
+	req, err := http.NewRequest("GET", baseUrl+url, nil)
+	assert.NoError(t, err)
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+	req.Close = true
+	resp, err := httpClient.Do(req)
+	assert.NoError(t, err)
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
+	if t.Failed() {
+		t.FailNow()
+	}
+	if f == nil {
+		return
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		log.WithField("line", line).Debug()
+		// make sure we have this enabled
+		if line == "" {
+			continue
+		}
+		if f(t, line) || t.Failed() {
+			return
+		}
+	}
+}
+
 // do some basic testing on the stream methods
 func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	var name string
@@ -1084,68 +1137,21 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func() {
-		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name="+name, nil)
-		assert.NoError(t, err)
-		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-		req.Close = true
-		resp, err := httpClient.Do(req)
-		defer func() {
-			if resp != nil && resp.Body != nil {
-				_ = resp.Body.Close()
+		s.stream("/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name="+name, func(t *testing.T, line string) (done bool) {
+			if strings.Contains(line, `status:`) {
+				assert.Contains(t, line, `"offloadNodeStatus":true`)
+				// so that we get this
+				assert.Contains(t, line, `"nodes":`)
 			}
-		}()
-		if assert.NoError(t, err) && assert.NotNil(t, resp) {
-			if assert.Equal(t, 200, resp.StatusCode) {
-				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-				scanner := bufio.NewScanner(resp.Body)
-				for scanner.Scan() {
-					line := scanner.Text()
-					log.WithField("line", line).Debug()
-					// make sure we have this enabled
-					if line == "" {
-						continue
-					}
-					if strings.Contains(line, `status:`) {
-						assert.Contains(t, line, `"offloadNodeStatus":true`)
-						// so that we get this
-						assert.Contains(t, line, `"nodes":`)
-					}
-					if strings.Contains(line, "Succeeded") {
-						break
-					}
-				}
-			}
-		}
+			return strings.Contains(line, "Succeeded")
+		})
 	})
 
 	// then,  lets see what events we got
 	s.Run("WatchEvents", func() {
-		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, nil)
-		assert.NoError(t, err)
-		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-		req.Close = true
-		resp, err := httpClient.Do(req)
-		defer func() {
-			if resp != nil && resp.Body != nil {
-				_ = resp.Body.Close()
-			}
-		}()
-		if assert.NoError(t, err) && assert.NotNil(t, resp) {
-			if assert.Equal(t, 200, resp.StatusCode) {
-				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-				s := bufio.NewScanner(resp.Body)
-				for s.Scan() {
-					line := s.Text()
-					if strings.Contains(line, "WorkflowRunning") {
-						break
-					}
-				}
-			}
-		}
+		s.stream("/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, func(t *testing.T, line string) (done bool) {
+			return strings.Contains(line, "WorkflowRunning")
+		})
 	})
 
 	// then,  lets check the logs
@@ -1157,32 +1163,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main&logOptions.tailLines=3"},
 	} {
 		s.Run(tt.name, func() {
-			t := s.T()
-			req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/"+name+tt.path, nil)
-			assert.NoError(t, err)
-			req.Header.Set("Accept", "text/event-stream")
-			req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-			req.Close = true
-			resp, err := httpClient.Do(req)
-			defer func() {
-				if resp != nil && resp.Body != nil {
-					_ = resp.Body.Close()
+			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
+				if strings.Contains(line, "data: ") {
+					assert.Contains(t, line, `"content":":) Hello Argo!"`)
+					assert.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
+					return true
 				}
-			}()
-			if assert.NoError(t, err) && assert.NotNil(t, resp) {
-				if assert.Equal(t, 200, resp.StatusCode) {
-					assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-					s := bufio.NewScanner(resp.Body)
-					for s.Scan() {
-						line := s.Text()
-						if strings.Contains(line, "data: ") {
-							assert.Contains(t, line, `"content":":) Hello Argo!"`)
-							assert.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
-							break
-						}
-					}
-				}
-			}
+				return false
+			})
 		})
 	}
 }
@@ -1590,6 +1578,231 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 			Status(200)
 	})
 
+}
+
+func (s *ArgoServerSuite) TestEventSourcesService() {
+	s.Run("CreateEventSource", func() {
+		s.e().POST("/api/v1/event-sources/argo").
+			WithBytes([]byte(`
+{
+  "eventsource": {
+    "metadata": {
+      "name": "test-event-source", 
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "calendar": {
+        "example-with-interval": {
+          "interval": "10s"
+        }
+      }
+    }
+  }
+}
+`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.resourceVersion").
+			NotNull().
+			String().
+			Raw()
+	})
+	s.Run("ListEventSources", func() {
+		s.e().GET("/api/v1/event-sources/argo").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+	s.Run("WatchEventSources", func() {
+		s.stream("/api/v1/stream/event-sources/argo", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-event-source")
+			return true
+		})
+	})
+	s.Run("EventSourcesLogs", func() {
+		s.T().Skip("we do not install the controllers, so we won't get any logs")
+		s.stream("/api/v1/stream/event-sources/argo/logs", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-event-source")
+			return true
+		})
+	})
+	var resourceVersion string
+	s.Run("GetEventSource", func() {
+		resourceVersion = s.e().GET("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.resourceVersion").
+			NotNull().
+			String().
+			Raw()
+	})
+	s.Run("UpdateEventSource", func() {
+		s.e().PUT("/api/v1/event-sources/argo/test-event-source").
+			WithBytes([]byte(`
+{
+  "eventsource": {
+    "metadata": {
+      "name": "test-event-source", 
+      "resourceVersion": "` + resourceVersion + `",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "calendar": {
+        "example-with-interval": {
+          "interval": "10s"
+        }
+      }
+    }
+  }
+}
+`)).
+			Expect().
+			Status(200)
+	})
+	s.Run("DeleteEventSource", func() {
+		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200)
+	})
+}
+
+func (s *ArgoServerSuite) TestSensorService() {
+	s.Run("CreateSensor", func() {
+		s.e().POST("/api/v1/sensors/argo").
+			WithBytes([]byte(`
+{
+	"sensor":{
+		"metadata":{
+			"name":"test-sensor",
+			"labels": {
+				"argo-e2e": "true"
+			}
+		},
+		"spec":{
+			"dependencies":[
+				{
+					"name":"test-dep",
+					"eventSourceName":"calendar",
+					"eventName":"example-with-interval"
+				}
+			],
+			"triggers":[
+				{
+					"template":{
+						"name":"log-trigger",
+						"log":{
+							"intervalSeconds":20
+						}
+					}
+				}
+			]
+		}
+	}
+}
+`)).Expect().
+			Status(200)
+	})
+	s.Run("ListSensors", func() {
+		s.e().GET("/api/v1/sensors/argo").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+	s.Run("GetSensor", func() {
+		s.e().GET("/api/v1/sensors/argo/test-sensor").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			Equal("test-sensor")
+	})
+	s.Run("WatchSensors", func() {
+		s.stream("/api/v1/stream/sensors/argo", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-sensor")
+			return true
+		})
+	})
+	s.Run("SensorsLogs", func() {
+		s.T().Skip("we do not install the controllers, so we won't get any logs")
+		s.stream("/api/v1/stream/sensors/argo/logs", func(t *testing.T, line string) (done bool) {
+			assert.Contains(t, line, "test-sensor")
+			return true
+		})
+	})
+	resourceVersion := s.e().GET("/api/v1/sensors/argo/test-sensor").
+		Expect().
+		Status(200).
+		JSON().
+		Path("$.metadata.resourceVersion").
+		String().
+		Raw()
+	s.Run("UpdateSensor", func() {
+		s.e().PUT("/api/v1/sensors/argo/test-sensor").
+			WithBytes([]byte(`
+{
+	"sensor":{
+		"metadata":{
+			"name":"test-sensor",
+			"resourceVersion": "` + resourceVersion + `",
+			"labels": {
+				"argo-e2e": "true"
+			}
+		},
+		"spec": {
+			"template": {
+				"serviceAccountName": "default"
+			},
+			"dependencies":[
+				{
+					"name":"test-dep",
+					"eventSourceName":"calendar",
+					"eventName":"example-with-interval"
+				}
+			],
+			"triggers":[
+				{
+					"template":{
+						"name":"log-trigger",
+						"log":{
+							"intervalSeconds":20
+						}
+					}
+				}
+			]
+		}
+	}
+}
+`)).
+			Expect().
+			Status(200)
+	})
+	s.Run("GetSensorAfterUpdating", func() {
+		s.e().GET("/api/v1/sensors/argo/test-sensor").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.spec.template.serviceAccountName").
+			Equal("default")
+	})
+	s.Run("DeleteSensor", func() {
+		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
+			Expect().
+			Status(200)
+	})
 }
 
 func TestArgoServerSuite(t *testing.T) {

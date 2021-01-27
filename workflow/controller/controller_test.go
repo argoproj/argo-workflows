@@ -6,38 +6,37 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/sync"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
-	dynamicfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
-
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
-	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/test"
-	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo/workflow/common"
-	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-	"github.com/argoproj/argo/workflow/controller/estimation"
-	"github.com/argoproj/argo/workflow/events"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v2/config"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/scheme"
+	wfextv "github.com/argoproj/argo/v2/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/v2/test"
+	armocks "github.com/argoproj/argo/v2/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo/v2/workflow/common"
+	controllercache "github.com/argoproj/argo/v2/workflow/controller/cache"
+	"github.com/argoproj/argo/v2/workflow/controller/estimation"
+	"github.com/argoproj/argo/v2/workflow/events"
+	hydratorfake "github.com/argoproj/argo/v2/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v2/workflow/metrics"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 var helloWorldWf = `
@@ -264,6 +263,14 @@ func expectWorkflow(ctx context.Context, controller *WorkflowController, name st
 	test(wf)
 }
 
+func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+}
+
+func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
+	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+}
+
 type with func(pod *apiv1.Pod)
 
 func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }
@@ -280,7 +287,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 		panic(err)
 	}
 	for _, pod := range pods.Items {
-		if pod.Status.Phase == "" {
+		if pod.Status.Phase != phase {
 			pod.Status.Phase = phase
 			if phase == apiv1.PodFailed {
 				pod.Status.Message = "Pod failed"
@@ -440,7 +447,7 @@ spec:
 
 	expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
 		if assert.NotNil(t, wf) {
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 		}
 	})
 	expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {

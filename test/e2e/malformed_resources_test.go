@@ -11,10 +11,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/e2e/fixtures"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 type MalformedResourcesSuite struct {
@@ -31,7 +31,7 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "malformed", metadata.Name)
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		})
 }
 
@@ -44,7 +44,7 @@ func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
@@ -67,7 +67,7 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -80,7 +80,7 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
 			assert.Contains(t, status.Message, "malformed workflow template")
 		})
 }
@@ -95,7 +95,7 @@ func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplate() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -108,7 +108,7 @@ func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplateRef() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
 			assert.Contains(t, status.Message, "malformed cluster workflow template")
 		})
 }

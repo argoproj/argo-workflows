@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/e2e/fixtures"
 )
 
 type EstimatedDurationSuite struct {
@@ -28,7 +28,7 @@ func (s *EstimatedDurationSuite) TestWorkflowTemplate() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.NotEmpty(t, status.EstimatedDuration)
 			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
 		})
@@ -45,7 +45,7 @@ func (s *EstimatedDurationSuite) TestClusterWorkflowTemplate() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.NotEmpty(t, status.EstimatedDuration)
 			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
 		})
@@ -62,7 +62,7 @@ func (s *EstimatedDurationSuite) TestCronWorkflow() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.NotEmpty(t, status.EstimatedDuration)
 			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
 		})

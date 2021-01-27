@@ -10,10 +10,10 @@ import (
 	"github.com/Knetic/govaluate"
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
 )
 
 // stepsContext holds context information about this context's steps
@@ -247,10 +247,8 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			case ErrTimeout:
 				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
-				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
-				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
-				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
+				return woc.markNodeError(node.Name, fmt.Errorf("step group deemed errored due to child %s error: %w", childNodeName, err))
 			}
 		}
 		if childNode != nil {
@@ -521,6 +519,9 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	if node.Outputs != nil {
 		if node.Outputs.Result != nil {
 			localScope["outputs.result"] = *node.Outputs.Result
+		}
+		if node.Outputs.ExitCode != nil {
+			localScope[common.LocalVarExitCode] = *node.Outputs.ExitCode
 		}
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)

@@ -6,9 +6,12 @@
     overflow-y: auto;
     margin-left: 0.2rem;
 }
+
 .checkbox-filter li {
     list-style: none;
+    float: left;
 }
+
 .checkbox-filter__label {
     vertical-align: bottom;
     width: calc(100% - 50px);

@@ -1,5 +1,5 @@
 # This is an auto-generated file. DO NOT EDIT
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: clusterworkflowtemplates.argoproj.io
@@ -14,13 +14,28 @@ spec:
     - cwft
     singular: clusterworkflowtemplate
   scope: Cluster
-  version: v1alpha1
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - spec
+        type: object
     served: true
     storage: true
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: cronworkflows.argoproj.io
@@ -35,13 +50,31 @@ spec:
     - cronwf
     singular: cronworkflow
   scope: Namespaced
-  version: v1alpha1
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - spec
+        type: object
     served: true
     storage: true
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: workfloweventbindings.argoproj.io
@@ -55,27 +88,32 @@ spec:
     - wfeb
     singular: workfloweventbinding
   scope: Namespaced
-  version: v1alpha1
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - spec
+        type: object
     served: true
     storage: true
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: workflows.argoproj.io
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.phase
-    description: Status of the workflow
-    name: Status
-    type: string
-  - JSONPath: .status.startedAt
-    description: When the workflow was started
-    format: date-time
-    name: Age
-    type: date
   group: argoproj.io
   names:
     kind: Workflow
@@ -85,14 +123,42 @@ spec:
     - wf
     singular: workflow
   scope: Namespaced
-  subresources: {}
-  version: v1alpha1
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Status of the workflow
+      jsonPath: .status.phase
+      name: Status
+      type: string
+    - description: When the workflow was started
+      format: date-time
+      jsonPath: .status.startedAt
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - spec
+        type: object
     served: true
     storage: true
+    subresources: {}
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: workflowtemplates.argoproj.io
@@ -106,9 +172,24 @@ spec:
     - wftmpl
     singular: workflowtemplate
   scope: Namespaced
-  version: v1alpha1
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - spec
+        type: object
     served: true
     storage: true
 ---
@@ -281,6 +362,8 @@ rules:
 - apiGroups:
   - argoproj.io
   resources:
+  - eventsources
+  - sensors
   - workflows
   - workfloweventbindings
   - workflowtemplates
@@ -502,12 +585,26 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  executor: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
   links: |
-    - name: Example Workflow Link
+    - name: Workflow Link
       scope: workflow
       url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
-    - name: Example Pod Link
+    - name: Pod Link
       scope: pod
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Pod Logs Link
+      scope: pod-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Event Source Logs Link
+      scope: event-source-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Sensor Logs Link
+      scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
   metricsConfig: |
     disableLegacy: true
@@ -691,6 +788,55 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app: minio
+  name: minio
+spec:
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - command:
+        - minio
+        - server
+        - /data
+        env:
+        - name: MINIO_ACCESS_KEY
+          value: admin
+        - name: MINIO_SECRET_KEY
+          value: password
+        image: minio/minio:RELEASE.2019-12-17T23-16-33Z
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - mkdir
+              - -p
+              - /data/my-bucket
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        name: main
+        ports:
+        - containerPort: 9000
+        readinessProbe:
+          httpGet:
+            path: /minio/health/ready
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
     app: postgres
   name: postgres
 spec:
@@ -772,44 +918,3 @@ spec:
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo
----
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    app: minio
-  name: minio
-spec:
-  containers:
-  - command:
-    - minio
-    - server
-    - /data
-    env:
-    - name: MINIO_ACCESS_KEY
-      value: admin
-    - name: MINIO_SECRET_KEY
-      value: password
-    image: minio/minio:RELEASE.2019-12-17T23-16-33Z
-    lifecycle:
-      postStart:
-        exec:
-          command:
-          - mkdir
-          - -p
-          - /data/my-bucket
-    livenessProbe:
-      httpGet:
-        path: /minio/health/live
-        port: 9000
-      initialDelaySeconds: 5
-      periodSeconds: 10
-    name: main
-    ports:
-    - containerPort: 9000
-    readinessProbe:
-      httpGet:
-        path: /minio/health/ready
-        port: 9000
-      initialDelaySeconds: 5
-      periodSeconds: 10

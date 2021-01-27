@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 var sampleWorkflow = `
@@ -67,7 +67,7 @@ func TestCleanFields(t *testing.T) {
 	err = json.Unmarshal(cleanJsonWf, &cleanWf)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "Succeeded", string(cleanWf.Status.Phase))
+	assert.Equal(t, v1alpha1.WorkflowSucceeded, cleanWf.Status.Phase)
 	assert.Equal(t, "whalesay", cleanWf.Spec.Entrypoint)
 	assert.Equal(t, "hello-world-qgpxz", cleanWf.Name)
 
@@ -89,7 +89,7 @@ func TestCleanFieldsExclude(t *testing.T) {
 	err = json.Unmarshal(cleanJsonWf, &cleanWf)
 	assert.NoError(t, err)
 
-	assert.Empty(t, string(cleanWf.Status.Phase))
+	assert.Empty(t, cleanWf.Status.Phase)
 	assert.Empty(t, cleanWf.Spec.Entrypoint)
 	assert.Empty(t, cleanWf.Name)
 

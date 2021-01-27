@@ -14,20 +14,19 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/help"
-	"github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/util/sorting"
-	"github.com/argoproj/argo/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util"
+	"github.com/argoproj/argo/v2/util/help"
+	"github.com/argoproj/argo/v2/util/intstr"
+	"github.com/argoproj/argo/v2/util/sorting"
+	"github.com/argoproj/argo/v2/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/metrics"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
 )
 
 // ValidateOpts provides options when linting
@@ -692,8 +691,8 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			}
 		}
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
-			// Try to unmarshal the given manifest.
-			obj := unstructured.Unstructured{}
+			// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
+			var obj interface{}
 			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
@@ -779,8 +778,8 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 		}
 	}
 	for _, art := range arguments.Artifacts {
-		if art.From == "" && !art.HasLocation() {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s.from or artifact location is required", prefix, art.Name)
+		if art.From == "" && !art.HasLocationOrKey() {
+			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
 		}
 	}
 	return nil

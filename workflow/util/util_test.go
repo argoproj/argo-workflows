@@ -15,11 +15,11 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/workflow/common"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/workflow/common"
+	hydratorfake "github.com/argoproj/argo/v2/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun
@@ -59,7 +59,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 			Name: wfName,
 		},
 		Status: wfv1.WorkflowStatus{
-			Phase: wfv1.NodeFailed,
+			Phase: wfv1.WorkflowFailed,
 			Nodes: map[string]wfv1.NodeStatus{},
 		},
 	}
@@ -431,6 +431,9 @@ status:
         - name: message
           valueFrom:
             supplied: {}
+        - name: message2
+          valueFrom:
+            supplied: {}
       phase: Running
       startedAt: "2020-06-25T18:01:56Z"
       templateName: approve
@@ -454,6 +457,8 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
 		assert.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		assert.NoError(t, err)
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 		assert.NoError(t, err)
 	}
 
@@ -753,7 +758,7 @@ func TestRetryWorkflow(t *testing.T) {
 			common.LabelKeyCompleted:               "true",
 			common.LabelKeyWorkflowArchivingStatus: "Pending",
 		}},
-		Status: wfv1.WorkflowStatus{Phase: wfv1.NodeFailed},
+		Status: wfv1.WorkflowStatus{Phase: wfv1.WorkflowFailed},
 	}
 
 	ctx := context.Background()
@@ -761,7 +766,7 @@ func TestRetryWorkflow(t *testing.T) {
 	assert.NoError(t, err)
 	wf, err = RetryWorkflow(ctx, kubeClient, hydratorfake.Always, wfClient, wf.Name, false, "")
 	if assert.NoError(t, err) {
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
 		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
 	}

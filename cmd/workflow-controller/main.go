@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -18,9 +20,10 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/controller"
+	wfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	cmdutil "github.com/argoproj/argo/v2/util/cmd"
+	"github.com/argoproj/argo/v2/workflow/controller"
+	"github.com/argoproj/argo/v2/workflow/metrics"
 )
 
 const (
@@ -64,6 +67,8 @@ func NewRootCommand() *cobra.Command {
 			config.Burst = burst
 			config.QPS = qps
 
+			metrics.AddMetricsTransportWrapper(config)
+
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
 				return err
@@ -88,6 +93,10 @@ func NewRootCommand() *cobra.Command {
 			errors.CheckError(err)
 
 			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
+
+			go func() {
+				log.Println(http.ListenAndServe("localhost:6060", nil))
+			}()
 
 			// Wait forever
 			select {}

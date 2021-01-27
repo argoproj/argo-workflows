@@ -16,12 +16,12 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	argoutil "github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/printer"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	argoutil "github.com/argoproj/argo/v2/util"
+	"github.com/argoproj/argo/v2/util/printer"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 const onExitSuffix = "onExit"
@@ -142,7 +142,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if !wf.Status.StartedAt.IsZero() {
 		out += fmt.Sprintf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
-	if wf.Status.Phase == wfv1.NodeRunning {
+	if wf.Status.Phase == wfv1.WorkflowRunning {
 		if wf.Status.EstimatedDuration > 0 {
 			out += fmt.Sprintf(fmtStr, "EstimatedDuration:", humanize.Duration(wf.Status.EstimatedDuration.ToDuration()))
 		}

@@ -9,11 +9,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/test"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
 )
 
 var wfClientset = fakewfclientset.NewSimpleClientset()
@@ -1169,11 +1169,11 @@ spec:
 func TestInvalidArgumentNoFromOrLocation(t *testing.T) {
 	_, err := validate(invalidStepsArgumentNoFromOrLocation)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from or artifact location is required")
+		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
 	}
 	_, err = validate(invalidDAGArgumentNoFromOrLocation)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from or artifact location is required")
+		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
 	}
 }
 

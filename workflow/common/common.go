@@ -5,7 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
 )
 
 const (
@@ -160,6 +160,8 @@ const (
 	LocalVarStatus = "status"
 	// LocalVarResourcesDuration is a step level variable (currently only available in metric emission) that tracks the resources duration of the step
 	LocalVarResourcesDuration = "resourcesDuration"
+	// LocalVarExitCode is a step level variable (currently only available in metric emission) that tracks the step's exit code
+	LocalVarExitCode = "exitCode"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"

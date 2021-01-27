@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/hydrator"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
+	"github.com/argoproj/argo/v2/workflow/packer"
 )
 
 func getMockDBCtx(expectedError error, largeWfSupport bool) (*mocks.OffloadNodeStatusRepo, hydrator.Interface) {
@@ -64,7 +64,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.False(t, wf.Status.IsOffloadNodeStatus())
-	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
@@ -84,7 +84,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowError, wf.Status.Phase)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence with largeWFsuppport
@@ -104,7 +104,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	// check the saved version has been offloaded
 	assert.True(t, wf.Status.IsOffloadNodeStatus())
 	assert.Empty(t, wf.Status.Nodes)
@@ -132,7 +132,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	// check the saved version has not been offloaded
 	assert.False(t, wf.Status.IsOffloadNodeStatus())
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
