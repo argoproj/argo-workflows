@@ -9,4 +9,4 @@ data:
     scrape_configs:
       - job_name: 'argo'
         static_configs:
-          - targets: ['workflow-controller-metrics:9090']
+          - targets: ['workflow-controller-metrics:9090', 'argo-server:2746']

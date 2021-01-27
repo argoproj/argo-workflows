@@ -35,6 +35,7 @@ nav:
           - node-field-selector.md
           - empty-dir.md
           - workflow-templates.md
+          - workflow-inputs.md
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md

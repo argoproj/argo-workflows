@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/argoproj/argo/cmd/argoexec/commands"
+	"github.com/argoproj/argo/v2/cmd/argoexec/commands"
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )

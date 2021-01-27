@@ -13,7 +13,6 @@ import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
-import {EventsPanel} from '../events-panel';
 
 require('./workflow-node-info.scss');
 
@@ -39,6 +38,7 @@ interface Props {
     links: models.Link[];
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
+    onShowEvents?: () => void;
     onShowYaml?: (nodeId: string) => any;
 }
 
@@ -142,6 +142,11 @@ const WorkflowNodeSummary = (props: Props) => {
                         <i className='fa fa-bars' /> main logs
                     </DropDownButton>
                 )}{' '}
+                {props.node.type === 'Pod' && props.onShowEvents && (
+                    <Button icon='bell' onClick={() => props.onShowEvents()}>
+                        EVENTS
+                    </Button>
+                )}{' '}
                 <Links
                     object={{
                         metadata: {
@@ -218,6 +223,7 @@ const WorkflowNodeContainer = (props: {
     nodeId: string;
     container: models.kubernetes.Container | models.Sidecar | models.Script;
     onShowContainerLogs: (nodeId: string, container: string) => any;
+    onShowEvents: () => void;
 }) => {
     const container = {name: 'main', args: Array<string>(), source: '', ...props.container};
     const maybeQuote = (v: string) => (v.includes(' ') ? `'${v}'` : v);
@@ -281,7 +287,12 @@ class WorkflowNodeContainers extends React.Component<Props, {selectedSidecar: st
         return (
             <div className='workflow-node-info__containers'>
                 {this.state.selectedSidecar && <i className='fa fa-angle-left workflow-node-info__sidecar-back' onClick={() => this.setState({selectedSidecar: null})} />}
-                <WorkflowNodeContainer nodeId={this.props.node.id} container={container} onShowContainerLogs={this.props.onShowContainerLogs} />
+                <WorkflowNodeContainer
+                    nodeId={this.props.node.id}
+                    container={container}
+                    onShowContainerLogs={this.props.onShowContainerLogs}
+                    onShowEvents={this.props.onShowEvents}
+                />
                 {!this.state.selectedSidecar && template.sidecars && template.sidecars.length > 0 && (
                     <div>
                         <p>SIDECARS:</p>
@@ -365,11 +376,6 @@ export const WorkflowNodeInfo = (props: Props) => (
                             {props.node.inputs && <WorkflowNodeInputs inputs={props.node.inputs} />}
                         </div>
                     )
-                },
-                props.node.type === 'Pod' && {
-                    title: 'EVENTS',
-                    key: 'events',
-                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.id} />
                 },
                 {
                     title: 'CONTAINERS',
