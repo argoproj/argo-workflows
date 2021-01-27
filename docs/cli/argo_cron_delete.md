@@ -52,5 +52,3 @@ argo cron delete [CRON_WORKFLOW... | --all] [flags]
 
 * [argo cron](argo_cron.md)	 - manage cron workflows
 
-NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
-
