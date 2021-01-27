@@ -14,7 +14,7 @@ var d = uint64(1)
 
 func TestGitArtifactDriver_Load(t *testing.T) {
 	_ = os.Remove("git-ask-pass.sh")
-	driver := &GitArtifactDriver{}
+	driver := &ArtifactDriver{}
 	path := "/tmp/git-found"
 	assert.NoError(t, os.RemoveAll(path))
 	assert.NoError(t, os.MkdirAll(path, 0777))
@@ -35,7 +35,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 }
 
 func TestGitArtifactDriver_Save(t *testing.T) {
-	driver := &GitArtifactDriver{}
+	driver := &ArtifactDriver{}
 	err := driver.Save("", nil)
 	assert.Error(t, err)
 }
@@ -47,7 +47,7 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 	_ = os.Remove("git-ask-pass.sh")
 	tmp, err := ioutil.TempDir("", "")
 	assert.NoError(t, err)
-	driver := &GitArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
+	driver := &ArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
 	assert.NotEmpty(t, driver.Username)
 	err = driver.Load(&wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{
@@ -82,7 +82,7 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 			tmp, err := ioutil.TempDir("", "")
 			assert.NoError(t, err)
 			println(tmp)
-			driver := &GitArtifactDriver{SSHPrivateKey: string(data)}
+			driver := &ArtifactDriver{SSHPrivateKey: string(data)}
 			err = driver.Load(&wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					Git: &wfv1.GitArtifact{

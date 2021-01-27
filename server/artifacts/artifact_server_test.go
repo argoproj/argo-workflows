@@ -3,12 +3,12 @@ package artifacts
 import (
 	"context"
 	"fmt"
+	common2 "github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
 
-	artifact "github.com/argoproj/argo/v2/workflow/artifacts"
 	"github.com/argoproj/argo/v2/workflow/artifacts/resource"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +38,7 @@ func mustParse(text string) *url.URL {
 }
 
 type fakeArtifactDriver struct {
-	artifact.ArtifactDriver
+	common2.ArtifactDriver
 	data []byte
 }
 
@@ -108,7 +108,7 @@ func newServer() *ArtifactServer {
 	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
 
-	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifact.ArtifactDriver, error) {
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (common2.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
 	}
 

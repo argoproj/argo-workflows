@@ -3,6 +3,7 @@ package hdfs
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"os"
 	"path/filepath"
 
@@ -24,6 +25,8 @@ type ArtifactDriver struct {
 	HDFSUser   string
 	KrbOptions *KrbOptions
 }
+
+var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // KrbOptions is options for Kerberos
 type KrbOptions struct {
@@ -220,4 +223,8 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 	}
 
 	return hdfscli.CopyToRemote(path, driver.Path)
+}
+
+func (driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	panic("implement me")
 }

@@ -1071,6 +1071,9 @@ type WorkflowStep struct {
 	// WithSequence expands a step into a numeric sequence
 	WithSequence *Sequence `json:"withSequence,omitempty" protobuf:"bytes,7,opt,name=withSequence"`
 
+	// WithArtifacts expands a step from a collection of artifacts
+	WithArtifacts *WithArtifacts `json:"withArtifacts,omitempty"`
+
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty" protobuf:"bytes,8,opt,name=when"`
 
@@ -1096,6 +1099,27 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 
 func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
+}
+
+func (step *WorkflowStep) ShouldExpandArtifacts() bool {
+	return step.WithArtifacts != nil
+}
+
+// WithArtifacts expands a step from a collection of artifacts
+type WithArtifacts struct {
+	// Aggregator is the strategy in how to aggregate files
+	Aggregator *Aggregator `json:"aggregator,omitempty"`
+
+	// Artifact is the artifact location from which to source the artifacts, it can be a directory
+	Artifact `json:",inline"`
+}
+
+type Aggregator struct {
+	Directory *Directory `json:"directory,omitempty"`
+}
+
+type Directory struct {
+	Recursive *bool `json:"recursive,omitempty"`
 }
 
 // Sequence expands a workflow step into numeric range

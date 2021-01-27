@@ -9,8 +9,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	common2 "github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io"
 	"io/ioutil"
+	"k8s.io/utils/pointer"
 	"os"
 	"os/signal"
 	"path"
@@ -233,6 +235,34 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv1.WithArtifacts) error {
+	if artifacts == nil {
+		return nil
+	}
+
+	driverArt, err := we.newDriverArt(&artifacts.Artifact)
+	if err != nil {
+		return err
+	}
+	artDriver, err := we.InitDriver(ctx, driverArt)
+	if err != nil {
+		return err
+	}
+
+	var files []string
+	switch agg := artifacts.Aggregator; {
+	case agg == nil:
+		// Default aggregator is that of a directory with recursion
+		agg = &wfv1.Aggregator{Directory: &wfv1.Directory{Recursive: pointer.BoolPtr(true)}}
+		fallthrough
+	case agg.Directory != nil:
+		files, err = artDriver.ListObjects(&artifacts.Artifact)
+	}
+
+	we.Template.Outputs.Result = pointer.StringPtr(fmt.Sprintf("[%s]", strings.Join(files, ", ")))
 	return nil
 }
 
@@ -597,7 +627,7 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 }
 
 // InitDriver initializes an instance of an artifact driver
-func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifact.ArtifactDriver, error) {
+func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (common2.ArtifactDriver, error) {
 	driver, err := artifact.NewDriver(ctx, art, we)
 	if err == artifact.ErrUnsupportedDriver {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)

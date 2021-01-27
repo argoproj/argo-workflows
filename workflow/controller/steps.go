@@ -415,7 +415,20 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if !step.ShouldExpand() {
+		artifactProcessingNeeded := false
+		if step.ShouldExpandArtifacts() {
+			// Check to see if the artifact processor Pod (which should have the same name as the parent pod) has already
+			// ran. If not, then run it and postpone further expansion.
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+			if woc.wf.GetNodeByName(childNodeName) == nil {
+				artifactProcessingNeeded = true
+				woc.log.Infof("SIMON would get artifacts here for %s", childNodeName)
+				bytes, _ := json.Marshal(step.WithArtifacts)
+				woc.log.Infof("%s", bytes)
+			}
+		}
+
+		if !step.ShouldExpand() || artifactProcessingNeeded {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}

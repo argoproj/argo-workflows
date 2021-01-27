@@ -11,7 +11,7 @@ import (
 )
 
 func TestArtifactoryArtifactDriver_Load(t *testing.T) {
-	driver := &ArtifactoryArtifactDriver{}
+	driver := &ArtifactDriver{}
 	t.Run("NotFound", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{

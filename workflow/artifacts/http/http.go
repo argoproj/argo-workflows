@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"os/exec"
 	"strings"
 
@@ -11,11 +12,13 @@ import (
 	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
-// HTTPArtifactDriver is the artifact driver for a HTTP URL
-type HTTPArtifactDriver struct{}
+// ArtifactDriver is the artifact driver for a HTTP URL
+type ArtifactDriver struct{}
+
+var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // Load download artifacts from an HTTP URL
-func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	// Download the file to a local file path
 	args := []string{"-fsS", "-L", "-o", path, inputArtifact.HTTP.URL}
 	headers := inputArtifact.HTTP.Headers
@@ -41,6 +44,10 @@ func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) err
 	return nil
 }
 
-func (h *HTTPArtifactDriver) Save(string, *wfv1.Artifact) error {
+func (h *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "HTTP output artifacts unsupported")
+}
+
+func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	panic("implement me")
 }

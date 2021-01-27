@@ -3,6 +3,7 @@ package gcs
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io"
 	"io/ioutil"
 	"os"
@@ -27,6 +28,8 @@ import (
 type ArtifactDriver struct {
 	ServiceAccountKey string
 }
+
+var _ common.ArtifactDriver = &ArtifactDriver{}
 
 func (g *ArtifactDriver) newGCSClient() (*storage.Client, error) {
 	if g.ServiceAccountKey != "" {
@@ -248,4 +251,8 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 		return fmt.Errorf("writer close: %v", err)
 	}
 	return nil
+}
+
+func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	panic("implement me")
 }
