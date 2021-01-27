@@ -2,7 +2,7 @@
 
 To see how Argo works, you can install it and run examples of simple workflows and workflows that use artifacts.
 
-Firstly, you'll need a Kubernetes cluster and `kubectl` set-up
+Firstly, you'll need a Kubernetes cluster and `kubectl` set-up.
 
 ## Install Argo Workflows
 
