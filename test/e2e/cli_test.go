@@ -213,7 +213,7 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 
 func (s *CLISuite) TestTokenArg() {
 	s.Need(fixtures.None(Server))
-	s.Need(fixtures.CI)
+	s.Need(fixtures.RBAC)
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
@@ -1276,7 +1276,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 }
 
 func (s *CLISuite) TestMetaDataNamespace() {
-	s.Need(fixtures.CI, Offloading)
+	s.Need(fixtures.RBAC, Offloading)
 	s.Given().
 		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.Error(t, err) {

@@ -10,8 +10,8 @@ var (
 	TODO Need = func(s *E2ESuite) (bool, string) {
 		return false, "something needs to be done"
 	}
-	CI Need = func(s *E2ESuite) (bool, string) {
-		return os.Getenv("CI") != "", "CI"
+	RBAC Need = func(s *E2ESuite) (bool, string) {
+		return os.Getenv("CI") != "", "RBAC (and therefore CI)"
 	}
 	Offloading Need = func(s *E2ESuite) (bool, string) {
 		return s.Persistence.IsEnabled(), "offloading"

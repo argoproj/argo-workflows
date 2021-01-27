@@ -333,7 +333,7 @@ func (s *ArgoServerSuite) TestOauth() {
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {
-	s.Need(fixtures.CI)
+	s.Need(fixtures.RBAC)
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = "test-token"
@@ -492,7 +492,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test creating workflow with bad token
 	s.bearerToken = badToken
 	s.Run("CreateWFBadToken", func() {
-		s.Need(fixtures.CI)
+		s.Need(fixtures.RBAC)
 		s.e().POST("/api/v1/workflows/" + nsName).
 			WithBytes([]byte(`{
   "workflow": {
@@ -525,7 +525,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test list workflows with bad token
 	s.bearerToken = badToken
 	s.Run("ListWFsBadToken", func() {
-		s.Need(fixtures.CI)
+		s.Need(fixtures.RBAC)
 		s.e().GET("/api/v1/workflows/" + nsName).
 			Expect().
 			Status(403)
@@ -542,7 +542,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		// Test delete workflow with bad token
 		s.bearerToken = badToken
 		s.Run("DeleteWFWithBadToken", func() {
-			s.Need(fixtures.CI)
+			s.Need(fixtures.RBAC)
 			s.e().DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 				Expect().
 				Status(403)
@@ -551,7 +551,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		// Test delete workflow with good token
 		s.bearerToken = goodToken
 		s.Run("DeleteWFWithGoodToken", func() {
-			s.Need(fixtures.CI)
+			s.Need(fixtures.RBAC)
 			s.e().DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 				Expect().
 				Status(200)
@@ -576,7 +576,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 			s.bearerToken = badToken
 			s.Run("ListArchivedWFsBadToken", func() {
-				s.Need(fixtures.CI)
+				s.Need(fixtures.RBAC)
 				s.e().GET("/api/v1/archived-workflows").
 					WithQuery("listOptions.labelSelector", "argo-e2e").
 					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
@@ -596,7 +596,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			// Test get archived wf with bad token
 			s.bearerToken = badToken
 			s.Run("GetArchivedWFsBadToken", func() {
-				s.Need(fixtures.CI)
+				s.Need(fixtures.RBAC)
 				s.e().GET("/api/v1/archived-workflows/" + uid).
 					Expect().
 					Status(403)
@@ -605,7 +605,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			// Test deleting archived wf with bad token
 			s.bearerToken = badToken
 			s.Run("DeleteArchivedWFsBadToken", func() {
-				s.Need(fixtures.CI)
+				s.Need(fixtures.RBAC)
 				s.e().DELETE("/api/v1/archived-workflows/" + uid).
 					Expect().
 					Status(403)
@@ -613,7 +613,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			// Test deleting archived wf with good token
 			s.bearerToken = goodToken
 			s.Run("DeleteArchivedWFsGoodToken", func() {
-				s.Need(fixtures.CI)
+				s.Need(fixtures.RBAC)
 				s.e().DELETE("/api/v1/archived-workflows/" + uid).
 					Expect().
 					Status(200)
@@ -1186,7 +1186,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
-	s.Need(fixtures.Offloading)
+	s.Need(fixtures.WorkflowArchive)
 	var uid types.UID
 	s.Given().
 		Workflow(`
