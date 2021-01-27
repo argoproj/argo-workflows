@@ -46,7 +46,7 @@ jobs:
         test: [ smoke, test-cli, test-e2e ]
         containerRuntimeExecutor: [ docker, k8sapi, kubelet, pns ]
         profile: [ minimal ]
-        alwaysOffloadNodeStatus: [ "true" ]
+        alwaysOffloadNodeStatus: [ "false" ]
         include:
           # TODO test offloading
           # test cron workflows
