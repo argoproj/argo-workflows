@@ -5,7 +5,7 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo/util/env"
+	"github.com/argoproj/argo/v2/util/env"
 )
 
 type fixedItemIntervalRateLimiter struct{}
