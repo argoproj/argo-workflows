@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	argoerr "github.com/argoproj/argo/util/errors"
+	argoerr "github.com/argoproj/argo/v2/util/errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
