@@ -50,7 +50,9 @@ jobs:
           # TODO test offloading
           # test cron workflows
           - test: test-e2e-cron
+            profile: minimal
             containerRuntimeExecutor: docker
+            alwaysOffloadNodeStatus: "false"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
