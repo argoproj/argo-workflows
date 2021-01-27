@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
 
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
 )
 
 var mutexWf = `
@@ -94,7 +94,7 @@ func TestMutexLock(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(mutexwfstatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
@@ -108,7 +108,7 @@ func TestMutexLock(t *testing.T) {
 		var nextWorkflow string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			nextWorkflow = key
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(mutexWf)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -287,7 +287,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		//var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			//nextKey = key
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(mutexWfWithTmplLevel)
 		tmpl := wf.Spec.Templates[1]
 

@@ -35,19 +35,19 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/util/retry"
-	unstructutil "github.com/argoproj/argo/util/unstructured"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/hydrator"
-	"github.com/argoproj/argo/workflow/packer"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo/v2/util/cmd"
+	"github.com/argoproj/argo/v2/util/retry"
+	unstructutil "github.com/argoproj/argo/v2/util/unstructured"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
+	"github.com/argoproj/argo/v2/workflow/packer"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/workflow/validate"
 )
 
 // NewWorkflowInformer returns the workflow informer used by the controller. This is actually
@@ -416,6 +416,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 		"displayName":  node.DisplayName,
 		"templateName": node.TemplateName,
 		"phase":        string(node.Phase),
+		"name":         node.Name,
 	}
 	if node.TemplateRef != nil {
 		nodeFields["templateRef.name"] = node.TemplateRef.Name

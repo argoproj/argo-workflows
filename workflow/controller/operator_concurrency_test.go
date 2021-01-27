@@ -13,9 +13,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
-	argoErr "github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/sync"
+	argoErr "github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/sync"
 )
 
 const configMap = `
@@ -100,6 +100,10 @@ spec:
           name: workflow-controller-configmap1
 `
 
+var workflowExistenceFunc = func(key string) bool {
+	return true
+}
+
 func GetSyncLimitFunc(ctx context.Context, kube kubernetes.Interface) func(string) (int, error) {
 	syncLimitConfig := func(lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
@@ -128,7 +132,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	})
+	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
@@ -191,7 +195,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	})
+	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
@@ -253,7 +257,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	})
+	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
@@ -316,7 +320,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	})
+	}, workflowExistenceFunc)
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
 		wf := unmarshalWF(wfWithSemaphore)
@@ -373,7 +377,7 @@ func TestMutexInDAG(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	})
+	}, workflowExistenceFunc)
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := unmarshalWF(DAGWithMutex)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
@@ -437,7 +441,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	})
+	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(err)

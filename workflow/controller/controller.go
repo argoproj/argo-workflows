@@ -32,30 +32,30 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/config"
-	argoErr "github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
-	authutil "github.com/argoproj/argo/util/auth"
-	"github.com/argoproj/argo/util/diff"
-	errorsutil "github.com/argoproj/argo/util/errors"
-	"github.com/argoproj/argo/workflow/artifactrepositories"
-	"github.com/argoproj/argo/workflow/common"
-	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-	"github.com/argoproj/argo/workflow/controller/estimation"
-	"github.com/argoproj/argo/workflow/controller/indexes"
-	"github.com/argoproj/argo/workflow/controller/informer"
-	"github.com/argoproj/argo/workflow/controller/pod"
-	"github.com/argoproj/argo/workflow/cron"
-	"github.com/argoproj/argo/workflow/events"
-	"github.com/argoproj/argo/workflow/hydrator"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/sync"
-	"github.com/argoproj/argo/workflow/ttlcontroller"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v2"
+	"github.com/argoproj/argo/v2/config"
+	argoErr "github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	wfextvv1alpha1 "github.com/argoproj/argo/v2/pkg/client/informers/externalversions/workflow/v1alpha1"
+	authutil "github.com/argoproj/argo/v2/util/auth"
+	"github.com/argoproj/argo/v2/util/diff"
+	errorsutil "github.com/argoproj/argo/v2/util/errors"
+	"github.com/argoproj/argo/v2/workflow/artifactrepositories"
+	"github.com/argoproj/argo/v2/workflow/common"
+	controllercache "github.com/argoproj/argo/v2/workflow/controller/cache"
+	"github.com/argoproj/argo/v2/workflow/controller/estimation"
+	"github.com/argoproj/argo/v2/workflow/controller/indexes"
+	"github.com/argoproj/argo/v2/workflow/controller/informer"
+	"github.com/argoproj/argo/v2/workflow/controller/pod"
+	"github.com/argoproj/argo/v2/workflow/cron"
+	"github.com/argoproj/argo/v2/workflow/events"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
+	"github.com/argoproj/argo/v2/workflow/metrics"
+	"github.com/argoproj/argo/v2/workflow/sync"
+	"github.com/argoproj/argo/v2/workflow/ttlcontroller"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 // WorkflowController is the controller for workflow resources
@@ -110,6 +110,7 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
+	workflowExistenceCheckPeriod        = 1 * time.Minute
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -243,6 +244,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
+				go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
+
 				for i := 0; i < wfWorkers; i++ {
 					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
 				}
@@ -297,7 +300,16 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		wfc.wfQueue.AddRateLimited(key)
 	}
 
-	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
+	isWFDeleted := func(key string) bool {
+		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+		if err != nil {
+			log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+			return false
+		}
+		return exists
+	}
+
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
 
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
