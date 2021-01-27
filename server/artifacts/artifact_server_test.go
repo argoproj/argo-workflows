@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/artifacts/resource"
+	artifact "github.com/argoproj/argo/v2/workflow/artifacts"
+	"github.com/argoproj/argo/v2/workflow/artifacts/resource"
 
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
@@ -17,16 +17,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo/config"
-	sqldbmocks "github.com/argoproj/argo/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	authmocks "github.com/argoproj/argo/server/auth/mocks"
-	"github.com/argoproj/argo/util/instanceid"
-	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo/workflow/common"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v2/config"
+	sqldbmocks "github.com/argoproj/argo/v2/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfv1 "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/server/auth"
+	authmocks "github.com/argoproj/argo/v2/server/auth/mocks"
+	"github.com/argoproj/argo/v2/util/instanceid"
+	armocks "github.com/argoproj/argo/v2/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo/v2/workflow/common"
+	hydratorfake "github.com/argoproj/argo/v2/workflow/hydrator/fake"
 )
 
 func mustParse(text string) *url.URL {
@@ -67,6 +67,7 @@ func newServer() *ArtifactServer {
 								Name: "my-s3-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									S3: &wfv1.S3Artifact{
+										// S3 is a configured artifact repo, so does not need key
 										Key: "my-wf/my-node/my-s3-artifact.tgz",
 									},
 								},
@@ -75,6 +76,10 @@ func newServer() *ArtifactServer {
 								Name: "my-gcs-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									GCS: &wfv1.GCSArtifact{
+										// GCS is not a configured artifact repo, so must have bucket
+										GCSBucket: wfv1.GCSBucket{
+											Bucket: "my-bucket",
+										},
 										Key: "my-wf/my-node/my-gcs-artifact",
 									},
 								},
@@ -82,7 +87,11 @@ func newServer() *ArtifactServer {
 							{
 								Name: "my-oss-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
-									GCS: &wfv1.GCSArtifact{
+									OSS: &wfv1.OSSArtifact{
+										// OSS is not a configured artifact repo, so must have bucket
+										OSSBucket: wfv1.OSSBucket{
+											Bucket: "my-bucket",
+										},
 										Key: "my-wf/my-node/my-oss-artifact.zip",
 									},
 								},
@@ -99,11 +108,20 @@ func newServer() *ArtifactServer {
 	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
 
-	fakeArtifactDriverFactory := func(_ *wfv1.Artifact, _ resource.Interface) (artifact.ArtifactDriver, error) {
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifact.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
 	}
 
-	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, armocks.DummyArtifactRepositories(&config.ArtifactRepository{}))
+	artifactRepositories := armocks.DummyArtifactRepositories(&config.ArtifactRepository{
+		S3: &config.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Endpoint: "my-endpoint",
+				Bucket:   "my-bucket",
+			},
+		},
+	})
+
+	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
 }
 
 func TestArtifactServer_GetArtifact(t *testing.T) {
@@ -133,9 +151,10 @@ func TestArtifactServer_GetArtifact(t *testing.T) {
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
 			w := &testhttp.TestResponseWriter{}
 			s.GetArtifact(w, r)
-			assert.Equal(t, 200, w.StatusCode)
-			assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
-			assert.Equal(t, "my-data", w.Output)
+			if assert.Equal(t, 200, w.StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
+				assert.Equal(t, "my-data", w.Output)
+			}
 		})
 	}
 }

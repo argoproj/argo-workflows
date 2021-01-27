@@ -1,4 +1,4 @@
-// +build e2e
+// +build smoke
 
 package e2e
 
@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/common"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/e2e/fixtures"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 type SmokeSuite struct {
@@ -28,7 +28,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.NotEmpty(t, status.Nodes)
 			assert.NotEmpty(t, status.ResourcesDuration)
 		})
@@ -45,7 +45,7 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -67,7 +67,7 @@ func (s *SmokeSuite) TestArtifactPassing() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -81,7 +81,7 @@ func (s *SmokeSuite) TestWorkflowTemplateBasic() {
 		WaitForWorkflow(60 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 

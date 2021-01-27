@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"testing"
 
 	"github.com/valyala/fasttemplate"
@@ -10,7 +11,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 // TestFindOverlappingVolume tests logic of TestFindOverlappingVolume
@@ -74,15 +75,17 @@ spec:
 }
 
 func TestDeletePod(t *testing.T) {
+	ctx := context.Background()
 	kube := fake.NewSimpleClientset(&corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{Name: "my-pod", Namespace: "my-ns"},
 	})
+
 	t.Run("Exists", func(t *testing.T) {
-		err := DeletePod(kube, "my-pod", "my-ms")
+		err := DeletePod(ctx, kube, "my-pod", "my-ms")
 		assert.NoError(t, err)
 	})
 	t.Run("NotExists", func(t *testing.T) {
-		err := DeletePod(kube, "not-exists", "my-ms")
+		err := DeletePod(ctx, kube, "not-exists", "my-ms")
 		assert.NoError(t, err)
 	})
 }

@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,9 +15,9 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	argoErr "github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	argoErr "github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
 )
 
 const configMap = `
@@ -303,6 +304,10 @@ spec:
      args: ["hello world"]
 `
 
+var WorkflowExistenceFunc = func(s string) bool {
+	return false
+}
+
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(yamlStr), &wf)
@@ -319,7 +324,8 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
 		}
 
-		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(items[2], metav1.GetOptions{})
+		ctx := context.Background()
+		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
 
 		if err != nil {
 			return 0, err
@@ -340,16 +346,19 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
-		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
+		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
@@ -357,12 +366,12 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
 		wf.Status.Synchronization.Semaphore.Holding = invalidSync
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
-		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
+		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 0, len(concurrenyMgr.syncLockMap))
@@ -372,7 +381,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			nextKey = key
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithSemaphore)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -457,12 +466,15 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
@@ -491,10 +503,10 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Increase the semaphore Size
-		cm, err := kube.CoreV1().ConfigMaps("default").Get("my-config", metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps("default").Get(ctx, "my-config", metav1.GetOptions{})
 		assert.NoError(t, err)
 		cm.Data["workflow"] = "3"
-		_, err = kube.CoreV1().ConfigMaps("default").Update(cm)
+		_, err = kube.CoreV1().ConfigMaps("default").Update(ctx, cm, metav1.UpdateOptions{})
 		assert.NoError(t, err)
 
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
@@ -523,14 +535,17 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		//var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			//nextKey = key
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
 
@@ -580,14 +595,17 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "3"
 	assert.NoError(err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
+
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TriggerWfsWithAvailableLocks", func(t *testing.T) {
 		triggerCount := 0
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			triggerCount++
-		})
+		}, WorkflowExistenceFunc)
 		var wfs []wfv1.Workflow
 		for i := 0; i < 3; i++ {
 			wf := unmarshalWF(wfWithSemaphore)
@@ -623,7 +641,7 @@ func TestMutexWfLevel(t *testing.T) {
 		//var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			//nextKey = key
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithMutex)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -658,7 +676,50 @@ func TestMutexWfLevel(t *testing.T) {
 		assert.Len(t, mutex.mutex.pending.items, 1)
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Len(t, mutex.mutex.pending.items, 0)
+	})
+}
 
+func TestCheckWorkflowExistence(t *testing.T) {
+	assert := assert.New(t)
+	kube := fake.NewSimpleClientset()
+	var cm v1.ConfigMap
+	err := yaml.Unmarshal([]byte(configMap), &cm)
+	cm.Data["workflow"] = "1"
+	assert.NoError(err)
+
+	ctx := context.Background()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	assert.NoError(err)
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+	t.Run("WorkflowDeleted", func(t *testing.T) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+			//nextKey = key
+		}, func(s string) bool {
+			return strings.Contains(s, "test1")
+		})
+		wfMutex := unmarshalWF(wfWithMutex)
+		wfMutex1 := wfMutex.DeepCopy()
+		wfMutex1.Name = "test1"
+		wfSema := unmarshalWF(wfWithSemaphore)
+		wfSema1 := wfSema.DeepCopy()
+		wfSema1.Name = "test2"
+		_, _, _, _ = concurrenyMgr.TryAcquire(wfMutex, "", wfMutex.Spec.Synchronization)
+		_, _, _, _ = concurrenyMgr.TryAcquire(wfMutex1, "", wfMutex.Spec.Synchronization)
+		_, _, _, _ = concurrenyMgr.TryAcquire(wfSema, "", wfSema.Spec.Synchronization)
+		_, _, _, _ = concurrenyMgr.TryAcquire(wfSema1, "", wfSema.Spec.Synchronization)
+		mutex := concurrenyMgr.syncLockMap["default/Mutex/my-mutex"].(*PriorityMutex)
+		semaphore := concurrenyMgr.syncLockMap["default/ConfigMap/my-config/workflow"]
+
+		assert.Len(mutex.getCurrentHolders(), 1)
+		assert.Len(mutex.getCurrentPending(), 1)
+		assert.Len(semaphore.getCurrentHolders(), 1)
+		assert.Len(semaphore.getCurrentPending(), 1)
+		concurrenyMgr.CheckWorkflowExistence()
+		assert.Len(mutex.getCurrentHolders(), 0)
+		assert.Len(mutex.getCurrentPending(), 1)
+		assert.Len(semaphore.getCurrentHolders(), 0)
+		assert.Len(semaphore.getCurrentPending(), 0)
 	})
 
 }

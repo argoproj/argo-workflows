@@ -11,12 +11,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/types"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/server/auth/types"
+	"github.com/argoproj/argo/v2/util/instanceid"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 func Test_metaData(t *testing.T) {
@@ -148,11 +148,11 @@ func TestNewOperation(t *testing.T) {
 		},
 	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}}`)})
 	assert.NoError(t, err)
-	operation.Dispatch()
+	operation.Dispatch(ctx)
 
 	expectedParamValues := []string{"bar", "bar", `{"bar":"baz"}`}
 	// assert
-	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(metav1.ListOptions{})
+	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 	if assert.NoError(t, err) && assert.Len(t, list.Items, 3) {
 		for i, wf := range list.Items {
 			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
@@ -315,26 +315,36 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
 
 	assert.NoError(t, err)
-	operation.Dispatch()
+	operation.Dispatch(ctx)
 
-	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(metav1.ListOptions{})
+	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 
 	assert.NoError(t, err)
 	assert.Len(t, list.Items, 3)
 
-	assert.Contains(t, list.Items[0].Name, "my-wft")
+	expectedNames := []string{
+		"my-wfeb-2",
+		"my-wfeb-baz",
+	}
+	actualNames := []string{}
+	for _, item := range list.Items {
+		actualNames = append(actualNames, item.Name)
+	}
 
-	assert.Equal(t, list.Items[1].Name, "my-wfeb-2")
-	assert.Contains(t, list.Items[1].Labels, "aLabel")
-	assert.Equal(t, "someValue", list.Items[1].Labels["aLabel"])
-	assert.Contains(t, list.Items[1].Annotations, "anAnnotation")
-	assert.Equal(t, "otherValue", list.Items[1].Annotations["anAnnotation"])
+	// ordering not guaranteed
+	assert.Subset(t, actualNames, expectedNames)
 
-	assert.Equal(t, list.Items[2].Name, "my-wfeb-baz")
-	assert.Contains(t, list.Items[2].Labels, "aLabel")
-	assert.Equal(t, "one", list.Items[2].Labels["aLabel"])
-	assert.Contains(t, list.Items[2].Annotations, "anAnnotation")
-	assert.Equal(t, "two", list.Items[2].Annotations["anAnnotation"])
+	for _, item := range list.Items {
+		if _, ok := item.Labels["aLabel"]; !ok {
+			assert.Contains(t, item.Name, "my-wft")
+			continue
+		}
+
+		label := item.Labels["aLabel"]
+		annotation := item.Annotations["anAnnotation"]
+		assert.True(t, label == "someValue" || label == "one")
+		assert.True(t, annotation == "otherValue" || annotation == "two")
+	}
 
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow name expression: unexpected token Operator(\"..\") (1:10)\n | payload.......foo[.numeric]\n | .........^", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: cannot use pointer accessor outside closure (1:6)\n | foo...bar\n | .....^", <-recorder.Events)

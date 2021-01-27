@@ -1,6 +1,7 @@
 package wait
 
 import (
+	"context"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
@@ -10,24 +11,24 @@ import (
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo/workflow/executor/common"
+	"github.com/argoproj/argo/v2/workflow/executor/common"
 )
 
-func UntilTerminated(kubernetesInterface kubernetes.Interface, namespace, podName, containerID string) error {
+func UntilTerminated(ctx context.Context, kubernetesInterface kubernetes.Interface, namespace, podName, containerID string) error {
 	log.Infof("Waiting for container %s to be terminated", containerID)
 	podInterface := kubernetesInterface.CoreV1().Pods(namespace)
 	listOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + podName}
 	for {
-		done, err := untilTerminatedAux(podInterface, containerID, listOptions)
+		done, err := untilTerminatedAux(ctx, podInterface, containerID, listOptions)
 		if done {
 			return err
 		}
 	}
 }
 
-func untilTerminatedAux(podInterface v1.PodInterface, containerID string, listOptions metav1.ListOptions) (bool, error) {
+func untilTerminatedAux(ctx context.Context, podInterface v1.PodInterface, containerID string, listOptions metav1.ListOptions) (bool, error) {
 	for {
-		timedOut, done, err := doWatch(podInterface, containerID, listOptions)
+		timedOut, done, err := doWatch(ctx, podInterface, containerID, listOptions)
 		if !timedOut {
 			return done, err
 		}
@@ -35,8 +36,8 @@ func untilTerminatedAux(podInterface v1.PodInterface, containerID string, listOp
 	}
 }
 
-func doWatch(podInterface v1.PodInterface, containerID string, listOptions metav1.ListOptions) (bool, bool, error) {
-	w, err := podInterface.Watch(listOptions)
+func doWatch(ctx context.Context, podInterface v1.PodInterface, containerID string, listOptions metav1.ListOptions) (bool, bool, error) {
+	w, err := podInterface.Watch(ctx, listOptions)
 	if err != nil {
 		return false, true, fmt.Errorf("could not watch pod: %w", err)
 	}

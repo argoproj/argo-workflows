@@ -35,12 +35,14 @@ nav:
           - node-field-selector.md
           - empty-dir.md
           - workflow-templates.md
+          - workflow-inputs.md
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - artifact-repository-ref.md
+          - key-only-artifacts.md
           - resource-duration.md
           - estimated-duration.md
           - workflow-pod-security-context.md
@@ -50,6 +52,7 @@ nav:
           - workflow-of-workflows.md
           - memoization.md
           - tolerating-pod-deletion.md
+          - widgets.md
       # all other topics, including API access
       - Advanced:
           - workflow-requirements.md
@@ -144,6 +147,7 @@ nav:
       - versioning.md
       - public-api.md
       - static-code-analysis.md
+      - stress-testing.md
       - releasing.md
   - Releases ⧉: https://github.com/argoproj/argo/releases
   - Roadmap: roadmap.md

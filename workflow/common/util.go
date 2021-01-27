@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,10 +27,10 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -270,11 +271,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	}
 
 	// Performs substitutions of input artifacts
-	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
-	for i, inArt := range newTmpl.Inputs.Artifacts {
+	artifacts := newTmpl.Inputs.Artifacts
+	for i, inArt := range artifacts {
 		// if artifact has hard-wired location, we prefer that
-		if inArt.HasLocation() {
-			newInputArtifacts[i] = inArt
+		if inArt.HasLocationOrKey() {
 			continue
 		}
 		argArt := args.GetArtifactByName(inArt.Name)
@@ -283,20 +283,17 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			if argArt == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
 			}
-			if !argArt.HasLocation() && !validateOnly {
+			if !argArt.HasLocationOrKey() && !validateOnly {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
 			}
 		}
 		if argArt != nil {
-			argArt.Path = inArt.Path
-			argArt.Mode = inArt.Mode
-			argArt.RecurseMode = inArt.RecurseMode
-			newInputArtifacts[i] = *argArt
-		} else {
-			newInputArtifacts[i] = inArt
+			artifacts[i] = *argArt
+			artifacts[i].Path = inArt.Path
+			artifacts[i].Mode = inArt.Mode
+			artifacts[i].RecurseMode = inArt.RecurseMode
 		}
 	}
-	newTmpl.Inputs.Artifacts = newInputArtifacts
 
 	return SubstituteParams(newTmpl, globalParams, localParams)
 }
@@ -448,7 +445,7 @@ var defaultPatchBackoff = wait.Backoff{
 }
 
 // AddPodAnnotation adds an annotation to pod
-func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value string, options ...interface{}) error {
+func AddPodAnnotation(ctx context.Context, c kubernetes.Interface, podName, namespace, key, value string, options ...interface{}) error {
 	backoff := defaultPatchBackoff
 	for _, option := range options {
 		switch v := option.(type) {
@@ -458,16 +455,16 @@ func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value str
 			panic("unknown option type")
 		}
 	}
-	return addPodMetadata(c, "annotations", podName, namespace, key, value, backoff)
+	return addPodMetadata(ctx, c, "annotations", podName, namespace, key, value, backoff)
 }
 
 // AddPodLabel adds an label to pod
-func AddPodLabel(c kubernetes.Interface, podName, namespace, key, value string) error {
-	return addPodMetadata(c, "labels", podName, namespace, key, value, defaultPatchBackoff)
+func AddPodLabel(ctx context.Context, c kubernetes.Interface, podName, namespace, key, value string) error {
+	return addPodMetadata(ctx, c, "labels", podName, namespace, key, value, defaultPatchBackoff)
 }
 
 // addPodMetadata is helper to either add a pod label or annotation to the pod
-func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
+func addPodMetadata(ctx context.Context, c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
 	metadata := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			field: map[string]string{
@@ -480,7 +477,7 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 		return errors.InternalWrapError(err)
 	}
 	return wait.ExponentialBackoff(backoff, func() (bool, error) {
-		_, err = c.CoreV1().Pods(namespace).Patch(podName, types.MergePatchType, patch)
+		_, err = c.CoreV1().Pods(namespace).Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
 		return err == nil, err
 	})
 }
@@ -488,10 +485,10 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 const deleteRetries = 3
 
 // DeletePod deletes a pod. Ignores NotFound error
-func DeletePod(c kubernetes.Interface, podName, namespace string) error {
+func DeletePod(ctx context.Context, c kubernetes.Interface, podName, namespace string) error {
 	var err error
 	for attempt := 0; attempt < deleteRetries; attempt++ {
-		err = c.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{})
+		err = c.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 		if err == nil || apierr.IsNotFound(err) {
 			return nil
 		}

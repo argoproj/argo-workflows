@@ -9,10 +9,10 @@ import (
 
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/types"
-	"github.com/argoproj/argo/workflow/common"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/server/auth/types"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 func TestLabel(t *testing.T) {
@@ -34,6 +34,13 @@ func TestLabel(t *testing.T) {
 		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("-", 63) + "y"}}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Equal(t, "y", wf.Labels[common.LabelKeyCreator])
+		}
+	})
+	t.Run("InvalidDNSNames", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}}), wf)
+		if assert.NotEmpty(t, wf.Labels) {
+			assert.Equal(t, strings.Repeat("y", 35), wf.Labels[common.LabelKeyCreator])
 		}
 	})
 }

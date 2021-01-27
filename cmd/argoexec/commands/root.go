@@ -4,23 +4,22 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/argoproj/pkg/cli"
+	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/pkg/cli"
-	kubecli "github.com/argoproj/pkg/kube/cli"
-
-	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/executor"
-	"github.com/argoproj/argo/workflow/executor/docker"
-	"github.com/argoproj/argo/workflow/executor/k8sapi"
-	"github.com/argoproj/argo/workflow/executor/kubelet"
-	"github.com/argoproj/argo/workflow/executor/pns"
+	"github.com/argoproj/argo/v2"
+	"github.com/argoproj/argo/v2/util"
+	"github.com/argoproj/argo/v2/util/cmd"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/executor"
+	"github.com/argoproj/argo/v2/workflow/executor/docker"
+	"github.com/argoproj/argo/v2/workflow/executor/k8sapi"
+	"github.com/argoproj/argo/v2/workflow/executor/kubelet"
+	"github.com/argoproj/argo/v2/workflow/executor/pns"
 )
 
 const (
@@ -45,7 +44,7 @@ func initConfig() {
 		FullTimestamp:   true,
 	})
 	cli.SetLogLevel(logLevel)
-	cli.SetGLogLevel(glogLevel)
+	cmd.SetGLogLevel(glogLevel)
 }
 
 func NewRootCommand() *cobra.Command {

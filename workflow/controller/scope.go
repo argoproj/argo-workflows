@@ -1,15 +1,13 @@
 package controller
 
 import (
-	"net/url"
-	"path"
 	"strings"
 
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 // wfScope contains the current scope of variables available when executing a template
@@ -92,47 +90,7 @@ func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, err
 
 		// Copy resolved artifact pointer before adding subpath
 		copyArt := valArt.DeepCopy()
-
-		locationType := copyArt.ArtifactLocation.GetType()
-
-		if locationType == "" {
-			return nil, errors.Errorf(errors.CodeBadRequest, "No artifact location found for reference: {{%s}}", v)
-		}
-
-		switch locationType {
-		case wfv1.ArtifactLocationS3:
-			copyArt.S3.Key = path.Join(copyArt.S3.Key, resolvedSubPath)
-
-		case wfv1.ArtifactLocationHDFS:
-			copyArt.HDFS.Path = path.Join(copyArt.HDFS.Path, resolvedSubPath)
-
-		case wfv1.ArtifactLocationOSS:
-			copyArt.OSS.Key = path.Join(copyArt.OSS.Key, resolvedSubPath)
-
-		case wfv1.ArtifactLocationGCS:
-			copyArt.GCS.Key = path.Join(copyArt.GCS.Key, resolvedSubPath)
-
-		case wfv1.ArtifactLocationArtifactory:
-			u, err := url.Parse(copyArt.Artifactory.URL)
-			if err != nil {
-				return nil, err
-			}
-			u.Path = path.Join(u.Path, resolvedSubPath)
-			copyArt.Artifactory.URL = u.String()
-
-		case wfv1.ArtifactLocationHTTP:
-			u, err := url.Parse(copyArt.HTTP.URL)
-			if err != nil {
-				return nil, err
-			}
-			u.Path = path.Join(u.Path, resolvedSubPath)
-			copyArt.HTTP.URL = u.String()
-
-		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "Artifact location of type {{%s}} does not support SubPath resolution", locationType)
-		}
-
-		return copyArt, nil
+		return copyArt, copyArt.AppendToKey(resolvedSubPath)
 	}
 
 	return &valArt, nil

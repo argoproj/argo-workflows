@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 	"strings"
@@ -12,10 +13,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/hydrator"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
 )
 
 type When struct {
@@ -40,7 +41,8 @@ func (w *When) SubmitWorkflow() *When {
 		w.t.Fatal("No workflow to submit")
 	}
 	println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
-	wf, err := w.client.Create(w.wf)
+	ctx := context.Background()
+	wf, err := w.client.Create(ctx, w.wf, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
@@ -51,9 +53,10 @@ func (w *When) SubmitWorkflow() *When {
 
 func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	w.t.Helper()
+	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
 		println("Submitting workflow from workflow template", tmpl.Name)
-		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false))
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
@@ -65,9 +68,10 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 
 func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	w.t.Helper()
+	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
 		println("Submitting workflow from cluster workflow template", tmpl.Name)
-		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true))
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
@@ -80,7 +84,8 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
 	w.t.Helper()
 	println("Submitting workflow from cron workflow", w.cronWf.Name)
-	wf, err := w.client.Create(common.ConvertCronWorkflowToWorkflow(w.cronWf))
+	ctx := context.Background()
+	wf, err := w.client.Create(ctx, common.ConvertCronWorkflowToWorkflow(w.cronWf), metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
@@ -95,7 +100,8 @@ func (w *When) CreateWorkflowEventBinding() *When {
 		w.t.Fatal("No workflow event to create")
 	}
 	println("Creating workflow event binding")
-	_, err := w.wfebClient.Create(w.wfeb)
+	ctx := context.Background()
+	_, err := w.wfebClient.Create(ctx, w.wfeb, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -108,9 +114,11 @@ func (w *When) CreateWorkflowTemplates() *When {
 	if len(w.wfTemplates) == 0 {
 		w.t.Fatal("No workflow templates to create")
 	}
+
+	ctx := context.Background()
 	for _, wfTmpl := range w.wfTemplates {
 		println("Creating workflow template", wfTmpl.Name)
-		_, err := w.wfTemplateClient.Create(wfTmpl)
+		_, err := w.wfTemplateClient.Create(ctx, wfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		}
@@ -124,9 +132,11 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	if len(w.cwfTemplates) == 0 {
 		w.t.Fatal("No cluster workflow templates to create")
 	}
+
+	ctx := context.Background()
 	for _, cwfTmpl := range w.cwfTemplates {
 		println("Creating cluster workflow template", cwfTmpl.Name)
-		_, err := w.cwfTemplateClient.Create(cwfTmpl)
+		_, err := w.cwfTemplateClient.Create(ctx, cwfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		}
@@ -141,7 +151,9 @@ func (w *When) CreateCronWorkflow() *When {
 		w.t.Fatal("No cron workflow to create")
 	}
 	println("Creating cron workflow", w.cronWf.Name)
-	cronWf, err := w.cronClient.Create(w.cronWf)
+
+	ctx := context.Background()
+	cronWf, err := w.cronClient.Create(ctx, w.cronWf, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
@@ -215,8 +227,10 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 
 	println("Waiting", timeout.String(), "for workflow", fieldSelector, message)
+
+	ctx := context.Background()
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
-	watch, err := w.client.Watch(opts)
+	watch, err := w.client.Watch(ctx, opts)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -270,7 +284,8 @@ func (w *When) Wait(timeout time.Duration) *When {
 func (w *When) DeleteWorkflow() *When {
 	w.t.Helper()
 	println("Deleting", w.wf.Name)
-	err := w.client.Delete(w.wf.Name, nil)
+	ctx := context.Background()
+	err := w.client.Delete(ctx, w.wf.Name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -303,10 +318,12 @@ func (w *When) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (w *When) CreateConfigMap(name string, data map[string]string) *When {
 	w.t.Helper()
-	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(&corev1.ConfigMap{
+
+	ctx := context.Background()
+	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(ctx, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
 		Data:       data,
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -315,7 +332,8 @@ func (w *When) CreateConfigMap(name string, data map[string]string) *When {
 
 func (w *When) DeleteConfigMap(name string) *When {
 	w.t.Helper()
-	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(name, nil)
+	ctx := context.Background()
+	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -324,7 +342,8 @@ func (w *When) DeleteConfigMap(name string) *When {
 
 func (w *When) PodsQuota(podLimit int) *When {
 	w.t.Helper()
-	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(metav1.ListOptions{})
+	ctx := context.Background()
+	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -345,10 +364,11 @@ func (w *When) StorageQuota(storageLimit string) *When {
 
 func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 	w.t.Helper()
-	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(&corev1.ResourceQuota{
+	ctx := context.Background()
+	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(ctx, &corev1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{"argo-e2e": "true"}},
 		Spec:       corev1.ResourceQuotaSpec{Hard: rl},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -372,7 +392,8 @@ func (w *When) DeleteMemoryQuota() *When {
 
 func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
-	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(name, &metav1.DeleteOptions{PropagationPolicy: &foreground})
+	ctx := context.Background()
+	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: &foreground})
 	if err != nil {
 		w.t.Fatal(err)
 	}

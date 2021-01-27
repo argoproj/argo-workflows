@@ -3,6 +3,7 @@ package docker
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,11 +17,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/file"
-	"github.com/argoproj/argo/workflow/common"
-	execcommon "github.com/argoproj/argo/workflow/executor/common"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/util"
+	"github.com/argoproj/argo/v2/util/file"
+	"github.com/argoproj/argo/v2/workflow/common"
+	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
 )
 
 type DockerExecutor struct{}
@@ -83,7 +84,7 @@ func (c *cmdCloser) Close() error {
 	return nil
 }
 
-func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (d *DockerExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	cmd := exec.Command("docker", "logs", containerID)
 	log.Info(cmd.Args)
 
@@ -130,7 +131,7 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 	return &cmdCloser{Reader: reader, cmd: cmd}, nil
 }
 
-func (d *DockerExecutor) GetExitCode(containerID string) (string, error) {
+func (d *DockerExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
 	reader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -166,13 +167,13 @@ func (d *DockerExecutor) WaitInit() error {
 }
 
 // Wait for the container to complete
-func (d *DockerExecutor) Wait(containerID string) error {
+func (d *DockerExecutor) Wait(ctx context.Context, containerID string) error {
 	_, err := common.RunCommand("docker", "wait", containerID)
 	return err
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (d *DockerExecutor) Kill(containerIDs []string) error {
+func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
 	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.

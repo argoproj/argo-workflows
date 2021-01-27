@@ -6,46 +6,50 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test"
 )
 
 // TestDagXfail verifies a DAG can fail properly
 func TestDagXfail(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/dag_xfail.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 // TestDagRetrySucceeded verifies a DAG will be marked Succeeded if retry was successful
 func TestDagRetrySucceeded(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/dag_retry_succeeded.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeSucceeded), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 // TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
 func TestDagRetryExhaustedXfail(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/dag-exhausted-retries-xfail.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 // TestDagDisableFailFast test disable fail fast function
 func TestDagDisableFailFast(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/dag-disable-fail-fast.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var dynamicSingleDag = `
@@ -100,22 +104,24 @@ func TestSingleDependency(t *testing.T) {
 			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
 		}
 		wf := unmarshalWF(wfString)
-		wf, err := wfcset.Create(wf)
+
+		ctx := context.Background()
+		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 		assert.Nil(t, err)
-		wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+		wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
-		woc.operate()
+		woc.operate(ctx)
 		// Mark the status of the pod according to the test
 		if _, ok := statusMap[status]; ok {
-			makePodsPhase(woc, statusMap[status])
+			makePodsPhase(ctx, woc, statusMap[status])
 		} else {
-			makePodsPhase(woc, v1.PodPending)
+			makePodsPhase(ctx, woc, v1.PodPending)
 		}
 
 		woc = newWorkflowOperationCtx(woc.wf, controller)
-		woc.operate()
+		woc.operate(ctx)
 		found := false
 		for _, node := range woc.wf.Status.Nodes {
 			if strings.Contains(node.Name, "TestSingle") {
@@ -181,16 +187,17 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(artifactResolutionWhenSkippedDAG)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 func TestEvaluateDependsLogic(t *testing.T) {
@@ -398,6 +405,55 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.True(t, proceed)
 	assert.True(t, execute)
 
+}
+
+func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name:    "B",
+			Depends: "A",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is running
+	daemon := true
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {Phase: wfv1.NodeRunning, Daemoned: &daemon},
+			},
+		},
+	}
+
+	// Task B should proceed and execute
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// Task B running
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Phase: wfv1.NodeRunning}
+
+	// Task A failed or error
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task B should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
 }
 
 func TestAllEvaluateDependsLogic(t *testing.T) {
@@ -714,15 +770,16 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTaskVariables)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var dagAssessPhaseContinueOnExpandedTask = `
@@ -936,15 +993,16 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTask)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var dagWithParamAndGlobalParam = `
@@ -984,13 +1042,14 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(dagWithParamAndGlobalParam)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var terminatingDAGWithRetryStrategyNodes = `
@@ -1221,13 +1280,14 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(terminatingDAGWithRetryStrategyNodes)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts = `
@@ -1378,12 +1438,13 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 
 	retryNode := woc.wf.GetNodeByName("dag-diamond-dj7q5.A")
 	if assert.NotNil(t, retryNode) {
@@ -1392,10 +1453,10 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	}
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 
 	// This is the crucial part of the test
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var testRetryStrategyNodes = `
@@ -1566,12 +1627,13 @@ func TestRetryStrategyNodes(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(testRetryStrategyNodes)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 	retryNode := woc.wf.GetNodeByName("wf-retry-pol")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
@@ -1582,7 +1644,7 @@ func TestRetryStrategyNodes(t *testing.T) {
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var testOnExitNodeDAGPhase = `
@@ -1730,12 +1792,13 @@ func TestOnExitDAGPhase(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(testOnExitNodeDAGPhase)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 	retryNode := woc.wf.GetNodeByName("dag-diamond-88trp")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
@@ -1746,7 +1809,7 @@ func TestOnExitDAGPhase(t *testing.T) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var testOnExitNonLeaf = `
@@ -1859,12 +1922,13 @@ func TestOnExitNonLeaf(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(testOnExitNonLeaf)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 	retryNode := woc.wf.GetNodeByName("step-2.onExit")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
@@ -1875,12 +1939,12 @@ func TestOnExitNonLeaf(t *testing.T) {
 	retryNode.Phase = wfv1.NodeSucceeded
 	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
+	woc.operate(ctx)
 	retryNode = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var testDagOptionalInputArtifacts = `
@@ -1974,8 +2038,9 @@ func TestDagOptionalInputArtifacts(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	optionalInputArtifactsNode := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
 	if assert.NotNil(t, optionalInputArtifactsNode) {
 		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
@@ -2125,12 +2190,13 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(testDagTargetTaskOnExit)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
+	woc.operate(ctx)
 	onExitNode := woc.wf.GetNodeByName("A.onExit")
 	if assert.NotNil(t, onExitNode) {
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
@@ -2276,13 +2342,14 @@ func TestEmptyWithParamDAG(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(testEmptyWithParamDAG)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var testFailsWithParamDAG = `
@@ -2952,13 +3019,14 @@ func TestFailsWithParamDAG(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(testFailsWithParamDAG)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var testLeafContinueOn = `
@@ -3081,6 +3149,7 @@ func TestLeafContinueOn(t *testing.T) {
 
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

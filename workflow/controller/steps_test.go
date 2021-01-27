@@ -1,22 +1,25 @@
 package controller
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/common"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
 func TestStepsFailedRetries(t *testing.T) {
+	ctx := context.Background()
 	wf := test.LoadTestWorkflow("testdata/steps-failed-retries.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var artifactResolutionWhenSkipped = `
@@ -68,13 +71,14 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(artifactResolutionWhenSkipped)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var stepsWithParamAndGlobalParam = `
@@ -113,13 +117,14 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(stepsWithParamAndGlobalParam)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 func TestResourceDurationMetric(t *testing.T) {
@@ -163,6 +168,7 @@ func TestResourceDurationMetric(t *testing.T) {
 		localScope, _ := woc.prepareMetricScope(&node)
 		assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
 		assert.Equal(t, "24", localScope["resourcesDuration.memory"])
+		assert.Equal(t, "0", localScope["exitCode"])
 	}
 }
 
@@ -284,11 +290,12 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := unmarshalWF(optionalArgumentAndParameter)
-	wf, err := wfcset.Create(wf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }

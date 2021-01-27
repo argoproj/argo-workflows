@@ -5,8 +5,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 type WorkflowServiceClient = Facade

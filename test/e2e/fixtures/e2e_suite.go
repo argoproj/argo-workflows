@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"context"
 	"encoding/base64"
 	"os"
 	"strings"
@@ -18,12 +19,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/v2/config"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util/kubeconfig"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
 )
 
 const Namespace = "argo"
@@ -51,7 +52,9 @@ func (s *E2ESuite) SetupSuite() {
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	s.CheckError(err)
 	configController := config.NewController(Namespace, "workflow-controller-configmap", s.KubeClient, config.EmptyConfigFunc)
-	c, err := configController.Get()
+
+	ctx := context.Background()
+	c, err := configController.Get(ctx)
 	s.CheckError(err)
 	s.Config = c.(*config.Config)
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
@@ -83,12 +86,15 @@ func (s *E2ESuite) DeleteResources() {
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: "sensors"},
+		{Group: workflow.Group, Version: workflow.Version, Resource: "eventsources"},
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
 
+	ctx := context.Background()
 	for _, r := range resources {
-		err := s.dynamicFor(r).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &background}, hasTestLabel)
+		err := s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{PropagationPolicy: &background}, hasTestLabel)
 		s.CheckError(err)
 	}
 
@@ -107,7 +113,7 @@ func (s *E2ESuite) DeleteResources() {
 
 	for _, r := range resources {
 		for {
-			list, err := s.dynamicFor(r).List(hasTestLabel)
+			list, err := s.dynamicFor(r).List(ctx, hasTestLabel)
 			s.CheckError(err)
 			if len(list.Items) == 0 {
 				break
@@ -158,7 +164,9 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	secretList, err := clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
+
+	ctx := context.Background()
+	secretList, err := clientset.CoreV1().Secrets("argo").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}

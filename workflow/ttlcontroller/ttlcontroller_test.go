@@ -1,6 +1,7 @@
 package ttlcontroller
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,10 +12,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/util"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/test"
+	"github.com/argoproj/argo/v2/workflow/metrics"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 var completedWf = `
@@ -349,6 +351,7 @@ func newTTLController() *Controller {
 		wfInformer:  wfInformer,
 		clock:       clock,
 		workqueue:   workqueue.NewDelayingQueue(),
+		metrics:     metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
 }
 
@@ -416,20 +419,23 @@ func TestTTLStrategySucceded(t *testing.T) {
 	wf2.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf2)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf2)
+
+	ctx := context.Background()
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf2, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
-	controller.processNextWorkItem()
+	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 	wf3 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
 	wf3.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf3)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf3)
+
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf3, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
-	controller.processNextWorkItem()
+	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 }

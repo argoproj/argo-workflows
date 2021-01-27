@@ -1,6 +1,7 @@
 package sqldb
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -10,9 +11,9 @@ import (
 	"upper.io/db.v3/mysql"
 	"upper.io/db.v3/postgresql"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/v2/config"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/util"
 )
 
 // CreateDBSession creates the dB session
@@ -38,11 +39,12 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", errors.InternalError("tableName is empty")
 	}
 
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	ctx := context.Background()
+	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
@@ -83,11 +85,12 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		return nil, "", errors.InternalError("tableName is empty")
 	}
 
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	ctx := context.Background()
+	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}

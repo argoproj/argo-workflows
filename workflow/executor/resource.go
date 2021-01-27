@@ -3,6 +3,7 @@ package executor
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -18,10 +19,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
+	os_specific "github.com/argoproj/argo/v2/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -89,7 +90,10 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		args = append(args, flags...)
 	}
 
-	if len(buff) != 0 {
+	// Action "patch" require flag "-p" with resource arguments.
+	// But kubectl disallow specify both "-f" flag and resource arguments.
+	// Flag "-f" should be excluded for action "patch" here.
+	if len(buff) != 0 && action != "patch" {
 		args = append(args, "-f")
 		args = append(args, manifestPath)
 	} else if len(flags) <= 0 {
@@ -120,7 +124,7 @@ func (g gjsonLabels) Get(label string) string {
 
 // signalMonitoring start the goroutine which listens for a SIGUSR2.
 // Upon receiving of the signal, We update the pod annotation and exit the process.
-func (we *WorkflowExecutor) signalMonitoring() {
+func (we *WorkflowExecutor) signalMonitoring(ctx context.Context) {
 	log.Infof("Starting SIGUSR2 signal monitor")
 	sigs := make(chan os.Signal, 1)
 
@@ -129,17 +133,17 @@ func (we *WorkflowExecutor) signalMonitoring() {
 		for {
 			<-sigs
 			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, "Received user signal to terminate the workflow")
+			_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, "Received user signal to terminate the workflow")
 			os.Exit(130)
 		}
 	}()
 }
 
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
-func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName string) error {
+func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace string, resourceName string) error {
 
 	// Monitor the SIGTERM
-	we.signalMonitoring()
+	we.signalMonitoring(ctx)
 
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
@@ -326,7 +330,7 @@ func readJSON(reader *bufio.Reader) ([]byte, error) {
 }
 
 // SaveResourceParameters will save any resource output parameters
-func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, resourceName string) error {
+func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
 	if len(we.Template.Outputs.Parameters) == 0 {
 		log.Infof("No output parameters")
 		return nil
@@ -378,6 +382,6 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
-	err := we.AnnotateOutputs(nil)
+	err := we.AnnotateOutputs(ctx, nil)
 	return err
 }

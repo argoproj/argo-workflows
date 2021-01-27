@@ -2,6 +2,8 @@ import {Observable} from 'rxjs';
 import * as models from '../../models';
 import {NODE_PHASE} from '../../models';
 
+const managedNamespaceKey = 'managedNamespace';
+const currentNamespaceKey = 'current_namespace';
 export const Utils = {
     statusIconClasses(status: string): string {
         let classes = [];
@@ -70,18 +72,38 @@ export const Utils = {
         return wf.status.phase === 'Running';
     },
 
+    set managedNamespace(value: string) {
+        if (value) {
+            localStorage.setItem(managedNamespaceKey, value);
+        } else {
+            localStorage.removeItem(managedNamespaceKey);
+        }
+    },
+
+    get managedNamespace() {
+        return localStorage.getItem(managedNamespaceKey);
+    },
+
     onNamespaceChange(value: string) {
         // noop
     },
 
-    setCurrentNamespace(value: string): void {
-        if (value) {
-            localStorage.setItem('current_namespace', value);
-            this.onNamespaceChange(value);
+    set currentNamespace(value: string) {
+        if (value != null) {
+            localStorage.setItem(currentNamespaceKey, value);
+        } else {
+            localStorage.removeItem(currentNamespaceKey);
         }
+        this.onNamespaceChange(this.currentNamespace);
     },
 
-    getCurrentNamespace(): string {
-        return localStorage.getItem('current_namespace');
+    get currentNamespace() {
+        // we always prefer the managed namespace
+        return this.managedNamespace || localStorage.getItem(currentNamespaceKey);
+    },
+
+    // return a namespace, never return null/undefined, defaults to "default"
+    getNamespace(namespace: string) {
+        return this.managedNamespace || namespace || this.currentNamespace || 'default';
     }
 };

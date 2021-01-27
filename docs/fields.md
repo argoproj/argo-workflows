@@ -140,6 +140,8 @@ Workflow is the definition of a workflow resource
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -318,6 +320,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
@@ -475,6 +479,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -596,6 +602,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -826,6 +836,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -947,6 +959,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -1135,6 +1151,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -1256,6 +1274,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -1459,6 +1481,10 @@ Arguments to a template
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -1737,6 +1763,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -1857,6 +1885,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -1951,6 +1981,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -2069,6 +2101,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
@@ -2170,6 +2204,8 @@ Artifact indicates an artifact to place at a specified path
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
+
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
@@ -2339,6 +2375,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -2510,6 +2550,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
@@ -2562,13 +2604,13 @@ UserContainer is a container specified by a user.
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
-|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
 |`stdinOnce`|`boolean`|Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false|
 |`terminationMessagePath`|`string`|Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.|
 |`terminationMessagePolicy`|`string`|Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.|
 |`tty`|`boolean`|Whether this container should allocate a TTY for itself, also requires 'stdin' to be true. Default is false.|
-|`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container. This is a beta feature.|
+|`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
@@ -2654,6 +2696,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -2709,6 +2753,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -2885,6 +2931,8 @@ Pod metdata
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -3007,6 +3055,10 @@ Pod metdata
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
@@ -3128,13 +3180,13 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
 |`source`|`string`|Source contains the source code of the script to execute|
-|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
 |`stdinOnce`|`boolean`|Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false|
 |`terminationMessagePath`|`string`|Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.|
 |`terminationMessagePolicy`|`string`|Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.|
 |`tty`|`boolean`|Whether this container should allocate a TTY for itself, also requires 'stdin' to be true. Default is false.|
-|`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container. This is a beta feature.|
+|`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
@@ -3275,6 +3327,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -3645,8 +3699,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
-
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -3662,6 +3714,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -3792,6 +3846,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
@@ -3914,8 +3970,6 @@ Sequence expands a workflow step into numeric range
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
-
-- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
@@ -4175,6 +4229,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -4296,6 +4352,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -4704,6 +4764,8 @@ A single application container that you want to run within a pod.
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -4809,6 +4871,8 @@ A single application container that you want to run within a pod.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
@@ -5162,6 +5226,8 @@ A label selector is a label query over a set of resources. The result of matchLa
 <br>
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -5349,6 +5415,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`key-only-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/key-only-artifact.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
@@ -5470,6 +5538,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -5909,8 +5981,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
-
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -5926,6 +5996,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields

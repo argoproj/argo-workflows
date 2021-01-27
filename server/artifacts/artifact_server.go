@@ -17,13 +17,13 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/artifactrepositories"
-	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/util/instanceid"
+	"github.com/argoproj/argo/v2/workflow/artifactrepositories"
+	artifact "github.com/argoproj/argo/v2/workflow/artifacts"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
 )
 
 type ArtifactServer struct {
@@ -134,7 +134,21 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("artifact not found")
 	}
 
-	driver, err := a.artDriverFactory(art, resources{kubeClient, wf.Namespace})
+	ref, err := a.artifactRepositories.Resolve(ctx, wf.Spec.ArtifactRepositoryRef, wf.Namespace)
+	if err != nil {
+		return err
+	}
+	ar, err := a.artifactRepositories.Get(ctx, ref)
+	if err != nil {
+		return err
+	}
+	l := ar.ToArtifactLocation()
+	err = art.Relocate(l)
+	if err != nil {
+		return err
+	}
+
+	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
 		return err
 	}
@@ -167,7 +181,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	contentLength := strconv.FormatInt(stats.Size(), 10)
 	log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
 
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(art.GetKey())))
+	key, _ := art.GetKey()
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 	w.WriteHeader(200)
 
 	http.ServeContent(w, r, "", time.Time{}, file)
@@ -177,7 +192,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, workflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

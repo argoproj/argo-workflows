@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 type configMapCache struct {
@@ -40,7 +41,7 @@ func (c *configMapCache) logInfo(fields log.Fields, message string) {
 	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).Info(message)
 }
 
-func (c *configMapCache) Load(key string) (*Entry, error) {
+func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		return nil, fmt.Errorf("invalid cache key: %s", key)
 	}
@@ -48,7 +49,7 @@ func (c *configMapCache) Load(key string) (*Entry, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
+	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			c.logError(err, log.Fields{}, "config map cache miss: config map does not exist")
@@ -75,7 +76,7 @@ func (c *configMapCache) Load(key string) (*Entry, error) {
 	return &entry, nil
 }
 
-func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) error {
+func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, value *wfv1.Outputs) error {
 	if !cacheKeyRegex.MatchString(key) {
 		errString := fmt.Sprintf("invalid cache key: %s", key)
 		err := errors.New(errString)
@@ -88,13 +89,13 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 
 	c.logInfo(log.Fields{"key": key, "nodeId": nodeId}, "Saving ConfigMap cache entry")
 
-	cache, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
+	cache, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) || cache == nil {
-		cache, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(&apiv1.ConfigMap{
+		cache, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(ctx, &apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: c.name,
 			},
-		})
+		}, metav1.CreateOptions{})
 		if err != nil {
 			c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Error saving to ConfigMap cache")
 			return fmt.Errorf("could not save to config map cache: %w", err)
@@ -118,7 +119,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 	}
 	cache.Data[key] = string(entryJSON)
 
-	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(cache)
+	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cache, metav1.UpdateOptions{})
 	if err != nil {
 		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Kubernetes error creating new cache entry")
 		return fmt.Errorf("error creating cache entry: %w", err)
