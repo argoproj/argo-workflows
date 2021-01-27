@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo/test/util"
+	"github.com/argoproj/argo/v2/test/util"
 )
 
 // TestGetServiceAccountTokenName verifies service account token retrieved by service account name.

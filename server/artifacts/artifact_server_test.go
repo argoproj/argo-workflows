@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/artifacts/resource"
+	artifact "github.com/argoproj/argo/v2/workflow/artifacts"
+	"github.com/argoproj/argo/v2/workflow/artifacts/resource"
 
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
@@ -17,14 +17,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	authmocks "github.com/argoproj/argo/server/auth/mocks"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
+	sqldbmocks "github.com/argoproj/argo/v2/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfv1 "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/server/auth"
+	authmocks "github.com/argoproj/argo/v2/server/auth/mocks"
+	"github.com/argoproj/argo/v2/util/instanceid"
+	"github.com/argoproj/argo/v2/workflow/common"
+	hydratorfake "github.com/argoproj/argo/v2/workflow/hydrator/fake"
 )
 
 func mustParse(text string) *url.URL {
@@ -94,7 +94,7 @@ func newServer() *ArtifactServer {
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"}})
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
-	a := &mocks.WorkflowArchive{}
+	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
 
 	fakeArtifactDriverFactory := func(_ *wfv1.Artifact, _ resource.Interface) (artifact.ArtifactDriver, error) {

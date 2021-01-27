@@ -11,8 +11,8 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) error {

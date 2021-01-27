@@ -7,7 +7,7 @@ import (
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
-	argoerrs "github.com/argoproj/argo/errors"
+	argoerrs "github.com/argoproj/argo/v2/errors"
 )
 
 func IsTransientErr(err error) bool {
