@@ -12,7 +12,7 @@ The examples below are limited to `DAGTemplate`s and mainly focused on `paramete
 
 First, some clarification of terms is needed. For a glossary reference, see [Argo Core Concepts](https://argoproj.github.io/argo/core-concepts/).
 
-A `Workflow` accepts `arguments`. A `template` accepts `inputs` (`arguments` is deprecated in `template`s). The structure of both is identical.
+A `workflow` provides `arguments`, which are passed in to the entry point template. A `template` defines `inputs` which are then provided by template callers (such as `steps`, `dag`, or even a `workflow`). The structure of both is identical.
 
 For example, in a `Workflow`, one parameter would look like this:
 ```
