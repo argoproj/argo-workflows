@@ -47,7 +47,11 @@ jobs:
         profile: [ minimal ]
         alwaysOffloadNodeStatus: [ "false" ]
         include:
-          # TODO test offloading
+          #  test offloading
+          - test: smoke
+            profile: minimal
+            containerRuntimeExecutor: docker
+            alwaysOffloadNodeStatus: "true"
           # test cron workflows
           - test: test-e2e-cron
             profile: minimal
