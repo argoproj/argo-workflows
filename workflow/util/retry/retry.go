@@ -3,7 +3,7 @@ package retry
 import (
 	apiv1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 // GetFailHosts returns slice of all child nodes with fail or error status

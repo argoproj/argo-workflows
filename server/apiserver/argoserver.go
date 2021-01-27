@@ -9,7 +9,9 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
@@ -18,40 +20,40 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/persist/sqldb"
-	clusterwftemplatepkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	eventpkg "github.com/argoproj/argo/pkg/apiclient/event"
-	eventsourcepkg "github.com/argoproj/argo/pkg/apiclient/eventsource"
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
-	sensorpkg "github.com/argoproj/argo/pkg/apiclient/sensor"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/artifacts"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/sso"
-	"github.com/argoproj/argo/server/auth/webhook"
-	"github.com/argoproj/argo/server/clusterworkflowtemplate"
-	"github.com/argoproj/argo/server/cronworkflow"
-	"github.com/argoproj/argo/server/event"
-	"github.com/argoproj/argo/server/eventsource"
-	"github.com/argoproj/argo/server/info"
-	"github.com/argoproj/argo/server/sensor"
-	"github.com/argoproj/argo/server/static"
-	"github.com/argoproj/argo/server/types"
-	"github.com/argoproj/argo/server/workflow"
-	"github.com/argoproj/argo/server/workflowarchive"
-	"github.com/argoproj/argo/server/workflowtemplate"
-	grpcutil "github.com/argoproj/argo/util/grpc"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/util/json"
-	"github.com/argoproj/argo/workflow/artifactrepositories"
-	"github.com/argoproj/argo/workflow/events"
-	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/v2"
+	"github.com/argoproj/argo/v2/config"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	clusterwftemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
+	eventpkg "github.com/argoproj/argo/v2/pkg/apiclient/event"
+	eventsourcepkg "github.com/argoproj/argo/v2/pkg/apiclient/eventsource"
+	infopkg "github.com/argoproj/argo/v2/pkg/apiclient/info"
+	sensorpkg "github.com/argoproj/argo/v2/pkg/apiclient/sensor"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/artifacts"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/server/auth/sso"
+	"github.com/argoproj/argo/v2/server/auth/webhook"
+	"github.com/argoproj/argo/v2/server/clusterworkflowtemplate"
+	"github.com/argoproj/argo/v2/server/cronworkflow"
+	"github.com/argoproj/argo/v2/server/event"
+	"github.com/argoproj/argo/v2/server/eventsource"
+	"github.com/argoproj/argo/v2/server/info"
+	"github.com/argoproj/argo/v2/server/sensor"
+	"github.com/argoproj/argo/v2/server/static"
+	"github.com/argoproj/argo/v2/server/types"
+	"github.com/argoproj/argo/v2/server/workflow"
+	"github.com/argoproj/argo/v2/server/workflowarchive"
+	"github.com/argoproj/argo/v2/server/workflowtemplate"
+	grpcutil "github.com/argoproj/argo/v2/util/grpc"
+	"github.com/argoproj/argo/v2/util/instanceid"
+	"github.com/argoproj/argo/v2/util/json"
+	"github.com/argoproj/argo/v2/workflow/artifactrepositories"
+	"github.com/argoproj/argo/v2/workflow/events"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
 )
 
 const (
@@ -212,6 +214,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 
 func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
+
+	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
+	grpc_prometheus.EnableHandlingTimeHistogram()
+
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
@@ -220,12 +226,14 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_prometheus.UnaryServerInterceptor,
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.gatekeeper.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_prometheus.StreamServerInterceptor,
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
@@ -244,6 +252,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
 	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService))
+	grpc_prometheus.Register(grpcServer)
 	return grpcServer
 }
 
@@ -296,6 +305,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
+	mux.Handle("/metrics", promhttp.Handler())
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles)
 	return &httpServer
