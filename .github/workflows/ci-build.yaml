@@ -45,8 +45,11 @@ jobs:
       matrix:
         test: [ smoke, test-cli, test-e2e ]
         containerRuntimeExecutor: [ docker, k8sapi, kubelet, pns ]
+        profile: [ minimal ]
+        alwaysOffloadNodeStatus: [ "true" ]
         include:
-          # one test to make sure cron works
+          # TODO test offloading
+          # test cron workflows
           - test: test-e2e-cron
             containerRuntimeExecutor: docker
     steps:
@@ -87,7 +90,6 @@ jobs:
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
-          PROFILE: mysql
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
@@ -95,15 +97,8 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          if [ ${{matrix.test}} == smoke ] || [ ${{matrix.test}} == test-e2e-cron ] ; then
-            PROFILE=minimal
-          fi
-          ALWAYS_OFFLOAD_NODE_STATUS=false
-          if [ ${{matrix.test}} == smoke ] ; then
-            ALWAYS_OFFLOAD_NODE_STATUS=true
-          fi
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=$ALWAYS_OFFLOAD_NODE_STATUS DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=$ALWAYS_OFFLOAD_NODE_STATUS DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready

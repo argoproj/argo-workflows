@@ -74,7 +74,7 @@ var (
 	Server fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
 		return os.Getenv("ARGO_SERVER") != "", "Argo Server"
 	}
-	Offloading               = fixtures.All(fixtures.Offloading)
+	Offloading               = fixtures.All(fixtures.Offloading, Server)
 	HTTP1      fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
 		return os.Getenv("ARGO_HTTP1") != "", "HTTP1 client"
 	}
