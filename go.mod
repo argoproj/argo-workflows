@@ -2,8 +2,6 @@ module github.com/argoproj/argo/v2
 
 go 1.13
 
-replace github.com/argoproj/argo/v2 => ./
-
 require (
 	bou.ke/staticfiles v0.0.0-20210106104248-dd04075d4104
 	cloud.google.com/go v0.55.0 // indirect
