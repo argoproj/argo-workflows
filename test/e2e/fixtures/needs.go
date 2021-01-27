@@ -4,53 +4,51 @@ import (
 	"os"
 )
 
-type Need func(s *E2ESuite) bool
+type Need func(s *E2ESuite) (met bool, message string)
 
 var (
-	TODO Need = func(s *E2ESuite) bool {
-		return false // something needs to be done, so this need is always unmet
+	TODO Need = func(s *E2ESuite) (bool, string) {
+		return false, "something needs to be done, so this need is always unmet"
 	}
-	CI Need = func(s *E2ESuite) bool {
-		return os.Getenv("CI") != ""
+	CI Need = func(s *E2ESuite) (bool, string) {
+		return os.Getenv("CI") != "", "CI"
 	}
-	Offloading Need = func(s *E2ESuite) bool {
-		return s.Persistence.IsEnabled()
+	Offloading Need = func(s *E2ESuite) (bool, string) {
+		return s.Persistence.IsEnabled(), "offloading"
 	}
-	Docker = Executor("docker")
-	K8SAPI = Executor("k8sapi")
-	PNS    = Executor("pns")
+	WorkflowArchive = Offloading
+	Docker          = Executor("docker")
+	K8SAPI          = Executor("k8sapi")
+	Kubelet         = Executor("kubelet")
+	PNS             = Executor("pns")
 )
 
 func Executor(e string) Need {
-	return func(s *E2ESuite) bool {
-		return s.Config.ContainerRuntimeExecutor == e
+	return func(s *E2ESuite) (bool, string) {
+		return s.Config.ContainerRuntimeExecutor == e, e
 	}
 }
 
-func Not(n Need) Need {
-	return func(s *E2ESuite) bool {
-		return !n(s)
-	}
-}
-
-func Or(needs ...Need) Need {
-	return func(s *E2ESuite) bool {
+func None(needs ...Need) Need {
+	return func(s *E2ESuite) (bool, string) {
 		for _, n := range needs {
-			if n(s) {
-				return true
+			met, message := n(s)
+			if met {
+				return false, "not " + message
 			}
 		}
-		return false
+		return true, ""
 	}
 }
 
-func And(needs ...Need) Need {
-	return func(s *E2ESuite) bool {
+func All(needs ...Need) Need {
+	return func(s *E2ESuite) (bool, string) {
 		for _, n := range needs {
-			if !n(s) {
-				return false
+			met, message := n(s)
+			if !met {
+				return false, message
 			}
 		}
-		return true
+		return true, ""
 	}
 }

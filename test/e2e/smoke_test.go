@@ -33,7 +33,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 }
 
 func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
-	s.Need(fixtures.Not(fixtures.Docker))
+	s.Need(fixtures.None(fixtures.Docker))
 	s.Given().
 		Workflow("@smoke/runasnonroot-workflow.yaml").
 		When().
@@ -46,7 +46,7 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	s.Need(fixtures.Or(fixtures.Docker, fixtures.PNS))
+	s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().

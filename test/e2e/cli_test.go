@@ -71,12 +71,12 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 }
 
 var (
-	Server fixtures.Need = func(*fixtures.E2ESuite) bool {
-		return os.Getenv("ARGO_SERVER") != ""
+	Server fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
+		return os.Getenv("ARGO_SERVER") != "", "Argo Server"
 	}
-	Offloading               = fixtures.And(fixtures.Offloading)
-	HTTP1      fixtures.Need = func(*fixtures.E2ESuite) bool {
-		return os.Getenv("ARGO_HTTP1") != ""
+	Offloading               = fixtures.All(fixtures.Offloading)
+	HTTP1      fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
+		return os.Getenv("ARGO_HTTP1") != "", "HTTP1 client"
 	}
 )
 
@@ -107,7 +107,7 @@ func (s *CLISuite) TestLogLevels() {
 }
 
 func (s *CLISuite) TestGLogLevels() {
-	s.Need(fixtures.Not(Server))
+	s.Need(fixtures.None(Server))
 	expected := "Config loaded from file"
 	s.Run("Verbose", func() {
 		s.Given().
@@ -212,7 +212,7 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
-	s.Need(fixtures.Not(Server))
+	s.Need(fixtures.None(Server))
 	s.Need(fixtures.CI)
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
@@ -281,7 +281,7 @@ func (s *CLISuite) TestLogs() {
 			})
 	})
 	s.Run("SinceTime", func() {
-		s.Need(fixtures.Not(HTTP1)) // this test errors with `field type *v1.Time is not supported in query parameters`
+		s.Need(fixtures.None(HTTP1)) // this test errors with `field type *v1.Time is not supported in query parameters`
 		s.Given().
 			RunCli([]string{"logs", name, "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -1276,7 +1276,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 }
 
 func (s *CLISuite) TestMetaDataNamespace() {
-	s.Need(Offloading)
+	s.Need(fixtures.CI, Offloading)
 	s.Given().
 		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.Error(t, err) {

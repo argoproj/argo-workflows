@@ -124,8 +124,9 @@ func (s *E2ESuite) DeleteResources() {
 
 func (s *E2ESuite) Need(needs ...Need) {
 	for _, n := range needs {
-		if !n(s) {
-			s.T().Skip("need not met")
+		met, message := n(s)
+		if !met {
+			s.T().Skip("unmet need: " + message)
 		}
 	}
 }
