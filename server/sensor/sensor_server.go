@@ -11,9 +11,9 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	sensorpkg "github.com/argoproj/argo/pkg/apiclient/sensor"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/logs"
+	sensorpkg "github.com/argoproj/argo/v2/pkg/apiclient/sensor"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/util/logs"
 )
 
 type sensorServer struct{}

@@ -9,8 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo/config"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/config"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 func TestArtifactRepositories(t *testing.T) {
