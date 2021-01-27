@@ -40,7 +40,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 4
       matrix:
         test: [ smoke ]
         containerRuntimeExecutor: [ docker, k8sapi, kubelet, pns ]
@@ -53,7 +54,7 @@ jobs:
           # one test to make sure cron works
           - test: test-e2e-cron
             containerRuntimeExecutor: docker
-              alwaysOffloadNodeStatus: "false"
+            alwaysOffloadNodeStatus: "false"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
