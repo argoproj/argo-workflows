@@ -38,6 +38,7 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 // when you delete a pending pod,
 // then the pod is re- created automatically
 func (s *FunctionalSuite) TestDeletingPendingPod() {
+	s.Need(fixtures.None(fixtures.K8SAPI))
 	s.Given().
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
