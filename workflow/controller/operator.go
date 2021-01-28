@@ -1317,6 +1317,10 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		if ctr.State.Terminated.ExitCode == 0 {
 			continue
 		}
+		if ctr.State.Terminated.Message == "" && ctr.State.Terminated.Reason == "OOMKilled" {
+			failMessages[ctr.Name] = ctr.State.Terminated.Reason
+			continue
+		}
 		if ctr.Name == common.WaitContainerName {
 			errDetails := ""
 			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
@@ -1341,10 +1345,6 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 				errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
 			}
 			failMessages[ctr.Name] = errMsg
-			continue
-		}
-		if ctr.State.Terminated.Reason == "OOMKilled" {
-			failMessages[ctr.Name] = ctr.State.Terminated.Reason
 			continue
 		}
 		errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)

@@ -10,7 +10,7 @@ See [code of conduct](https://github.com/argoproj/argo/blob/master/CODE_OF_CONDU
 
 ## How To Contribute
 
-We're always looking for contributors. 
+We're always looking for contributors.
 
 * Documentation - something missing or unclear? Please submit a pull request!
 * Code contribution - investigate a [help wanted issue](https://github.com/argoproj/argo/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+label%3A%22good+first+issue%22), or anything labelled with "good first issue"?

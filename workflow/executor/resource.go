@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	argoerr "github.com/argoproj/argo/v2/util/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -223,6 +225,9 @@ func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool 
 func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
 
 	cmd, reader, err := startKubectlWaitCmd(resourceNamespace, resourceName)
+	if argoerr.IsTransientErr(err) {
+		return true, err
+	}
 	if err != nil {
 		return false, err
 	}

@@ -2,10 +2,7 @@ module github.com/argoproj/argo/v2
 
 go 1.13
 
-replace (
-	github.com/argoproj/argo/v2 => ./
-	github.com/argoproj/pkg v0.3.0 => ../pkg
-)
+replace github.com/argoproj/pkg v0.3.0 => ../pkg
 
 require (
 	bou.ke/staticfiles v0.0.0-20210106104248-dd04075d4104
