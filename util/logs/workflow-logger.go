@@ -221,7 +221,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						return
 					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
-					if pod.Status.Phase == corev1.PodRunning {
+					if pod.Status.Phase != corev1.PodPending {
 						ensureWeAreStreaming(pod)
 					}
 					podListOptions.ResourceVersion = pod.ResourceVersion
