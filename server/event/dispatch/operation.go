@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 
@@ -22,6 +21,7 @@ import (
 	errorsutil "github.com/argoproj/argo/v2/util/errors"
 	"github.com/argoproj/argo/v2/util/instanceid"
 	"github.com/argoproj/argo/v2/util/labels"
+	waitutil "github.com/argoproj/argo/v2/util/wait"
 	"github.com/argoproj/argo/v2/workflow/common"
 	"github.com/argoproj/argo/v2/workflow/creator"
 )
@@ -58,9 +58,9 @@ func (o *Operation) Dispatch(ctx context.Context) {
 		// we use a predicable suffix for the name so that lost connections cannot result in the same workflow being created twice
 		// being created twice
 		nameSuffix := fmt.Sprintf("%v", time.Now().Unix())
-		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			_, err := o.dispatch(ctx, event, nameSuffix)
-			return errorsutil.Done(err)
+			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")
