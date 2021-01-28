@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: log-problems
+  generateName: log-problems-
   labels:
     argo-e2e: true
 spec:
