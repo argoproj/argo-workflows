@@ -450,6 +450,14 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	return ctr, nil
 }
 
+func (woc *wfOperationCtx) newProcessArtifactsContainer(artifacts wfv1.WithArtifacts) apiv1.Container {
+	container := woc.newExecContainer("process-artifacts", &wfv1.Template{})
+	bytes, _ := json.Marshal(artifacts)
+	container.ImagePullPolicy = apiv1.PullNever
+	container.Command = []string{"argoexec", "artifacts", fmt.Sprintf("%s", bytes)}
+	return *container
+}
+
 // hasPrivilegedContainers tests if the main container or sidecars is privileged
 func hasPrivilegedContainers(tmpl *wfv1.Template) bool {
 	if containerIsPrivileged(tmpl.Container) {

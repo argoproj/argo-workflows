@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/v2/workflow/executor/artifacts"
 	"strings"
 	"time"
 
@@ -204,8 +205,38 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		return woc.markNodeError(sgNodeName, err)
 	}
 
+	// BEGIN: art
+	artifactProcessingNeeded := false
+	for _, step := range stepGroup {
+		if step.ShouldExpandArtifacts() {
+			// Check to see if the artifact processor Pod (which should have the same name as the parent pod) has already
+			// ran. If not, then run it and postpone further expansion.
+			artifactProcessorNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+			artifactProcessorNode := woc.wf.GetNodeByName(artifactProcessorNodeName)
+			if artifactProcessorNode == nil {
+				artifactProcessingNeeded = true
+				woc.log.Infof("SIMON would get artifacts here for %s", artifactProcessorNodeName)
+				container := woc.newProcessArtifactsContainer(*step.WithArtifacts)
+				tmpl := &wfv1.Template{Name: "pro", Container: &container}
+				_, err := woc.executeContainer(ctx, artifactProcessorNodeName, stepsCtx.tmplCtx.GetTemplateScope(), tmpl, &step, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID})
+				if err != nil {
+					panic(err)
+				}
+				woc.addChildNode(sgNodeName, artifactProcessorNodeName)
+			} else if !artifactProcessorNode.Fulfilled() {
+				artifactProcessingNeeded = true
+			}
+		}
+	}
+
+	if artifactProcessingNeeded {
+		return node
+	}
+
+	// END: art
+
 	// Next, expand the step's withItems (if any)
-	stepGroup, err = woc.expandStepGroup(sgNodeName, stepGroup, stepsCtx)
+	stepGroup, err = woc.expandStepGroup(ctx, sgNodeName, stepGroup, stepsCtx)
 	if err != nil {
 		return woc.markNodeError(sgNodeName, err)
 	}
@@ -412,23 +443,10 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 }
 
 // expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems/withParam
-func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) expandStepGroup(ctx context.Context, sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		artifactProcessingNeeded := false
-		if step.ShouldExpandArtifacts() {
-			// Check to see if the artifact processor Pod (which should have the same name as the parent pod) has already
-			// ran. If not, then run it and postpone further expansion.
-			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-			if woc.wf.GetNodeByName(childNodeName) == nil {
-				artifactProcessingNeeded = true
-				woc.log.Infof("SIMON would get artifacts here for %s", childNodeName)
-				bytes, _ := json.Marshal(step.WithArtifacts)
-				woc.log.Infof("%s", bytes)
-			}
-		}
-
-		if !step.ShouldExpand() || artifactProcessingNeeded {
+		if !step.ShouldExpand() {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}

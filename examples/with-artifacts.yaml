@@ -11,6 +11,8 @@ spec:
     steps:
     - - name: generate-artifact
         withArtifacts:
+          aggregator:
+            directory: {}
           s3:
             bucket: my-bucket
             endpoint: minio:9000

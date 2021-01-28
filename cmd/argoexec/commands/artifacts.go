@@ -15,7 +15,8 @@ func NewArtifactsCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			var artifacts v1alpha1.WithArtifacts
-			err := json.Unmarshal([]byte(args[1]), &artifacts)
+			log.Info("ARGS:", args)
+			err := json.Unmarshal([]byte(args[0]), &artifacts)
 			if err != nil {
 				log.Fatalf("first argument is not of a WithArtifacts type")
 			}
