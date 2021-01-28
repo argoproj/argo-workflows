@@ -10,7 +10,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/fields"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -37,17 +36,10 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 
 	secretsIf := clientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			log.Warnf("Failed to get secret '%s': %v", name, err)
-			if !errorsutil.IsTransientErr(err) {
-				return false, err
-			}
-			return false, nil
-		}
-		return true, nil
+		return errorsutil.Done(err)
 	})
 	if err != nil {
 		return []byte{}, errors.InternalWrapError(err)

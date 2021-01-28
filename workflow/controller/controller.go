@@ -619,12 +619,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
-		transientErr := errorsutil.IsTransientErr(err)
-		woc.log.WithField("transientErr", transientErr).Errorf("hydration failed: %v", err)
-		if !transientErr {
-			woc.markWorkflowError(ctx, err)
-			woc.persistUpdates(ctx)
-		}
+		woc.log.Errorf("hydration failed: %v", err)
+		woc.markWorkflowError(ctx, err)
+		woc.persistUpdates(ctx)
 		return true
 	}
 
