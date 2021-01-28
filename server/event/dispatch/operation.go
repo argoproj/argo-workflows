@@ -19,6 +19,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/v2/server/auth"
+	errorsutil "github.com/argoproj/argo/v2/util/errors"
 	"github.com/argoproj/argo/v2/util/instanceid"
 	"github.com/argoproj/argo/v2/util/labels"
 	"github.com/argoproj/argo/v2/workflow/common"
@@ -59,7 +60,7 @@ func (o *Operation) Dispatch(ctx context.Context) {
 		nameSuffix := fmt.Sprintf("%v", time.Now().Unix())
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 			_, err := o.dispatch(ctx, event, nameSuffix)
-			return err == nil, err
+			return errorsutil.Done(err)
 		})
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")
