@@ -1272,6 +1272,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		return wfv1.NodeFailed, pod.Status.Message
 	}
 	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
+
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
@@ -3099,14 +3100,10 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 	}
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
-		if err != nil && !apierr.IsNotFound(err) {
-			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !errorsutil.IsTransientErr(err) {
-				return false, err
-			}
-			return false, nil
+		if apierr.IsNotFound(err) {
+			return true, nil
 		}
-		return true, nil
+		return errorsutil.Done(err)
 	})
 	if err != nil {
 		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
