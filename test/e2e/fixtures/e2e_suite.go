@@ -3,7 +3,6 @@ package fixtures
 import (
 	"context"
 	"encoding/base64"
-	"os"
 	"strings"
 	"time"
 
@@ -123,15 +122,12 @@ func (s *E2ESuite) DeleteResources() {
 	}
 }
 
-func (s *E2ESuite) NeedsCI() {
-	if os.Getenv("CI") != "true" {
-		s.T().Skip("test needs CI")
-	}
-}
-
-func (s *E2ESuite) NeedsOffloading() {
-	if !s.Persistence.IsEnabled() {
-		s.T().Skip("test needs offloading, but persistence not enabled")
+func (s *E2ESuite) Need(needs ...Need) {
+	for _, n := range needs {
+		met, message := n(s)
+		if !met {
+			s.T().Skip("unmet need: " + message)
+		}
 	}
 }
 

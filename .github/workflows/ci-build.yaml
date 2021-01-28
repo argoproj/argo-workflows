@@ -42,31 +42,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # kubelet is not included because it'd take ages to get it working methinks
-        test: [ "smoke", "test-e2e", "test-cli", "test-e2e-cron" ]
-        containerRuntimeExecutor: [ "docker", "k8sapi", "pns" ]
-        alwaysOffloadNodeStatus: ["true", "false"]
-        exclude:
-          # only use alwaysOffloadNodeStatus=true for test-e2e
+        # this list can be used to run certain interesting suites of tests
+        test:
+          - smoke
+          - test-cli
+          - test-e2e
+        # `docker` is omitted from this list because we want to run the most thorough set of tests on it,
+        # but always offloading, all persistence related tests, and cron tests
+        containerRuntimeExecutor:
+          - k8sapi
+          - kubelet
+          - pns
+        profile: [ minimal ]
+        alwaysOffloadNodeStatus: [ "false" ]
+        include:
+          # run all test with docker - this is the most complete set of tests
           - test: smoke
+            profile: mysql
+            containerRuntimeExecutor: docker
             alwaysOffloadNodeStatus: "true"
           - test: test-cli
+            profile: mysql
+            containerRuntimeExecutor: docker
             alwaysOffloadNodeStatus: "true"
-          - test: test-e2e-cron
-            alwaysOffloadNodeStatus: "true"
-          # only containerRuntimeExecutor=docker for smoke and test-e2e
           - test: test-e2e
-            containerRuntimeExecutor: k8sapi
-          - test: test-e2e
-            containerRuntimeExecutor: pns
-          - test: test-cli
-            containerRuntimeExecutor: k8sapi
-          - test: test-cli
-            containerRuntimeExecutor: pns
+            profile: mysql
+            containerRuntimeExecutor: docker
+            alwaysOffloadNodeStatus: "true"
+          # test cron workflows
           - test: test-e2e-cron
-            containerRuntimeExecutor: k8sapi
-          - test: test-e2e-cron
-            containerRuntimeExecutor: pns
+            profile: minimal
+            containerRuntimeExecutor: docker
+            alwaysOffloadNodeStatus: "false"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -100,7 +107,6 @@ jobs:
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
-          PROFILE: mysql
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
@@ -108,11 +114,8 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          if [ ${{matrix.test}} == smoke ] || [ ${{matrix.test}} == test-e2e-cron ] ; then
-            PROFILE=minimal
-          fi
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
