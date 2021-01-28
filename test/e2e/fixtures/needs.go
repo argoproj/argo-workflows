@@ -7,27 +7,29 @@ import (
 type Need func(s *E2ESuite) (met bool, message string)
 
 var (
-	TODO Need = func(s *E2ESuite) (bool, string) {
-		return false, "something needs to be done"
-	}
 	RBAC Need = func(s *E2ESuite) (bool, string) {
-		return os.Getenv("CI") != "", "RBAC (and therefore CI)"
+		return os.Getenv("CI") != "", "Kubernetes RBAC (and therefore CI)"
 	}
 	CI Need = func(s *E2ESuite) (bool, string) {
 		return os.Getenv("CI") != "", "CI"
 	}
 	BaseLayerArtifacts Need = func(s *E2ESuite) (bool, string) {
+		// for base layer you need
+		// * docker
+		// * pns, but not on the CI system for some reason
 		met, _ := Any(Docker, All(None(CI), PNS))(s)
-		return met, "artifacts"
+		return met, "base layer artifact support"
 	}
 	Offloading Need = func(s *E2ESuite) (bool, string) {
-		return s.Persistence.IsEnabled(), "offloading"
+		return s.Persistence.IsEnabled(), "offloading enabled"
 	}
-	WorkflowArchive = Offloading
-	Docker          = Executor("docker")
-	K8SAPI          = Executor("k8sapi")
-	Kubelet         = Executor("kubelet")
-	PNS             = Executor("pns")
+	WorkflowArchive Need = func(s *E2ESuite) (bool, string) {
+		return s.Persistence.IsEnabled(), "workflow archive enabled"
+	}
+	Docker  = Executor("docker")
+	K8SAPI  = Executor("k8sapi")
+	Kubelet = Executor("kubelet")
+	PNS     = Executor("pns")
 )
 
 func Executor(e string) Need {

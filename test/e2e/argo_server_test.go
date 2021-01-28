@@ -93,7 +93,7 @@ func (s *ArgoServerSuite) TestVersion() {
 }
 
 func (s *ArgoServerSuite) TestMetrics() {
-	s.Need(fixtures.TODO)
+	s.Need(fixtures.CI)
 	s.e().GET("/metrics").
 		Expect().
 		Status(200).

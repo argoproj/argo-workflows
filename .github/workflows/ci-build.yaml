@@ -42,14 +42,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [ smoke, test-cli, test-e2e ]
-        containerRuntimeExecutor: [ docker, k8sapi, kubelet, pns ]
+        # this list can be used to run certain interesting suites of tests
+        test:
+          - smoke
+          - test-cli
+          - test-e2e
+        # `docker` is omitted from this list because we want to run the most thorough set of tests on it,
+        # but always offloading, all persistence related tests, and cron tests
+        containerRuntimeExecutor:
+          - k8sapi
+          - kubelet
+          - pns
         profile: [ minimal ]
         alwaysOffloadNodeStatus: [ "false" ]
         include:
-          #  test offloading
+          # run all test with docker - this is the most complete set of tests
           - test: smoke
-            profile: minimal
+            profile: mysql
+            containerRuntimeExecutor: docker
+            alwaysOffloadNodeStatus: "true"
+          - test: test-cli
+            profile: mysql
+            containerRuntimeExecutor: docker
+            alwaysOffloadNodeStatus: "true"
+          - test: test-e2e
+            profile: mysql
             containerRuntimeExecutor: docker
             alwaysOffloadNodeStatus: "true"
           # test cron workflows
@@ -74,9 +91,7 @@ jobs:
           echo /home/runner/go/bin >> $GITHUB_PATH
           echo /usr/local/bin >> $GITHUB_PATH
       - name: Install and start K3S v1.18.8+k3s1
-        run: |
-          INSTALL_K3S_EXEC=
-          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
+        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go
