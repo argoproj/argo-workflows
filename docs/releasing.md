@@ -9,9 +9,15 @@ Allow 1h to do a release.
 
 ## Release
 
+Releasing requires a clean tree state, so back-up any untracked files in your Git directory.
+
+**Only once your files are backed up**, run:
+
+    git clean -fdx  # WARNING: Will delete untracked files!
+
 To generate new manifests and perform basic checks:
 
-    make prepare-release VERSION=v2.11.5
+    make prepare-release -B VERSION=v2.11.5
 
 Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):
 
