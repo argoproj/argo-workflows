@@ -9,6 +9,7 @@ import (
 
 	"github.com/argoproj/argo/v2/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo/v2/util/errors"
 	"github.com/argoproj/argo/v2/workflow/packer"
 )
 
@@ -75,7 +76,7 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 		var offloadedNodes wfv1.Nodes
 		err := wait.ExponentialBackoff(readRetry, func() (bool, error) {
 			offloadedNodes, err = h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			return err == nil, err
+			return errorsutil.Done(err)
 		})
 		if err != nil {
 			return err
@@ -101,7 +102,7 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		var offloadVersion string
 		err := wait.ExponentialBackoff(writeRetry, func() (bool, error) {
 			offloadVersion, err = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
-			return err == nil, err
+			return errorsutil.Done(err)
 		})
 		if err != nil {
 			return err
