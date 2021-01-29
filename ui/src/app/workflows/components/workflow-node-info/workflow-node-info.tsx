@@ -148,6 +148,7 @@ const WorkflowNodeSummary = (props: Props) => {
                     </Button>
                 )}{' '}
                 <Links
+                    button={true}
                     object={{
                         metadata: {
                             namespace: props.workflow.metadata.namespace,
