@@ -11,15 +11,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/v2"
-	"github.com/argoproj/argo/v2/util"
-	"github.com/argoproj/argo/v2/util/cmd"
-	"github.com/argoproj/argo/v2/workflow/common"
-	"github.com/argoproj/argo/v2/workflow/executor"
-	"github.com/argoproj/argo/v2/workflow/executor/docker"
-	"github.com/argoproj/argo/v2/workflow/executor/k8sapi"
-	"github.com/argoproj/argo/v2/workflow/executor/kubelet"
-	"github.com/argoproj/argo/v2/workflow/executor/pns"
+	"github.com/argoproj/argo/v3"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/cmd"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/executor"
+	"github.com/argoproj/argo/v3/workflow/executor/docker"
+	"github.com/argoproj/argo/v3/workflow/executor/k8sapi"
+	"github.com/argoproj/argo/v3/workflow/executor/kubelet"
+	"github.com/argoproj/argo/v3/workflow/executor/pns"
 )
 
 const (
