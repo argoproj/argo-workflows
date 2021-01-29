@@ -12,13 +12,13 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/v2/errors"
 	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo/v2/util/errors"
 	"github.com/argoproj/argo/v2/util/retry"
+	waitutil "github.com/argoproj/argo/v2/util/wait"
 )
 
 type Closer interface {
@@ -36,10 +36,10 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 
 	secretsIf := clientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		return errorsutil.Done(err)
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return []byte{}, errors.InternalWrapError(err)

@@ -34,6 +34,7 @@ import (
 	"github.com/argoproj/argo/v2/util/archive"
 	errorsutil "github.com/argoproj/argo/v2/util/errors"
 	"github.com/argoproj/argo/v2/util/retry"
+	waitutil "github.com/argoproj/argo/v2/util/wait"
 	artifact "github.com/argoproj/argo/v2/workflow/artifacts"
 	"github.com/argoproj/argo/v2/workflow/common"
 	os_specific "github.com/argoproj/argo/v2/workflow/executor/os-specific"
@@ -610,10 +611,10 @@ func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) 
 func (we *WorkflowExecutor) getPod(ctx context.Context) (*apiv1.Pod, error) {
 	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	var pod *apiv1.Pod
-	err := wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
+	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
 		var err error
 		pod, err = podsIf.Get(ctx, we.PodName, metav1.GetOptions{})
-		return errorsutil.Done(err)
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -630,10 +631,10 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 	}
 	configmapsIf := we.ClientSet.CoreV1().ConfigMaps(namespace)
 	var configmap *apiv1.ConfigMap
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		configmap, err = configmapsIf.Get(ctx, name, metav1.GetOptions{})
-		return errorsutil.Done(err)
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return "", errors.InternalWrapError(err)
@@ -658,10 +659,10 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 	}
 	secretsIf := we.ClientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		return errorsutil.Done(err)
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return []byte{}, errors.InternalWrapError(err)
@@ -994,13 +995,9 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
-	err = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
+	err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
 		err := we.RuntimeExecutor.Wait(ctx, mainContainerID)
-		if err != nil {
-			log.Warnf("Failed to wait for container id '%s': %v", mainContainerID, err)
-			return false, nil
-		}
-		return true, nil
+		return err == nil, err
 	})
 	if err != nil {
 		return err
@@ -1020,10 +1017,10 @@ func (we *WorkflowExecutor) waitMainContainerStart(ctx context.Context) (string,
 
 		var watchIf watch.Interface
 
-		err := wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
+		err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
 			var err error
 			watchIf, err = podsIf.Watch(ctx, opts)
-			return errorsutil.Done(err)
+			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
 			return "", errors.InternalWrapErrorf(err, "Failed to establish pod watch: %v", err)
