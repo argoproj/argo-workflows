@@ -700,7 +700,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../workflow-requirements/" title="Workflow Restrictions" class="md-nav__link">
+    <a href="../workflow-restrictions/" title="Workflow Restrictions" class="md-nav__link">
       Workflow Restrictions
     </a>
   </li>
@@ -883,6 +883,40 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#workflow-controller-security" title="Workflow Controller Security" class="md-nav__link">
+    Workflow Controller Security
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#controller-permissions" title="Controller Permissions" class="md-nav__link">
+    Controller Permissions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-permissions" title="User Permissions" class="md-nav__link">
+    User Permissions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-pod-permissions" title="Workflow Pod Permissions" class="md-nav__link">
+    Workflow Pod Permissions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#argo-server-security" title="Argo Server Security" class="md-nav__link">
     Argo Server Security
   </a>
@@ -899,13 +933,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#workflow-pod-security" title="Workflow Pod Security" class="md-nav__link">
-    Workflow Pod Security
-  </a>
   
 </li>
       
@@ -2031,6 +2058,40 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#workflow-controller-security" title="Workflow Controller Security" class="md-nav__link">
+    Workflow Controller Security
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#controller-permissions" title="Controller Permissions" class="md-nav__link">
+    Controller Permissions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-permissions" title="User Permissions" class="md-nav__link">
+    User Permissions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-pod-permissions" title="Workflow Pod Permissions" class="md-nav__link">
+    Workflow Pod Permissions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#argo-server-security" title="Argo Server Security" class="md-nav__link">
     Argo Server Security
   </a>
@@ -2047,13 +2108,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#workflow-pod-security" title="Workflow Pod Security" class="md-nav__link">
-    Workflow Pod Security
-  </a>
   
 </li>
       
@@ -2077,6 +2131,43 @@
                 
                 
                 <h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h1>
+<h2 id="workflow-controller-security">Workflow Controller Security<a class="headerlink" href="#workflow-controller-security" title="Permanent link">&para;</a></h2>
+<p>This has three parts.</p>
+<h3 id="controller-permissions">Controller Permissions<a class="headerlink" href="#controller-permissions" title="Permanent link">&para;</a></h3>
+<p>The controller has permission (via Kubernetes RBAC + its config map) with either all namespaces (cluster-scope install) or a single <a href="../managed-namespace/">managed namespace</a> (namespace-install), notably:</p>
+<ul>
+<li>List/get/update workflows, and cron-workflows.</li>
+<li>Create/get/delete pods, PVCs, and PDBs.</li>
+<li>List/get template, config maps, service accounts, and secrets.</li>
+</ul>
+<p>See <a href="../manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml">workflow-controller-clusterrole.yaml</a> or <a href="../manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml">workflow-controller-role.yaml</a></p>
+<h3 id="user-permissions">User Permissions<a class="headerlink" href="#user-permissions" title="Permanent link">&para;</a></h3>
+<p>Users minimally need permission to create/read workflows. The controller will then create workflow pods (config maps etc) on behalf of the users, even if the user does not have permission to do this themselves. The controller will only create workflow pods in the workflow's namespace.</p>
+<p>A way to think of this is that, if the user has permission to create a workflow in a namespace, then it is OK to create pods or anything else for them in that namespace.</p>
+<p>If the user only has permission to create workflows, then they will be typically unable to configure other necessary resources such as config maps, or view the outcome of their workflow. This is useful when the user is a service.  </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you allow users to create workflows in the controller's namespace (typically <code>argo</code>), it may be possible for users to modify the controller itself.  In a namespace-install the managed namespace should therefore not be the controller's namespace.</p>
+</div>
+<p>You can typically further restrict what a user can do to just being able to submit workflows from templates using <a href="../workflow-restrictions/">the workflow requriments feature</a>.</p>
+<h3 id="workflow-pod-permissions">Workflow Pod Permissions<a class="headerlink" href="#workflow-pod-permissions" title="Permanent link">&para;</a></h3>
+<p>Workflow pods run using either:</p>
+<ul>
+<li>The <code>default</code> service account.</li>
+<li>The service account declared in the workflow spec.</li>
+</ul>
+<p>There is no restriction on which service account in a namespace may be used.</p>
+<p>This service account typically needs the following permissions:</p>
+<ul>
+<li>Get/watch/patch pods.</li>
+<li>Get/watch pod logs.</li>
+</ul>
+<p>See <a href="../manifests/quick-start/base/workflow-role.yaml">workflow-role.yaml</a>.</p>
+<p>Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.</p>
+<p>The main container will have the service account token mounted , allowing the main container to patch pods (amongst other permissions). Set <code>automountServiceAccountToken</code> to false to prevent this. See <a href="../fields/">fields</a>.</p>
+<p>By default, workflows pods run as <code>root</code>. To further secure workflow pods, set the <a href="../workflow-pod-security-context/">workflow pod security context</a>.</p>
+<p>You should configure the controller with the correct <a href="../workflow-executors/">workflow executor</a> for your trade off between security and scalabily.</p>
+<p>These settings can be set by default using <a href="../default-workflow-specs/">workflow defaults</a>.</p>
 <h2 id="argo-server-security">Argo Server Security<a class="headerlink" href="#argo-server-security" title="Permanent link">&para;</a></h2>
 <p>Argo Server implements security in three layers.</p>
 <p>Firstly, you should enable <a href="../tls/">transport layer security</a> to ensure your data cannot be read in transit.</p>
@@ -2084,8 +2175,6 @@
 <p>Finally, you should configure the <code>argo-server</code> role and role binding with the correct permissions.</p>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
 <p>You can achieve this by configuring the <code>argo-server</code> role (<a href="https://github.com/argoproj/argo/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml">example</a> with only read access (i.e. only <code>get</code>/<code>list</code>/<code>watch</code> verbs).</p>
-<h2 id="workflow-pod-security">Workflow Pod Security<a class="headerlink" href="#workflow-pod-security" title="Permanent link">&para;</a></h2>
-<p>See <a href="../workflow-pod-security-context/">workflow pod security context</a>.</p>
                 
                   
                 

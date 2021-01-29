@@ -696,7 +696,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../workflow-requirements/" title="Workflow Restrictions" class="md-nav__link">
+    <a href="../workflow-restrictions/" title="Workflow Restrictions" class="md-nav__link">
       Workflow Restrictions
     </a>
   </li>
@@ -2124,8 +2124,13 @@
 <li>[ ] The release branch should be green in CI before you start.</li>
 </ul>
 <h2 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h2>
+<p>Releasing requires a clean tree state, so back-up any untracked files in your Git directory.</p>
+<p><strong>Only once your files are backed up</strong>, run:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">git clean -fdx  # WARNING: Will delete untracked files!</span>
+</code></pre></div>
+
 <p>To generate new manifests and perform basic checks:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make prepare-release VERSION=v2.11.5</span>
+<div class="codehilite"><pre><span></span><code><span class="err">make prepare-release -B VERSION=v2.11.5</span>
 </code></pre></div>
 
 <p>Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):</p>
