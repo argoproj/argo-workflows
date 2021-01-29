@@ -55,7 +55,7 @@ nav:
           - widgets.md
       # all other topics, including API access
       - Advanced:
-          - workflow-requirements.md
+          - workflow-restrictions.md
           - workflow-notifications.md
           - workflow-events.md
           - kubectl.md
