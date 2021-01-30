@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 func TestConvertCronWorkflowToWorkflow(t *testing.T) {
@@ -107,6 +107,11 @@ spec:
 	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
 		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
 	}
+
+	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
+	assert.NoError(t, err)
+	wf = ConvertCronWorkflowToWorkflowWithName(&cronWf, "test-name")
+	assert.Equal(t, "test-name", wf.Name)
 }
 
 const workflowTmpl = `

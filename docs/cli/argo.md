@@ -91,6 +91,7 @@ argo [flags]
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.
       --server string                  The address and port of the Kubernetes API server
+      --tls-server-name string         If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
       --token string                   Bearer token for authentication to the API server
       --user string                    The name of the kubeconfig user to use
       --username string                Username for basic authentication to the API server
@@ -104,8 +105,6 @@ argo [flags]
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
 * [argo cron](argo_cron.md)	 - manage cron workflows
-
-NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
 * [argo delete](argo_delete.md)	 - delete workflows
 * [argo get](argo_get.md)	 - display details about a workflow
 * [argo lint](argo_lint.md)	 - validate files or directories of workflow manifests
@@ -116,11 +115,11 @@ NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
 * [argo resume](argo_resume.md)	 - resume zero or more workflows
 * [argo retry](argo_retry.md)	 - retry zero or more workflows
 * [argo server](argo_server.md)	 - Start the Argo Server
-* [argo stop](argo_stop.md)	 - stop zero or more workflows
+* [argo stop](argo_stop.md)	 - stop zero or more workflows allowing all exit handlers to run
 * [argo submit](argo_submit.md)	 - submit a workflow
 * [argo suspend](argo_suspend.md)	 - suspend zero or more workflow
 * [argo template](argo_template.md)	 - manipulate workflow templates
-* [argo terminate](argo_terminate.md)	 - terminate zero or more workflows
+* [argo terminate](argo_terminate.md)	 - terminate zero or more workflows immediately
 * [argo version](argo_version.md)	 - Print version information
 * [argo wait](argo_wait.md)	 - waits for workflows to complete
 * [argo watch](argo_watch.md)	 - watch a workflow until it completes

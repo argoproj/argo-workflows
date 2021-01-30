@@ -46,7 +46,7 @@ RUN if [ "${IMAGE_OS}" = "linux" ]; then \
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
 ####################################################################################################
-FROM debian:10.3-slim as argoexec-base
+FROM debian:10.6-slim as argoexec-base
 
 ARG IMAGE_OS=linux
 
@@ -142,7 +142,7 @@ ARG IMAGE_OS=linux
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/nsswitch.conf /etc/nsswitch.conf
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt
-COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.key argo-server.key
+COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt
+COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo/argo-server.key argo-server.key
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-${IMAGE_OS}-* /bin/argo
 ENTRYPOINT [ "argo" ]

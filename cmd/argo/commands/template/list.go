@@ -9,9 +9,9 @@ import (
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {
@@ -52,7 +52,7 @@ func NewListCommand() *cobra.Command {
 
 		},
 	}
-	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
+	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	return command
 }

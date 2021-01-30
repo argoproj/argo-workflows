@@ -18,10 +18,11 @@ func NewSharedIndexInformer() *SharedIndexInformer {
 func (s *SharedIndexInformer) AddEventHandler(cache.ResourceEventHandler) {}
 func (s *SharedIndexInformer) AddEventHandlerWithResyncPeriod(cache.ResourceEventHandler, time.Duration) {
 }
-func (s *SharedIndexInformer) GetStore() cache.Store            { return s.Indexer }
-func (s *SharedIndexInformer) GetController() cache.Controller  { panic("implement me") }
-func (s *SharedIndexInformer) Run(<-chan struct{})              {}
-func (s *SharedIndexInformer) HasSynced() bool                  { return true }
-func (s *SharedIndexInformer) LastSyncResourceVersion() string  { return "" }
-func (s *SharedIndexInformer) AddIndexers(cache.Indexers) error { return nil }
-func (s *SharedIndexInformer) GetIndexer() cache.Indexer        { return s.Indexer }
+func (s *SharedIndexInformer) GetStore() cache.Store                                      { return s.Indexer }
+func (s *SharedIndexInformer) GetController() cache.Controller                            { panic("implement me") }
+func (s *SharedIndexInformer) Run(<-chan struct{})                                        {}
+func (s *SharedIndexInformer) HasSynced() bool                                            { return true }
+func (s *SharedIndexInformer) LastSyncResourceVersion() string                            { return "" }
+func (s *SharedIndexInformer) AddIndexers(cache.Indexers) error                           { return nil }
+func (s *SharedIndexInformer) GetIndexer() cache.Indexer                                  { return s.Indexer }
+func (s *SharedIndexInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error { return nil }

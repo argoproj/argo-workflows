@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"net/url"
+	"path"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/argoproj/argo/util/slice"
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/argoproj/argo/v2/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -825,21 +827,13 @@ type ZipStrategy struct{}
 // save/load the directory appropriately.
 type NoneStrategy struct{}
 
-// ArtifactLocationType is the type of artifact location
-type ArtifactLocationType string
+type ArtifactLocationType interface {
+	HasLocation() bool
+	GetKey() (string, error)
+	SetKey(key string) error
+}
 
-// ArtifactLocationType
-const (
-	ArtifactLocationS3          ArtifactLocationType = "S3"
-	ArtifactLocationGit         ArtifactLocationType = "Git"
-	ArtifactLocationHTTP        ArtifactLocationType = "HTTP"
-	ArtifactLocationArtifactory ArtifactLocationType = "Artifactory"
-	ArtifactLocationHDFS        ArtifactLocationType = "HDFS"
-	ArtifactLocationRaw         ArtifactLocationType = "Raw"
-	ArtifactLocationOSS         ArtifactLocationType = "OSS"
-	ArtifactLocationGCS         ArtifactLocationType = "GCS"
-	ArtifactLocationUnknown     ArtifactLocationType = ""
-)
+var keyUnsupportedErr = fmt.Errorf("key unsupported")
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
@@ -874,66 +868,164 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-// HasLocation whether or not an artifact has a location defined
+func (a *ArtifactLocation) Get() ArtifactLocationType {
+	if a == nil {
+		return nil
+	} else if a.Artifactory != nil {
+		return a.Artifactory
+	} else if a.Git != nil {
+		return a.Git
+	} else if a.GCS != nil {
+		return a.GCS
+	} else if a.HDFS != nil {
+		return a.HDFS
+	} else if a.HTTP != nil {
+		return a.HTTP
+	} else if a.OSS != nil {
+		return a.OSS
+	} else if a.Raw != nil {
+		return a.Raw
+	} else if a.S3 != nil {
+		return a.S3
+	}
+	return nil
+}
+
+// SetType sets the type of the artifact to type the argument.
+// Any existing value is deleted.
+func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
+	switch v := x.(type) {
+	case *ArtifactoryArtifact:
+		a.Artifactory = &ArtifactoryArtifact{}
+	case *GCSArtifact:
+		a.GCS = &GCSArtifact{}
+	case *HDFSArtifact:
+		a.HDFS = &HDFSArtifact{}
+	case *HTTPArtifact:
+		a.HTTP = &HTTPArtifact{}
+	case *OSSArtifact:
+		a.OSS = &OSSArtifact{}
+	case *RawArtifact:
+		a.Raw = &RawArtifact{}
+	case *S3Artifact:
+		a.S3 = &S3Artifact{}
+	default:
+		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
+	}
+	return nil
+}
+
+func (a *ArtifactLocation) HasLocationOrKey() bool {
+	return a.HasLocation() || a.HasKey()
+}
+
+// HasKey returns whether or not an artifact has a key. They may or may not also HasLocation.
+func (a *ArtifactLocation) HasKey() bool {
+	key, _ := a.GetKey()
+	return key != ""
+}
+
+// set the key to a new value, use path.Join to combine items
+func (a *ArtifactLocation) SetKey(key string) error {
+	v := a.Get()
+	if v == nil {
+		return keyUnsupportedErr
+	}
+	return v.SetKey(key)
+}
+
+func (a *ArtifactLocation) AppendToKey(x string) error {
+	key, err := a.GetKey()
+	if err != nil {
+		return err
+	}
+	return a.SetKey(path.Join(key, x))
+}
+
+// Relocate copies all location info from the parameter, except the key.
+// But only if it does not have a location already.
+func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
+	if a.HasLocation() {
+		return nil
+	}
+	if l == nil {
+		return fmt.Errorf("template artifact location not set")
+	}
+	key, err := a.GetKey()
+	if err != nil {
+		return err
+	}
+	*a = *l.DeepCopy()
+	return a.SetKey(key)
+}
+
+// HasLocation whether or not an artifact has a *full* location defined
+// An artifact that has a location implicitly has a key (i.e. HasKey() == true).
 func (a *ArtifactLocation) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+	v := a.Get()
+	return v != nil && v.HasLocation()
 }
 
-func (a *ArtifactLocation) GetType() ArtifactLocationType {
-
-	if a.S3 != nil {
-		return ArtifactLocationS3
-	}
-
-	if a.Git != nil {
-		return ArtifactLocationGit
-	}
-
-	if a.HTTP != nil {
-		return ArtifactLocationHTTP
-	}
-
-	if a.Artifactory != nil {
-		return ArtifactLocationArtifactory
-	}
-
-	if a.HDFS != nil {
-		return ArtifactLocationHDFS
-	}
-
-	if a.Raw != nil {
-		return ArtifactLocationRaw
-	}
-
-	if a.OSS != nil {
-		return ArtifactLocationOSS
-	}
-
-	if a.GCS != nil {
-		return ArtifactLocationGCS
-	}
-
-	return ArtifactLocationUnknown
-
+func (a *ArtifactLocation) IsArchiveLogs() bool {
+	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
+func (a *ArtifactLocation) GetKey() (string, error) {
+	v := a.Get()
+	if v == nil {
+		return "", keyUnsupportedErr
+	}
+	return v.GetKey()
+}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
+	// The name of the config map. Defaults to "artifact-repositories".
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
-	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	// The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
-func (r ArtifactRepositoryRef) GetConfigMap() string {
-	if r.ConfigMap == "" {
-		return "artifact-repositories"
+func (r *ArtifactRepositoryRef) GetConfigMapOr(configMap string) string {
+	if r == nil || r.ConfigMap == "" {
+		return configMap
 	}
 	return r.ConfigMap
+}
+
+func (r *ArtifactRepositoryRef) GetKeyOr(key string) string {
+	if r == nil || r.Key == "" {
+		return key
+	}
+	return r.Key
+}
+
+func (r *ArtifactRepositoryRef) String() string {
+	if r == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
+}
+
+var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: true}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type ArtifactRepositoryRefStatus struct {
+	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
+	// The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// If this ref represents the default artifact repository, rather than a config map.
+	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
+}
+
+func (r *ArtifactRepositoryRefStatus) String() string {
+	if r == nil {
+		return "nil"
+	}
+	if r.Default {
+		return "default-artifact-repository"
+	}
+	return fmt.Sprintf("%s/%s", r.Namespace, r.ArtifactRepositoryRef.String())
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1122,21 +1214,67 @@ var _ ArgumentsProvider = &Arguments{}
 type Nodes map[string]NodeStatus
 
 func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	return n.Find(NodeWithDisplayName(name))
+}
+
+func (in Nodes) Any(f func(NodeStatus) bool) bool {
+	return in.Find(f) != nil
+}
+
+func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	for _, i := range n {
-		if i.DisplayName == name {
+		if f(i) {
 			return &i
 		}
 	}
 	return nil
 }
 
-func (in Nodes) Any(f func(node NodeStatus) bool) bool {
-	for _, i := range in {
-		if f(i) {
-			return true
+func NodeWithDisplayName(name string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool { return n.DisplayName == name }
+}
+
+func FailedPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeFailed
+}
+
+func SucceededPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeSucceeded
+}
+
+// Children returns the children of the parent.
+func (s Nodes) Children(parentNodeId string) Nodes {
+	var childNodes = make(Nodes)
+	parentNode, ok := s[parentNodeId]
+	if !ok {
+		return childNodes
+	}
+	for _, childID := range parentNode.Children {
+		if childNode, ok := s[childID]; ok {
+			childNodes[childID] = childNode
 		}
 	}
-	return false
+	return childNodes
+}
+
+// Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
+func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
+	var filteredNodes = make(Nodes)
+	for _, node := range s {
+		if predicate(node) {
+			filteredNodes[node.ID] = node
+		}
+	}
+	return filteredNodes
+}
+
+// Map maps the nodes to new values, e.g. `x.Hostname`
+func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
+	var values = make(map[string]interface{})
+	for _, node := range s {
+		values[node.ID] = f(node)
+	}
+	return values
 }
 
 // UserContainer is a container specified by a user.
@@ -1153,7 +1291,7 @@ type UserContainer struct {
 // WorkflowStatus contains overall status information about a workflow
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
-	Phase NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
+	Phase WorkflowPhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=WorkflowPhase"`
 
 	// Time at which this workflow started
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`
@@ -1201,6 +1339,9 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
+
+	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
+	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1233,6 +1374,16 @@ type Backoff struct {
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
+// RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
+// In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+type RetryNodeAntiAffinity struct {
+}
+
+// RetryAffinity prevents running steps on the same host.
+type RetryAffinity struct {
+	NodeAntiAffinity *RetryNodeAntiAffinity `json:"nodeAntiAffinity,omitempty" protobuf:"bytes,1,opt,name=nodeAntiAffinity"`
+}
+
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
@@ -1243,6 +1394,9 @@ type RetryStrategy struct {
 
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
+
+	// Affinity prevents running workflow's step on the same host
+	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -1359,6 +1513,8 @@ type ConditionType string
 const (
 	// ConditionTypeCompleted is a signifies the workflow has completed
 	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypePodRunning any workflow pods are currently running
+	ConditionTypePodRunning ConditionType = "PodRunning"
 	// ConditionTypeSpecWarning is a warning on the current application spec
 	ConditionTypeSpecWarning ConditionType = "SpecWarning"
 	// ConditionTypeSpecWarning is an error on the current application spec
@@ -1490,19 +1646,19 @@ func (phase NodePhase) FailedOrError() bool {
 	return phase == NodeFailed || phase == NodeError
 }
 
-// Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
+// Fulfilled returns whether or not the workflow has fulfilled its execution
 func (ws WorkflowStatus) Fulfilled() bool {
-	return ws.Phase.Fulfilled()
+	return ws.Phase.Completed()
 }
 
 // Successful return whether or not the workflow has succeeded
 func (ws WorkflowStatus) Successful() bool {
-	return ws.Phase == NodeSucceeded
+	return ws.Phase == WorkflowSucceeded
 }
 
 // Failed return whether or not the workflow has failed
 func (ws WorkflowStatus) Failed() bool {
-	return ws.Phase == NodeFailed
+	return ws.Phase == WorkflowFailed
 }
 
 func (ws WorkflowStatus) StartTime() *metav1.Time {
@@ -1612,10 +1768,10 @@ func (n NodeStatus) GetDuration() time.Duration {
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// Region contains the optional bucket region
 	Region string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
@@ -1624,16 +1780,25 @@ type S3Bucket struct {
 	Insecure *bool `json:"insecure,omitempty" protobuf:"varint,4,opt,name=insecure"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,5,opt,name=accessKeySecret"`
+	AccessKeySecret *apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,5,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,6,opt,name=secretKeySecret"`
+	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,6,opt,name=secretKeySecret"`
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
 
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
+}
+
+// CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
+type CreateS3BucketOptions struct {
+	// ObjectLocking Enable object locking
+	ObjectLocking bool `json:"objectLocking,omitempty" protobuf:"varint,3,opt,name=objectLocking"`
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -1642,6 +1807,15 @@ type S3Artifact struct {
 
 	// Key is the key in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (s *S3Artifact) GetKey() (string, error) {
+	return s.Key, nil
+}
+
+func (s *S3Artifact) SetKey(key string) error {
+	s.Key = key
+	return nil
 }
 
 func (s *S3Artifact) HasLocation() bool {
@@ -1680,6 +1854,14 @@ func (g *GitArtifact) HasLocation() bool {
 	return g != nil && g.Repo != ""
 }
 
+func (g *GitArtifact) GetKey() (string, error) {
+	return "", keyUnsupportedErr
+}
+
+func (g *GitArtifact) SetKey(string) error {
+	return keyUnsupportedErr
+}
+
 func (g *GitArtifact) GetDepth() int {
 	if g == nil || g.Depth == nil {
 		return 0
@@ -1706,6 +1888,23 @@ type ArtifactoryArtifact struct {
 //func (a *ArtifactoryArtifact) String() string {
 //	return a.URL
 //}
+func (a *ArtifactoryArtifact) GetKey() (string, error) {
+	u, err := url.Parse(a.URL)
+	if err != nil {
+		return "", err
+	}
+	return u.Path, nil
+}
+
+func (a *ArtifactoryArtifact) SetKey(key string) error {
+	u, err := url.Parse(a.URL)
+	if err != nil {
+		return err
+	}
+	u.Path = key
+	a.URL = u.String()
+	return nil
+}
 
 func (a *ArtifactoryArtifact) HasLocation() bool {
 	return a != nil && a.URL != ""
@@ -1722,6 +1921,15 @@ type HDFSArtifact struct {
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
 }
 
+func (h *HDFSArtifact) GetKey() (string, error) {
+	return h.Path, nil
+}
+
+func (g *HDFSArtifact) SetKey(key string) error {
+	g.Path = key
+	return nil
+}
+
 func (h *HDFSArtifact) HasLocation() bool {
 	return h != nil && len(h.Addresses) > 0
 }
@@ -1731,7 +1939,7 @@ type HDFSConfig struct {
 	HDFSKrbConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSKrbConfig"`
 
 	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `json:"addresses" protobuf:"bytes,2,rep,name=addresses"`
+	Addresses []string `json:"addresses,omitempty" protobuf:"bytes,2,rep,name=addresses"`
 
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
@@ -1771,6 +1979,14 @@ type RawArtifact struct {
 	Data string `json:"data" protobuf:"bytes,1,opt,name=data"`
 }
 
+func (r *RawArtifact) GetKey() (string, error) {
+	return "", keyUnsupportedErr
+}
+
+func (r *RawArtifact) SetKey(string) error {
+	return keyUnsupportedErr
+}
+
 func (r *RawArtifact) HasLocation() bool {
 	return r != nil
 }
@@ -1793,6 +2009,24 @@ type HTTPArtifact struct {
 	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
 }
 
+func (h *HTTPArtifact) GetKey() (string, error) {
+	u, err := url.Parse(h.URL)
+	if err != nil {
+		return "", err
+	}
+	return u.Path, nil
+}
+
+func (g *HTTPArtifact) SetKey(key string) error {
+	u, err := url.Parse(g.URL)
+	if err != nil {
+		return err
+	}
+	u.Path = key
+	g.URL = u.String()
+	return nil
+}
+
 func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
@@ -1801,10 +2035,10 @@ func (h *HTTPArtifact) HasLocation() bool {
 type GCSBucket struct {
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
-	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+	ServiceAccountKeySecret *apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
 }
 
 // GCSArtifact is the location of a GCS artifact
@@ -1815,6 +2049,15 @@ type GCSArtifact struct {
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
+func (g *GCSArtifact) GetKey() (string, error) {
+	return g.Key, nil
+}
+
+func (g *GCSArtifact) SetKey(key string) error {
+	g.Key = key
+	return nil
+}
+
 func (g *GCSArtifact) HasLocation() bool {
 	return g != nil && g.Bucket != "" && g.Key != ""
 }
@@ -1822,16 +2065,16 @@ func (g *GCSArtifact) HasLocation() bool {
 // OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
+	AccessKeySecret *apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,3,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
+	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -1840,6 +2083,15 @@ type OSSArtifact struct {
 
 	// Key is the path in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (o *OSSArtifact) GetKey() (string, error) {
+	return o.Key, nil
+}
+
+func (o *OSSArtifact) SetKey(key string) error {
+	o.Key = key
+	return nil
 }
 
 func (o *OSSArtifact) HasLocation() bool {
@@ -1958,7 +2210,7 @@ type DAGTask struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
-	Template string `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
@@ -2444,6 +2696,9 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
 	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
 	holdingName := items[len(items)-1]
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
@@ -2459,6 +2714,9 @@ func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolder
 func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
 	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
 	holdingName := items[len(items)-1]
 	if i >= 0 {
 		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
@@ -2533,6 +2791,9 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, mutexHolding := ms.GetHolding(lockKey)
 	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
 	holdingName := items[len(items)-1]
 	if i < 0 {
 		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
@@ -2546,8 +2807,13 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 }
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
-	i, _ := ms.GetHolding(lockKey)
-	if i >= 0 {
+	i, holder := ms.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
+	holdingName := items[len(items)-1]
+	if i >= 0 && holder.Holder == holdingName {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true
 	}

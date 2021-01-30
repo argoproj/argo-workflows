@@ -801,6 +801,8 @@ spec:
         duration: "1"      # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
         maxDuration: "1m"  # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+      affinity:
+        nodeAntiAffinity: {}
     container:
       image: python:alpine3.6
       command: ["python", -c]
@@ -811,6 +813,7 @@ spec:
 * `limit` is the maximum number of times the container will be retried.
 * `retryPolicy` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
 * `backoff` is an exponential backoff
+* `nodeAntiAffinity` prevents running steps on the same host.  Current implementation allows only empty `nodeAntiAffinity` (i.e. `nodeAntiAffinity: {}`) and by default it uses label `kubernetes.io/hostname` as the selector.
 
 Providing an empty `retryStrategy` (i.e. `retryStrategy: {}`) will cause a container to retry until completion.
 

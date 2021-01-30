@@ -11,8 +11,8 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) error {
@@ -129,24 +129,21 @@ func parameterString(params []wfv1.Parameter) string {
 }
 
 // WorkflowStatus returns a human readable inferred workflow status based on workflow phase and conditions
-func WorkflowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
+func WorkflowStatus(wf *wfv1.Workflow) string {
 	switch wf.Status.Phase {
-	case wfv1.NodeRunning:
+	case wfv1.WorkflowRunning:
 		if util.IsWorkflowSuspended(wf) {
 			return "Running (Suspended)"
 		}
-		return wf.Status.Phase
-	case wfv1.NodeFailed:
+	case wfv1.WorkflowFailed:
 		if wf.Spec.Shutdown != "" {
 			return "Failed (Terminated)"
 		}
-		return wf.Status.Phase
-	case "", wfv1.NodePending:
+	case wfv1.WorkflowUnknown, wfv1.WorkflowPending:
 		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-			return wfv1.NodePending
+			return "Pending"
 		}
 		return "Unknown"
-	default:
-		return wf.Status.Phase
 	}
+	return string(wf.Status.Phase)
 }

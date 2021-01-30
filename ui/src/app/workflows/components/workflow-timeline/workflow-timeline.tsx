@@ -12,13 +12,13 @@ const ROUND_START_DIFF_MS = 1000;
 const NODE_NAME_WIDTH = 250;
 const MIN_WIDTH = 800;
 
-export interface WorkflowTimelineProps {
+interface WorkflowTimelineProps {
     workflow: models.Workflow;
     selectedNodeId: string;
     nodeClicked?: (node: models.NodeStatus) => any;
 }
 
-export interface WorkflowTimelineState {
+interface WorkflowTimelineState {
     parentWidth: number;
     now: moment.Moment;
 }
@@ -55,6 +55,9 @@ export class WorkflowTimeline extends React.Component<WorkflowTimelineProps, Wor
     }
 
     public render() {
+        if (!this.props.workflow.status.nodes) {
+            return <p>No nodes</p>;
+        }
         const nodes = Object.keys(this.props.workflow.status.nodes)
             .map(id => {
                 const node = this.props.workflow.status.nodes[id];

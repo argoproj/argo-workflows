@@ -5,14 +5,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
-
-	"github.com/argoproj/argo/cmd/argo/commands/archive"
-	"github.com/argoproj/argo/cmd/argo/commands/auth"
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
-	"github.com/argoproj/argo/cmd/argo/commands/template"
+	"github.com/argoproj/argo/v2"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/archive"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/auth"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/clustertemplate"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/cron"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/template"
+	cmdutil "github.com/argoproj/argo/v2/util/cmd"
 )
 
 const (
@@ -123,7 +123,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 			glogLevel = 6
 		}
 		cli.SetLogLevel(logLevel)
-		cli.SetGLogLevel(glogLevel)
+		cmdutil.SetGLogLevel(glogLevel)
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")

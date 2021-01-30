@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
@@ -16,11 +18,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/apiserver"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/help"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v2/server/apiserver"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/server/types"
+	"github.com/argoproj/argo/v2/util/help"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -54,10 +57,12 @@ See %s`, help.ArgoSever),
 			config.QPS = 20.0
 
 			namespace := client.Namespace()
-
-			kubeConfig := kubernetes.NewForConfigOrDie(config)
-			wfClientSet := wfclientset.NewForConfigOrDie(config)
-
+			clients := &types.Clients{
+				Workflow:    wfclientset.NewForConfigOrDie(config),
+				EventSource: eventsource.NewForConfigOrDie(config),
+				Sensor:      sensor.NewForConfigOrDie(config),
+				Kubernetes:  kubernetes.NewForConfigOrDie(config),
+			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -101,8 +106,7 @@ See %s`, help.ArgoSever),
 				TLSConfig:               tlsConfig,
 				HSTS:                    htst,
 				Namespace:               namespace,
-				WfClientSet:             wfClientSet,
-				KubeClientset:           kubeConfig,
+				Clients:                 clients,
 				RestConfig:              config,
 				AuthModes:               modes,
 				ManagedNamespace:        managedNamespace,
@@ -121,7 +125,7 @@ See %s`, help.ArgoSever),
 					}
 				}
 			}
-			server, err := apiserver.NewArgoServer(opts)
+			server, err := apiserver.NewArgoServer(ctx, opts)
 			errors.CheckError(err)
 			server.Run(ctx, port, browserOpenFunc)
 		},

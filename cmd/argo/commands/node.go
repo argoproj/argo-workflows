@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
 )
 
 type setOps struct {
@@ -91,6 +91,7 @@ func NewNodeCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&setArgs.nodeFieldSelector, "node-field-selector", "", "Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&setArgs.phase, "phase", "", "Phase to set the node to, eg: --phase Succeeded")
 	command.Flags().StringArrayVarP(&setArgs.outputParameters, "output-parameter", "p", []string{}, "Set a \"supplied\" output parameter of node, eg: --output-parameter parameter-name=\"Hello, world!\"")
 	command.Flags().StringVarP(&setArgs.message, "message", "m", "", "Set the message of a node, eg: --message \"Hello, world!\"")
 	return command

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,10 +10,10 @@ import (
 	"github.com/Knetic/govaluate"
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
 )
 
 // stepsContext holds context information about this context's steps
@@ -31,7 +32,7 @@ type stepsContext struct {
 	onExitTemplate bool
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -39,7 +40,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
-			_ = woc.killDaemonedChildren(node.ID)
+			_ = woc.killDaemonedChildren(ctx, node.ID)
 		}
 	}()
 
@@ -91,9 +92,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			}
 		}
 
-		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
+		sgNode := woc.executeStepGroup(ctx, stepGroup.Steps, sgNodeName, &stepsCtx)
 
-		if !sgNode.Fulfilled() {
+		if sgNode.Fulfilled() {
+			if tmpl.Synchronization != nil {
+				woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
+			}
+		} else {
 			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
 			return node, nil
 		}
@@ -186,7 +191,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 
 // executeStepGroup examines a list of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
-func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
 	node := woc.wf.GetNodeByName(sgNodeName)
 	if node.Fulfilled() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
@@ -233,7 +238,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
-		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
+		childNode, err := woc.executeTemplate(ctx, childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
@@ -242,10 +247,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrTimeout:
 				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
-				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
-				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
-				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
+				return woc.markNodeError(node.Name, fmt.Errorf("step group deemed errored due to child %s error: %w", childNodeName, err))
 			}
 		}
 		if childNode != nil {
@@ -263,7 +266,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
@@ -394,6 +397,9 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 			resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
 			if err != nil {
+				if art.Optional {
+					continue
+				}
 				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
@@ -513,6 +519,9 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	if node.Outputs != nil {
 		if node.Outputs.Result != nil {
 			localScope["outputs.result"] = *node.Outputs.Result
+		}
+		if node.Outputs.ExitCode != nil {
+			localScope[common.LocalVarExitCode] = *node.Outputs.ExitCode
 		}
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)

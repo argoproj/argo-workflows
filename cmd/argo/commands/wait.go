@@ -14,10 +14,10 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -74,7 +74,8 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
-			FieldSelector: util.GenerateFieldSelectorFromWorkflowName(wfName),
+			FieldSelector:   util.GenerateFieldSelectorFromWorkflowName(wfName),
+			ResourceVersion: "0",
 		},
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
@@ -102,7 +103,7 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 			if !quiet {
 				fmt.Printf("%s %s at %v\n", wfName, wf.Status.Phase, wf.Status.FinishedAt)
 			}
-			if wf.Status.Phase == wfv1.NodeFailed || wf.Status.Phase == wfv1.NodeError {
+			if wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError {
 				return false
 			}
 			return true

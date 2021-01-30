@@ -5,15 +5,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/minio/minio-go/v7"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -103,6 +105,19 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 				log.Warnf("Failed to test if %s is a directory: %v", path, err)
 				return false, nil
 			}
+
+			createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
+			if createBucketIfNotPresent != nil {
+				log.Infof("Trying to create bucket: %s", outputArtifact.S3.Bucket)
+				err := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
+					Region:        outputArtifact.S3.Region,
+					ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
+				})
+				if err != nil {
+					log.Warnf("Failed to create bucket: %v. Error: %v", outputArtifact.S3.Bucket, err)
+				}
+			}
+
 			if isDir {
 				if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
 					log.Warnf("Failed to put directory: %v", err)

@@ -18,8 +18,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/e2e/fixtures"
 )
 
 type CLISuite struct {
@@ -35,7 +35,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	token, err := s.GetServiceAccountToken()
 	s.CheckError(err)
 	switch mode {
-	default:
+	case "KUBE":
 		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Unsetenv("ARGO_SERVER")
 		_ = os.Unsetenv("ARGO_BASE_HREF")
@@ -43,7 +43,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 		_ = os.Unsetenv("ARGO_TOKEN")
 		_ = os.Unsetenv("ARGO_NAMESPACE")
 		_ = os.Setenv("KUBECONFIG", kubeConfig)
-	case "GRPC":
+	default:
 		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 		_ = os.Unsetenv("ARGO_BASE_HREF")
@@ -70,27 +70,15 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 	_ = os.Setenv("KUBECONFIG", kubeConfig)
 }
 
-func (s *CLISuite) needsServer() {
-	if os.Getenv("ARGO_SERVER") == "" {
-		s.T().Skip("test needs server")
+var (
+	Server fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
+		return os.Getenv("ARGO_SERVER") != "", "Argo Server"
 	}
-}
-func (s *CLISuite) skipIfServer() {
-	if os.Getenv("ARGO_SERVER") != "" {
-		s.T().Skip("test must not run with server")
+	Offloading               = fixtures.All(fixtures.Offloading, Server)
+	HTTP1      fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
+		return os.Getenv("ARGO_HTTP1") != "", "HTTP1 client"
 	}
-}
-
-func (s *CLISuite) skipIfHTTP() {
-	if os.Getenv("ARGO_HTTP1") != "" {
-		s.T().Skip("test must not run with HTTP")
-	}
-}
-
-func (s *CLISuite) NeedsOffloading() {
-	s.E2ESuite.NeedsOffloading()
-	s.needsServer()
-}
+)
 
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
@@ -119,12 +107,13 @@ func (s *CLISuite) TestLogLevels() {
 }
 
 func (s *CLISuite) TestGLogLevels() {
-	s.skipIfServer()
+	s.Need(fixtures.None(Server))
+	expected := "Config loaded from file"
 	s.Run("Verbose", func() {
 		s.Given().
 			RunCli([]string{"-v", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Config loaded from file", "glog output")
+					assert.Contains(t, output, expected, "glog output")
 				}
 			})
 	})
@@ -132,7 +121,7 @@ func (s *CLISuite) TestGLogLevels() {
 		s.Given().
 			RunCli([]string{"--loglevel=debug", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.NotContains(t, output, "Config loaded from file", "glog output")
+					assert.NotContains(t, output, expected, "glog output")
 				}
 			})
 	})
@@ -140,7 +129,7 @@ func (s *CLISuite) TestGLogLevels() {
 		s.Given().
 			RunCli([]string{"--gloglevel=6", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Config loaded from file", "glog output")
+					assert.Contains(t, output, expected, "glog output")
 				}
 			})
 	})
@@ -156,7 +145,7 @@ func (s *CLISuite) TestVersion() {
 
 	})
 	s.Run("Default", func() {
-		s.needsServer()
+		s.Need(Server)
 		s.Given().
 			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -186,7 +175,7 @@ func (s *CLISuite) TestVersion() {
 			})
 	})
 	s.Run("Short", func() {
-		s.needsServer()
+		s.Need(Server)
 		s.Given().
 			RunCli([]string{"version", "--short"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -223,8 +212,8 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
-	s.skipIfServer()
-	s.NeedsCI()
+	s.Need(fixtures.None(Server))
+	s.Need(fixtures.RBAC)
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
@@ -292,7 +281,7 @@ func (s *CLISuite) TestLogs() {
 			})
 	})
 	s.Run("SinceTime", func() {
-		s.skipIfHTTP() // this test errors with `field type *v1.Time is not supported in query parameters`
+		s.Need(fixtures.None(HTTP1)) // this test errors with `field type *v1.Time is not supported in query parameters`
 		s.Given().
 			RunCli([]string{"logs", name, "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -331,7 +320,7 @@ func (s *CLISuite) TestLogProblems() {
 		WaitForWorkflow(fixtures.ToStart, "to start").
 		Then().
 		// logs should come in order
-		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"logs", "@latest", "--follow"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				lines := strings.Split(output, "\n")
 				if assert.Len(t, lines, 6) {
@@ -347,7 +336,7 @@ func (s *CLISuite) TestLogProblems() {
 		// Next check that all log entries and received and in the correct order.
 		WaitForWorkflow().
 		Then().
-		RunCli([]string{"logs", "log-problems"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"logs", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				lines := strings.Split(output, "\n")
 				if assert.Len(t, lines, 6) {
@@ -374,7 +363,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
-		s.NeedsOffloading()
+		s.Need(Offloading)
 		for i := 0; i < 3; i++ {
 			s.Given().
 				Workflow("@smoke/basic-generate-name.yaml").
@@ -393,7 +382,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("Get", func() {
-		s.NeedsOffloading()
+		s.Need(Offloading)
 		s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -423,13 +412,13 @@ func (s *CLISuite) TestRoot() {
 			WaitForWorkflow(createdWorkflowName).
 			Then().
 			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+				assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			})
 	})
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
@@ -448,12 +437,12 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
 func (s *CLISuite) TestNodeSuspendResume() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -475,11 +464,11 @@ func (s *CLISuite) TestNodeSuspendResume() {
 			}
 		}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "suspended node").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if assert.Equal(t, wfv1.NodeFailed, status.Phase) {
+			if assert.Equal(t, wfv1.WorkflowFailed, status.Phase) {
 				r := regexp.MustCompile(`child '(node-suspend-[0-9]+)' failed`)
 				res := r.FindStringSubmatch(status.Message)
 				assert.Equal(t, len(res), 2)
@@ -743,7 +732,7 @@ func (s *CLISuite) TestWorkflowLint() {
 }
 
 func (s *CLISuite) TestWorkflowRetry() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	var retryTime corev1.Time
 
 	s.Given().
@@ -761,7 +750,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			retryTime = wf.Status.FinishedAt
-			return wf.Status.Phase == wfv1.NodeFailed
+			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "is terminated", 20*time.Second).
 		Wait(3*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
@@ -837,7 +826,7 @@ func (s *CLISuite) TestWorkflowTerminateByFieldSelector() {
 }
 
 func (s *CLISuite) TestWorkflowWait() {
-	s.needsServer()
+	s.Need(Offloading)
 	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -855,7 +844,7 @@ func (s *CLISuite) TestWorkflowWait() {
 }
 
 func (s *CLISuite) TestWorkflowWatch() {
-	s.needsServer()
+	s.Need(Offloading)
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -921,7 +910,7 @@ func (s *CLISuite) TestTemplate() {
 		})
 	})
 	s.Run("Submittable-Template", func() {
-		s.NeedsOffloading()
+		s.Need(Offloading)
 		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -1171,7 +1160,7 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 	semaphoreData := map[string]string{
 		"workflow": "1",
 	}
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/semaphore-wf-level.yaml").
 		When().
@@ -1183,13 +1172,13 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 		}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == ""
+			return wf.Status.Phase == wfv1.WorkflowUnknown
 		}), "Workflow is waiting for lock").
 		WaitForWorkflow().
 		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -1198,14 +1187,14 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		"template": "1",
 	}
 
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/semaphore-tmpl-level.yaml").
 		When().
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodeRunning
+			return wf.Status.Phase == wfv1.WorkflowRunning
 		}), "waiting for Workflow to run", 10*time.Second).
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
@@ -1214,7 +1203,7 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 }
 
 func (s *CLISuite) TestRetryOmit() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
 		When().
@@ -1239,47 +1228,8 @@ func (s *CLISuite) TestRetryOmit() {
 		WaitForWorkflow()
 }
 
-func (s *CLISuite) TestSynchronizationWfLevelMutex() {
-	s.NeedsOffloading()
-	s.Given().
-		Workflow("@functional/synchronization-mutex-wf-level.yaml").
-		When().
-		RunCli([]string{"submit", "functional/synchronization-mutex-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "synchronization-wf-level-mutex")
-			}
-		}).
-		SubmitWorkflow().
-		Wait(1*time.Second).
-		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Pending")
-		}).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *CLISuite) TestTemplateLevelMutex() {
-	s.NeedsOffloading()
-	s.Given().
-		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
-		When().
-		SubmitWorkflow().
-		Wait(3*time.Second).
-		RunCli([]string{"get", "synchronization-tmpl-level-mutex"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for")
-		}).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Run("ResourceTemplateStop", func() {
 		s.Given().
 			WorkflowName("resource-tmpl-wf").
@@ -1287,6 +1237,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
+			WaitForWorkflow(fixtures.ToBeRunning).
 			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Running")
 			}).
@@ -1325,7 +1276,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 }
 
 func (s *CLISuite) TestMetaDataNamespace() {
-	s.needsServer()
+	s.Need(fixtures.RBAC, Offloading)
 	s.Given().
 		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.Error(t, err) {
@@ -1348,7 +1299,7 @@ func (s *CLISuite) TestMetaDataNamespace() {
 }
 
 func (s *CLISuite) TestAuthToken() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Given().RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, output)
@@ -1356,7 +1307,7 @@ func (s *CLISuite) TestAuthToken() {
 }
 
 func (s *CLISuite) TestArchive() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -1408,7 +1359,7 @@ func (s *CLISuite) TestArchive() {
 }
 
 func (s *CLISuite) TestArgoSetOutputs() {
-	s.NeedsOffloading()
+	s.Need(Offloading)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -1483,7 +1434,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("release")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
@@ -1496,16 +1447,5 @@ spec:
 }
 
 func TestCLISuite(t *testing.T) {
-	_ = os.Setenv("E2E_MODE", "KUBE")
-	suite.Run(t, new(CLISuite))
-}
-
-func TestCLIWithServerOverGRPCSuite(t *testing.T) {
-	_ = os.Setenv("E2E_MODE", "GRPC")
-	suite.Run(t, new(CLISuite))
-}
-
-func TestCLIWithServerOverHTTP1Suite(t *testing.T) {
-	_ = os.Setenv("E2E_MODE", "HTTP1")
 	suite.Run(t, new(CLISuite))
 }

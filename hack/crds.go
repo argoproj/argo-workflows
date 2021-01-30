@@ -20,7 +20,10 @@ func cleanCRD(filename string) {
 	metadata := crd["metadata"].(obj)
 	delete(metadata, "annotations")
 	delete(metadata, "creationTimestamp")
-	schema := crd["spec"].(obj)["validation"].(obj)["openAPIV3Schema"].(obj)
+	spec := crd["spec"].(obj)
+	versions := spec["versions"].([]interface{})
+	version := versions[0].(obj)
+	schema := version["schema"].(obj)["openAPIV3Schema"].(obj)
 	name := crd["metadata"].(obj)["name"].(string)
 	switch name {
 	case "cronworkflows.argoproj.io":
@@ -57,7 +60,14 @@ func removeCRDValidation(filename string) {
 		panic(err)
 	}
 	spec := crd["spec"].(obj)
-	delete(spec, "validation")
+	versions := spec["versions"].([]interface{})
+	version := versions[0].(obj)
+	properties := version["schema"].(obj)["openAPIV3Schema"].(obj)["properties"].(obj)
+	for k := range properties {
+		if k == "spec" || k == "status" {
+			properties[k] = obj{"type": "object", "x-kubernetes-preserve-unknown-fields": true}
+		}
+	}
 	data, err = yaml.Marshal(crd)
 	if err != nil {
 		panic(err)

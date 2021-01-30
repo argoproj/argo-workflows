@@ -28,19 +28,21 @@ nav:
           - workflow-concepts.md
           - cli.md
           - variables.md
-      # topics that don't require kubctl or re-configuration
+      # topics that don't require kubectl or re-configuration
       - Intermediate:
           - service-accounts.md
           - workflow-rbac.md
           - node-field-selector.md
           - empty-dir.md
           - workflow-templates.md
+          - workflow-inputs.md
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - artifact-repository-ref.md
+          - key-only-artifacts.md
           - resource-duration.md
           - estimated-duration.md
           - workflow-pod-security-context.md
@@ -50,9 +52,10 @@ nav:
           - workflow-of-workflows.md
           - memoization.md
           - tolerating-pod-deletion.md
+          - widgets.md
       # all other topics, including API access
       - Advanced:
-          - workflow-requirements.md
+          - workflow-restrictions.md
           - workflow-notifications.md
           - workflow-events.md
           - kubectl.md
@@ -132,6 +135,8 @@ nav:
           - argo-server-auth-mode.md
           - tls.md
           - argo-server-sso.md
+      - high-availability.md
+      - disaster-recovery.md
       - scaling.md
       - cost-optimisation.md
       - windows.md
@@ -142,6 +147,7 @@ nav:
       - versioning.md
       - public-api.md
       - static-code-analysis.md
+      - stress-testing.md
       - releasing.md
   - Releases ⧉: https://github.com/argoproj/argo/releases
   - Roadmap: roadmap.md

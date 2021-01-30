@@ -14,19 +14,19 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/help"
-	"github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util"
+	"github.com/argoproj/argo/v2/util/help"
+	"github.com/argoproj/argo/v2/util/intstr"
+	"github.com/argoproj/argo/v2/util/sorting"
+	"github.com/argoproj/argo/v2/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/metrics"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
 )
 
 // ValidateOpts provides options when linting
@@ -691,8 +691,8 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			}
 		}
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
-			// Try to unmarshal the given manifest.
-			obj := unstructured.Unstructured{}
+			// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
+			var obj interface{}
 			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
@@ -778,8 +778,8 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 		}
 	}
 	for _, art := range arguments.Artifacts {
-		if art.From == "" && !art.HasLocation() {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s.from or artifact location is required", prefix, art.Name)
+		if art.From == "" && !art.HasLocationOrKey() {
+			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
 		}
 	}
 	return nil
@@ -1150,7 +1150,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 
 type dagValidationContext struct {
 	tasks        map[string]wfv1.DAGTask
-	dependencies map[string][]string
+	dependencies map[string]map[string]common.DependencyType //map of DAG tasks, each one containing a map of [task it's dependent on] -> [dependency type]
 }
 
 func (d *dagValidationContext) GetTask(taskName string) *wfv1.DAGTask {
@@ -1159,6 +1159,17 @@ func (d *dagValidationContext) GetTask(taskName string) *wfv1.DAGTask {
 }
 
 func (d *dagValidationContext) GetTaskDependencies(taskName string) []string {
+	dependencies := d.GetTaskDependenciesWithDependencyTypes(taskName)
+
+	var dependencyTasks []string
+	for task := range dependencies {
+		dependencyTasks = append(dependencyTasks, task)
+	}
+
+	return dependencyTasks
+}
+
+func (d *dagValidationContext) GetTaskDependenciesWithDependencyTypes(taskName string) map[string]common.DependencyType {
 	if dependencies, ok := d.dependencies[taskName]; ok {
 		return dependencies
 	}
@@ -1180,6 +1191,12 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if len(tmpl.DAG.Tasks) == 0 {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s must have at least one task", tmpl.Name)
 	}
+
+	err = sortDAGTasks(tmpl)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s sorting failed: %s", tmpl.Name, err.Error())
+	}
+
 	err = validateWorkflowFieldNames(tmpl.DAG.Tasks)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
@@ -1196,7 +1213,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 	dagValidationCtx := &dagValidationContext{
 		tasks:        nameToTask,
-		dependencies: make(map[string][]string),
+		dependencies: make(map[string]map[string]common.DependencyType),
 	}
 
 	resolvedTemplates := make(map[string]*wfv1.Template)
@@ -1204,8 +1221,8 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
 
-		if usingDepends && '0' <= task.Name[0] && task.Name[0] <= '9' {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using 'depends'", tmpl.Name, task.Name)
+		if '0' <= task.Name[0] && task.Name[0] <= '9' {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.Name)
 		}
 
 		if usingDepends && len(task.Dependencies) > 0 {
@@ -1231,11 +1248,17 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 
-		for j, depName := range dagValidationCtx.GetTaskDependencies(task.Name) {
-			if _, ok := dagValidationCtx.tasks[depName]; !ok {
+		for depName, depType := range dagValidationCtx.GetTaskDependenciesWithDependencyTypes(task.Name) {
+			task, ok := dagValidationCtx.tasks[depName]
+			if !ok {
 				return errors.Errorf(errors.CodeBadRequest,
-					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' not defined",
-					tmpl.Name, task.Name, j, depName)
+					"templates.%s.tasks.%s dependency '%s' not defined",
+					tmpl.Name, task.Name, depName)
+
+			} else if depType == common.DependencyTypeItems && len(task.WithItems) == 0 && task.WithParam == "" && task.WithSequence == nil {
+				return errors.Errorf(errors.CodeBadRequest,
+					"templates.%s.tasks.%s dependency '%s' uses an items-based condition such as .AnySucceeded or .AllFailed but does not contain any items",
+					tmpl.Name, task.Name, depName)
 			}
 		}
 	}
@@ -1343,6 +1366,27 @@ func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func sortDAGTasks(tmpl *wfv1.Template) error {
+	taskMap := make(map[string]*wfv1.DAGTask, len(tmpl.DAG.Tasks))
+	sortingGraph := make([]*sorting.TopologicalSortingNode, len(tmpl.DAG.Tasks))
+	for index := range tmpl.DAG.Tasks {
+		taskMap[tmpl.DAG.Tasks[index].Name] = &tmpl.DAG.Tasks[index]
+		sortingGraph[index] = &sorting.TopologicalSortingNode{
+			NodeName:     tmpl.DAG.Tasks[index].Name,
+			Dependencies: tmpl.DAG.Tasks[index].Dependencies,
+		}
+	}
+	sortingResult, err := sorting.TopologicalSorting(sortingGraph)
+	if err != nil {
+		return err
+	}
+	tmpl.DAG.Tasks = make([]wfv1.DAGTask, len(tmpl.DAG.Tasks))
+	for index, node := range sortingResult {
+		tmpl.DAG.Tasks[index] = *taskMap[node.NodeName]
 	}
 	return nil
 }

@@ -2,29 +2,62 @@ package sync
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 type NextWorkflow func(string)
 type GetSyncLimit func(string) (int, error)
+type IsWorkflowDeleted func(string) bool
 
 type Manager struct {
 	syncLockMap  map[string]Semaphore
 	lock         *sync.Mutex
 	nextWorkflow NextWorkflow
 	getSyncLimit GetSyncLimit
+	isWFDeleted  IsWorkflowDeleted
 }
 
-func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow) *Manager {
+func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	return &Manager{
 		syncLockMap:  make(map[string]Semaphore),
 		lock:         &sync.Mutex{},
 		nextWorkflow: nextWorkflow,
 		getSyncLimit: getSyncLimit,
+		isWFDeleted:  isWFDeleted,
+	}
+}
+
+func (cm *Manager) getWorkflowKey(key string) (string, error) {
+	if key == "" {
+		return "", fmt.Errorf("holderkey is empty")
+	}
+	items := strings.Split(key, "/")
+	if len(items) < 2 {
+		return "", fmt.Errorf("invalid holderkey format")
+	}
+	return fmt.Sprintf("%s/%s", items[0], items[1]), nil
+}
+
+func (cm *Manager) CheckWorkflowExistence() {
+	log.Infof("Check the workflow existence")
+	for _, lock := range cm.syncLockMap {
+		keys := lock.getCurrentHolders()
+		keys = append(keys, lock.getCurrentPending()...)
+		for _, holderKeys := range keys {
+			wfKey, err := cm.getWorkflowKey(holderKeys)
+			if err != nil {
+				continue
+			}
+			if !cm.isWFDeleted(wfKey) {
+				lock.release(holderKeys)
+				lock.removeFromQueue(holderKeys)
+			}
+		}
 	}
 }
 
@@ -155,6 +188,7 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 
 	if syncLockHolder, ok := cm.syncLockMap[lockName.EncodeName()]; ok {
 		syncLockHolder.release(holderKey)
+		syncLockHolder.removeFromQueue(holderKey)
 		log.Debugf("%s sync lock is released by %s", lockName.EncodeName(), holderKey)
 		lockKey := lockName.EncodeName()
 		wf.Status.Synchronization.GetStatus(syncRef.GetType()).LockReleased(holderKey, lockKey)
@@ -183,6 +217,16 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				log.Infof("%s released a lock from %s", resourceKey, holding.Semaphore)
 			}
 		}
+
+		// Remove the pending Workflow level semaphore keys
+		for _, waiting := range wf.Status.Synchronization.Semaphore.Waiting {
+			syncLockHolder := cm.syncLockMap[waiting.Semaphore]
+			if syncLockHolder == nil {
+				continue
+			}
+			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
+			syncLockHolder.removeFromQueue(resourceKey)
+		}
 		wf.Status.Synchronization.Semaphore = nil
 	}
 
@@ -197,6 +241,16 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			syncLockHolder.release(resourceKey)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
 			log.Infof("%s released a lock from %s", resourceKey, holding.Mutex)
+		}
+
+		// Remove the pending Workflow level mutex keys
+		for _, waiting := range wf.Status.Synchronization.Mutex.Waiting {
+			syncLockHolder := cm.syncLockMap[waiting.Mutex]
+			if syncLockHolder == nil {
+				continue
+			}
+			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
+			syncLockHolder.removeFromQueue(resourceKey)
 		}
 		wf.Status.Synchronization.Mutex = nil
 	}

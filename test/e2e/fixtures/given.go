@@ -10,9 +10,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/hydrator"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
 )
 
 type Given struct {
@@ -140,11 +140,11 @@ var NoError = func(t *testing.T, output string, err error) {
 	assert.NoError(t, err, output)
 }
 
-var OutputContains = func(contains string) func(t *testing.T, output string, err error) {
+var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
 		t.Helper()
 		if assert.NoError(t, err, output) {
-			assert.Contains(t, output, contains)
+			assert.Regexp(t, rx, output)
 		}
 	}
 }

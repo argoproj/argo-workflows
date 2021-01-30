@@ -7,9 +7,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 const (
@@ -43,12 +44,14 @@ type Metrics struct {
 	telemetryConfig ServerConfig
 
 	workflowsProcessed prometheus.Counter
+	podsByPhase        map[corev1.PodPhase]prometheus.Gauge
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
 	workflows          map[string][]string
 	operationDurations prometheus.Histogram
 	errors             map[ErrorCause]prometheus.Counter
 	customMetrics      map[string]metric
 	workqueueMetrics   map[string]prometheus.Metric
+	workersBusy        map[string]prometheus.Gauge
 
 	// Used to quickly check if a metric desc is already used by the system
 	defaultMetricDescs map[string]bool
@@ -72,12 +75,14 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		metricsConfig:      metricsConfig,
 		telemetryConfig:    telemetryConfig,
 		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
+		podsByPhase:        getPodPhaseGauges(),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
 		workflows:          make(map[string][]string),
 		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		workqueueMetrics:   make(map[string]prometheus.Metric),
+		workersBusy:        make(map[string]prometheus.Gauge),
 		defaultMetricDescs: make(map[string]bool),
 		metricNameHelps:    make(map[string]string),
 		logMetric: prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -110,10 +115,16 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	for _, metric := range m.workflowsByPhase {
 		allMetrics = append(allMetrics, metric)
 	}
+	for _, metric := range m.podsByPhase {
+		allMetrics = append(allMetrics, metric)
+	}
 	for _, metric := range m.errors {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.workqueueMetrics {
+		allMetrics = append(allMetrics, metric)
+	}
+	for _, metric := range m.workersBusy {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.customMetrics {
@@ -122,53 +133,20 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	return allMetrics
 }
 
-func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	if _, exists := m.workflows[key]; exists {
-		return
-	}
-	m.workflows[key] = []string{}
-	if _, ok := m.workflowsByPhase[phase]; ok {
-		m.workflowsByPhase[phase].Inc()
-	}
-}
-
-func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePhase) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	if _, exists := m.workflows[key]; !exists || fromPhase == toPhase {
-		return
-	}
-	if _, ok := m.workflowsByPhase[fromPhase]; ok {
-		m.workflowsByPhase[fromPhase].Dec()
-	}
-	if _, ok := m.workflowsByPhase[toPhase]; ok {
-		m.workflowsByPhase[toPhase].Inc()
-	}
-}
-
-func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
+func (m *Metrics) StopRealtimeMetricsForKey(key string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
 	if _, exists := m.workflows[key]; !exists {
 		return
 	}
-	m.StopRealtimeMetricsForKey(key)
-	delete(m.workflows, key)
-	if _, ok := m.workflowsByPhase[phase]; ok {
-		m.workflowsByPhase[phase].Dec()
-	}
-}
 
-func (m *Metrics) StopRealtimeMetricsForKey(key string) {
 	realtimeMetrics := m.workflows[key]
 	for _, metric := range realtimeMetrics {
 		delete(m.customMetrics, metric)
 	}
+
+	delete(m.workflows, key)
 }
 
 func (m *Metrics) OperationCompleted(durationSeconds float64) {
@@ -208,6 +186,20 @@ func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prom
 	}
 
 	return nil
+}
+
+func (m *Metrics) SetWorkflowPhaseGauge(phase v1alpha1.NodePhase, num int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.workflowsByPhase[phase].Set(float64(num))
+}
+
+func (m *Metrics) SetPodPhaseGauge(phase corev1.PodPhase, num int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.podsByPhase[phase].Set(float64(num))
 }
 
 type ErrorCause string

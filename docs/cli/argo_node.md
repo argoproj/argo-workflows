@@ -30,6 +30,7 @@ argo node ACTION WORKFLOW FLAGS [flags]
   -m, --message string                 Set the message of a node, eg: --message "Hello, world!"
       --node-field-selector string     Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc
   -p, --output-parameter stringArray   Set a "supplied" output parameter of node, eg: --output-parameter parameter-name="Hello, world!"
+      --phase string                   Phase to set the node to, eg: --phase Succeeded
 ```
 
 ### Options inherited from parent commands
@@ -56,6 +57,7 @@ argo node ACTION WORKFLOW FLAGS [flags]
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.
       --server string                  The address and port of the Kubernetes API server
+      --tls-server-name string         If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
       --token string                   Bearer token for authentication to the API server
       --user string                    The name of the kubeconfig user to use
       --username string                Username for basic authentication to the API server

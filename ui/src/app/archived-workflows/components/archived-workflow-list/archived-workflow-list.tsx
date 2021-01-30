@@ -60,7 +60,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             <Page
                 title='Archived Workflows'
                 toolbar={{
-                    breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}]
+                    breadcrumbs: [
+                        {title: 'Archived Workflows', path: uiUrl('archived-workflows')},
+                        {title: this.state.namespace, path: uiUrl('archived-workflows/' + this.state.namespace)}
+                    ]
                 }}>
                 <div className='row'>
                     <div className='columns small-12 xlarge-2'>
@@ -122,7 +125,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (this.state.pagination.offset) {
             params.append('offset', this.state.pagination.offset);
         }
-        if (this.state.pagination.limit !== defaultPaginationLimit) {
+        if (this.state.pagination.limit && this.state.pagination.limit !== defaultPaginationLimit) {
             params.append('limit', this.state.pagination.limit.toString());
         }
         return params;
@@ -130,7 +133,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private saveHistory() {
         this.url = uiUrl('archived-workflows/' + (this.state.namespace || '') + '?' + this.filterParams.toString());
-        Utils.setCurrentNamespace(this.state.namespace);
+        Utils.currentNamespace = this.state.namespace;
     }
 
     private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
@@ -208,6 +211,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, pagination)
                     }
                     pagination={this.state.pagination}
+                    numRecords={(this.state.workflows || []).length}
                 />
                 <p>
                     <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes. {learnMore}.

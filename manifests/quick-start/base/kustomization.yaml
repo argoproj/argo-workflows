@@ -7,6 +7,8 @@ resources:
   - webhooks
   - argo-server-sso-secret.yaml
   - workflow-role.yaml
+  - kubelet-executor-clusterrole.yaml
+  - kubelet-executor-default-clusterrolebinding.yaml
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml

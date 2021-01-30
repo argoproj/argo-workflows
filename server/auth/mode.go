@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/argoproj/argo/server/auth/sso"
+	"github.com/argoproj/argo/v2/server/auth/sso"
 )
 
 type Modes map[Mode]bool
@@ -31,11 +31,14 @@ func (m Modes) Add(value string) error {
 }
 
 func (m Modes) GetMode(authorisation string) (Mode, bool) {
-	if strings.HasPrefix(authorisation, sso.Prefix) {
-		return SSO, m[SSO]
+	if m[SSO] && strings.HasPrefix(authorisation, sso.Prefix) {
+		return SSO, true
 	}
-	if strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ") {
-		return Client, m[Client]
+	if m[Client] && strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ") {
+		return Client, true
 	}
-	return Server, m[Server]
+	if m[Server] {
+		return Server, true
+	}
+	return "", false
 }

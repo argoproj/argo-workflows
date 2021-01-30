@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
 
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
 )
 
 var mutexWf = `
@@ -93,11 +94,12 @@ func TestMutexLock(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(mutexwfstatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
-		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
+		ctx := context.Background()
+		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
@@ -106,7 +108,7 @@ func TestMutexLock(t *testing.T) {
 		var nextWorkflow string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			nextWorkflow = key
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(mutexWf)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -285,7 +287,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		//var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			//nextKey = key
-		})
+		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(mutexWfWithTmplLevel)
 		tmpl := wf.Spec.Templates[1]
 
@@ -311,6 +313,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.False(t, wfUpdate)
 		assert.False(t, status)
 
+		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
 		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
@@ -324,5 +327,11 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
 		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-2216915482", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+
+		assert.NotEqual(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
+		assert.NotNil(t, wf.Status.Synchronization)
+		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		assert.NotEmpty(t, wf.Status.Synchronization.Mutex.Holding)
 	})
 }

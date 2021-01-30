@@ -8,11 +8,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/v2/config"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	"github.com/argoproj/argo/v2/util/instanceid"
+	"github.com/argoproj/argo/v2/workflow/artifactrepositories"
+	"github.com/argoproj/argo/v2/workflow/hydrator"
 )
 
 func (wfc *WorkflowController) updateConfig(v interface{}) error {
@@ -33,6 +34,7 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
+	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
@@ -44,9 +46,13 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 			return err
 		}
 		log.Info("Persistence Session created successfully")
-		err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
-		if err != nil {
-			return err
+		if !persistence.SkipMigration {
+			err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Info("DB migration is disabled")
 		}
 
 		wfc.session = session

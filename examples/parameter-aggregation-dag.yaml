@@ -18,6 +18,20 @@ spec:
           - name: num
             value: "{{item}}"
         withItems: [1, 2, 3, 4]
+      - name: print-nums
+        template: whalesay
+        dependencies: [odd-or-even]
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.odd-or-even.outputs.parameters.num}}"
+      - name: print-evenness
+        template: whalesay
+        dependencies: [odd-or-even]
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.odd-or-even.outputs.parameters.evenness}}"
       # Next, for each even number, divide it by two (using a script template).
       # Skip odd numbers using a `when` clause.
       - name: divide-by-2
@@ -46,7 +60,7 @@ spec:
       - name: num
     container:
       image: alpine:latest
-      command: [sh, -xc]
+      command: [sh, -c]
       args:
       - |
         sleep 1 &&
@@ -70,12 +84,11 @@ spec:
     inputs:
       parameters:
       - name: num
-    script:
+    container:
       image: alpine:latest
-      command: [sh, -x]
-      source: |
-        #!/bin/sh
-        echo $(({{inputs.parameters.num}}/2))
+      command: [sh, -c]
+      args:
+        - echo $(({{inputs.parameters.num}}/2))
 
   # whalesay prints a number using whalesay
   - name: whalesay

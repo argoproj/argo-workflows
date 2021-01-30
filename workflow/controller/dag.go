@@ -1,18 +1,20 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/antonmedv/expr"
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
 )
 
 // dagContext holds context information about this context's DAG
@@ -92,7 +94,12 @@ func (d *dagContext) GetTaskDependsLogic(taskName string) string {
 
 func (d *dagContext) resolveDependencies(taskName string) {
 	dependencies, resolvedDependsLogic := common.GetTaskDependencies(d.GetTask(taskName), d)
-	d.dependencies[taskName] = dependencies
+	var dependencyTasks []string
+	for dep := range dependencies {
+		dependencyTasks = append(dependencyTasks, dep)
+	}
+
+	d.dependencies[taskName] = dependencyTasks
 	d.dependsLogic[taskName] = resolvedDependsLogic
 }
 
@@ -201,7 +208,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 	return result
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -209,7 +216,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
-			_ = woc.killDaemonedChildren(node.ID)
+			_ = woc.killDaemonedChildren(ctx, node.ID)
 		}
 	}()
 
@@ -237,7 +244,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
-		woc.executeDAGTask(dagCtx, taskName)
+		woc.executeDAGTask(ctx, dagCtx, taskName)
 
 		// It is possible that target tasks are not reconsidered (i.e. executeDAGTask is not called on them) once they are
 		// complete (since the DAG itself will have succeeded). To ensure that their exit handlers are run we also run them here. Note that
@@ -247,7 +254,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 			if taskNode.Completed() {
 				// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
 				// of the onExit node before continuing. That will be done in assesDAGPhase
-				_, _, err := woc.runOnExitNode(dagCtx.GetTask(taskName).OnExit, taskName, taskNode.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
+				_, _, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).OnExit, taskName, taskNode.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
 				if err != nil {
 					return node, err
 				}
@@ -314,7 +321,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 }
 
 // executeDAGTask traverses and executes the upward chain of dependencies of a task
-func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
+func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContext, taskName string) {
 	if _, ok := dagCtx.visited[taskName]; ok {
 		return
 	}
@@ -339,7 +346,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 		if node.Completed() {
 			// Run the node's onExit node, if any.
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				return
@@ -385,7 +392,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	if dagCtx.GetTaskDependsLogic(taskName) != "" {
 		// Recurse into all of this node's dependencies
 		for _, dep := range taskDependencies {
-			woc.executeDAGTask(dagCtx, dep)
+			woc.executeDAGTask(ctx, dagCtx, dep)
 		}
 		execute, proceed, err := dagCtx.evaluateDependsLogic(taskName)
 		if err != nil {
@@ -437,7 +444,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		node = dagCtx.getTaskNode(t.Name)
 		if node == nil {
-			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, taskDependencies)
+			woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
 
@@ -455,7 +462,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		node, err = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		_, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
@@ -465,8 +472,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return
 			default:
-				woc.log.Infof("DAG %s deemed errored due to task %s error: %s", node.ID, taskNodeName, err.Error())
-				_ = woc.markNodePhase(taskNodeName, wfv1.NodeError, fmt.Sprintf("task '%s' errored", taskNodeName))
+				_ = woc.markNodeError(taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
 				return
 			}
 		}
@@ -621,6 +627,7 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 			leafTaskNames = append(leafTaskNames, taskName)
 		}
 	}
+	sort.Strings(leafTaskNames) // execute tasks in a predictable order
 	return leafTaskNames
 }
 
@@ -674,16 +681,23 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 }
 
 type TaskResults struct {
-	Succeeded bool `json:"Succeeded"`
-	Failed    bool `json:"Failed"`
-	Errored   bool `json:"Errored"`
-	Skipped   bool `json:"Skipped"`
-	Daemoned  bool `json:"Daemoned"`
+	Succeeded    bool `json:"Succeeded"`
+	Failed       bool `json:"Failed"`
+	Errored      bool `json:"Errored"`
+	Skipped      bool `json:"Skipped"`
+	Daemoned     bool `json:"Daemoned"`
+	AnySucceeded bool `json:"AnySucceeded"`
+	AllFailed    bool `json:"AllFailed"`
 }
 
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
 // completed and execute means that given the results of its dependencies, this node should execute.
 func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
+	node := d.getTaskNode(taskName)
+	if node != nil {
+		return true, true, nil
+	}
+
 	evalScope := make(map[string]TaskResults)
 
 	for _, taskName := range d.GetTaskDependencies(taskName) {
@@ -706,12 +720,28 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			continue
 		}
 
+		anySucceeded := false
+		allFailed := false
+
+		if depNode.Type == wfv1.NodeTypeTaskGroup {
+
+			allFailed = len(depNode.Children) > 0
+
+			for _, childNodeID := range depNode.Children {
+				childNode := d.wf.Status.Nodes[childNodeID]
+				anySucceeded = anySucceeded || childNode.Phase == wfv1.NodeSucceeded
+				allFailed = allFailed && childNode.Phase == wfv1.NodeFailed
+			}
+		}
+
 		evalScope[evalTaskName] = TaskResults{
-			Succeeded: depNode.Phase == wfv1.NodeSucceeded,
-			Failed:    depNode.Phase == wfv1.NodeFailed,
-			Errored:   depNode.Phase == wfv1.NodeError,
-			Skipped:   depNode.Phase == wfv1.NodeSkipped,
-			Daemoned:  depNode.IsDaemoned() && depNode.Phase != wfv1.NodePending,
+			Succeeded:    depNode.Phase == wfv1.NodeSucceeded,
+			Failed:       depNode.Phase == wfv1.NodeFailed,
+			Errored:      depNode.Phase == wfv1.NodeError,
+			Skipped:      depNode.Phase == wfv1.NodeSkipped,
+			Daemoned:     depNode.IsDaemoned() && depNode.Phase != wfv1.NodePending,
+			AnySucceeded: anySucceeded,
+			AllFailed:    allFailed,
 		}
 	}
 
