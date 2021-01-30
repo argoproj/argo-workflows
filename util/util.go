@@ -36,7 +36,7 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 
 	secretsIf := clientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.BackoffSettings(), func() (bool, error) {
 		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
 		return !errorsutil.IsTransientErr(err), err
