@@ -2798,7 +2798,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
-	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
+	newStepStr, err := common.Replace(fstTmpl, replaceMap)
 	if err != nil {
 		return "", err
 	}
@@ -2882,7 +2882,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	if err != nil {
 		return fmt.Errorf("unable to parse argo varaible: %w", err)
 	}
-	newVolumesStr, err := common.Replace(fstTmpl, params, true)
+	newVolumesStr, err := common.Replace(fstTmpl, params)
 	if err != nil {
 		return err
 	}
@@ -2955,7 +2955,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
 			continue
 		}
-		replacedValue, err := common.Replace(fstTmpl, localScope, false)
+		replacedValue, err := common.Replace(fstTmpl, localScope)
 		if err != nil {
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
 			continue
@@ -3015,7 +3015,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
 				continue
 			}
-			replacedValue, err := common.Replace(fstTmpl, localScope, false)
+			replacedValue, err := common.Replace(fstTmpl, localScope)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue

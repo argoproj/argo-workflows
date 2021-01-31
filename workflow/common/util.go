@@ -312,7 +312,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
 	}
-	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap, true)
+	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
 	}
-	s, err := Replace(fstTmpl, replaceMap, true)
+	s, err := Replace(fstTmpl, replaceMap)
 	if err != nil {
 		return nil, err
 	}
@@ -368,9 +368,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 }
 
 // Replace executes basic string substitution of a template with replacement values.
-// allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template.
-func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
+func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		replacement, ok := replaceMap[strings.TrimSpace(tag)]
@@ -384,10 +382,6 @@ func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 					replacement = replacement[1 : len(replacement)-1]
 					return w.Write([]byte("{{" + nestedTagPrefix + replacement))
 				}
-			}
-			if allowUnresolved {
-				// just write the same string back
-				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
 			}
 			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 			return 0, nil

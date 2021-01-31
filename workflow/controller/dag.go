@@ -562,7 +562,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
 	}
 
-	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
+	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()))
 	if err != nil {
 		return nil, err
 	}

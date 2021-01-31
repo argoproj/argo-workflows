@@ -83,7 +83,7 @@ func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, err
 
 	if subPath != "" {
 		fstTmpl := fasttemplate.New(subPath, "{{", "}}")
-		resolvedSubPath, err := common.Replace(fstTmpl, s.getParameters(), true)
+		resolvedSubPath, err := common.Replace(fstTmpl, s.getParameters())
 		if err != nil {
 			return nil, err
 		}

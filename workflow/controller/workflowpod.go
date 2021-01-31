@@ -407,7 +407,7 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
 	}
-	newSpecBytes, err := common.Replace(fstTmpl, podParams, true)
+	newSpecBytes, err := common.Replace(fstTmpl, podParams)
 	if err != nil {
 		return nil, err
 	}

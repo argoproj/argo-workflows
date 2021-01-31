@@ -361,7 +361,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
 		}
 
-		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
+		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()))
 		if err != nil {
 			return nil, err
 		}
