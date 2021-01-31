@@ -200,13 +200,13 @@ dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/argo: server/static/files.go $(CLI_PKGS)
-	go build -v -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
+	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
 dist/argo-%: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 argo-server.crt: argo-server.key
 
@@ -232,10 +232,10 @@ dist/workflow-controller-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/workflow-controller-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/workflow-controller: $(CONTROLLER_PKGS)
-	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
+	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
 dist/workflow-controller-%: $(CONTROLLER_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
 .PHONY: controller-image
 controller-image: $(CONTROLLER_IMAGE_FILE)
@@ -252,7 +252,7 @@ dist/argoexec-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argoexec-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/argoexec-%: $(ARGOEXEC_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
 
 .PHONY: executor-image
 executor-image: $(EXECUTOR_IMAGE_FILE)
@@ -483,9 +483,9 @@ endif
 .PHONY: wait
 wait:
 	# Wait for workflow controller
-	until lsof :9090 > /dev/null ; do sleep 10s ; done
+	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
 	# Wait for Argo Server
-	until lsof :2746 > /dev/null ; do sleep 10s ; done
+	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 
 .PHONY: postgres-cli
 postgres-cli:
@@ -575,9 +575,8 @@ go-diagrams/diagram.dot: ./hack/diagram/main.go
 	rm -Rf go-diagrams
 	go run ./hack/diagram
 
-docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
-	swagger-markdown  api/openapi-spec/swagger.json -o docs/swagger.md
-	rm -rf package-lock.json package.json node_modules/
+docs/assets/diagram.png: go-diagrams/diagram.dot
+	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
 
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docgen.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
