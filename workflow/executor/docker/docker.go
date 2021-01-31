@@ -18,25 +18,36 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/v2/util"
 	"github.com/argoproj/argo/v2/util/file"
 	"github.com/argoproj/argo/v2/workflow/common"
 	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
 )
 
-type DockerExecutor struct{}
+var errContainerNotExist = fmt.Errorf("container does not exist")
 
-func NewDockerExecutor() (*DockerExecutor, error) {
-	log.Infof("Creating a docker executor")
-	return &DockerExecutor{}, nil
+type DockerExecutor struct {
+	podName    string
+	containers map[string]string // containerName -> containerID
+	tmpl       *wfv1.Template
 }
 
-func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) (string, error) {
+func NewDockerExecutor(podName string, tmpl *wfv1.Template) (*DockerExecutor, error) {
+	log.Infof("Creating a docker executor")
+	return &DockerExecutor{podName, make(map[string]string), tmpl}, nil
+}
+
+func (d *DockerExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {
 	// Uses docker cp command to return contents of the file
 	// NOTE: docker cp CONTAINER:SRC_PATH DEST_PATH|- streams the contents of the resource
 	// as a tar archive to STDOUT if using - as DEST_PATH. Thus, we need to extract the
 	// content from the tar archive and output into stdout. In this way, we do not need to
 	// create and copy the content into a file from the wait container.
+	containerID, err := d.getContainerID(containerName)
+	if err != nil {
+		return "", err
+	}
 	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | tar -ax -O", containerID, sourcePath)
 	out, err := common.RunShellCommand(dockerCpCmd)
 	if err != nil {
@@ -45,11 +56,14 @@ func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) 
 	return string(out), nil
 }
 
-func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
-	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-
+func (d *DockerExecutor) CopyFile(containerName string, sourcePath string, destPath string, compressionLevel int) error {
+	log.Infof("Archiving %s:%s to %s", containerName, sourcePath, destPath)
+	containerID, err := d.getContainerID(containerName)
+	if err != nil {
+		return err
+	}
 	dockerCpCmd := getDockerCpCmd(containerID, sourcePath, compressionLevel, destPath)
-	_, err := common.RunShellCommand(dockerCpCmd)
+	_, err = common.RunShellCommand(dockerCpCmd)
 	if err != nil {
 		return err
 	}
@@ -84,7 +98,11 @@ func (c *cmdCloser) Close() error {
 	return nil
 }
 
-func (d *DockerExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (d *DockerExecutor) GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error) {
+	containerID, err := d.getContainerID(containerName)
+	if err != nil {
+		return nil, err
+	}
 	cmd := exec.Command("docker", "logs", containerID)
 	log.Info(cmd.Args)
 
@@ -131,7 +149,11 @@ func (d *DockerExecutor) GetOutputStream(ctx context.Context, containerID string
 	return &cmdCloser{Reader: reader, cmd: cmd}, nil
 }
 
-func (d *DockerExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
+func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
+	containerID, err := d.getContainerID(containerName)
+	if err != nil {
+		return "", err
+	}
 	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
 	reader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -162,18 +184,87 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerID string) (s
 	return exitCode, nil
 }
 
-func (d *DockerExecutor) WaitInit() error {
-	return nil
-}
+func (d *DockerExecutor) Wait(ctx context.Context) error {
 
-// Wait for the container to complete
-func (d *DockerExecutor) Wait(ctx context.Context, containerID string) error {
-	_, err := common.RunCommand("docker", "wait", containerID)
+	err := d.syncContainerIDs(ctx)
+	if err != nil {
+		return err
+	}
+	containerID, err := d.getContainerID("main")
+	if err != nil {
+		return err
+	}
+	_, err = common.RunCommand("docker", "wait", containerID)
 	return err
 }
 
-// killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string) error {
+func (d *DockerExecutor) syncContainerIDs(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			output, err := common.RunCommand(
+				"docker",
+				"ps",
+				"--all",    // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
+				"--latest", // only the latest containers
+				"--format={{.Label \"io.kubernetes.container.name\"}}={{.ID}}",
+				"--no-trunc", // display long container IDs
+				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
+				"--filter=label=io.kubernetes.pod.name="+d.podName,
+			)
+			if err != nil {
+				return err
+			}
+			for _, l := range strings.Split(string(output), "\n") {
+				parts := strings.Split(strings.TrimSpace(l), "=")
+				if len(parts) != 2 {
+					continue
+				}
+				containerName := parts[0]
+				containerID := parts[1]
+				d.containers[containerName] = containerID
+				log.Infof("mapped container name %s to container ID %s", containerName, containerID)
+			}
+			if d.haveContainerIDs() {
+				return nil
+			}
+		}
+		time.Sleep(1 * time.Second) // this is a hard loop because containers can run very short periods of time
+	}
+}
+func (d *DockerExecutor) haveContainerIDs() bool {
+	for _, n := range d.tmpl.GetContainerNames() {
+		if d.containers[n] == "" {
+			return false
+		}
+	}
+	return true
+}
+
+func (d *DockerExecutor) getContainerID(containerName string) (string, error) {
+	if containerID, ok := d.containers[containerName]; ok {
+		return containerID, nil
+	}
+	return "", errContainerNotExist
+}
+
+// killContainers kills a list of containerNames first with a SIGTERM then with a SIGKILL after a grace period
+func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string) error {
+
+	var containerIDs []string
+	for _, n := range containerNames {
+		containerID, err := d.getContainerID(n)
+		if err == errContainerNotExist {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		containerIDs = append(containerIDs, containerID)
+	}
+
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
 	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.

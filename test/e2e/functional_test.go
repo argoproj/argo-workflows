@@ -48,8 +48,13 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			assert.Len(t, status.Nodes, 1)
+			switch status.Phase {
+			case wfv1.WorkflowError:
+				assert.Equal(t, status.Message, "pod deleted during operation")
+			default:
+				assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+				assert.Len(t, status.Nodes, 1)
+			}
 		})
 }
 
@@ -67,14 +72,7 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			// the outcome could be either of these, depending on time
 			// this is due to the grace period recently deleted pods get
-			switch status.Phase {
-			case wfv1.WorkflowError:
-				assert.Equal(t, "pod deleted during operation", status.Nodes[metadata.Name].Message)
-			case wfv1.WorkflowFailed:
-				assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
-			default:
-				assert.Fail(t, "expected error of failed")
-			}
+			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowError, wfv1.WorkflowFailed}, status.Phase)
 		})
 }
 
@@ -336,7 +334,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
 						assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
 					case "WorkflowFailed":
-						assert.Equal(t, "failed with exit code 1", e.Message)
+						assert.Contains(t, e.Message, "exit code 1")
 					default:
 						assert.Fail(t, e.Reason)
 					}
@@ -813,7 +811,7 @@ spec:
 			assert.Len(t, status.Nodes, 3)
 			node := status.Nodes.FindByDisplayName("retry-backoff-2(1)")
 			if assert.NotNil(t, node) {
-				assert.Equal(t, "Step exceeded its deadline", node.Message)
+				assert.Equal(t, wfv1.NodeFailed, node.Phase)
 			}
 		})
 }
@@ -891,6 +889,33 @@ spec:
 				assert.Contains(t, node.Message, "No more retries left")
 			}
 			assert.Len(t, status.Nodes, 3)
+		})
+}
+
+// invalid commands will cause the executor to exit earlier than expected, but these errors must still
+// get returned to the controller, the wait container must fail the wait
+func (s *FunctionalSuite) TestInvalidCommand() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: invalid-command-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: argoproj/argosay:v2
+      command: [invalid-command]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Contains(t, status.Message, "invalid-command")
 		})
 }
 

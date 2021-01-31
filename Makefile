@@ -52,7 +52,7 @@ STATIC_BUILD          ?= true
 # should we build the static files?
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
-GOTEST                ?= go test
+GOTEST                ?= gotestsum --jsonfile=test.json --format=testname --
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
 DEFAULT_REQUEUE_TIME  ?= 2s
@@ -324,6 +324,9 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	$(call go_install,golang.org/x/tools/cmd/goimports)
 
+$(GOPATH)/bin/gotestsum:
+	go install gotest.tools/gotestsum
+
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor
 	[ -e v2 ] || ln -s . v2
@@ -404,7 +407,7 @@ endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go
+test: server/static/files.go $(GOPATH)/bin/gotestsum
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
@@ -477,7 +480,7 @@ endif
 	sleep 10s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
 
 .PHONY: wait
@@ -496,21 +499,21 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e:
+test-e2e: $(GOPATH)/bin/gotestsum
 	$(GOTEST) -timeout 15m -count 1 --tags e2e,api -p 1 ./test/e2e
 
 .PHONY: test-cli
-test-cli:
+test-cli: $(GOPATH)/bin/gotestsum
 	E2E_MODE=GRPC  $(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=HTTP1 $(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=KUBE  $(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
-test-e2e-cron:
+test-e2e-cron: $(GOPATH)/bin/gotestsum
 	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: smoke
-smoke:
+smoke: $(GOPATH)/bin/gotestsum
 	$(GOTEST) -count 1 --tags smoke -p 1 ./test/e2e
 
 # clean

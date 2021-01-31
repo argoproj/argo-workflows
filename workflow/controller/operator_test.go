@@ -5374,7 +5374,7 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 		assert.NotNil(t, pod)
 		nodeStatus, msg := inferFailedReason(&pod)
 		assert.Equal(t, tt.phase, nodeStatus)
-		assert.Equal(t, msg, "OOMKilled")
+		assert.Contains(t, msg, "OOMKilled")
 	}
 }
 

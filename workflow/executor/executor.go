@@ -23,9 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/v2/errors"
@@ -69,8 +67,6 @@ type WorkflowExecutor struct {
 	ExecutionControl   *common.ExecutionControl
 	RuntimeExecutor    ContainerRuntimeExecutor
 
-	// memoized container ID to prevent multiple lookups
-	mainContainerID string
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
 	// memoized secrets
@@ -85,28 +81,24 @@ type WorkflowExecutor struct {
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
-	GetFileContents(containerID string, sourcePath string) (string, error)
+	GetFileContents(containerName string, sourcePath string) (string, error)
 
 	// CopyFile copies a source file in a container to a local path
-	CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error
+	CopyFile(containerName, sourcePath, destPath string, compressionLevel int) error
 
 	// GetOutputStream returns the entirety of the container output as a io.Reader
 	// Used to capture script results as an output parameter, and to archive container logs
-	GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error)
+	GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error)
 
 	// GetExitCode returns the exit code of the container
 	// Used to capture script exit code as an output parameter
-	GetExitCode(ctx context.Context, containerID string) (string, error)
+	GetExitCode(ctx context.Context, containerName string) (string, error)
 
-	// WaitInit is called before Wait() to signal the executor about an impending Wait call.
-	// For most executors this is a noop, and is only used by the the PNS executor
-	WaitInit() error
+	// Wait waits for the container to complete.
+	Wait(ctx context.Context) error
 
-	// Wait waits for the container to complete
-	Wait(ctx context.Context, containerID string) error
-
-	// Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-	Kill(ctx context.Context, containerIDs []string) error
+	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
+	Kill(ctx context.Context, containerNames []string) error
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -268,18 +260,13 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 		return nil
 	}
 	log.Infof("Saving output artifacts")
-	mainCtrID, err := we.GetMainContainerID(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = os.MkdirAll(tempOutArtDir, os.ModePerm)
+	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 
 	for i, art := range we.Template.Outputs.Artifacts {
-		err := we.saveArtifact(ctx, mainCtrID, &art)
+		err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
 			return err
 		}
@@ -288,12 +275,12 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) saveArtifact(ctx context.Context, mainCtrID string, art *wfv1.Artifact) error {
+func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
 	// Determine the file path of where to find the artifact
 	if art.Path == "" {
 		return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
 	}
-	fileName, localArtPath, err := we.stageArchiveFile(mainCtrID, art)
+	fileName, localArtPath, err := we.stageArchiveFile(containerName, art)
 	if err != nil {
 		if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
 			log.Warnf("Ignoring optional artifact '%s' which does not exist in path '%s': %v", art.Name, art.Path, err)
@@ -354,7 +341,7 @@ func (we *WorkflowExecutor) maybeDeleteLocalArtPath(localArtPath string) {
 // The filename is incorporated into the final path when uploading it to the artifact repo.
 // The local path is the final staging location of the file (or directory) which we will pass
 // to the SaveArtifacts call and may be a directory or file.
-func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifact) (string, string, error) {
+func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Artifact) (string, string, error) {
 	log.Infof("Staging artifact: %s", art.Name)
 	strategy := art.Archive
 	if strategy == nil {
@@ -405,7 +392,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	localArtPath := filepath.Join(tempOutArtDir, fileName)
 	log.Infof("Copying %s from container base image layer to %s", art.Path, localArtPath)
 
-	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath, compressionLevel)
+	err := we.RuntimeExecutor.CopyFile(containerName, art.Path, localArtPath, compressionLevel)
 	if err != nil {
 		return "", "", err
 	}
@@ -479,11 +466,6 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 		return nil
 	}
 	log.Infof("Saving output parameters")
-	mainCtrID, err := we.GetMainContainerID(ctx)
-	if err != nil {
-		return err
-	}
-
 	for i, param := range we.Template.Outputs.Parameters {
 		log.Infof("Saving path output parameter: %s", param.Name)
 		// Determine the file path of where to find the parameter
@@ -500,7 +482,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 				continue
 			}
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
-			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
+			fileContents, err := we.RuntimeExecutor.GetFileContents(common.MainContainerName, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
@@ -541,18 +523,14 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 		return nil, nil
 	}
 	log.Infof("Saving logs")
-	mainCtrID, err := we.GetMainContainerID(ctx)
-	if err != nil {
-		return nil, err
-	}
 	tempLogsDir := "/tmp/argo/outputs/logs"
-	err = os.MkdirAll(tempLogsDir, os.ModePerm)
+	err := os.MkdirAll(tempLogsDir, os.ModePerm)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 	fileName := "main.log"
 	mainLog := path.Join(tempLogsDir, fileName)
-	err = we.saveLogToFile(ctx, mainCtrID, mainLog)
+	err = we.saveLogToFile(ctx, common.MainContainerName, mainLog)
 	if err != nil {
 		return nil, err
 	}
@@ -679,36 +657,6 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 	return val, nil
 }
 
-// GetMainContainerStatus returns the container status of the main container, nil if the main container does not exist
-func (we *WorkflowExecutor) GetMainContainerStatus(ctx context.Context) (*apiv1.ContainerStatus, error) {
-	pod, err := we.getPod(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, ctrStatus := range pod.Status.ContainerStatuses {
-		if ctrStatus.Name == common.MainContainerName {
-			return &ctrStatus, nil
-		}
-	}
-	return nil, nil
-}
-
-// GetMainContainerID returns the container id of the main container
-func (we *WorkflowExecutor) GetMainContainerID(ctx context.Context) (string, error) {
-	if we.mainContainerID != "" {
-		return we.mainContainerID, nil
-	}
-	ctrStatus, err := we.GetMainContainerStatus(ctx)
-	if err != nil {
-		return "", err
-	}
-	if ctrStatus == nil {
-		return "", nil
-	}
-	we.mainContainerID = containerID(ctrStatus.ContainerID)
-	return we.mainContainerID, nil
-}
-
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
@@ -721,11 +669,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 		return nil
 	}
 	log.Infof("Capturing script output")
-	mainContainerID, err := we.GetMainContainerID(ctx)
-	if err != nil {
-		return err
-	}
-	reader, err := we.RuntimeExecutor.GetOutputStream(ctx, mainContainerID, false)
+	reader, err := we.RuntimeExecutor.GetOutputStream(ctx, common.MainContainerName, false)
 	if err != nil {
 		return err
 	}
@@ -759,11 +703,7 @@ func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
 		return nil
 	}
 	log.Infof("Capturing script exit code")
-	mainContainerID, err := we.GetMainContainerID(ctx)
-	if err != nil {
-		return err
-	}
-	exitCode, err := we.RuntimeExecutor.GetExitCode(ctx, mainContainerID)
+	exitCode, err := we.RuntimeExecutor.GetExitCode(ctx, common.MainContainerName)
 	if err != nil {
 		return err
 	}
@@ -966,93 +906,18 @@ func chmod(artPath string, mode int32, recurse bool) error {
 	return nil
 }
 
-// containerID is a convenience function to strip the 'docker://', 'containerd://' from k8s ContainerID string
-func containerID(ctrID string) string {
-	schemeIndex := strings.Index(ctrID, "://")
-	if schemeIndex == -1 {
-		return ctrID
-	}
-	return ctrID[schemeIndex+3:]
-}
-
 // Wait is the sidecar container logic which waits for the main container to complete.
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
-	err := we.RuntimeExecutor.WaitInit()
-	if err != nil {
-		return err
-	}
-	log.Infof("Waiting on main container")
-	mainContainerID, err := we.waitMainContainerStart(ctx)
-	if err != nil {
-		return err
-	}
-	log.Infof("main container started with container ID: %s", mainContainerID)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
-	go we.monitorDeadline(ctx, annotationUpdatesCh)
-
-	err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx, mainContainerID)
-		return err == nil, err
-	})
+	go we.monitorDeadline(ctx, common.MainContainerName, annotationUpdatesCh)
+	err := we.RuntimeExecutor.Wait(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
 	log.Infof("Main container completed")
 	return nil
-}
-
-// waitMainContainerStart waits for the main container to start and returns its container ID.
-func (we *WorkflowExecutor) waitMainContainerStart(ctx context.Context) (string, error) {
-	for {
-		podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
-		fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", we.PodName))
-		opts := metav1.ListOptions{
-			FieldSelector: fieldSelector.String(),
-		}
-
-		var watchIf watch.Interface
-
-		err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-			var err error
-			watchIf, err = podsIf.Watch(ctx, opts)
-			return !errorsutil.IsTransientErr(err), err
-		})
-		if err != nil {
-			return "", errors.InternalWrapErrorf(err, "Failed to establish pod watch: %v", err)
-		}
-		for watchEv := range watchIf.ResultChan() {
-			if watchEv.Type == watch.Error {
-				return "", errors.InternalErrorf("Pod watch error waiting for main to start: %v", watchEv.Object)
-			}
-			pod, ok := watchEv.Object.(*apiv1.Pod)
-			if !ok {
-				log.Warnf("Pod watch returned non pod object: %v", watchEv.Object)
-				continue
-			}
-			for _, ctrStatus := range pod.Status.ContainerStatuses {
-				if ctrStatus.Name == common.MainContainerName {
-					log.Debug(ctrStatus)
-					if ctrStatus.State.Waiting != nil {
-						// main container is still in waiting status
-					} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
-						// status still not ready, wait
-					} else if ctrStatus.ContainerID != "" {
-						we.mainContainerID = containerID(ctrStatus.ContainerID)
-						return containerID(ctrStatus.ContainerID), nil
-					} else {
-						// main container in running or terminated state but missing container ID
-						return "", errors.InternalError("Main container ID cannot be found")
-					}
-				}
-			}
-		}
-		log.Warnf("Pod watch closed unexpectedly")
-	}
 }
 
 func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath string) <-chan struct{} {
@@ -1094,7 +959,10 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os_specific.GetOsSignal())
 
-	we.setExecutionControl(ctx)
+	err := we.LoadExecutionControl() // this is much cheaper than doing `get pod`
+	if err != nil {
+		log.Errorf("Failed to reload execution control from annotations: %v", err)
+	}
 
 	// Create a channel which will notify a listener on new updates to the annotations
 	annotationUpdateCh := make(chan struct{})
@@ -1154,7 +1022,7 @@ func (we *WorkflowExecutor) setExecutionControl(ctx context.Context) {
 
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
-func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpdate <-chan struct{}) {
+func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerName string, annotationsUpdate <-chan struct{}) {
 	log.Infof("Starting deadline monitor")
 	for {
 		select {
@@ -1179,8 +1047,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 					log.Info(message)
 					_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, message)
 					log.Infof("Killing main container")
-					mainContainerID, _ := we.GetMainContainerID(ctx)
-					err := we.RuntimeExecutor.Kill(ctx, []string{mainContainerID})
+					err := we.RuntimeExecutor.Kill(ctx, []string{containerName})
 					if err != nil {
 						log.Warnf("Failed to kill main container: %v", err)
 					}
@@ -1194,12 +1061,15 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
+	if len(we.Template.Sidecars) == 0 { // avoid expensive and unnecessary `get pod` call
+		return nil
+	}
 	log.Infof("Killing sidecars")
 	pod, err := we.getPod(ctx)
 	if err != nil {
 		return err
 	}
-	sidecarIDs := make([]string, 0)
+	sidecars := make([]string, 0)
 	for _, ctrStatus := range pod.Status.ContainerStatuses {
 		if ctrStatus.Name == common.MainContainerName || ctrStatus.Name == common.WaitContainerName {
 			continue
@@ -1207,14 +1077,10 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 		if ctrStatus.State.Terminated != nil {
 			continue
 		}
-		containerID := containerID(ctrStatus.ContainerID)
-		log.Infof("Killing sidecar %s (%s)", ctrStatus.Name, containerID)
-		sidecarIDs = append(sidecarIDs, containerID)
+		log.Infof("Killing sidecar %s", ctrStatus.Name)
+		sidecars = append(sidecars, ctrStatus.Name)
 	}
-	if len(sidecarIDs) == 0 {
-		return nil
-	}
-	return we.RuntimeExecutor.Kill(ctx, sidecarIDs)
+	return we.RuntimeExecutor.Kill(ctx, sidecars)
 }
 
 // LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file

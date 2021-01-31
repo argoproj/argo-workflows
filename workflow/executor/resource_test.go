@@ -33,7 +33,6 @@ func TestResourceFlags(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
 	args, err := we.getKubectlArguments("fake", "../../examples/hello-world.yaml", fakeFlags)
 

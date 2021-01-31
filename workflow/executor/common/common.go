@@ -23,23 +23,23 @@ const (
 const KillGracePeriod = 30
 
 // GetContainerID returns container ID of a ContainerStatus resource
-func GetContainerID(container *v1.ContainerStatus) string {
-	i := strings.Index(container.ContainerID, containerShimPrefix)
+func GetContainerID(container string) string {
+	i := strings.Index(container, containerShimPrefix)
 	if i == -1 {
-		return ""
+		return container
 	}
-	return container.ContainerID[i+len(containerShimPrefix):]
+	return container[i+len(containerShimPrefix):]
 }
 
 // KubernetesClientInterface is the interface to implement getContainerStatus method
 type KubernetesClientInterface interface {
-	GetContainerStatus(ctx context.Context, containerID string) (*v1.Pod, *v1.ContainerStatus, error)
+	GetContainerStatus(ctx context.Context, containerName string) (*v1.Pod, *v1.ContainerStatus, error)
 	KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error
-	CreateArchive(ctx context.Context, containerID, sourcePath string) (*bytes.Buffer, error)
+	CreateArchive(ctx context.Context, containerName, sourcePath string) (*bytes.Buffer, error)
 }
 
-// WaitForTermination of the given containerID, set the timeout to 0 to discard it
-func WaitForTermination(ctx context.Context, c KubernetesClientInterface, containerID string, timeout time.Duration) error {
+// WaitForTermination of the given containerName, set the timeout to 0 to discard it
+func WaitForTermination(ctx context.Context, c KubernetesClientInterface, containerName string, timeout time.Duration) error {
 	ticker := time.NewTicker(time.Second * 1)
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
@@ -51,18 +51,18 @@ func WaitForTermination(ctx context.Context, c KubernetesClientInterface, contai
 		defer timer.Stop()
 	}
 
-	log.Infof("Starting to wait completion of containerID %s ...", containerID)
+	log.Infof("Starting to wait completion of container %s ...", containerName)
 	for {
 		select {
 		case <-ticker.C:
-			_, containerStatus, err := c.GetContainerStatus(ctx, containerID)
+			_, containerStatus, err := c.GetContainerStatus(ctx, containerName)
 			if err != nil {
 				return err
 			}
 			if containerStatus.State.Terminated == nil {
 				continue
 			}
-			log.Infof("ContainerID %q is terminated: %v", containerID, containerStatus.String())
+			log.Infof("Container %q is terminated: %v", containerName, containerStatus.String())
 			return nil
 		case <-timer.C:
 			return fmt.Errorf("timeout after %s", timeout.String())
@@ -72,13 +72,13 @@ func WaitForTermination(ctx context.Context, c KubernetesClientInterface, contai
 
 // TerminatePodWithContainerID invoke the given SIG against the PID1 of the container.
 // No-op if the container is on the hostPID
-func TerminatePodWithContainerID(ctx context.Context, c KubernetesClientInterface, containerID string, sig syscall.Signal) error {
-	pod, container, err := c.GetContainerStatus(ctx, containerID)
+func TerminatePodWithContainerName(ctx context.Context, c KubernetesClientInterface, containerName string, sig syscall.Signal) error {
+	pod, container, err := c.GetContainerStatus(ctx, containerName)
 	if err != nil {
 		return err
 	}
 	if container.State.Terminated != nil {
-		log.Infof("Container %s is already terminated: %v", container.ContainerID, container.State.Terminated.String())
+		log.Infof("Container %s is already terminated: %v", containerName, container.State.Terminated.String())
 		return nil
 	}
 	if pod.Spec.ShareProcessNamespace != nil && *pod.Spec.ShareProcessNamespace {
@@ -94,34 +94,34 @@ func TerminatePodWithContainerID(ctx context.Context, c KubernetesClientInterfac
 }
 
 // KillGracefully kills a container gracefully.
-func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerID string) error {
-	log.Infof("SIGTERM containerID %q: %s", containerID, syscall.SIGTERM.String())
-	err := TerminatePodWithContainerID(ctx, c, containerID, syscall.SIGTERM)
+func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerName string) error {
+	log.Infof("SIGTERM container %q: %s", containerName, syscall.SIGTERM.String())
+	err := TerminatePodWithContainerName(ctx, c, containerName, syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
-	err = WaitForTermination(ctx, c, containerID, time.Second*KillGracePeriod)
+	err = WaitForTermination(ctx, c, containerName, time.Second*KillGracePeriod)
 	if err == nil {
-		log.Infof("ContainerID %q successfully killed", containerID)
+		log.Infof("Container %q successfully killed", containerName)
 		return nil
 	}
-	log.Infof("SIGKILL containerID %q: %s", containerID, syscall.SIGKILL.String())
-	err = TerminatePodWithContainerID(ctx, c, containerID, syscall.SIGKILL)
+	log.Infof("SIGKILL container %q: %s", containerName, syscall.SIGKILL.String())
+	err = TerminatePodWithContainerName(ctx, c, containerName, syscall.SIGKILL)
 	if err != nil {
 		return err
 	}
-	err = WaitForTermination(ctx, c, containerID, time.Second*KillGracePeriod)
+	err = WaitForTermination(ctx, c, containerName, time.Second*KillGracePeriod)
 	if err != nil {
 		return err
 	}
-	log.Infof("ContainerID %q successfully killed", containerID)
+	log.Infof("Container %q successfully killed", containerName)
 	return nil
 }
 
 // CopyArchive downloads files and directories as a tarball and saves it to a specified path.
-func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerID, sourcePath, destPath string) error {
-	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	b, err := c.CreateArchive(ctx, containerID, sourcePath)
+func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerName, sourcePath, destPath string) error {
+	log.Infof("Archiving %s:%s to %s", containerName, sourcePath, destPath)
+	b, err := c.CreateArchive(ctx, containerName, sourcePath)
 	if err != nil {
 		return err
 	}

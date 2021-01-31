@@ -19,7 +19,7 @@ type MockKC struct {
 	killContainerError                error
 }
 
-func (m *MockKC) GetContainerStatus(ctx context.Context, containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
+func (m *MockKC) GetContainerStatus(ctx context.Context, containerName string) (*v1.Pod, *v1.ContainerStatus, error) {
 	return m.getContainerStatusPod, m.getContainerStatusContainerStatus, m.getContainerStatusErr
 }
 
@@ -27,12 +27,12 @@ func (m *MockKC) KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig s
 	return m.killContainerError
 }
 
-func (*MockKC) CreateArchive(ctx context.Context, containerID, sourcePath string) (*bytes.Buffer, error) {
+func (*MockKC) CreateArchive(ctx context.Context, containerName, sourcePath string) (*bytes.Buffer, error) {
 	return nil, nil
 }
 
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
-func TestTerminatePodWithContainerID(t *testing.T) {
+func TestTerminatePodWithContainerName(t *testing.T) {
 	// Already terminated.
 	mock := &MockKC{
 		getContainerStatusContainerStatus: &v1.ContainerStatus{
@@ -42,7 +42,7 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	err := TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
+	err := TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
 	assert.NoError(t, err)
 
 	// w/ ShareProcessNamespace.
@@ -61,7 +61,7 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate a process-namespace-shared Pod foo")
 
 	// w/ HostPID.
@@ -80,7 +80,7 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate a hostPID Pod foo")
 
 	// w/ RestartPolicy.
@@ -99,7 +99,7 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate pod with a \"Always\" restart policy")
 
 	// Successfully call KillContainer of the client interface.
@@ -118,6 +118,6 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 			},
 		},
 	}
-	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
+	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
 	assert.NoError(t, err)
 }

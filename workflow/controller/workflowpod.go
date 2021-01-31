@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -158,6 +159,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
 		mainCtr.Resources = *tmpl.Container.Resources.DeepCopy()
 	}
+	mainCtr.Env = append(mainCtr.Env, apiv1.EnvVar{Name: "ARGO_CONTAINER_NAME", Value: mainCtr.Name}) // used by PNS executor to identify the container name of the process
 
 	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()
@@ -439,7 +441,9 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 				},
 			},
 		}
-		if hasPrivilegedContainers(tmpl) {
+		// PNS_PRIVILEGED allows you to always set privileged on for PNS, this seems to be needed for certain systems
+		// https://github.com/argoproj/argo/issues/1256
+		if hasPrivilegedContainers(tmpl) || os.Getenv("PNS_PRIVILEGED") == "true" {
 			// if the main or sidecar is privileged, the wait sidecar must also run privileged,
 			// in order to SIGTERM/SIGKILL the pid
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
