@@ -47,13 +47,13 @@ jobs:
           - test-cli
           - test-e2e
         containerRuntimeExecutor:
-        #  - docker
-        #  - k8sapi
-        #  - kubelet
+          - docker
+          - k8sapi
+          - kubelet
           - pns
-        #include:
-        #  - test: test-e2e-cron
-        #    containerRuntimeExecutor: docker
+        include:
+          - test: test-e2e-cron
+            containerRuntimeExecutor: docker
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
