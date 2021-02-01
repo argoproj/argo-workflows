@@ -1,7 +1,7 @@
 kind: Workflow
 apiVersion: argoproj.io/v1alpha1
 metadata:
-  generateName: sleepy-
+  generateName: pending-
   labels:
     argo-e2e: "true"
 spec:
@@ -10,6 +10,7 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v2
-        args:
-          - sleep
-          - 30s
+        # too much to be scheduled
+        resources:
+          requests:
+            memory: 1000Gi

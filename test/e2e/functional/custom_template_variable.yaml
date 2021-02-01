@@ -27,6 +27,5 @@ spec:
         parameters:
           - name: message
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay]
-        args: ["{{custom.variable}}"]
+        image: argoproj/argosay:v2
+        args: [echo, "{{custom.variable}}"]
