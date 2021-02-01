@@ -76,7 +76,7 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 	var cm *v1.ConfigMap
 	namespace := ref.Namespace
 	configMap := ref.GetConfigMapOr("artifact-repositories")
-	err := waitutil.Backoff(retry.BackoffSettings(), func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(namespace).Get(ctx, configMap, metav1.GetOptions{})
 		return !errorsutil.IsTransientErr(err), err
