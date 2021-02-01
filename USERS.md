@@ -4,7 +4,9 @@ Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows 
 
 ## Who uses Argo Workflows?
 
-As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
+As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization or project name in the following sections.
+
+### Organizations Using Argo
 
 Currently, the following organizations are **officially** using Argo Workflows:
 
@@ -33,7 +35,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [CoreFiling](https://www.corefiling.com/)
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [CoreWeave Cloud](https://www.coreweave.com)
-1. [Couler](https://github.com/couler-proj/couler)
 1. [Cruise](https://getcruise.com/)
 1. [CyberAgent](https://www.cyberagent.co.jp/en/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
@@ -66,7 +67,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Karius](https://www.kariusdx.com/)
 1. [Kasa](https://www.kasa.co.kr/)
 1. [KintoHub](https://www.kintohub.com/)
-1. [Kubeflow](https://www.kubeflow.org/)
 1. [Localytics](https://www.localytics.com/)
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
 1. [Max Kelsen](https://maxkelsen.com/)
@@ -102,7 +102,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [SegmentStream](https://segmentstream.com)
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Sohu](https://www.sohu.com/)
-1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
 1. [strongDM](https://www.strongdm.com/)
 1. [Styra](https://www.styra.com/)
@@ -113,3 +112,11 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
+
+### Projects Using Argo
+
+In addition, the following projects are **officially** using Argo Workflows:
+
+1. [Couler](https://github.com/couler-proj/couler)
+1. [Kubeflow](https://www.kubeflow.org/)
+1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
