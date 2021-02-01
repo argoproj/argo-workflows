@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	time.Sleep(time.Second) // allow PNS 1s to secure my root file-handle
 	err := argosay(os.Args[1:]...)
 	if err != nil {
 		if exitErr, ok := err.(exitError); ok {

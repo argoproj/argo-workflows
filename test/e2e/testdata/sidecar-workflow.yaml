@@ -1,7 +1,7 @@
-kind: Workflow
 apiVersion: argoproj.io/v1alpha1
+kind: Workflow
 metadata:
-  generateName: sleepy-
+  generateName: sidecar-
   labels:
     argo-e2e: "true"
 spec:
@@ -10,6 +10,7 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v2
-        args:
-          - sleep
-          - 30s
+      sidecars:
+        - name: sidecar-0
+          image: argoproj/argosay:v2
+          argso: [ sleep, "999" ]
