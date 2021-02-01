@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
@@ -41,8 +40,10 @@ import (
 	wfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/v2/util/cmd"
+	errorsutil "github.com/argoproj/argo/v2/util/errors"
 	"github.com/argoproj/argo/v2/util/retry"
 	unstructutil "github.com/argoproj/argo/v2/util/unstructured"
+	waitutil "github.com/argoproj/argo/v2/util/wait"
 	"github.com/argoproj/argo/v2/workflow/common"
 	"github.com/argoproj/argo/v2/workflow/hydrator"
 	"github.com/argoproj/argo/v2/workflow/packer"
@@ -323,23 +324,21 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
 func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workflowName string) error {
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
 		if err != nil {
-			return false, err
+			return !errorsutil.IsTransientErr(err), err
 		}
 		if IsWorkflowCompleted(wf) {
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
 			wf.Spec.Suspend = pointer.BoolPtr(true)
-			_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
-			if err != nil {
-				if apierr.IsConflict(err) {
-					return false, nil
-				}
-				return false, err
+			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
+			if apierr.IsConflict(err) {
+				return false, nil
 			}
+			return !errorsutil.IsTransientErr(err), err
 		}
 		return true, nil
 	})
@@ -352,10 +351,10 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 	if len(nodeFieldSelector) > 0 {
 		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
 	} else {
-		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
 			if err != nil {
-				return false, err
+				return !errorsutil.IsTransientErr(err), err
 			}
 
 			err = hydrator.Hydrate(wf)
@@ -442,10 +441,10 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 	if err != nil {
 		return err
 	}
-	err = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
 		if err != nil {
-			return false, err
+			return !errorsutil.IsTransientErr(err), err
 		}
 
 		err = hydrator.Hydrate(wf)
@@ -670,10 +669,10 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
 func RetryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	var updated *wfv1.Workflow
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
-		return err == nil, err
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return nil, err
@@ -860,15 +859,12 @@ func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface,
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
-		if err != nil {
-			if !apierr.IsConflict(err) {
-				return false, err
-			}
+	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+		_, err := wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
+		if apierr.IsConflict(err) {
 			return false, nil
 		}
-		return true, nil
+		return !errorsutil.IsTransientErr(err), err
 	})
 	return err
 }

@@ -26,7 +26,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -44,6 +43,7 @@ import (
 	"github.com/argoproj/argo/v2/util/intstr"
 	"github.com/argoproj/argo/v2/util/resource"
 	"github.com/argoproj/argo/v2/util/retry"
+	waitutil "github.com/argoproj/argo/v2/util/wait"
 	"github.com/argoproj/argo/v2/workflow/common"
 	controllercache "github.com/argoproj/argo/v2/workflow/controller/cache"
 	"github.com/argoproj/argo/v2/workflow/controller/estimation"
@@ -1272,6 +1272,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		return wfv1.NodeFailed, pod.Status.Message
 	}
 	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
+
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
@@ -3097,16 +3098,12 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
-		if err != nil && !apierr.IsNotFound(err) {
-			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !errorsutil.IsTransientErr(err) {
-				return false, err
-			}
-			return false, nil
+		if apierr.IsNotFound(err) {
+			return true, nil
 		}
-		return true, nil
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")

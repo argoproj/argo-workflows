@@ -25,7 +25,7 @@ If the user only has permission to create workflows, then they will be typically
 !!! Warning
     If you allow users to create workflows in the controller's namespace (typically `argo`), it may be possible for users to modify the controller itself.  In a namespace-install the managed namespace should therefore not be the controller's namespace.
 
-You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow requriments feature](workflow-requirements.md).
+You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow requriments feature](workflow-restrictions.md).
 
 ### Workflow Pod Permissions
 
