@@ -523,40 +523,6 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		})
 }
 
-func (s *FunctionalSuite) TestGlobalScope() {
-	s.Need(fixtures.BaseLayerArtifacts)
-	s.Need(fixtures.None(fixtures.PNS)) // does not work on PNS on CI for some reason
-	s.Given().
-		Workflow("@functional/global-scope.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			nodeStatus := status.Nodes.FindByDisplayName("consume-global-parameter-1")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
-			}
-			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-2")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
-			}
-			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-3")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
-			}
-			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-4")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
-			}
-		})
-}
-
 func (s *FunctionalSuite) TestDAGDepends() {
 	s.Given().
 		Workflow("@functional/dag-depends.yaml").
