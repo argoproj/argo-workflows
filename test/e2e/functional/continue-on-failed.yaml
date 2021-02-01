@@ -28,7 +28,7 @@ spec:
 
     - name: whalesay
       container:
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
 
     - name: whalesplosion
       container:

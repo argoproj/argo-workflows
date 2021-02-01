@@ -14,18 +14,12 @@ spec:
           - name: A
             template: echo
             onExit: exit
-            arguments:
-              parameters: [{name: message, value: A}]
 
     - name: echo
-      inputs:
-        parameters:
-          - name: message
       container:
         image: argoproj/argosay:v2
-        args: [sleep, "30s"]
+        args: [ sleep, "999" ]
 
     - name: exit
       container:
         image: argoproj/argosay:v2
-        args: [echo, "one exit"]
