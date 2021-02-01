@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/v2/workflow/executor/artifacts"
 	"strings"
 	"time"
 
@@ -217,8 +216,8 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 				artifactProcessingNeeded = true
 				woc.log.Infof("SIMON would get artifacts here for %s", artifactProcessorNodeName)
 				container := woc.newProcessArtifactsContainer(*step.WithArtifacts)
-				tmpl := &wfv1.Template{Name: "pro", Container: &container}
-				_, err := woc.executeContainer(ctx, artifactProcessorNodeName, stepsCtx.tmplCtx.GetTemplateScope(), tmpl, &step, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID})
+				tmpl := &wfv1.Template{Name: "pro", Container: &container, Inputs: wfv1.Inputs{Artifacts: []wfv1.Artifact{step.WithArtifacts.Artifact}}}
+				_, err := woc.executeContainer(ctx, artifactProcessorNodeName, stepsCtx.tmplCtx.GetTemplateScope(), tmpl, &step, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, isImpliedPod: true})
 				if err != nil {
 					panic(err)
 				}

@@ -31,6 +31,7 @@ const (
 	TemplateTypeResource  TemplateType = "Resource"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
+	TemplateTypeImplied   TemplateType = "Implied"
 	TemplateTypeUnknown   TemplateType = "Unknown"
 )
 
