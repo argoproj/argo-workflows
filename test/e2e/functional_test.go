@@ -62,7 +62,6 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
 		})
 }
 
