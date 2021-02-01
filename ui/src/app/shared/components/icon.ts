@@ -20,6 +20,7 @@ export type Icon =
     | 'envelope'
     | 'edit'
     | 'ellipsis-h'
+    | 'external-link-alt'
     | 'file'
     | 'file-alt'
     | 'file-code'
