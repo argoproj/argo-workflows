@@ -42,38 +42,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # this list can be used to run certain interesting suites of tests
         test:
-          - smoke
-          - test-cli
-          - test-e2e
-        # `docker` is omitted from this list because we want to run the most thorough set of tests on it,
-        # but always offloading, all persistence related tests, and cron tests
+          - test-executor
         containerRuntimeExecutor:
+          - docker
           - k8sapi
           - kubelet
           - pns
-        profile: [ minimal ]
-        alwaysOffloadNodeStatus: [ "false" ]
         include:
-          # run all test with docker - this is the most complete set of tests
-          - test: smoke
-            profile: mysql
-            containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "true"
           - test: test-cli
-            profile: mysql
             containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "true"
-          - test: test-e2e
-            profile: mysql
+          - test: test-functional
             containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "true"
-          # test cron workflows
           - test: test-e2e-cron
-            profile: minimal
             containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "false"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -91,7 +73,17 @@ jobs:
           echo /home/runner/go/bin >> $GITHUB_PATH
           echo /usr/local/bin >> $GITHUB_PATH
       - name: Install and start K3S v1.18.8+k3s1
-        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
+        run: |
+          INSTALL_K3S_EXEC=--docker
+          if [ ${{matrix.containerRuntimeExecutor}} = pns ]; then
+            INSTALL_K3S_EXEC=
+          fi
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=$INSTALL_K3S_EXEC K3S_KUBECONFIG_MODE=644 sh - &
+      - name: Install stern
+        run: |
+          mkdir -p /home/runner/go/bin
+          curl -L -o /home/runner/go/bin/stern https://github.com/wercker/stern/releases/download/1.11.0/stern_linux_amd64
+          chmod +x /home/runner/go/bin/stern
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go
@@ -114,24 +106,30 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start   PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
-      - name: Install gotestsum
-        run: go install gotest.tools/gotestsum
+          KUBECONFIG=~/.kube/config make install PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go
         run: make wait
+      - name: Capture workflow pod logs
+        run: stern . -l workflows.argoproj.io/workflow -c wait > /tmp/log/argo-e2e/pod-logs.log &
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
+        run: make ${{ matrix.test }}
       - name: Upload logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{matrix.alwaysOffloadNodeStatus}}-${{ github.run_id }}-argo.log
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-argo.log
           path: /tmp/log/argo-e2e/argo.log
+      - name: Upload pod logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-pod-logs.log
+          path: /tmp/log/argo-e2e/pod-logs.log
 
   codegen:
     name: Codegen
