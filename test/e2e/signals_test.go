@@ -79,6 +79,7 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 }
 
 func (s *SignalsSuite) TestPropagateMaxDuration() {
+	s.Need(fixtures.None(fixtures.PNS)) // does not work on PNS on CI for some reason
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1

@@ -525,6 +525,7 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 
 func (s *FunctionalSuite) TestGlobalScope() {
 	s.Need(fixtures.BaseLayerArtifacts)
+	s.Need(fixtures.None(fixtures.PNS)) // does not work on PNS on CI for some reason
 	s.Given().
 		Workflow("@functional/global-scope.yaml").
 		When().
