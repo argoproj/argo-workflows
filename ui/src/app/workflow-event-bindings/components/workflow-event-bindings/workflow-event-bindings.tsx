@@ -110,7 +110,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     <GraphPanel
                         storageScope='workflow-event-bindings'
                         graph={g}
-                        nodeGenresTitle={'FILL ME'}
+                        nodeGenresTitle={'Type'}
                         nodeGenres={{'event': true, 'template': true, 'cluster-template': true}}
                         horizontal={true}
                         onNodeSelect={id => {

@@ -1,6 +1,7 @@
-import {Checkbox, DropDown} from 'argo-ui';
+import {Checkbox} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
+import {DropDown} from './dropdown/dropdown';
 
 interface FilterDropDownProps {
     sections: FilterDropSection[];
@@ -27,7 +28,7 @@ export const FilterDropDown = (props: FilterDropDownProps) => {
                     .filter(item => item.values)
                     .map((item, i) => (
                         <div key={i}>
-                            <li>
+                            <li className={classNames('top-bar__filter-item', {title: true})}>
                                 <span>{item.title}</span>
                             </li>
                             {Object.entries(item.values)
