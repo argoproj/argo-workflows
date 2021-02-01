@@ -43,15 +43,17 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - smoke
-          - test-cli
-          - test-e2e
+          - test-executor
         containerRuntimeExecutor:
           - docker
           - k8sapi
           - kubelet
           - pns
         include:
+          - test: test-cli
+            containerRuntimeExecutor: docker
+          - test: test-functional
+            containerRuntimeExecutor: docker
           - test: test-e2e-cron
             containerRuntimeExecutor: docker
     steps:
@@ -72,9 +74,9 @@ jobs:
           echo /usr/local/bin >> $GITHUB_PATH
       - name: Install and start K3S v1.18.8+k3s1
         run: |
-          INSTALL_K3S_EXEC=
-          if [ ${{matrix.containerRuntimeExecutor}} = docker ]; then
-            INSTALL_K3S_EXEC=--docker
+          INSTALL_K3S_EXEC=--docker
+          if [ ${{matrix.containerRuntimeExecutor}} = pns ]; then
+            INSTALL_K3S_EXEC=
           fi
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=$INSTALL_K3S_EXEC K3S_KUBECONFIG_MODE=644 sh - &
       - name: Install stern

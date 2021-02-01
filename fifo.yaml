@@ -1,0 +1,32 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: fifo
+spec:
+  volumes:
+    - name: workspace
+      emptyDir: { }
+  restartPolicy: Never
+  containers:
+    - name: source
+      image: alpine:latest
+      volumeMounts:
+        - mountPath: /workspace
+          name: workspace
+      command:
+        - sh
+        - -c
+        - |
+          mkfifo /workspace/pipe
+          cat /dev/random > /workspace/pipe
+    - name: sink
+      image: alpine:latest
+      volumeMounts:
+        - mountPath: /workspace
+          name: workspace
+      command:
+        - sh
+        - -c
+        - |
+          sleep 2
+          cat /workspace/pipe
