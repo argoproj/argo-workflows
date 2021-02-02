@@ -3,7 +3,7 @@ apiVersion: argoproj.io/v1alpha1
 metadata:
   generateName: sleepy-
   labels:
-    argo-e2e: "true"
+    argo-e2e: "sleepy"
 spec:
   entrypoint: main
   templates:

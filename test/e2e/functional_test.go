@@ -56,7 +56,7 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
-		Exec("kubectl", []string{"-n", "argo", "wait", "pod", "-l", "workflows.argoproj.io/workflow", "--for=condition=Ready"}, fixtures.OutputRegexp(`pod/sleepy-.* condition met`)).
+		Exec("kubectl", []string{"-n", "argo", "wait", "pod", "-l", "workflows.argoproj.io/completed=false", "--for=condition=Ready"}, fixtures.OutputRegexp(`pod/sleepy-.* condition met`)).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow", "--grace-period=1"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
 		WaitForWorkflow().
 		Then().
