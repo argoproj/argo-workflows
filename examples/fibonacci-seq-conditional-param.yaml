@@ -1,0 +1,98 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: fibonacci-
+spec:
+  entrypoint: fibonacci
+  templates:
+    - name: fibonacci
+      inputs:
+        parameters:
+          - name: num-0
+      memoize:
+        key: "{{inputs.parameters.num-0}}"
+        cache:
+          configMap:
+            name: fibonacci-m
+            key: fibonacci-cache
+      steps:
+        - - name: one
+            template: return-1
+            when: "{{inputs.parameters.num-0}} == 1"
+          - name: two
+            template: return-1
+            when: "{{inputs.parameters.num-0}} == 2"
+          - name: fibonacci-helper
+            template: fibonacci-helper
+            when: "{{inputs.parameters.num-0}} != 1 && {{inputs.parameters.num-0}} != 2"
+            arguments:
+              parameters:
+                - name: num-1
+                  value: "{{inputs.parameters.num-0}}"
+      outputs:
+        parameters:
+          - name: fib
+            valueFrom:
+              fromExpression: "({{inputs.parameters.num-0}} == 1)? '1' : (({{inputs.parameters.num-0}} == 2) ? '2' : {{steps.fibonacci-helper.outputs.parameters.result}})"
+    
+    - name: fibonacci-helper
+      inputs:
+        parameters:
+          - name: num-1
+      steps:
+        - - name: sub-1
+            template: do-math
+            arguments:
+              parameters:
+                - {name: a, value: "{{inputs.parameters.num-1}}"}
+                - {name: op, value: "-"}
+                - {name: b, value: "1"}
+          - name: sub-2
+            template: do-math
+            when: "{{inputs.parameters.num-1}} != 1 && {{inputs.parameters.num-1}} != 2"
+            arguments:
+              parameters:
+                - {name: a, value: "{{inputs.parameters.num-1}}"}
+                - {name: op, value: "-"}
+                - {name: b, value: "2"}
+        - - name: fib-sub-1
+            template: fibonacci
+            arguments:
+              parameters:
+                - name: num-0
+                  value: "{{steps.sub-1.outputs.result}}"
+          - name: fib-sub-2
+            template: fibonacci
+            arguments:
+              parameters:
+                - name: num-0
+                  value: "{{steps.sub-2.outputs.result}}"
+        - - name: add
+            template: do-math
+            arguments:
+              parameters:
+                - {name: a, value: "{{steps.fib-sub-1.outputs.parameters.fib}}"}
+                - {name: op, value: "+"}
+                - {name: b, value: "{{steps.fib-sub-2.outputs.parameters.fib}}"}
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              parameter: "{{steps.add.outputs.result}}"
+    - name: return-1
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: print(1)
+    
+    - name: do-math
+      inputs:
+        parameters:
+          - name: a
+          - name: op
+          - name: b
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          print({{inputs.parameters.a}} {{inputs.parameters.op}} {{inputs.parameters.b}})

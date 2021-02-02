@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-artifacts-
+spec:
+  entrypoint: coinflip
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  templates:
+    - name: coinflip
+      steps:
+        - - name: flip-coin
+            template: flip-coin
+        - - name: heads
+            template: heads
+            when: "{{steps.flip-coin.outputs.result}} == heads"
+          - name: tails
+            template: tails
+            when: "{{steps.flip-coin.outputs.result}} == tails"
+      outputs:
+        artifacts:
+          - name: step-result
+            fromExpression: "{{steps.flip-coin.outputs.result}} == heads?{{steps.heads.outputs.artifacts.heads-result}}:{{steps.tails.outputs.artifacts.tails-result}}"
+    
+    - name: flip-coin
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          import random
+          result = "heads" if random.randint(0,1) == 0 else "tails"
+          print(result)
+          
+    - name: heads
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["sleep 30; echo \"it was heads\" > /result.txt"]
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/vol
+      outputs:
+        artifacts:
+          - name: heads-result
+            path: /result.txt
+
+            
+    - name: tails
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["sleep30; echo \"it was tails\" > /result.txt"]
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/vol
+      outputs:
+        artifacts:
+          - name: tails-result
+            path: /result.txt

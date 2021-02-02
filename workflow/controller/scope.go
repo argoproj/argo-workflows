@@ -90,7 +90,6 @@ func (s *wfScope) evaluateExpression(fromExpression string) (string, error) {
 	if fromExpression == "" {
 		return "", nil
 	}
-
 	fstTmpl := fasttemplate.New(fromExpression, "{{", "}}")
 	updateExp, err := common.Replace(fstTmpl, s.getParameters(), true)
 	if err != nil {
@@ -99,7 +98,6 @@ func (s *wfScope) evaluateExpression(fromExpression string) (string, error) {
 
 	updateExp = strings.Replace(updateExp, "{{", "\"{{", -1)
 	updateExp = strings.Replace(updateExp, "}}", "}}\"", -1)
-
 	expression, err := govaluate.NewEvaluableExpression(updateExp)
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid token") {
@@ -130,11 +128,7 @@ func (s *wfScope) evaluateExpression(fromExpression string) (string, error) {
 	if result == nil {
 		return "", nil
 	}
-	output, ok := result.(string)
-	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", expression, result)
-	}
-	return output, nil
+	return fmt.Sprintf("%v", result), nil
 }
 
 func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Artifact, error) {
