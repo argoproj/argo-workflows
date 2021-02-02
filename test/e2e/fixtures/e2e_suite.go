@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -30,8 +29,6 @@ import (
 const Namespace = "argo"
 const Label = "argo-e2e"
 const defaultTimeout = 30 * time.Second
-
-var numFailures = 0
 
 type E2ESuite struct {
 	suite.Suite
@@ -74,12 +71,6 @@ func (s *E2ESuite) TearDownSuite() {
 
 func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
-	if s.T().Failed() {
-		numFailures++
-	}
-	if numFailures > 4 { // fail fast if it looks like everything is failing
-		log.Fatal("too many test failures")
-	}
 }
 
 var foreground = metav1.DeletePropagationForeground
@@ -135,7 +126,7 @@ func (s *E2ESuite) Need(needs ...Need) {
 	for _, n := range needs {
 		met, message := n(s)
 		if !met {
-			s.T().Skipf("%s: unmet need: %s", s.T().Name(), message)
+			s.T().Skip("unmet need: " + message)
 		}
 	}
 }

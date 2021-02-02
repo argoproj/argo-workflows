@@ -912,7 +912,10 @@ func chmod(artPath string, mode int32, recurse bool) error {
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, common.MainContainerName, annotationUpdatesCh)
-	err := we.RuntimeExecutor.Wait(ctx)
+	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+		err := we.RuntimeExecutor.Wait(ctx)
+		return err == nil, err
+	})
 	if err != nil {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
@@ -1061,26 +1064,8 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerName s
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
-	if len(we.Template.Sidecars) == 0 { // avoid expensive and unnecessary `get pod` call
-		return nil
-	}
 	log.Infof("Killing sidecars")
-	pod, err := we.getPod(ctx)
-	if err != nil {
-		return err
-	}
-	sidecars := make([]string, 0)
-	for _, ctrStatus := range pod.Status.ContainerStatuses {
-		if ctrStatus.Name == common.MainContainerName || ctrStatus.Name == common.WaitContainerName {
-			continue
-		}
-		if ctrStatus.State.Terminated != nil {
-			continue
-		}
-		log.Infof("Killing sidecar %s", ctrStatus.Name)
-		sidecars = append(sidecars, ctrStatus.Name)
-	}
-	return we.RuntimeExecutor.Kill(ctx, sidecars)
+	return we.RuntimeExecutor.Kill(ctx, we.Template.GetSidecarNames())
 }
 
 // LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file

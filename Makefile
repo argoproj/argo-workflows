@@ -324,9 +324,6 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	$(call go_install,golang.org/x/tools/cmd/goimports)
 
-$(GOPATH)/bin/gotestsum:
-	go install gotest.tools/gotestsum
-
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor
 	[ -e v2 ] || ln -s . v2
@@ -407,7 +404,7 @@ endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go $(GOPATH)/bin/gotestsum
+test: server/static/files.go
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
@@ -505,7 +502,7 @@ test-cli:
 	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
-test-e2e-cron: $(GOPATH)/bin/gotestsum
+test-e2e-cron:
 	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: test-executor

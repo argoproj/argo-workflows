@@ -664,12 +664,16 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 }
 
 func (tmpl *Template) GetContainerNames() []string {
+	return append(tmpl.GetSidecarNames(), "main")
+}
+
+func (tmpl *Template) GetSidecarNames() []string {
 	var containerNames []string
-	containerNames = append(containerNames, "main")
 	for _, s := range tmpl.Sidecars {
 		containerNames = append(containerNames, s.Name)
 	}
 	return containerNames
+
 }
 
 type Artifacts []Artifact
