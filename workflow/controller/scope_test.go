@@ -3,6 +3,8 @@ package controller
 import (
 	"testing"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,12 +19,12 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
 
 	// Ensure that normal artifact resolution without adding subpaths works
-	resolvedArtifact, err := scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}", "")
+	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"}, "")
 	assert.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in an error being thrown
-	_, err = scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}", "some/subkey")
+	_, err = scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"}, "some/subkey")
 	assert.Error(t, err)
 }
 
@@ -39,19 +41,19 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
 
 	// Ensure that normal artifact resolution without adding subpaths works
-	resolvedArtifact, err := scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}", "")
+	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"}, "")
 	assert.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in artifact key being modified
-	resolvedArtifact, err = scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}", "some/subkey")
+	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"}, "some/subkey")
 	assert.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 
 	// Ensure that subpath template values are also resolved
 	scope.addParamToScope("steps.test.outputs.parameters.subkey", "some")
 
-	resolvedArtifact, err = scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}", "{{steps.test.outputs.parameters.subkey}}/subkey")
+	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"}, "{{steps.test.outputs.parameters.subkey}}/subkey")
 	assert.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 	assert.Equal(t, artifact, originalArtifact)
@@ -238,4 +240,8 @@ func TestSubPathResolution(t *testing.T) {
 	t.Run("Raw Artifact SubPath Unsupported Resolution", func(t *testing.T) {
 		unsupportedArtifactSubPathResolution(t, RawArtifact)
 	})
+}
+
+func TestExecuteFromCondition(t *testing.T) {
+
 }

@@ -916,7 +916,7 @@ func TestInvalidOutputParam(t *testing.T) {
 	}
 	_, err = validate(invalidOutputIncompatibleValueFromParam)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), ".parameter must be specified for Steps templates")
+		assert.Contains(t, err.Error(), ".parameter or fromExpression must be specified for Steps templates")
 	}
 }
 

@@ -573,6 +573,9 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		if art.From != "" {
 			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
 		}
+		if art.FromExpression != "" {
+			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
+		}
 		errPrefix := fmt.Sprintf("templates.%s.%s", tmpl.Name, artRef)
 		err = validateArtifactLocation(errPrefix, art.ArtifactLocation)
 		if err != nil {
@@ -780,6 +783,9 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, art := range arguments.Artifacts {
 		if art.From == "" && !art.HasLocationOrKey() {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
+		}
+		if art.From != "" && art.FromExpression != "" {
+			return errors.Errorf(errors.CodeBadRequest, "%s%s should have either `from` or `fromExpression`", prefix, art.Name)
 		}
 	}
 	return nil
@@ -996,8 +1002,11 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 					return errors.Errorf(errors.CodeBadRequest, "%s .jqFilter or jsonPath must be specified for %s templates", paramRef, tmplType)
 				}
 			case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
-				if param.ValueFrom.Parameter == "" {
-					return errors.Errorf(errors.CodeBadRequest, "%s.parameter must be specified for %s templates", paramRef, tmplType)
+				if param.ValueFrom.Parameter == "" && param.ValueFrom.FromExpression == "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s.parameter or fromExpression must be specified for %s templates", paramRef, tmplType)
+				}
+				if param.ValueFrom.FromExpression != "" && param.ValueFrom.Parameter != "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s should have either `from` or `fromExpression` specified for %s templates", paramRef, tmplType)
 				}
 			}
 		}
@@ -1077,7 +1086,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 		return errors.Errorf(errors.CodeBadRequest, "%s does not have valueFrom or value specified", paramRef)
 	}
 	paramTypes := 0
-	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter} {
+	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter, param.ValueFrom.FromExpression} {
 		if value != "" {
 			paramTypes++
 		}
@@ -1087,7 +1096,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 	}
 	switch paramTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "valueFrom type unspecified. choose one of: path, jqFilter, jsonPath, parameter, raw")
+		return errors.New(errors.CodeBadRequest, "valueFrom type unspecified. choose one of: path, jqFilter, jsonPath, parameter, raw, expression")
 	case 1:
 	default:
 		return errors.New(errors.CodeBadRequest, "multiple valueFrom types specified. choose one of: path, jqFilter, jsonPath, parameter, raw")

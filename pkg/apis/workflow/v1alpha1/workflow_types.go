@@ -743,6 +743,9 @@ type ValueFrom struct {
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+
+	// FromExpression is an expression in which the parameter should conditionally include
+	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,8,rep,name=fromExpression"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -782,6 +785,9 @@ type Artifact struct {
 
 	// If mode is set, apply the permission recursively into the artifact if it is a folder
 	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
+
+	// FromExpression is an expression in which the artifact should conditionally include
+	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 }
 
 // PodGC describes how to delete completed pods as they complete
