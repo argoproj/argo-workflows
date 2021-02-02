@@ -40,7 +40,7 @@ type KubernetesClientInterface interface {
 
 // WaitForTermination of the given containerName, set the timeout to 0 to discard it
 func WaitForTermination(ctx context.Context, c KubernetesClientInterface, containerName string, timeout time.Duration) error {
-	ticker := time.NewTicker(time.Second * 1)
+	ticker := time.NewTicker(time.Second * 3)
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
 	if timeout == 0 {
