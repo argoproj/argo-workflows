@@ -19,6 +19,7 @@ interface NodeGenres {
 interface NodeClassNames {
     [type: string]: boolean;
 }
+
 interface NodeTags {
     [key: string]: boolean;
 }
@@ -28,8 +29,11 @@ interface Props {
     storageScope: string; // the scope of storage, similar graphs should use the same vaulue
     options?: React.ReactNode; // add to the option panel
     classNames?: string;
+    nodeGenresTitle: string;
     nodeGenres: NodeGenres;
+    nodeClassNamesTitle?: string;
     nodeClassNames?: NodeClassNames;
+    nodeTagsTitle?: string;
     nodeTags?: NodeTags;
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
@@ -82,39 +86,39 @@ export const GraphPanel = (props: Props) => {
             {!props.hideOptions && (
                 <div className='graph-options-panel'>
                     <FilterDropDown
-                        key='types'
-                        values={nodeGenres}
-                        onChange={(label, checked) => {
-                            setNodeGenres(v => {
-                                v[label] = checked;
-                                return Object.assign({}, v);
-                            });
-                        }}
+                        sections={[
+                            {
+                                title: props.nodeGenresTitle,
+                                values: nodeGenres,
+                                onChange: (label, checked) => {
+                                    setNodeGenres(v => {
+                                        v[label] = checked;
+                                        return Object.assign({}, v);
+                                    });
+                                }
+                            },
+                            {
+                                title: props.nodeClassNamesTitle,
+                                values: nodeClassNames,
+                                onChange: (label, checked) => {
+                                    setNodeClassNames(v => {
+                                        v[label] = checked;
+                                        return Object.assign({}, v);
+                                    });
+                                }
+                            },
+                            {
+                                title: props.nodeTagsTitle,
+                                values: nodeTags,
+                                onChange: (label, checked) => {
+                                    setNodeTags(v => {
+                                        v[label] = checked;
+                                        return Object.assign({}, v);
+                                    });
+                                }
+                            }
+                        ]}
                     />
-                    {nodeClassNames && (
-                        <FilterDropDown
-                            key='class-names'
-                            values={nodeClassNames}
-                            onChange={(label, checked) => {
-                                setNodeClassNames(v => {
-                                    v[label] = checked;
-                                    return Object.assign({}, v);
-                                });
-                            }}
-                        />
-                    )}
-                    {nodeTags && (
-                        <FilterDropDown
-                            key='annotations'
-                            values={nodeTags}
-                            onChange={(label, checked) => {
-                                setNodeTags(v => {
-                                    v[label] = checked;
-                                    return Object.assign({}, v);
-                                });
-                            }}
-                        />
-                    )}
                     <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
                         <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
                     </a>
