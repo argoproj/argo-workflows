@@ -102,7 +102,6 @@ func checkHTTPErr(resp *http.Response) error {
 }
 
 func (k *kubeletClient) getPod() (*corev1.Pod, error) {
-	// TODO - add backoff?
 	u, err := url.ParseRequestURI(fmt.Sprintf("https://%s/pods", k.kubeletEndpoint))
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
