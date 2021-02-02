@@ -64,18 +64,19 @@ const (
 type argoServer struct {
 	baseHRef string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
-	tlsConfig        *tls.Config
-	hsts             bool
-	namespace        string
-	managedNamespace string
-	clients          *types.Clients
-	gatekeeper       auth.Gatekeeper
-	oAuth2Service    sso.Interface
-	configController config.Controller
-	stopCh           chan struct{}
-	eventQueueSize   int
-	eventWorkerCount int
-	xframeOptions    string
+	tlsConfig                *tls.Config
+	hsts                     bool
+	namespace                string
+	managedNamespace         string
+	clients                  *types.Clients
+	gatekeeper               auth.Gatekeeper
+	oAuth2Service            sso.Interface
+	configController         config.Controller
+	stopCh                   chan struct{}
+	eventQueueSize           int
+	eventWorkerCount         int
+	xframeOptions            string
+	accessControlAllowOrigin string
 }
 
 type ArgoServerOpts struct {
@@ -86,12 +87,13 @@ type ArgoServerOpts struct {
 	RestConfig *rest.Config
 	AuthModes  auth.Modes
 	// config map name
-	ConfigName              string
-	ManagedNamespace        string
-	HSTS                    bool
-	EventOperationQueueSize int
-	EventWorkerCount        int
-	XFrameOptions           string
+	ConfigName               string
+	ManagedNamespace         string
+	HSTS                     bool
+	EventOperationQueueSize  int
+	EventWorkerCount         int
+	XFrameOptions            string
+	AccessControlAllowOrigin string
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
@@ -115,19 +117,20 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		return nil, err
 	}
 	return &argoServer{
-		baseHRef:         opts.BaseHRef,
-		tlsConfig:        opts.TLSConfig,
-		hsts:             opts.HSTS,
-		namespace:        opts.Namespace,
-		managedNamespace: opts.ManagedNamespace,
-		clients:          opts.Clients,
-		gatekeeper:       gatekeeper,
-		oAuth2Service:    ssoIf,
-		configController: configController,
-		stopCh:           make(chan struct{}),
-		eventQueueSize:   opts.EventOperationQueueSize,
-		eventWorkerCount: opts.EventWorkerCount,
-		xframeOptions:    opts.XFrameOptions,
+		baseHRef:                 opts.BaseHRef,
+		tlsConfig:                opts.TLSConfig,
+		hsts:                     opts.HSTS,
+		namespace:                opts.Namespace,
+		managedNamespace:         opts.ManagedNamespace,
+		clients:                  opts.Clients,
+		gatekeeper:               gatekeeper,
+		oAuth2Service:            ssoIf,
+		configController:         configController,
+		stopCh:                   make(chan struct{}),
+		eventQueueSize:           opts.EventOperationQueueSize,
+		eventWorkerCount:         opts.EventWorkerCount,
+		xframeOptions:            opts.XFrameOptions,
+		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
 	}, nil
 }
 
@@ -300,15 +303,32 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })
+	mux.HandleFunc("/api/", configureCORS(func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) }, as.accessControlAllowOrigin))
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	mux.Handle("/metrics", promhttp.Handler())
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles)
+	mux.HandleFunc("/", configureCORS(static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles, as.accessControlAllowOrigin))
 	return &httpServer
+}
+
+// configureCORS is a middleware for setting CORS headers
+func configureCORS(h http.HandlerFunc, accessControlAllowOrigin string) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if accessControlAllowOrigin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
+			if r.Method == http.MethodOptions { // Set CORS headers for preflight request
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
