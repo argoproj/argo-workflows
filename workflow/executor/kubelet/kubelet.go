@@ -8,11 +8,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 type KubeletExecutor struct {
-	cli     *kubeletClient
-	podName string
+	cli *kubeletClient
 }
 
 func NewKubeletExecutor(namespace, podName string) (*KubeletExecutor, error) {
@@ -22,8 +22,7 @@ func NewKubeletExecutor(namespace, podName string) (*KubeletExecutor, error) {
 		return nil, errors.InternalWrapError(err)
 	}
 	return &KubeletExecutor{
-		cli:     cli,
-		podName: podName,
+		cli: cli,
 	}, nil
 }
 
@@ -56,7 +55,7 @@ func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string)
 
 // Wait for the container to complete
 func (k *KubeletExecutor) Wait(ctx context.Context) error {
-	return k.cli.WaitForTermination(ctx, "main", 0)
+	return k.cli.WaitForTermination(ctx, common.MainContainerName, 0)
 }
 
 // Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period

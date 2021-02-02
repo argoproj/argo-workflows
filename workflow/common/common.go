@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 const (
@@ -13,7 +14,7 @@ const (
 	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
 
 	// Container names used in the workflow pod
-	MainContainerName = "main"
+	MainContainerName = wfv1.MainContainerName
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 
@@ -104,7 +105,8 @@ const (
 	// Various environment variables containing pod information exposed to the executor container(s)
 
 	// EnvVarPodName contains the name of the pod (currently unused)
-	EnvVarPodName = "ARGO_POD_NAME"
+	EnvVarPodName       = "ARGO_POD_NAME"
+	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
 	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`

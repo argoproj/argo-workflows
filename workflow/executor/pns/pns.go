@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,6 +20,7 @@ import (
 	"github.com/argoproj/argo/v2/errors"
 	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/v2/util/archive"
+	"github.com/argoproj/argo/v2/workflow/common"
 	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
 	"github.com/argoproj/argo/v2/workflow/executor/k8sapi"
 	osspecific "github.com/argoproj/argo/v2/workflow/executor/os-specific"
@@ -33,9 +33,13 @@ type PNSExecutor struct {
 	podName   string
 	namespace string
 
+	containers map[string]string // container name -> container ID
+
+	// ctrIDToPid maps a containerID to a process ID
 	ctrIDToPid map[string]int
-	containers map[string]string
-	rootFiles  map[int]*os.File
+
+	// pidFileHandles holds file handles to all root containers
+	pidFileHandles map[int]*os.File
 
 	// thisPID is the pid of this process
 	thisPID int
@@ -62,7 +66,7 @@ func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string, 
 		thisPID:        thisPID,
 		ctrIDToPid:     make(map[string]int),
 		containers:     make(map[string]string), // containerName -> containerID
-		rootFiles:      make(map[int]*os.File),
+		pidFileHandles: make(map[int]*os.File),
 		tmpl:           tmpl,
 	}, nil
 }
@@ -86,7 +90,7 @@ func (p *PNSExecutor) enterChroot(containerName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get container PID: %w", err)
 	}
-	if err := p.rootFiles[pid].Chdir(); err != nil {
+	if err := p.pidFileHandles[pid].Chdir(); err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chdir to main filesystem: %v", err)
 	}
 	if err := osspecific.CallChroot(); err != nil {
@@ -165,7 +169,7 @@ func (p *PNSExecutor) Wait(ctx context.Context) error {
 		}
 	}
 
-	mainPID, err := p.getContainerPID("main")
+	mainPID, err := p.getContainerPID(common.MainContainerName)
 	if err != nil {
 		return err
 	}
@@ -290,41 +294,39 @@ func containerNameForPID(pid int) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	prefix := common.EnvVarContainerName + "="
 	for _, l := range strings.Split(string(data), "\000") {
-		if strings.HasPrefix(l, "ARGO_CONTAINER_NAME=") {
-			return strings.TrimPrefix(l, "ARGO_CONTAINER_NAME="), nil
+		if strings.HasPrefix(l, prefix) {
+			return strings.TrimPrefix(l, prefix), nil
 		}
 	}
 	return "", errContainerNameNotFound
 }
 
 func (p *PNSExecutor) secureRootFiles() error {
-	dir, err := ioutil.ReadDir("/proc")
+	processes, err := gops.Processes()
 	if err != nil {
 		return err
 	}
-	for _, f := range dir {
+	for _, proc := range processes {
 		_ = func() error {
-			pid, err := strconv.Atoi(f.Name())
-			if err != nil || pid == 1 || pid == p.thisPID { // ignore the pause container, our own pid
+			pid := proc.Pid()
+			if pid == 1 || pid == p.thisPID || proc.PPid() != 0 {
+				// ignore the pause container, our own pid, and non-root processes
 				return nil
-			}
-			proc, err := gops.FindProcess(pid)
-			if err != nil || proc.PPid() != 0 { // ignore non-root processes
-				return nil
-			}
-
-			// the main container may have switched (e.g. gone from busybox to the user's container)
-			if prevInfo, ok := p.rootFiles[pid]; ok {
-				_ = prevInfo.Close()
 			}
 
 			fs, err := os.Open(fmt.Sprintf("/proc/%d/root", pid))
 			if err != nil {
 				return err
 			}
-			log.Infof("secure root for pid %d root: %s", pid, proc.Executable())
-			p.rootFiles[pid] = fs
+
+			// the main container may have switched (e.g. gone from busybox to the user's container)
+			if prevInfo, ok := p.pidFileHandles[pid]; ok {
+				_ = prevInfo.Close()
+			}
+			p.pidFileHandles[pid] = fs
+			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
 
 			containerID, err := parseContainerID(pid)
 			if err != nil {

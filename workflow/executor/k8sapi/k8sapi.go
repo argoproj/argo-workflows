@@ -11,6 +11,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 type K8sAPIExecutor struct {
@@ -60,7 +61,7 @@ func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) 
 func (k *K8sAPIExecutor) Wait(ctx context.Context) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
 		for _, s := range pod.Status.ContainerStatuses {
-			if s.Name == "main" && s.State.Terminated != nil {
+			if s.Name == common.MainContainerName && s.State.Terminated != nil {
 				return true
 			}
 		}

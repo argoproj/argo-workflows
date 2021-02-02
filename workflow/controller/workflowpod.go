@@ -159,7 +159,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
 		mainCtr.Resources = *tmpl.Container.Resources.DeepCopy()
 	}
-	mainCtr.Env = append(mainCtr.Env, apiv1.EnvVar{Name: "ARGO_CONTAINER_NAME", Value: mainCtr.Name}) // used by PNS executor to identify the container name of the process
+	mainCtr.Env = append(mainCtr.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: mainCtr.Name}) // used by PNS executor to identify the container name of the process
 
 	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()

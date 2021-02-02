@@ -25,7 +25,7 @@ import (
 	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
 )
 
-var errContainerNotExist = fmt.Errorf("container does not exist")
+var errContainerNotExist = fmt.Errorf("container does not exist") // sentinel error
 
 type DockerExecutor struct {
 	namespace  string
@@ -191,7 +191,7 @@ func (d *DockerExecutor) Wait(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	containerID, err := d.getContainerID("main")
+	containerID, err := d.getContainerID(common.MainContainerName)
 	if err != nil {
 		return err
 	}
