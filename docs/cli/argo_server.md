@@ -32,7 +32,6 @@ See https://argoproj.github.io/argo/argo-server.md
       --namespaced                       run as namespaced mode
   -p, --port int                         Port to listen on (default 2746)
       --x-frame-options string           Set X-Frame-Options header in HTTP responses. (default "DENY")
-      --access-control-allow-origin      Set Access-Control-Allow-Origin header in HTTP responses. (default "")
 ```
 
 ### Options inherited from parent commands
