@@ -222,7 +222,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	if woc.controller.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
@@ -429,7 +429,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait"}
-	switch woc.controller.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
 			Capabilities: &apiv1.Capabilities{
@@ -487,19 +487,19 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
-	switch woc.controller.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorK8sAPI:
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.GetContainerRuntimeExecutor(),
+				Value: woc.getContainerRuntimeExecutor(),
 			},
 		)
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.GetContainerRuntimeExecutor(),
+				Value: woc.getContainerRuntimeExecutor(),
 			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
@@ -522,7 +522,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.GetContainerRuntimeExecutor(),
+				Value: woc.getContainerRuntimeExecutor(),
 			},
 		)
 	}
@@ -547,7 +547,7 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 			},
 		})
 	}
-	switch woc.controller.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
 	default:
