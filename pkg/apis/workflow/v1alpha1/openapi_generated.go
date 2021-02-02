@@ -333,6 +333,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"fromExpression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FromExpression is an expression in which the artifact should conditionally include",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -4358,6 +4365,13 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"fromExpression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FromExpression is an expression in which the parameter should conditionally include",
 							Type:        []string{"string"},
 							Format:      "",
 						},
