@@ -14,10 +14,7 @@ var (
 		return os.Getenv("CI") != "", "CI"
 	}
 	BaseLayerArtifacts Need = func(s *E2ESuite) (bool, string) {
-		// for base layer you need
-		// * docker
-		// * pns, but not on the CI system for some reason
-		met, _ := Any(Docker, All(None(CI), PNS))(s)
+		met, _ := None(K8SAPI, Kubelet)(s)
 		return met, "base layer artifact support"
 	}
 	Offloading Need = func(s *E2ESuite) (bool, string) {
