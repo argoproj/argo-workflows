@@ -1313,6 +1313,7 @@ const (
 	RetryPolicyAlways    RetryPolicy = "Always"
 	RetryPolicyOnFailure RetryPolicy = "OnFailure"
 	RetryPolicyOnError   RetryPolicy = "OnError"
+	RetryPolicyOnTransientError   RetryPolicy = "OnTransientError"
 )
 
 // Backoff is a backoff strategy to use within retryStrategy
