@@ -8,12 +8,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	eventpkg "github.com/argoproj/argo/v2/pkg/apiclient/event"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/server/auth"
-	"github.com/argoproj/argo/v2/server/event/dispatch"
-	"github.com/argoproj/argo/v2/util/instanceid"
-	"github.com/argoproj/argo/v2/workflow/events"
+	eventpkg "github.com/argoproj/argo/v3/pkg/apiclient/event"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/server/auth"
+	"github.com/argoproj/argo/v3/server/event/dispatch"
+	"github.com/argoproj/argo/v3/util/instanceid"
+	"github.com/argoproj/argo/v3/workflow/events"
 )
 
 type Controller struct {
