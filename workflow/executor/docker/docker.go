@@ -267,6 +267,10 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string) erro
 		containerIDs = append(containerIDs, containerID)
 	}
 
+	if len(containerIDs) == 0 { // they may have already terminated
+		return nil
+	}
+
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
 	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
