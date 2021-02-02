@@ -2345,16 +2345,6 @@ func getStepOrDAGTaskName(nodeName string) string {
 	return nodeName
 }
 
-func extractMainCtrFromScriptTemplate(tmpl *wfv1.Template) apiv1.Container {
-	mainCtr := tmpl.Script.Container
-	// If script source is provided then pass all container args to the
-	// script instead of passing them to the container command directly
-	if tmpl.Script.Source != "" {
-		mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
-	}
-	return mainCtr
-}
-
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
@@ -2370,7 +2360,8 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		return node, err
 	}
 
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err = woc.createWorkflowPod(ctx, nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
