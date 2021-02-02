@@ -15,9 +15,9 @@ type KubeletExecutor struct {
 	podName string
 }
 
-func NewKubeletExecutor(podName string) (*KubeletExecutor, error) {
+func NewKubeletExecutor(namespace, podName string) (*KubeletExecutor, error) {
 	log.Infof("Creating a kubelet executor")
-	cli, err := newKubeletClient(podName)
+	cli, err := newKubeletClient(namespace, podName)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}

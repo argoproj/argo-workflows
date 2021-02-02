@@ -62,7 +62,7 @@ func WaitForTermination(ctx context.Context, c KubernetesClientInterface, contai
 			if containerStatus.State.Terminated == nil {
 				continue
 			}
-			log.Infof("Container %q is terminated: %v", containerName, containerStatus.String())
+			log.Infof("Container %q is terminated: %v", containerName, containerStatus.State.String())
 			return nil
 		case <-timer.C:
 			return fmt.Errorf("timeout after %s", timeout.String())

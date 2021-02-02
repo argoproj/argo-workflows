@@ -38,12 +38,13 @@ type kubeletClient struct {
 	// - 127.0.0.1:10250
 	// - my-host.com:10250
 	kubeletEndpoint string
+	namespace       string
 	podName         string
 }
 
 var _ execcommon.KubernetesClientInterface = &kubeletClient{}
 
-func newKubeletClient(podName string) (*kubeletClient, error) {
+func newKubeletClient(namespace, podName string) (*kubeletClient, error) {
 	kubeletHost := os.Getenv(common.EnvVarDownwardAPINodeIP)
 	if kubeletHost == "" {
 		return nil, fmt.Errorf("empty envvar %s", common.EnvVarDownwardAPINodeIP)
@@ -88,6 +89,7 @@ func newKubeletClient(podName string) (*kubeletClient, error) {
 			HandshakeTimeout: time.Second * 5,
 		},
 		kubeletEndpoint: fmt.Sprintf("%s:%d", kubeletHost, kubeletPort),
+		namespace:       namespace,
 		podName:         podName,
 	}, nil
 }
@@ -114,6 +116,7 @@ func (k *kubeletClient) getPod() (*corev1.Pod, error) {
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+	log.Infof("List pod %d (kubelet)", resp.StatusCode) // log that we are listing pods from Kubelet
 	err = checkHTTPErr(resp)
 	if err != nil {
 		return nil, err
@@ -129,7 +132,7 @@ func (k *kubeletClient) getPod() (*corev1.Pod, error) {
 		return nil, err
 	}
 	for _, item := range podList.Items {
-		if item.Name == k.podName {
+		if item.Namespace == k.namespace && item.Name == k.podName {
 			return &item, nil
 		}
 	}
@@ -137,11 +140,7 @@ func (k *kubeletClient) getPod() (*corev1.Pod, error) {
 }
 
 func (k *kubeletClient) GetLogStream(containerName string) (io.ReadCloser, error) {
-	pod, err := k.getPod()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := k.doRequestLogs(pod.Namespace, pod.Name, containerName)
+	resp, err := k.doRequestLogs(k.namespace, k.podName, containerName)
 	if err != nil {
 		return nil, err
 	}

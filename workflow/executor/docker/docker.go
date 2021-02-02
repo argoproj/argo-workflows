@@ -28,14 +28,15 @@ import (
 var errContainerNotExist = fmt.Errorf("container does not exist")
 
 type DockerExecutor struct {
+	namespace  string
 	podName    string
 	containers map[string]string // containerName -> containerID
 	tmpl       *wfv1.Template
 }
 
-func NewDockerExecutor(podName string, tmpl *wfv1.Template) (*DockerExecutor, error) {
+func NewDockerExecutor(namespace, podName string, tmpl *wfv1.Template) (*DockerExecutor, error) {
 	log.Infof("Creating a docker executor")
-	return &DockerExecutor{podName, make(map[string]string), tmpl}, nil
+	return &DockerExecutor{namespace, podName, make(map[string]string), tmpl}, nil
 }
 
 func (d *DockerExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {
@@ -212,6 +213,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context) error {
 				"--format={{.Label \"io.kubernetes.container.name\"}}={{.ID}}",
 				"--no-trunc", // display long container IDs
 				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
+				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
 				"--filter=label=io.kubernetes.pod.name="+d.podName,
 			)
 			if err != nil {

@@ -552,13 +552,13 @@ func (we *WorkflowExecutor) GetSecret(ctx context.Context, accessKeyName string,
 }
 
 // saveLogToFile saves the entire log output of a container to a local file
-func (we *WorkflowExecutor) saveLogToFile(ctx context.Context, mainCtrID, path string) error {
+func (we *WorkflowExecutor) saveLogToFile(ctx context.Context, containerName, path string) error {
 	outFile, err := os.Create(path)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 	defer func() { _ = outFile.Close() }()
-	reader, err := we.RuntimeExecutor.GetOutputStream(ctx, mainCtrID, true)
+	reader, err := we.RuntimeExecutor.GetOutputStream(ctx, containerName, true)
 	if err != nil {
 		return err
 	}
