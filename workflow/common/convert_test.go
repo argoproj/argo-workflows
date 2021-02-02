@@ -138,10 +138,8 @@ spec:
         parameters:
           - name: message
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2
+        args: [echo, "{{inputs.parameters.message}}"]
 `
 
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {

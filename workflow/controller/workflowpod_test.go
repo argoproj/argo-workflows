@@ -69,42 +69,6 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-var scriptTemplateWithArgsAndWithSource = `
-name: script-with-args-and-with-source
-script:
-  image: alpine:latest
-  command: [sh]
-  args: ["hello world"]
-  source: |
-    echo $@
-`
-
-// TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource ensure order of merged args
-// and script path is correct when both args and script source are specified
-func TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource(t *testing.T) {
-	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithSource)
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
-	assert.Equal(t, []string{"sh"}, mainCtr.Command)
-	assert.Equal(t, []string{common.ExecutorScriptSourcePath, "hello world"}, mainCtr.Args)
-}
-
-var scriptTemplateWithArgsAndWithoutSource = `
-name: script-with-args-and-without-source
-script:
-  image: alpine:latest
-  command: [echo]
-  args: ["hello world"]
-`
-
-// TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource ensure only args are passed
-// to the resulting container when script source is empty
-func TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource(t *testing.T) {
-	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithoutSource)
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
-	assert.Equal(t, []string{"echo"}, mainCtr.Command)
-	assert.Equal(t, []string{"hello world"}, mainCtr.Args)
-}
-
 var scriptTemplateWithOptionalInputArtifactProvided = `
 name: script-with-input-artifact
 inputs:

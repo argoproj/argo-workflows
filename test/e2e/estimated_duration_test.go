@@ -1,4 +1,4 @@
-// +build e2e
+// +build functional
 
 package e2e
 

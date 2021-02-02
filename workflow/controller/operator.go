@@ -1116,38 +1116,29 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
-		if pod.DeletionTimestamp != nil {
-			// pod is being terminated
-			newPhase = wfv1.NodeError
-			newDaemonStatus = pointer.BoolPtr(false)
-			message = "pod deleted during operation"
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Error(message)
-		} else {
-			newPhase = wfv1.NodeRunning
-			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-			if !ok {
-				woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
-				return nil
-			}
-			var tmpl wfv1.Template
-			err := json.Unmarshal([]byte(tmplStr), &tmpl)
-			if err != nil {
-				woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
-				return nil
-			}
-			if tmpl.Daemon != nil && *tmpl.Daemon {
-				// pod is running and template is marked daemon. check if everything is ready
-				for _, ctrStatus := range pod.Status.ContainerStatuses {
-					if !ctrStatus.Ready {
-						return nil
-					}
+		newPhase = wfv1.NodeRunning
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
+			return nil
+		}
+		var tmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &tmpl)
+		if err != nil {
+			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
+			return nil
+		}
+		if tmpl.Daemon != nil && *tmpl.Daemon {
+			// pod is running and template is marked daemon. check if everything is ready
+			for _, ctrStatus := range pod.Status.ContainerStatuses {
+				if !ctrStatus.Ready {
+					return nil
 				}
-				// proceed to mark node status as running (and daemoned)
-				newPhase = wfv1.NodeRunning
-				newDaemonStatus = pointer.BoolPtr(true)
-				woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 			}
+			// proceed to mark node status as running (and daemoned)
+			newPhase = wfv1.NodeRunning
+			newDaemonStatus = pointer.BoolPtr(true)
+			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
 	default:
 		newPhase = wfv1.NodeError
@@ -2354,16 +2345,6 @@ func getStepOrDAGTaskName(nodeName string) string {
 	return nodeName
 }
 
-func extractMainCtrFromScriptTemplate(tmpl *wfv1.Template) apiv1.Container {
-	mainCtr := tmpl.Script.Container
-	// If script source is provided then pass all container args to the
-	// script instead of passing them to the container command directly
-	if tmpl.Script.Source != "" {
-		mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
-	}
-	return mainCtr
-}
-
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
@@ -2379,7 +2360,8 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		return node, err
 	}
 
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err = woc.createWorkflowPod(ctx, nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
