@@ -224,8 +224,10 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context) error {
 				}
 				containerName := parts[0]
 				containerID := parts[1]
-				d.containers[containerName] = containerID
-				log.Infof("mapped container name %s to container ID %s", containerName, containerID)
+				if containerID != "" {
+					d.containers[containerName] = containerID
+					log.Infof("mapped container name %s to container ID %s", containerName, containerID)
+				}
 			}
 			if d.haveContainerIDs() {
 				return nil
