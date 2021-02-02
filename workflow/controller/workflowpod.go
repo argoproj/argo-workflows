@@ -708,7 +708,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume, isImpliedPod bool) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeTransformation:
 	default:
 		return nil
 	}
@@ -799,6 +799,14 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 		if container.Name == common.InitContainerName {
 			pod.Spec.InitContainers[idx].VolumeMounts = append(pod.Spec.InitContainers[idx].VolumeMounts, volumeMounts...)
 			break
+		}
+	}
+	if tmpl.Transformation != nil {
+		for idx, container := range pod.Spec.Containers {
+			if container.Name == common.MainContainerName {
+				pod.Spec.Containers[idx].VolumeMounts = append(pod.Spec.Containers[idx].VolumeMounts, volumeMounts...)
+				break
+			}
 		}
 	}
 
@@ -1116,6 +1124,11 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	}
 	for _, art := range tmpl.Inputs.Artifacts {
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+	}
+
+	if tmpl.Transformation.WithArtifacts != nil {
+		log.Infof("SIMON creating volume")
+		createSecretVolume(allVolumesMap, tmpl.Transformation.WithArtifacts.Artifact, uniqueKeyMap)
 	}
 
 	for volMountName, val := range allVolumesMap {

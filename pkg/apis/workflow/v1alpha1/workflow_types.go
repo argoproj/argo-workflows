@@ -25,14 +25,14 @@ type TemplateType string
 
 // Possible template types
 const (
-	TemplateTypeContainer TemplateType = "Container"
-	TemplateTypeSteps     TemplateType = "Steps"
-	TemplateTypeScript    TemplateType = "Script"
-	TemplateTypeResource  TemplateType = "Resource"
-	TemplateTypeDAG       TemplateType = "DAG"
-	TemplateTypeSuspend   TemplateType = "Suspend"
-	TemplateTypeImplied   TemplateType = "Implied"
-	TemplateTypeUnknown   TemplateType = "Unknown"
+	TemplateTypeContainer      TemplateType = "Container"
+	TemplateTypeSteps          TemplateType = "Steps"
+	TemplateTypeScript         TemplateType = "Script"
+	TemplateTypeResource       TemplateType = "Resource"
+	TemplateTypeDAG            TemplateType = "DAG"
+	TemplateTypeSuspend        TemplateType = "Suspend"
+	TemplateTypeTransformation TemplateType = "Transformation"
+	TemplateTypeUnknown        TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -545,6 +545,8 @@ type Template struct {
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
+
+	Transformation *TransformationTemplate `json:"transformation"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -1072,9 +1074,6 @@ type WorkflowStep struct {
 	// WithSequence expands a step into a numeric sequence
 	WithSequence *Sequence `json:"withSequence,omitempty" protobuf:"bytes,7,opt,name=withSequence"`
 
-	// WithArtifacts expands a step from a collection of artifacts
-	WithArtifacts *WithArtifacts `json:"withArtifacts,omitempty"`
-
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty" protobuf:"bytes,8,opt,name=when"`
 
@@ -1100,10 +1099,6 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 
 func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
-}
-
-func (step *WorkflowStep) ShouldExpandArtifacts() bool {
-	return step.WithArtifacts != nil
 }
 
 // WithArtifacts expands a step from a collection of artifacts
@@ -2058,7 +2053,6 @@ func (h *HTTPArtifact) HasLocation() bool {
 
 // GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
-
 	// Bucket is the name of the bucket
 	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
@@ -2186,6 +2180,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
+	if tmpl.Transformation != nil {
+		return TemplateTypeTransformation
+	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
@@ -2195,7 +2192,7 @@ func (tmpl *Template) GetType() TemplateType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeTransformation:
 		return true
 	}
 	return false
@@ -2204,7 +2201,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeTransformation:
 		return true
 	}
 	return false
@@ -2290,6 +2287,10 @@ func (t *DAGTask) ShouldExpand() bool {
 type SuspendTemplate struct {
 	// Duration is the seconds to wait before automatically resuming a template
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
+}
+
+type TransformationTemplate struct {
+	WithArtifacts *WithArtifacts `json:"withArtifacts,omitempty"`
 }
 
 // GetArtifactByName returns an input artifact by its name

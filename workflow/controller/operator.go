@@ -1768,6 +1768,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeTransformation:
+		node, err = woc.executeTransformation(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
@@ -2680,6 +2682,30 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
 	_, err := woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
+	if err != nil {
+		return woc.requeueIfTransientErr(err, node.Name)
+	}
+
+	return node, err
+}
+
+
+func (woc *wfOperationCtx) executeTransformation(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	} else if !node.Pending() {
+		return node, nil
+	}
+
+	withArtifacts, err := json.Marshal(tmpl.Transformation.WithArtifacts)
+	if err != nil {
+		return node, fmt.Errorf("could not marhsal withArtifacts in transformation: %w", err)
+	}
+
+	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
+	mainCtr.Command = []string{"argoexec", "artifacts", string(withArtifacts)}
+	_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
