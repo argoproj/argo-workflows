@@ -15,12 +15,8 @@ import (
 //     3      0.07
 //     4      0.15
 //     5      0.31
-var DefaultRetry wait.Backoff
-
-func init() {
-	DefaultRetry = wait.Backoff{
-		Steps:    envutil.LookupEnvIntOr("RETRY_BACKOFF_STEPS", 5),
-		Duration: envutil.LookupEnvDurationOr("RETRY_BACKOFF_DURATION", 10*time.Millisecond),
-		Factor:   envutil.LookupEnvFloatOr("RETRY_BACKOFF_FACTOR", 2.),
-	}
+var DefaultRetry = wait.Backoff{
+	Steps:    envutil.LookupEnvIntOr("RETRY_BACKOFF_STEPS", 5),
+	Duration: envutil.LookupEnvDurationOr("RETRY_BACKOFF_DURATION", 10*time.Millisecond),
+	Factor:   envutil.LookupEnvFloatOr("RETRY_BACKOFF_FACTOR", 2.),
 }
