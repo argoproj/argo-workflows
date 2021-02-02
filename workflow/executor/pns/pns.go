@@ -280,7 +280,7 @@ func (p *PNSExecutor) killContainer(ctx context.Context, containerName string) e
 func (p *PNSExecutor) getContainerPID(containerName string) (int, error) {
 	containerID, ok := p.containers[containerName]
 	if !ok {
-		return 0, fmt.Errorf("container ID found for container name")
+		return 0, fmt.Errorf("container ID not found for container name")
 	}
 	pid := p.ctrIDToPid[containerID]
 	if pid == 0 {
