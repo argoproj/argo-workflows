@@ -168,17 +168,24 @@ func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) 
 }
 
 func (k *kubeletClient) GetContainerStatus(ctx context.Context, containerName string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+	pod, containerStatus, err := k.GetContainerStatuses(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, s := range containerStatus {
+		if containerName == s.Name {
+			return pod, &s, nil
+		}
+	}
+	return nil, nil, fmt.Errorf("container %q is not found in the pod", containerName)
+}
+
+func (k *kubeletClient) GetContainerStatuses(ctx context.Context) (*corev1.Pod, []corev1.ContainerStatus, error) {
 	pod, err := k.getPod()
 	if err != nil {
 		return nil, nil, errors.InternalWrapError(err)
 	}
-	for _, container := range pod.Status.ContainerStatuses {
-		if container.Name != containerName {
-			continue
-		}
-		return pod, &container, nil
-	}
-	return nil, nil, fmt.Errorf("container %q is not found in the pod", containerName)
+	return pod, pod.Status.ContainerStatuses, nil
 }
 
 func (k *kubeletClient) exec(u *url.URL) (*url.URL, error) {
@@ -256,9 +263,8 @@ func (k *kubeletClient) getCommandOutput(containerName, command string) (*bytes.
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-
 	if container.State.Terminated != nil {
-		err = fmt.Errorf("container %s is terminated: %v", containerName, container.State.Terminated.String())
+		err = fmt.Errorf("container %q is terminated: %v", containerName, container.State.Terminated.String())
 		return nil, err
 	}
 	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s", k.kubeletEndpoint, pod.Namespace, pod.Name, containerName, command))
@@ -274,8 +280,8 @@ func (k *kubeletClient) getCommandOutput(containerName, command string) (*bytes.
 }
 
 // WaitForTermination of the given container, set the timeout to 0 to discard it
-func (k *kubeletClient) WaitForTermination(ctx context.Context, containerName string, timeout time.Duration) error {
-	return execcommon.WaitForTermination(ctx, k, containerName, timeout)
+func (k *kubeletClient) WaitForTermination(ctx context.Context, containerNames []string, timeout time.Duration) error {
+	return execcommon.WaitForTermination(ctx, k, containerNames, timeout)
 }
 
 func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
@@ -287,8 +293,8 @@ func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.Contain
 	return err
 }
 
-func (k *kubeletClient) KillGracefully(ctx context.Context, containerName string) error {
-	return execcommon.KillGracefully(ctx, k, containerName)
+func (k *kubeletClient) KillGracefully(ctx context.Context, containerNames []string) error {
+	return execcommon.KillGracefully(ctx, k, containerNames)
 }
 
 func (k *kubeletClient) CopyArchive(ctx context.Context, containerName, sourcePath, destPath string) error {

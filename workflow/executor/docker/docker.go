@@ -18,7 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/v2/errors"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/v2/util"
 	"github.com/argoproj/argo/v2/util/file"
 	"github.com/argoproj/argo/v2/workflow/common"
@@ -31,12 +30,11 @@ type DockerExecutor struct {
 	namespace  string
 	podName    string
 	containers map[string]string // containerName -> containerID
-	tmpl       *wfv1.Template
 }
 
-func NewDockerExecutor(namespace, podName string, tmpl *wfv1.Template) (*DockerExecutor, error) {
+func NewDockerExecutor(namespace, podName string) (*DockerExecutor, error) {
 	log.Infof("Creating a docker executor")
-	return &DockerExecutor{namespace, podName, make(map[string]string), tmpl}, nil
+	return &DockerExecutor{namespace, podName, make(map[string]string)}, nil
 }
 
 func (d *DockerExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {
@@ -185,9 +183,8 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 	return exitCode, nil
 }
 
-func (d *DockerExecutor) Wait(ctx context.Context) error {
-
-	err := d.syncContainerIDs(ctx)
+func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
+	err := d.syncContainerIDs(ctx, containerNames)
 	if err != nil {
 		return err
 	}
@@ -199,7 +196,7 @@ func (d *DockerExecutor) Wait(ctx context.Context) error {
 	return err
 }
 
-func (d *DockerExecutor) syncContainerIDs(ctx context.Context) error {
+func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -228,18 +225,19 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context) error {
 				containerID := parts[1]
 				if containerID != "" {
 					d.containers[containerName] = containerID
-					log.Infof("mapped container name %s to container ID %s", containerName, containerID)
+					log.Infof("mapped container name %q to container ID %q", containerName, containerID)
 				}
 			}
-			if d.haveContainerIDs() {
+			if d.haveContainers(containerNames) {
 				return nil
 			}
 		}
 		time.Sleep(1 * time.Second) // this is a hard loop because containers can run very short periods of time
 	}
 }
-func (d *DockerExecutor) haveContainerIDs() bool {
-	for _, n := range d.tmpl.GetContainerNames() {
+
+func (d *DockerExecutor) haveContainers(containerNames []string) bool {
+	for _, n := range containerNames {
 		if d.containers[n] == "" {
 			return false
 		}

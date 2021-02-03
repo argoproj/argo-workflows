@@ -11,7 +11,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/util/slice"
 )
 
 type K8sAPIExecutor struct {
@@ -58,10 +58,10 @@ func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) 
 }
 
 // Wait for the container to complete
-func (k *K8sAPIExecutor) Wait(ctx context.Context) error {
+func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames []string) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
 		for _, s := range pod.Status.ContainerStatuses {
-			if s.Name == common.MainContainerName && s.State.Terminated != nil {
+			if s.State.Terminated != nil && slice.ContainsString(containerNames, s.Name) {
 				return true
 			}
 		}
@@ -75,12 +75,6 @@ func (k *K8sAPIExecutor) Until(ctx context.Context, f func(pod *corev1.Pod) bool
 
 // Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 func (k *K8sAPIExecutor) Kill(ctx context.Context, containerNames []string) error {
-	log.Infof("Killing containers %s", containerNames)
-	for _, containerName := range containerNames {
-		err := k.client.killGracefully(ctx, containerName)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	log.Infof("Killing containers %v", containerNames)
+	return k.client.killGracefully(ctx, containerNames)
 }

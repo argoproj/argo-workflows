@@ -108,13 +108,13 @@ func (_m *ContainerRuntimeExecutor) Kill(ctx context.Context, containerNames []s
 	return r0
 }
 
-// Wait provides a mock function with given fields: ctx
-func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context) error {
-	ret := _m.Called(ctx)
+// Wait provides a mock function with given fields: ctx, containerNames
+func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context, containerNames []string) error {
+	ret := _m.Called(ctx, containerNames)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, []string) error); ok {
+		r0 = rf(ctx, containerNames)
 	} else {
 		r0 = ret.Error(0)
 	}

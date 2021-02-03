@@ -19,6 +19,10 @@ type MockKC struct {
 	killContainerError                error
 }
 
+func (m *MockKC) GetContainerStatuses(ctx context.Context) (*v1.Pod, []v1.ContainerStatus, error) {
+	return m.getContainerStatusPod, []v1.ContainerStatus{*m.getContainerStatusContainerStatus}, m.getContainerStatusErr
+}
+
 func (m *MockKC) GetContainerStatus(ctx context.Context, containerName string) (*v1.Pod, *v1.ContainerStatus, error) {
 	return m.getContainerStatusPod, m.getContainerStatusContainerStatus, m.getContainerStatusErr
 }
@@ -42,7 +46,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	err := TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
+	err := TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	assert.NoError(t, err)
 
 	// w/ ShareProcessNamespace.
@@ -56,12 +60,13 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{
+			Name: "container-name",
 			State: v1.ContainerState{
 				Terminated: nil,
 			},
 		},
 	}
-	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
+	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate a process-namespace-shared Pod foo")
 
 	// w/ HostPID.
@@ -75,12 +80,13 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{
+			Name: "container-name",
 			State: v1.ContainerState{
 				Terminated: nil,
 			},
 		},
 	}
-	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
+	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate a hostPID Pod foo")
 
 	// w/ RestartPolicy.
@@ -94,12 +100,13 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{
+			Name: "container-name",
 			State: v1.ContainerState{
 				Terminated: nil,
 			},
 		},
 	}
-	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
+	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	assert.EqualError(t, err, "cannot terminate pod with a \"Always\" restart policy")
 
 	// Successfully call KillContainer of the client interface.
@@ -113,11 +120,12 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{
+			Name: "container-name",
 			State: v1.ContainerState{
 				Terminated: nil,
 			},
 		},
 	}
-	err = TerminatePodWithContainerName(ctx, mock, "container-name", syscall.SIGTERM)
+	err = TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	assert.NoError(t, err)
 }

@@ -95,7 +95,7 @@ type ContainerRuntimeExecutor interface {
 	GetExitCode(ctx context.Context, containerName string) (string, error)
 
 	// Wait waits for the container to complete.
-	Wait(ctx context.Context) error
+	Wait(ctx context.Context, containerNames []string) error
 
 	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(ctx context.Context, containerNames []string) error
@@ -910,10 +910,11 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
+	containerNames := []string{common.MainContainerName}
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
-	go we.monitorDeadline(ctx, common.MainContainerName, annotationUpdatesCh)
+	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx)
+		err := we.RuntimeExecutor.Wait(ctx, containerNames)
 		return err == nil, err
 	})
 	if err != nil {
@@ -1025,7 +1026,7 @@ func (we *WorkflowExecutor) setExecutionControl(ctx context.Context) {
 
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
-func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerName string, annotationsUpdate <-chan struct{}) {
+func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string, annotationsUpdate <-chan struct{}) {
 	log.Infof("Starting deadline monitor")
 	for {
 		select {
@@ -1050,7 +1051,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerName s
 					log.Info(message)
 					_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, message)
 					log.Infof("Killing main container")
-					err := we.RuntimeExecutor.Kill(ctx, []string{containerName})
+					err := we.RuntimeExecutor.Kill(ctx, containerNames)
 					if err != nil {
 						log.Warnf("Failed to kill main container: %v", err)
 					}
@@ -1064,8 +1065,9 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerName s
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
-	log.Infof("Killing sidecars")
-	return we.RuntimeExecutor.Kill(ctx, we.Template.GetSidecarNames())
+	sidecarNames := we.Template.GetSidecarNames()
+	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
+	return we.RuntimeExecutor.Kill(ctx, sidecarNames)
 }
 
 // LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file

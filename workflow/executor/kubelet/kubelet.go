@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 type KubeletExecutor struct {
@@ -42,7 +41,7 @@ func (k *KubeletExecutor) GetOutputStream(ctx context.Context, containerName str
 }
 
 func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
-	log.Infof("Getting exit code of %s", containerName)
+	log.Infof("Getting exit code of %q", containerName)
 	_, status, err := k.cli.GetContainerStatus(ctx, containerName)
 	if err != nil {
 		return "", errors.InternalWrapError(err, "Could not get container status")
@@ -54,17 +53,11 @@ func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string)
 }
 
 // Wait for the container to complete
-func (k *KubeletExecutor) Wait(ctx context.Context) error {
-	return k.cli.WaitForTermination(ctx, common.MainContainerName, 0)
+func (k *KubeletExecutor) Wait(ctx context.Context, containerNames []string) error {
+	return k.cli.WaitForTermination(ctx, containerNames, 0)
 }
 
 // Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 func (k *KubeletExecutor) Kill(ctx context.Context, containerNames []string) error {
-	for _, containerName := range containerNames {
-		err := k.cli.KillGracefully(ctx, containerName)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return k.cli.KillGracefully(ctx, containerNames)
 }

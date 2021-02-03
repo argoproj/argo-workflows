@@ -75,17 +75,25 @@ func (c *k8sAPIClient) getPod(ctx context.Context) (*corev1.Pod, error) {
 }
 
 func (c *k8sAPIClient) GetContainerStatus(ctx context.Context, containerName string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+	pod, containerStatuses, err := c.GetContainerStatuses(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, s := range containerStatuses {
+		if s.Name != containerName {
+			continue
+		}
+		return pod, &s, nil
+	}
+	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("container %q is not found in the pod %s", containerName, c.podName))
+}
+
+func (c *k8sAPIClient) GetContainerStatuses(ctx context.Context) (*corev1.Pod, []corev1.ContainerStatus, error) {
 	pod, err := c.getPod(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, containerStatus := range pod.Status.ContainerStatuses {
-		if containerStatus.Name != containerName {
-			continue
-		}
-		return pod, &containerStatus, nil
-	}
-	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("container %q is not found in the pod %s", containerName, c.podName))
+	return pod, pod.Status.ContainerStatuses, nil
 }
 
 func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
@@ -98,8 +106,8 @@ func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.Containe
 	return err
 }
 
-func (c *k8sAPIClient) killGracefully(ctx context.Context, containerName string) error {
-	return execcommon.KillGracefully(ctx, c, containerName)
+func (c *k8sAPIClient) killGracefully(ctx context.Context, containerNames []string) error {
+	return execcommon.KillGracefully(ctx, c, containerNames)
 }
 
 func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) error {
