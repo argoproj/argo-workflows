@@ -96,7 +96,6 @@ WORKDIR /go/src/github.com/argoproj/argo
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
-RUN git diff --exit-code
 
 # controller image
 RUN . hack/image_arch.sh && make dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH}
