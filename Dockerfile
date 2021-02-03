@@ -3,7 +3,7 @@
 # Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
-FROM golang:1.13.4 as builder
+FROM golang:1.15.7 as builder
 
 ARG IMAGE_OS=linux
 
@@ -46,7 +46,7 @@ RUN if [ "${IMAGE_OS}" = "linux" ]; then \
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
 ####################################################################################################
-FROM debian:10.6-slim as argoexec-base
+FROM debian:10.7-slim as argoexec-base
 
 ARG IMAGE_OS=linux
 
