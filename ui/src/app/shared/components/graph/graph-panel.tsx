@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useEffect} from 'react';
+import {TextInput} from '../../../shared/components/text-input';
 import {ScopedLocalStorage} from '../../scoped-local-storage';
 import {FilterDropDown} from '../filter-drop-down';
 import {Icon} from '../icon';
@@ -7,8 +8,6 @@ import {GraphIcon} from './icon';
 import {formatLabel} from './label';
 import {layout} from './layout';
 import {Graph, Node} from './types';
-import {TextInput} from '../../../shared/components/text-input';
-import { node } from 'prop-types';
 
 require('./graph-panel.scss');
 
@@ -72,7 +71,8 @@ export const GraphPanel = (props: Props) => {
         return (
             nodeGenres[label.genre] &&
             (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
-            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) && props.graph.nodes.get(id).label.includes(nodeSearchKeyword)
+            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) &&
+            props.graph.nodes.get(id).label.includes(nodeSearchKeyword)
         );
     };
 
@@ -132,7 +132,7 @@ export const GraphPanel = (props: Props) => {
                     </a>
                     {props.options}
                     <div className='node-search-bar'>
-                        <TextInput value={nodeSearchKeyword} onChange={(e) => setNodeSearchKeyword(e)} placeholder={'Search'} />
+                        <TextInput value={nodeSearchKeyword} onChange={v => setNodeSearchKeyword(v)} placeholder={'Search'} />
                     </div>
                 </div>
             )}
