@@ -99,7 +99,7 @@ RUN git rev-parse HEAD
 
 # controller image
 RUN . hack/image_arch.sh && make dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH}
-RUN git diff --exit-code
+RUN . hack/image_arch.sh && ./dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH} version 
 RUN . hack/image_arch.sh && ./dist/workflow-controller-${IMAGE_OS}-${IMAGE_ARCH} version | grep clean
 
 # executor image
