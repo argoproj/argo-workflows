@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo/v2/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/test/e2e/fixtures"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test/e2e/fixtures"
 )
 
 type FunctionalSuite struct {
@@ -56,8 +56,8 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
-		Wait(10*time.Second). // be very sure the pod is actually running (not pending)
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
+		Exec("kubectl", []string{"-n", "argo", "wait", "pod", "-l", "workflows.argoproj.io/completed=false", "--for=condition=Ready"}, fixtures.OutputRegexp(`pod/sleepy-.* condition met`)).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow", "--grace-period=1"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {

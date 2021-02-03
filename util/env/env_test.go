@@ -16,3 +16,21 @@ func TestLookupEnvDurationOr(t *testing.T) {
 	_ = os.Setenv("FOO", "1h")
 	assert.Equal(t, time.Hour, LookupEnvDurationOr("FOO", time.Second), "env var value")
 }
+
+func TestLookupEnvIntOr(t *testing.T) {
+	defer func() { _ = os.Unsetenv("FOO") }()
+	assert.Equal(t, 1, LookupEnvIntOr("", 1), "default value")
+	_ = os.Setenv("FOO", "not-int")
+	assert.Panics(t, func() { LookupEnvIntOr("FOO", 1) }, "bad value")
+	_ = os.Setenv("FOO", "2")
+	assert.Equal(t, 2, LookupEnvIntOr("FOO", 1), "env var value")
+}
+
+func TestLookupEnvFloatOr(t *testing.T) {
+	defer func() { _ = os.Unsetenv("FOO") }()
+	assert.Equal(t, 1., LookupEnvFloatOr("", 1.), "default value")
+	_ = os.Setenv("FOO", "not-float")
+	assert.Panics(t, func() { LookupEnvFloatOr("FOO", 1.) }, "bad value")
+	_ = os.Setenv("FOO", "2.0")
+	assert.Equal(t, 2., LookupEnvFloatOr("FOO", 1.), "env var value")
+}

@@ -10,10 +10,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/v2/workflow/metrics"
-	"github.com/argoproj/argo/v2/workflow/util"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/util"
 )
 
 var scheduledWf = `

@@ -215,7 +215,7 @@ spec:
         arguments:
           parameters:
           - name: message
-            value: "{{tasks.B.outputs.parameters.unresolvable}}"
+            value: "{{tasks.B.outputs.parameters.hosts}}"
 `
 
 var dagResolvedGlobalVar = `
@@ -290,7 +290,7 @@ func TestDAGVariableResolution(t *testing.T) {
 
 	_, err = validate(dagResolvedVarNotAncestor)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.outputs.parameters.unresolvable}}")
+		assert.Contains(t, err.Error(), "templates.unresolved.tasks.C missing dependency 'B' for parameter 'message'")
 	}
 
 	_, err = validate(dagResolvedGlobalVar)

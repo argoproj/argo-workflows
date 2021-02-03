@@ -7,11 +7,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo/v2/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo/v2/util/errors"
-	waitutil "github.com/argoproj/argo/v2/util/wait"
-	"github.com/argoproj/argo/v2/workflow/packer"
+	"github.com/argoproj/argo/v3/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo/v3/workflow/packer"
 )
 
 type Interface interface {
