@@ -32,7 +32,7 @@ ARG IMAGE_OS=windows
 ARG IMAGE_ARCH=amd64
 
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.18.8
+ENV KUBECTL_VERSION=1.19.6
 ENV JQ_VERSION=1.6
 
 RUN mkdir C:\app && \
