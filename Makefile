@@ -130,8 +130,8 @@ define protoc
     [ -e vendor ] || go mod vendor
     protoc \
       -I /usr/local/include \
-      -I $(CURDIR)/ \
-      -I $(CURDIR)//vendor \
+      -I $(CURDIR) \
+      -I $(CURDIR)/vendor \
       -I ${GOPATH}/src \
       -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
       -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
