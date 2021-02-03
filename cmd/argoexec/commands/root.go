@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/argoproj/pkg/cli"
@@ -9,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/v3"
@@ -72,6 +74,7 @@ func NewRootCommand() *cobra.Command {
 func initExecutor() *executor.WorkflowExecutor {
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
+	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflow-%s-executor", os.Getenv(common.EnvVarContainerRuntimeExecutor)))
 	checkErr(err)
 
 	namespace, _, err := clientConfig.Namespace()
