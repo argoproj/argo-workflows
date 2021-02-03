@@ -15,11 +15,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/v2/errors"
-	errorsutil "github.com/argoproj/argo/v2/util/errors"
-	waitutil "github.com/argoproj/argo/v2/util/wait"
-	"github.com/argoproj/argo/v2/workflow/common"
-	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
+	"github.com/argoproj/argo/v3/errors"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo/v3/workflow/common"
+	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
 )
 
 type k8sAPIClient struct {

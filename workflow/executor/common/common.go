@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo/v2/util/slice"
+	"github.com/argoproj/argo/v3/util/slice"
 )
 
 const (

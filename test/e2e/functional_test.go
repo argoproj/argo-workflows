@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo/v2/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/test/e2e/fixtures"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test/e2e/fixtures"
 )
 
 type FunctionalSuite struct {
@@ -46,23 +46,6 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
 		Wait(3*time.Second). // allow 3s for reconcilliation, we'll create a new pod
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
-}
-
-// where you delete a running pod,
-// then the workflow is failed
-func (s *FunctionalSuite) TestDeletingRunningPod() {
-	s.Given().
-		Workflow("@testdata/sleepy-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
-		Exec("kubectl", []string{"-n", "argo", "wait", "pod", "-l", "workflows.argoproj.io/completed=false", "--for=condition=Ready"}, fixtures.OutputRegexp(`pod/sleepy-.* condition met`)).
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow", "--grace-period=1"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-		})
 }
 
 // where you delete a running pod, and you have retry on error,

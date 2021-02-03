@@ -17,12 +17,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/util/archive"
-	"github.com/argoproj/argo/v2/workflow/common"
-	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
-	"github.com/argoproj/argo/v2/workflow/executor/k8sapi"
-	osspecific "github.com/argoproj/argo/v2/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/util/archive"
+	"github.com/argoproj/argo/v3/workflow/common"
+	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
+	"github.com/argoproj/argo/v3/workflow/executor/k8sapi"
+	osspecific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
 
 var errContainerNameNotFound = fmt.Errorf("container name not found")

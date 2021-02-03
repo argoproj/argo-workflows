@@ -84,22 +84,22 @@ endif
 ALWAYS_OFFLOAD_NODE_STATUS := false
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo/v2.version=$(VERSION) \
-  -X github.com/argoproj/argo/v2.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo/v2.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo/v2.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo/v3.version=$(VERSION) \
+  -X github.com/argoproj/argo/v3.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo/v3.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo/v3.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo/v2.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo/v3.gitTag=${GIT_TAG}
 endif
 
-ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/v2/' | cut -c 29-)
-CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo/v2/' | cut -c 29-)
-CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo/v2/' | cut -c 29-)
+ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/v3/' | cut -c 29-)
+CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo/v3/' | cut -c 29-)
+CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo/v3/' | cut -c 29-)
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
@@ -139,7 +139,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-     perl -i -pe 's|argoproj/argo/|argoproj/argo/v2/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+     perl -i -pe 's|argoproj/argo/|argoproj/argo/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
 # docker_build,image_name,binary_name,marker_file_name
@@ -326,14 +326,14 @@ $(GOPATH)/bin/goimports:
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor
-	[ -e v2 ] || ln -s . v2
+	[ -e v3 ] || ln -s . v3
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
-		--packages=github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
+		--packages=github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import ./vendor
 	touch pkg/apis/workflow/v1alpha1/generated.proto
-	rm -rf v2
+	rm -rf v3
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
@@ -523,24 +523,24 @@ clean:
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
-	[ -e v2 ] || ln -s . v2
+	[ -e v3 ] || ln -s . v3
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
-	  --output-package github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1 \
+	  --input-dirs github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
+	  --output-package github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	rm -rf v2
+	rm -rf v3
 
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
-	[ -e v2 ] || ln -s . v2
+	[ -e v3 ] || ln -s . v3
 	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
-		github.com/argoproj/argo/v2/pkg/client github.com/argoproj/argo/v2/pkg/apis \
+		github.com/argoproj/argo/v3/pkg/client github.com/argoproj/argo/v3/pkg/apis \
 		workflow:v1alpha1 \
 		--go-header-file ./hack/custom-boilerplate.go.txt
-	rm -rf v2
+	rm -rf v3
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist

@@ -26,16 +26,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/v2/errors"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/util"
-	"github.com/argoproj/argo/v2/util/archive"
-	errorsutil "github.com/argoproj/argo/v2/util/errors"
-	"github.com/argoproj/argo/v2/util/retry"
-	waitutil "github.com/argoproj/argo/v2/util/wait"
-	artifact "github.com/argoproj/argo/v2/workflow/artifacts"
-	"github.com/argoproj/argo/v2/workflow/common"
-	os_specific "github.com/argoproj/argo/v2/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/archive"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	"github.com/argoproj/argo/v3/util/retry"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	artifact "github.com/argoproj/argo/v3/workflow/artifacts"
+	"github.com/argoproj/argo/v3/workflow/common"
+	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
