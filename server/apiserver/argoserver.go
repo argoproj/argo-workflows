@@ -64,18 +64,19 @@ const (
 type argoServer struct {
 	baseHRef string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
-	tlsConfig        *tls.Config
-	hsts             bool
-	namespace        string
-	managedNamespace string
-	clients          *types.Clients
-	gatekeeper       auth.Gatekeeper
-	oAuth2Service    sso.Interface
-	configController config.Controller
-	stopCh           chan struct{}
-	eventQueueSize   int
-	eventWorkerCount int
-	xframeOptions    string
+	tlsConfig                *tls.Config
+	hsts                     bool
+	namespace                string
+	managedNamespace         string
+	clients                  *types.Clients
+	gatekeeper               auth.Gatekeeper
+	oAuth2Service            sso.Interface
+	configController         config.Controller
+	stopCh                   chan struct{}
+	eventQueueSize           int
+	eventWorkerCount         int
+	xframeOptions            string
+	accessControlAllowOrigin string
 }
 
 type ArgoServerOpts struct {
@@ -86,12 +87,13 @@ type ArgoServerOpts struct {
 	RestConfig *rest.Config
 	AuthModes  auth.Modes
 	// config map name
-	ConfigName              string
-	ManagedNamespace        string
-	HSTS                    bool
-	EventOperationQueueSize int
-	EventWorkerCount        int
-	XFrameOptions           string
+	ConfigName               string
+	ManagedNamespace         string
+	HSTS                     bool
+	EventOperationQueueSize  int
+	EventWorkerCount         int
+	XFrameOptions            string
+	AccessControlAllowOrigin string
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
@@ -115,19 +117,20 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		return nil, err
 	}
 	return &argoServer{
-		baseHRef:         opts.BaseHRef,
-		tlsConfig:        opts.TLSConfig,
-		hsts:             opts.HSTS,
-		namespace:        opts.Namespace,
-		managedNamespace: opts.ManagedNamespace,
-		clients:          opts.Clients,
-		gatekeeper:       gatekeeper,
-		oAuth2Service:    ssoIf,
-		configController: configController,
-		stopCh:           make(chan struct{}),
-		eventQueueSize:   opts.EventOperationQueueSize,
-		eventWorkerCount: opts.EventWorkerCount,
-		xframeOptions:    opts.XFrameOptions,
+		baseHRef:                 opts.BaseHRef,
+		tlsConfig:                opts.TLSConfig,
+		hsts:                     opts.HSTS,
+		namespace:                opts.Namespace,
+		managedNamespace:         opts.ManagedNamespace,
+		clients:                  opts.Clients,
+		gatekeeper:               gatekeeper,
+		oAuth2Service:            ssoIf,
+		configController:         configController,
+		stopCh:                   make(chan struct{}),
+		eventQueueSize:           opts.EventOperationQueueSize,
+		eventWorkerCount:         opts.EventWorkerCount,
+		xframeOptions:            opts.XFrameOptions,
+		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
 	}, nil
 }
 
@@ -307,7 +310,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	mux.Handle("/metrics", promhttp.Handler())
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin).ServerFiles)
 	return &httpServer
 }
 
