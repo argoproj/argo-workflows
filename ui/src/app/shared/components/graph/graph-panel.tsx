@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useEffect} from 'react';
+import {TextInput} from '../../../shared/components/text-input';
 import {ScopedLocalStorage} from '../../scoped-local-storage';
 import {FilterDropDown} from '../filter-drop-down';
 import {Icon} from '../icon';
@@ -55,6 +56,7 @@ export const GraphPanel = (props: Props) => {
     const [nodeGenres, setNodeGenres] = React.useState<NodeGenres>(storage.getItem('nodeGenres', props.nodeGenres));
     const [nodeClassNames, setNodeClassNames] = React.useState<NodeClassNames>(storage.getItem('nodeClassNames', props.nodeClassNames));
     const [nodeTags, setNodeTags] = React.useState<NodeTags>(props.nodeTags);
+    const [nodeSearchKeyword, setNodeSearchKeyword] = React.useState<string>('');
 
     useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
     useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
@@ -73,7 +75,8 @@ export const GraphPanel = (props: Props) => {
         return (
             nodeGenres[label.genre] &&
             (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
-            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag))))
+            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) &&
+            props.graph.nodes.get(id).label.includes(nodeSearchKeyword)
         );
     };
 
@@ -132,6 +135,9 @@ export const GraphPanel = (props: Props) => {
                         <i className='fa fa-bolt' />
                     </a>
                     {props.options}
+                    <div className='node-search-bar'>
+                        <TextInput value={nodeSearchKeyword} onChange={v => setNodeSearchKeyword(v)} placeholder={'Search'} />
+                    </div>
                 </div>
             )}
             <div className={'graph ' + props.classNames}>
