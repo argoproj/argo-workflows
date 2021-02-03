@@ -7,6 +7,7 @@ resources:
   - workflow-controller-pprof-service.yaml
 
 patchesStrategicMerge:
+  - workflow-controller-configmap.yaml
   - workflow-controller-deployment.yaml
 
 commonLabels:

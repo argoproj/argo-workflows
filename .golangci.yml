@@ -10,8 +10,8 @@ run:
     - api
     - cli
     - cron
-    - e2e
-    - smoke
+    - executor
+    - functional
 linters:
   enable:
     - goimports

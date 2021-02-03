@@ -7,9 +7,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v2/server/auth"
-	"github.com/argoproj/argo/v2/util/labels"
-	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v3/server/auth"
+	"github.com/argoproj/argo/v3/util/labels"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 func Label(ctx context.Context, obj metav1.Object) {

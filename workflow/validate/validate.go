@@ -17,16 +17,16 @@ import (
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v2/errors"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/util"
-	"github.com/argoproj/argo/v2/util/help"
-	"github.com/argoproj/argo/v2/util/intstr"
-	"github.com/argoproj/argo/v2/util/sorting"
-	"github.com/argoproj/argo/v2/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo/v2/workflow/common"
-	"github.com/argoproj/argo/v2/workflow/metrics"
-	"github.com/argoproj/argo/v2/workflow/templateresolution"
+	"github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/help"
+	"github.com/argoproj/argo/v3/util/intstr"
+	"github.com/argoproj/argo/v3/util/sorting"
+	"github.com/argoproj/argo/v3/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/templateresolution"
 )
 
 // ValidateOpts provides options when linting
@@ -1304,6 +1304,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
+		err = validateDAGTaskArgumentDependency(task.Arguments, ancestry)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		}
 		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments)
 		if err != nil {
 			return err
@@ -1315,6 +1319,38 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		}
 	}
 
+	return nil
+}
+
+func validateDAGTaskArgumentDependency(arguments wfv1.Arguments, ancestry []string) error {
+	ancestryMap := make(map[string]struct{}, len(ancestry))
+	for _, a := range ancestry {
+		ancestryMap[a] = struct{}{}
+	}
+
+	for _, param := range arguments.Parameters {
+		if strings.HasPrefix(param.Value.String(), "{{tasks.") {
+			// All parameter values should have been validated, so
+			// index 1 should exist.
+			refTaskName := strings.Split(param.Value.String(), ".")[1]
+
+			if _, dependencyExists := ancestryMap[refTaskName]; !dependencyExists {
+				return errors.Errorf(errors.CodeBadRequest, "missing dependency '%s' for parameter '%s'", refTaskName, param.Name)
+			}
+		}
+	}
+
+	for _, artifact := range arguments.Artifacts {
+		if strings.HasPrefix(artifact.From, "{{tasks.") {
+			// All parameter values should have been validated, so
+			// index 1 should exist.
+			refTaskName := strings.Split(artifact.From, ".")[1]
+
+			if _, dependencyExists := ancestryMap[refTaskName]; !dependencyExists {
+				return errors.Errorf(errors.CodeBadRequest, "missing dependency '%s' for artifact '%s'", refTaskName, artifact.Name)
+			}
+		}
+	}
 	return nil
 }
 

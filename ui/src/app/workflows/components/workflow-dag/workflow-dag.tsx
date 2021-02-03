@@ -70,8 +70,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             <GraphPanel
                 storageScope='workflow-dag'
                 graph={this.graph}
+                nodeGenresTitle={'Node Type'}
                 nodeGenres={genres}
+                nodeClassNamesTitle={'Node Phase'}
                 nodeClassNames={classNames}
+                nodeTagsTitle={'Template'}
                 nodeTags={tags}
                 nodeSize={this.props.nodeSize || 32}
                 defaultIconShape='circle'

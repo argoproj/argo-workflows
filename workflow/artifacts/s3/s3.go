@@ -6,17 +6,15 @@ import (
 	"time"
 
 	"github.com/minio/minio-go/v7"
-
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 
-	"github.com/argoproj/argo/v2/errors"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	artifactscommon "github.com/argoproj/argo/v2/workflow/artifacts/common"
-	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	artifactscommon "github.com/argoproj/argo/v3/workflow/artifacts/common"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 // ArtifactDriver is a driver for AWS S3

@@ -3,13 +3,10 @@ package artifacts
 import (
 	"context"
 	"fmt"
-	common2 "github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
-
-	"github.com/argoproj/argo/v2/workflow/artifacts/resource"
 
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
@@ -17,16 +14,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo/v2/config"
-	sqldbmocks "github.com/argoproj/argo/v2/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	fakewfv1 "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/v2/server/auth"
-	authmocks "github.com/argoproj/argo/v2/server/auth/mocks"
-	"github.com/argoproj/argo/v2/util/instanceid"
-	armocks "github.com/argoproj/argo/v2/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo/v2/workflow/common"
-	hydratorfake "github.com/argoproj/argo/v2/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v3/config"
+	sqldbmocks "github.com/argoproj/argo/v3/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	fakewfv1 "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/server/auth"
+	authmocks "github.com/argoproj/argo/v3/server/auth/mocks"
+	"github.com/argoproj/argo/v3/util/instanceid"
+	armocks "github.com/argoproj/argo/v3/workflow/artifactrepositories/mocks"
+	common2 "github.com/argoproj/argo/v3/workflow/artifacts/common"
+	"github.com/argoproj/argo/v3/workflow/artifacts/resource"
+	"github.com/argoproj/argo/v3/workflow/common"
+	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
 )
 
 func mustParse(text string) *url.URL {

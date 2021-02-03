@@ -18,8 +18,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test/e2e/fixtures"
 )
 
 type CLISuite struct {
@@ -1213,7 +1213,7 @@ func (s *CLISuite) TestRetryOmit() {
 				return node.Phase == wfv1.NodeOmitted
 			})
 		}), "any node omitted").
-		WaitForWorkflow(10*time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("should-not-execute")
@@ -1221,10 +1221,11 @@ func (s *CLISuite) TestRetryOmit() {
 				assert.Equal(t, wfv1.NodeOmitted, node.Phase)
 			}
 		}).
-		RunCli([]string{"retry", "dag-diamond-8q7vp"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"retry", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "Status:              Running")
-		}).When().
+		}).
+		When().
 		WaitForWorkflow()
 }
 
