@@ -11,12 +11,13 @@ spec:
     steps:
     - - name: generate-artifact
         template: generate-artifacts
-    #- - name: consume-artifact
-    #    template: print-message
-    #    arguments:
-    #      artifacts:
-    #      - name: message
-    #        from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+    - - name: consume-artifact
+        template: print-message
+        withParam: "{{steps.generate-artifact.outputs.result}}"
+        arguments:
+          parameters:
+          - name: file
+            value: "{{item}}"
 
   - name: generate-artifacts
     transformation:
@@ -46,10 +47,9 @@ spec:
 
   - name: print-message
     inputs:
-      artifacts:
-      - name: message
-        path: /tmp/message
+      parameters:
+      - name: file
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["cat /tmp/message"]
+      args: ["echo {{inputs.parameters.file}}"]

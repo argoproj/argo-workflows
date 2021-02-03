@@ -1176,7 +1176,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
 		updated = true
-		woc.log.Infof("Setting node %v outputs", node.ID)
+		woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
 		var outputs wfv1.Outputs
 		err := json.Unmarshal([]byte(outputStr), &outputs)
 		if err != nil {
@@ -2705,7 +2705,7 @@ func (woc *wfOperationCtx) executeTransformation(ctx context.Context, nodeName s
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "artifacts", string(withArtifacts)}
-	_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
+	_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}

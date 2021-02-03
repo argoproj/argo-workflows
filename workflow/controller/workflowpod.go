@@ -233,7 +233,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if tmpl.GetType() != wfv1.TemplateTypeResource {
+	if tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeTransformation {
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
@@ -875,7 +875,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		}
 	}
 	if mainCtrIndex == -1 {
-		panic("Could not find main or wait container in pod spec")
+		panic("Could not find main container in pod spec")
 	}
 	mainCtr := &pod.Spec.Containers[mainCtrIndex]
 
@@ -917,7 +917,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 // them to the wait sidecar. In order for this to work, we mirror all volume mounts in the main
 // container under a well-known path.
 func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if tmpl.GetType() == wfv1.TemplateTypeResource {
+	if tmpl.GetType() == wfv1.TemplateTypeResource || tmpl.GetType() == wfv1.TemplateTypeTransformation {
 		return
 	}
 	mainCtrIndex := -1
@@ -1126,7 +1126,7 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
 	}
 
-	if tmpl.Transformation.WithArtifacts != nil {
+	if tmpl.Transformation != nil && tmpl.Transformation.WithArtifacts != nil {
 		log.Infof("SIMON creating volume")
 		createSecretVolume(allVolumesMap, tmpl.Transformation.WithArtifacts.Artifact, uniqueKeyMap)
 	}

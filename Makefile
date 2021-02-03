@@ -416,7 +416,7 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
+# 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
 ifeq ($(RUN_MODE),kubernetes)
 	# scale to 2 replicas so we touch upon leader election
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2

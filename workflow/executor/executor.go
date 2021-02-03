@@ -255,16 +255,25 @@ func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv
 	}
 
 	var files []string
-	switch agg := artifacts.Aggregator; {
-	case agg == nil:
+	aggregator := artifacts.Aggregator
+	if aggregator == nil {
 		// Default aggregator is that of a directory with recursion
-		agg = &wfv1.Aggregator{Directory: &wfv1.Directory{Recursive: pointer.BoolPtr(true)}}
-		fallthrough
+		aggregator = &wfv1.Aggregator{Directory: &wfv1.Directory{Recursive: pointer.BoolPtr(true)}}
+	}
+	switch agg := aggregator; {
 	case agg.Directory != nil:
 		files, err = artDriver.ListObjects(&artifacts.Artifact)
 	}
 
-	we.Template.Outputs.Result = pointer.StringPtr(fmt.Sprintf("[%s]", strings.Join(files, ", ")))
+	out, err := json.Marshal(files)
+	if err != nil {
+		return err
+	}
+	we.Template.Outputs.Result = pointer.StringPtr(string(out))
+	err = we.AnnotateOutputs(ctx, nil)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -819,6 +828,7 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
+	log.Infof("Annotation: %s", outputBytes)
 	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 
