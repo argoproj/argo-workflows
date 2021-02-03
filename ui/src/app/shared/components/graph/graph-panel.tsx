@@ -76,7 +76,7 @@ export const GraphPanel = (props: Props) => {
             nodeGenres[label.genre] &&
             (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
             (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) &&
-            props.graph.nodes.get(id).label.includes(nodeSearchKeyword)
+            !nodeSearchKeyword || label.label.includes(nodeSearchKeyword)
         );
     };
 
