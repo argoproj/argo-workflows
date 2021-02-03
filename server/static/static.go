@@ -7,13 +7,14 @@ import (
 )
 
 type FilesServer struct {
-	baseHRef   string
-	hsts       bool
-	xframeOpts string
+	baseHRef        string
+	hsts            bool
+	xframeOpts      string
+	corsAllowOrigin string
 }
 
-func NewFilesServer(baseHRef string, hsts bool, xframeOpts string) *FilesServer {
-	return &FilesServer{baseHRef, hsts, xframeOpts}
+func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string) *FilesServer {
+	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin}
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +32,18 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	if s.xframeOpts != "" {
 		w.Header().Set("X-Frame-Options", s.xframeOpts)
 	}
+
+	if s.corsAllowOrigin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", s.corsAllowOrigin)
+		if r.Method == http.MethodOptions { // Set CORS headers for preflight request
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
 	// `data:` is need for Monaco editors wiggly red lines
 	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; img-src 'self' data:")
 	if s.hsts {
