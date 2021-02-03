@@ -18,28 +18,29 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/v2/server/apiserver"
-	"github.com/argoproj/argo/v2/server/auth"
-	"github.com/argoproj/argo/v2/server/types"
-	"github.com/argoproj/argo/v2/util/help"
+	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v3/server/apiserver"
+	"github.com/argoproj/argo/v3/server/auth"
+	"github.com/argoproj/argo/v3/server/types"
+	"github.com/argoproj/argo/v3/util/help"
 )
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authModes               []string
-		configMap               string
-		port                    int
-		baseHRef                string
-		secure                  bool
-		htst                    bool
-		namespaced              bool   // --namespaced
-		managedNamespace        string // --managed-namespace
-		enableOpenBrowser       bool
-		eventOperationQueueSize int
-		eventWorkerCount        int
-		frameOptions            string
+		authModes                []string
+		configMap                string
+		port                     int
+		baseHRef                 string
+		secure                   bool
+		htst                     bool
+		namespaced               bool   // --namespaced
+		managedNamespace         string // --managed-namespace
+		enableOpenBrowser        bool
+		eventOperationQueueSize  int
+		eventWorkerCount         int
+		frameOptions             string
+		accessControlAllowOrigin string
 	)
 
 	var command = cobra.Command{
@@ -102,18 +103,19 @@ See %s`, help.ArgoSever),
 			}
 
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:                baseHRef,
-				TLSConfig:               tlsConfig,
-				HSTS:                    htst,
-				Namespace:               namespace,
-				Clients:                 clients,
-				RestConfig:              config,
-				AuthModes:               modes,
-				ManagedNamespace:        managedNamespace,
-				ConfigName:              configMap,
-				EventOperationQueueSize: eventOperationQueueSize,
-				EventWorkerCount:        eventWorkerCount,
-				XFrameOptions:           frameOptions,
+				BaseHRef:                 baseHRef,
+				TLSConfig:                tlsConfig,
+				HSTS:                     htst,
+				Namespace:                namespace,
+				Clients:                  clients,
+				RestConfig:               config,
+				AuthModes:                modes,
+				ManagedNamespace:         managedNamespace,
+				ConfigName:               configMap,
+				EventOperationQueueSize:  eventOperationQueueSize,
+				EventWorkerCount:         eventWorkerCount,
+				XFrameOptions:            frameOptions,
+				AccessControlAllowOrigin: accessControlAllowOrigin,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -148,5 +150,6 @@ See %s`, help.ArgoSever),
 	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
+	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	return &command
 }
