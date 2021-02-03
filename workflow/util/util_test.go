@@ -15,11 +15,11 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v2/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/v2/workflow/common"
-	hydratorfake "github.com/argoproj/argo/v2/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/workflow/common"
+	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun

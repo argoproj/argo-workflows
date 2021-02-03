@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/test"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test"
 )
 
 // TestDagXfail verifies a DAG can fail properly

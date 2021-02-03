@@ -31,29 +31,29 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v2/config"
-	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/util"
-	"github.com/argoproj/argo/v2/util/diff"
-	envutil "github.com/argoproj/argo/v2/util/env"
-	errorsutil "github.com/argoproj/argo/v2/util/errors"
-	"github.com/argoproj/argo/v2/util/intstr"
-	"github.com/argoproj/argo/v2/util/resource"
-	"github.com/argoproj/argo/v2/util/retry"
-	waitutil "github.com/argoproj/argo/v2/util/wait"
-	"github.com/argoproj/argo/v2/workflow/common"
-	controllercache "github.com/argoproj/argo/v2/workflow/controller/cache"
-	"github.com/argoproj/argo/v2/workflow/controller/estimation"
-	"github.com/argoproj/argo/v2/workflow/controller/indexes"
-	"github.com/argoproj/argo/v2/workflow/metrics"
-	"github.com/argoproj/argo/v2/workflow/progress"
-	argosync "github.com/argoproj/argo/v2/workflow/sync"
-	"github.com/argoproj/argo/v2/workflow/templateresolution"
-	wfutil "github.com/argoproj/argo/v2/workflow/util"
-	"github.com/argoproj/argo/v2/workflow/validate"
+	"github.com/argoproj/argo/v3/config"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/diff"
+	envutil "github.com/argoproj/argo/v3/util/env"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	"github.com/argoproj/argo/v3/util/intstr"
+	"github.com/argoproj/argo/v3/util/resource"
+	"github.com/argoproj/argo/v3/util/retry"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo/v3/workflow/common"
+	controllercache "github.com/argoproj/argo/v3/workflow/controller/cache"
+	"github.com/argoproj/argo/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/progress"
+	argosync "github.com/argoproj/argo/v3/workflow/sync"
+	"github.com/argoproj/argo/v3/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo/v3/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -2345,16 +2345,6 @@ func getStepOrDAGTaskName(nodeName string) string {
 	return nodeName
 }
 
-func extractMainCtrFromScriptTemplate(tmpl *wfv1.Template) apiv1.Container {
-	mainCtr := tmpl.Script.Container
-	// If script source is provided then pass all container args to the
-	// script instead of passing them to the container command directly
-	if tmpl.Script.Source != "" {
-		mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
-	}
-	return mainCtr
-}
-
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
@@ -2370,7 +2360,8 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		return node, err
 	}
 
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err = woc.createWorkflowPod(ctx, nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
