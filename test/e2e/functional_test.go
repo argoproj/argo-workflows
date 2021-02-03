@@ -48,24 +48,6 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
 }
 
-// where you delete a running pod,
-// then the workflow is failed
-func (s *FunctionalSuite) TestDeletingRunningPod() {
-	s.Given().
-		Workflow("@testdata/sleepy-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
-		Exec("kubectl", []string{"-n", "argo", "wait", "pod", "-l", "workflows.argoproj.io/completed=false", "--for=condition=Ready"}, fixtures.OutputRegexp(`pod/sleepy-.* condition met`)).
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow", "--grace-period=1"}, fixtures.OutputRegexp(`pod "sleepy-.*" deleted`)).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Contains(t, status.Nodes[metadata.Name].Message, "failed with exit code")
-		})
-}
-
 // where you delete a running pod, and you have retry on error,
 // then the node is retried
 func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
