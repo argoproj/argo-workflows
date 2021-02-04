@@ -1303,3 +1303,54 @@ func TestPropagateMaxDuration(t *testing.T) {
 		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
 	}
 }
+
+func TestPodsInheritWorkflowAnnotationsAndLabels(t *testing.T) {
+	woc := newWoc()
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+
+	woc.wf.ObjectMeta.Annotations = make(map[string]string)
+	woc.wf.ObjectMeta.Annotations["test-workflow-annotation"] = "inherited"
+	woc.wf.ObjectMeta.Labels = make(map[string]string)
+	woc.wf.ObjectMeta.Labels["test-workflow-label"] = "inherited"
+
+	ctx := context.Background()
+	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &woc.execWf.Spec.Templates[0], &executeTemplateOpts{})
+	assert.NoError(t, err)
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
+	assert.NotNil(t, pod.ObjectMeta)
+	assert.NotNil(t, pod.ObjectMeta.Annotations)
+	assert.NotNil(t, pod.ObjectMeta.Labels)
+	assert.Equal(t, pod.ObjectMeta.Annotations["test-workflow-annotation"], "inherited")
+	assert.Equal(t, pod.ObjectMeta.Labels["test-workflow-label"], "inherited")
+}
+
+func TestTemplateOverwritesInheritedAnnotationsAndLabels(t *testing.T) {
+	woc := newWoc()
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+
+	woc.wf.ObjectMeta.Annotations = make(map[string]string)
+	woc.wf.ObjectMeta.Annotations["test-workflow-annotation"] = "inherited"
+	woc.wf.ObjectMeta.Labels = make(map[string]string)
+	woc.wf.ObjectMeta.Labels["test-workflow-label"] = "inherited"
+
+	woc.wf.Spec.Templates[0].Metadata.Annotations["test-workflow-annotation"] = "overwritten"
+	woc.wf.Spec.Templates[0].Metadata.Labels["test-workflow-label"] = "overwritten"
+
+	ctx := context.Background()
+	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &woc.execWf.Spec.Templates[0], &executeTemplateOpts{})
+	assert.NoError(t, err)
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
+	assert.NotNil(t, pod.ObjectMeta)
+	assert.NotNil(t, pod.ObjectMeta.Annotations)
+	assert.NotNil(t, pod.ObjectMeta.Labels)
+	assert.Equal(t, pod.ObjectMeta.Annotations["test-workflow-annotation"], "overwritten")
+	assert.Equal(t, pod.ObjectMeta.Labels["test-workflow-label"], "overwritten")
+}
