@@ -3,9 +3,10 @@ package hdfs
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"os"
 	"path/filepath"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	"github.com/argoproj/pkg/file"
 	"gopkg.in/jcmturner/gokrb5.v5/credentials"

@@ -2,12 +2,13 @@ package git
 
 import (
 	"errors"
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"

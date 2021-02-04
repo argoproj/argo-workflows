@@ -1,8 +1,9 @@
 package oss
 
 import (
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"time"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"

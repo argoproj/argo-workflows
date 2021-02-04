@@ -521,7 +521,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 // validateTemplateType validates that only one template type is defined
 func validateTemplateType(tmpl *wfv1.Template) error {
 	numTypes := 0
-	for _, tmplType := range []interface{}{tmpl.TemplateRef, tmpl.Container, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.Transformation} {
+	for _, tmplType := range []interface{}{tmpl.TemplateRef, tmpl.Container, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.Data} {
 		if !reflect.ValueOf(tmplType).IsNil() {
 			numTypes++
 		}
@@ -896,7 +896,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}
-	if tmpl.Script != nil || tmpl.Container != nil || tmpl.Transformation != nil {
+	if tmpl.Script != nil || tmpl.Container != nil || tmpl.Data != nil {
 		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
 		scope[fmt.Sprintf("%s.exitCode", prefix)] = true
 	}

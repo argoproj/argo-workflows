@@ -20,10 +20,11 @@ spec:
             value: "{{item}}"
 
   - name: generate-artifacts
-    transformation:
-      withArtifacts:
+    data:
+      withArtifactPaths:
         aggregator:
-          directory: {}
+          directory:
+            glob: ".+?\\.pdf"
         s3:
           bucket: test
           endpoint: minio:9000

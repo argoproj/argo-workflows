@@ -1,10 +1,11 @@
 package artifactory
 
 import (
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	"github.com/argoproj/argo/v3/errors"
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"

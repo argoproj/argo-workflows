@@ -2,9 +2,10 @@ package http
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"os/exec"
 	"strings"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	log "github.com/sirupsen/logrus"
 

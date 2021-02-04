@@ -9,17 +9,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	common2 "github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io"
 	"io/ioutil"
-	"k8s.io/utils/pointer"
 	"os"
 	"os/signal"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"k8s.io/utils/pointer"
+
+	common2 "github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
@@ -240,11 +243,21 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv1.WithArtifacts) error {
-	if artifacts == nil {
+func (we *WorkflowExecutor) ProcessData(ctx context.Context, data *wfv1.DataTemplate) error {
+	if data == nil {
 		return nil
 	}
 
+	var err error
+	switch {
+	case data.WithArtifactPaths != nil:
+		err = we.ProcessArtifacts(ctx, data.WithArtifactPaths)
+	}
+
+	return err
+}
+
+func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv1.WithArtifactPaths) error {
 	driverArt, err := we.newDriverArt(&artifacts.Artifact)
 	if err != nil {
 		return err
@@ -263,6 +276,26 @@ func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv
 	switch agg := aggregator; {
 	case agg.Directory != nil:
 		files, err = artDriver.ListObjects(&artifacts.Artifact)
+		if err != nil {
+			return err
+		}
+
+		// If recursive is set to false, remove all files that contain a directory
+		if agg.Directory.Recursive != nil && !*agg.Directory.Recursive {
+			inPlaceFilter(func(file string) bool {
+				return !strings.Contains(file, "/")
+			}, &files)
+		}
+
+		if agg.Directory.Regex != "" {
+			re, err := regexp.Compile(agg.Directory.Regex)
+			if err != nil {
+				return fmt.Errorf("regex '%s' is not valid: %w", agg.Directory.Regex, err)
+			}
+			inPlaceFilter(func(file string) bool {
+				return re.MatchString(file)
+			}, &files)
+		}
 	}
 
 	out, err := json.Marshal(files)
@@ -274,6 +307,7 @@ func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

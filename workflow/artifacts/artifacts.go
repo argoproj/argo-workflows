@@ -3,7 +3,8 @@ package executor
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	"github.com/argoproj/argo/v3/workflow/artifacts/gcs"
 	"github.com/argoproj/argo/v3/workflow/artifacts/oss"

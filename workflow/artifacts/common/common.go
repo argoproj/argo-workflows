@@ -1,6 +1,6 @@
 package common
 
-import "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+import "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 
 // ArtifactDriver is the interface for loading and saving of artifacts
 type ArtifactDriver interface {
@@ -12,4 +12,3 @@ type ArtifactDriver interface {
 
 	ListObjects(artifact *v1alpha1.Artifact) ([]string, error)
 }
-

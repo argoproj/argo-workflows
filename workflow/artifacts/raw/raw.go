@@ -1,8 +1,9 @@
 package raw
 
 import (
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"os"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	"github.com/argoproj/argo/v3/errors"
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
@@ -35,4 +36,3 @@ func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 func (a *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	panic("implement me")
 }
-

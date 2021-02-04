@@ -3,13 +3,14 @@ package gcs
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/v2/workflow/artifacts/common"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/argoproj/argo/v3/workflow/artifacts/common"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"

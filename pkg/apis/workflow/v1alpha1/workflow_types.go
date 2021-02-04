@@ -25,14 +25,14 @@ type TemplateType string
 
 // Possible template types
 const (
-	TemplateTypeContainer      TemplateType = "Container"
-	TemplateTypeSteps          TemplateType = "Steps"
-	TemplateTypeScript         TemplateType = "Script"
-	TemplateTypeResource       TemplateType = "Resource"
-	TemplateTypeDAG            TemplateType = "DAG"
-	TemplateTypeSuspend        TemplateType = "Suspend"
-	TemplateTypeTransformation TemplateType = "Transformation"
-	TemplateTypeUnknown        TemplateType = "Unknown"
+	TemplateTypeContainer TemplateType = "Container"
+	TemplateTypeSteps     TemplateType = "Steps"
+	TemplateTypeScript    TemplateType = "Script"
+	TemplateTypeResource  TemplateType = "Resource"
+	TemplateTypeDAG       TemplateType = "DAG"
+	TemplateTypeSuspend   TemplateType = "Suspend"
+	TemplateTypeData      TemplateType = "Data"
+	TemplateTypeUnknown   TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -546,7 +546,7 @@ type Template struct {
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
 
-	Transformation *TransformationTemplate `json:"transformation"`
+	Data *DataTemplate `json:"data"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -1101,8 +1101,8 @@ func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
 }
 
-// WithArtifacts expands a step from a collection of artifacts
-type WithArtifacts struct {
+// WithArtifactPaths expands a step from a collection of artifacts
+type WithArtifactPaths struct {
 	// Aggregator is the strategy in how to aggregate files
 	Aggregator *Aggregator `json:"aggregator,omitempty"`
 
@@ -1110,12 +1110,19 @@ type WithArtifacts struct {
 	Artifact `json:",inline"`
 }
 
+// Aggregator is the strategy in how to aggregate files
 type Aggregator struct {
+	// Directory gathers all the files in a directory
 	Directory *Directory `json:"directory,omitempty"`
 }
 
+// Directory gathers all the files in a directory
 type Directory struct {
+	// Recursive is a recursive directory crawl
 	Recursive *bool `json:"recursive,omitempty"`
+
+	// Regex applies a regex filter to all files in a directory
+	Regex string `json:"regex,omitempty"`
 }
 
 // Sequence expands a workflow step into numeric range
@@ -2180,8 +2187,8 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
-	if tmpl.Transformation != nil {
-		return TemplateTypeTransformation
+	if tmpl.Data != nil {
+		return TemplateTypeData
 	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
@@ -2192,7 +2199,7 @@ func (tmpl *Template) GetType() TemplateType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeTransformation:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
@@ -2201,7 +2208,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeTransformation:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
@@ -2289,8 +2296,10 @@ type SuspendTemplate struct {
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 
-type TransformationTemplate struct {
-	WithArtifacts *WithArtifacts `json:"withArtifacts,omitempty"`
+// DataTemplate is a template that process and transforms data
+type DataTemplate struct {
+	// WithArtifactPaths is a data transformation that collects a list of artifact paths
+	WithArtifactPaths *WithArtifactPaths `json:"withArtifactPaths,omitempty"`
 }
 
 // GetArtifactByName returns an input artifact by its name
