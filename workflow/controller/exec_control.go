@@ -119,6 +119,10 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 				firstErr = err
 			}
 		}
+
+		childNode.Daemoned = nil
+		woc.wf.Status.Nodes[childNode.ID] = childNode
+		woc.updated = true
 	}
 	return firstErr
 }
