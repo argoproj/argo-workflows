@@ -18,9 +18,6 @@ type DaemonPodSuite struct {
 }
 
 func (s *DaemonPodSuite) TestWorkflowCompletesIfContainsDaemonPod() {
-	hasSucceeded := func(wf *v1alpha1.Workflow) bool {
-		return wf.Status.Phase == v1alpha1.WorkflowSucceeded
-	}
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -51,7 +48,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.Condition(hasSucceeded), "to show succeeded").
+		WaitForWorkflow(fixtures.ToBeSucceeded, "to be succeeded").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.False(t, status.FinishedAt.IsZero())
