@@ -2,10 +2,12 @@ package controller
 
 import (
 	"context"
-	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/pointer"
-	"testing"
+
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
@@ -16,9 +18,9 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 		Status: v1alpha1.WorkflowStatus{
 			Nodes: v1alpha1.Nodes{
 				"a": v1alpha1.NodeStatus{
-					ID: "a",
+					ID:         "a",
 					BoundaryID: "a",
-					Daemoned: pointer.BoolPtr(true),
+					Daemoned:   pointer.BoolPtr(true),
 				},
 			},
 		},
