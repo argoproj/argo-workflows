@@ -72,9 +72,11 @@ func NewRootCommand() *cobra.Command {
 }
 
 func initExecutor() *executor.WorkflowExecutor {
-	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Executor")
+	version := argo.GetVersion()
+	log.WithField("version", version).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
-	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflow-%s-executor", os.Getenv(common.EnvVarContainerRuntimeExecutor)))
+	executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
+	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s executor/%s", version.Version, executorType))
 	checkErr(err)
 
 	namespace, _, err := clientConfig.Namespace()
@@ -92,7 +94,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	checkErr(err)
 
 	var cre executor.ContainerRuntimeExecutor
-	switch os.Getenv(common.EnvVarContainerRuntimeExecutor) {
+	switch executorType {
 	case common.ContainerRuntimeExecutorK8sAPI:
 		cre, err = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
 	case common.ContainerRuntimeExecutorKubelet:
@@ -106,8 +108,7 @@ func initExecutor() *executor.WorkflowExecutor {
 
 	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
-	vers := argo.GetVersion()
-	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", vers.Version, vers.BuildDate, namespace, podName, string(yamlBytes))
+	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor
 }
 
