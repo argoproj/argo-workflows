@@ -658,7 +658,6 @@ WorkflowSpec is the specification of a Workflow.
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`integer`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
@@ -1330,7 +1329,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`integer`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
@@ -1906,7 +1904,6 @@ Template is a reusable and composable unit of execution in a workflow
 |`activeDeadlineSeconds`|[`IntOrString`](#intorstring)|Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
-|~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template.~ DEPRECATED: This field is not used.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
@@ -1935,8 +1932,6 @@ Template is a reusable and composable unit of execution in a workflow
 |`steps`|`Array<Array<`[`WorkflowStep`](#workflowstep)`>>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
-|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
-|~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |`timeout`|`string`|Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
@@ -2053,13 +2048,11 @@ NodeStatus contains status information about an individual node in the workflow
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
-|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
 |`synchronizationStatus`|[`NodeSynchronizationStatus`](#nodesynchronizationstatus)|SynchronizationStatus is the synchronization status of the node|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
 |`type`|`string`|Type indicates type of node|
-|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore.|
 
 ## Outputs
 
@@ -3375,6 +3368,26 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the seconds to wait before automatically resuming a template|
 
+## MemoizationStatus
+
+MemoizationStatus is the status of this memoized node
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`cacheName`|`string`|Cache is the name of the cache that was used|
+|`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
+|`key`|`string`|Key is the name of the key used for this node's cache|
+
+## NodeSynchronizationStatus
+
+NodeSynchronizationStatus stores the status of a node
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`waiting`|`string`|Waiting is the name of the lock that this node is waiting for|
+
 ## TemplateRef
 
 TemplateRef is a reference of template resource.
@@ -3407,28 +3420,7 @@ TemplateRef is a reference of template resource.
 |:----------:|:----------:|---------------|
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the template.|
-|~`runtimeResolution`~|~`boolean`~|~RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.~ DEPRECATED: This value is not used anymore and is ignored|
 |`template`|`string`|Template is the name of referred template in the resource.|
-
-## MemoizationStatus
-
-MemoizationStatus is the status of this memoized node
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`cacheName`|`string`|Cache is the name of the cache that was used|
-|`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
-|`key`|`string`|Key is the name of the key used for this node's cache|
-
-## NodeSynchronizationStatus
-
-NodeSynchronizationStatus stores the status of a node
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`waiting`|`string`|Waiting is the name of the lock that this node is waiting for|
 
 ## MutexStatus
 
