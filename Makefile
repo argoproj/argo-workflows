@@ -423,10 +423,6 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
 
-.PHONY: pull-build-images
-pull-build-images:
-	./hack/pull-build-images.sh
-
 .PHONY: argosay
 argosay: test/e2e/images/argosay/v2/argosay
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
