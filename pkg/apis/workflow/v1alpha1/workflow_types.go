@@ -788,6 +788,7 @@ type Artifact struct {
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+	GracePeriodSeconds *int64 `json:"gracePeriodSeconds,omitempty" protobuf:"bytes,2,opt,name=gracePeriodSeconds"`
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows

@@ -439,7 +439,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 		case deletePod:
 			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(ctx, podName, metav1.DeleteOptions{PropagationPolicy: &propagation})
+			err := pods.Delete(ctx, podName, metav1.DeleteOptions{PropagationPolicy: &propagation, GracePeriodSeconds: })
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
