@@ -10,9 +10,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
@@ -120,6 +120,10 @@ func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID stri
 				firstErr = err
 			}
 		}
+
+		childNode.Daemoned = nil
+		woc.wf.Status.Nodes[childNode.ID] = childNode
+		woc.updated = true
 	}
 	return firstErr
 }

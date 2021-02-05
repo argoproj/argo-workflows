@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/argoproj/argo/util/slice"
+	"github.com/argoproj/argo/v3/util/slice"
 )
 
 // TemplateType is the type of a template

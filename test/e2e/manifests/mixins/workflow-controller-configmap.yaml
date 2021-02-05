@@ -18,3 +18,4 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
+  kubeletInsecure: "true"

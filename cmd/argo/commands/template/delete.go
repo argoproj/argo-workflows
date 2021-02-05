@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowtemplate"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command

@@ -3383,6 +3383,9 @@
         "issuer": {
           "type": "string"
         },
+        "serviceAccountName": {
+          "type": "string"
+        },
         "subject": {
           "type": "string"
         }

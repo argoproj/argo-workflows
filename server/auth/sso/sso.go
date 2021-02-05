@@ -22,8 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo/server/auth/rbac"
-	"github.com/argoproj/argo/server/auth/types"
+	"github.com/argoproj/argo/v3/server/auth/rbac"
+	"github.com/argoproj/argo/v3/server/auth/types"
 )
 
 const (
@@ -242,9 +242,10 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Issuer:  issuer,
 		Subject: c.Subject,
 		Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry))},
-		Groups:        c.Groups,
-		Email:         c.Email,
-		EmailVerified: c.EmailVerified,
+		Groups:             c.Groups,
+		Email:              c.Email,
+		EmailVerified:      c.EmailVerified,
+		ServiceAccountName: c.ServiceAccountName,
 	}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {

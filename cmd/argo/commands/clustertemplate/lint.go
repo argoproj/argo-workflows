@@ -9,9 +9,9 @@ import (
 
 	"github.com/argoproj/pkg/errors"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo/v3/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo/v3/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {

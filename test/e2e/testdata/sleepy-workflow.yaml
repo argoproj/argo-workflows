@@ -12,4 +12,4 @@ spec:
         image: argoproj/argosay:v2
         args:
           - sleep
-          - 10s
+          - 30s

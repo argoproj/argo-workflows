@@ -28,14 +28,16 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/archive"
-	"github.com/argoproj/argo/util/retry"
-	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/common"
-	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/archive"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	"github.com/argoproj/argo/v3/util/retry"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	artifact "github.com/argoproj/argo/v3/workflow/artifacts"
+	"github.com/argoproj/argo/v3/workflow/common"
+	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -609,14 +611,10 @@ func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) 
 func (we *WorkflowExecutor) getPod(ctx context.Context) (*apiv1.Pod, error) {
 	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	var pod *apiv1.Pod
-	var err error
-	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
+	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+		var err error
 		pod, err = podsIf.Get(ctx, we.PodName, metav1.GetOptions{})
-		if err != nil {
-			log.Warnf("Failed to get pod '%s': %v", we.PodName, err)
-			return false, nil
-		}
-		return true, nil
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -633,14 +631,10 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 	}
 	configmapsIf := we.ClientSet.CoreV1().ConfigMaps(namespace)
 	var configmap *apiv1.ConfigMap
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+		var err error
 		configmap, err = configmapsIf.Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			log.Warnf("Failed to get configmap '%s': %v", name, err)
-			return false, nil
-		}
-		return true, nil
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return "", errors.InternalWrapError(err)
@@ -665,14 +659,10 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 	}
 	secretsIf := we.ClientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			log.Warnf("Failed to get secret '%s': %v", name, err)
-			return false, nil
-		}
-		return true, nil
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return []byte{}, errors.InternalWrapError(err)
@@ -1005,13 +995,9 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
-	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
-		err = we.RuntimeExecutor.Wait(ctx, mainContainerID)
-		if err != nil {
-			log.Warnf("Failed to wait for container id '%s': %v", mainContainerID, err)
-			return false, err
-		}
-		return true, nil
+	err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+		err := we.RuntimeExecutor.Wait(ctx, mainContainerID)
+		return err == nil, err
 	})
 	if err != nil {
 		return err
@@ -1029,16 +1015,12 @@ func (we *WorkflowExecutor) waitMainContainerStart(ctx context.Context) (string,
 			FieldSelector: fieldSelector.String(),
 		}
 
-		var err error
 		var watchIf watch.Interface
 
-		err = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
+		err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+			var err error
 			watchIf, err = podsIf.Watch(ctx, opts)
-			if err != nil {
-				log.Debugf("Failed to establish watch, retrying: %v", err)
-				return false, nil
-			}
-			return true, nil
+			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
 			return "", errors.InternalWrapErrorf(err, "Failed to establish pod watch: %v", err)

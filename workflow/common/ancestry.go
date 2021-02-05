@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type DagContext interface {

@@ -15,11 +15,11 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/workflow/common"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/workflow/common"
+	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun
@@ -431,6 +431,9 @@ status:
         - name: message
           valueFrom:
             supplied: {}
+        - name: message2
+          valueFrom:
+            supplied: {}
       phase: Running
       startedAt: "2020-06-25T18:01:56Z"
       templateName: approve
@@ -454,6 +457,8 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
 		assert.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		assert.NoError(t, err)
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 		assert.NoError(t, err)
 	}
 

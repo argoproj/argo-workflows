@@ -13,16 +13,18 @@ import (
 	"strings"
 	"time"
 
+	argoerr "github.com/argoproj/argo/v3/util/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/workflow/common"
+	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -223,6 +225,9 @@ func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool 
 func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
 
 	cmd, reader, err := startKubectlWaitCmd(resourceNamespace, resourceName)
+	if argoerr.IsTransientErr(err) {
+		return true, err
+	}
 	if err != nil {
 		return false, err
 	}

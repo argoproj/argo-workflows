@@ -3,10 +3,10 @@ package info
 import (
 	"context"
 
-	"github.com/argoproj/argo"
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/v3"
+	infopkg "github.com/argoproj/argo/v3/pkg/apiclient/info"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/server/auth"
 )
 
 type infoServer struct {
@@ -18,11 +18,12 @@ func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequ
 	claims := auth.GetClaims(ctx)
 	if claims != nil {
 		return &infopkg.GetUserInfoResponse{
-			Subject:       claims.Subject,
-			Issuer:        claims.Issuer,
-			Groups:        claims.Groups,
-			Email:         claims.Email,
-			EmailVerified: claims.EmailVerified,
+			Subject:            claims.Subject,
+			Issuer:             claims.Issuer,
+			Groups:             claims.Groups,
+			Email:              claims.Email,
+			EmailVerified:      claims.EmailVerified,
+			ServiceAccountName: claims.ServiceAccountName,
 		}, nil
 	}
 	return &infopkg.GetUserInfoResponse{}, nil

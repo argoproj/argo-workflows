@@ -22,13 +22,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	workflow "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth/serviceaccount"
-	"github.com/argoproj/argo/server/auth/sso"
-	"github.com/argoproj/argo/server/auth/types"
-	servertypes "github.com/argoproj/argo/server/types"
-	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/common"
+	workflow "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v3/server/auth/serviceaccount"
+	"github.com/argoproj/argo/v3/server/auth/sso"
+	"github.com/argoproj/argo/v3/server/auth/types"
+	servertypes "github.com/argoproj/argo/v3/server/types"
+	"github.com/argoproj/argo/v3/util/kubeconfig"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 type ContextKey string
@@ -229,6 +229,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		if err != nil {
 			return nil, err
 		}
+		claims.ServiceAccountName = serviceAccount.Name
 		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
 		return clients, nil
 	}

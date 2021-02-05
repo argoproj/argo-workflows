@@ -26,34 +26,34 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/diff"
-	envutil "github.com/argoproj/argo/util/env"
-	errorsutil "github.com/argoproj/argo/util/errors"
-	"github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/util/resource"
-	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/workflow/common"
-	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-	"github.com/argoproj/argo/workflow/controller/estimation"
-	"github.com/argoproj/argo/workflow/controller/indexes"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/progress"
-	argosync "github.com/argoproj/argo/workflow/sync"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	wfutil "github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v3/config"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/diff"
+	envutil "github.com/argoproj/argo/v3/util/env"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	"github.com/argoproj/argo/v3/util/intstr"
+	"github.com/argoproj/argo/v3/util/resource"
+	"github.com/argoproj/argo/v3/util/retry"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo/v3/workflow/common"
+	controllercache "github.com/argoproj/argo/v3/workflow/controller/cache"
+	"github.com/argoproj/argo/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/progress"
+	argosync "github.com/argoproj/argo/v3/workflow/sync"
+	"github.com/argoproj/argo/v3/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo/v3/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -1116,38 +1116,29 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
-		if pod.DeletionTimestamp != nil {
-			// pod is being terminated
-			newPhase = wfv1.NodeError
-			newDaemonStatus = pointer.BoolPtr(false)
-			message = "pod deleted during operation"
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Error(message)
-		} else {
-			newPhase = wfv1.NodeRunning
-			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-			if !ok {
-				woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
-				return nil
-			}
-			var tmpl wfv1.Template
-			err := json.Unmarshal([]byte(tmplStr), &tmpl)
-			if err != nil {
-				woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
-				return nil
-			}
-			if tmpl.Daemon != nil && *tmpl.Daemon {
-				// pod is running and template is marked daemon. check if everything is ready
-				for _, ctrStatus := range pod.Status.ContainerStatuses {
-					if !ctrStatus.Ready {
-						return nil
-					}
+		newPhase = wfv1.NodeRunning
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
+			return nil
+		}
+		var tmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &tmpl)
+		if err != nil {
+			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
+			return nil
+		}
+		if tmpl.Daemon != nil && *tmpl.Daemon {
+			// pod is running and template is marked daemon. check if everything is ready
+			for _, ctrStatus := range pod.Status.ContainerStatuses {
+				if !ctrStatus.Ready {
+					return nil
 				}
-				// proceed to mark node status as running (and daemoned)
-				newPhase = wfv1.NodeRunning
-				newDaemonStatus = pointer.BoolPtr(true)
-				woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 			}
+			// proceed to mark node status as running (and daemoned)
+			newPhase = wfv1.NodeRunning
+			newDaemonStatus = pointer.BoolPtr(true)
+			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
 	default:
 		newPhase = wfv1.NodeError
@@ -1272,6 +1263,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		return wfv1.NodeFailed, pod.Status.Message
 	}
 	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
+
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
@@ -1317,6 +1309,10 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		if ctr.State.Terminated.ExitCode == 0 {
 			continue
 		}
+		if ctr.State.Terminated.Message == "" && ctr.State.Terminated.Reason == "OOMKilled" {
+			failMessages[ctr.Name] = ctr.State.Terminated.Reason
+			continue
+		}
 		if ctr.Name == common.WaitContainerName {
 			errDetails := ""
 			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
@@ -1341,10 +1337,6 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 				errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
 			}
 			failMessages[ctr.Name] = errMsg
-			continue
-		}
-		if ctr.State.Terminated.Reason == "OOMKilled" {
-			failMessages[ctr.Name] = ctr.State.Terminated.Reason
 			continue
 		}
 		errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
@@ -2356,16 +2348,6 @@ func getStepOrDAGTaskName(nodeName string) string {
 	return nodeName
 }
 
-func extractMainCtrFromScriptTemplate(tmpl *wfv1.Template) apiv1.Container {
-	mainCtr := tmpl.Script.Container
-	// If script source is provided then pass all container args to the
-	// script instead of passing them to the container command directly
-	if tmpl.Script.Source != "" {
-		mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
-	}
-	return mainCtr
-}
-
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
@@ -2381,7 +2363,8 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		return node, err
 	}
 
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err = woc.createWorkflowPod(ctx, nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
@@ -3100,16 +3083,12 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
-		if err != nil && !apierr.IsNotFound(err) {
-			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !errorsutil.IsTransientErr(err) {
-				return false, err
-			}
-			return false, nil
+		if apierr.IsNotFound(err) {
+			return true, nil
 		}
-		return true, nil
+		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")

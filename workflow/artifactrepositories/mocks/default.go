@@ -3,8 +3,8 @@ package mocks
 import (
 	"github.com/stretchr/testify/mock"
 
-	"github.com/argoproj/argo/config"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/config"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func DummyArtifactRepositories(repo *config.ArtifactRepository) *Interface {

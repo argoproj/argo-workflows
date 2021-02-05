@@ -16,10 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/workflow/common"
+	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 // The goal of this class is to stream the logs of the workflow you want.
@@ -221,7 +221,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						return
 					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
-					if pod.Status.Phase == corev1.PodRunning {
+					if pod.Status.Phase != corev1.PodPending {
 						ensureWeAreStreaming(pod)
 					}
 					podListOptions.ResourceVersion = pod.ResourceVersion

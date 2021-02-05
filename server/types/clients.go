@@ -6,7 +6,7 @@ import (
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 
-	workflow "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	workflow "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
 )
 
 type Clients struct {

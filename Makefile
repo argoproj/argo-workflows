@@ -52,7 +52,7 @@ STATIC_BUILD          ?= true
 # should we build the static files?
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
-GOTEST                ?= go test
+GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
 DEFAULT_REQUEUE_TIME  ?= 2s
@@ -84,22 +84,22 @@ endif
 ALWAYS_OFFLOAD_NODE_STATUS := false
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo.version=$(VERSION) \
-  -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo/v3.version=$(VERSION) \
+  -X github.com/argoproj/argo/v3.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo/v3.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo/v3.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo/v3.gitTag=${GIT_TAG}
 endif
 
-ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/' | cut -c 26-)
-CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo/' | cut -c 26-)
-CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo/' | cut -c 26-)
+ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo/v3/' | cut -c 29-)
+CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo/v3/' | cut -c 29-)
+CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo/v3/' | cut -c 29-)
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
@@ -130,8 +130,8 @@ define protoc
     [ -e vendor ] || go mod vendor
     protoc \
       -I /usr/local/include \
-      -I . \
-      -I ./vendor \
+      -I $(CURDIR) \
+      -I $(CURDIR)/vendor \
       -I ${GOPATH}/src \
       -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
       -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
@@ -139,6 +139,8 @@ define protoc
       --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
+     perl -i -pe 's|argoproj/argo/|argoproj/argo/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+
 endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -324,12 +326,14 @@ $(GOPATH)/bin/goimports:
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor
+	[ -e v3 ] || ln -s . v3
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
-		--packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
+		--packages=github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
-		--proto-import ./vendor
+		--proto-import $(CURDIR)/vendor
 	touch pkg/apis/workflow/v1alpha1/generated.proto
+	rm -rf v3
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
@@ -361,7 +365,7 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
 # generate other files for other CRDs
-manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
+manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES) ./hack/crdgen.sh ./hack/crds.go
 	./hack/crdgen.sh
 
 dist/kustomize:
@@ -473,7 +477,7 @@ endif
 	sleep 10s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
 
 .PHONY: wait
@@ -491,21 +495,23 @@ postgres-cli:
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
-.PHONY: test-e2e
-test-e2e:
-	$(GOTEST) -timeout 15m -count 1 --tags e2e,api -p 1 ./test/e2e
-
 .PHONY: test-cli
 test-cli:
-	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
 	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
-.PHONY: smoke
-smoke:
-	$(GOTEST) -count 1 --tags smoke -p 1 ./test/e2e
+.PHONY: test-executor
+test-executor:
+	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
+
+.PHONY: test-functional
+test-functional:
+	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
 
 # clean
 
@@ -517,19 +523,24 @@ clean:
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
+	[ -e v3 ] || ln -s . v3
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
-	  --output-package github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
+	  --input-dirs github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
+	  --output-package github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
+	rm -rf v3
+
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+	[ -e v3 ] || ln -s . v3
 	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
-		github.com/argoproj/argo/pkg/client github.com/argoproj/argo/pkg/apis \
+		github.com/argoproj/argo/v3/pkg/client github.com/argoproj/argo/v3/pkg/apis \
 		workflow:v1alpha1 \
 		--go-header-file ./hack/custom-boilerplate.go.txt
+	rm -rf v3
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist

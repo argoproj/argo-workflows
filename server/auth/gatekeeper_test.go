@@ -16,11 +16,11 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	ssomocks "github.com/argoproj/argo/server/auth/sso/mocks"
-	"github.com/argoproj/argo/server/auth/types"
-	servertypes "github.com/argoproj/argo/server/types"
-	"github.com/argoproj/argo/workflow/common"
+	fakewfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	ssomocks "github.com/argoproj/argo/v3/server/auth/sso/mocks"
+	"github.com/argoproj/argo/v3/server/auth/types"
+	servertypes "github.com/argoproj/argo/v3/server/types"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
@@ -129,6 +129,7 @@ func TestServer_GetWFClient(t *testing.T) {
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 				if assert.NotNil(t, GetClaims(ctx)) {
 					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
+					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
 				}
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
@@ -140,9 +141,10 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			_, err := g.Context(x("Bearer v2:whatever"))
+			ctx, err := g.Context(x("Bearer v2:whatever"))
 			if assert.NoError(t, err) {
 				assert.Equal(t, "my-other-sa", hook.LastEntry().Data["serviceAccount"])
+				assert.Equal(t, "my-other-sa", GetClaims(ctx).ServiceAccountName)
 			}
 		}
 	})

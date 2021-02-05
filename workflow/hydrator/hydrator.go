@@ -7,9 +7,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/v3/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo/v3/workflow/packer"
 )
 
 type Interface interface {
@@ -73,9 +75,9 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 	}
 	if wf.Status.IsOffloadNodeStatus() {
 		var offloadedNodes wfv1.Nodes
-		err := wait.ExponentialBackoff(readRetry, func() (bool, error) {
+		err := waitutil.Backoff(readRetry, func() (bool, error) {
 			offloadedNodes, err = h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			return err == nil, err
+			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
 			return err
@@ -99,9 +101,9 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 	}
 	if packer.IsTooLargeError(err) || alwaysOffloadNodeStatus {
 		var offloadVersion string
-		err := wait.ExponentialBackoff(writeRetry, func() (bool, error) {
+		err := waitutil.Backoff(writeRetry, func() (bool, error) {
 			offloadVersion, err = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
-			return err == nil, err
+			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
 			return err

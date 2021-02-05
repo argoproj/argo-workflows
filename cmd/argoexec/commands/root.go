@@ -11,15 +11,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/executor"
-	"github.com/argoproj/argo/workflow/executor/docker"
-	"github.com/argoproj/argo/workflow/executor/k8sapi"
-	"github.com/argoproj/argo/workflow/executor/kubelet"
-	"github.com/argoproj/argo/workflow/executor/pns"
+	"github.com/argoproj/argo/v3"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/cmd"
+	"github.com/argoproj/argo/v3/util/logs"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/executor"
+	"github.com/argoproj/argo/v3/workflow/executor/docker"
+	"github.com/argoproj/argo/v3/workflow/executor/k8sapi"
+	"github.com/argoproj/argo/v3/workflow/executor/kubelet"
+	"github.com/argoproj/argo/v3/workflow/executor/pns"
 )
 
 const (
@@ -73,6 +74,8 @@ func initExecutor() *executor.WorkflowExecutor {
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
+
+	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)

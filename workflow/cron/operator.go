@@ -13,18 +13,18 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	argoerr "github.com/argoproj/argo/util/errors"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	typed "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/templateresolution"
+	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo/v3/workflow/validate"
 )
 
 type cronWfOperationCtx struct {
@@ -142,13 +142,10 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 		woc.log.WithError(err).Error("failed to marshall cron workflow status.active data")
 		return
 	}
-	err = wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
+	err = waitutil.Backoff(retry.DefaultBackoff, func() (bool, error) {
 		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
 		if err != nil {
-			if argoerr.IsTransientErr(err) {
-				return false, nil
-			}
-			return false, err
+			return !errorsutil.IsTransientErr(err), err
 		}
 		woc.cronWf = cronWf
 		return true, nil
@@ -194,6 +191,10 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 		woc.log.Infof("stopping '%s'", wfObjectRef.Name)
 		err := util.TerminateWorkflow(ctx, woc.wfClient, wfObjectRef.Name)
 		if err != nil {
+			if errors.IsNotFound(err) {
+				woc.log.Warnf("workflow '%s' not found when trying to terminate outstanding workflows", wfObjectRef.Name)
+				continue
+			}
 			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
 		}
 	}

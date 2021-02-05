@@ -20,13 +20,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util/archive"
-	errorsutil "github.com/argoproj/argo/util/errors"
-	"github.com/argoproj/argo/workflow/common"
-	execcommon "github.com/argoproj/argo/workflow/executor/common"
-	argowait "github.com/argoproj/argo/workflow/executor/common/wait"
-	osspecific "github.com/argoproj/argo/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/util/archive"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo/v3/workflow/common"
+	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
+	argowait "github.com/argoproj/argo/v3/workflow/executor/common/wait"
+	osspecific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
 
 type PNSExecutor struct {
@@ -382,10 +383,10 @@ func (p *PNSExecutor) GetTerminatedContainerStatus(ctx context.Context, containe
 	var containerStatus *corev1.ContainerStatus
 	// Under high load, the Kubernetes API may be unresponsive for some time (30s). This would have failed the workflow
 	// previously (<=v2.11) but a 30s back-off mitigates this.
-	err := wait.ExponentialBackoff(backoffOver30s, func() (bool, error) {
+	err := waitutil.Backoff(backoffOver30s, func() (bool, error) {
 		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(ctx, p.podName, metav1.GetOptions{})
 		if err != nil {
-			return !errorsutil.IsTransientErr(err), fmt.Errorf("could not get pod: %w", err)
+			return !errorsutil.IsTransientErr(err), err
 		}
 		for _, containerStatusRes := range podRes.Status.ContainerStatuses {
 			if execcommon.GetContainerID(&containerStatusRes) != containerID {
@@ -395,7 +396,7 @@ func (p *PNSExecutor) GetTerminatedContainerStatus(ctx context.Context, containe
 			containerStatus = &containerStatusRes
 			return containerStatus.State.Terminated != nil, nil
 		}
-		return false, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod %s", containerID, p.podName))
+		return false, nil
 	})
 	return pod, containerStatus, err
 }

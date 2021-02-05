@@ -16,12 +16,12 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	argoutil "github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/printer"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	argoutil "github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/printer"
+	"github.com/argoproj/argo/v3/workflow/util"
 )
 
 const onExitSuffix = "onExit"

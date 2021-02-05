@@ -1,7 +1,7 @@
 package http1
 
 import (
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
 )
 
 type podLogsClient struct{ serverSentEventsClient }

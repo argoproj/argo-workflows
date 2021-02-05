@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useEffect} from 'react';
+import {TextInput} from '../../../shared/components/text-input';
 import {ScopedLocalStorage} from '../../scoped-local-storage';
 import {FilterDropDown} from '../filter-drop-down';
 import {Icon} from '../icon';
@@ -19,6 +20,7 @@ interface NodeGenres {
 interface NodeClassNames {
     [type: string]: boolean;
 }
+
 interface NodeTags {
     [key: string]: boolean;
 }
@@ -28,8 +30,11 @@ interface Props {
     storageScope: string; // the scope of storage, similar graphs should use the same vaulue
     options?: React.ReactNode; // add to the option panel
     classNames?: string;
+    nodeGenresTitle: string;
     nodeGenres: NodeGenres;
+    nodeClassNamesTitle?: string;
     nodeClassNames?: NodeClassNames;
+    nodeTagsTitle?: string;
     nodeTags?: NodeTags;
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
@@ -51,6 +56,7 @@ export const GraphPanel = (props: Props) => {
     const [nodeGenres, setNodeGenres] = React.useState<NodeGenres>(storage.getItem('nodeGenres', props.nodeGenres));
     const [nodeClassNames, setNodeClassNames] = React.useState<NodeClassNames>(storage.getItem('nodeClassNames', props.nodeClassNames));
     const [nodeTags, setNodeTags] = React.useState<NodeTags>(props.nodeTags);
+    const [nodeSearchKeyword, setNodeSearchKeyword] = React.useState<string>('');
 
     useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
     useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
@@ -67,9 +73,11 @@ export const GraphPanel = (props: Props) => {
     const visible = (id: Node) => {
         const label = props.graph.nodes.get(id);
         return (
-            nodeGenres[label.genre] &&
-            (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
-            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag))))
+            (nodeGenres[label.genre] &&
+                (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
+                (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) &&
+                !nodeSearchKeyword) ||
+            label.label.includes(nodeSearchKeyword)
         );
     };
 
@@ -82,39 +90,39 @@ export const GraphPanel = (props: Props) => {
             {!props.hideOptions && (
                 <div className='graph-options-panel'>
                     <FilterDropDown
-                        key='types'
-                        values={nodeGenres}
-                        onChange={(label, checked) => {
-                            setNodeGenres(v => {
-                                v[label] = checked;
-                                return Object.assign({}, v);
-                            });
-                        }}
+                        sections={[
+                            {
+                                title: props.nodeGenresTitle,
+                                values: nodeGenres,
+                                onChange: (label, checked) => {
+                                    setNodeGenres(v => {
+                                        v[label] = checked;
+                                        return Object.assign({}, v);
+                                    });
+                                }
+                            },
+                            {
+                                title: props.nodeClassNamesTitle,
+                                values: nodeClassNames,
+                                onChange: (label, checked) => {
+                                    setNodeClassNames(v => {
+                                        v[label] = checked;
+                                        return Object.assign({}, v);
+                                    });
+                                }
+                            },
+                            {
+                                title: props.nodeTagsTitle,
+                                values: nodeTags,
+                                onChange: (label, checked) => {
+                                    setNodeTags(v => {
+                                        v[label] = checked;
+                                        return Object.assign({}, v);
+                                    });
+                                }
+                            }
+                        ]}
                     />
-                    {nodeClassNames && (
-                        <FilterDropDown
-                            key='class-names'
-                            values={nodeClassNames}
-                            onChange={(label, checked) => {
-                                setNodeClassNames(v => {
-                                    v[label] = checked;
-                                    return Object.assign({}, v);
-                                });
-                            }}
-                        />
-                    )}
-                    {nodeTags && (
-                        <FilterDropDown
-                            key='annotations'
-                            values={nodeTags}
-                            onChange={(label, checked) => {
-                                setNodeTags(v => {
-                                    v[label] = checked;
-                                    return Object.assign({}, v);
-                                });
-                            }}
-                        />
-                    )}
                     <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
                         <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
                     </a>
@@ -128,6 +136,9 @@ export const GraphPanel = (props: Props) => {
                         <i className='fa fa-bolt' />
                     </a>
                     {props.options}
+                    <div className='node-search-bar'>
+                        <TextInput value={nodeSearchKeyword} onChange={v => setNodeSearchKeyword(v)} placeholder={'Search'} />
+                    </div>
                 </div>
             )}
             <div className={'graph ' + props.classNames}>

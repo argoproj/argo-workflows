@@ -1,4 +1,4 @@
-// +build e2e
+// +build functional
 
 package e2e
 
@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test/e2e/fixtures"
 )
 
 type WorkflowTemplateSuite struct {

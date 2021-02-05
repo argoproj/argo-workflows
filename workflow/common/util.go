@@ -27,10 +27,12 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	waitutil "github.com/argoproj/argo/v3/util/wait"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -476,9 +478,9 @@ func addPodMetadata(ctx context.Context, c kubernetes.Interface, field, podName,
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	return wait.ExponentialBackoff(backoff, func() (bool, error) {
-		_, err = c.CoreV1().Pods(namespace).Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
-		return err == nil, err
+	return waitutil.Backoff(backoff, func() (bool, error) {
+		_, err := c.CoreV1().Pods(namespace).Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
+		return !errorsutil.IsTransientErr(err), err
 	})
 }
 

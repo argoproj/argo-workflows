@@ -29,15 +29,15 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test"
-	testutil "github.com/argoproj/argo/test/util"
-	intstrutil "github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/controller/cache"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v3/config"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test"
+	testutil "github.com/argoproj/argo/v3/test/util"
+	intstrutil "github.com/argoproj/argo/v3/util/intstr"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/controller/cache"
+	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v3/workflow/util"
 )
 
 // TestOperateWorkflowPanicRecover ensures we can recover from unexpected panics
@@ -1106,16 +1106,6 @@ func TestAssessNodeStatus(t *testing.T) {
 		},
 		node: &wfv1.NodeStatus{},
 		want: wfv1.NodeFailed,
-	}, {
-		name: "pod deleted during operation",
-		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
-			Status: apiv1.PodStatus{
-				Phase: apiv1.PodRunning,
-			},
-		},
-		node: &wfv1.NodeStatus{},
-		want: wfv1.NodeError,
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
@@ -5222,88 +5212,6 @@ func TestStorageQuota(t *testing.T) {
 var podWithFailed = `
 apiVersion: v1
 kind: Pod
-metadata:
-  annotations:
-    creationTimestamp: '2020-08-27T18:14:19Z'
-  name: hello-world-lbgpt-2607732259
-  namespace: argo
-spec:
-  containers:
-  - command:
-    - argoexec
-    - wait
-    env:
-    - name: ARGO_POD_NAME
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.name
-    image: argoproj/argoexec:v2.9.5
-    imagePullPolicy: IfNotPresent
-    name: wait
-    resources: {}
-    terminationMessagePath: "/dev/termination-log"
-    terminationMessagePolicy: File
-    volumeMounts:
-    - mountPath: "/argo/podmetadata"
-      name: podmetadata
-    - mountPath: "/var/run/docker.sock"
-      name: docker-sock
-      readOnly: true
-    - mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
-      name: default-token-rc4ml
-      readOnly: true
-  - args:
-    - import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)
-    command:
-    - python
-    - "-c"
-    image: python:alpine3.6
-    imagePullPolicy: IfNotPresent
-    name: main
-    resources: {}
-    terminationMessagePath: "/dev/termination-log"
-    terminationMessagePolicy: File
-    volumeMounts:
-    - mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
-      name: default-token-rc4ml
-      readOnly: true
-  dnsPolicy: ClusterFirst
-  enableServiceLinks: true
-  nodeName: docker-desktop
-  priority: 0
-  restartPolicy: Never
-  schedulerName: default-scheduler
-  securityContext: {}
-  serviceAccount: default
-  serviceAccountName: default
-  terminationGracePeriodSeconds: 30
-  tolerations:
-  - effect: NoExecute
-    key: node.kubernetes.io/not-ready
-    operator: Exists
-    tolerationSeconds: 300
-  - effect: NoExecute
-    key: node.kubernetes.io/unreachable
-    operator: Exists
-    tolerationSeconds: 300
-  volumes:
-  - downwardAPI:
-      defaultMode: 420
-      items:
-      - fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.annotations
-        path: annotations
-    name: podmetadata
-  - hostPath:
-      path: "/var/run/docker.sock"
-      type: Socket
-    name: docker-sock
-  - name: default-token-rc4ml
-    secret:
-      defaultMode: 420
-      secretName: default-token-rc4ml
 status:
   conditions:
   - lastProbeTime: 
@@ -5349,6 +5257,115 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	nodeStatus, msg := inferFailedReason(&pod)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Contains(t, msg, "Pod failed before")
+}
+
+var podWithWaitContainerOOM = `
+apiVersion: v1
+kind: Pod
+status:
+  containerStatuses:
+  - containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
+    image: docker.io/argoproj/argosay:v2
+    imageID: docker.io/argoproj/argosay@sha256:3d2d553a462cfe3288833a010c1d91454bd05a0e02937f2f82050d68ca57a580
+    lastState: {}
+    name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
+        exitCode: 0
+        finishedAt: "2021-01-22T09:50:17Z"
+        reason: Completed
+        startedAt: "2021-01-22T09:50:16Z"
+  - containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
+    image: docker.io/argoproj/argoexec:latest
+    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
+    lastState: {}
+    name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
+        exitCode: 137
+        finishedAt: "2021-01-22T09:50:17Z"
+        reason: OOMKilled
+        startedAt: "2021-01-22T09:50:16Z"
+  hostIP: 172.19.0.2
+  phase: Failed
+  podIP: 10.42.0.74
+  podIPs:
+  - ip: 10.42.0.74
+  qosClass: Burstable
+  startTime: "2021-01-22T09:50:15Z"
+`
+
+var podWithMainContainerOOM = `
+apiVersion: v1
+kind: Pod
+status:
+  containerStatuses:
+  - containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
+    image: docker.io/monitoringartist/docker-killer:latest
+    imageID: docker.io/monitoringartist/docker-killer@sha256:85ba7f17a5ef691eb4a3dff7fdab406369085c6ee6e74dc4527db9fe9e448fa1
+    lastState: {}
+    name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
+        exitCode: 137
+        finishedAt: "2021-01-22T10:28:13Z"
+        reason: OOMKilled
+        startedAt: "2021-01-22T10:28:13Z"
+  - containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
+    image: docker.io/argoproj/argoexec:latest
+    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
+    lastState: {}
+    name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
+        exitCode: 0
+        finishedAt: "2021-01-22T10:28:14Z"
+        reason: Completed
+        startedAt: "2021-01-22T10:28:12Z"
+  hostIP: 172.19.0.2
+  phase: Failed
+  podIP: 10.42.0.87
+  podIPs:
+  - ip: 10.42.0.87
+  qosClass: Burstable
+  startTime: "2021-01-22T10:28:12Z"
+`
+
+func TestPodFailureWithContainerOOM(t *testing.T) {
+	tests := []struct {
+		podDetail string
+		phase     wfv1.NodePhase
+	}{{
+		podDetail: podWithWaitContainerOOM,
+		phase:     wfv1.NodeError,
+	}, {
+		podDetail: podWithMainContainerOOM,
+		phase:     wfv1.NodeFailed,
+	}}
+	var pod apiv1.Pod
+	for _, tt := range tests {
+		testutil.MustUnmarshallYAML(tt.podDetail, &pod)
+		assert.NotNil(t, pod)
+		nodeStatus, msg := inferFailedReason(&pod)
+		assert.Equal(t, tt.phase, nodeStatus)
+		assert.Equal(t, msg, "OOMKilled")
+	}
 }
 
 func TestResubmitPendingPods(t *testing.T) {

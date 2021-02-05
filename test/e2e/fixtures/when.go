@@ -13,10 +13,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/hydrator"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/hydrator"
 )
 
 type When struct {
@@ -172,6 +172,7 @@ var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
 		return node.Phase == wfv1.NodeRunning
 	})
 }
+var ToBeSucceeded Condition = func(wf *wfv1.Workflow) bool { return wf.Status.Phase == wfv1.WorkflowSucceeded }
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
 // This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this

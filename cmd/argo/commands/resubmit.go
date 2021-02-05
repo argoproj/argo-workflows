@@ -4,8 +4,8 @@ import (
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
 )
 
 func NewResubmitCommand() *cobra.Command {
