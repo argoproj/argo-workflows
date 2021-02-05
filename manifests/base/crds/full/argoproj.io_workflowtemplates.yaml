@@ -2760,15 +2760,7 @@ spec:
                         withArtifactPaths:
                           properties:
                             aggregator:
-                              properties:
-                                directory:
-                                  properties:
-                                    glob:
-                                      type: string
-                                    recursive:
-                                      type: boolean
-                                  type: object
-                              type: object
+                              type: string
                             archive:
                               properties:
                                 none:
@@ -2812,6 +2804,16 @@ spec:
                                   type: object
                               required:
                               - url
+                              type: object
+                            filter:
+                              properties:
+                                directory:
+                                  properties:
+                                    recursive:
+                                      type: boolean
+                                    regex:
+                                      type: string
+                                  type: object
                               type: object
                             from:
                               type: string

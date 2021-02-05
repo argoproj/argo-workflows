@@ -1101,17 +1101,26 @@ func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
 }
 
+type Aggregator string
+
+const (
+	AggregatorExtension Aggregator = "Extension"
+)
+
 // WithArtifactPaths expands a step from a collection of artifacts
 type WithArtifactPaths struct {
+	// Filter is the strategy in how to filter files
+	Filter *Filter `json:"filter,omitempty"`
+
 	// Aggregator is the strategy in how to aggregate files
-	Aggregator *Aggregator `json:"aggregator,omitempty"`
+	Aggregator Aggregator `json:"aggregator,omitempty"`
 
 	// Artifact is the artifact location from which to source the artifacts, it can be a directory
 	Artifact `json:",inline"`
 }
 
-// Aggregator is the strategy in how to aggregate files
-type Aggregator struct {
+// Filter is the strategy in how to aggregate files
+type Filter struct {
 	// Directory gathers all the files in a directory
 	Directory *Directory `json:"directory,omitempty"`
 }

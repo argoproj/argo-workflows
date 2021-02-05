@@ -22,9 +22,7 @@ spec:
   - name: generate-artifacts
     data:
       withArtifactPaths:
-        aggregator:
-          directory:
-            glob: ".+?\\.pdf"
+        aggregator: "Extension"
         s3:
           bucket: test
           endpoint: minio:9000

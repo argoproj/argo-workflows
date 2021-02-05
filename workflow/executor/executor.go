@@ -243,7 +243,8 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) ProcessData(ctx context.Context, data *wfv1.DataTemplate) error {
+func (we *WorkflowExecutor) ProcessData(ctx context.Context) error {
+	data := we.Template.Data
 	if data == nil {
 		return nil
 	}
@@ -251,13 +252,13 @@ func (we *WorkflowExecutor) ProcessData(ctx context.Context, data *wfv1.DataTemp
 	var err error
 	switch {
 	case data.WithArtifactPaths != nil:
-		err = we.ProcessArtifacts(ctx, data.WithArtifactPaths)
+		err = we.ProcessDataArtifacts(ctx, data.WithArtifactPaths)
 	}
 
 	return err
 }
 
-func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv1.WithArtifactPaths) error {
+func (we *WorkflowExecutor) ProcessDataArtifacts(ctx context.Context, artifacts *wfv1.WithArtifactPaths) error {
 	driverArt, err := we.newDriverArt(&artifacts.Artifact)
 	if err != nil {
 		return err
@@ -268,29 +269,29 @@ func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv
 	}
 
 	var files []string
-	aggregator := artifacts.Aggregator
-	if aggregator == nil {
-		// Default aggregator is that of a directory with recursion
-		aggregator = &wfv1.Aggregator{Directory: &wfv1.Directory{Recursive: pointer.BoolPtr(true)}}
+	files, err = artDriver.ListObjects(&artifacts.Artifact)
+	if err != nil {
+		return err
 	}
-	switch agg := aggregator; {
-	case agg.Directory != nil:
-		files, err = artDriver.ListObjects(&artifacts.Artifact)
-		if err != nil {
-			return err
-		}
 
+	filter := artifacts.Filter
+	if filter == nil {
+		// Default filter is that of a directory with recursion
+		filter = &wfv1.Filter{Directory: &wfv1.Directory{Recursive: pointer.BoolPtr(true)}}
+	}
+	switch fil := filter; {
+	case fil.Directory != nil:
 		// If recursive is set to false, remove all files that contain a directory
-		if agg.Directory.Recursive != nil && !*agg.Directory.Recursive {
+		if fil.Directory.Recursive != nil && !*fil.Directory.Recursive {
 			inPlaceFilter(func(file string) bool {
 				return !strings.Contains(file, "/")
 			}, &files)
 		}
 
-		if agg.Directory.Regex != "" {
-			re, err := regexp.Compile(agg.Directory.Regex)
+		if fil.Directory.Regex != "" {
+			re, err := regexp.Compile(fil.Directory.Regex)
 			if err != nil {
-				return fmt.Errorf("regex '%s' is not valid: %w", agg.Directory.Regex, err)
+				return fmt.Errorf("regex '%s' is not valid: %w", fil.Directory.Regex, err)
 			}
 			inPlaceFilter(func(file string) bool {
 				return re.MatchString(file)
@@ -298,7 +299,26 @@ func (we *WorkflowExecutor) ProcessArtifacts(ctx context.Context, artifacts *wfv
 		}
 	}
 
-	out, err := json.Marshal(files)
+	var aggFiles [][]string
+
+	switch artifacts.Aggregator {
+	case "":
+		// Do nothing
+	case wfv1.AggregatorExtension:
+		aggFiles = groupBy(func(file string) string {
+			return filepath.Ext(file)
+		}, files)
+	default:
+		return fmt.Errorf("unknown aggreagtor type '%s'", artifacts.Aggregator)
+	}
+
+	var toMarshal interface{}
+	toMarshal = files
+	if aggFiles != nil {
+		toMarshal = aggFiles
+	}
+
+	out, err := json.Marshal(toMarshal)
 	if err != nil {
 		return err
 	}
