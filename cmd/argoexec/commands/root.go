@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo/v3"
 	"github.com/argoproj/argo/v3/util"
 	"github.com/argoproj/argo/v3/util/cmd"
+	"github.com/argoproj/argo/v3/util/logs"
 	"github.com/argoproj/argo/v3/workflow/common"
 	"github.com/argoproj/argo/v3/workflow/executor"
 	"github.com/argoproj/argo/v3/workflow/executor/docker"
@@ -74,6 +75,8 @@ func initExecutor() *executor.WorkflowExecutor {
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
+
+	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)

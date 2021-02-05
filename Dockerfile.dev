@@ -3,7 +3,7 @@
 # Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
-FROM golang:1.13.4 as builder
+FROM golang:1.15.7 as builder
 
 ARG IMAGE_OS=linux
 ARG IMAGE_ARCH=amd64
@@ -44,13 +44,13 @@ RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
 ####################################################################################################
-FROM debian:10.3-slim as argoexec-base
+FROM debian:10.7-slim as argoexec-base
 
 ARG IMAGE_OS=linux
 ARG IMAGE_ARCH=amd64
 
-# NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.18.8
+# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
+ENV KUBECTL_VERSION=1.19.6
 ENV JQ_VERSION=1.6
 RUN apt-get update && \
     apt-get --no-install-recommends install -y curl procps git apt-utils apt-transport-https ca-certificates tar mime-support && \

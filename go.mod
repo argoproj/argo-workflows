@@ -1,6 +1,6 @@
 module github.com/argoproj/argo/v3
 
-go 1.13
+go 1.15
 
 replace github.com/argoproj/pkg v0.3.0 => ../pkg
 
