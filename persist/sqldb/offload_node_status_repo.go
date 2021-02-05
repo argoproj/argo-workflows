@@ -3,10 +3,11 @@ package sqldb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/v3/util/env"
 	"hash/fnv"
 	"strings"
 	"time"
+
+	"github.com/argoproj/argo/v3/util/env"
 
 	log "github.com/sirupsen/logrus"
 	"upper.io/db.v3"

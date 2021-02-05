@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/v3/util/env"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/argoproj/argo/v3/util/env"
 
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
