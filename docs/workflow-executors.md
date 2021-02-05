@@ -23,6 +23,8 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Configuration:
     * No additional configuration needed.
 
+**Note**: when using docker as workflow executors, messages printed in both `stdout` and `stderr` are captured in the [Argo variable](./variables.md#scripttemplate) `.outputs.result`.
+
 ## Kubelet (kubelet)
 
 * Reliability:
