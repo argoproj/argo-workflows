@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/argoproj/argo-workflows/v3/util/env"
 
 	"github.com/argoproj/pkg/errors"
@@ -439,7 +441,9 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 		case deletePod:
 			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(ctx, podName, metav1.DeleteOptions{PropagationPolicy: &propagation, GracePeriodSeconds: })
+			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
+				PropagationPolicy:  &propagation,
+				GracePeriodSeconds: pointer.Int64Ptr(wfc.Config.PodGCGracePeriodSeconds)})
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
