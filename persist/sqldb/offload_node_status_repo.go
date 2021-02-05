@@ -3,8 +3,8 @@ package sqldb
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/v3/util/env"
 	"hash/fnv"
-	"os"
 	"strings"
 	"time"
 
@@ -34,14 +34,7 @@ type OffloadNodeStatusRepo interface {
 func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
-	text, ok := os.LookupEnv("OFFLOAD_NODE_STATUS_TTL")
-	if !ok {
-		text = "5m"
-	}
-	ttl, err := time.ParseDuration(text)
-	if err != nil {
-		return nil, err
-	}
+	ttl := env.LookupEnvDurationOr("OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
 	log.WithField("ttl", ttl).Info("Node status offloading config")
 	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
 }

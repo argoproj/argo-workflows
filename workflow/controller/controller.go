@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/v3/util/env"
 	"os"
 	"strconv"
 	"time"
@@ -454,15 +455,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
-	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
-	periodicity := 5 * time.Minute
-	if ok {
-		var err error
-		periodicity, err = time.ParseDuration(value)
-		if err != nil {
-			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse WORKFLOW_GC_PERIOD")
-		}
-	}
+	periodicity := env.LookupEnvDurationOr("WORKFLOW_GC_PERIOD", 5*time.Minute)
 	log.Infof("Performing periodic GC every %v", periodicity)
 	ticker := time.NewTicker(periodicity)
 	for {
@@ -510,15 +503,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 }
 
 func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
-	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
-	periodicity := 24 * time.Hour
-	if ok {
-		var err error
-		periodicity, err = time.ParseDuration(value)
-		if err != nil {
-			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_GC_PERIOD")
-		}
-	}
+	periodicity := env.LookupEnvDurationOr("ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
 	if wfc.Config.Persistence == nil {
 		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
