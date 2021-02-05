@@ -190,6 +190,10 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows() error {
 		woc.log.Infof("stopping '%s'", wfObjectRef.Name)
 		err := util.TerminateWorkflow(woc.wfClient, wfObjectRef.Name)
 		if err != nil {
+			if errors.IsNotFound(err) {
+				woc.log.Warnf("workflow '%s' not found when trying to terminate outstanding workflows", wfObjectRef.Name)
+				continue
+			}
 			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
 		}
 	}
