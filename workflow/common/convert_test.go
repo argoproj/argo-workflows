@@ -51,6 +51,7 @@ metadata:
 spec:
   arguments: {}
   entrypoint: whalesay
+  podMetadata: {}
   templates:
   - arguments: {}
     container:

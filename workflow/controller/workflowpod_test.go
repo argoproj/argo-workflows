@@ -1304,53 +1304,68 @@ func TestPropagateMaxDuration(t *testing.T) {
 	}
 }
 
-func TestPodsInheritWorkflowAnnotationsAndLabels(t *testing.T) {
-	woc := newWoc()
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
-	assert.NoError(t, err)
+var wfWithPodMetadata = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  podMetadata:
+    annotations:
+      workflow-level-pod-annotation: foo
+    labels:
+      workflow-level-pod-label: bar
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
 
-	woc.wf.ObjectMeta.Annotations = make(map[string]string)
-	woc.wf.ObjectMeta.Annotations["test-workflow-annotation"] = "inherited"
-	woc.wf.ObjectMeta.Labels = make(map[string]string)
-	woc.wf.ObjectMeta.Labels["test-workflow-label"] = "inherited"
+var wfWithPodMetadataAndTemplateMetadata = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  podMetadata:
+    annotations:
+      workflow-level-pod-annotation: foo
+    labels:
+      workflow-level-pod-label: bar
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        workflow-level-pod-annotation: fizz
+        template-level-pod-annotation: hello
+      labels:
+        workflow-level-pod-label: buzz
+        template-level-pod-label: world
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
 
+func TestPodMetadata(t *testing.T) {
+	wf := unmarshalWF(wfWithPodMetadata)
 	ctx := context.Background()
-	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &woc.execWf.Spec.Templates[0], &executeTemplateOpts{})
-	assert.NoError(t, err)
-	pods, err := listPods(woc)
-	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-	pod := pods.Items[0]
-	assert.NotNil(t, pod.ObjectMeta)
-	assert.NotNil(t, pod.ObjectMeta.Annotations)
-	assert.NotNil(t, pod.ObjectMeta.Labels)
-	assert.Equal(t, pod.ObjectMeta.Annotations["test-workflow-annotation"], "inherited")
-	assert.Equal(t, pod.ObjectMeta.Labels["test-workflow-label"], "inherited")
-}
+	woc := newWoc(*wf)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "foo", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
+	assert.Equal(t, "bar", pod.ObjectMeta.Labels["workflow-level-pod-label"])
 
-func TestTemplateOverwritesInheritedAnnotationsAndLabels(t *testing.T) {
-	woc := newWoc()
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
-	assert.NoError(t, err)
-
-	woc.wf.ObjectMeta.Annotations = make(map[string]string)
-	woc.wf.ObjectMeta.Annotations["test-workflow-annotation"] = "inherited"
-	woc.wf.ObjectMeta.Labels = make(map[string]string)
-	woc.wf.ObjectMeta.Labels["test-workflow-label"] = "inherited"
-
-	woc.wf.Spec.Templates[0].Metadata.Annotations["test-workflow-annotation"] = "overwritten"
-	woc.wf.Spec.Templates[0].Metadata.Labels["test-workflow-label"] = "overwritten"
-
-	ctx := context.Background()
-	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &woc.execWf.Spec.Templates[0], &executeTemplateOpts{})
-	assert.NoError(t, err)
-	pods, err := listPods(woc)
-	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-	pod := pods.Items[0]
-	assert.NotNil(t, pod.ObjectMeta)
-	assert.NotNil(t, pod.ObjectMeta.Annotations)
-	assert.NotNil(t, pod.ObjectMeta.Labels)
-	assert.Equal(t, pod.ObjectMeta.Annotations["test-workflow-annotation"], "overwritten")
-	assert.Equal(t, pod.ObjectMeta.Labels["test-workflow-label"], "overwritten")
+	wf = unmarshalWF(wfWithPodMetadataAndTemplateMetadata)
+	woc = newWoc(*wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "fizz", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
+	assert.Equal(t, "buzz", pod.ObjectMeta.Labels["workflow-level-pod-label"])
+	assert.Equal(t, "hello", pod.ObjectMeta.Annotations["template-level-pod-annotation"])
+	assert.Equal(t, "world", pod.ObjectMeta.Labels["template-level-pod-label"])
 }

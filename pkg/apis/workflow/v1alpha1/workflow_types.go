@@ -351,6 +351,9 @@ type WorkflowSpec struct {
 
 	// RetryStrategy for all templates in the workflow.
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
+
+	// PodMetadata defines additional metadata that should be applied to workflow pods
+	PodMetadata Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.

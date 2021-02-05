@@ -615,11 +615,11 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 
 // addMetadata applies metadata specified in the template
 func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
-	// inherit workflow annotations and labels
-	for k, v := range woc.wf.ObjectMeta.Annotations {
+	// add workflow-level pod annotations and labels
+	for k, v := range woc.wf.Spec.PodMetadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}
-	for k, v := range woc.wf.ObjectMeta.Labels {
+	for k, v := range woc.wf.Spec.PodMetadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
 	}
 
