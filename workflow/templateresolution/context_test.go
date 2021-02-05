@@ -164,11 +164,6 @@ func TestGetTemplate(t *testing.T) {
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
-	// Get a non-concrete template.
-	tmplHolderTemplate := wfv1.Template{}
-	_, err = ctx.GetTemplate(&tmplHolderTemplate)
-	assert.EqualError(t, err, "template  is not a concrete template")
-
 	// Get the template of unexisting template name.
 	tmplHolder = wfv1.WorkflowStep{Template: "unexisting"}
 	_, err = ctx.GetTemplate(&tmplHolder)

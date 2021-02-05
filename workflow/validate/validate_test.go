@@ -70,28 +70,6 @@ func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 const invalidErr = "is invalid"
 
-const unknownField = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      unknown_field: ""
-`
-
-func TestUnknownField(t *testing.T) {
-	t.Skip("Cannot detect unknown fields yet")
-	_, err := validate(unknownField)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "invalid keys: unknown_field")
-	}
-}
-
 var dupTemplateNames = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1575,46 +1553,6 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	}
 }
 
-var localTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: local-template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    template: B
-  - name: B
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-`
-
-func TestLocalTemplateRef(t *testing.T) {
-	_, err := validate(localTemplateRef)
-	assert.NoError(t, err)
-}
-
-var undefinedLocalTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: undefined-local-template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    template: undef
-`
-
-func TestUndefinedLocalTemplateRef(t *testing.T) {
-	_, err := validate(undefinedLocalTemplateRef)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "not found")
-	}
-}
-
 var templateRefTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -1661,29 +1599,6 @@ spec:
 func TestWorkflowTemplate(t *testing.T) {
 	err := validateWorkflowTemplate(templateRefTarget)
 	assert.NoError(t, err)
-}
-
-func TestTemplateRef(t *testing.T) {
-	err := createWorkflowTemplate(templateRefTarget)
-	assert.NoError(t, err)
-
-	wfConditions, err := validate(templateRef)
-	assert.NoError(t, err)
-	assert.Empty(t, wfConditions)
-
-	// This tests for deprecated behavior (calling template.templateRef) and should be removed next major version.
-	wfConditions, err = validate(deprecatedTemplateRef)
-	assert.NoError(t, err)
-
-	// Ensure that a deprecated SpecWarning was issued
-	foundSpecWarning := false
-	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.ConditionTypeSpecWarning {
-			foundSpecWarning = true
-			break
-		}
-	}
-	assert.True(t, foundSpecWarning)
 }
 
 var templateRefNestedTarget = `
@@ -1740,40 +1655,6 @@ spec:
       template: A
 `
 
-var deprecatedNestedTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: deprecated-template-ref-nested-target
-      template: A
-`
-
-// This tests for deprecated behavior (calling template.templateRef) and should be removed next major version.
-func TestDeprecatedNestedTemplateRef(t *testing.T) {
-	err := createWorkflowTemplate(templateRefTarget)
-	assert.NoError(t, err)
-	err = createWorkflowTemplate(deprecatedTemplateRefNestedTarget)
-	assert.NoError(t, err)
-	wfConditions, err := validate(deprecatedNestedTemplateRef)
-	assert.NoError(t, err)
-
-	// Ensure that a deprecated SpecWarning was issued
-	foundSpecWarning := false
-	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.ConditionTypeSpecWarning {
-			foundSpecWarning = true
-			break
-		}
-	}
-	assert.True(t, foundSpecWarning)
-}
-
 var deprecatedTemplateRefNestedLocalTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -1788,38 +1669,6 @@ spec:
       image: alpine:latest
       command: [echo, hello]
 `
-
-var deprecatedNestedLocalTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: template-ref-nested-local-target
-      template: A
-`
-
-// This tests for deprecated behavior (calling template.template aka "localRef") and should be removed next major version.
-func TestNestedLocalTemplateRef(t *testing.T) {
-	err := createWorkflowTemplate(deprecatedTemplateRefNestedLocalTarget)
-	assert.NoError(t, err)
-	wfConditions, err := validate(deprecatedNestedLocalTemplateRef)
-	assert.NoError(t, err)
-
-	// Ensure that a deprecated SpecWarning was issued
-	foundSpecWarning := false
-	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.ConditionTypeSpecWarning {
-			foundSpecWarning = true
-			break
-		}
-	}
-	assert.True(t, foundSpecWarning)
-}
 
 var undefinedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
@@ -2040,49 +1889,6 @@ func TestAutomountServiceAccountTokenUse(t *testing.T) {
 		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
 		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
-	}
-}
-
-var templateResolutionWithPlaceholderWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-resolution-with-placeholder-
-spec:
-  entrypoint: template-resolution
-  arguments:
-    parameters:
-    - name: foo
-      value: /mnt/foo
-    - name: bar
-      value: /mnt/bar
-  volumes:
-  - name: workdir
-    emptyDir: {}
-  templates:
-  - name: template-resolution
-    template: multi-volume-mounts
-  - name: multi-volume-mounts
-    inputs:
-      parameters:
-      - name: foo
-      - name: bar
-    container:
-      image: debian:latest
-      volumeMounts:
-      - name: workdir
-        mountPath: "{{inputs.parameters.foo}}"
-      - name: workdir
-        mountPath: "{{inputs.parameters.bar}}"
-`
-
-// TestTemplateResolutionWithPlaceholderWorkflow verifies the placeholder use during a validation process.
-func TestTemplateResolutionWithPlaceholderWorkflow(t *testing.T) {
-	{
-		wf := unmarshalWf(templateResolutionWithPlaceholderWorkflow)
-		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
-		assert.NoError(t, err)
 	}
 }
 
