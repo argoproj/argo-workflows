@@ -43,7 +43,7 @@ type KubernetesClientInterface interface {
 
 // WaitForTermination of the given containerName, set the timeout to 0 to discard it
 func WaitForTermination(ctx context.Context, c KubernetesClientInterface, containerNames []string, timeout time.Duration) error {
-	ticker := time.NewTicker(time.Second * 3)
+	ticker := time.NewTicker(time.Second * 5)
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
 	if timeout == 0 {
@@ -53,29 +53,34 @@ func WaitForTermination(ctx context.Context, c KubernetesClientInterface, contai
 	} else {
 		defer timer.Stop()
 	}
-
 	log.Infof("Starting to wait completion of containers %s...", strings.Join(containerNames, ","))
 	for {
 		select {
 		case <-ticker.C:
-			_, containerStatus, err := c.GetContainerStatuses(ctx)
+			done, err := isTerminated(ctx, c, containerNames)
 			if err != nil {
 				return err
+			} else if done {
+				return nil
 			}
-			for _, s := range containerStatus {
-				if !slice.ContainsString(containerNames, s.Name) {
-					continue
-				}
-				if s.State.Terminated == nil {
-					break
-				}
-				log.Infof("Container is terminated: %v", s.String())
-			}
-			return nil
 		case <-timer.C:
 			return fmt.Errorf("timeout after %s", timeout.String())
 		}
 	}
+}
+
+func isTerminated(ctx context.Context, c KubernetesClientInterface, containerNames []string) (bool, error) {
+	_, containerStatus, err := c.GetContainerStatuses(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, s := range containerStatus {
+		log.Debugf("%q %v", s.Name, s.State.Terminated)
+		if s.State.Terminated == nil && slice.ContainsString(containerNames, s.Name) {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // TerminatePodWithContainerID invoke the given SIG against the PID1 of the container.
@@ -91,7 +96,7 @@ func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInter
 		}
 		if s.State.Terminated != nil {
 			log.Infof("Container %s is already terminated: %v", s.Name, s.State.Terminated.String())
-			return nil
+			continue
 		}
 		if pod.Spec.ShareProcessNamespace != nil && *pod.Spec.ShareProcessNamespace {
 			return fmt.Errorf("cannot terminate a process-namespace-shared Pod %s", pod.Name)
@@ -112,17 +117,17 @@ func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInter
 
 // KillGracefully kills a container gracefully.
 func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerNames []string) error {
-	log.Infof("SIGTERM container %s: %s", strings.Join(containerNames, ","), syscall.SIGTERM.String())
+	log.Infof("SIGTERM containers %s: %s", strings.Join(containerNames, ","), syscall.SIGTERM.String())
 	err := TerminatePodWithContainerNames(ctx, c, containerNames, syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
 	err = WaitForTermination(ctx, c, containerNames, time.Second*KillGracePeriod)
 	if err == nil {
-		log.Infof("Container %s successfully killed", strings.Join(containerNames, ","))
+		log.Infof("Containers %s successfully killed", strings.Join(containerNames, ","))
 		return nil
 	}
-	log.Infof("SIGKILL container %s: %s", strings.Join(containerNames, ","), syscall.SIGKILL.String())
+	log.Infof("SIGKILL containers %s: %s", strings.Join(containerNames, ","), syscall.SIGKILL.String())
 	err = TerminatePodWithContainerNames(ctx, c, containerNames, syscall.SIGKILL)
 	if err != nil {
 		return err
@@ -131,7 +136,7 @@ func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerN
 	if err != nil {
 		return err
 	}
-	log.Infof("Container %s successfully killed", strings.Join(containerNames, ","))
+	log.Infof("Containers %s successfully killed", strings.Join(containerNames, ","))
 	return nil
 }
 

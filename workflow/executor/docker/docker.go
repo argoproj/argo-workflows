@@ -183,16 +183,16 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 	return exitCode, nil
 }
 
-func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
-	err := d.syncContainerIDs(ctx, containerNames)
+func (d *DockerExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
+	err := d.syncContainerIDs(ctx, append(containerNames, sidecarNames...))
 	if err != nil {
 		return err
 	}
-	containerID, err := d.getContainerID(common.MainContainerName)
+	containerIDs, err := d.getContainerIDs(containerNames)
 	if err != nil {
 		return err
 	}
-	_, err = common.RunCommand("docker", "wait", containerID)
+	_, err = common.RunCommand("docker", append([]string{"wait"}, containerIDs...)...)
 	return err
 }
 
@@ -205,10 +205,9 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 			output, err := common.RunCommand(
 				"docker",
 				"ps",
-				"--all",    // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
-				"--latest", // only the latest containers
-				"--format={{.Label \"io.kubernetes.container.name\"}}={{.ID}}",
+				"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
 				"--no-trunc", // display long container IDs
+				"--format={{.Label \"io.kubernetes.container.name\"}}={{.ID}}",
 				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
 				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
 				"--filter=label=io.kubernetes.pod.name="+d.podName,
@@ -223,7 +222,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				}
 				containerName := parts[0]
 				containerID := parts[1]
-				if containerID != "" {
+				if d.containers[containerName] == "" && containerID != "" {
 					d.containers[containerName] = containerID
 					log.Infof("mapped container name %q to container ID %q", containerName, containerID)
 				}
@@ -232,7 +231,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				return nil
 			}
 		}
-		time.Sleep(1 * time.Second) // this is a hard loop because containers can run very short periods of time
+		time.Sleep(1 * time.Second) // this is a hard-loop because containers can run very short periods of time
 	}
 }
 
@@ -255,26 +254,20 @@ func (d *DockerExecutor) getContainerID(containerName string) (string, error) {
 // killContainers kills a list of containerNames first with a SIGTERM then with a SIGKILL after a grace period
 func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string) error {
 
-	var containerIDs []string
-	for _, n := range containerNames {
-		containerID, err := d.getContainerID(n)
-		if err == errContainerNotExist {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		containerIDs = append(containerIDs, containerID)
+	containerIDs, err := d.getContainerIDs(containerNames)
+	if err != nil {
+		return err
 	}
 
 	if len(containerIDs) == 0 { // they may have already terminated
+		log.Info("zero container IDs, assuming all containers have exited successfully")
 		return nil
 	}
 
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
 	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
-	_, err := common.RunCommand("docker", killArgs...)
+	_, err = common.RunCommand("docker", killArgs...)
 	if err != nil {
 		log.Warningf("Ignored error from 'docker kill --signal TERM': %s", err)
 	}
@@ -310,6 +303,21 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string) erro
 	}
 	log.Infof("Containers %s killed successfully", containerIDs)
 	return nil
+}
+
+func (d *DockerExecutor) getContainerIDs(containerNames []string) ([]string, error) {
+	var containerIDs []string
+	for _, n := range containerNames {
+		containerID, err := d.getContainerID(n)
+		if err == errContainerNotExist {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		containerIDs = append(containerIDs, containerID)
+	}
+	return containerIDs, nil
 }
 
 // getDockerCpCmd uses os-specific code to run `docker cp` and gzip/7zip to copy gzipped data from another

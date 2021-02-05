@@ -264,8 +264,7 @@ func (k *kubeletClient) getCommandOutput(containerName, command string) (*bytes.
 		return nil, errors.InternalWrapError(err)
 	}
 	if container.State.Terminated != nil {
-		err = fmt.Errorf("container %q is terminated: %v", containerName, container.State.Terminated.String())
-		return nil, err
+		return nil, fmt.Errorf("container %q is terminated: %v", containerName, container.State.Terminated.String())
 	}
 	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s", k.kubeletEndpoint, pod.Namespace, pod.Name, containerName, command))
 	if err != nil {

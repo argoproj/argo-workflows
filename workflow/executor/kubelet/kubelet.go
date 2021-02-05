@@ -53,7 +53,7 @@ func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string)
 }
 
 // Wait for the container to complete
-func (k *KubeletExecutor) Wait(ctx context.Context, containerNames []string) error {
+func (k *KubeletExecutor) Wait(ctx context.Context, containerNames, sidecars []string) error {
 	return k.cli.WaitForTermination(ctx, containerNames, 0)
 }
 

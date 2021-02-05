@@ -6,7 +6,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 )
 
 const (
@@ -14,7 +13,7 @@ const (
 	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
 
 	// Container names used in the workflow pod
-	MainContainerName = wfv1.MainContainerName
+	MainContainerName = "main"
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 

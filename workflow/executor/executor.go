@@ -95,7 +95,8 @@ type ContainerRuntimeExecutor interface {
 	GetExitCode(ctx context.Context, containerName string) (string, error)
 
 	// Wait waits for the container to complete.
-	Wait(ctx context.Context, containerNames []string) error
+	// The implementation should not wait for the sidecars. These are included in case you need to capture data on them.
+	Wait(ctx context.Context, containerNames, sidecarNames []string) error
 
 	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(ctx context.Context, containerNames []string) error
@@ -914,7 +915,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx, containerNames)
+		err := we.RuntimeExecutor.Wait(ctx, containerNames, we.Template.GetSidecarNames())
 		return err == nil, err
 	})
 	if err != nil {

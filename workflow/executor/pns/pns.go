@@ -15,6 +15,7 @@ import (
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/v3/errors"
@@ -60,10 +61,10 @@ func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string) 
 		K8sAPIExecutor: delegate,
 		podName:        podName,
 		namespace:      namespace,
-		thisPID:        thisPID,
+		containers:     make(map[string]string),
 		ctrIDToPid:     make(map[string]int),
-		containers:     make(map[string]string), // containerName -> containerID
 		pidFileHandles: make(map[int]*os.File),
+		thisPID:        thisPID,
 	}, nil
 }
 
@@ -134,9 +135,10 @@ func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath
 	return err
 }
 
-func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
+func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
 
-	go p.pollRootProcesses(containerNames)
+	allContainerNames := append(containerNames, sidecarNames...)
+	go p.pollRootProcesses(ctx, allContainerNames)
 
 	// Secure a filehandle on our own root. This is because we will chroot back and forth from
 	// the main container's filesystem, to our own.
@@ -146,7 +148,7 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 	}
 	p.rootFS = rootFS
 
-	if !p.haveContainers(containerNames) { // allow some additional time for polling to get this data
+	if !p.haveContainers(allContainerNames) { // allow some additional time for polling to get this data
 		time.Sleep(3 * time.Second)
 	}
 
@@ -158,36 +160,37 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 				p.containers[c.Name] = containerID
 				log.Infof("mapped container name %q to container ID %q", c.Name, containerID)
 			}
-			return p.haveContainers(containerNames)
+			return p.haveContainers(allContainerNames)
 		})
 		if err != nil {
 			return err
 		}
 	}
 
-	mainPID, err := p.getContainerPID(common.MainContainerName)
-	if err != nil {
-		return err
-	}
-
-	// wait for pid to complete
-	log.Infof("Waiting for main pid %d to complete", mainPID)
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			p, err := gops.FindProcess(mainPID)
-			if err != nil {
-				return fmt.Errorf("failed to find main process: %w", err)
+	for _, containerName := range containerNames {
+		pid, err := p.getContainerPID(containerName)
+		if err != nil {
+			return err
+		}
+		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				p, err := gops.FindProcess(pid)
+				if err != nil {
+					return fmt.Errorf("failed to find %q process: %w", containerName, err)
+				}
+				if p == nil {
+					log.Infof("%q pid %d completed", containerName, pid)
+					return nil
+				}
+				time.Sleep(3 * time.Second)
 			}
-			if p == nil {
-				log.Infof("Main pid %d completed", mainPID)
-				return nil
-			}
-			time.Sleep(3 * time.Second)
 		}
 	}
+	return nil
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the
@@ -195,21 +198,22 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 // It opens file handles on all root pids because at this point, we do not yet know which pid is the
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
-func (p *PNSExecutor) pollRootProcesses(containerNames []string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	for {
+func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
+	_ = wait.ExponentialBackoff(wait.Backoff{ // takes 51s
+		Duration: 50 * time.Millisecond,
+		Factor:   2,
+		Steps:    11,
+	}, func() (done bool, err error) {
 		select {
 		case <-ctx.Done():
-			return
+			return true, ctx.Err()
 		default:
-			_ = p.secureRootFiles()
-			if p.haveContainers(containerNames) {
-				return
+			if err := p.secureRootFiles(); err != nil {
+				log.WithError(err).Warn("failed to secure root files")
 			}
-			time.Sleep(50 * time.Millisecond)
+			return p.haveContainers(containerNames), nil
 		}
-	}
+	})
 }
 
 func (d *PNSExecutor) haveContainers(containerNames []string) bool {
@@ -305,7 +309,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 		return err
 	}
 	for _, proc := range processes {
-		_ = func() error {
+		err = func() error {
 			pid := proc.Pid()
 			if pid == 1 || pid == p.thisPID || proc.PPid() != 0 {
 				// ignore the pause container, our own pid, and non-root processes
@@ -329,15 +333,18 @@ func (p *PNSExecutor) secureRootFiles() error {
 				return err
 			}
 			p.ctrIDToPid[containerID] = pid
-			log.Infof("mapped pid %q to container ID %q", pid, containerID)
+			log.Infof("mapped pid %d to container ID %q", pid, containerID)
 			containerName, err := containerNameForPID(pid)
 			if err != nil {
 				return err
 			}
 			p.containers[containerName] = containerID
-			log.Infof("mapped container name %q to container ID %q", containerName, containerID)
+			log.Infof("mapped container name %q to container ID %q and pid %d", containerName, containerID, pid)
 			return nil
 		}()
+		if err != nil {
+			log.WithError(err).Warnf("failed to secure root file handle for %d", proc.Pid())
+		}
 	}
 	return nil
 }

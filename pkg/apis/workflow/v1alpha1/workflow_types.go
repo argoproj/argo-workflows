@@ -663,12 +663,6 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
 }
 
-const MainContainerName = "main" // must specific here, not in common, to prevent package cycle
-
-func (tmpl *Template) GetContainerNames() []string {
-	return append(tmpl.GetSidecarNames(), MainContainerName)
-}
-
 func (tmpl *Template) GetSidecarNames() []string {
 	var containerNames []string
 	for _, s := range tmpl.Sidecars {

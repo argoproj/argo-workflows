@@ -58,14 +58,14 @@ func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) 
 }
 
 // Wait for the container to complete
-func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames []string) error {
+func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
 		for _, s := range pod.Status.ContainerStatuses {
-			if s.State.Terminated != nil && slice.ContainsString(containerNames, s.Name) {
-				return true
+			if s.State.Terminated == nil && slice.ContainsString(containerNames, s.Name) {
+				return false
 			}
 		}
-		return false
+		return true
 	})
 }
 
