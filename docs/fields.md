@@ -186,6 +186,8 @@ Workflow is the definition of a workflow resource
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
+
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
@@ -524,6 +526,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -882,6 +886,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
+
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
@@ -1197,6 +1203,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
+
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
@@ -1449,6 +1457,8 @@ Arguments to a template
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -1808,6 +1818,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -2344,6 +2356,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
+
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
@@ -2732,6 +2746,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
+
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
@@ -2976,6 +2992,8 @@ Pod metdata
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -3285,6 +3303,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -3793,6 +3813,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
+
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
@@ -4274,6 +4296,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -4805,6 +4829,8 @@ A single application container that you want to run within a pod.
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
@@ -5460,6 +5486,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
