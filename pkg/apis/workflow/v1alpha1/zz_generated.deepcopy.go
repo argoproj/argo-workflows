@@ -2535,6 +2535,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(RetryStrategy)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.PodMetadata != nil {
+		in, out := &in.PodMetadata, &out.PodMetadata
+		*out = new(Metadata)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
