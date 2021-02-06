@@ -1,6 +1,7 @@
 package hydrator
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -101,12 +102,17 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 	}
 	if packer.IsTooLargeError(err) || alwaysOffloadNodeStatus {
 		var offloadVersion string
-		err := waitutil.Backoff(writeRetry, func() (bool, error) {
-			offloadVersion, err = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
-			return !errorsutil.IsTransientErr(err), err
-		})
+		var errMsg string
 		if err != nil {
-			return err
+			errMsg += err.Error()
+		}
+		offloadErr := waitutil.Backoff(writeRetry, func() (bool, error) {
+			var offloadErr error
+			offloadVersion, offloadErr = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+			return !errorsutil.IsTransientErr(offloadErr), offloadErr
+		})
+		if offloadErr != nil {
+			return fmt.Errorf("%sTried to offload but encountered error: %s", errMsg, offloadErr.Error())
 		}
 		wf.Status.Nodes = nil
 		wf.Status.CompressedNodes = ""
