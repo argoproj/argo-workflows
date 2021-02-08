@@ -4114,6 +4114,8 @@ spec:
                     parallelism:
                       format: int64
                       type: integer
+                    plugin:
+                      type: object
                     podSpecPatch:
                       type: string
                     priority:
@@ -11907,6 +11909,8 @@ spec:
                     parallelism:
                       format: int64
                       type: integer
+                    plugin:
+                      type: object
                     podSpecPatch:
                       type: string
                     priority:
@@ -17941,6 +17945,8 @@ spec:
                         parallelism:
                           format: int64
                           type: integer
+                        plugin:
+                          type: object
                         podSpecPatch:
                           type: string
                         priority:

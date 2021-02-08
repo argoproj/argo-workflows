@@ -7,5 +7,8 @@ spec:
   template:
     spec:
       containers:
+        - name: jsonrpc-plugin
+          image: argoproj/jsonrpc-plugin:latest
+          imagePullPolicy: Never
         - name: workflow-controller
           imagePullPolicy: Never

@@ -4,6 +4,8 @@ set -eux -o pipefail
 file=$1
 url=$2
 
+echo "$url -> $file"
+
 # loop forever
 while ! curl -L -o "$file" -- "$url" ;do
   echo "sleeping before trying again"

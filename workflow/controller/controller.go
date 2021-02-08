@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
@@ -39,6 +42,8 @@ import (
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	pluginpkg "github.com/argoproj/argo/v3/pkg/plugin"
+	"github.com/argoproj/argo/v3/plugins"
 	authutil "github.com/argoproj/argo/v3/util/auth"
 	"github.com/argoproj/argo/v3/util/diff"
 	errorsutil "github.com/argoproj/argo/v3/util/errors"
@@ -146,6 +151,35 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.podQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
+	if err = plugins.Load(); err != nil {
+		return nil, fmt.Errorf("failed to load plugin: %w", err)
+	}
+
+	for path, p := range plugins.Plugins {
+		name := strings.TrimSuffix(filepath.Base(path), ".so")
+		symbol, err := p.Lookup("Init")
+		if err != nil {
+			log.WithError(err).Infof("plugin %q not Init", name)
+			continue
+		}
+		if f, ok := symbol.(pluginpkg.InitFunc); ok {
+			log.Infof("initializing %q", name)
+			resp := &pluginpkg.InitResp{}
+			if err := f(pluginpkg.InitReq{
+				Name: name,
+			}, resp); err != nil {
+				return nil, fmt.Errorf("failed to init plugin: %w", err)
+			}
+			log.Infof("initialized %q; supports %q template(s)", name, resp.Templates)
+			for _, x := range resp.Templates {
+				templatePlugins[x] = name
+			}
+		} else {
+			return nil, fmt.Errorf("plugin %q Init is not InitFunc: %s", name, reflect.TypeOf(symbol).String())
+		}
+	}
+	log.Infof("loaded %d plugins", len(plugins.Plugins))
+
 	return &wfc, nil
 }
 
@@ -194,6 +228,22 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
+	for path, p := range plugins.Plugins {
+		symbol, err := p.Lookup("Run")
+		if err != nil {
+			log.WithError(err).Infof("plugin %q not Run", path)
+			continue
+		}
+		if f, ok := symbol.(pluginpkg.RunFunc); ok {
+			log.Infof("running %q", path)
+			go f(pluginpkg.RunReq{
+				Notify: func(namespace, workflowName string) { wfc.wfQueue.AddRateLimited(namespace + "/" + workflowName) },
+				Done:   ctx.Done(),
+			})
+		} else {
+			log.Fatalf("plugin %q Run is not RunFunc", reflect.TypeOf(symbol).String())
+		}
+	}
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())

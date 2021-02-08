@@ -1922,6 +1922,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
+|`plugin`|[`PluginTemplate`](#plugintemplate)|_No description available_|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
@@ -3081,6 +3082,10 @@ Pod metdata
 |:----------:|:----------:|---------------|
 |`annotations`|`Map< string , string >`|_No description available_|
 |`labels`|`Map< string , string >`|_No description available_|
+
+## PluginTemplate
+
+_No description available_
 
 ## ResourceTemplate
 

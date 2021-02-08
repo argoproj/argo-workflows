@@ -6,6 +6,7 @@ on:
       - v*
     branches:
       - master
+      - http-t
 
 defaults:
   run:

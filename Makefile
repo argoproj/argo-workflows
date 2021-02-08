@@ -5,9 +5,6 @@ export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-OUTPUT_IMAGE_OS ?= linux
-OUTPUT_IMAGE_ARCH ?= amd64
-
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
@@ -16,39 +13,20 @@ GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] && echo false || echo true)
 
-export DOCKER_BUILDKIT = 1
-
-# Use a different Dockerfile, e.g. for building for Windows or dev images.
-DOCKERFILE            := Dockerfile
-
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
 VERSION               := latest
-DEV_IMAGE             := true
 DOCKER_PUSH           := false
 
 # VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
-DEV_IMAGE             := false
 endif
 
-# If we are building dev images, then we want to use the Docker cache for speed.
-ifeq ($(DEV_IMAGE),true)
-DOCKERFILE            := Dockerfile.dev
-endif
-
-# version change, so does the file location
-CLI_IMAGE_FILE         := dist/cli-image.marker
-EXECUTOR_IMAGE_FILE    := dist/executor-image.marker
-CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
-
-# perform static compilation
-STATIC_BUILD          ?= true
 # should we build the static files?
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
@@ -89,10 +67,6 @@ override LDFLAGS += \
   -X github.com/argoproj/argo/v3.gitCommit=${GIT_COMMIT} \
   -X github.com/argoproj/argo/v3.gitTreeState=${GIT_TREE_STATE}
 
-ifeq ($(STATIC_BUILD), true)
-override LDFLAGS += -extldflags "-static"
-endif
-
 ifneq ($(GIT_TAG),)
 override LDFLAGS += -X github.com/argoproj/argo/v3.gitTag=${GIT_TAG}
 endif
@@ -120,14 +94,14 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	[ -e vendor ] || go mod vendor
+	go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
 
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    [ -e vendor ] || go mod vendor
+    go mod vendor
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -142,15 +116,12 @@ define protoc
      perl -i -pe 's|argoproj/argo/|argoproj/argo/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
-# docker_build,image_name,binary_name,marker_file_name
+# docker_build,image_name
 define docker_build
-	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
-	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
-	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
+	docker buildx build -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) --progress plain .
+	docker run --rm -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
-	touch $(3)
 endef
 define docker_pull
 	docker pull $(1)
@@ -206,7 +177,7 @@ dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
 dist/argo-%: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS} --extldflags -static' -o $@ ./cmd/argo
 
 argo-server.crt: argo-server.key
 
@@ -214,52 +185,37 @@ argo-server.key:
 	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
 
 .PHONY: cli-image
-cli-image: $(CLI_IMAGE_FILE)
-
-$(CLI_IMAGE_FILE): $(CLI_PKGS) argo-server.crt argo-server.key
-	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
+cli-image: $(CLI_PKGS) argo-server.crt argo-server.key
+	$(call docker_build,argocli)
 
 .PHONY: clis
 clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-windows-amd64.gz
 
+# plugins
+
+%.so: $(shell find plugins -type f)
+	go build -v -i -tags plugin -buildmode=plugin -o $@ ./plugins/$*
+
+# controller
 .PHONY: controller
 controller: dist/workflow-controller
-
-dist/workflow-controller: GOARGS = GOOS= GOARCH=
-dist/workflow-controller-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
-dist/workflow-controller-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
-dist/workflow-controller-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
-dist/workflow-controller-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/workflow-controller: $(CONTROLLER_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
-dist/workflow-controller-%: $(CONTROLLER_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
-
 .PHONY: controller-image
-controller-image: $(CONTROLLER_IMAGE_FILE)
-
-$(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
-	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
+controller-image: $(CONTROLLER_PKGS)
+	$(call docker_build,workflow-controller)
 
 # argoexec
 
-dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
-dist/argoexec-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
-dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
-dist/argoexec-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
-dist/argoexec-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
-
-dist/argoexec-%: $(ARGOEXEC_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
+dist/argoexec: $(ARGOEXEC_PKGS)
+	$(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
 
 .PHONY: executor-image
-executor-image: $(EXECUTOR_IMAGE_FILE)
-
-$(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
+executor-image: $(ARGOEXEC_PKGS)
 	# Create executor image
-	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
+	$(call docker_build,argoexec)
 
 # generation
 
@@ -325,7 +281,7 @@ $(GOPATH)/bin/goimports:
 	$(call go_install,golang.org/x/tools/cmd/goimports)
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	[ -e vendor ] || go mod vendor
+	go mod vendor
 	[ -e v3 ] || ln -s . v3
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
@@ -409,6 +365,7 @@ test: server/static/files.go
 
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
+	cd test/e2e/images/jsonrpc-plugin && $(MAKE)
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -419,7 +376,7 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
 ifeq ($(RUN_MODE),kubernetes)
 	# scale to 2 replicas so we touch upon leader election
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
 
@@ -479,6 +436,13 @@ endif
 ifeq ($(RUN_MODE),local)
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
+
+$(GOPATH)/bin/stern:
+	./hack/recurl.sh $(GOPATH)/bin/stern https://github.com/wercker/stern/releases/download/1.11.0/stern_`uname -s|tr '[:upper:]' '[:lower:]'`_amd64
+
+.PHONY: logs
+logs: $(GOPATH)/bin/stern
+	stern . --tail 3
 
 .PHONY: wait
 wait:
