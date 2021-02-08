@@ -218,7 +218,7 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 
 func (d *PNSExecutor) haveContainers(containerNames []string) bool {
 	for _, n := range containerNames {
-		if d.containers[n] == "" {
+		if d.ctrIDToPid[d.containers[n]] == 0 { 
 			return false
 		}
 	}
