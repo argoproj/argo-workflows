@@ -685,7 +685,7 @@ func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Contex
 	if err != nil {
 		return time.Duration(0), err
 	}
-	terminationGracePeriodDuration := time.Duration(*pod.Spec.TerminationGracePeriodSeconds)
+	terminationGracePeriodDuration := time.Second * time.Duration(*pod.Spec.TerminationGracePeriodSeconds))
 	return terminationGracePeriodDuration, nil
 }
 
