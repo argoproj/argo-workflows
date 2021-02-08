@@ -99,7 +99,7 @@ type ContainerRuntimeExecutor interface {
 	Wait(ctx context.Context, containerNames, sidecarNames []string) error
 
 	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
-	Kill(ctx context.Context, containerNames []string) error
+	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -658,6 +658,16 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 	return val, nil
 }
 
+// GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
+func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Context) (time.Duration, error) {
+	pod, err := we.getPod(ctx)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	terminationGracePeriodDuration := time.Duration(*pod.Spec.TerminationGracePeriodSeconds)
+	return terminationGracePeriodDuration, nil
+}
+
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
@@ -1052,7 +1062,8 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 					log.Info(message)
 					_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, message)
 					log.Infof("Killing main container")
-					err := we.RuntimeExecutor.Kill(ctx, containerNames)
+					terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
+					err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration)
 					if err != nil {
 						log.Warnf("Failed to kill main container: %v", err)
 					}
@@ -1068,7 +1079,8 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 	sidecarNames := we.Template.GetSidecarNames()
 	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
-	return we.RuntimeExecutor.Kill(ctx, sidecarNames)
+	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
+	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }
 
 // LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file

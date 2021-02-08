@@ -106,8 +106,8 @@ func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.Containe
 	return err
 }
 
-func (c *k8sAPIClient) killGracefully(ctx context.Context, containerNames []string) error {
-	return execcommon.KillGracefully(ctx, c, containerNames)
+func (c *k8sAPIClient) killGracefully(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
+	return execcommon.KillGracefully(ctx, c, containerNames, terminationGracePeriodDuration)
 }
 
 func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) error {

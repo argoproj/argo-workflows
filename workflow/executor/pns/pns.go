@@ -226,13 +226,13 @@ func (d *PNSExecutor) haveContainers(containerNames []string) bool {
 }
 
 // Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
-func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string) error {
+func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	var asyncErr error
 	wg := sync.WaitGroup{}
 	for _, containerName := range containerNames {
 		wg.Add(1)
 		go func(containerName string) {
-			err := p.killContainer(ctx, containerName)
+			err := p.killContainer(ctx, containerName, terminationGracePeriodDuration)
 			if err != nil && asyncErr != nil {
 				asyncErr = err
 			}
@@ -243,7 +243,7 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string) error {
 	return asyncErr
 }
 
-func (p *PNSExecutor) killContainer(ctx context.Context, containerName string) error {
+func (p *PNSExecutor) killContainer(ctx context.Context, containerName string, terminationGracePeriodDuration time.Duration) error {
 	pid, err := p.getContainerPID(containerName)
 	if err != nil {
 		log.Warnf("Ignoring kill container failure of %q: %v. Process assumed to have completed", containerName, err)
@@ -257,8 +257,7 @@ func (p *PNSExecutor) killContainer(ctx context.Context, containerName string) e
 	if err != nil {
 		log.Warnf("Failed to SIGTERM pid %d: %v", pid, err)
 	}
-
-	waitPIDOpts := executil.WaitPIDOpts{Timeout: execcommon.KillGracePeriod * time.Second}
+	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration * time.Second}
 	err = executil.WaitPID(pid, waitPIDOpts)
 	if err == nil {
 		log.Infof("PID %d completed", pid)

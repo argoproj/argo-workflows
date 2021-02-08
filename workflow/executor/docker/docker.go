@@ -21,7 +21,6 @@ import (
 	"github.com/argoproj/argo/v3/util"
 	"github.com/argoproj/argo/v3/util/file"
 	"github.com/argoproj/argo/v3/workflow/common"
-	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
 )
 
 var errContainerNotExist = fmt.Errorf("container does not exist") // sentinel error
@@ -252,7 +251,7 @@ func (d *DockerExecutor) getContainerID(containerName string) (string, error) {
 }
 
 // killContainers kills a list of containerNames first with a SIGTERM then with a SIGKILL after a grace period
-func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string) error {
+func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 
 	containerIDs, err := d.getContainerIDs(containerNames)
 	if err != nil {
@@ -278,7 +277,7 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string) erro
 		return errors.InternalWrapError(err)
 	}
 	// waitCh needs buffer of 1 so it can always send the result of waitCmd.Wait() without blocking.
-	// Otherwise, if the KillGracePeriod elapses and the forced kill branch is run, there would
+	// Otherwise, if the terminationGracePeriodSeconds elapses and the forced kill branch is run, there would
 	// be no receiver for waitCh and the goroutine would block forever
 	waitCh := make(chan error, 1)
 	go func() {
@@ -288,8 +287,8 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string) erro
 	select {
 	case err = <-waitCh:
 		// waitCmd completed
-	case <-time.After(execcommon.KillGracePeriod * time.Second):
-		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", execcommon.KillGracePeriod)
+	case <-time.After(terminationGracePeriodDuration):
+		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -58,6 +59,6 @@ func (k *KubeletExecutor) Wait(ctx context.Context, containerNames, sidecars []s
 }
 
 // Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period
-func (k *KubeletExecutor) Kill(ctx context.Context, containerNames []string) error {
-	return k.cli.KillGracefully(ctx, containerNames)
+func (k *KubeletExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
+	return k.cli.KillGracefully(ctx, containerNames, terminationGracePeriodDuration)
 }

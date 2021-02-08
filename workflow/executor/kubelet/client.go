@@ -292,8 +292,8 @@ func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.Contain
 	return err
 }
 
-func (k *kubeletClient) KillGracefully(ctx context.Context, containerNames []string) error {
-	return execcommon.KillGracefully(ctx, k, containerNames)
+func (k *kubeletClient) KillGracefully(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
+	return execcommon.KillGracefully(ctx, k, containerNames, terminationGracePeriodDuration)
 }
 
 func (k *kubeletClient) CopyArchive(ctx context.Context, containerName, sourcePath, destPath string) error {

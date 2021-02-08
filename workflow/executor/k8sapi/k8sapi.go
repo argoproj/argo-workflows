@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -74,7 +75,7 @@ func (k *K8sAPIExecutor) Until(ctx context.Context, f func(pod *corev1.Pod) bool
 }
 
 // Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period
-func (k *K8sAPIExecutor) Kill(ctx context.Context, containerNames []string) error {
+func (k *K8sAPIExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	log.Infof("Killing containers %v", containerNames)
-	return k.client.killGracefully(ctx, containerNames)
+	return k.client.killGracefully(ctx, containerNames, terminationGracePeriodDuration)
 }
