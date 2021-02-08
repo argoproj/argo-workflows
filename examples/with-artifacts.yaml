@@ -22,7 +22,14 @@ spec:
   - name: generate-artifacts
     data:
       withArtifactPaths:
+
+#        filter:
+#          directory:
+#            regex: ".+?\\.py"
+
         aggregator: "Extension"
+        # Size also available in at least S3, will have to see about other execs
+
         s3:
           bucket: test
           endpoint: minio:9000
