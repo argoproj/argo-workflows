@@ -10,7 +10,7 @@ dist
 docs
 examples
 manifests
-test
+test/e2e
 ui/node_modules
 vendor
 Dockerfile
