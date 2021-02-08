@@ -20,9 +20,11 @@ spec:
   entrypoint: entry
   templates:
   - name: entry
-    templateRef:
-      name: test-template-scope-1
-      template: steps
+    steps:
+      - - name: step
+          templateRef:
+            name: test-template-scope-1
+            template: steps
 `
 
 var testTemplateScopeWorkflowTemplateYaml1 = `
@@ -89,31 +91,31 @@ func TestTemplateScope(t *testing.T) {
 		assert.Equal(t, "local/test-template-scope", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].step[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-1", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].hello")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].step[0].hello")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0].hello") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-1", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].step[0].other-wftmpl")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-1", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0]")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].step[0].other-wftmpl[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-2", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0].hello")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].step[0].other-wftmpl[0].hello")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0].hello") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-2", node.TemplateScope)
@@ -130,9 +132,11 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      templateRef:
-        name: test-template-scope-with-param-1
-        template: main
+      steps:
+        - - name: step
+            templateRef:
+              name: test-template-scope-with-param-1
+              template: main
 `
 
 var testTemplateScopeWithParamWorkflowTemplateYaml1 = `
@@ -183,25 +187,25 @@ func TestTemplateScopeWithParam(t *testing.T) {
 		assert.Equal(t, "local/test-template-scope-with-param", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0]")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].step[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(0:x)")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].step[0].print-string(0:x)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(0:x)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(1:y)")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].step[0].print-string(1:y)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(1:y)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(2:z)")
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].step[0].print-string(2:z)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(2:z)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
 		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
@@ -218,9 +222,11 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      templateRef:
-        name: test-template-scope-nested-steps-with-params-1
-        template: main
+      steps:
+        - - name: step
+            templateRef:
+              name: test-template-scope-nested-steps-with-params-1
+              template: main
 `
 
 var testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1 = `
@@ -322,9 +328,11 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      templateRef:
-        name: test-template-scope-dag-1
-        template: main
+      steps:
+        - - name: step
+            templateRef:
+              name: test-template-scope-dag-1
+              template: main
 `
 
 var testTemplateScopeDAGWorkflowTemplateYaml1 = `
@@ -432,10 +440,12 @@ spec:
   entrypoint: entry
   templates:
   - name: entry
-    templateRef:
-      name: test-template-scope-1
-      template: steps
-      clusterScope: true
+    steps:
+      - - name: step
+          templateRef:
+            name: test-template-scope-1
+            template: steps
+            clusterScope: true
 `
 
 var testTemplateClusterScopeWorkflowTemplateYaml1 = `
