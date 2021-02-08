@@ -359,7 +359,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 
 			err = hydrator.Hydrate(wf)
 			if err != nil {
-				return false, err
+				return true, err
 			}
 
 			workflowUpdated := false
