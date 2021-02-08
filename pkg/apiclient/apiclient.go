@@ -55,7 +55,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
 	if opts.ArgoServerOpts.HTTP1 {
-		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier())
+		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify)
 	} else if opts.ArgoServerOpts.URL != "" {
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
