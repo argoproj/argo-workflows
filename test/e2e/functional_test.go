@@ -826,6 +826,39 @@ func (s *FunctionalSuite) TestK8SJSONPatch() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: basic
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - ":) Hello Argo!"
+      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}]}'
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			assert.Equal(t, *p.Spec.TerminationGracePeriodSeconds, int64(5))
+			for _, c := range p.Spec.Containers {
+				if c.Name == "main" {
+					assert.Equal(t, c.Resources.Limits.Cpu().String(), "100m")
+				}
+			}
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
