@@ -160,7 +160,7 @@ var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
 		return node.Phase == wfv1.NodeRunning
 	})
 }
-var ToBeSucceeded Condition = func(wf *wfv1.Workflow) bool { return wf.Status.Phase == wfv1.WorkflowSucceeded }
+var ToBeSucceeded Condition = func(wf *wfv1.Workflow) bool { return wf.Status.Phase == wfv1.NodeSucceeded }
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
 // This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this

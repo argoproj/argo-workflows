@@ -1,13 +1,12 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
@@ -28,6 +27,6 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 
 	assert.NotNil(t, woc.wf.Status.Nodes["a"].Daemoned)
 	// Error will be that it cannot find the pod, but we only care about the node status for this test
-	_ = woc.killDaemonedChildren(context.Background(), "a")
+	_ = woc.killDaemonedChildren("a")
 	assert.Nil(t, woc.wf.Status.Nodes["a"].Daemoned)
 }
