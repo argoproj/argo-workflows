@@ -14,14 +14,14 @@ spec:
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: argoproj/workflow-controller:v2.12.7
+          image: argoproj/workflow-controller:v2.12.8
           command:
             - workflow-controller
           args:
             - --configmap
             - workflow-controller-configmap
             - --executor-image
-            - argoproj/argoexec:v2.12.7
+            - argoproj/argoexec:v2.12.8
           ports:
             - name: metrics
               containerPort: 9090
