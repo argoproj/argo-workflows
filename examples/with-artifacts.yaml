@@ -11,6 +11,8 @@ spec:
     steps:
     - - name: generate-artifact
         template: generate-artifacts
+      - name: generate-artifact
+        template: generate-artifacts
     - - name: consume-artifact
         template: print-message
         withParam: "{{steps.generate-artifact.outputs.result}}"
@@ -21,25 +23,32 @@ spec:
 
   - name: generate-artifacts
     data:
-      withArtifactPaths:
-
-#        filter:
-#          directory:
-#            regex: ".+?\\.py"
-
-        aggregator: "Extension"
-        # Size also available in at least S3, will have to see about other execs
-
-        s3:
-          bucket: test
-          endpoint: minio:9000
-          insecure: true
-          accessKeySecret:
-            name: my-minio-cred
-            key: accesskey
-          secretKeySecret:
-            name: my-minio-cred
-            key: secretkey
+      - name: input
+        withArtifactPaths:
+          s3:
+            bucket: test
+            endpoint: minio:9000
+            insecure: true
+            accessKeySecret:
+              name: my-minio-cred
+              key: accesskey
+            secretKeySecret:
+              name: my-minio-cred
+              key: secretkey
+      - name: filter
+        filter:
+          directory:
+            #recursive: false
+            regex: ".+?\\.py"
+      - name: filter-2
+        filter:
+          directory:
+            #recursive: false
+            regex: ".+?\\.go"
+      - name: aggregate
+        aggregator:
+          batch:
+            size: 10
 
   - name: whalesay
     container:
