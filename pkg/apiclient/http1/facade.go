@@ -3,6 +3,7 @@ package http1
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,12 +21,13 @@ import (
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
 // Errors are extracted from message body and returned as GRPC status errors.
 type Facade struct {
-	baseUrl       string
-	authorization string
+	baseUrl            string
+	authorization      string
+	insecureSkipVerify bool
 }
 
-func NewFacade(baseUrl, authorization string) Facade {
-	return Facade{baseUrl, authorization}
+func NewFacade(baseUrl, authorization string, insecureSkipVerify bool) Facade {
+	return Facade{baseUrl, authorization, insecureSkipVerify}
 }
 
 func (h Facade) Get(in, out interface{}, path string) error {
@@ -87,7 +89,14 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	}
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: h.insecureSkipVerify,
+			},
+		},
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
