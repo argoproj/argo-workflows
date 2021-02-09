@@ -492,21 +492,21 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-cli
-test-cli: test-images
+test-cli:
 	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
-test-e2e-cron: test-images
+test-e2e-cron:
 	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: test-executor
-test-executor: test-images
+test-executor:
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
 .PHONY: test-functional
-test-functional: test-images
+test-functional:
 	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
 
 # clean
