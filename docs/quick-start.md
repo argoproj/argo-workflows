@@ -30,7 +30,7 @@ This will serve the user interface on http://localhost:2746
 
 If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then [follow these instructions](argo-server.md#access-the-argo-workflows-ui). 
 
-Next, Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo/releases).
+Next, Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo-workflows/releases).
 
 Finally, submit an example workflow:  
 

@@ -41,7 +41,7 @@ docker run argoproj/argocli:v2.11.5 version
 
 ### Release Notes
 
-Create [the release](https://github.com/argoproj/argo/releases) in Github. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
+Create [the release](https://github.com/argoproj/argo-workflows/releases) in Github. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
 
     ght relnote v2.7.3..v2.11.4
 

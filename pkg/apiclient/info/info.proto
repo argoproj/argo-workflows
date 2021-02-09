@@ -1,8 +1,8 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo/pkg/apiclient/info";
+option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/info";
 
 import "google/api/annotations.proto";
-import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
+import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
 
 package info;
 
