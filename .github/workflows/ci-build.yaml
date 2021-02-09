@@ -89,7 +89,7 @@ jobs:
       - name: Start logging
         run: |
           mkdir -p /tmp/log/argo-e2e
-          make logs > /tmp/log/argo-e2e/pods.log &
+          make logs > /tmp/log/argo-e2e/pod.log &
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
