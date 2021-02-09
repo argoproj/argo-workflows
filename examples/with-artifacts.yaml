@@ -33,19 +33,20 @@ spec:
             secretKeySecret:
               name: my-minio-cred
               key: secretkey
-#      - name: filter
-#        filter:
-#          directory:
-#            #recursive: false
-#            regex: ".+?\\.py"
-#      - name: filter-2
-#        filter:
-#          directory:
-#            #recursive: false
-#            regex: ".+?\\.go"
-      - name: aggregate
+      #- name: filter-extension
+      #  filter:
+      #    directory:
+      #      regex: ".+?\\.pdf"
+      #- name: filter-content
+      #  filter:
+      #    directory:
+      #      regex: "lunch"
+      #- name: aggregate-batch
+      #  aggregator:
+      #    batch: 2
+      - name: aggregate-extension
         aggregator:
-          batch: 2
+          regex: ".+?\\.(.+?)$"
 
   - name: whalesay
     container:
