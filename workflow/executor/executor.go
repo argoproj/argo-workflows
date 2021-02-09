@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/utils/pointer"
 	"os"
 	"os/signal"
 	"path"
@@ -20,6 +19,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"k8s.io/utils/pointer"
 
 	common2 "github.com/argoproj/argo/v3/workflow/artifacts/common"
 
@@ -286,10 +287,6 @@ func (we *WorkflowExecutor) processDataArtifacts(ctx context.Context, artifacts 
 	}
 
 	return files, nil
-
-	//
-
-
 }
 
 func (we *WorkflowExecutor) processFilter(data interface{}, filter *wfv1.Filter) ([]string, error) {
@@ -323,7 +320,6 @@ func (we *WorkflowExecutor) processFilter(data interface{}, filter *wfv1.Filter)
 	return files, nil
 }
 
-
 func (we *WorkflowExecutor) processAggregator(data interface{}, aggregator *wfv1.Aggregator) ([][]string, error) {
 	var files []string
 	var ok bool
@@ -355,7 +351,6 @@ func (we *WorkflowExecutor) processAggregator(data interface{}, aggregator *wfv1
 	}
 
 	return aggFiles, nil
-
 }
 
 func (we *WorkflowExecutor) processOutput(ctx context.Context, data interface{}) error {
