@@ -29,15 +29,15 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v3/config"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/test"
-	testutil "github.com/argoproj/argo/v3/test/util"
-	intstrutil "github.com/argoproj/argo/v3/util/intstr"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/controller/cache"
-	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/config"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test"
+	testutil "github.com/argoproj/argo-workflows/v3/test/util"
+	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // TestOperateWorkflowPanicRecover ensures we can recover from unexpected panics

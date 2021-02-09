@@ -92,7 +92,7 @@ FROM builder as argo-build
 ARG IMAGE_OS=linux
 
 # Perform the build
-WORKDIR /go/src/github.com/argoproj/argo
+WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
@@ -119,7 +119,7 @@ RUN . hack/image_arch.sh && ./dist/argo-${IMAGE_OS}-${IMAGE_ARCH} version 2>&1 |
 ####################################################################################################
 FROM argoexec-base as argoexec
 ARG IMAGE_OS=linux
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec-${IMAGE_OS}-* /usr/local/bin/argoexec
+COPY --from=argo-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec-${IMAGE_OS}-* /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
@@ -130,7 +130,7 @@ USER 8737
 ARG IMAGE_OS=linux
 # Add timezone data
 COPY --from=argo-build /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-${IMAGE_OS}-* /bin/workflow-controller
+COPY --from=argo-build /go/src/github.com/argoproj/argo-workflows/dist/workflow-controller-${IMAGE_OS}-* /bin/workflow-controller
 ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
@@ -142,7 +142,7 @@ ARG IMAGE_OS=linux
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/nsswitch.conf /etc/nsswitch.conf
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt
-COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo/argo-server.key argo-server.key
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-${IMAGE_OS}-* /bin/argo
+COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.crt argo-server.crt
+COPY --from=argo-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.key argo-server.key
+COPY --from=argo-build /go/src/github.com/argoproj/argo-workflows/dist/argo-${IMAGE_OS}-* /bin/argo
 ENTRYPOINT [ "argo" ]

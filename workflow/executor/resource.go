@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	argoerr "github.com/argoproj/argo/v3/util/errors"
+	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -21,10 +21,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
