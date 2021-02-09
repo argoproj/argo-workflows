@@ -6,7 +6,6 @@ on:
       - v*
     branches:
       - master
-      - buildx
 
 defaults:
   run:
