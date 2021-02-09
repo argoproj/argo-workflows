@@ -1129,9 +1129,18 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
 	}
 
-	if tmpl.Data != nil && tmpl.Data.WithArtifactPaths != nil {
-		log.Infof("SIMON creating volume")
-		createSecretVolume(allVolumesMap, tmpl.Data.WithArtifactPaths.Artifact, uniqueKeyMap)
+	if tmpl.Data != nil {
+		spot := -1
+		for i, step := range tmpl.Data {
+			if step.WithArtifactPaths != nil {
+				spot = i
+				break
+			}
+		}
+		if spot >= 0 {
+			log.Infof("SIMON creating volume")
+			createSecretVolume(allVolumesMap, tmpl.Data[spot].WithArtifactPaths.Artifact, uniqueKeyMap)
+		}
 	}
 
 	for volMountName, val := range allVolumesMap {

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/utils/pointer"
 	"os"
 	"os/signal"
 	"path"
@@ -19,8 +20,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
-
-	"k8s.io/utils/pointer"
 
 	common2 "github.com/argoproj/argo/v3/workflow/artifacts/common"
 
@@ -244,41 +243,63 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) ProcessData(ctx context.Context) error {
-	data := we.Template.Data
-	if data == nil {
+	dataTemplate := we.Template.Data
+	if dataTemplate == nil {
 		return nil
 	}
 
+	// Once we allow input parameters to the data template, we'll load them here
+	var data interface{}
 	var err error
-	switch {
-	case data.WithArtifactPaths != nil:
-		err = we.ProcessDataArtifacts(ctx, data.WithArtifactPaths)
+	for _, step := range dataTemplate {
+		switch {
+		case step.WithArtifactPaths != nil:
+			data, err = we.processDataArtifacts(ctx, step.WithArtifactPaths)
+		case step.Filter != nil:
+			data, err = we.processFilter(data, step.Filter)
+		case step.Aggregator != nil:
+			data, err = we.processAggregator(data, step.Aggregator)
+		}
+
+		if err != nil {
+			return fmt.Errorf("error processing data step '%s': %w", step.Name, err)
+		}
 	}
 
-	return err
+	return we.processOutput(ctx, data)
 }
 
-func (we *WorkflowExecutor) ProcessDataArtifacts(ctx context.Context, artifacts *wfv1.WithArtifactPaths) error {
+func (we *WorkflowExecutor) processDataArtifacts(ctx context.Context, artifacts *wfv1.WithArtifactPaths) ([]string, error) {
 	driverArt, err := we.newDriverArt(&artifacts.Artifact)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	artDriver, err := we.InitDriver(ctx, driverArt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var files []string
 	files, err = artDriver.ListObjects(&artifacts.Artifact)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	filter := artifacts.Filter
-	if filter == nil {
-		// Default filter is that of a directory with recursion
-		filter = &wfv1.Filter{Directory: &wfv1.Directory{Recursive: pointer.BoolPtr(true)}}
+	return files, nil
+
+	//
+
+
+}
+
+func (we *WorkflowExecutor) processFilter(data interface{}, filter *wfv1.Filter) ([]string, error) {
+	var files []string
+	var ok bool
+	if files, ok = data.([]string); !ok {
+		// Currently we only support input being []string, but we could easily also do so for [][]string
+		return nil, fmt.Errorf("intput is not []string")
 	}
+
 	switch fil := filter; {
 	case fil.Directory != nil:
 		// If recursive is set to false, remove all files that contain a directory
@@ -291,7 +312,7 @@ func (we *WorkflowExecutor) ProcessDataArtifacts(ctx context.Context, artifacts 
 		if fil.Directory.Regex != "" {
 			re, err := regexp.Compile(fil.Directory.Regex)
 			if err != nil {
-				return fmt.Errorf("regex '%s' is not valid: %w", fil.Directory.Regex, err)
+				return nil, fmt.Errorf("regex '%s' is not valid: %w", fil.Directory.Regex, err)
 			}
 			inPlaceFilter(func(file string) bool {
 				return re.MatchString(file)
@@ -299,26 +320,46 @@ func (we *WorkflowExecutor) ProcessDataArtifacts(ctx context.Context, artifacts 
 		}
 	}
 
+	return files, nil
+}
+
+
+func (we *WorkflowExecutor) processAggregator(data interface{}, aggregator *wfv1.Aggregator) ([][]string, error) {
+	var files []string
+	var ok bool
+	if files, ok = data.([]string); !ok {
+		return nil, fmt.Errorf("intput is not []string")
+	}
+
 	var aggFiles [][]string
-
-	switch artifacts.Aggregator {
-	case "":
-		// Do nothing
-	case wfv1.AggregatorExtension:
+	switch {
+	case aggregator.Batch != 0:
+		// Starts at -1 because we increment before first file
+		filesSeen := -1
 		aggFiles = groupBy(func(file string) string {
-			return filepath.Ext(file)
+			filesSeen++
+			return fmt.Sprint(filesSeen / aggregator.Batch)
 		}, files)
-	default:
-		return fmt.Errorf("unknown aggreagtor type '%s'", artifacts.Aggregator)
+	case aggregator.Regex != "":
+		re, err := regexp.Compile(aggregator.Regex)
+		if err != nil {
+			return nil, fmt.Errorf("regex '%s' is not valid: %w", aggregator.Regex, err)
+		}
+		aggFiles = groupBy(func(file string) string {
+			match := re.FindStringSubmatch(file)
+			if len(match) == 1 {
+				return match[0]
+			}
+			return match[1]
+		}, files)
 	}
 
-	var toMarshal interface{}
-	toMarshal = files
-	if aggFiles != nil {
-		toMarshal = aggFiles
-	}
+	return aggFiles, nil
 
-	out, err := json.Marshal(toMarshal)
+}
+
+func (we *WorkflowExecutor) processOutput(ctx context.Context, data interface{}) error {
+	out, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}

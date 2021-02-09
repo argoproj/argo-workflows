@@ -546,7 +546,8 @@ type Template struct {
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
 
-	Data *DataTemplate `json:"data"`
+	// Data is a data template
+	Data []DataStep `json:"data,omitempty"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -1101,20 +1102,22 @@ func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
 }
 
-type Aggregator string
+type DataStep struct {
+	// Name is the name of the data step
+	Name string `json:"name,omitempty"`
 
-const (
-	AggregatorExtension Aggregator = "Extension"
-)
+	// WithArtifactPaths is a data transformation that collects a list of artifact paths
+	WithArtifactPaths *WithArtifactPaths `json:"withArtifactPaths,omitempty"`
 
-// WithArtifactPaths expands a step from a collection of artifacts
-type WithArtifactPaths struct {
 	// Filter is the strategy in how to filter files
 	Filter *Filter `json:"filter,omitempty"`
 
 	// Aggregator is the strategy in how to aggregate files
-	Aggregator Aggregator `json:"aggregator,omitempty"`
+	Aggregator *Aggregator `json:"aggregator,omitempty"`
+}
 
+// WithArtifactPaths expands a step from a collection of artifacts
+type WithArtifactPaths struct {
 	// Artifact is the artifact location from which to source the artifacts, it can be a directory
 	Artifact `json:",inline"`
 }
@@ -1132,6 +1135,14 @@ type Directory struct {
 
 	// Regex applies a regex filter to all files in a directory
 	Regex string `json:"regex,omitempty"`
+}
+
+// Aggregator is the strategy in how to aggregate files
+type Aggregator struct {
+	// Regex applies a regex and aggregates based on a capture group
+	Regex string `json:"regex"`
+	// Batch groups into batches of specified size
+	Batch int `json:"batch"`
 }
 
 // Sequence expands a workflow step into numeric range
@@ -2307,8 +2318,8 @@ type SuspendTemplate struct {
 
 // DataTemplate is a template that process and transforms data
 type DataTemplate struct {
-	// WithArtifactPaths is a data transformation that collects a list of artifact paths
-	WithArtifactPaths *WithArtifactPaths `json:"withArtifactPaths,omitempty"`
+	// DataSteps contains the steps of the data transformation
+	DataSteps []DataStep `json:",inline"`
 }
 
 // GetArtifactByName returns an input artifact by its name
