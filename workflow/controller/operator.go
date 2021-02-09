@@ -1779,6 +1779,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 	}
 
+	if node.Fulfilled(){
+		if processedTmpl.Synchronization != nil {
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+		}
+	}
+
 	if processedTmpl.Metrics != nil {
 		// Check if the node was just created, if it was emit realtime metrics.
 		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
