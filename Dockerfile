@@ -28,12 +28,11 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
 WORKDIR /tmp
 
 # https://blog.container-solutions.com/faster-builds-in-docker-with-go-1-11
-WORKDIR /go/src/github.com/argoproj/argo
+WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-WORKDIR /go/src/github.com/argoproj/argo
 COPY . .
 
 ####################################################################################################
@@ -112,7 +111,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 FROM argoexec-base as argoexec
 
-COPY --from=argoexec-build /go/src/github.com/argoproj/argo/dist/argoexec /usr/local/bin/
+COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
 
 ENTRYPOINT [ "argoexec" ]
 
