@@ -142,7 +142,7 @@ images: cli-image executor-image controller-image
 # cli
 
 .PHONY: cli
-cli: dist/argo argo-server.crt argo-server.key
+cli: dist/argo
 
 ifeq ($(STATIC_FILES),true)
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
@@ -173,13 +173,15 @@ dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: server/static/files.go $(CLI_PKGS)
+dist/argo-%: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: server/static/files.go $(CLI_PKGS)
+dist/argo: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS)
 ifeq ($(shell uname -s),Darwin)
+	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 else
+	# otherwise, build portable: without GCO and statically-linked
 	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o dist/argo ./cmd/argo
 endif
 
