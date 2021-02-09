@@ -27,8 +27,6 @@ ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
 endif
 
-CGO_ENABLED           ?= 1
-
 # should we build the static files?
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
