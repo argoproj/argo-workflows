@@ -39,7 +39,6 @@
 
   &__graph-container {
     position: relative;
-    overflow: auto;
     height: calc(100vh - 2 * #{$top-bar-height});
     width: 100%;
     transition: width 0.2s;
