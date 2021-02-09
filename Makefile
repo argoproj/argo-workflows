@@ -172,14 +172,18 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo: server/static/files.go $(CLI_PKGS)
-	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
-
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
+
+dist/argo: server/static/files.go $(CLI_PKGS)
+ifeq ($(shell uname -s),Darwin)
+	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
+else
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o dist/argo ./cmd/argo
+endif
 
 argo-server.crt: argo-server.key
 
@@ -413,7 +417,7 @@ $(GOPATH)/bin/goreman:
 ifeq ($(RUN_MODE),kubernetes)
 start: controller-image cli-image install executor-image
 else
-start: install executor-image $(GOPATH)/bin/goreman
+start: install cli executor-image $(GOPATH)/bin/goreman
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 ifeq ($(RUN_MODE),kubernetes)
