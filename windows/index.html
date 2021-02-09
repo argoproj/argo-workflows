@@ -193,7 +193,7 @@
 
   
 
-<a href="https://github.com/argoproj/argo/" title="Go to repository" class="md-source" data-md-source="github">
+<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
   
     <div class="md-source__icon">
       <svg viewBox="0 0 24 24" width="24" height="24">
@@ -240,7 +240,7 @@
 
   
 
-<a href="https://github.com/argoproj/argo/" title="Go to repository" class="md-source" data-md-source="github">
+<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
   
     <div class="md-source__icon">
       <svg viewBox="0 0 24 24" width="24" height="24">
@@ -1969,7 +1969,7 @@
 
 
   <li class="md-nav__item">
-    <a href="https://github.com/argoproj/argo/releases" title="Releases ⧉" class="md-nav__link">
+    <a href="https://github.com/argoproj/argo-workflows/releases" title="Releases ⧉" class="md-nav__link">
       Releases ⧉
     </a>
   </li>
@@ -2101,7 +2101,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo/edit/master/docs/windows.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/windows.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
                 <h1 id="windows-container-support">Windows Container Support<a class="headerlink" href="#windows-container-support" title="Permanent link">&para;</a></h1>
@@ -2130,7 +2130,7 @@
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>You can run this example and get the logs:
-<div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-windows.yaml
+<div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-windows.yaml
 $ argo logs hello-windows-s9kk5
 hello-windows-s9kk5: &quot;Hello from Windows Container!&quot;
 </code></pre></div></p>
@@ -2167,7 +2167,7 @@ hello-windows-s9kk5: &quot;Hello from Windows Container!&quot;
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Linux</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div></p>
 <p>Again, you can run this example and get the logs:
-<div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-hybrid.yaml
+<div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-hybrid.yaml
 $ argo logs hello-hybrid-plqpp
 hello-hybrid-plqpp-1977432187: &quot;Hello from Windows Container!&quot;
 hello-hybrid-plqpp-764774907: Hello from Linux Container!
@@ -2197,7 +2197,7 @@ hello-hybrid-plqpp-764774907: Hello from Linux Container!
 <h2 id="building-the-workflow-executor-image-for-windows">Building the workflow executor image for Windows<a class="headerlink" href="#building-the-workflow-executor-image-for-windows" title="Permanent link">&para;</a></h2>
 <p>To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described <a href="https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise">in the docs</a>.</p>
 <p>You then clone the project and run the Docker build with the Dockerfile for Windows and <code>argoexec</code> as a target:</p>
-<div class="highlight"><pre><span></span><code>git clone https://github.com/argoproj/argo.git
+<div class="highlight"><pre><span></span><code>git clone https://github.com/argoproj/argo-workflows.git
 cd argo
 docker build -t myargoexec -f .\Dockerfile.windows --target argoexec .
 </code></pre></div>

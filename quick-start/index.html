@@ -193,7 +193,7 @@
 
   
 
-<a href="https://github.com/argoproj/argo/" title="Go to repository" class="md-source" data-md-source="github">
+<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
   
     <div class="md-source__icon">
       <svg viewBox="0 0 24 24" width="24" height="24">
@@ -240,7 +240,7 @@
 
   
 
-<a href="https://github.com/argoproj/argo/" title="Go to repository" class="md-source" data-md-source="github">
+<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
   
     <div class="md-source__icon">
       <svg viewBox="0 0 24 24" width="24" height="24">
@@ -1932,7 +1932,7 @@
 
 
   <li class="md-nav__item">
-    <a href="https://github.com/argoproj/argo/releases" title="Releases ⧉" class="md-nav__link">
+    <a href="https://github.com/argoproj/argo-workflows/releases" title="Releases ⧉" class="md-nav__link">
       Releases ⧉
     </a>
   </li>
@@ -2029,7 +2029,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo/edit/master/docs/quick-start.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/quick-start.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
                 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
@@ -2038,7 +2038,7 @@
 <h2 id="install-argo-workflows">Install Argo Workflows<a class="headerlink" href="#install-argo-workflows" title="Permanent link">&para;</a></h2>
 <p>To get started quickly, you can use the quick start manifest which will install Argo Workflow as well as some commonly used components:</p>
 <div class="highlight"><pre><span></span><code>kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/quick-start-postgres.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/quick-start-postgres.yaml
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2051,9 +2051,9 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 </code></pre></div>
 <p>This will serve the user interface on http://localhost:2746</p>
 <p>If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then <a href="../argo-server/#access-the-argo-workflows-ui">follow these instructions</a>. </p>
-<p>Next, Download the latest Argo CLI from our <a href="https://github.com/argoproj/argo/releases">releases page</a>.</p>
+<p>Next, Download the latest Argo CLI from our <a href="https://github.com/argoproj/argo-workflows/releases">releases page</a>.</p>
 <p>Finally, submit an example workflow:  </p>
-<div class="highlight"><pre><span></span><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+<div class="highlight"><pre><span></span><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 argo list -n argo
 argo get -n argo @latest
 argo logs -n argo @latest

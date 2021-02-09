@@ -193,7 +193,7 @@
 
   
 
-<a href="https://github.com/argoproj/argo/" title="Go to repository" class="md-source" data-md-source="github">
+<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
   
     <div class="md-source__icon">
       <svg viewBox="0 0 24 24" width="24" height="24">
@@ -240,7 +240,7 @@
 
   
 
-<a href="https://github.com/argoproj/argo/" title="Go to repository" class="md-source" data-md-source="github">
+<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
   
     <div class="md-source__icon">
       <svg viewBox="0 0 24 24" width="24" height="24">
@@ -1907,7 +1907,7 @@
 
 
   <li class="md-nav__item">
-    <a href="https://github.com/argoproj/argo/releases" title="Releases ⧉" class="md-nav__link">
+    <a href="https://github.com/argoproj/argo-workflows/releases" title="Releases ⧉" class="md-nav__link">
       Releases ⧉
     </a>
   </li>
@@ -1988,14 +1988,14 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo/edit/master/docs/kubectl.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/kubectl.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
                 <h1 id="kubectl">Kubectl<a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h1>
 <p>You can also create Workflows directly with <code>kubectl</code>. However, the Argo CLI offers extra features
 that <code>kubectl</code> does not, such as YAML validation, workflow visualization, parameter passing, retries
 and resubmits, suspend and resume, and more.</p>
-<div class="highlight"><pre><span></span><code>kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+<div class="highlight"><pre><span></span><code>kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 kubectl get wf -n argo
 kubectl get wf hello-world-xxx -n argo
 kubectl get po -n argo --selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx
