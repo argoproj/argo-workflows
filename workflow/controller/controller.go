@@ -450,7 +450,8 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	}()
 	if err != nil {
 		logCtx.WithError(err).Warn("failed to clean-up pod")
-		if errorsutil.IsTransientErr(err) {
+		podGCMaxRequeues := env.LookupEnvIntOr("POD_GC_TRANSIENT_ERROR_MAX_REQUEUES", 2)
+		if errorsutil.IsTransientErr(err) && wfc.podCleanupQueue.NumRequeues(key) > podGCMaxRequeues {
 			wfc.podCleanupQueue.AddRateLimited(key)
 		}
 	}
