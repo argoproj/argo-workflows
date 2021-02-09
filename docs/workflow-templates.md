@@ -226,13 +226,13 @@ spec:
 You can create some example templates as follows:
 
 ```
-argo template create https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/templates.yaml
+argo template create https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/templates.yaml
 ```
 
 The submit a workflow using one of those templates:
 
 ```
-argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/hello-world.yaml
+argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/hello-world.yaml
 ```
 > 2.7 and after
 The submit a `WorkflowTemplate` as a `Workflow`:
