@@ -682,10 +682,10 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 // GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
 func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Context) (time.Duration, error) {
 	pod, err := we.getPod(ctx)
-	if err != nil {
+	if err != nil || pod.Spec.TerminationGracePeriodSeconds == nil {
 		return time.Duration(0), err
 	}
-	terminationGracePeriodDuration := time.Second * time.Duration(*pod.Spec.TerminationGracePeriodSeconds))
+	terminationGracePeriodDuration := time.Second * time.Duration(*pod.Spec.TerminationGracePeriodSeconds)
 	return terminationGracePeriodDuration, nil
 }
 
