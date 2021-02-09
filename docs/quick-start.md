@@ -10,7 +10,7 @@ To get started quickly, you can use the quick start manifest which will install 
 
 ```sh
 kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/quick-start-postgres.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/quick-start-postgres.yaml
 ```
 
 !!! note
@@ -35,7 +35,7 @@ Next, Download the latest Argo CLI from our [releases page](https://github.com/a
 Finally, submit an example workflow:  
 
 ```sh
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 argo list -n argo
 argo get -n argo @latest
 argo logs -n argo @latest

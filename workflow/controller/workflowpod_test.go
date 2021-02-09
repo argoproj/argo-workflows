@@ -77,7 +77,7 @@ inputs:
     path: /manifest
     optional: true
     http:
-        url: https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+        url: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
 script:
   image: alpine:latest
   command: [sh]
@@ -93,7 +93,7 @@ inputs:
     path: /manifest
     optional: true
     http:
-        url: https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+        url: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
 script:
   volumeMounts:
   - mountPath: /manifest

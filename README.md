@@ -25,7 +25,7 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 ## Quickstart
 ```bash
 kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
 ```
 
 ## Who uses Argo Workflows?

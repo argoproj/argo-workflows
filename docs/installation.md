@@ -12,7 +12,7 @@ E.g.
 
 ```sh
 kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/namespace-install.yaml 
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/namespace-install.yaml 
 ```
 
 
