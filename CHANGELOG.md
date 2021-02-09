@@ -2,7 +2,7 @@
 
 THIS IS NO LONGER UPDATED AND ONLY KEPT FOR HISTORICAL REASONS
 
-See [releases](https://github.com/argoproj/argo/releases).
+See [releases](https://github.com/argoproj/argo-workflows/releases).
 
 ## 2.4.0 (2019-10-02)
 
