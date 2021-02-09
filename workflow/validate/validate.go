@@ -1008,10 +1008,6 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 				if param.ValueFrom.Expression != "" && param.ValueFrom.Parameter != "" {
 					return errors.Errorf(errors.CodeBadRequest, "%s should have either `from` or `expression` specified for %s templates", paramRef, tmplType)
 				}
-				if strings.Contains(param.ValueFrom.Expression, "{{") || strings.Contains(param.ValueFrom.Expression, "}}") ||
-					strings.Contains(param.ValueFrom.Expression, "-") {
-					return errors.Errorf(errors.CodeBadRequest, "%s contains unsupported characters. Expression should not contain `{{ }} -` in %s templates", param.ValueFrom.Expression, tmplType)
-				}
 			}
 		}
 		if param.GlobalName != "" && !isParameter(param.GlobalName) {
