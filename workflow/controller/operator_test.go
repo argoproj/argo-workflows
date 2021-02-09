@@ -5695,6 +5695,7 @@ func TestParamAggregation(t *testing.T) {
 		}
 	}
 }
+
 func TestRetryOnDiffHost(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -5760,4 +5761,36 @@ func TestRetryOnDiffHost(t *testing.T) {
 		Values:   []string{lastChild.HostNodeName},
 	}
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}
+
+var noPodsWhenShutdown = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestNoPodsWhenShutdown(t *testing.T) {
+	wf := unmarshalWF(noPodsWhenShutdown)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeSkipped, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
+	}
 }
