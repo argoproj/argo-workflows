@@ -744,8 +744,8 @@ type ValueFrom struct {
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 
-	// FromExpression is an expression in which the parameter should conditionally include
-	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,8,rep,name=fromExpression"`
+	// Expression is an expression in which the parameter should conditionally include
+	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.

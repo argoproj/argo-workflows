@@ -1652,6 +1652,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	if processedTmpl.Synchronization != nil {
+		fmt.Println(processedTmpl.Name)
 		lockAcquired, wfUpdated, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
@@ -2322,9 +2323,9 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 	var variableRefName string
 	if parentTmpl.DAG != nil {
-		variableRefName = "{{tasks." + name + ".outputs.result}}"
+		variableRefName = "tasks." + name + ".outputs.result"
 	} else if parentTmpl.Steps != nil {
-		variableRefName = "{{steps." + name + ".outputs.result}}"
+		variableRefName = "steps." + name + ".outputs.result"
 	}
 
 	jsonValue, err := json.Marshal(parentTmpl)

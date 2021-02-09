@@ -10,20 +10,20 @@ spec:
   templates:
     - name: coinflip
       steps:
-        - - name: flip-coin
-            template: flip-coin
+        - - name: flipcoin
+            template: flipcoin1
         - - name: heads
             template: heads
-            when: "{{steps.flip-coin.outputs.result}} == heads"
+            when: "{{steps.flipcoin.outputs.result}} == heads"
           - name: tails
             template: tails
-            when: "{{steps.flip-coin.outputs.result}} == tails"
+            when: "{{steps.flipcoin.outputs.result}} == tails"
       outputs:
         artifacts:
           - name: step-result
-            fromExpression: "{{steps.flip-coin.outputs.result}} == heads?{{steps.heads.outputs.artifacts.heads-result}}:{{steps.tails.outputs.artifacts.tails-result}}"
+            fromExpression: "steps.flipcoin.outputs.result == 'heads'?steps.heads.outputs.artifacts.headsresult:steps.tails.outputs.artifacts.tailsresult"
     
-    - name: flip-coin
+    - name: flipcoin1
       script:
         image: python:alpine3.6
         command: [python]
@@ -42,7 +42,7 @@ spec:
             mountPath: /mnt/vol
       outputs:
         artifacts:
-          - name: heads-result
+          - name: headsresult
             path: /result.txt
 
             
@@ -56,5 +56,5 @@ spec:
             mountPath: /mnt/vol
       outputs:
         artifacts:
-          - name: tails-result
+          - name: tailsresult
             path: /result.txt

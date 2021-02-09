@@ -335,7 +335,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"fromExpression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FromExpression is an expression in which the artifact should conditionally include",
+							Description: "Expression is an expression in which the artifact should conditionally include",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4371,7 +4371,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"fromExpression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FromExpression is an expression in which the parameter should conditionally include",
+							Description: "Expression is an expression in which the parameter should conditionally include",
 							Type:        []string{"string"},
 							Format:      "",
 						},

@@ -3,7 +3,7 @@ package controller
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -242,6 +242,41 @@ func TestSubPathResolution(t *testing.T) {
 	})
 }
 
-func TestExecuteFromCondition(t *testing.T) {
-
+func TestResolveParameters(t *testing.T) {
+	assert := assert.New(t)
+	tmpl := wfv1.Template{Name: "test",
+		Inputs: wfv1.Inputs{
+			Parameters: []wfv1.Parameter{
+				{
+					Name:  "one",
+					Value: wfv1.AnyStringPtr(1),
+				},
+				{
+					Name:  "two",
+					Value: wfv1.AnyStringPtr(2),
+				},
+			},
+			Artifacts: nil,
+		},
+	}
+	env := map[string]interface{}{
+		"steps.t1.outputs.parameters.result": 4,
+		"workflows.arguments.param":          "head",
+	}
+	scope := wfScope{
+		tmpl:  &tmpl,
+		scope: env,
+	}
+	valFrom := &wfv1.ValueFrom{
+		Expression: "inputs.parameters.one == 1 ? inputs.parameters.one+inputs.parameters.two: steps.t1.outputs.parameters.result",
+	}
+	result, err := scope.resolveParameter(valFrom)
+	assert.NoError(err)
+	assert.Equal("3", result)
+	valFrom = &wfv1.ValueFrom{
+		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result :workflows.arguments.param",
+	}
+	result, err = scope.resolveParameter(valFrom)
+	assert.NoError(err)
+	assert.Equal("head", result)
 }

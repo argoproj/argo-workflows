@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 )
 
@@ -49,4 +50,16 @@ func (i AnyString) MarshalJSON() ([]byte, error) {
 
 func (i AnyString) String() string {
 	return string(i)
+}
+
+func (i AnyString) Value() interface{} {
+	intExp := regexp.MustCompile(`^[-]?[0-9]+?$`)
+	floatExp := regexp.MustCompile(`^[-]?[0-9]+(\.[0-9]+)?$`)
+	if intExp.MatchString(i.String()) {
+		return parseInt64(i.String())
+	} else if floatExp.MatchString(i.String()) {
+		val, _ := strconv.ParseFloat(i.String(), 64)
+		return val
+	}
+	return i.String()
 }

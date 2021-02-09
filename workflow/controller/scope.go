@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Knetic/govaluate"
 	"github.com/valyala/fasttemplate"
 
 	"github.com/argoproj/argo/v3/errors"
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util/expr"
 	"github.com/argoproj/argo/v3/workflow/common"
 )
 
@@ -40,6 +40,7 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
+
 	v = strings.TrimPrefix(v, "{{")
 	v = strings.TrimSuffix(v, "}}")
 	parts := strings.Split(v, ".")
@@ -47,7 +48,9 @@ func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	switch prefix {
 	case "steps", "tasks", "workflow":
 		val, ok := s.scope[v]
+		fmt.Println(val, ok)
 		if ok {
+			fmt.Println(val, ok)
 			return val, nil
 		}
 	case "inputs":
@@ -63,72 +66,45 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (string, error) {
 	if p == nil {
 		return "", nil
 	}
-	if p.Parameter == "" && p.FromExpression == "" {
+	if p.Parameter == "" && p.Expression == "" {
 		return "", nil
 	}
-	param := p.Parameter
+	var val interface{}
 	var err error
-	if p.FromExpression != "" {
-		param, err = s.evaluateExpression(p.FromExpression)
-		if err != nil {
-			return "", fmt.Errorf("unable to resolve expression: %s", err)
-		}
-		return param, nil
+	if p.Expression != "" {
+		val, err = expr.Eval(p.Expression, s.getAllParamArtifact())
+	} else {
+		val, err = s.resolveVar(p.Parameter)
 	}
-	val, err := s.resolveVar(param)
+
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to resolve expression: %s", err)
 	}
-	valStr, ok := val.(string)
-	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not a string", param)
+	if val == nil {
+		return "", nil
 	}
-	return valStr, nil
+	return fmt.Sprintf("%v", val), nil
 }
 
-func (s *wfScope) evaluateExpression(fromExpression string) (string, error) {
-	if fromExpression == "" {
-		return "", nil
-	}
-	fstTmpl := fasttemplate.New(fromExpression, "{{", "}}")
-	updateExp, err := common.Replace(fstTmpl, s.getParameters(), true)
-	if err != nil {
-		return "", err
-	}
+func (s *wfScope) getAllParamArtifact() map[string]interface{} {
 
-	updateExp = strings.Replace(updateExp, "{{", "\"{{", -1)
-	updateExp = strings.Replace(updateExp, "}}", "}}\"", -1)
-	expression, err := govaluate.NewEvaluableExpression(updateExp)
-	if err != nil {
-		if strings.Contains(err.Error(), "Invalid token") {
-			return "", errors.Errorf(errors.CodeBadRequest, "Invalid 'fromExpression' '%s': %v (hint: try wrapping the affected expression in quotes (\"))", expression, err)
+	paramArtMap := make(map[string]interface{})
+	for key, val := range s.scope {
+		if _, ok := val.(*wfv1.AnyString); ok {
+			paramArtMap[strings.TrimSpace(key)] = val.(*wfv1.AnyString).Value()
+		} else {
+			paramArtMap[strings.TrimSpace(key)] = val
 		}
-		return "", errors.Errorf(errors.CodeBadRequest, "Invalid 'fromExpression' '%s': %v", expression, err)
 	}
-	// The following loop converts govaluate variables (which we don't use), into strings. This
-	// allows us to have expressions like: "foo != bar" without requiring foo and bar to be quoted.
-	tokens := expression.Tokens()
-	for i, tok := range tokens {
-		switch tok.Kind {
-		case govaluate.VARIABLE:
-			tok.Kind = govaluate.STRING
-		default:
-			continue
-		}
-		tokens[i] = tok
+	for _, param := range s.tmpl.Inputs.Parameters {
+		key := fmt.Sprintf("inputs.parameters.%s", strings.TrimSpace(param.Name))
+		paramArtMap[strings.TrimSpace(key)] = s.tmpl.Inputs.GetParameterByName(param.Name).Value.Value()
 	}
-	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
-	if err != nil {
-		return "", errors.InternalWrapErrorf(err, "Failed to parse 'fromExpression''%s': %v", expression, err)
+	for _, param := range s.tmpl.Inputs.Artifacts {
+		key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
+		paramArtMap[strings.TrimSpace(key)] = s.tmpl.Inputs.GetArtifactByName(param.Name)
 	}
-	result, err := expression.Evaluate(nil)
-	if err != nil {
-		return "", errors.InternalWrapErrorf(err, "Failed to evaluate 'fromExpression' '%s': %v", expression, err)
-	}
-	if result == nil {
-		return "", nil
-	}
-	return fmt.Sprintf("%v", result), nil
+	return paramArtMap
 }
 
 func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Artifact, error) {
@@ -138,29 +114,20 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Art
 	if art.From == "" && art.FromExpression == "" {
 		return nil, nil
 	}
-	artReference := art.From
 	var err error
+	var val interface{}
 	if art.FromExpression != "" {
-		artReference, err = s.evaluateExpression(art.FromExpression)
-		if err != nil {
-			if art.Optional {
-				return nil, nil
-			}
-			return nil, fmt.Errorf("unable to resolve expression: %s", err)
-		}
+		val, err = expr.Eval(art.FromExpression, s.getAllParamArtifact())
+	} else {
+		val, err = s.resolveVar(art.From)
 	}
-
-	if artReference == "" {
-		return nil, nil
-	}
-	val, err := s.resolveVar(artReference)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to resolve artifact: %s", err)
 	}
+
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {
-		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", artReference)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%v}} is not an artifact", art)
 	}
 
 	if subPath != "" {

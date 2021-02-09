@@ -1002,11 +1002,15 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 					return errors.Errorf(errors.CodeBadRequest, "%s .jqFilter or jsonPath must be specified for %s templates", paramRef, tmplType)
 				}
 			case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
-				if param.ValueFrom.Parameter == "" && param.ValueFrom.FromExpression == "" {
-					return errors.Errorf(errors.CodeBadRequest, "%s.parameter or fromExpression must be specified for %s templates", paramRef, tmplType)
+				if param.ValueFrom.Parameter == "" && param.ValueFrom.Expression == "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s.parameter or expression must be specified for %s templates", paramRef, tmplType)
 				}
-				if param.ValueFrom.FromExpression != "" && param.ValueFrom.Parameter != "" {
-					return errors.Errorf(errors.CodeBadRequest, "%s should have either `from` or `fromExpression` specified for %s templates", paramRef, tmplType)
+				if param.ValueFrom.Expression != "" && param.ValueFrom.Parameter != "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s should have either `from` or `expression` specified for %s templates", paramRef, tmplType)
+				}
+				if strings.Contains(param.ValueFrom.Expression, "{{") || strings.Contains(param.ValueFrom.Expression, "}}") ||
+					strings.Contains(param.ValueFrom.Expression, "-") {
+					return errors.Errorf(errors.CodeBadRequest, "%s contains unsupported characters. Expression should not contain `{{ }} -` in %s templates", param.ValueFrom.Expression, tmplType)
 				}
 			}
 		}
@@ -1086,7 +1090,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 		return errors.Errorf(errors.CodeBadRequest, "%s does not have valueFrom or value specified", paramRef)
 	}
 	paramTypes := 0
-	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter, param.ValueFrom.FromExpression} {
+	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter, param.ValueFrom.Expression} {
 		if value != "" {
 			paramTypes++
 		}

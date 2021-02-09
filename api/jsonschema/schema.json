@@ -2708,7 +2708,7 @@
           "type": "string"
         },
         "fromExpression": {
-          "description": "FromExpression is an expression in which the artifact should conditionally include",
+          "description": "Expression is an expression in which the artifact should conditionally include",
           "type": "string"
         },
         "gcs": {
@@ -4922,7 +4922,7 @@
           "type": "string"
         },
         "fromExpression": {
-          "description": "FromExpression is an expression in which the parameter should conditionally include",
+          "description": "Expression is an expression in which the parameter should conditionally include",
           "type": "string"
         },
         "jqFilter": {

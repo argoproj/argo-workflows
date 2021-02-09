@@ -1249,8 +1249,8 @@ message ValueFrom {
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
 
-  // FromExpression is an expression in which the parameter should conditionally include
-  optional string fromExpression = 8;
+  // Expression is an expression in which the parameter should conditionally include
+  optional string expression = 8;
 }
 
 message Version {

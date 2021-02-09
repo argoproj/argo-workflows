@@ -86,6 +86,8 @@ spec:
                               type: object
                             from:
                               type: string
+                            fromExpression:
+                              type: string
                             gcs:
                               properties:
                                 bucket:
@@ -355,6 +357,8 @@ spec:
                                 default:
                                   type: string
                                 event:
+                                  type: string
+                                expression:
                                   type: string
                                 jqFilter:
                                   type: string

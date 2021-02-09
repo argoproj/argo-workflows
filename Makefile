@@ -120,14 +120,14 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	[ -e vendor ] || go mod vendor
+	go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
 
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    [ -e vendor ] || go mod vendor
+    go mod vendor
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -325,7 +325,7 @@ $(GOPATH)/bin/goimports:
 	$(call go_install,golang.org/x/tools/cmd/goimports)
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	[ -e vendor ] || go mod vendor
+	go mod vendor
 	[ -e v3 ] || ln -s . v3
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \

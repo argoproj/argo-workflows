@@ -8,34 +8,28 @@ spec:
     - name: fibonacci
       inputs:
         parameters:
-          - name: num-0
+          - name: num0
       memoize:
-        key: "{{inputs.parameters.num-0}}"
+        key: "{{inputs.parameters.num0}}"
         cache:
           configMap:
             name: fibonacci-m
             key: fibonacci-cache
       steps:
-        - - name: one
-            template: return-1
-            when: "{{inputs.parameters.num-0}} == 1"
-          - name: two
-            template: return-1
-            when: "{{inputs.parameters.num-0}} == 2"
-          - name: fibonacci-helper
-            template: fibonacci-helper
-            when: "{{inputs.parameters.num-0}} != 1 && {{inputs.parameters.num-0}} != 2"
+        - - name: fibonaccihelper
+            template: fibonaccihelper
+            when: "{{inputs.parameters.num0}} != 1 && {{inputs.parameters.num0}} != 2"
             arguments:
               parameters:
                 - name: num-1
-                  value: "{{inputs.parameters.num-0}}"
+                  value: "{{inputs.parameters.num0}}"
       outputs:
         parameters:
           - name: fib
             valueFrom:
-              fromExpression: "({{inputs.parameters.num-0}} == 1)? '1' : (({{inputs.parameters.num-0}} == 2) ? '2' : {{steps.fibonacci-helper.outputs.parameters.result}})"
+              expression: "inputs.parameters.num0 == 1? 1: inputs.parameters.num0 == 2? 1: steps.fibonaccihelper.outputs.parameters.result"
     
-    - name: fibonacci-helper
+    - name: fibonaccihelper
       inputs:
         parameters:
           - name: num-1
@@ -47,7 +41,7 @@ spec:
                 - {name: a, value: "{{inputs.parameters.num-1}}"}
                 - {name: op, value: "-"}
                 - {name: b, value: "1"}
-          - name: sub-2
+        - - name: sub-2
             template: do-math
             when: "{{inputs.parameters.num-1}} != 1 && {{inputs.parameters.num-1}} != 2"
             arguments:
@@ -59,13 +53,13 @@ spec:
             template: fibonacci
             arguments:
               parameters:
-                - name: num-0
+                - name: num0
                   value: "{{steps.sub-1.outputs.result}}"
-          - name: fib-sub-2
+        - - name: fib-sub-2
             template: fibonacci
             arguments:
               parameters:
-                - name: num-0
+                - name: num0
                   value: "{{steps.sub-2.outputs.result}}"
         - - name: add
             template: do-math
