@@ -179,9 +179,9 @@ dist/argo-%: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS)
 dist/argo: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS)
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
-	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
+	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 else
-	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o dist/argo ./cmd/argo
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 endif
 
 argo-server.crt: argo-server.key
@@ -201,8 +201,16 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 
 # controller
 
+.PHONY: controller
+controller: dist/workflow-controller
+
 dist/workflow-controller: $(CONTROLLER_PKGS)
+ifeq ($(shell uname -s),Darwin)
+	# if local, then build fast: use CGO and dynamic-linking
+	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
+else
 	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/workflow-controller
+endif
 
 .PHONY: controller-image
 controller-image: dist/controller.image
@@ -416,7 +424,7 @@ $(GOPATH)/bin/goreman:
 ifeq ($(RUN_MODE),kubernetes)
 start: controller-image cli-image install executor-image
 else
-start: install cli executor-image $(GOPATH)/bin/goreman
+start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 ifeq ($(RUN_MODE),kubernetes)
@@ -440,7 +448,7 @@ endif
 	sleep 5s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env LDFLAGS="${LDFLAGS}" DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
 
 $(GOPATH)/bin/stern:
