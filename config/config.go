@@ -92,6 +92,12 @@ type Config struct {
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 
+	// PodGCGracePeriodSeconds specifies the duration in seconds before the pods in the GC queue get deleted.
+	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately
+	// as soon as they arrived in the pod GC queue.
+	// Defaults to 30 seconds.
+	PodGCGracePeriodSeconds *int64 `json:"podGCGracePeriodSeconds,omitempty"`
+
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
