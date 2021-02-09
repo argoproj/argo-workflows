@@ -37,7 +37,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(2*time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
