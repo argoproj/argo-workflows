@@ -35,9 +35,9 @@ docker run argoproj/workflow-controller:v2.11.5 version
 docker run argoproj/argocli:v2.11.5 version
 ```
 
-* [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/v3.11.5/manifests/install.yaml
+* [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo-workflows/v2.11.5/manifests/install.yaml
 
-* [ ] Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo/v3.11.5/manifests/install.yaml`
+* [ ] Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v2.11.5/manifests/install.yaml`
 
 ### Release Notes
 
@@ -61,7 +61,7 @@ git tag -f stable
 git push -f origin stable
 ```
 
-* [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+* [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
 
 ### Update Homebrew
 

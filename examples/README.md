@@ -1336,7 +1336,7 @@ spec:
       - name: argo-source
         path: /src
         git:
-          repo: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo-workflows.git
           revision: "master"
       # Download kubectl 1.8.0 and place it at /bin/kubectl
       - name: kubectl

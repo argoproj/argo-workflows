@@ -56,7 +56,7 @@ ARG IMAGE_OS=windows
 ARG IMAGE_ARCH=amd64
 
 # Perform the build
-WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo
+WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD

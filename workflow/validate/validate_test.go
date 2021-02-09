@@ -1038,7 +1038,7 @@ spec:
       - name: argo-source
         path: /src
         git:
-          repo: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo-workflows.git
     container:
       image: alpine:latest
       command: [sh, -c]

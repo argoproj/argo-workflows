@@ -92,7 +92,7 @@ FROM builder as argo-build
 ARG IMAGE_OS=linux
 
 # Perform the build
-WORKDIR /go/src/github.com/argoproj/argo
+WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD

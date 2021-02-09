@@ -28,7 +28,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	t.Run("Found", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
-				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo"},
+				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows"},
 			},
 		}, "/tmp/found")
 		if assert.NoError(t, err) {

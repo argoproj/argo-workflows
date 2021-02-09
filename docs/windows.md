@@ -114,7 +114,7 @@ To build the workflow executor image for Windows you need a Windows machine runn
 You then clone the project and run the Docker build with the Dockerfile for Windows and `argoexec` as a target:
 
 ```
-git clone https://github.com/argoproj/argo.git
+git clone https://github.com/argoproj/argo-workflows.git
 cd argo
 docker build -t myargoexec -f .\Dockerfile.windows --target argoexec .
 ```
