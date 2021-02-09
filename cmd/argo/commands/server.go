@@ -18,12 +18,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/v3/server/apiserver"
-	"github.com/argoproj/argo/v3/server/auth"
-	"github.com/argoproj/argo/v3/server/types"
-	"github.com/argoproj/argo/v3/util/help"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/server/apiserver"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/help"
 )
 
 func NewServerCommand() *cobra.Command {

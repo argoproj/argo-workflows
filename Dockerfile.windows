@@ -53,7 +53,7 @@ RUN SETX /m path C:\app;C:\app\git\bin;%path%
 FROM builder as argo-build
 
 # Perform the build
-WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo
+WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
@@ -64,6 +64,6 @@ RUN bash -c 'make dist/argoexec'
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
-COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo/dist/argoexec C:/app/argoexec.exe
+COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows/dist/argoexec C:/app/argoexec.exe
 RUN argoexec version
 ENTRYPOINT [ "argoexec" ]

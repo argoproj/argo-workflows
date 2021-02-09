@@ -7,11 +7,11 @@ import (
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo/v3/pkg/apiclient/clusterworkflowtemplate"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type cliCreateOpts struct {

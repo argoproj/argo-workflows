@@ -21,7 +21,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
@@ -63,7 +63,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
@@ -133,7 +133,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
@@ -161,7 +161,7 @@ jobs:
           git fetch --tags
 
           mkdir -p /home/runner/go/src/github.com/argoproj
-          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
+          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
 
           # we use -B to force make to always make targets
           make -B codegen STATIC_FILES=false

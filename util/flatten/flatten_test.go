@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/v3/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 )
 
 func Test_flatten(t *testing.T) {
