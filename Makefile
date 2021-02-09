@@ -139,7 +139,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-     perl -i -pe 's|argoproj/argo/|argoproj/argo/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+     perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
 # docker_build,image_name,binary_name,marker_file_name
