@@ -13,15 +13,16 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/v3"
-	"github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/util/cmd"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/executor"
-	"github.com/argoproj/argo/v3/workflow/executor/docker"
-	"github.com/argoproj/argo/v3/workflow/executor/k8sapi"
-	"github.com/argoproj/argo/v3/workflow/executor/kubelet"
-	"github.com/argoproj/argo/v3/workflow/executor/pns"
+	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/util/logs"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/docker"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/k8sapi"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/kubelet"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/pns"
 )
 
 const (
@@ -78,6 +79,8 @@ func initExecutor() *executor.WorkflowExecutor {
 	executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s executor/%s", version.Version, executorType))
 	checkErr(err)
+
+	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var d = uint64(1)
@@ -52,7 +52,7 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 	err = driver.Load(&wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{
 			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argo.git",
+				Repo:     "https://github.com/argoproj/argo-workflows.git",
 				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
 				Revision: "HEAD",
 				Depth:    &d,
@@ -86,7 +86,7 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 			err = driver.Load(&wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					Git: &wfv1.GitArtifact{
-						Repo:                  "git@github.com:argoproj/argo.git",
+						Repo:                  "git@github.com:argoproj/argo-workflows.git",
 						Fetch:                 []string{"+refs/heads/*:refs/remotes/origin/*"},
 						Revision:              "HEAD",
 						InsecureIgnoreHostKey: tt.insecure,

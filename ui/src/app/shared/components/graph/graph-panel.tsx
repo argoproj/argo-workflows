@@ -73,10 +73,11 @@ export const GraphPanel = (props: Props) => {
     const visible = (id: Node) => {
         const label = props.graph.nodes.get(id);
         return (
-            nodeGenres[label.genre] &&
-            (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
-            (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) &&
-            props.graph.nodes.get(id).label.includes(nodeSearchKeyword)
+            (nodeGenres[label.genre] &&
+                (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
+                (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) &&
+                !nodeSearchKeyword) ||
+            label.label.includes(nodeSearchKeyword)
         );
     };
 
