@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/go-openapi/jsonreference"
 	"github.com/go-openapi/spec"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 /*
@@ -18,6 +19,7 @@ import (
 	We do some hackerey here too:
 
 	* Change "/" into "." in names.
+	* Change "argo-workflows" into "argo_workflows".
 */
 func secondarySwaggerGen() {
 	definitions := make(map[string]interface{})
@@ -40,6 +42,16 @@ func secondarySwaggerGen() {
 	e := json.NewEncoder(f)
 	e.SetIndent("", "  ")
 	err = e.Encode(swagger)
+	if err != nil {
+		panic(err)
+	}
+
+	read, err := ioutil.ReadFile("pkg/apiclient/_.secondary.swagger.json")
+	if err != nil {
+		panic(err)
+	}
+	newContents := strings.ReplaceAll(string(read), "argo-workflows", "argo_workflows")
+	err = ioutil.WriteFile("pkg/apiclient/_.secondary.swagger.json", []byte(newContents), 0666)
 	if err != nil {
 		panic(err)
 	}

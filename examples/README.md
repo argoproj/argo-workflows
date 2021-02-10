@@ -8,7 +8,7 @@ Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a resul
 
 Many of the Argo examples used in this walkthrough are available at in this directory. If you like this project, please give us a star!
 
-For a complete description of the Argo workflow spec, please refer to [our spec definitions](https://github.com/argoproj/argo/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go).
+For a complete description of the Argo workflow spec, please refer to [our spec definitions](https://github.com/argoproj/argo-workflows/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go).
 
 ## Table of Contents
 
@@ -311,12 +311,12 @@ spec:
 The dependency graph may have [multiple roots](./dag-multiroot.yaml). The templates called from a DAG or steps template can themselves be DAG or steps templates. This can allow for complex workflows to be split into manageable pieces.
 
 The DAG logic has a built-in `fail fast` feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself.
-The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `false`, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at [here](https://github.com/argoproj/argo/issues/1442).
+The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `false`, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at [here](https://github.com/argoproj/argo-workflows/issues/1442).
 ## Artifacts
 
 **Note:**
 You will need to configure an artifact repository to run this example.
-[Configuring an artifact repository here](https://argoproj.github.io/argo/configure-artifact-repository/).
+[Configuring an artifact repository here](https://argoproj.github.io/argo-workflows/configure-artifact-repository/).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
@@ -1336,7 +1336,7 @@ spec:
       - name: argo-source
         path: /src
         git:
-          repo: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo-workflows.git
           revision: "master"
       # Download kubectl 1.8.0 and place it at /bin/kubectl
       - name: kubectl
@@ -1523,4 +1523,4 @@ spec:
 
 Continuous integration is a popular application for workflows. Currently, Argo does not provide event triggers for automatically kicking off your CI jobs, but we plan to do so in the near future. Until then, you can easily write a cron job that checks for new commits and kicks off the needed workflow, or use your existing Jenkins server to kick off the workflow.
 
-A good example of a CI workflow spec is provided at https://github.com/argoproj/argo/tree/master/examples/influxdb-ci.yaml. Because it just uses the concepts that we've already covered and is somewhat long, we don't go into details here.
+A good example of a CI workflow spec is provided at https://github.com/argoproj/argo-workflows/tree/master/examples/influxdb-ci.yaml. Because it just uses the concepts that we've already covered and is somewhat long, we don't go into details here.

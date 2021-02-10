@@ -24,7 +24,7 @@ const introductionText = (
         from a remote system.
     </>
 );
-const learnMore = <a href={'https://argoproj.github.io/argo/events/'}>Learn more</a>;
+const learnMore = <a href={'https://argoproj.github.io/argo-workflows/events/'}>Learn more</a>;
 
 export const WorkflowEventBindings = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate

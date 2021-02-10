@@ -86,8 +86,8 @@ spec:
       args: ["sleep 10; echo acquired lock"]
 ```
 Examples:
-1. [Workflow level](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
-2. [Step level](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
+1. [Workflow level](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
+2. [Step level](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 ### Other Parallelism support:
 In addition to this synchronization, the workflow controller supports a parallelism setting that applies to all workflows 
