@@ -8691,6 +8691,10 @@
           "description": "PodGC describes the strategy to use when to deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
         },
+        "podMetadata": {
+          "description": "PodMetadata defines additional metadata that should be applied to workflow pods",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
+        },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
           "type": "integer"
@@ -9152,6 +9156,10 @@
         "podGC": {
           "description": "PodGC describes the strategy to use when to deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
+        },
+        "podMetadata": {
+          "description": "PodMetadata defines additional metadata that should be applied to workflow pods",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
