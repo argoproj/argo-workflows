@@ -22,6 +22,7 @@ import (
 	authmocks "github.com/argoproj/argo-workflows/v3/server/auth/mocks"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
+	common2 "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
