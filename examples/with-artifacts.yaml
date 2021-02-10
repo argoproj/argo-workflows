@@ -27,7 +27,7 @@ spec:
 
   - name: generate-artifacts
     data:
-      - name: input
+      source:
         withArtifactPaths:
           s3:
             bucket: test
@@ -39,30 +39,32 @@ spec:
             secretKeySecret:
               name: my-minio-cred
               key: secretkey
-      #- name: filter-extension
-      #  filter:
-      #    directory:
-      #      regex: ".+?\\.pdf"
-      #- name: filter-content
-      #  filter:
-      #    directory:
-      #      regex: "lunch"
-      #- name: aggregate-batch
-      #  aggregator:
-      #    batch: 2
-      - name: aggregate-extension
-        aggregator:
-          regex: ".+?\\.(.+?)$"
+      transformation:
+        - name: filter-extension
+          filter:
+            regex: ".+?\\.py"
+        #- name: filter-content
+        #  filter:
+        #    regex: "lunch"
+        #- name: aggregate-batch
+        #  aggregator:
+        #    batch: 2
+        #- name: aggregate-extension
+        #  aggregator:
+        #    regex: ".+?\\.(.+?)$"
 
   - name: collect-artifacts
     inputs:
       parameters:
         - name: processed
     data:
-      - name: aggregate-batch
-        filter:
-          directory:
-            recursive: false
+      transformation:
+        - name: filter-path
+          filter:
+            regex: ".+?\\.pdf$"
+        - name: aggregate-batch
+          aggregator:
+            batch: 2
 
   - name: print-message
     inputs:
@@ -71,7 +73,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo \"{{inputs.parameters.file}}\" | tee /tmp/f.txt"]
+      args: ["echo \"{{inputs.parameters.file}}.done\" | tee /tmp/f.txt"]
     outputs:
       parameters:
         - name: processed

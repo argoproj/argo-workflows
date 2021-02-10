@@ -547,7 +547,7 @@ type Template struct {
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
 
 	// Data is a data template
-	Data DataSteps `json:"data,omitempty"`
+	Data *Data `json:"data,omitempty"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -1100,60 +1100,6 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 
 func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
-}
-
-type DataSteps []DataStep
-
-func (ds *DataSteps) GetWithArtifactPathsIfAny() *WithArtifactPaths {
-	for _, step := range *ds {
-		if step.WithArtifactPaths != nil {
-			return step.WithArtifactPaths
-		}
-	}
-	return nil
-}
-
-type DataStep struct {
-	// Name is the name of the data step
-	Name string `json:"name,omitempty"`
-
-	// WithArtifactPaths is a data transformation that collects a list of artifact paths
-	WithArtifactPaths *WithArtifactPaths `json:"withArtifactPaths,omitempty"`
-
-	// Filter is the strategy in how to filter files
-	Filter *Filter `json:"filter,omitempty"`
-
-	// Aggregator is the strategy in how to aggregate files
-	Aggregator *Aggregator `json:"aggregator,omitempty"`
-}
-
-// WithArtifactPaths expands a step from a collection of artifacts
-type WithArtifactPaths struct {
-	// Artifact is the artifact location from which to source the artifacts, it can be a directory
-	Artifact `json:",inline"`
-}
-
-// Filter is the strategy in how to aggregate files
-type Filter struct {
-	// Directory gathers all the files in a directory
-	Directory *Directory `json:"directory,omitempty"`
-}
-
-// Directory gathers all the files in a directory
-type Directory struct {
-	// Recursive is a recursive directory crawl
-	Recursive *bool `json:"recursive,omitempty"`
-
-	// Regex applies a regex filter to all files in a directory
-	Regex string `json:"regex,omitempty"`
-}
-
-// Aggregator is the strategy in how to aggregate files
-type Aggregator struct {
-	// Regex applies a regex and aggregates based on a capture group
-	Regex string `json:"regex"`
-	// Batch groups into batches of specified size
-	Batch int `json:"batch"`
 }
 
 // Sequence expands a workflow step into numeric range
