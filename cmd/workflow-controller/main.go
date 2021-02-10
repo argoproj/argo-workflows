@@ -51,7 +51,7 @@ func NewRootCommand() *cobra.Command {
 		managedNamespace         string // --managed-namespace
 	)
 
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {

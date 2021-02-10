@@ -242,7 +242,6 @@ func TestUntar(t *testing.T) {
 }
 
 func TestChmod(t *testing.T) {
-
 	type perm struct {
 		dir  string
 		file string
@@ -296,7 +295,6 @@ func TestChmod(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
 	}
-
 }
 
 func TestSaveArtifacts(t *testing.T) {

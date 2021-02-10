@@ -11,7 +11,6 @@ func TestGetAuthString(t *testing.T) {
 	_ = os.Setenv("ARGO_TOKEN", "my-token")
 	defer func() { _ = os.Unsetenv("ARGO_TOKEN") }()
 	assert.Equal(t, "my-token", GetAuthString())
-
 }
 
 func TestNamespace(t *testing.T) {

@@ -49,7 +49,7 @@ func initConfig() {
 }
 
 func NewRootCommand() *cobra.Command {
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   CLIName,
 		Short: "argoexec is the executor sidecar to workflow containers",
 		Run: func(cmd *cobra.Command, args []string) {

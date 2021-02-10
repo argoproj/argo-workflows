@@ -10,7 +10,7 @@ import (
 )
 
 func NewWaitCommand() *cobra.Command {
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		Run: func(cmd *cobra.Command, args []string) {

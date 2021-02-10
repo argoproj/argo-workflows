@@ -177,7 +177,6 @@ func TestMutexLock(t *testing.T) {
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
-
 }
 
 var mutexWfWithTmplLevel = `
@@ -284,9 +283,9 @@ func TestMutexTmplLevel(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
-		//var nextKey string
+		// var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-			//nextKey = key
+			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(mutexWfWithTmplLevel)
 		tmpl := wf.Spec.Templates[1]

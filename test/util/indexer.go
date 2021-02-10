@@ -34,6 +34,7 @@ func (i Indexer) ListIndexFuncValues(string) []string              { panic("impl
 func (i Indexer) SetByIndex(indexName, indexedValue string, objs ...interface{}) {
 	i.byIndex[indexName+"="+indexedValue] = objs
 }
+
 func (i Indexer) ByIndex(indexName, indexedValue string) ([]interface{}, error) {
 	return i.byIndex[indexName+"="+indexedValue], nil
 }

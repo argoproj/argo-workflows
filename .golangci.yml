@@ -1,4 +1,4 @@
-# https://github.com/golangci/golangci/wiki/Configuration
+# https://golangci-lint.run/usage/quick-start/
 run:
   skip-dirs:
     - pkg/client
@@ -17,8 +17,11 @@ linters:
     - deadcode
     - errcheck
     - goimports
+    - gci
+    - gofumpt
     - gosimple
     - govet
+    - misspell
     - staticcheck
     - structcheck
     - typecheck

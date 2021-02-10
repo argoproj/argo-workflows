@@ -37,7 +37,7 @@ func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 	return false
 }
 
-//Close the file
+// Close the file
 func close(f io.Closer) {
 	err := f.Close()
 	if err != nil {
@@ -52,7 +52,6 @@ func CompressEncodeString(content string) string {
 
 // DecodeDecompressString will return  decode and decompress the
 func DecodeDecompressString(content string) (string, error) {
-
 	buf, err := base64.StdEncoding.DecodeString(content)
 	if err != nil {
 		return "", err
@@ -79,7 +78,6 @@ func CompressContent(content []byte) []byte {
 
 // DecompressContent will return the uncompressed content
 func DecompressContent(content []byte) ([]byte, error) {
-
 	buf := bytes.NewReader(content)
 	gZipReader, _ := gzip.NewReader(buf)
 	defer close(gZipReader)

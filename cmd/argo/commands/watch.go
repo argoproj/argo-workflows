@@ -14,18 +14,15 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
 
 func NewWatchCommand() *cobra.Command {
-	var (
-		getArgs getFlags
-	)
+	var getArgs getFlags
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "watch WORKFLOW",
 		Short: "watch a workflow until it completes",
 		Example: `# Watch a workflow:

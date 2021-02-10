@@ -10,9 +10,11 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type NextWorkflow func(string)
-type GetSyncLimit func(string) (int, error)
-type IsWorkflowDeleted func(string) bool
+type (
+	NextWorkflow      func(string)
+	GetSyncLimit      func(string) (int, error)
+	IsWorkflowDeleted func(string) bool
+)
 
 type Manager struct {
 	syncLockMap  map[string]Semaphore

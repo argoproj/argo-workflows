@@ -721,7 +721,6 @@ func (we *WorkflowExecutor) GetMainContainerID(ctx context.Context) (string, err
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
-
 	if we.ExecutionControl == nil || !we.ExecutionControl.IncludeScriptOutput {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil

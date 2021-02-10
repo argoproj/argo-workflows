@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,7 +35,6 @@ func IsBearerAuthScheme(token string) bool {
 }
 
 func GetRestConfig(token string) (*restclient.Config, error) {
-
 	if IsBasicAuthScheme(token) {
 		token = strings.TrimSpace(strings.TrimPrefix(token, BasicAuthScheme))
 		username, password, ok := decodeBasicAuthToken(token)
@@ -54,7 +52,6 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 
 // convert a basic token (username, password) into a REST config
 func GetBasicRestConfig(username, password string) (*restclient.Config, error) {
-
 	restConfig, err := DefaultRestConfig()
 	if err != nil {
 		return nil, err
@@ -68,7 +65,6 @@ func GetBasicRestConfig(username, password string) (*restclient.Config, error) {
 
 // convert a bearer token into a REST config
 func GetBearerRestConfig(token string) (*restclient.Config, error) {
-
 	restConfig, err := DefaultRestConfig()
 	if err != nil {
 		return nil, err
@@ -83,10 +79,9 @@ func GetBearerRestConfig(token string) (*restclient.Config, error) {
 	return restConfig, nil
 }
 
-//Return the AuthString include Auth type(Basic or Bearer)
+// Return the AuthString include Auth type(Basic or Bearer)
 func GetAuthString(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
-
-	//Checking Basic Auth
+	// Checking Basic Auth
 	if in.Username != "" {
 		token, err := GetBasicAuthToken(in)
 		return BasicAuthScheme + " " + token, err
@@ -97,7 +92,6 @@ func GetAuthString(in *restclient.Config, explicitKubeConfigPath string) (string
 }
 
 func GetBasicAuthToken(in *restclient.Config) (string, error) {
-
 	if in == nil {
 		return "", errors.Errorf("RestClient can't be nil")
 	}
@@ -107,7 +101,6 @@ func GetBasicAuthToken(in *restclient.Config) (string, error) {
 
 // convert the REST config into a bearer token
 func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
-
 	if len(in.BearerToken) > 0 {
 		return in.BearerToken, nil
 	}
@@ -126,7 +119,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
-		//This function will return error because of TLS Cert missing,
+		// This function will return error because of TLS Cert missing,
 		// This code is not making actual request. We can ignore it.
 		_ = auth.UpdateTransportConfig(tc)
 
@@ -160,7 +153,6 @@ func encodeBasicAuthToken(username, password string) string {
 }
 
 func decodeBasicAuthToken(auth string) (username, password string, ok bool) {
-
 	c, err := base64.StdEncoding.DecodeString(auth)
 	if err != nil {
 		return

@@ -6,11 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
@@ -27,6 +26,7 @@ data:
   workflow: "2"
   template: "1"
 `
+
 const wfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -76,6 +76,7 @@ spec:
         exit_code = random.choice([0, 1, 1]); 
         sys.exit(exit_code)
 `
+
 const ResourceWfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -112,7 +113,6 @@ func GetSyncLimitFunc(ctx context.Context, kube kubernetes.Interface) func(strin
 		}
 
 		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
-
 		if err != nil {
 			return 0, err
 		}
@@ -186,7 +186,6 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
-
 	})
 }
 
@@ -248,7 +247,6 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
-
 	})
 }
 
@@ -311,9 +309,9 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
-
 	})
 }
+
 func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -339,7 +337,6 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodeError, node.Phase)
 		}
-
 	})
 }
 
@@ -483,6 +480,5 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		assert.Empty(woc.wf.Status.Synchronization.Semaphore.Waiting)
 		// Nobody is holding the lock
 		assert.Empty(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders)
-
 	})
 }

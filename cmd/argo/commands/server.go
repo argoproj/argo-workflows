@@ -43,7 +43,7 @@ func NewServerCommand() *cobra.Command {
 		accessControlAllowOrigin string
 	)
 
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   "server",
 		Short: "Start the Argo Server",
 		Example: fmt.Sprintf(`
