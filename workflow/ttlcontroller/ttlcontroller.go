@@ -15,12 +15,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	commonutil "github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/metrics"
-	"github.com/argoproj/argo/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	commonutil "github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type Controller struct {

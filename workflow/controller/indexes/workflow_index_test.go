@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	testutil "github.com/argoproj/argo/v3/test/util"
+	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 )
 
 func TestWorkflowIndexFunc(t *testing.T) {

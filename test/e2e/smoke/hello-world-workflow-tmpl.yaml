@@ -8,10 +8,12 @@ spec:
   entrypoint: whalesay
   templates:
     - name: whalesay
-      templateRef:
-        name: workflow-template-whalesay-template
-        template: whalesay-template
-      inputs:
-        parameters:
-          - name: message
-            value: "hello world"
+      steps:
+        - - name: step
+            templateRef:
+              name: workflow-template-whalesay-template
+              template: whalesay-template
+            arguments:
+              parameters:
+                - name: message
+                  value: "hello world"
