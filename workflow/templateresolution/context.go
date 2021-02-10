@@ -2,17 +2,18 @@ package templateresolution
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	typed "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // maxResolveDepth is the limit of template reference resolution.
@@ -158,13 +159,6 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*wfv1.
 		return ctx.GetTemplateFromRef(tmplRef)
 	} else if tmplName != "" {
 		return ctx.GetTemplateByName(tmplName)
-	} else {
-		if tmpl, ok := tmplHolder.(*wfv1.Template); ok {
-			if tmpl.GetType() != wfv1.TemplateTypeUnknown {
-				return tmpl.DeepCopy(), nil
-			}
-			return nil, errors.Errorf(errors.CodeNotFound, "template %s is not a concrete template", tmpl.Name)
-		}
 	}
 	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }
@@ -239,27 +233,11 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 		return nil, nil, false, err
 	}
 
-	// Return a concrete template without digging into it.
-	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
-		return newTmplCtx, tmpl, templateStored, nil
+	if tmpl.GetType() == wfv1.TemplateTypeUnknown {
+		return nil, nil, false, fmt.Errorf("template '%s' type is unknown", tmpl.Name)
 	}
 
-	// Dig into nested references with new template base.
-	finalTmplCtx, resolvedTmpl, templateStoredInCall, err := newTmplCtx.resolveTemplateImpl(tmpl, depth+1)
-	if err != nil {
-		return nil, nil, false, err
-	}
-	if templateStoredInCall {
-		templateStored = true
-	}
-
-	// Merge the referred template into the original.
-	mergedTmpl, err := common.MergeReferredTemplate(tmpl, resolvedTmpl)
-	if err != nil {
-		return nil, nil, false, err
-	}
-
-	return finalTmplCtx, mergedTmpl, templateStored, nil
+	return newTmplCtx, tmpl, templateStored, nil
 }
 
 // WithTemplateHolder creates new context with a template base of a given template holder.
