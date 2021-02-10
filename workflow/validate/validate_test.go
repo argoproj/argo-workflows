@@ -1566,36 +1566,6 @@ spec:
       command: [echo, hello]
 `
 
-var templateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    steps:
-      - - name: call-A
-          templateRef:
-            name: template-ref-target
-            template: A
-`
-
-var deprecatedTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: template-ref-target
-      template: A
-`
-
 func TestWorkflowTemplate(t *testing.T) {
 	err := validateWorkflowTemplate(templateRefTarget)
 	assert.NoError(t, err)
@@ -1641,34 +1611,6 @@ func TestNestedTemplateRef(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, wfConditions)
 }
-
-var deprecatedTemplateRefNestedTarget = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: deprecated-template-ref-nested-target
-spec:
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: template-ref-target
-      template: A
-`
-
-var deprecatedTemplateRefNestedLocalTarget = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: template-ref-nested-local-target
-spec:
-  templates:
-  - name: A
-    template: B		# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-  - name: B
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-`
 
 var undefinedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1

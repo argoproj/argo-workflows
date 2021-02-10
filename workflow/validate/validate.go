@@ -1379,5 +1379,5 @@ func isValidWorkflowFieldName(name string) []string {
 }
 
 func getTemplateID(tmpl *wfv1.Template) string {
-	return fmt.Sprintf("%s", tmpl.Name)
+	return tmpl.Name
 }
