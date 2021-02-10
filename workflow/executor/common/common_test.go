@@ -169,5 +169,5 @@ func TestKillGracefully(t *testing.T) {
 	}
 	ctx := context.Background()
 	err := KillGracefully(ctx, mock, "container-id", 1)
-	assert.EqualError(t, err, "timeout after 1s")
+	assert.EqualError(t, err, "timeout after 1ns")
 }
