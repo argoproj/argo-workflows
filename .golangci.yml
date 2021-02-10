@@ -14,6 +14,7 @@ run:
     - functional
 linters:
   enable:
+    - bodyclose
     - deadcode
     - errcheck
     - goimports
