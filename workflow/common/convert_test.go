@@ -52,8 +52,7 @@ spec:
   arguments: {}
   entrypoint: whalesay
   templates:
-  - arguments: {}
-    container:
+  - container:
       args:
       - hello world
       command:

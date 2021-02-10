@@ -63,7 +63,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		{
 			sgNode := woc.wf.GetNodeByName(sgNodeName)
 			if sgNode == nil {
-				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{}, stepsCtx.boundaryID, wfv1.NodeRunning)
 			} else if !sgNode.Fulfilled() {
 				_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 			}
