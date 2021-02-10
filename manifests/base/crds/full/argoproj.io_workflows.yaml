@@ -806,6 +806,17 @@ spec:
                   strategy:
                     type: string
                 type: object
+              podMetadata:
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  labels:
+                    additionalProperties:
+                      type: string
+                    type: object
+                type: object
               podPriority:
                 format: int32
                 type: integer
@@ -13919,6 +13930,17 @@ spec:
                     properties:
                       strategy:
                         type: string
+                    type: object
+                  podMetadata:
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        type: object
                     type: object
                   podPriority:
                     format: int32
