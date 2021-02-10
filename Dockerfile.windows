@@ -56,7 +56,7 @@ ARG IMAGE_OS=windows
 ARG IMAGE_ARCH=amd64
 
 # Perform the build
-WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo
+WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
@@ -69,5 +69,5 @@ RUN bash -c 'make dist/argoexec-windows-amd64'
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
-COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo/dist/argoexec-windows-amd64 C:/app/argoexec.exe
+COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows/dist/argoexec-windows-amd64 C:/app/argoexec.exe
 ENTRYPOINT [ "argoexec" ]

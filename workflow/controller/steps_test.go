@@ -8,9 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/test"
-	"github.com/argoproj/argo/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
