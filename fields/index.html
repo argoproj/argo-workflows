@@ -1742,8 +1742,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templateref" title="TemplateRef" class="md-nav__link">
-    TemplateRef
+  <a href="#memoizationstatus" title="MemoizationStatus" class="md-nav__link">
+    MemoizationStatus
   </a>
   
     <nav class="md-nav">
@@ -1762,8 +1762,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memoizationstatus" title="MemoizationStatus" class="md-nav__link">
-    MemoizationStatus
+  <a href="#nodesynchronizationstatus" title="NodeSynchronizationStatus" class="md-nav__link">
+    NodeSynchronizationStatus
   </a>
   
     <nav class="md-nav">
@@ -1782,8 +1782,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nodesynchronizationstatus" title="NodeSynchronizationStatus" class="md-nav__link">
-    NodeSynchronizationStatus
+  <a href="#templateref" title="TemplateRef" class="md-nav__link">
+    TemplateRef
   </a>
   
     <nav class="md-nav">
@@ -4244,8 +4244,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templateref" title="TemplateRef" class="md-nav__link">
-    TemplateRef
+  <a href="#memoizationstatus" title="MemoizationStatus" class="md-nav__link">
+    MemoizationStatus
   </a>
   
     <nav class="md-nav">
@@ -4264,8 +4264,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memoizationstatus" title="MemoizationStatus" class="md-nav__link">
-    MemoizationStatus
+  <a href="#nodesynchronizationstatus" title="NodeSynchronizationStatus" class="md-nav__link">
+    NodeSynchronizationStatus
   </a>
   
     <nav class="md-nav">
@@ -4284,8 +4284,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nodesynchronizationstatus" title="NodeSynchronizationStatus" class="md-nav__link">
-    NodeSynchronizationStatus
+  <a href="#templateref" title="TemplateRef" class="md-nav__link">
+    TemplateRef
   </a>
   
     <nav class="md-nav">
@@ -5735,11 +5735,6 @@
 <td>Tolerations to apply to workflow pods.</td>
 </tr>
 <tr>
-<td align="center">~<code>ttlSecondsAfterFinished</code>~</td>
-<td align="center">~<code>integer</code>~</td>
-<td>~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.</td>
-</tr>
-<tr>
 <td align="center"><code>ttlStrategy</code></td>
 <td align="center"><a href="#ttlstrategy"><code>TTLStrategy</code></a></td>
 <td>TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.</td>
@@ -6699,11 +6694,6 @@
 <td>Tolerations to apply to workflow pods.</td>
 </tr>
 <tr>
-<td align="center">~<code>ttlSecondsAfterFinished</code>~</td>
-<td align="center">~<code>integer</code>~</td>
-<td>~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.</td>
-</tr>
-<tr>
 <td align="center"><code>ttlStrategy</code></td>
 <td align="center"><a href="#ttlstrategy"><code>TTLStrategy</code></a></td>
 <td>TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.</td>
@@ -7429,11 +7419,6 @@
 <td>Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.</td>
 </tr>
 <tr>
-<td align="center">~<code>arguments</code>~</td>
-<td align="center">~<a href="#arguments"><code>Arguments</code></a>~</td>
-<td>~Arguments hold arguments to the template.~ DEPRECATED: This field is not used.</td>
-</tr>
-<tr>
 <td align="center"><code>automountServiceAccountToken</code></td>
 <td align="center"><code>boolean</code></td>
 <td>AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.</td>
@@ -7572,16 +7557,6 @@
 <td align="center"><code>synchronization</code></td>
 <td align="center"><a href="#synchronization"><code>Synchronization</code></a></td>
 <td>Synchronization holds synchronization lock configuration for this template</td>
-</tr>
-<tr>
-<td align="center">~<code>template</code>~</td>
-<td align="center">~<code>string</code>~</td>
-<td>~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.</td>
-</tr>
-<tr>
-<td align="center">~<code>templateRef</code>~</td>
-<td align="center">~<a href="#templateref"><code>TemplateRef</code></a>~</td>
-<td>~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.</td>
 </tr>
 <tr>
 <td align="center"><code>timeout</code></td>
@@ -7882,11 +7857,6 @@
 <td>Time at which this node started</td>
 </tr>
 <tr>
-<td align="center">~<code>storedTemplateID</code>~</td>
-<td align="center">~<code>string</code>~</td>
-<td>~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.</td>
-</tr>
-<tr>
 <td align="center"><code>synchronizationStatus</code></td>
 <td align="center"><a href="#nodesynchronizationstatus"><code>NodeSynchronizationStatus</code></a></td>
 <td>SynchronizationStatus is the synchronization status of the node</td>
@@ -7910,11 +7880,6 @@
 <td align="center"><code>type</code></td>
 <td align="center"><code>string</code></td>
 <td>Type indicates type of node</td>
-</tr>
-<tr>
-<td align="center">~<code>workflowTemplateName</code>~</td>
-<td align="center">~<code>string</code>~</td>
-<td>~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore.</td>
 </tr>
 </tbody>
 </table>
@@ -9886,68 +9851,9 @@
 </tr>
 </tbody>
 </table>
-<h2 id="templateref">TemplateRef<a class="headerlink" href="#templateref" title="Permanent link">&para;</a></h2>
-<p>TemplateRef is a reference of template resource.</p>
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-<ul>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml">cluster-wftmpl-dag.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml">clustertemplates.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml">mixed-cluster-namespaced-wftmpl-steps.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml">cron-backfill.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/dag.yaml">dag.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/hello-world.yaml">hello-world.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/retry-with-steps.yaml">retry-with-steps.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml">steps.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
-</ul>
-</details>
-
-<h3 id="fields_41">Fields<a class="headerlink" href="#fields_41" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th align="center">Field Name</th>
-<th align="center">Field Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center"><code>clusterScope</code></td>
-<td align="center"><code>boolean</code></td>
-<td>ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).</td>
-</tr>
-<tr>
-<td align="center"><code>name</code></td>
-<td align="center"><code>string</code></td>
-<td>Name is the resource name of the template.</td>
-</tr>
-<tr>
-<td align="center">~<code>runtimeResolution</code>~</td>
-<td align="center">~<code>boolean</code>~</td>
-<td>~RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.~ DEPRECATED: This value is not used anymore and is ignored</td>
-</tr>
-<tr>
-<td align="center"><code>template</code></td>
-<td align="center"><code>string</code></td>
-<td>Template is the name of referred template in the resource.</td>
-</tr>
-</tbody>
-</table>
 <h2 id="memoizationstatus">MemoizationStatus<a class="headerlink" href="#memoizationstatus" title="Permanent link">&para;</a></h2>
 <p>MemoizationStatus is the status of this memoized node</p>
-<h3 id="fields_42">Fields<a class="headerlink" href="#fields_42" title="Permanent link">&para;</a></h3>
+<h3 id="fields_41">Fields<a class="headerlink" href="#fields_41" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -9976,7 +9882,7 @@
 </table>
 <h2 id="nodesynchronizationstatus">NodeSynchronizationStatus<a class="headerlink" href="#nodesynchronizationstatus" title="Permanent link">&para;</a></h2>
 <p>NodeSynchronizationStatus stores the status of a node</p>
-<h3 id="fields_43">Fields<a class="headerlink" href="#fields_43" title="Permanent link">&para;</a></h3>
+<h3 id="fields_42">Fields<a class="headerlink" href="#fields_42" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -9990,6 +9896,60 @@
 <td align="center"><code>waiting</code></td>
 <td align="center"><code>string</code></td>
 <td>Waiting is the name of the lock that this node is waiting for</td>
+</tr>
+</tbody>
+</table>
+<h2 id="templateref">TemplateRef<a class="headerlink" href="#templateref" title="Permanent link">&para;</a></h2>
+<p>TemplateRef is a reference of template resource.</p>
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+<ul>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml">cluster-wftmpl-dag.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml">clustertemplates.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml">mixed-cluster-namespaced-wftmpl-steps.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml">cron-backfill.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/dag.yaml">dag.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/hello-world.yaml">hello-world.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/retry-with-steps.yaml">retry-with-steps.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml">steps.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
+</ul>
+</details>
+
+<h3 id="fields_43">Fields<a class="headerlink" href="#fields_43" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="center">Field Name</th>
+<th align="center">Field Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>clusterScope</code></td>
+<td align="center"><code>boolean</code></td>
+<td>ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).</td>
+</tr>
+<tr>
+<td align="center"><code>name</code></td>
+<td align="center"><code>string</code></td>
+<td>Name is the resource name of the template.</td>
+</tr>
+<tr>
+<td align="center"><code>template</code></td>
+<td align="center"><code>string</code></td>
+<td>Template is the name of referred template in the resource.</td>
 </tr>
 </tbody>
 </table>
