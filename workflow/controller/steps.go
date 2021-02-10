@@ -10,10 +10,10 @@ import (
 	"github.com/Knetic/govaluate"
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
 // stepsContext holds context information about this context's steps

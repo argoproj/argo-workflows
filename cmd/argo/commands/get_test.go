@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	testutil "github.com/argoproj/argo/v3/test/util"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 )
 
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
