@@ -74,7 +74,7 @@ func (we *WorkflowExecutor) processFilter(data interface{}, filter *wfv1.Filter)
 		}
 		return out, nil
 	default:
-		return nil, fmt.Errorf("unsupported data type for filtering")
+		return nil, fmt.Errorf("unsupported data type for filtering: %T", data)
 	}
 }
 
