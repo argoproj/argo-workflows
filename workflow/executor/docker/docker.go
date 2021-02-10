@@ -17,10 +17,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/util/file"
-	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type DockerExecutor struct{}
@@ -197,7 +197,7 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string, termin
 	select {
 	case err = <-waitCh:
 		// waitCmd completed
-	case <-time.After(terminationGracePeriodDuration * time.Second):
+	case <-time.After(terminationGracePeriodDuration):
 		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)

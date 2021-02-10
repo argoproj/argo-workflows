@@ -10,8 +10,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/workflow/executor/common/wait"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/common/wait"
 )
 
 type K8sAPIExecutor struct {
