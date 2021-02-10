@@ -14,9 +14,17 @@ run:
     - functional
 linters:
   enable:
+    - deadcode
+    - errcheck
     - goimports
+    - gosimple
+    - govet
+    - staticcheck
+    - structcheck
+    - typecheck
     - unparam
     - unused
+    - varcheck
 linters-settings:
   goimports:
     local-prefixes: github.com/argoproj/argo-workflows/
