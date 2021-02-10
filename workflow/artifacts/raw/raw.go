@@ -1,6 +1,7 @@
 package raw
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/argoproj/argo-workflows/v3/errors"

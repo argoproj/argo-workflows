@@ -11,13 +11,19 @@ spec:
     steps:
     - - name: generate-artifact
         template: generate-artifacts
-    - - name: consume-artifact
+    - - name: process-artifact
         template: print-message
         withParam: "{{steps.generate-artifact.outputs.result}}"
         arguments:
           parameters:
           - name: file
             value: "{{item}}"
+    - - name: collect-artifact
+        template: collect-artifacts
+        arguments:
+          parameters:
+            - name: processed
+              value: "{{steps.process-artifact.outputs.parameters.processed}}"
 
   - name: generate-artifacts
     data:
@@ -48,15 +54,15 @@ spec:
         aggregator:
           regex: ".+?\\.(.+?)$"
 
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      artifacts:
-      - name: hello-art
-        path: /tmp/hello_world.txt
+  - name: collect-artifacts
+    inputs:
+      parameters:
+        - name: processed
+    data:
+      - name: aggregate-batch
+        filter:
+          directory:
+            recursive: false
 
   - name: print-message
     inputs:
@@ -65,4 +71,9 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{inputs.parameters.file}}"]
+      args: ["echo \"{{inputs.parameters.file}}\" | tee /tmp/f.txt"]
+    outputs:
+      parameters:
+        - name: processed
+          valueFrom:
+            path: /tmp/f.txt

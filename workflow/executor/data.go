@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"k8s.io/utils/pointer"
 	"regexp"
 	"strings"
-
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func (we *WorkflowExecutor) Data(ctx context.Context) error {
@@ -19,6 +18,10 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 
 	// Once we allow input parameters to the data template, we'll load them here
 	var data interface{}
+	if len(we.Template.Inputs.Parameters) == 1 {
+		data = &we.Template.Inputs.Parameters[0].Value
+	}
+
 	var err error
 	for _, step := range dataTemplate {
 		switch {
@@ -56,21 +59,33 @@ func (we *WorkflowExecutor) processWithArtifactPaths(ctx context.Context, artifa
 	return files, nil
 }
 
-func (we *WorkflowExecutor) processFilter(data interface{}, filter *wfv1.Filter) ([]string, error) {
-	var files []string
-	var ok bool
-	if files, ok = data.([]string); !ok {
-		// Currently we only support input being []string, but we could easily also do so for [][]string
-		return nil, fmt.Errorf("intput is not []string")
+func (we *WorkflowExecutor) processFilter(data interface{}, filter *wfv1.Filter) (interface{}, error) {
+	switch data.(type) {
+	case []string:
+		return processFilterSlice(data.([]string), filter)
+	case [][]string:
+		var out [][]string
+		for i, slice := range data.([][]string) {
+			filtered, err := processFilterSlice(slice, filter)
+			if err != nil {
+				return nil, fmt.Errorf("cannot filter index '%d' of data: %w", i, err)
+			}
+			out = append(out, filtered)
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("unsupported data type for filtering")
 	}
+}
 
+func processFilterSlice(files []string, filter *wfv1.Filter) ([]string, error) {
 	switch fil := filter; {
 	case fil.Directory != nil:
 		// If recursive is set to false, remove all files that contain a directory
 		if fil.Directory.Recursive != nil && !*fil.Directory.Recursive {
-			inPlaceFilter(func(file string) bool {
+			return inPlaceFilter(func(file string) bool {
 				return !strings.Contains(file, "/")
-			}, &files)
+			}, files), nil
 		}
 
 		if fil.Directory.Regex != "" {
@@ -78,12 +93,11 @@ func (we *WorkflowExecutor) processFilter(data interface{}, filter *wfv1.Filter)
 			if err != nil {
 				return nil, fmt.Errorf("regex '%s' is not valid: %w", fil.Directory.Regex, err)
 			}
-			inPlaceFilter(func(file string) bool {
+			return inPlaceFilter(func(file string) bool {
 				return re.MatchString(file)
-			}, &files)
+			}, files), nil
 		}
 	}
-
 	return files, nil
 }
 
@@ -134,15 +148,16 @@ func (we *WorkflowExecutor) processOutput(ctx context.Context, data interface{})
 	return nil
 }
 
-func inPlaceFilter(filter func(file string) bool, files *[]string) {
+func inPlaceFilter(filter func(file string) bool, files []string) []string {
 	keptFiles := 0
-	for _, file := range *files {
+	for _, file := range files {
 		if filter(file) {
-			(*files)[keptFiles] = file
+			files[keptFiles] = file
 			keptFiles++
 		}
 	}
-	*files = (*files)[:keptFiles]
+	out := files[:keptFiles]
+	return out
 }
 
 func groupBy(grouper func(file string) string, files []string) [][]string {
