@@ -15,7 +15,6 @@ import (
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -199,21 +198,20 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
-	_ = wait.ExponentialBackoff(wait.Backoff{ // takes 51s
-		Duration: 50 * time.Millisecond,
-		Factor:   2,
-		Steps:    11,
-	}, func() (done bool, err error) {
+	for {
 		select {
 		case <-ctx.Done():
-			return true, ctx.Err()
+			return
 		default:
 			if err := p.secureRootFiles(); err != nil {
 				log.WithError(err).Warn("failed to secure root files")
 			}
-			return p.haveContainers(containerNames), nil
+			if p.haveContainers(containerNames) {
+				return
+			}
+			time.Sleep(50 * time.Millisecond)
 		}
-	})
+	}
 }
 
 func (d *PNSExecutor) haveContainers(containerNames []string) bool {
