@@ -19,7 +19,7 @@ import {WorkflowTemplateCreator} from '../workflow-template-creator';
 
 require('./workflow-template-list.scss');
 
-const learnMore = <a href='https://argoproj.github.io/argo/workflow-templates/'>Learn more</a>;
+const learnMore = <a href='https://argoproj.github.io/argo-workflows/workflow-templates/'>Learn more</a>;
 
 export const WorkflowTemplateList = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
