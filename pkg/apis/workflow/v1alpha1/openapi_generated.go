@@ -2157,20 +2157,6 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
-					"storedTemplateID": {
-						SchemaProps: spec.SchemaProps{
-							Description: "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"workflowTemplateName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"templateScope": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateScope is the template scope in which the template of this node was retrieved.",
@@ -3686,26 +3672,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"template": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"arguments": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Arguments hold arguments to the template. DEPRECATED: This field is not used.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
-						},
-					},
-					"templateRef": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TemplateRef is the reference to the template resource which is used as the base of this template. DEPRECATED: This field is not used.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
-						},
-					},
 					"inputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
@@ -4009,7 +3975,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -4031,13 +3997,6 @@ func schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref common.ReferenceCallback)
 						SchemaProps: spec.SchemaProps{
 							Description: "Template is the name of referred template in the resource.",
 							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"runtimeResolution": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored",
-							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
@@ -4885,13 +4844,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
-					"ttlSecondsAfterFinished": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
 					"ttlStrategy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.",
@@ -5606,13 +5558,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Description: "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary workflow.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"ttlSecondsAfterFinished": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-							Type:        []string{"integer"},
-							Format:      "int32",
 						},
 					},
 					"ttlStrategy": {
