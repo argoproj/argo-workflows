@@ -547,7 +547,7 @@ type Template struct {
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
 
 	// Data is a data template
-	Data []DataStep `json:"data,omitempty"`
+	Data DataSteps `json:"data,omitempty"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -1100,6 +1100,17 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 
 func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
+}
+
+type DataSteps []DataStep
+
+func (ds *DataSteps) GetWithArtifactPathsIfAny() *WithArtifactPaths {
+	for _, step := range *ds {
+		if step.WithArtifactPaths != nil {
+			return step.WithArtifactPaths
+		}
+	}
+	return nil
 }
 
 type DataStep struct {
@@ -2314,12 +2325,6 @@ func (t *DAGTask) ShouldExpand() bool {
 type SuspendTemplate struct {
 	// Duration is the seconds to wait before automatically resuming a template
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
-}
-
-// DataTemplate is a template that process and transforms data
-type DataTemplate struct {
-	// DataSteps contains the steps of the data transformation
-	DataSteps []DataStep `json:",inline"`
 }
 
 // GetArtifactByName returns an input artifact by its name

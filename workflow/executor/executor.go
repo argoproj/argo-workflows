@@ -243,7 +243,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) ProcessData(ctx context.Context) error {
+func (we *WorkflowExecutor) Data(ctx context.Context) error {
 	dataTemplate := we.Template.Data
 	if dataTemplate == nil {
 		return nil
@@ -261,7 +261,6 @@ func (we *WorkflowExecutor) ProcessData(ctx context.Context) error {
 		case step.Aggregator != nil:
 			data, err = we.processAggregator(data, step.Aggregator)
 		}
-
 		if err != nil {
 			return fmt.Errorf("error processing data step '%s': %w", step.Name, err)
 		}

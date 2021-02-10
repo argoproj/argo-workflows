@@ -1522,7 +1522,6 @@ type executeTemplateOpts struct {
 	onExitTemplate bool
 	// activeDeadlineSeconds is a deadline to set to any pods executed. This is necessary for pods to inherit backoff.maxDuration
 	executionDeadline time.Time
-	isImpliedPod      bool
 }
 
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
@@ -2230,7 +2229,6 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
-		isImpliedPod:        opts.isImpliedPod,
 	})
 
 	if err != nil {

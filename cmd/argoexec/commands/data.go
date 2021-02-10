@@ -24,5 +24,5 @@ func NewDataCommand() *cobra.Command {
 
 func processData(ctx context.Context) error {
 	wfExecutor := initExecutor()
-	return wfExecutor.ProcessData(ctx)
+	return wfExecutor.Data(ctx)
 }

@@ -126,7 +126,6 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 type createWorkflowPodOpts struct {
 	includeScriptOutput bool
 	onExitPod           bool
-	isImpliedPod        bool
 	executionDeadline   time.Time
 }
 
@@ -260,7 +259,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl, opts)
 
-	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims, opts.isImpliedPod)
+	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +708,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
-func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume, isImpliedPod bool) error {
+func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
 	default:
@@ -762,7 +761,7 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 		return nil
 	}
 
-	if tmpl.Container != nil && !isImpliedPod {
+	if tmpl.Container != nil {
 		err := addVolumeRef(tmpl.Container.VolumeMounts)
 		if err != nil {
 			return err
@@ -1130,16 +1129,8 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	}
 
 	if tmpl.Data != nil {
-		spot := -1
-		for i, step := range tmpl.Data {
-			if step.WithArtifactPaths != nil {
-				spot = i
-				break
-			}
-		}
-		if spot >= 0 {
-			log.Infof("SIMON creating volume")
-			createSecretVolume(allVolumesMap, tmpl.Data[spot].WithArtifactPaths.Artifact, uniqueKeyMap)
+		if arts := tmpl.Data.GetWithArtifactPathsIfAny(); arts != nil {
+			createSecretVolume(allVolumesMap, arts.Artifact, uniqueKeyMap)
 		}
 	}
 
