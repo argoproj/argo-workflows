@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	common2 "github.com/argoproj/argo/v3/workflow/artifacts/common"
+	common2 "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"

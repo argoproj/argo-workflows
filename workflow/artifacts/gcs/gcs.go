@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/v3/workflow/artifacts/common"
-
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
@@ -23,6 +21,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
 // ArtifactDriver is a driver for GCS

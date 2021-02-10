@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/argoproj/argo/v3/workflow/artifacts/common"
-
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
@@ -19,6 +17,7 @@ import (
 	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
 // ArtifactDriver is the artifact driver for a git repo

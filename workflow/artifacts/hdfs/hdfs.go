@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/argo/v3/workflow/artifacts/common"
-
 	"github.com/argoproj/pkg/file"
 	"gopkg.in/jcmturner/gokrb5.v5/credentials"
 	"gopkg.in/jcmturner/gokrb5.v5/keytab"
@@ -15,6 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 )
 

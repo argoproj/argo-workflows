@@ -5,12 +5,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/argoproj/argo/v3/workflow/artifacts/common"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
 // ArtifactDriver is the artifact driver for a HTTP URL
