@@ -47,6 +47,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/httptemplate"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/progress"
@@ -941,42 +942,53 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
 	// we can re-submit it.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Phase.Fulfilled() || node.StartedAt.IsZero() {
+		if node.Phase.Fulfilled() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
-		if seenPod, ok := seenPods[nodeID]; !ok {
-
-			// grace-period to allow informer sync
-			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
-			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
-
-			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
-			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() {
-				continue
+		switch node.Type {
+		case wfv1.NodeTypeHTTP:
+			if err := httptemplate.ReconcileNode(*woc.wf, &node); err != nil {
+				return fmt.Errorf("failed to reconcille HTTP node %q: %w", node.Name, err)
 			}
-			if recentlyStarted {
-				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
-				// In this case, the workflow will only be requeued after the resync period (20m). This means
-				// workflow will not update for 20m. Requeuing here prevents that happening.
-				woc.requeue()
-				continue
-			}
-
-			if node.Daemoned != nil && *node.Daemoned {
-				node.Daemoned = nil
-				woc.updated = true
-			}
-			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
-		} else {
-			// At this point we are certain that the pod associated with our node is running or has been run;
-			// it is safe to extract the k8s-node information given this knowledge.
-			if node.HostNodeName != seenPod.Spec.NodeName {
-				node.HostNodeName = seenPod.Spec.NodeName
+			if node.Fulfilled() {
 				woc.wf.Status.Nodes[nodeID] = node
 				woc.updated = true
+			}
+		case wfv1.NodeTypePod:
+			if seenPod, ok := seenPods[nodeID]; !ok {
+
+				// grace-period to allow informer sync
+				recentlyStarted := recentlyStarted(node)
+				woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+				metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
+
+				// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
+				// again instead of marking it as an error. Check if that's the case.
+				if node.Pending() {
+					continue
+				}
+				if recentlyStarted {
+					// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
+					// In this case, the workflow will only be requeued after the resync period (20m). This means
+					// workflow will not update for 20m. Requeuing here prevents that happening.
+					woc.requeue()
+					continue
+				}
+
+				if node.Daemoned != nil && *node.Daemoned {
+					node.Daemoned = nil
+					woc.updated = true
+				}
+				woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
+			} else {
+				// At this point we are certain that the pod associated with our node is running or has been run;
+				// it is safe to extract the k8s-node information given this knowledge.
+				if node.HostNodeName != seenPod.Spec.NodeName {
+					node.HostNodeName = seenPod.Spec.NodeName
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
+				}
 			}
 		}
 	}
@@ -1754,6 +1766,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeScript(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeResource:
 		node, err = woc.executeResource(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeHTTP:
+		node, err = httptemplate.ExecuteNode(ctx, *woc.wf, nodeName, processedTmpl, func(nodeType wfv1.NodeType, phase wfv1.NodePhase) *wfv1.NodeStatus {
+			return woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, opts.boundaryID, phase)
+		})
 	case wfv1.TemplateTypeDAG:
 		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:

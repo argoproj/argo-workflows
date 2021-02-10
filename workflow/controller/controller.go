@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/httptemplate"
 
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
@@ -193,6 +194,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
+	httptemplate.Init(wfc.kubeclientset)
 
 	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
@@ -243,6 +245,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				go wfc.runTTLController(ctx, workflowTTLWorkers)
 				go wfc.runCronController(ctx)
 				go wfc.metrics.RunServer(ctx)
+				go httptemplate.Run(ctx, wfc.queueWF, 4)
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
@@ -692,8 +695,12 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) error {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return fmt.Errorf("Watch returned pod unrelated to any workflow")
 	}
-	wfc.wfQueue.AddRateLimited(pod.ObjectMeta.Namespace + "/" + workflowName)
+	wfc.queueWF(pod.Namespace, workflowName)
 	return nil
+}
+
+func (wfc *WorkflowController) queueWF(namespace, workflowName string) {
+	wfc.wfQueue.AddRateLimited(namespace + "/" + workflowName)
 }
 
 func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
