@@ -7,13 +7,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
-	clusterworkflowtmplpkg "github.com/argoproj/argo/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
-	infopkg "github.com/argoproj/argo/v3/pkg/apiclient/info"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/v3/util/instanceid"
+	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
 type Client interface {
@@ -55,7 +55,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
 	if opts.ArgoServerOpts.HTTP1 {
-		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier())
+		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify)
 	} else if opts.ArgoServerOpts.URL != "" {
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {

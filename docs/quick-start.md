@@ -10,7 +10,7 @@ To get started quickly, you can use the quick start manifest which will install 
 
 ```sh
 kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/quick-start-postgres.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/quick-start-postgres.yaml
 ```
 
 !!! note
@@ -30,12 +30,12 @@ This will serve the user interface on http://localhost:2746
 
 If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then [follow these instructions](argo-server.md#access-the-argo-workflows-ui). 
 
-Next, Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo/releases).
+Next, Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo-workflows/releases).
 
 Finally, submit an example workflow:  
 
 ```sh
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 argo list -n argo
 argo get -n argo @latest
 argo logs -n argo @latest

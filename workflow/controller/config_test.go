@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/argoproj/argo/v3/config"
+	"github.com/argoproj/argo-workflows/v3/config"
 )
 
 func TestUpdateConfig(t *testing.T) {

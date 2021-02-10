@@ -8,7 +8,7 @@ import (
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/argoproj/argo/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 const baseUrlMetrics = "http://localhost:9090/metrics"
