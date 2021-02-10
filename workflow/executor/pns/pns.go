@@ -274,7 +274,7 @@ func (p *PNSExecutor) killContainer(containerID string, terminationGracePeriodDu
 	if err != nil {
 		log.Warnf("Failed to SIGTERM pid %d: %v", pid, err)
 	}
-	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration * time.Second}
+	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration}
 	err = executil.WaitPID(pid, waitPIDOpts)
 	if err == nil {
 		log.Infof("PID %d completed", pid)

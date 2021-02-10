@@ -96,7 +96,7 @@ func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerI
 	if err != nil {
 		return err
 	}
-	err = WaitForTermination(ctx, c, containerID, terminationGracePeriodDuration*time.Second)
+	err = WaitForTermination(ctx, c, containerID, terminationGracePeriodDuration)
 	if err == nil {
 		log.Infof("ContainerID %q successfully killed", containerID)
 		return nil
@@ -106,7 +106,7 @@ func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerI
 	if err != nil {
 		return err
 	}
-	err = WaitForTermination(ctx, c, containerID, terminationGracePeriodDuration*time.Second)
+	err = WaitForTermination(ctx, c, containerID, terminationGracePeriodDuration)
 	if err != nil {
 		return err
 	}
