@@ -16,7 +16,7 @@ spec:
             path: /my-http-artifact
             optional: true
             http:
-              url: https://github.com/argoproj/argo/not-found
+              url: https://github.com/argoproj/argo-workflows/not-found
           - name: my-s3-artifact
             path: /my-s3-artifact
             optional: true

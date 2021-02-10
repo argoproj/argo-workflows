@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/argoproj/argo/v3/util/slice"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -2143,7 +2143,7 @@ type DAGTemplate struct {
 	// before failing the DAG itself.
 	// The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to
 	// completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
-	// More info and example about this feature at https://github.com/argoproj/argo/issues/1442
+	// More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442
 	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,3,opt,name=failFast"`
 }
 

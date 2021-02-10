@@ -22,13 +22,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	workflow "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/v3/server/auth/serviceaccount"
-	"github.com/argoproj/argo/v3/server/auth/sso"
-	"github.com/argoproj/argo/v3/server/auth/types"
-	servertypes "github.com/argoproj/argo/v3/server/types"
-	"github.com/argoproj/argo/v3/util/kubeconfig"
-	"github.com/argoproj/argo/v3/workflow/common"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/server/auth/serviceaccount"
+	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type ContextKey string

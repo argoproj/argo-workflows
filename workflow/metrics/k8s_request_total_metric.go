@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/v3/util/k8s"
+	"github.com/argoproj/argo-workflows/v3/util/k8s"
 )
 
 var (

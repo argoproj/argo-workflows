@@ -1,7 +1,7 @@
 package resource
 
 import (
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func UpdateResourceDurations(wf *wfv1.Workflow) {
