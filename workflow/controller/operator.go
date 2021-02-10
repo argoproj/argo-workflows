@@ -824,6 +824,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	case wfv1.RetryPolicyOnError:
 		retryOnFailed = false
 		retryOnError = true
+	case wfv1.RetryPolicyOnTransientError:
+		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(errors.InternalError(lastChildNode.Message)) {
+			retryOnFailed = true
+			retryOnError = true
+		}
 	case wfv1.RetryPolicyOnFailure, "":
 		retryOnFailed = true
 		retryOnError = false
@@ -1774,7 +1779,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		retryStrategy := woc.retryStrategy(processedTmpl)
 		if retryStrategy == nil ||
 			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
 			return node, err
 		}
 	}
