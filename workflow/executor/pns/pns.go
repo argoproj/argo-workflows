@@ -18,12 +18,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/util/archive"
-	"github.com/argoproj/argo/v3/workflow/common"
-	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
-	"github.com/argoproj/argo/v3/workflow/executor/k8sapi"
-	osspecific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/archive"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/k8sapi"
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 var errContainerNameNotFound = fmt.Errorf("container name not found")
@@ -257,7 +257,7 @@ func (p *PNSExecutor) killContainer(ctx context.Context, containerName string, t
 	if err != nil {
 		log.Warnf("Failed to SIGTERM pid %d: %v", pid, err)
 	}
-	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration * time.Second}
+	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration}
 	err = executil.WaitPID(pid, waitPIDOpts)
 	if err == nil {
 		log.Infof("PID %d completed", pid)

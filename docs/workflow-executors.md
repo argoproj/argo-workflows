@@ -33,7 +33,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Secure
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
-    * [`runAsNonRoot`](workflow-pod-security-context.md) - TBD, see [#4186](https://github.com/argoproj/argo/issues/4186)
+    * [`runAsNonRoot`](workflow-pod-security-context.md) - TBD, see [#4186](https://github.com/argoproj/argo-workflows/issues/4186)
 * Scalable:
     * Operations performed against the local Kubelet
 * Artifacts:

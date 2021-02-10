@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/argoproj/argo/v3/util/slice"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -278,14 +278,6 @@ type WorkflowSpec struct {
 	// primary workflow.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,17,opt,name=onExit"`
 
-	// TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
-	// (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
-	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
-	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
-	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-	// DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
-	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"bytes,18,opt,name=ttlSecondsAfterFinished"`
-
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
 	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
 	// deleted after the time to live expires. If this field is unset,
@@ -365,14 +357,6 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 }
 
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
-	if wfs.TTLSecondsAfterFinished != nil {
-		if wfs.TTLStrategy == nil {
-			ttlstrategy := TTLStrategy{SecondsAfterCompletion: wfs.TTLSecondsAfterFinished}
-			wfs.TTLStrategy = &ttlstrategy
-		} else if wfs.TTLStrategy.SecondsAfterCompletion == nil {
-			wfs.TTLStrategy.SecondsAfterCompletion = wfs.TTLSecondsAfterFinished
-		}
-	}
 	return wfs.TTLStrategy
 }
 
@@ -494,18 +478,6 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 type Template struct {
 	// Name is the name of the template
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
-
-	// Template is the name of the template which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-
-	// Arguments hold arguments to the template.
-	// DEPRECATED: This field is not used.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
-
-	// TemplateRef is the reference to the template resource which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
@@ -633,23 +605,6 @@ type Template struct {
 	// Timout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
-}
-
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-var _ TemplateReferenceHolder = &Template{}
-
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-func (tmpl *Template) GetTemplateName() string {
-	if tmpl.Template != "" {
-		return tmpl.Template
-	} else {
-		return tmpl.Name
-	}
-}
-
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-func (tmpl *Template) GetTemplateRef() *TemplateRef {
-	return tmpl.TemplateRef
 }
 
 // GetBaseTemplate returns a base template content.
@@ -1128,10 +1083,6 @@ type TemplateRef struct {
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	// Template is the name of referred template in the resource.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-	// RuntimeResolution skips validation at creation time.
-	// By enabling this option, you can create the referred workflow template before the actual runtime.
-	// DEPRECATED: This value is not used anymore and is ignored
-	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
@@ -1565,14 +1516,6 @@ type NodeStatus struct {
 	// TemplateRef is the reference to the template resource which this node corresponds to.
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
-
-	// StoredTemplateID is the ID of stored template.
-	// DEPRECATED: This value is not used anymore.
-	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
-
-	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-	// DEPRECATED: This value is not used anymore.
-	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
 
 	// TemplateScope is the template scope in which the template of this node was retrieved.
 	TemplateScope string `json:"templateScope,omitempty" protobuf:"bytes,20,opt,name=templateScope"`
@@ -2209,7 +2152,7 @@ type DAGTemplate struct {
 	// before failing the DAG itself.
 	// The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to
 	// completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
-	// More info and example about this feature at https://github.com/argoproj/argo/issues/1442
+	// More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442
 	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,3,opt,name=failFast"`
 }
 

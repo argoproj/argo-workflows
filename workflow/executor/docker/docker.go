@@ -17,10 +17,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/util/file"
-	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 var errContainerNotExist = fmt.Errorf("container does not exist") // sentinel error
