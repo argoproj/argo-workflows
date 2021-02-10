@@ -8,6 +8,11 @@ spec:
   entrypoint: hello-hello-hello
   templates:
   - name: hello-hello-hello
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          key: template
+          name: my-config
     steps:
     - - name: hello1
         template: whalesay

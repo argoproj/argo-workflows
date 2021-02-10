@@ -1779,7 +1779,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 	}
 
-	if node.Fulfilled(){
+	if node.Fulfilled() {
 		if processedTmpl.Synchronization != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 		}

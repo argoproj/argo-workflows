@@ -26,6 +26,7 @@ metadata:
 data:
   workflow: "2"
   template: "1"
+  step: "1"
 `
 const wfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
@@ -484,5 +485,333 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		// Nobody is holding the lock
 		assert.Empty(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders)
 
+	})
+}
+
+const StepWithSync = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-bzz2s
+  namespace: default
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - arguments: {}
+    name: hello-hello-hello
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello1
+        name: hello1
+        template: whalesay
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello2a
+        name: hello2a
+        template: whalesay
+      - arguments:
+          parameters:
+          - name: message
+            value: hello2b
+        name: hello2b
+        template: whalesay
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          key: step
+          name: my-config
+  - arguments: {}
+    container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+    inputs:
+      parameters:
+      - name: message
+    name: whalesay
+`
+
+const StepWithSyncStatus = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-bzz2s
+  namespace: default
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - arguments: {}
+    name: hello-hello-hello
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello1
+        name: hello1
+        template: whalesay
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello2a
+        name: hello2a
+        template: whalesay
+      - arguments:
+          parameters:
+          - name: message
+            value: hello2b
+        name: hello2b
+        template: whalesay
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          key: step
+          name: my-config
+  - arguments: {}
+    container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+    inputs:
+      parameters:
+      - name: message
+    name: whalesay
+status:
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2021-02-10T22:19:58Z"
+  nodes:
+    steps-bzz2s:
+      children:
+      - steps-bzz2s-3171338946
+      displayName: steps-bzz2s
+      finishedAt: "2021-02-10T22:19:58Z"
+      id: steps-bzz2s
+      message: 'Waiting for argo/ConfigMap/my-config/step lock. Lock status: 0/1 '
+      name: steps-bzz2s
+      outboundNodes:
+      - steps-bzz2s-2645942520
+      - steps-bzz2s-2696275377
+      phase: Running
+      progress: 3/3
+      resourcesDuration:
+        cpu: 15
+        memory: 8
+      startedAt: "2021-02-10T22:18:59Z"
+      templateName: hello-hello-hello
+      templateScope: local/steps-bzz2s
+      type: Steps
+    steps-bzz2s-2030313759:
+      boundaryID: steps-bzz2s
+      children:
+      - steps-bzz2s-2645942520
+      - steps-bzz2s-2696275377
+      displayName: '[1]'
+      finishedAt: "2021-02-10T22:19:58Z"
+      id: steps-bzz2s-2030313759
+      name: steps-bzz2s[1]
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 10
+        memory: 5
+      startedAt: "2021-02-10T22:19:48Z"
+      templateName: hello-hello-hello
+      templateScope: local/steps-bzz2s
+      type: StepGroup
+    steps-bzz2s-2645942520:
+      boundaryID: steps-bzz2s
+      displayName: hello2a
+      finishedAt: "2021-02-10T22:19:56Z"
+      id: steps-bzz2s-2645942520
+      inputs:
+        parameters:
+        - name: message
+          value: hello2a
+      name: steps-bzz2s[1].hello2a
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: steps-bzz2s/steps-bzz2s-2645942520/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 6
+        memory: 3
+      startedAt: "2021-02-10T22:19:48Z"
+      templateName: whalesay
+      templateScope: local/steps-bzz2s
+      type: Pod
+    steps-bzz2s-2696275377:
+      boundaryID: steps-bzz2s
+      displayName: hello2b
+      finishedAt: "2021-02-10T22:19:53Z"
+      id: steps-bzz2s-2696275377
+      inputs:
+        parameters:
+        - name: message
+          value: hello2b
+      name: steps-bzz2s[1].hello2b
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: steps-bzz2s/steps-bzz2s-2696275377/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      startedAt: "2021-02-10T22:19:48Z"
+      templateName: whalesay
+      templateScope: local/steps-bzz2s
+      type: Pod
+    steps-bzz2s-3171338946:
+      boundaryID: steps-bzz2s
+      children:
+      - steps-bzz2s-3612800383
+      displayName: '[0]'
+      finishedAt: "2021-02-10T22:19:48Z"
+      id: steps-bzz2s-3171338946
+      name: steps-bzz2s[0]
+      phase: Succeeded
+      progress: 3/3
+      resourcesDuration:
+        cpu: 15
+        memory: 8
+      startedAt: "2021-02-10T22:19:38Z"
+      templateName: hello-hello-hello
+      templateScope: local/steps-bzz2s
+      type: StepGroup
+    steps-bzz2s-3612800383:
+      boundaryID: steps-bzz2s
+      children:
+      - steps-bzz2s-2030313759
+      displayName: hello1
+      finishedAt: "2021-02-10T22:19:44Z"
+      id: steps-bzz2s-3612800383
+      inputs:
+        parameters:
+        - name: message
+          value: hello1
+      name: steps-bzz2s[0].hello1
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: steps-bzz2s/steps-bzz2s-3612800383/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 3
+      startedAt: "2021-02-10T22:19:38Z"
+      templateName: whalesay
+      templateScope: local/steps-bzz2s
+      type: Pod
+  phase: Succeeded
+  progress: 3/3
+  resourcesDuration:
+    cpu: 15
+    memory: 8
+  startedAt: "2021-02-10T22:18:59Z"
+`
+
+func TestSynchronizationWithStep(t *testing.T) {
+	assert := assert.New(t)
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc)
+	var cm v1.ConfigMap
+	err := yaml.Unmarshal([]byte(configMap), &cm)
+	assert.NoError(err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	assert.NoError(err)
+
+	t.Run("StepWithSychronization", func(t *testing.T) {
+		//First workflow Acquire the lock
+		wf := unmarshalWF(StepWithSync)
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.NotNil(woc.wf.Status.Synchronization)
+		assert.NotNil(woc.wf.Status.Synchronization.Semaphore)
+		assert.Len(woc.wf.Status.Synchronization.Semaphore.Holding, 1)
+
+		// Second workflow try to acquire the lock and wait for lock
+		wf1 := unmarshalWF(StepWithSync)
+		wf1.Name = "step2"
+		wf1, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf1, metav1.CreateOptions{})
+		assert.NoError(err)
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate(ctx)
+		assert.NotNil(woc1.wf.Status.Synchronization)
+		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
+		assert.Nil(woc1.wf.Status.Synchronization.Semaphore.Holding)
+		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Waiting, 1)
+
+		//Finished all StepGroup in step
+		wf = unmarshalWF(StepWithSyncStatus)
+		woc = newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Nil(woc.wf.Status.Synchronization)
+
+		// Second workflow acquire the lock
+		woc1 = newWorkflowOperationCtx(woc1.wf, controller)
+		woc1.operate(ctx)
+		assert.NotNil(woc1.wf.Status.Synchronization)
+		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
+		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore.Holding)
+		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
