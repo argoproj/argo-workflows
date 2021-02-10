@@ -292,7 +292,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation(ctx)
 		if err == nil {
-			err = woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
@@ -994,7 +994,7 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 }
 
 //fails any suspended and pending nodes if the workflow deadline has passed
-func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() error {
+func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
 	deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
 	if woc.execWf.Spec.Shutdown != "" || deadlineExceeded {
 		for _, node := range woc.wf.Status.Nodes {
@@ -1009,7 +1009,6 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 			}
 		}
 	}
-	return nil
 }
 
 // countActivePods counts the number of active (Pending/Running) pods.
@@ -2445,7 +2444,7 @@ func (woc *wfOperationCtx) addOutputsToGlobalScope(outputs *wfv1.Outputs) {
 		woc.addParamToGlobalScope(param)
 	}
 	for _, art := range outputs.Artifacts {
-		woc.addArtifactToGlobalScope(art, nil)
+		woc.addArtifactToGlobalScope(art)
 	}
 }
 
@@ -2570,7 +2569,7 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 
 // addArtifactToGlobalScope exports any desired node outputs to the global scope
 // Optionally adds to a local scope if supplied
-func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact, scope *wfScope) {
+func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 	if art.GlobalName == "" {
 		return
 	}
@@ -2584,9 +2583,6 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact, scope *wf
 				art.Path = ""
 				if !reflect.DeepEqual(woc.wf.Status.Outputs.Artifacts[i], art) {
 					woc.wf.Status.Outputs.Artifacts[i] = art
-					if scope != nil {
-						scope.addArtifactToScope(globalArtName, art)
-					}
 					woc.log.Infof("overwriting %s: %v", globalArtName, art)
 					woc.updated = true
 				}
@@ -2602,9 +2598,6 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact, scope *wf
 	art.Path = ""
 	woc.log.Infof("setting %s: %v", globalArtName, art)
 	woc.wf.Status.Outputs.Artifacts = append(woc.wf.Status.Outputs.Artifacts, art)
-	if scope != nil {
-		scope.addArtifactToScope(globalArtName, art)
-	}
 	woc.updated = true
 }
 

@@ -27,13 +27,13 @@ type k8sAPIClient struct {
 
 var _ execcommon.KubernetesClientInterface = &k8sAPIClient{}
 
-func newK8sAPIClient(clientset *kubernetes.Clientset, config *restclient.Config, podName, namespace string) (*k8sAPIClient, error) {
+func newK8sAPIClient(clientset *kubernetes.Clientset, config *restclient.Config, podName, namespace string) *k8sAPIClient {
 	return &k8sAPIClient{
 		clientset: clientset,
 		config:    config,
 		podName:   podName,
 		namespace: namespace,
-	}, nil
+	}
 }
 
 func (c *k8sAPIClient) CreateArchive(ctx context.Context, containerID, sourcePath string) (*bytes.Buffer, error) {

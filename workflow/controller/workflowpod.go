@@ -237,10 +237,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		waitCtr, err := woc.newWaitContainer(tmpl)
-		if err != nil {
-			return nil, err
-		}
+		waitCtr := woc.newWaitContainer(tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 	// NOTE: the order of the container list is significant. kubelet will pull, create, and start
@@ -275,14 +272,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// addInitContainers, addSidecars and addOutputArtifactsVolumes should be called after all
 	// volumes have been manipulated in the main container since volumeMounts are mirrored
-	err = addInitContainers(pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
-	err = addSidecars(pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
+	addInitContainers(pod, tmpl)
+	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
 
 	// Set the container template JSON in pod annotations, which executor examines for things like
@@ -426,7 +417,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 	return *ctr
 }
 
-func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
+func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait"}
 	switch woc.controller.GetContainerRuntimeExecutor() {
@@ -450,7 +441,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	case "", common.ContainerRuntimeExecutorDocker:
 		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
-	return ctr, nil
+	return ctr
 }
 
 // hasPrivilegedContainers tests if the main container or sidecars is privileged
@@ -1040,9 +1031,9 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 
 // addInitContainers adds all init containers to the pod spec of the step
 // Optionally volume mounts from the main container to the init containers
-func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if len(tmpl.InitContainers) == 0 {
-		return nil
+		return
 	}
 	mainCtr := findMainContainer(pod)
 	if mainCtr == nil {
@@ -1055,14 +1046,13 @@ func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 		}
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
 	}
-	return nil
 }
 
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
-func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if len(tmpl.Sidecars) == 0 {
-		return nil
+		return
 	}
 	mainCtr := findMainContainer(pod)
 	if mainCtr == nil {
@@ -1075,7 +1065,6 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-	return nil
 }
 
 // verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object

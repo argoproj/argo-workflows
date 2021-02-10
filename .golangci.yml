@@ -15,6 +15,8 @@ run:
 linters:
   enable:
     - goimports
+    - unparam
+    - unused
 linters-settings:
   goimports:
     local-prefixes: github.com/argoproj/argo-workflows/
