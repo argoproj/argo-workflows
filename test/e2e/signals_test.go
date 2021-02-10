@@ -28,7 +28,6 @@ func (s *SignalsSuite) SetupSuite() {
 }
 
 func (s *SignalsSuite) TestStopBehavior() {
-	s.Need(fixtures.None(fixtures.PNS)) // does not work on PNS on CI for some reason
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
@@ -67,7 +66,7 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
 		}).
-		WaitForWorkflow().
+		WaitForWorkflow(time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
