@@ -14,7 +14,7 @@ export const Help = () => (
                     <a href='https://argoproj.github.io/argo' target='_blank' className='help-box__link'>
                         Online Help
                     </a>
-                    <a className='help-box__link' target='_blank' href={uiUrl('/apidocs')}>
+                    <a className='help-box__link' target='_blank' href={uiUrl('apidocs')}>
                         API Docs
                     </a>
                 </div>
