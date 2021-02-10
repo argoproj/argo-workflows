@@ -78,5 +78,5 @@ func (a *ArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
 }
 
 func (a *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
-	panic("implement me")
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }

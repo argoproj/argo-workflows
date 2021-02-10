@@ -142,20 +142,16 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 	var files []string
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
-			log.Infof("S3 List objects: %s", artifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
-				log.Warnf("Failed to create new S3 client: %v", err)
 				return false, err
 			}
 			files, err = s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
-			log.Infof("GOT files: %v", files)
 			if err != nil {
 				return false, err
 			}
 			return true, nil
 		})
 
-	log.Infof("GOT files 2: %v", files)
 	return files, err
 }

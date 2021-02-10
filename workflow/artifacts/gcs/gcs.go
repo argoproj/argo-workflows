@@ -254,5 +254,5 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
-	panic("implement me")
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
