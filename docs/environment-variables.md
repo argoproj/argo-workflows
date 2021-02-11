@@ -1,7 +1,7 @@
 # Environment Variables
 
 This document outlines the set of environment variables that can be used to customize the behaviours at different levels.
-Note that these environment variables are not officially supported and may be removed at any time.
+These environment variables are typically added to test out experimental features and should not be needed by most users.
 
 ## Controller
 
@@ -23,7 +23,6 @@ Note that these environment variables are not officially supported and may be re
 | `TRANSIENT_ERROR_PATTERN` | string | The regular expression that represents additional patterns for transient errors. |
 | `WF_DEL_PROPAGATION_POLICY` | string | The deletion propogation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | time.duration | The periodicity for GC of workflows. |
-
 
 ## Executor
 
