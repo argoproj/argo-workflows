@@ -1633,8 +1633,6 @@ Synchronization holds synchronization lock configuration
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
@@ -2170,8 +2168,6 @@ SynchronizationStatus stores the status of semaphore and mutex.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
-
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
@@ -2511,8 +2507,6 @@ SemaphoreRef is a reference of Semaphore
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
-
-- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -3200,8 +3194,6 @@ _No description available_
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
-
-- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -4664,8 +4656,6 @@ Selects a key from a ConfigMap.
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
-
-- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
