@@ -1,15 +1,16 @@
+import {Ticker} from 'argo-ui';
 import * as React from 'react';
-import Moment from 'react-moment';
+import {ago} from '../duration';
 
-export const Timestamp = ({date}: {date: string | number}) => {
+export const Timestamp = ({date}: {date: Date | string | number}) => {
     return (
         <span>
             {date === null ? (
                 '-'
             ) : (
-                <Moment fromNow={true} withTitle={true}>
-                    {date}
-                </Moment>
+                <span title={date.toString()}>
+                    <Ticker intervalMs={1000}>{() => ago(new Date(date))}</Ticker>
+                </span>
             )}
         </span>
     );
