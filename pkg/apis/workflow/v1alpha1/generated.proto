@@ -1450,6 +1450,9 @@ message WorkflowSpec {
 
   // RetryStrategy for all templates in the workflow.
   optional RetryStrategy retryStrategy = 37;
+
+  // PodMetadata defines additional metadata that should be applied to workflow pods
+  optional Metadata podMetadata = 38;
 }
 
 // WorkflowStatus contains overall status information about a workflow

@@ -107,7 +107,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         if (!this.state.cronWorkflows) {
             return <Loading />;
         }
-        const learnMore = <a href='https://argoproj.github.io/argo/cron-workflows/'>Learn more</a>;
+        const learnMore = <a href='https://argoproj.github.io/argo-workflows/cron-workflows/'>Learn more</a>;
         if (this.state.cronWorkflows.length === 0) {
             return (
                 <ZeroState title='No cron workflows'>
