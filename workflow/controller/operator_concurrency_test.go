@@ -492,7 +492,7 @@ const StepWithSync = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: steps-bzz2s
+  name: steps-jklcl
   namespace: default
 spec:
   entrypoint: hello-hello-hello
@@ -505,18 +505,6 @@ spec:
           - name: message
             value: hello1
         name: hello1
-        template: whalesay
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello2a
-        name: hello2a
-        template: whalesay
-      - arguments:
-          parameters:
-          - name: message
-            value: hello2b
-        name: hello2b
         template: whalesay
     synchronization:
       semaphore:
@@ -537,15 +525,15 @@ spec:
 `
 
 const StepWithSyncStatus = `
-apiVersion: argoproj.io/v1alpha1
+piVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: steps-bzz2s
+  name: steps-jklcl
   namespace: default
 spec:
   entrypoint: hello-hello-hello
   templates:
-  - arguments: {}
+  - inputs: {}
     name: hello-hello-hello
     steps:
     - - arguments:
@@ -554,30 +542,18 @@ spec:
             value: hello1
         name: hello1
         template: whalesay
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello2a
-        name: hello2a
-        template: whalesay
-      - arguments:
-          parameters:
-          - name: message
-            value: hello2b
-        name: hello2b
-        template: whalesay
     synchronization:
       semaphore:
         configMapKeyRef:
           key: step
           name: my-config
-  - arguments: {}
-    container:
+  - container:
       args:
       - '{{inputs.parameters.message}}'
       command:
       - cowsay
       image: docker/whalesay
+      resources: {}
     inputs:
       parameters:
       - name: message
@@ -592,145 +568,36 @@ status:
     type: PodRunning
   - status: "True"
     type: Completed
-  finishedAt: "2021-02-10T22:19:58Z"
+  finishedAt: "2021-02-11T19:46:55Z"
   nodes:
-    steps-bzz2s:
+    steps-jklcl:
       children:
-      - steps-bzz2s-3171338946
-      displayName: steps-bzz2s
-      finishedAt: "2021-02-10T22:19:58Z"
-      id: steps-bzz2s
-      message: 'Waiting for argo/ConfigMap/my-config/step lock. Lock status: 0/1 '
-      name: steps-bzz2s
+      - steps-jklcl-3895081407
+      displayName: steps-jklcl
+      finishedAt: "2021-02-11T19:46:55Z"
+      id: steps-jklcl
+      name: steps-jklcl
       outboundNodes:
-      - steps-bzz2s-2645942520
-      - steps-bzz2s-2696275377
+      - steps-jklcl-969694128
       phase: Running
-      progress: 3/3
+      progress: 1/1
       resourcesDuration:
-        cpu: 15
-        memory: 8
-      startedAt: "2021-02-10T22:18:59Z"
+        cpu: 7
+        memory: 4
+      startedAt: "2021-02-11T19:46:33Z"
       templateName: hello-hello-hello
-      templateScope: local/steps-bzz2s
+      templateScope: local/steps-jklcl
       type: Steps
-    steps-bzz2s-2030313759:
-      boundaryID: steps-bzz2s
-      children:
-      - steps-bzz2s-2645942520
-      - steps-bzz2s-2696275377
-      displayName: '[1]'
-      finishedAt: "2021-02-10T22:19:58Z"
-      id: steps-bzz2s-2030313759
-      name: steps-bzz2s[1]
-      phase: Succeeded
-      progress: 2/2
-      resourcesDuration:
-        cpu: 10
-        memory: 5
-      startedAt: "2021-02-10T22:19:48Z"
-      templateName: hello-hello-hello
-      templateScope: local/steps-bzz2s
-      type: StepGroup
-    steps-bzz2s-2645942520:
-      boundaryID: steps-bzz2s
-      displayName: hello2a
-      finishedAt: "2021-02-10T22:19:56Z"
-      id: steps-bzz2s-2645942520
-      inputs:
-        parameters:
-        - name: message
-          value: hello2a
-      name: steps-bzz2s[1].hello2a
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: steps-bzz2s/steps-bzz2s-2645942520/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 6
-        memory: 3
-      startedAt: "2021-02-10T22:19:48Z"
-      templateName: whalesay
-      templateScope: local/steps-bzz2s
-      type: Pod
-    steps-bzz2s-2696275377:
-      boundaryID: steps-bzz2s
-      displayName: hello2b
-      finishedAt: "2021-02-10T22:19:53Z"
-      id: steps-bzz2s-2696275377
-      inputs:
-        parameters:
-        - name: message
-          value: hello2b
-      name: steps-bzz2s[1].hello2b
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: steps-bzz2s/steps-bzz2s-2696275377/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      startedAt: "2021-02-10T22:19:48Z"
-      templateName: whalesay
-      templateScope: local/steps-bzz2s
-      type: Pod
-    steps-bzz2s-3171338946:
-      boundaryID: steps-bzz2s
-      children:
-      - steps-bzz2s-3612800383
-      displayName: '[0]'
-      finishedAt: "2021-02-10T22:19:48Z"
-      id: steps-bzz2s-3171338946
-      name: steps-bzz2s[0]
-      phase: Succeeded
-      progress: 3/3
-      resourcesDuration:
-        cpu: 15
-        memory: 8
-      startedAt: "2021-02-10T22:19:38Z"
-      templateName: hello-hello-hello
-      templateScope: local/steps-bzz2s
-      type: StepGroup
-    steps-bzz2s-3612800383:
-      boundaryID: steps-bzz2s
-      children:
-      - steps-bzz2s-2030313759
+    steps-jklcl-969694128:
+      boundaryID: steps-jklcl
       displayName: hello1
-      finishedAt: "2021-02-10T22:19:44Z"
-      id: steps-bzz2s-3612800383
+      finishedAt: "2021-02-11T19:46:44Z"
+      id: steps-jklcl-969694128
       inputs:
         parameters:
         - name: message
           value: hello1
-      name: steps-bzz2s[0].hello1
+      name: steps-jklcl[0].hello1
       outputs:
         artifacts:
         - archiveLogs: true
@@ -742,7 +609,7 @@ status:
             bucket: my-bucket
             endpoint: minio:9000
             insecure: true
-            key: steps-bzz2s/steps-bzz2s-3612800383/main.log
+            key: steps-jklcl/steps-jklcl-969694128/main.log
             secretKeySecret:
               key: secretkey
               name: my-minio-cred
@@ -750,18 +617,35 @@ status:
       phase: Succeeded
       progress: 1/1
       resourcesDuration:
-        cpu: 5
-        memory: 3
-      startedAt: "2021-02-10T22:19:38Z"
+        cpu: 7
+        memory: 4
+      startedAt: "2021-02-11T19:46:33Z"
       templateName: whalesay
-      templateScope: local/steps-bzz2s
+      templateScope: local/steps-jklcl
       type: Pod
+    steps-jklcl-3895081407:
+      boundaryID: steps-jklcl
+      children:
+      - steps-jklcl-969694128
+      displayName: '[0]'
+      finishedAt: "2021-02-11T19:46:55Z"
+      id: steps-jklcl-3895081407
+      name: steps-jklcl[0]
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 7
+        memory: 4
+      startedAt: "2021-02-11T19:46:33Z"
+      templateScope: local/steps-jklcl
+      type: StepGroup
   phase: Succeeded
-  progress: 3/3
+  progress: 1/1
   resourcesDuration:
-    cpu: 15
-    memory: 8
-  startedAt: "2021-02-10T22:18:59Z"
+    cpu: 7
+    memory: 4
+  startedAt: "2021-02-11T19:46:33Z"
+
 `
 
 func TestSynchronizationWithStep(t *testing.T) {
