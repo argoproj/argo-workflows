@@ -1,6 +1,7 @@
 # Environment Variables
 
-This document outlines the set of environment variables that can be set to customize the behaviours at different levels.
+This document outlines the set of environment variables that can be used to customize the behaviours at different levels.
+Note that these environment variables are not officially supported and may be removed at any time.
 
 ## Controller
 
@@ -29,7 +30,7 @@ This document outlines the set of environment variables that can be set to custo
 | Name | Type | Description|
 |----------|------|------------|
 | `ARGO_CONTAINER_RUNTIME_EXECUTOR` | string | The name of the container runtime executor. |
-| `ARGO_KUBELET_PORT` |  int | The port to the Kubelet API. |
+| `ARGO_KUBELET_PORT` | int | The port to the Kubelet API. |
 | `ARGO_KUBELET_INSECURE` | bool | Whether to disable the TLS verification. |
 | `PNS_PRIVILEGED` | bool | Whether to always set privileged on for PNS when PNS executor is used. |
 | `REMOVE_LOCAL_ART_PATH` | bool | Whether to remove local artifacts. |
