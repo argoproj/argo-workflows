@@ -12,7 +12,7 @@ spec:
     - - name: generate-artifact
         template: generate-artifacts
     - - name: process-artifact
-        template: print-message
+        template: process-message
         withParam: "{{steps.generate-artifact.outputs.result}}"
         arguments:
           parameters:
@@ -24,6 +24,12 @@ spec:
           parameters:
             - name: processed
               value: "{{steps.process-artifact.outputs.parameters.processed}}"
+    - - name: print-artifact
+        template: print-message
+        arguments:
+          parameters:
+          - name: file
+            value: "{{steps.collect-artifact.outputs.result}}"
 
   - name: generate-artifacts
     data:
@@ -40,17 +46,13 @@ spec:
               name: my-minio-cred
               key: secretkey
       transformation:
-        - name: filter-extension
-          filter:
-            regex: ".+?\\.py"
-        #- name: filter-content
-        #  filter:
+        - filter:
+            regex: "\\.py"
+        #- filter:
         #    regex: "lunch"
-        #- name: aggregate-batch
-        #  aggregator:
+        #- group:
         #    batch: 2
-        #- name: aggregate-extension
-        #  aggregator:
+        #- group:
         #    regex: ".+?\\.(.+?)$"
 
   - name: collect-artifacts
@@ -59,12 +61,28 @@ spec:
         - name: processed
     data:
       transformation:
-        - name: filter-path
-          filter:
-            regex: ".+?\\.pdf$"
-        - name: aggregate-batch
-          aggregator:
-            batch: 2
+        #- filter:
+        #    regex: ".+?\\.pdf$"
+        #- group:
+        #    batch: 1
+        - map:
+            replace:
+              old: ".done"
+              new: ".final"
+
+  - name: process-message
+    inputs:
+      parameters:
+      - name: file
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo \"{{inputs.parameters.file}}.done\" > /tmp/f.txt"]
+    outputs:
+      parameters:
+        - name: processed
+          valueFrom:
+            path: /tmp/f.txt
 
   - name: print-message
     inputs:
@@ -73,9 +91,4 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo \"{{inputs.parameters.file}}.done\" | tee /tmp/f.txt"]
-    outputs:
-      parameters:
-        - name: processed
-          valueFrom:
-            path: /tmp/f.txt
+      args: ["echo {{inputs.parameters.file}}"]

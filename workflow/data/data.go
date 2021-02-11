@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"regexp"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -39,21 +40,51 @@ func ProcessInputParameters(parameters []wfv1.Parameter) (interface{}, error) {
 	return data, nil
 }
 
-func ProcessTransformation(transformation wfv1.Transformation, data interface{}) (interface{}, error) {
+func ProcessTransformation(data interface{}, transformation *wfv1.Transformation) (interface{}, error) {
 	var err error
-	for _, step := range transformation {
+	for i, step := range *transformation {
 		switch {
 		case step.Filter != nil:
 			data, err = processFilter(data, step.Filter)
-		case step.Aggregator != nil:
-			data, err = processAggregator(data, step.Aggregator)
+		case step.Map != nil:
+			data, err = processMap(data, step.Map)
+		case step.Group != nil:
+			data, err = processGroup(data, step.Group)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("error processing data step '%s': %w", step.Name, err)
+			return nil, fmt.Errorf("error processing data step %d: %w", i, err)
 		}
 	}
 
 	return data, nil
+}
+
+func processMap(data interface{}, mapTransform *wfv1.MapTransform) (interface{}, error) {
+	switch data.(type) {
+	case []string:
+		return processMapSlice(data.([]string), mapTransform)
+	case [][]string:
+		var out [][]string
+		for i, slice := range data.([][]string) {
+			filtered, err := processMapSlice(slice, mapTransform)
+			if err != nil {
+				return nil, fmt.Errorf("cannot filter index '%d' of data: %w", i, err)
+			}
+			out = append(out, filtered)
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("unsupported data type for filtering: %T", data)
+	}
+}
+
+func processMapSlice(files []string, mapTransform *wfv1.MapTransform) ([]string, error) {
+	if mapTransform.Replace != nil {
+		return stringMap(func(file string) string {
+			return strings.ReplaceAll(file, mapTransform.Replace.Old, mapTransform.Replace.New)
+		}, files), nil
+	}
+	return files, nil
 }
 
 func processFilter(data interface{}, filter *wfv1.Filter) (interface{}, error) {
@@ -82,14 +113,14 @@ func processFilterSlice(files []string, filter *wfv1.Filter) ([]string, error) {
 			return nil, fmt.Errorf("regex '%s' is not valid: %w", filter.Regex, err)
 		}
 
-		return inPlaceFilter(func(file string) bool {
+		return stringFilter(func(file string) bool {
 			return re.MatchString(file)
 		}, files), nil
 	}
 	return files, nil
 }
 
-func processAggregator(data interface{}, aggregator *wfv1.Aggregator) ([][]string, error) {
+func processGroup(data interface{}, group *wfv1.Group) ([][]string, error) {
 	var files []string
 	var ok bool
 	if files, ok = data.([]string); !ok {
@@ -98,17 +129,17 @@ func processAggregator(data interface{}, aggregator *wfv1.Aggregator) ([][]strin
 
 	var aggFiles [][]string
 	switch {
-	case aggregator.Batch != 0:
+	case group.Batch != 0:
 		// Starts at -1 because we increment before first use
 		filesSeen := -1
 		aggFiles = groupBy(func(file string) string {
 			filesSeen++
-			return fmt.Sprint(filesSeen / aggregator.Batch)
+			return fmt.Sprint(filesSeen / group.Batch)
 		}, files)
-	case aggregator.Regex != "":
-		re, err := regexp.Compile(aggregator.Regex)
+	case group.Regex != "":
+		re, err := regexp.Compile(group.Regex)
 		if err != nil {
-			return nil, fmt.Errorf("regex '%s' is not valid: %w", aggregator.Regex, err)
+			return nil, fmt.Errorf("regex '%s' is not valid: %w", group.Regex, err)
 		}
 		aggFiles = groupBy(func(file string) string {
 			match := re.FindStringSubmatch(file)
@@ -122,7 +153,7 @@ func processAggregator(data interface{}, aggregator *wfv1.Aggregator) ([][]strin
 	return aggFiles, nil
 }
 
-func inPlaceFilter(filter func(file string) bool, files []string) []string {
+func stringFilter(filter func(file string) bool, files []string) []string {
 	keptFiles := 0
 	for _, file := range files {
 		if filter(file) {
@@ -131,6 +162,14 @@ func inPlaceFilter(filter func(file string) bool, files []string) []string {
 		}
 	}
 	out := files[:keptFiles]
+	return out
+}
+
+func stringMap(mapFunc func(file string) string, files []string) []string {
+	var out []string
+	for _, file := range files {
+		out = append(out, mapFunc(file))
+	}
 	return out
 }
 

@@ -31,7 +31,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 		return fmt.Errorf("internal error: should not launch data Pod if no source is used")
 	}
 
-	data, err = data2.ProcessTransformation(dataTemplate.Transformation, data)
+	data, err = data2.ProcessTransformation(data, dataTemplate.Transformation)
 	if err != nil {
 		return fmt.Errorf("unable to process transformation: %w", err)
 	}

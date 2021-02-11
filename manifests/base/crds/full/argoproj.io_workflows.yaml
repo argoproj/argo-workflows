@@ -2767,6 +2767,8 @@ spec:
                       type: object
                     data:
                       properties:
+                        podPolicy:
+                          type: string
                         source:
                           properties:
                             withArtifactPaths:
@@ -3069,7 +3071,12 @@ spec:
                         transformation:
                           items:
                             properties:
-                              aggregator:
+                              filter:
+                                properties:
+                                  regex:
+                                    type: string
+                                type: object
+                              group:
                                 properties:
                                   batch:
                                     type: integer
@@ -3079,13 +3086,23 @@ spec:
                                 - batch
                                 - regex
                                 type: object
-                              filter:
+                              map:
                                 properties:
-                                  regex:
-                                    type: string
+                                  replace:
+                                    properties:
+                                      new:
+                                        type: string
+                                      old:
+                                        type: string
+                                    required:
+                                    - new
+                                    - old
+                                    type: object
+                                required:
+                                - replace
                                 type: object
-                              name:
-                                type: string
+                            required:
+                            - map
                             type: object
                           type: array
                       required:
@@ -10886,6 +10903,8 @@ spec:
                       type: object
                     data:
                       properties:
+                        podPolicy:
+                          type: string
                         source:
                           properties:
                             withArtifactPaths:
@@ -11188,7 +11207,12 @@ spec:
                         transformation:
                           items:
                             properties:
-                              aggregator:
+                              filter:
+                                properties:
+                                  regex:
+                                    type: string
+                                type: object
+                              group:
                                 properties:
                                   batch:
                                     type: integer
@@ -11198,13 +11222,23 @@ spec:
                                 - batch
                                 - regex
                                 type: object
-                              filter:
+                              map:
                                 properties:
-                                  regex:
-                                    type: string
+                                  replace:
+                                    properties:
+                                      new:
+                                        type: string
+                                      old:
+                                        type: string
+                                    required:
+                                    - new
+                                    - old
+                                    type: object
+                                required:
+                                - replace
                                 type: object
-                              name:
-                                type: string
+                            required:
+                            - map
                             type: object
                           type: array
                       required:
@@ -17246,6 +17280,8 @@ spec:
                           type: object
                         data:
                           properties:
+                            podPolicy:
+                              type: string
                             source:
                               properties:
                                 withArtifactPaths:
@@ -17548,7 +17584,12 @@ spec:
                             transformation:
                               items:
                                 properties:
-                                  aggregator:
+                                  filter:
+                                    properties:
+                                      regex:
+                                        type: string
+                                    type: object
+                                  group:
                                     properties:
                                       batch:
                                         type: integer
@@ -17558,13 +17599,23 @@ spec:
                                     - batch
                                     - regex
                                     type: object
-                                  filter:
+                                  map:
                                     properties:
-                                      regex:
-                                        type: string
+                                      replace:
+                                        properties:
+                                          new:
+                                            type: string
+                                          old:
+                                            type: string
+                                        required:
+                                        - new
+                                        - old
+                                        type: object
+                                    required:
+                                    - replace
                                     type: object
-                                  name:
-                                    type: string
+                                required:
+                                - map
                                 type: object
                               type: array
                           required:
