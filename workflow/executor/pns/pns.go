@@ -20,14 +20,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/util/archive"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	waitutil "github.com/argoproj/argo/v3/util/wait"
-	"github.com/argoproj/argo/v3/workflow/common"
-	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
-	argowait "github.com/argoproj/argo/v3/workflow/executor/common/wait"
-	osspecific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/archive"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
+	argowait "github.com/argoproj/argo-workflows/v3/workflow/executor/common/wait"
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 type PNSExecutor struct {
@@ -243,13 +243,13 @@ func (p *PNSExecutor) GetExitCode(ctx context.Context, containerID string) (stri
 }
 
 // Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (p *PNSExecutor) Kill(ctx context.Context, containerIDs []string) error {
+func (p *PNSExecutor) Kill(ctx context.Context, containerIDs []string, terminationGracePeriodDuration time.Duration) error {
 	var asyncErr error
 	wg := sync.WaitGroup{}
 	for _, cid := range containerIDs {
 		wg.Add(1)
 		go func(containerID string) {
-			err := p.killContainer(containerID)
+			err := p.killContainer(containerID, terminationGracePeriodDuration)
 			if err != nil && asyncErr != nil {
 				asyncErr = err
 			}
@@ -260,7 +260,7 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerIDs []string) error {
 	return asyncErr
 }
 
-func (p *PNSExecutor) killContainer(containerID string) error {
+func (p *PNSExecutor) killContainer(containerID string, terminationGracePeriodDuration time.Duration) error {
 	pid, err := p.getContainerPID(containerID)
 	if err != nil {
 		log.Warnf("Ignoring kill container failure of %s: %v. Process assumed to have completed", containerID, err)
@@ -274,8 +274,7 @@ func (p *PNSExecutor) killContainer(containerID string) error {
 	if err != nil {
 		log.Warnf("Failed to SIGTERM pid %d: %v", pid, err)
 	}
-
-	waitPIDOpts := executil.WaitPIDOpts{Timeout: execcommon.KillGracePeriod * time.Second}
+	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration}
 	err = executil.WaitPID(pid, waitPIDOpts)
 	if err == nil {
 		log.Infof("PID %d completed", pid)

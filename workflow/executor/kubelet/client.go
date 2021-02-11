@@ -20,9 +20,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/workflow/common"
-	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
 const (
@@ -294,8 +294,8 @@ func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.Contain
 	return err
 }
 
-func (k *kubeletClient) KillGracefully(ctx context.Context, containerID string) error {
-	return execcommon.KillGracefully(ctx, k, containerID)
+func (k *kubeletClient) KillGracefully(ctx context.Context, containerID string, terminationGracePeriodDuration time.Duration) error {
+	return execcommon.KillGracefully(ctx, k, containerID, terminationGracePeriodDuration)
 }
 
 func (k *kubeletClient) CopyArchive(ctx context.Context, containerID, sourcePath, destPath string) error {

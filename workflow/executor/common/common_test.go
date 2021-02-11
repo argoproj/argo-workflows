@@ -5,6 +5,7 @@ import (
 	"context"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -120,4 +121,53 @@ func TestTerminatePodWithContainerID(t *testing.T) {
 	}
 	err = TerminatePodWithContainerID(ctx, mock, "container-id", syscall.SIGTERM)
 	assert.NoError(t, err)
+}
+
+// TestWaitForTermination ensure we SIGTERM container with input wait time
+func TestWaitForTermination(t *testing.T) {
+	// Successfully SIGTERM Container
+	mock := &MockKC{
+		getContainerStatusContainerStatus: &v1.ContainerStatus{
+			State: v1.ContainerState{
+				Terminated: &v1.ContainerStateTerminated{},
+			},
+		},
+	}
+	ctx := context.Background()
+	err := WaitForTermination(ctx, mock, "container-id", time.Duration(2)*time.Second)
+	assert.NoError(t, err)
+
+	// Fail SIGTERM Container
+	mock = &MockKC{
+		getContainerStatusContainerStatus: &v1.ContainerStatus{
+			State: v1.ContainerState{
+				Terminated: nil,
+			},
+		},
+	}
+	err = WaitForTermination(ctx, mock, "container-id", time.Duration(1)*time.Second)
+	assert.EqualError(t, err, "timeout after 1s")
+}
+
+// TestKillGracefully ensure we kill container gracefully with input wait time
+func TestKillGracefully(t *testing.T) {
+	// Graceful SIGTERM Container
+	mock := &MockKC{
+		getContainerStatusPod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "foo",
+			},
+			Spec: v1.PodSpec{
+				RestartPolicy: "Never",
+			},
+		},
+		getContainerStatusContainerStatus: &v1.ContainerStatus{
+			State: v1.ContainerState{
+				Terminated: nil,
+			},
+		},
+	}
+	ctx := context.Background()
+	err := KillGracefully(ctx, mock, "container-id", 1)
+	assert.EqualError(t, err, "timeout after 1ns")
 }
