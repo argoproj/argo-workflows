@@ -64,9 +64,7 @@ func (i *Item) String() string {
 	}
 	// this convenience to remove quotes from strings will cause many problems
 	if jsonBytes[0] == '"' {
-		var str string
-		_ = json.Unmarshal(jsonBytes, &str)
-		return str
+		return string(jsonBytes[1 : len(jsonBytes)-1])
 	}
 	return string(jsonBytes)
 }
