@@ -4,6 +4,7 @@ import {CronWorkflowSpec, CronWorkflowStatus} from '../../../models';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {WorkflowLink} from '../../workflows/components/workflow-link';
+import {Schedule} from './schedule';
 
 const parser = require('cron-parser');
 export const CronWorkflowStatusViewer = ({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) => {
@@ -15,6 +16,7 @@ export const CronWorkflowStatusViewer = ({spec, status}: {spec: CronWorkflowSpec
             <div className='white-box__details'>
                 {[
                     {title: 'Active', value: status.active ? getCronWorkflowActiveWorkflowList(status.active) : <i>No Workflows Active</i>},
+                    {title: 'Schedule', value: <Schedule schedule={spec.schedule} />},
                     {title: 'Last Scheduled Time', value: <Timestamp date={status.lastScheduledTime} />},
                     {
                         title: 'Next Scheduled Time',

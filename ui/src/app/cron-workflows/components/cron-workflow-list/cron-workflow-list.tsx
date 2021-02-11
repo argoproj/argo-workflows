@@ -18,6 +18,7 @@ import {Footnote} from '../../../shared/footnote';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {CronWorkflowCreator} from '../cron-workflow-creator';
+import {Schedule} from '../schedule';
 
 require('./cron-workflow-list.scss');
 
@@ -125,8 +126,8 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                         <div className='columns small-1' />
                         <div className='columns small-3'>NAME</div>
                         <div className='columns small-2'>NAMESPACE</div>
-                        <div className='columns small-2'>SCHEDULE</div>
-                        <div className='columns small-2'>CREATED</div>
+                        <div className='columns small-3'>SCHEDULE</div>
+                        <div className='columns small-1'>CREATED</div>
                         <div className='columns small-2'>NEXT RUN</div>
                     </div>
                     {this.state.cronWorkflows.map(w => (
@@ -137,8 +138,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
                             <div className='columns small-3'>{w.metadata.name}</div>
                             <div className='columns small-2'>{w.metadata.namespace}</div>
-                            <div className='columns small-2'>{w.spec.schedule}</div>
-                            <div className='columns small-2'>
+                            <div className='columns small-3'>
+                                <Schedule schedule={w.spec.schedule} />
+                            </div>
+                            <div className='columns small-1'>
                                 <Timestamp date={w.metadata.creationTimestamp} />
                             </div>
                             <div className='columns small-2'>
