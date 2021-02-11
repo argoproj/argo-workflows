@@ -3,7 +3,7 @@ import * as React from 'react';
 import {ConcurrencyPolicy, CronWorkflowSpec} from '../../../models';
 import {NumberInput} from '../../shared/components/number-input';
 import {TextInput} from '../../shared/components/text-input';
-import {ScheduleValidator} from './schedule';
+import {ScheduleValidator} from './schedule-validator';
 
 export const CronWorkflowSpecEditor = ({onChange, spec}: {spec: CronWorkflowSpec; onChange: (spec: CronWorkflowSpec) => void}) => {
     return (
