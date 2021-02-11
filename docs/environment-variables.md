@@ -34,14 +34,3 @@ Note that these environment variables are not officially supported and may be re
 | `ARGO_KUBELET_INSECURE` | bool | Whether to disable the TLS verification. |
 | `PNS_PRIVILEGED` | bool | Whether to always set privileged on for PNS when PNS executor is used. |
 | `REMOVE_LOCAL_ART_PATH` | bool | Whether to remove local artifacts. |
-
-
-## CLI
-
-| Name | Type | Description|
-|----------|------|------------|
-| `ARGO_INSTANCEID` | string | The controller's instance ID to establish the connection with. |
-| `ARGO_NAMESPACE` | string | The namespace to establish the connection with. |
-| `ARGO_SERVER` | string | The address of the Argo Server. |
-| `ARGO_TOKEN` | string | The authentication token. |
-| `BASE_HREF` | string |The base href in Argo Server's index page. Used if the server is running behind reverse proxy under subpath different from "/". |
