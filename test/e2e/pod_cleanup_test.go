@@ -127,6 +127,53 @@ spec:
 		})
 }
 
+func (s *PodCleanupSuite) TestOnPodLabelSelected() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: test-pod-cleanup-on-pod-label-selected-
+  labels:
+    argo-e2e: true
+spec:
+  podGC:
+    strategy: OnPodLabelSelected
+    labelSelector: "evicted=true"
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: success
+            template: success
+          - name: failure
+            template: failure
+    - name: success
+      container:
+        image: argoproj/argosay:v2
+    - name: failure
+      container:
+        image: argoproj/argosay:v2
+        args: [exit, 1]
+      metadata:
+        labels:
+          evicted: true
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Wait(enoughTimeForPodCleanup).
+		Then().
+		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.Nil(t, p, "failed pod is deleted since it matches the label selector in podGC")
+			}
+		}).
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.NotNil(t, p, "successful pod is not deleted since it does match the label selector in podGC")
+			}
+		})
+}
+
 func (s *PodCleanupSuite) TestOnWorkflowCompletion() {
 	s.Given().
 		Workflow(`

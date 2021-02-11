@@ -778,8 +778,11 @@ message Parameter {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
-  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnPodLabelSelected", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
+
+  // LabelSelector represents the label selector to use when "OnPodLabelSelected" is used.
+  optional string labelSelector = 2;
 }
 
 // Prometheus is a prometheus metric to be emitted

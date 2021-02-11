@@ -796,6 +796,8 @@ spec:
                 type: object
               podGC:
                 properties:
+                  labelSelector:
+                    type: string
                   strategy:
                     type: string
                 type: object

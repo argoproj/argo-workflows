@@ -1596,7 +1596,8 @@ PodGC describes how to delete completed pods as they complete
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
+|`labelSelector`|`string`|LabelSelector represents the label selector to use when "OnPodLabelSelected" is used.|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnPodLabelSelected", "OnWorkflowCompletion", "OnWorkflowSuccess"|
 
 ## Metadata
 

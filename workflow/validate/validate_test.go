@@ -1729,18 +1729,27 @@ spec:
       args: ["hello world"]
 `
 
-// TestUnknownPodGCStrategy verifies pod gc strategy is correct.
-func TestUnknownPodGCStrategy(t *testing.T) {
+// TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
+func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 
-	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
-		wf.Spec.PodGC.Strategy = start
+	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
+		wf.Spec.PodGC.Strategy = strat
+		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+		assert.NoError(t, err)
+
+		wf.Spec.PodGC.LabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{"evicted": "true"}}
 		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
+
+	wf.Spec.PodGC.Strategy = wfv1.PodGCOnOnPodLabelSelected
+	wf.Spec.PodGC.LabelSelector = ""
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	assert.EqualError(t, err, "podGC.labelSelector cannot be empty string when 'OnPodLabelSelected' strategy is used")
 }
 
 var validAutomountServiceAccountTokenUseWfLevel = `

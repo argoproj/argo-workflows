@@ -4014,8 +4014,12 @@
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
       "properties": {
+        "labelSelector": {
+          "description": "LabelSelector represents the label selector to use when \"OnPodLabelSelected\" is used.",
+          "type": "string"
+        },
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnPodLabelSelected\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
           "type": "string"
         }
       },
