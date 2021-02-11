@@ -132,12 +132,6 @@ type createWorkflowPodOpts struct {
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
-	if !woc.execWf.Spec.Shutdown.ShouldExecute(opts.onExitPod) {
-		// Do not create pods if we are shutting down
-		woc.markNodePhase(nodeName, wfv1.NodeSkipped, fmt.Sprintf("workflow shutdown with strategy: %s", woc.execWf.Spec.Shutdown))
-		return nil, nil
-	}
-
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
@@ -151,6 +145,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return existing, nil
 		}
+	}
+
+	if !woc.execWf.Spec.Shutdown.ShouldExecute(opts.onExitPod) {
+		// Do not create pods if we are shutting down
+		woc.markNodePhase(nodeName, wfv1.NodeSkipped, fmt.Sprintf("workflow shutdown with strategy: %s", woc.execWf.Spec.Shutdown))
+		return nil, nil
 	}
 
 	tmpl = tmpl.DeepCopy()

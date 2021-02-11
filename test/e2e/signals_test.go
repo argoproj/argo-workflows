@@ -78,6 +78,29 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		})
 }
 
+func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
+	s.Given().
+		Workflow("@functional/stop-terminate-2.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
+		}).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("A")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("B")
+			assert.Nil(t, nodeStatus)
+		})
+}
+
 func (s *SignalsSuite) TestPropagateMaxDuration() {
 	s.T().Skip("too hard to get working")
 	s.Given().
