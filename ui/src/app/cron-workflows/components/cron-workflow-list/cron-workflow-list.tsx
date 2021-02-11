@@ -1,10 +1,9 @@
-import {Page, SlidingPanel} from 'argo-ui';
+import {Page, SlidingPanel, Ticker} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
-import {DurationFromNow} from '../../../shared/components/duration-panel';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {InfoIcon} from '../../../shared/components/fa-icons';
@@ -18,6 +17,7 @@ import {Footnote} from '../../../shared/footnote';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {CronWorkflowCreator} from '../cron-workflow-creator';
+import {PrettySchedule} from '../pretty-schedule';
 
 require('./cron-workflow-list.scss');
 
@@ -125,9 +125,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                         <div className='columns small-1' />
                         <div className='columns small-3'>NAME</div>
                         <div className='columns small-2'>NAMESPACE</div>
-                        <div className='columns small-2'>SCHEDULE</div>
-                        <div className='columns small-2'>CREATED</div>
-                        <div className='columns small-2'>NEXT RUN</div>
+                        <div className='columns small-1'>SCHEDULE</div>
+                        <div className='columns small-3' />
+                        <div className='columns small-1'>CREATED</div>
+                        <div className='columns small-1'>NEXT RUN</div>
                     </div>
                     {this.state.cronWorkflows.map(w => (
                         <Link
@@ -137,12 +138,15 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
                             <div className='columns small-3'>{w.metadata.name}</div>
                             <div className='columns small-2'>{w.metadata.namespace}</div>
-                            <div className='columns small-2'>{w.spec.schedule}</div>
-                            <div className='columns small-2'>
+                            <div className='columns small-1'>{w.spec.schedule}</div>
+                            <div className='columns small-3'>
+                                <PrettySchedule schedule={w.spec.schedule} />
+                            </div>
+                            <div className='columns small-1'>
                                 <Timestamp date={w.metadata.creationTimestamp} />
                             </div>
-                            <div className='columns small-2'>
-                                {w.spec.suspend ? '' : <DurationFromNow getDate={() => getNextScheduledTime(w.spec.schedule, w.spec.timezone)} />}
+                            <div className='columns small-1'>
+                                {w.spec.suspend ? '' : <Ticker intervalMs={1000}>{() => <Timestamp date={getNextScheduledTime(w.spec.schedule, w.spec.timezone)} />}</Ticker>}
                             </div>
                         </Link>
                     ))}
