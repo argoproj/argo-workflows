@@ -17,7 +17,7 @@ export const Schedule = ({schedule}: {schedule: string}) => {
         const pretty = x.toString(schedule);
         return (
             <span title={pretty}>
-                {schedule} <small>({pretty})</small>
+                <code>{schedule}</code> {pretty}
             </span>
         );
     } catch (e) {
