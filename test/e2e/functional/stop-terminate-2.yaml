@@ -5,21 +5,20 @@ metadata:
   labels:
     argo-e2e: true
 spec:
-  entrypoint: diamond
-  onExit: exit
+  entrypoint: main
   templates:
-    - name: diamond
-      dag:
-        tasks:
-          - name: A
-            template: echo
-            onExit: exit
+    - name: main
+      steps:
+        - - name: A
+            template: sleep
+        - - name: B
+            template: pass
 
-    - name: echo
+    - name: sleep
       container:
         image: argoproj/argosay:v1
         args: [ sleep, "999"]
 
-    - name: exit
+    - name: pass
       container:
         image: argoproj/argosay:v1
