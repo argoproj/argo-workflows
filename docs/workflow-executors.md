@@ -16,7 +16,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
     * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
     * It can escape the privileges of the pod's service account
     * It cannot [`runAsNonRoot`](workflow-pod-security-context.md).
-* Most scalable:
+* Equal most scalable:
     * It communicates directly with the local Docker daemon.
 * Artifacts:
     * Output artifacts can be located on the base layer (e.g. `/tmp`).
@@ -28,8 +28,8 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 ## Kubelet (kubelet)
 
 * Reliability:
-    * Least well-tested
-    * Least popular
+    * Second least well-tested
+    * Second least popular
 * Secure
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
@@ -79,3 +79,47 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * [Doesn't work for Windows containers](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod).
 
 [https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)
+
+## Emissary (emissary)
+
+![alpha](assets/alpha.svg)
+
+> v3.1 and after
+
+This is the most fully featured executor.
+
+This executor works very differently to the others. It mounts an empty-dir on all containers at `/var/run/argo`. The main container command is replaces by a new binary `emissary` which starts the original command in a sub-process and when it is finished, captures the outputs:
+
+The init container creates these files:
+
+* `/var/run/argo/argoexec` The binary, copied from the `argoexec` image.
+* `/var/run/argo/template` A JSON encoding of the template.
+
+In the main container, the emissary creates these files: 
+
+* `/var/run/argo/outputs/parameters/${path}` All output parameters are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/parameters/tmp/message`.  
+* `/var/run/argo/outputs/artifacts/${path}.tgz` All output artifacts are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/artifacts/tmp/message.tgz`.  
+* `/var/run/argo/ctr/${containerName}/stderr` A copy of stderr. 
+* `/var/run/argo/ctr/${containerName}/stdout`  A copy of stdout.
+
+The wait container write the exit code:
+
+* `/var/run/argo/ctr/${containerName}/exitcode` The container exit code.
+
+The wait container can create one file itself, used for terminating the sub-process:
+
+* `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the signal found in this file.
+
+* Reliability:
+  * Least well-tested.
+  * Least popular.
+* More secure:
+  * No `privileged` access
+  * Cannot escape the privileges of the pod's service account
+  * Can [`runAsNonRoot`](workflow-pod-security-context.md).
+* Scalable:
+  * It reads and writes to and from the container's disk and does not use any network APIs.
+* Artifacts:
+  * Output artifacts can be located on the base layer (e.g. `/tmp`).
+* Configuration:
+  * `command` must be specified for containers. 
