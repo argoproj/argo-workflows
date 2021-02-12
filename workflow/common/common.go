@@ -5,7 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
 const (

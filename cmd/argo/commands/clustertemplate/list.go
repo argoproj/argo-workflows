@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
-	"github.com/argoproj/argo/v2/pkg/apiclient/clusterworkflowtemplate"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {

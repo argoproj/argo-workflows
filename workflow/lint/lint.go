@@ -10,12 +10,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	clusterworkflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
-	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
-	workflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/workflow/common"
+	clusterworkflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type (

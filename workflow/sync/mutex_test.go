@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
 
-	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 )
 
 var mutexWf = `

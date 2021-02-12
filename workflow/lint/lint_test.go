@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	workflowmocks "github.com/argoproj/argo/v2/pkg/apiclient/workflow/mocks"
-	wftemplatemocks "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate/mocks"
+	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
+	wftemplatemocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate/mocks"
 )
 
 var lintFileData = []byte(`
@@ -149,7 +149,7 @@ func TestLintStdin(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, res.Success, false)
-	assert.Equal(t, res.msg, fmt.Sprintf("stdin: in object #1: lint error\nstdin: in object #2: lint error\n"))
+	assert.Equal(t, res.msg, "stdin: in object #1: lint error\nstdin: in object #2: lint error\n")
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
 }

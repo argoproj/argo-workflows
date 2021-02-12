@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"io"
 	"syscall"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/workflow/common"
-	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
 type k8sAPIClient struct {
@@ -89,6 +90,6 @@ func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.Containe
 	return err
 }
 
-func (c *k8sAPIClient) killGracefully(ctx context.Context, containerID string) error {
-	return execcommon.KillGracefully(ctx, c, containerID)
+func (c *k8sAPIClient) killGracefully(ctx context.Context, containerID string, terminationGracePeriodDuration time.Duration) error {
+	return execcommon.KillGracefully(ctx, c, containerID, terminationGracePeriodDuration)
 }

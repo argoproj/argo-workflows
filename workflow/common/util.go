@@ -25,11 +25,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
-	"github.com/argoproj/argo/v2/errors"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/util"
-	errorsutil "github.com/argoproj/argo/v2/util/errors"
-	waitutil "github.com/argoproj/argo/v2/util/wait"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any

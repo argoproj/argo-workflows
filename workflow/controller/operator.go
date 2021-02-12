@@ -31,29 +31,29 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v2/config"
-	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/util"
-	"github.com/argoproj/argo/v2/util/diff"
-	envutil "github.com/argoproj/argo/v2/util/env"
-	errorsutil "github.com/argoproj/argo/v2/util/errors"
-	"github.com/argoproj/argo/v2/util/intstr"
-	"github.com/argoproj/argo/v2/util/resource"
-	"github.com/argoproj/argo/v2/util/retry"
-	waitutil "github.com/argoproj/argo/v2/util/wait"
-	"github.com/argoproj/argo/v2/workflow/common"
-	controllercache "github.com/argoproj/argo/v2/workflow/controller/cache"
-	"github.com/argoproj/argo/v2/workflow/controller/estimation"
-	"github.com/argoproj/argo/v2/workflow/controller/indexes"
-	"github.com/argoproj/argo/v2/workflow/metrics"
-	"github.com/argoproj/argo/v2/workflow/progress"
-	argosync "github.com/argoproj/argo/v2/workflow/sync"
-	"github.com/argoproj/argo/v2/workflow/templateresolution"
-	wfutil "github.com/argoproj/argo/v2/workflow/util"
-	"github.com/argoproj/argo/v2/workflow/validate"
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/diff"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/resource"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/progress"
+	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -623,7 +623,7 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
-// See https://github.com/argoproj/argo/issues/913
+// See https://github.com/argoproj/argo-workflows/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
@@ -669,7 +669,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		// There is something about having informer indexers (introduced in v2.12) that means we are more likely to operate on the
 		// previous version of the workflow. This means under high load, a previously successful workflow could
 		// be operated on again. This can error (e.g. if any pod was deleted as part of clean-up). This check prevents that.
-		// https://github.com/argoproj/argo/issues/4798
+		// https://github.com/argoproj/argo-workflows/issues/4798
 		if currWf.Status.Fulfilled() {
 			return nil, fmt.Errorf("must never update completed workflows")
 		}
@@ -824,6 +824,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	case wfv1.RetryPolicyOnError:
 		retryOnFailed = false
 		retryOnError = true
+	case wfv1.RetryPolicyOnTransientError:
+		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(errors.InternalError(lastChildNode.Message)) {
+			retryOnFailed = true
+			retryOnError = true
+		}
 	case wfv1.RetryPolicyOnFailure, "":
 		retryOnFailed = true
 		retryOnError = false
@@ -1116,38 +1121,29 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
-		if pod.DeletionTimestamp != nil {
-			// pod is being terminated
-			newPhase = wfv1.NodeError
-			newDaemonStatus = pointer.BoolPtr(false)
-			message = "pod deleted during operation"
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Error(message)
-		} else {
-			newPhase = wfv1.NodeRunning
-			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-			if !ok {
-				woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
-				return nil
-			}
-			var tmpl wfv1.Template
-			err := json.Unmarshal([]byte(tmplStr), &tmpl)
-			if err != nil {
-				woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
-				return nil
-			}
-			if tmpl.Daemon != nil && *tmpl.Daemon {
-				// pod is running and template is marked daemon. check if everything is ready
-				for _, ctrStatus := range pod.Status.ContainerStatuses {
-					if !ctrStatus.Ready {
-						return nil
-					}
+		newPhase = wfv1.NodeRunning
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
+			return nil
+		}
+		var tmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &tmpl)
+		if err != nil {
+			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
+			return nil
+		}
+		if tmpl.Daemon != nil && *tmpl.Daemon {
+			// pod is running and template is marked daemon. check if everything is ready
+			for _, ctrStatus := range pod.Status.ContainerStatuses {
+				if !ctrStatus.Ready {
+					return nil
 				}
-				// proceed to mark node status as running (and daemoned)
-				newPhase = wfv1.NodeRunning
-				newDaemonStatus = pointer.BoolPtr(true)
-				woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 			}
+			// proceed to mark node status as running (and daemoned)
+			newPhase = wfv1.NodeRunning
+			newDaemonStatus = pointer.BoolPtr(true)
+			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
 	default:
 		newPhase = wfv1.NodeError
@@ -1278,7 +1274,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	// init, main (annotated), main (exit code), wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
 		// Virtual Kubelet environment will not set the terminate on waiting container
-		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/argoproj/argo-workflows/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
 		if ctr.State.Waiting != nil {
 			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
@@ -1304,7 +1300,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	failMessages := make(map[string]string)
 	for _, ctr := range pod.Status.ContainerStatuses {
 		// Virtual Kubelet environment will not set the terminate on waiting container
-		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/argoproj/argo-workflows/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
 
 		if ctr.State.Waiting != nil {
@@ -1783,7 +1779,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		retryStrategy := woc.retryStrategy(processedTmpl)
 		if retryStrategy == nil ||
 			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
 			return node, err
 		}
 	}
@@ -2354,16 +2351,6 @@ func getStepOrDAGTaskName(nodeName string) string {
 	return nodeName
 }
 
-func extractMainCtrFromScriptTemplate(tmpl *wfv1.Template) apiv1.Container {
-	mainCtr := tmpl.Script.Container
-	// If script source is provided then pass all container args to the
-	// script instead of passing them to the container command directly
-	if tmpl.Script.Source != "" {
-		mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
-	}
-	return mainCtr
-}
-
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
@@ -2379,7 +2366,8 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		return node, err
 	}
 
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err = woc.createWorkflowPod(ctx, nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,

@@ -1,4 +1,4 @@
-// +build e2e
+// +build functional
 
 package e2e
 
@@ -11,10 +11,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v2/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/test/e2e/fixtures"
-	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type MalformedResourcesSuite struct {

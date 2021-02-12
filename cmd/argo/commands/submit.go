@@ -13,11 +13,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/workflow/common"
-	"github.com/argoproj/argo/v2/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)

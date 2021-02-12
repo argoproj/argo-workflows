@@ -19,8 +19,8 @@ import (
 
 	"github.com/argoproj/pkg/file"
 
-	"github.com/argoproj/argo/v2/errors"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // ArtifactDriver is a driver for GCS

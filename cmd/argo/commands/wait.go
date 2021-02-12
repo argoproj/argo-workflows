@@ -14,10 +14,10 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 func NewWaitCommand() *cobra.Command {

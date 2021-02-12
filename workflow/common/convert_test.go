@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestConvertCronWorkflowToWorkflow(t *testing.T) {
@@ -52,8 +52,7 @@ spec:
   arguments: {}
   entrypoint: whalesay
   templates:
-  - arguments: {}
-    container:
+  - container:
       args:
       - hello world
       command:
@@ -138,10 +137,8 @@ spec:
         parameters:
           - name: message
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2
+        args: [echo, "{{inputs.parameters.message}}"]
 `
 
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {

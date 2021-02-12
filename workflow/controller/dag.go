@@ -11,10 +11,10 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/v2/errors"
-	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v2/workflow/common"
-	"github.com/argoproj/argo/v2/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
 // dagContext holds context information about this context's DAG

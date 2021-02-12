@@ -17,11 +17,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/util"
-	"github.com/argoproj/argo/v2/util/file"
-	"github.com/argoproj/argo/v2/workflow/common"
-	execcommon "github.com/argoproj/argo/v2/workflow/executor/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type DockerExecutor struct{}
@@ -173,7 +172,7 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerID string) error {
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string) error {
+func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string, terminationGracePeriodDuration time.Duration) error {
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
 	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
@@ -188,7 +187,7 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string) error 
 		return errors.InternalWrapError(err)
 	}
 	// waitCh needs buffer of 1 so it can always send the result of waitCmd.Wait() without blocking.
-	// Otherwise, if the KillGracePeriod elapses and the forced kill branch is run, there would
+	// Otherwise, if the terminationGracePeriodSeconds elapses and the forced kill branch is run, there would
 	// be no receiver for waitCh and the goroutine would block forever
 	waitCh := make(chan error, 1)
 	go func() {
@@ -198,8 +197,8 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerIDs []string) error 
 	select {
 	case err = <-waitCh:
 		// waitCmd completed
-	case <-time.After(execcommon.KillGracePeriod * time.Second):
-		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", execcommon.KillGracePeriod)
+	case <-time.After(terminationGracePeriodDuration):
+		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)

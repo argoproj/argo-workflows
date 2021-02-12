@@ -7,8 +7,8 @@ import (
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
-	"github.com/argoproj/argo/v2/workflow/lint"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/workflow/lint"
 )
 
 func NewLintCommand() *cobra.Command {

@@ -21,11 +21,11 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
-          go-version: "1.13.12"
+          go-version: "1.15.7"
       - name: Add bins to PATH
         run: |
           echo /home/runner/go/bin >> $GITHUB_PATH
@@ -42,38 +42,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # this list can be used to run certain interesting suites of tests
         test:
-          - smoke
-          - test-cli
-          - test-e2e
-        # `docker` is omitted from this list because we want to run the most thorough set of tests on it,
-        # but always offloading, all persistence related tests, and cron tests
+          - test-executor
         containerRuntimeExecutor:
+          - docker
           - k8sapi
           - kubelet
           - pns
-        profile: [ minimal ]
-        alwaysOffloadNodeStatus: [ "false" ]
         include:
-          # run all test with docker - this is the most complete set of tests
-          - test: smoke
-            profile: mysql
-            containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "true"
           - test: test-cli
-            profile: mysql
             containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "true"
-          - test: test-e2e
-            profile: mysql
+          - test: test-functional
             containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "true"
-          # test cron workflows
           - test: test-e2e-cron
-            profile: minimal
             containerRuntimeExecutor: docker
-            alwaysOffloadNodeStatus: "false"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -81,11 +63,11 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
-          go-version: "1.13.12"
+          go-version: "1.15.7"
       - name: Add bins to PATH
         run: |
           echo /home/runner/go/bin >> $GITHUB_PATH
@@ -104,6 +86,10 @@ jobs:
           echo "- name: fake_token_user" >> ~/.kube/config
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
+      - name: Start logging
+        run: |
+          mkdir -p /tmp/log/argo-e2e
+          make logs > /tmp/log/argo-e2e/pod.log &
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
@@ -112,12 +98,9 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start   PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${{matrix.alwaysOffloadNodeStatus}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
-      - name: Install gotestsum
-        run: go install gotest.tools/gotestsum
+          KUBECONFIG=~/.kube/config make install PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go
@@ -125,13 +108,19 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
+        run: make ${{ matrix.test }}
       - name: Upload logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-argo.log
+          path: /tmp/log/argo-e2e/argo.log
+      - name: Upload pod logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{matrix.alwaysOffloadNodeStatus}}-${{ github.run_id }}-argo.log
-          path: /tmp/log/argo-e2e/argo.log
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-pod.log
+          path: /tmp/log/argo-e2e/pod.log
 
   codegen:
     name: Codegen
@@ -144,11 +133,11 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
-          go-version: "1.13.12"
+          go-version: "1.15.7"
       - name: Add bins to PATH
         run: |
           echo /home/runner/go/bin >> $GITHUB_PATH
@@ -172,7 +161,7 @@ jobs:
           git fetch --tags
 
           mkdir -p /home/runner/go/src/github.com/argoproj
-          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
+          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
 
           # we use -B to force make to always make targets
           make -B codegen STATIC_FILES=false

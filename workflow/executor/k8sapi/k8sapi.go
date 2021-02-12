@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/v2/errors"
-	"github.com/argoproj/argo/v2/workflow/executor/common/wait"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/common/wait"
 )
 
 type K8sAPIExecutor struct {
@@ -66,10 +67,10 @@ func (k *K8sAPIExecutor) Wait(ctx context.Context, containerID string) error {
 }
 
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (k *K8sAPIExecutor) Kill(ctx context.Context, containerIDs []string) error {
+func (k *K8sAPIExecutor) Kill(ctx context.Context, containerIDs []string, terminationGracePeriodDuration time.Duration) error {
 	log.Infof("Killing containers %s", containerIDs)
 	for _, containerID := range containerIDs {
-		err := k.client.killGracefully(ctx, containerID)
+		err := k.client.killGracefully(ctx, containerID, terminationGracePeriodDuration)
 		if err != nil {
 			return err
 		}

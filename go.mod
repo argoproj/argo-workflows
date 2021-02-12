@@ -1,6 +1,6 @@
-module github.com/argoproj/argo/v2
+module github.com/argoproj/argo-workflows/v3
 
-go 1.13
+go 1.15
 
 require (
 	bou.ke/staticfiles v0.0.0-20210106104248-dd04075d4104

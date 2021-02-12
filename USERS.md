@@ -4,7 +4,9 @@ Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows 
 
 ## Who uses Argo Workflows?
 
-As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
+As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization or project name in the following sections.
+
+### Organizations Using Argo
 
 Currently, the following organizations are **officially** using Argo Workflows:
 
@@ -107,6 +109,15 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Tulip](https://tulip.com/)
 1. [UFirstGroup](https://www.ufirstgroup.com)
+1. [Vispera](https://www.vispera.co)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
+
+### Projects Using Argo
+
+In addition, the following projects are **officially** using Argo Workflows:
+
+1. [Couler](https://github.com/couler-proj/couler)
+1. [Kubeflow](https://www.kubeflow.org/)
+1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)

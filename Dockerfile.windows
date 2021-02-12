@@ -5,7 +5,7 @@
 ####################################################################################################
 # had issues with official golange image for windows so I'm using plain servercore
 FROM mcr.microsoft.com/windows/servercore:ltsc2019 as builder
-ENV GOLANG_VERSION=1.13.4
+ENV GOLANG_VERSION=1.15.7
 SHELL ["powershell", "-Command"]
 
 ARG IMAGE_OS=windows
@@ -32,7 +32,7 @@ ARG IMAGE_OS=windows
 ARG IMAGE_ARCH=amd64
 
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.18.8
+ENV KUBECTL_VERSION=1.19.6
 ENV JQ_VERSION=1.6
 
 RUN mkdir C:\app && \
@@ -52,22 +52,18 @@ RUN SETX /m path C:\app;C:\app\git\bin;%path%
 ####################################################################################################
 FROM builder as argo-build
 
-ARG IMAGE_OS=windows
-ARG IMAGE_ARCH=amd64
-
 # Perform the build
-WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo
+WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
-# fail the build if we are "dirty"
-RUN git diff --exit-code
 # run in git bash for all the shell commands in Makefile to work
-RUN bash -c 'make dist/argoexec-windows-amd64'
+RUN bash -c 'make dist/argoexec'
 
 ####################################################################################################
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
-COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo/dist/argoexec-windows-amd64 C:/app/argoexec.exe
+COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows/dist/argoexec C:/app/argoexec.exe
+RUN argoexec version
 ENTRYPOINT [ "argoexec" ]

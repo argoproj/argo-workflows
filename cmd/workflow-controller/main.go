@@ -20,10 +20,10 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
-	wfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
-	cmdutil "github.com/argoproj/argo/v2/util/cmd"
-	"github.com/argoproj/argo/v2/workflow/controller"
-	"github.com/argoproj/argo/v2/workflow/metrics"
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
 
 const (

@@ -24,12 +24,18 @@
   }
 }
 
+.node-search-bar {
+  display: inline-block;
+  margin-left: 10px;
+}
+
 .graph-options-panel {
   margin: 10px;
   padding: 10px;
   display: inline-block;
   background-color: white;
   box-shadow: 1px 1px 3px $argo-color-gray-5;
+  position: fixed;
 
   div.argo-dropdown, a {
     padding: 5px;

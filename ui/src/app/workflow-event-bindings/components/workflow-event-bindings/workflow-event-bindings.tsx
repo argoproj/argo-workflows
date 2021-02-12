@@ -24,7 +24,7 @@ const introductionText = (
         from a remote system.
     </>
 );
-const learnMore = <a href={'https://argoproj.github.io/argo/events/'}>Learn more</a>;
+const learnMore = <a href={'https://argoproj.github.io/argo-workflows/events/'}>Learn more</a>;
 
 export const WorkflowEventBindings = ({match, location, history}: RouteComponentProps<any>) => {
     // boiler-plate
@@ -110,6 +110,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     <GraphPanel
                         storageScope='workflow-event-bindings'
                         graph={g}
+                        nodeGenresTitle={'Type'}
                         nodeGenres={{'event': true, 'template': true, 'cluster-template': true}}
                         horizontal={true}
                         onNodeSelect={id => {
