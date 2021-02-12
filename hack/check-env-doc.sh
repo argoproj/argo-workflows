@@ -3,6 +3,7 @@
 pwd
 ls -al
 
+cat workflow/controller/pod/significant.go
 
 echo "Checking env variables doc..."
 
