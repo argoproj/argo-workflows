@@ -13,8 +13,9 @@ argo template lint (DIRECTORY | FILE1 FILE2 FILE3...) [flags]
 ### Options
 
 ```
-  -h, --help     help for lint
-      --strict   perform strict workflow validation (default true)
+      --format string   Linting results output format. One of: pretty|simple (default "pretty")
+  -h, --help            help for lint
+      --strict          perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands

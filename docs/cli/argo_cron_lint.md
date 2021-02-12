@@ -13,8 +13,9 @@ argo cron lint FILE... [flags]
 ### Options
 
 ```
-  -h, --help     help for lint
-      --strict   perform strict workflow validation (default true)
+      --format string   Linting results output format. One of: pretty|simple (default "pretty")
+  -h, --help            help for lint
+      --strict          perform strict validation (default true)
 ```
 
 ### Options inherited from parent commands
