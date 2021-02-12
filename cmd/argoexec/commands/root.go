@@ -101,11 +101,11 @@ func initExecutor() *executor.WorkflowExecutor {
 	case common.ContainerRuntimeExecutorK8sAPI:
 		cre, err = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
 	case common.ContainerRuntimeExecutorKubelet:
-		cre, err = kubelet.NewKubeletExecutor()
+		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
 	case common.ContainerRuntimeExecutorPNS:
-		cre, err = pns.NewPNSExecutor(clientset, podName, namespace, tmpl.Outputs.HasOutputs())
+		cre, err = pns.NewPNSExecutor(clientset, podName, namespace)
 	default:
-		cre, err = docker.NewDockerExecutor()
+		cre, err = docker.NewDockerExecutor(namespace, podName)
 	}
 	checkErr(err)
 

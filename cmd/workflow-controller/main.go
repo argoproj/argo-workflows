@@ -22,6 +22,7 @@ import (
 
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
@@ -67,6 +68,7 @@ func NewRootCommand() *cobra.Command {
 			config.Burst = burst
 			config.QPS = qps
 
+			logs.AddK8SLogTransportWrapper(config)
 			metrics.AddMetricsTransportWrapper(config)
 
 			namespace, _, err := clientConfig.Namespace()
