@@ -1272,33 +1272,23 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
-	for _, ctr := range pod.Status.InitContainerStatuses {
-		// Virtual Kubelet environment will not set the terminate on waiting container
-		// https://github.com/argoproj/argo-workflows/issues/3879
-		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
-		if ctr.State.Waiting != nil {
-			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+	order := func(n string) int {
+		order, ok := map[string]int{
+			common.InitContainerName: 0,
+			common.MainContainerName: 1,
+			common.WaitContainerName: 2,
+		}[n]
+		if ok {
+			return order
 		}
-		if ctr.State.Terminated == nil {
-			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
-			continue
-		}
-		if ctr.State.Terminated.ExitCode == 0 {
-			continue
-		}
-		errMsg := "failed to load artifacts"
-		for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
-			if msg != "" {
-				errMsg += ": " + msg
-				break
-			}
-		}
-		// NOTE: we consider artifact load issues as Error instead of Failed
-		return wfv1.NodeError, errMsg
+		return 3
 	}
-	failMessages := make(map[string]string)
-	for _, ctr := range pod.Status.ContainerStatuses {
+
+	ctrs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
+	sort.Slice(ctrs, func(i, j int) bool { return order(ctrs[i].Name) < order(ctrs[j].Name) })
+
+	for _, ctr := range ctrs {
+
 		// Virtual Kubelet environment will not set the terminate on waiting container
 		// https://github.com/argoproj/argo-workflows/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
@@ -1306,76 +1296,40 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		if ctr.State.Waiting != nil {
 			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
 		}
-		if ctr.State.Terminated == nil {
+		t := ctr.State.Terminated
+		if t == nil {
 			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.Name, ctr.Name)
 			continue
 		}
-		if ctr.State.Terminated.ExitCode == 0 {
+		if t.ExitCode == 0 {
 			continue
 		}
-		if ctr.State.Terminated.Message == "" && ctr.State.Terminated.Reason == "OOMKilled" {
-			failMessages[ctr.Name] = ctr.State.Terminated.Reason
-			continue
-		}
-		if ctr.Name == common.WaitContainerName {
-			errDetails := ""
-			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
-				if msg != "" {
-					errDetails = msg
-					break
-				}
-			}
-			if errDetails == "" {
-				// executor is expected to annotate a message to the pod upon any errors.
-				// If we failed to see the annotated message, it is likely the pod ran with
-				// insufficient privileges. Give a hint to that effect.
-				errDetails = fmt.Sprintf("verify serviceaccount %s:%s has necessary privileges", pod.ObjectMeta.Namespace, pod.Spec.ServiceAccountName)
-			}
-			errMsg := fmt.Sprintf("failed to save outputs: %s", errDetails)
-			failMessages[ctr.Name] = errMsg
-			continue
-		}
-		if ctr.State.Terminated.Message != "" {
-			errMsg := ctr.State.Terminated.Message
-			if ctr.Name != common.MainContainerName {
-				errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
-			}
-			failMessages[ctr.Name] = errMsg
-			continue
-		}
-		errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
-		if ctr.Name != common.MainContainerName {
-			if ctr.State.Terminated.ExitCode == 137 || ctr.State.Terminated.ExitCode == 143 {
+
+		msg := fmt.Sprintf("exit code %d: %s; %s; %s", t.ExitCode, t.Reason, t.Message, annotatedMsg)
+
+		switch ctr.Name {
+		case common.InitContainerName:
+			return wfv1.NodeError, msg
+		case common.MainContainerName:
+			return wfv1.NodeFailed, msg
+		case common.WaitContainerName:
+			// executor is expected to annotate a message to the pod upon any errors.
+			// If we failed to see the annotated message, it is likely the pod ran with
+			// insufficient privileges. Give a hint to that effect.
+			return wfv1.NodeError, fmt.Sprintf("%s; verify serviceaccount %s:%s has necessary privileges", msg, pod.Namespace, pod.Spec.ServiceAccountName)
+		default:
+			if t.ExitCode == 137 || t.ExitCode == 143 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
 				// forcibly killed the container, which we ignore the error for.
 				// Java code 143 is a normal exit 128 + 15 https://github.com/elastic/elasticsearch/issues/31847
-				log.Infof("Ignoring %d exit code of sidecar '%s'", ctr.State.Terminated.ExitCode, ctr.Name)
-				continue
+				log.Infof("Ignoring %d exit code of container '%s'", t.ExitCode, ctr.Name)
+			} else {
+				return wfv1.NodeFailed, msg
 			}
-			errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
 		}
-		failMessages[ctr.Name] = errMsg
-	}
-	if failMsg, ok := failMessages[common.MainContainerName]; ok {
-		_, ok = failMessages[common.WaitContainerName]
-		isResourceTemplate := !ok
-		if isResourceTemplate && annotatedMsg != "" {
-			// For resource templates, we prefer the annotated message
-			// over the vanilla exit code 1 error
-			return wfv1.NodeFailed, annotatedMsg
-		}
-		return wfv1.NodeFailed, failMsg
-	}
-	if failMsg, ok := failMessages[common.WaitContainerName]; ok {
-		return wfv1.NodeError, failMsg
 	}
 
-	// If we get here, both the main and wait container succeeded. Iterate the fail messages to
-	// identify the sidecar which failed and return the message.
-	for _, failMsg := range failMessages {
-		return wfv1.NodeFailed, failMsg
-	}
 	// If we get here, we have detected that the main/wait containers succeed but the sidecar(s)
 	// were  SIGKILL'd. The executor may have had to forcefully terminate the sidecar (kill -9),
 	// resulting in a 137 exit code (which we had ignored earlier). If failMessages is empty, it
