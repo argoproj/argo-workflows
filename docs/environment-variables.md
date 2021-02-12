@@ -16,6 +16,7 @@ Note that these environment variables may be removed at any time.
 | `LEADER_ELECTION_IDENTITY` | `string` | The ID used for workflow controllers to elect a leader. |
 | `MAX_OPERATION_TIME` | `time.Duration` | The maximum time a workflow operation is allowed to run for before requeuing the workflow onto the work queue. |
 | `OFFLOAD_NODE_STATUS_TTL` | `time.Duration` | The TTL to delete the offloaded node status. Currently only used for testing. |
+| `POD_GC_TRANSIENT_ERROR_MAX_REQUEUES` | `int` | The maximum number of requeues of pods in the GC queue when encountering transient errors. |
 | `RECENTLY_STARTED_POD_DURATION` | `time.Duration` | The duration of a pod before the pod is considered to be recently started. |
 | `RETRY_BACKOFF_DURATION` | `time.Duration` | The retry backoff duration when retrying API calls. |
 | `RETRY_BACKOFF_FACTOR` | `float` | The retry backoff factor when retrying API calls. |
