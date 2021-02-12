@@ -78,6 +78,7 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		})
 }
 
+// Tests that new pods are never created once a stop shutdown strategy has been added
 func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 	s.Given().
 		Workflow("@functional/stop-terminate-2.yaml").
@@ -88,7 +89,7 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
-		WaitForWorkflow().
+		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
