@@ -16,8 +16,8 @@ spec:
 
     - name: sleep
       container:
-        image: argoproj/argosay:v2
-        args: [ sleep, "999s"]
+        image: argoproj/argosay:v1
+        args: [ sleep, "999"]
 
     - name: pass
       container:

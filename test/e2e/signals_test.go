@@ -89,7 +89,7 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
-		WaitForWorkflow(45 * time.Second).
+		WaitForWorkflow(1 * time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
