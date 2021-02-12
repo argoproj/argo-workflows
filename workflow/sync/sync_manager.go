@@ -140,12 +140,12 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 }
 
 func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-
 	if syncRef == nil {
 		return
 	}
+
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 
 	holderKey := getHolderKey(wf, nodeName)
 	lockName, err := GetLockName(syncRef, wf.Namespace)

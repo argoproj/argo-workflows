@@ -25,6 +25,7 @@ metadata:
 data:
   workflow: "2"
   template: "1"
+  step: "1"
 `
 const wfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
@@ -473,5 +474,216 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		// Nobody is holding the lock
 		assert.Empty(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders)
 
+	})
+}
+
+const StepWithSync = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-jklcl
+  namespace: default
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - arguments: {}
+    name: hello-hello-hello
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello1
+        name: hello1
+        template: whalesay
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          key: step
+          name: my-config
+  - arguments: {}
+    container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+    inputs:
+      parameters:
+      - name: message
+    name: whalesay
+`
+
+const StepWithSyncStatus = `
+piVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-jklcl
+  namespace: default
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - inputs: {}
+    name: hello-hello-hello
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello1
+        name: hello1
+        template: whalesay
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          key: step
+          name: my-config
+  - container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    name: whalesay
+status:
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2021-02-11T19:46:55Z"
+  nodes:
+    steps-jklcl:
+      children:
+      - steps-jklcl-3895081407
+      displayName: steps-jklcl
+      finishedAt: "2021-02-11T19:46:55Z"
+      id: steps-jklcl
+      name: steps-jklcl
+      outboundNodes:
+      - steps-jklcl-969694128
+      phase: Running
+      progress: 1/1
+      resourcesDuration:
+        cpu: 7
+        memory: 4
+      startedAt: "2021-02-11T19:46:33Z"
+      templateName: hello-hello-hello
+      templateScope: local/steps-jklcl
+      type: Steps
+    steps-jklcl-969694128:
+      boundaryID: steps-jklcl
+      displayName: hello1
+      finishedAt: "2021-02-11T19:46:44Z"
+      id: steps-jklcl-969694128
+      inputs:
+        parameters:
+        - name: message
+          value: hello1
+      name: steps-jklcl[0].hello1
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: steps-jklcl/steps-jklcl-969694128/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 7
+        memory: 4
+      startedAt: "2021-02-11T19:46:33Z"
+      templateName: whalesay
+      templateScope: local/steps-jklcl
+      type: Pod
+    steps-jklcl-3895081407:
+      boundaryID: steps-jklcl
+      children:
+      - steps-jklcl-969694128
+      displayName: '[0]'
+      finishedAt: "2021-02-11T19:46:55Z"
+      id: steps-jklcl-3895081407
+      name: steps-jklcl[0]
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 7
+        memory: 4
+      startedAt: "2021-02-11T19:46:33Z"
+      templateScope: local/steps-jklcl
+      type: StepGroup
+  phase: Succeeded
+  progress: 1/1
+  resourcesDuration:
+    cpu: 7
+    memory: 4
+  startedAt: "2021-02-11T19:46:33Z"
+
+`
+
+func TestSynchronizationWithStep(t *testing.T) {
+	assert := assert.New(t)
+	cancel, controller := newController()
+	defer cancel()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	})
+	var cm v1.ConfigMap
+	err := yaml.Unmarshal([]byte(configMap), &cm)
+	assert.NoError(err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
+	assert.NoError(err)
+
+	t.Run("StepWithSychronization", func(t *testing.T) {
+		//First workflow Acquire the lock
+		wf := unmarshalWF(StepWithSync)
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf)
+		assert.NoError(err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.NotNil(woc.wf.Status.Synchronization)
+		assert.NotNil(woc.wf.Status.Synchronization.Semaphore)
+		assert.Len(woc.wf.Status.Synchronization.Semaphore.Holding, 1)
+
+		// Second workflow try to acquire the lock and wait for lock
+		wf1 := unmarshalWF(StepWithSync)
+		wf1.Name = "step2"
+		wf1, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf1)
+		assert.NoError(err)
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate()
+		assert.NotNil(woc1.wf.Status.Synchronization)
+		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
+		assert.Nil(woc1.wf.Status.Synchronization.Semaphore.Holding)
+		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Waiting, 1)
+
+		//Finished all StepGroup in step
+		wf = unmarshalWF(StepWithSyncStatus)
+		woc = newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Nil(woc.wf.Status.Synchronization)
+
+		// Second workflow acquire the lock
+		woc1 = newWorkflowOperationCtx(woc1.wf, controller)
+		woc1.operate()
+		assert.NotNil(woc1.wf.Status.Synchronization)
+		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
+		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore.Holding)
+		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
