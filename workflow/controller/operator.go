@@ -922,16 +922,15 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					return
 				}
 				if woc.execWf.Spec.PodGC != nil && woc.execWf.Spec.PodGC.Strategy == wfv1.PodGCOnPodCompletion && woc.execWf.Spec.PodGC.LabelSelector != nil {
-					labelSelector, err := labels.Parse(woc.execWf.Spec.PodGC.LabelSelector.String())
+					labelsMap, err := metav1.LabelSelectorAsMap(woc.execWf.Spec.PodGC.LabelSelector)
 					if err != nil {
 						woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
 					}
-					if labelSelector != nil {
-						var podLabels labels.Set = pod.GetLabels()
-						match := labelSelector.Matches(podLabels)
-						if match {
-							woc.podGCSelectedPods[pod.ObjectMeta.Name] = true
-						}
+					labelSelector := labels.SelectorFromSet(labelsMap)
+					var podLabels labels.Set = pod.GetLabels()
+					match := labelSelector.Matches(podLabels)
+					if match {
+						woc.podGCSelectedPods[pod.ObjectMeta.Name] = true
 					}
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
