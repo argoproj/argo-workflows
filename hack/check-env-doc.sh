@@ -5,6 +5,14 @@ ls -al
 
 cat workflow/controller/pod/significant.go
 
+echo "TEST 1"
+
+grep "| \`" < ./docs/environment-variables.md
+
+echo "TEST 2"
+
+grep "| \`" < ./docs/environment-variables.md | awk '{gsub(/\`/, "", $2);  print $2; }'
+
 echo "Checking env variables doc..."
 
 function check-used {
