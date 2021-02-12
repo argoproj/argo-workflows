@@ -4015,8 +4015,8 @@
       "description": "PodGC describes how to delete completed pods as they complete",
       "properties": {
         "labelSelector": {
-          "description": "LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "description": "LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue."
         },
         "strategy": {
           "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",

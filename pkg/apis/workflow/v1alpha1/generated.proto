@@ -782,7 +782,7 @@ message PodGC {
   optional string strategy = 1;
 
   // LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.
-  optional string labelSelector = 2;
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 }
 
 // Prometheus is a prometheus metric to be emitted

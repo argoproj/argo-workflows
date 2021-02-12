@@ -209,7 +209,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if wf.Spec.PodGC != nil {
 		switch wf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
-			if wf.Spec.PodGC.Strategy != wfv1.PodGCOnPodCompletion && wf.Spec.PodGC.LabelSelector != "" {
+			if wf.Spec.PodGC.Strategy != wfv1.PodGCOnPodCompletion && wf.Spec.PodGC.LabelSelector != nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector can only be used with 'OnPodCompletion' strategy")
 			}
 		default:

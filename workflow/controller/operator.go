@@ -607,7 +607,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 			}
 		case wfv1.PodGCOnPodCompletion:
-			if woc.execWf.Spec.PodGC.LabelSelector != "" {
+			if woc.execWf.Spec.PodGC.LabelSelector != nil {
 				for podName := range woc.podGCSelectedPods {
 					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 				}
@@ -921,8 +921,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 					return
 				}
-				if woc.execWf.Spec.PodGC != nil && woc.execWf.Spec.PodGC.Strategy == wfv1.PodGCOnPodCompletion && woc.execWf.Spec.PodGC.LabelSelector != "" {
-					labelSelector, err := labels.Parse(woc.execWf.Spec.PodGC.LabelSelector)
+				if woc.execWf.Spec.PodGC != nil && woc.execWf.Spec.PodGC.Strategy == wfv1.PodGCOnPodCompletion && woc.execWf.Spec.PodGC.LabelSelector != nil {
+					labelSelector, err := labels.Parse(woc.execWf.Spec.PodGC.LabelSelector.String())
 					if err != nil {
 						woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
 					}

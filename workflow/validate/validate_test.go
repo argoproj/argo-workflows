@@ -1748,7 +1748,7 @@ func TestIncorrectPodGCStrategy(t *testing.T) {
 
 	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
 		wf.Spec.PodGC.Strategy = strat
-		wf.Spec.PodGC.LabelSelector = "evicted=true"
+		wf.Spec.PodGC.LabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{"evicted": "true"}}
 		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.EqualError(t, err, "podGC.labelSelector can only be used with 'OnPodCompletion' strategy")
 	}

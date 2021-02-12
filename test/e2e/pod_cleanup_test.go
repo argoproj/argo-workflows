@@ -137,7 +137,9 @@ metadata:
 spec:
   podGC:
     strategy: OnPodCompletion
-    labelSelector: "evicted=true"
+    labelSelector:
+      matchLabels:
+        evicted: true
   entrypoint: main
   templates:
     - name: main
