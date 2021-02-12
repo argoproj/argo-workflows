@@ -205,7 +205,7 @@ func TestSubPathResolution(t *testing.T) {
   name: git-artifact
   path: some/local/path
   git:
-    repo: https://github.com/argoproj/argo
+    repo: https://github.com/argoproj/argo-workflows
   `
 
 	var RawArtifact = `

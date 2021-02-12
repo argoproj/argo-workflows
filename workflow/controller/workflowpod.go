@@ -19,13 +19,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	"github.com/argoproj/argo/v3/util/intstr"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // Reusable k8s pod spec portions used in workflow pods
@@ -441,7 +441,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 			},
 		}
 		// PNS_PRIVILEGED allows you to always set privileged on for PNS, this seems to be needed for certain systems
-		// https://github.com/argoproj/argo/issues/1256
+		// https://github.com/argoproj/argo-workflows/issues/1256
 		if hasPrivilegedContainers(tmpl) || os.Getenv("PNS_PRIVILEGED") == "true" {
 			// if the main or sidecar is privileged, the wait sidecar must also run privileged,
 			// in order to SIGTERM/SIGKILL the pid
@@ -615,6 +615,16 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 
 // addMetadata applies metadata specified in the template
 func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
+	if woc.wf.Spec.PodMetadata != nil {
+		// add workflow-level pod annotations and labels
+		for k, v := range woc.wf.Spec.PodMetadata.Annotations {
+			pod.ObjectMeta.Annotations[k] = v
+		}
+		for k, v := range woc.wf.Spec.PodMetadata.Labels {
+			pod.ObjectMeta.Labels[k] = v
+		}
+	}
+
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}

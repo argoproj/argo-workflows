@@ -30,7 +30,7 @@ spec:
       - name: argo-source
         path: /src
         git:
-          repo: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo-workflows.git
           revision: "{{inputs.parameters.revision}}"
     container:
       image: golang:1.8

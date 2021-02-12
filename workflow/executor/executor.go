@@ -28,16 +28,16 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/util/archive"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	"github.com/argoproj/argo/v3/util/retry"
-	waitutil "github.com/argoproj/argo/v3/util/wait"
-	artifact "github.com/argoproj/argo/v3/workflow/artifacts"
-	"github.com/argoproj/argo/v3/workflow/common"
-	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/archive"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -496,7 +496,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 			executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
 			if executorType == common.ContainerRuntimeExecutorK8sAPI || executorType == common.ContainerRuntimeExecutorKubelet {
 				log.Infof("Copying output parameter %s from base image layer %s is not supported for k8sapi and kubelet executors. "+
-					"Consider using an emptyDir volume: https://argoproj.github.io/argo/empty-dir/.", param.Name, param.ValueFrom.Path)
+					"Consider using an emptyDir volume: https://argoproj.github.io/argo-workflows/empty-dir/.", param.Name, param.ValueFrom.Path)
 				continue
 			}
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
@@ -682,10 +682,10 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 // GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
 func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Context) (time.Duration, error) {
 	pod, err := we.getPod(ctx)
-	if err != nil {
+	if err != nil || pod.Spec.TerminationGracePeriodSeconds == nil {
 		return time.Duration(0), err
 	}
-	terminationGracePeriodDuration := time.Duration(*pod.Spec.TerminationGracePeriodSeconds)
+	terminationGracePeriodDuration := time.Second * time.Duration(*pod.Spec.TerminationGracePeriodSeconds)
 	return terminationGracePeriodDuration, nil
 }
 
