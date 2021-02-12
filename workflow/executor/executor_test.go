@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	fakePodName     = "fake-test-pod-1234567890"
-	fakeNamespace   = "default"
-	fakeAnnotations = "/tmp/podannotationspath"
-	fakeContainerID = "abc123"
+	fakePodName       = "fake-test-pod-1234567890"
+	fakeNamespace     = "default"
+	fakeAnnotations   = "/tmp/podannotationspath"
+	fakeContainerName = "main"
 )
 
 func TestSaveParameters(t *testing.T) {
@@ -45,9 +45,8 @@ func TestSaveParameters(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
-	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("has a newline\n", nil)
+	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("has a newline\n", nil)
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
@@ -135,9 +134,8 @@ func TestDefaultParameters(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
-	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
+	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
@@ -169,9 +167,8 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
-	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
+	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
@@ -329,7 +326,6 @@ func TestSaveArtifacts(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
 
 	ctx := context.Background()
