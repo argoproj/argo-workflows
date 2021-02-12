@@ -463,6 +463,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 }
 
+func (woc *wfOperationCtx) GetContainerRuntimeExecutor() string {
+	return woc.controller.GetContainerRuntimeExecutor()
+}
+
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	if woc.execWf.Spec.ActiveDeadlineSeconds == nil {
 		return nil

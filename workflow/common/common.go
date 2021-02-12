@@ -130,6 +130,9 @@ const (
 	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
 	ContainerRuntimeExecutorPNS = "pns"
 
+	// ContainerRuntimeExecutorEmissary indicates to use emissary container runtime executor
+	ContainerRuntimeExecutorEmissary = "emissary"
+
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
