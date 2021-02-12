@@ -19,8 +19,10 @@ function check-used {
     grep "| \`" < ./docs/environment-variables.md \
       | awk '{gsub(/\`/, "", $2);  print $2; }' \
       | while read -r x; do
-        if ! grep -qR --exclude="*_test.go" "$x" ./workflow ./persist ./util; then
-          echo "Documented variable $x is not used anywhere";
+        var="${x%\`}";
+        var="${var#\`}";
+        if ! grep -qR --exclude="*_test.go" "$var" ./workflow ./persist ./util; then
+          echo "Documented variable $var is not used anywhere";
           exit 1;
         fi;
       done
