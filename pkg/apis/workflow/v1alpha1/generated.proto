@@ -778,10 +778,10 @@ message Parameter {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
-  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnPodLabelSelected", "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
 
-  // LabelSelector represents the label selector to use when "OnPodLabelSelected" is used.
+  // LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.
   optional string labelSelector = 2;
 }
 

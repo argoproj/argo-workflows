@@ -77,7 +77,6 @@ type PodGCStrategy string
 const (
 	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
-	PodGCOnOnPodLabelSelected PodGCStrategy = "OnPodLabelSelected"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
@@ -752,9 +751,9 @@ type Artifact struct {
 
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
-	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnPodLabelSelected", "OnWorkflowCompletion", "OnWorkflowSuccess"
+	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
-	// LabelSelector represents the label selector to use when "OnPodLabelSelected" is used.
+	// LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.
 	LabelSelector string `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 }
 

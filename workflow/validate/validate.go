@@ -208,9 +208,9 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	if wf.Spec.PodGC != nil {
 		switch wf.Spec.PodGC.Strategy {
-		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnOnPodLabelSelected, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
-			if wf.Spec.PodGC.Strategy == wfv1.PodGCOnOnPodLabelSelected && wf.Spec.PodGC.LabelSelector == "" {
-				return nil, errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector cannot be empty string when 'OnPodLabelSelected' strategy is used")
+		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
+			if wf.Spec.PodGC.Strategy != wfv1.PodGCOnPodCompletion && wf.Spec.PodGC.LabelSelector != "" {
+				return nil, errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector can only be used with 'OnPodCompletion' strategy")
 			}
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)

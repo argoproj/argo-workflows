@@ -127,16 +127,16 @@ spec:
 		})
 }
 
-func (s *PodCleanupSuite) TestOnPodLabelSelected() {
+func (s *PodCleanupSuite) TestOnPodCompletionLabelSelected() {
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: test-pod-cleanup-on-pod-label-selected-
+  generateName: test-pod-cleanup-on-pod-completion-label-selected-
   labels:
     argo-e2e: true
 spec:
   podGC:
-    strategy: OnPodLabelSelected
+    strategy: OnPodCompletion
     labelSelector: "evicted=true"
   entrypoint: main
   templates:

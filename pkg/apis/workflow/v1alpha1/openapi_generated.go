@@ -2604,14 +2604,14 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"strategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnPodLabelSelected\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+							Description: "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"labelSelector": {
 						SchemaProps: spec.SchemaProps{
-							Description: "LabelSelector represents the label selector to use when \"OnPodLabelSelected\" is used.",
+							Description: "LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

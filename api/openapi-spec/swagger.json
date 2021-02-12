@@ -7430,11 +7430,11 @@
       "type": "object",
       "properties": {
         "labelSelector": {
-          "description": "LabelSelector represents the label selector to use when \"OnPodLabelSelected\" is used.",
+          "description": "LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.",
           "type": "string"
         },
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnPodLabelSelected\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
           "type": "string"
         }
       }

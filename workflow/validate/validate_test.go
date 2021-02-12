@@ -1746,10 +1746,12 @@ func TestIncorrectPodGCStrategy(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	wf.Spec.PodGC.Strategy = wfv1.PodGCOnOnPodLabelSelected
-	wf.Spec.PodGC.LabelSelector = ""
-	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-	assert.EqualError(t, err, "podGC.labelSelector cannot be empty string when 'OnPodLabelSelected' strategy is used")
+	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
+		wf.Spec.PodGC.Strategy = strat
+		wf.Spec.PodGC.LabelSelector = "evicted=true"
+		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+		assert.EqualError(t, err, "podGC.labelSelector can only be used with 'OnPodCompletion' strategy")
+	}
 }
 
 var validAutomountServiceAccountTokenUseWfLevel = `
