@@ -17,6 +17,7 @@
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.2.5",
         "cron-parser": "^2.16.3",
+        "cronstrue": "^1.109.0",
         "dagre": "^0.8.5",
         "formik": "^2.1.2",
         "history": "^4.7.2",
