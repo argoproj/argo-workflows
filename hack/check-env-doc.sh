@@ -1,4 +1,7 @@
 #!/bin/bash
+
+grep --version
+
 grep "| \`" < ./docs/environment-variables.md \
   | awk '{gsub(/\`/, "", $2);  print $2; }' \
   | while read -r x; do
