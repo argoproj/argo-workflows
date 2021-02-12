@@ -198,6 +198,8 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	for {
 		select {
 		case <-ctx.Done():
