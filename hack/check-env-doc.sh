@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Checking env variables doc for completness..."
+echo "Checking docs/environment-variables.md for completeness..."
 
 function check-used {
     grep "| \`" < ./docs/environment-variables.md \
@@ -9,7 +9,7 @@ function check-used {
         var="${x%\`}";
         var="${var#\`}";
         if ! grep -qR --exclude="*_test.go" "$var" ./workflow ./persist ./util; then
-          echo "Documented variable $var is not used anywhere";
+          echo "Documented variable $var in docs/environment-variables.md is not used anywhere";
           exit 1;
         fi;
       done
@@ -24,7 +24,7 @@ function check-documented {
         var="${x%\"}";
         var="${var#\"}";
         if ! grep -q "$var" docs/environment-variables.md; then
-          echo "Variable $var not documented in docs/environment-variables";
+          echo "Variable $var not documented in docs/environment-variables.md";
           exit 1;
         fi;
       done
