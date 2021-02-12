@@ -9,8 +9,12 @@ spec:
   templates:
     - name: main
       container:
-        image: argoproj/argosay:v2
+        image: argoproj/argosay:v1
+        args: [ sleep, "5s" ]
       sidecars:
         - name: sidecar-0
-          image: argoproj/argosay:v2
-          argso: [ sleep, "999" ]
+          image: argoproj/argosay:v1
+          args: [ sleep, "999s" ]
+        - name: sidecar-1
+          image: argoproj/argosay:v1
+          args: [ sleep, "999s" ]
