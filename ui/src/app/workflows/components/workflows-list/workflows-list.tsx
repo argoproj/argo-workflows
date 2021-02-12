@@ -270,10 +270,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div className='row small-11'>
                                     <div className='columns small-3'>NAME</div>
                                     <div className='columns small-2'>NAMESPACE</div>
-                                    <div className='columns small-2'>STARTED</div>
-                                    <div className='columns small-2'>FINISHED</div>
+                                    <div className='columns small-1'>STARTED</div>
+                                    <div className='columns small-1'>FINISHED</div>
                                     <div className='columns small-1'>DURATION</div>
                                     <div className='columns small-1'>PROGRESS</div>
+                                    <div className='columns small-2'>MESSAGE</div>
                                     <div className='columns small-1'>DETAILS</div>
                                 </div>
                             </div>

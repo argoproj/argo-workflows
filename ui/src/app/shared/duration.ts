@@ -6,8 +6,8 @@ import * as models from '../../models';
  * @param sigfigs Level of significant figures to show
  */
 
-export function formatDuration(seconds: number, sigfigs?: number) {
-    let remainingSeconds = Math.round(seconds);
+export function formatDuration(seconds: number, sigfigs = 1) {
+    let remainingSeconds = Math.abs(Math.round(seconds));
     let formattedDuration = '';
     const figs = [];
 
@@ -37,7 +37,7 @@ export function formatDuration(seconds: number, sigfigs?: number) {
         formattedDuration += remainingSeconds + 's';
     }
 
-    if (sigfigs && sigfigs <= figs.length) {
+    if (sigfigs <= figs.length) {
         formattedDuration = '';
         for (let i = 0; i < sigfigs; i++) {
             formattedDuration += figs[i];
@@ -67,3 +67,13 @@ export function wfDuration(status: models.WorkflowStatus) {
     }
     return ((status.finishedAt ? new Date(status.finishedAt) : new Date()).getTime() - new Date(status.startedAt).getTime()) / 1000;
 }
+
+export const ago = (date: Date) => {
+    const secondsAgo = (new Date().getTime() - date.getTime()) / 1000;
+    const duration = formatDuration(secondsAgo);
+    if (secondsAgo < 0) {
+        return 'in ' + duration;
+    } else {
+        return duration + ' ago';
+    }
+};
