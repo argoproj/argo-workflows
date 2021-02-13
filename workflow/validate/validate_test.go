@@ -1736,8 +1736,8 @@ func TestIncorrectPodGCStrategy(t *testing.T) {
 
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 
-	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
-		wf.Spec.PodGC.Strategy = strat
+	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
+		wf.Spec.PodGC.Strategy = start
 		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 

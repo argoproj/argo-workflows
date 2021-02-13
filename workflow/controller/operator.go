@@ -15,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/labels"
-
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
