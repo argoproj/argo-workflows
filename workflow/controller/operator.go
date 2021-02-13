@@ -84,8 +84,6 @@ type wfOperationCtx struct {
 	artifactRepository *config.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
-	// map of pods which need to be added to pod GC queue when pod label matches with the label selector.
-	podGCSelectedPods map[string]bool
 	// map of pods which is identified as succeeded=true
 	succeededPods map[string]bool
 	// deadline is the dealine time in which this operation should relinquish
@@ -158,7 +156,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		volumes:                wf.Spec.DeepCopy().Volumes,
 		completedPods:          make(map[string]bool),
 		succeededPods:          make(map[string]bool),
-		podGCSelectedPods:      make(map[string]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
@@ -607,14 +604,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 			}
 		case wfv1.PodGCOnPodCompletion:
-			if woc.execWf.Spec.PodGC.LabelSelector != nil {
-				for podName := range woc.podGCSelectedPods {
-					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
-				}
-			} else {
-				for podName := range woc.completedPods {
-					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
-				}
+			for podName := range woc.completedPods {
+				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 			}
 		}
 	} else {
@@ -917,23 +908,23 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
+			match := true
+			if woc.execWf.Spec.PodGC != nil && woc.execWf.Spec.PodGC.LabelSelector != nil {
+				labelsMap, err := metav1.LabelSelectorAsMap(woc.execWf.Spec.PodGC.LabelSelector)
+				if err != nil {
+					woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
+				}
+				labelSelector := labels.SelectorFromSet(labelsMap)
+				var podLabels labels.Set = pod.GetLabels()
+				match = labelSelector.Matches(podLabels)
+			}
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 					return
 				}
-				if woc.execWf.Spec.PodGC != nil && woc.execWf.Spec.PodGC.Strategy == wfv1.PodGCOnPodCompletion && woc.execWf.Spec.PodGC.LabelSelector != nil {
-					labelsMap, err := metav1.LabelSelectorAsMap(woc.execWf.Spec.PodGC.LabelSelector)
-					if err != nil {
-						woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
-					}
-					labelSelector := labels.SelectorFromSet(labelsMap)
-					var podLabels labels.Set = pod.GetLabels()
-					match := labelSelector.Matches(podLabels)
-					if match {
-						woc.podGCSelectedPods[pod.ObjectMeta.Name] = true
-					}
+				if match {
+					woc.completedPods[pod.ObjectMeta.Name] = true
 				}
-				woc.completedPods[pod.ObjectMeta.Name] = true
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
@@ -941,7 +932,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					woc.onNodeComplete(&node)
 				}
 			}
-			if node.Succeeded() {
+			if node.Succeeded() && match {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
 			}
 		}
