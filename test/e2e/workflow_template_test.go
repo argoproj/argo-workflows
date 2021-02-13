@@ -67,7 +67,6 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		})
-
 }
 
 func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {

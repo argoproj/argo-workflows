@@ -341,6 +341,7 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 		Expect().
 		Status(401)
 }
+
 func (s *ArgoServerSuite) TestCookieAuth() {
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
@@ -1093,7 +1094,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Expect().
 			Status(200)
 	})
-
 }
 
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
@@ -1329,7 +1329,6 @@ spec:
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {
-
 	s.Run("Lint", func() {
 		s.e().POST("/api/v1/workflow-templates/argo/lint").
 			WithBytes([]byte(`{
@@ -1389,7 +1388,6 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	})
 
 	s.Run("List", func() {
-
 		// make sure list options work correctly
 		s.Given().
 			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
@@ -1462,7 +1460,6 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 }
 
 func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
-
 	s.Run("CreateWFT", func() {
 		s.e().POST("/api/v1/workflow-templates/argo").
 			WithBytes([]byte(`{
@@ -1585,7 +1582,6 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 			Expect().
 			Status(200)
 	})
-
 }
 
 func (s *ArgoServerSuite) TestEventSourcesService() {

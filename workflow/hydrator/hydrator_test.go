@@ -76,8 +76,9 @@ func TestHydrator(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
 			offloadNodeStatusRepo.On("Get", "my-uid", "my-offload-version").Return(wfv1.Nodes{"foo": wfv1.NodeStatus{}}, nil)
 			hydrator := New(offloadNodeStatusRepo)
-			wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
-				Status: wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
+				Status:     wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
 			}
 			err := hydrator.Hydrate(wf)
 			if assert.NoError(t, err) {
@@ -90,16 +91,18 @@ func TestHydrator(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
 			offloadNodeStatusRepo.On("Get", "my-uid", "my-offload-version").Return(nil, sqldb.OffloadNotSupportedError)
 			hydrator := New(offloadNodeStatusRepo)
-			wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
-				Status: wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
+				Status:     wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
 			}
 			err := hydrator.Hydrate(wf)
 			assert.Error(t, err)
 		})
 		t.Run("Packed", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
-			wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
-				Status: wfv1.WorkflowStatus{CompressedNodes: "H4sIAAAAAAAA/6pWSkosUrKqVspMUbJSUtJRykvMTYWwUjKLC3ISK/3gAiWVBVBWcUliUUlqimOJklVeaU6OjlJaZl5mcQZCpFZHKS0/nwbm1gICAAD//8SSRamxAAAA"},
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
+				Status:     wfv1.WorkflowStatus{CompressedNodes: "H4sIAAAAAAAA/6pWSkosUrKqVspMUbJSUtJRykvMTYWwUjKLC3ISK/3gAiWVBVBWcUliUUlqimOJklVeaU6OjlJaZl5mcQZCpFZHKS0/nwbm1gICAAD//8SSRamxAAAA"},
 			}
 			err := hydrator.Hydrate(wf)
 			if assert.NoError(t, err) {

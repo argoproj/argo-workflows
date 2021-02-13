@@ -12,7 +12,7 @@ import (
 )
 
 func NewResourceCommand() *cobra.Command {
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   "resource (get|create|apply|delete) MANIFEST",
 		Short: "update a resource and wait for resource conditions",
 		Run: func(cmd *cobra.Command, args []string) {

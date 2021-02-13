@@ -22,7 +22,7 @@ const (
 
 // NewCommand returns a new instance of an argo command
 func NewCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   CLIName,
 		Short: "argo is the command line interface to Argo",
 		Long: `

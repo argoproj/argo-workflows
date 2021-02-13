@@ -77,7 +77,6 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	deps, logic = GetTaskDependencies(task, ctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored || task-1.Failed)", logic)
-
 }
 
 func TestValidateTaskResults(t *testing.T) {

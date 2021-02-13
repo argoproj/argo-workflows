@@ -1,4 +1,4 @@
-# https://github.com/golangci/golangci/wiki/Configuration
+# https://golangci-lint.run/usage/quick-start/
 run:
   skip-dirs:
     - pkg/client
@@ -14,7 +14,20 @@ run:
     - functional
 linters:
   enable:
+    - deadcode
+    - errcheck
     - goimports
+    - gci
+    - gofumpt
+    - gosimple
+    - govet
+    - misspell
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unparam
+    - unused
+    - varcheck
 linters-settings:
   goimports:
     local-prefixes: github.com/argoproj/argo-workflows/

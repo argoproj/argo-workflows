@@ -5,13 +5,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/minio/minio-go/v7"
-
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
+	"github.com/minio/minio-go/v7"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"

@@ -33,5 +33,4 @@ func TestMetricsWorkQueue(t *testing.T) {
 
 	queue.Done("A")
 	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
-
 }

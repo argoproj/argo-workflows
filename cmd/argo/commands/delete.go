@@ -23,7 +23,7 @@ func NewDeleteCommand() *cobra.Command {
 		allNamespaces bool
 		dryRun        bool
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]]",
 		Short: "delete workflows",
 		Example: `# Delete a workflow:

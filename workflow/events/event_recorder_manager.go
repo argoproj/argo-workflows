@@ -37,7 +37,6 @@ func (m *eventRecorderManager) Get(namespace string) record.EventRecorder {
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: m.kubernetes.CoreV1().Events(namespace)})
 	m.eventRecorders[namespace] = eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: "workflow-controller"})
 	return m.eventRecorders[namespace]
-
 }
 
 func NewEventRecorderManager(kubernetes kubernetes.Interface) EventRecorderManager {

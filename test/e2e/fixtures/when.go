@@ -165,13 +165,15 @@ func (w *When) CreateCronWorkflow() *When {
 
 type Condition func(wf *wfv1.Workflow) bool
 
-var ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
-var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
-var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
-	return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-		return node.Phase == wfv1.NodeRunning
-	})
-}
+var (
+	ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
+	ToStart       Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
+	ToBeRunning   Condition = func(wf *wfv1.Workflow) bool {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Phase == wfv1.NodeRunning
+		})
+	}
+)
 var ToBeSucceeded Condition = func(wf *wfv1.Workflow) bool { return wf.Status.Phase == wfv1.WorkflowSucceeded }
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.

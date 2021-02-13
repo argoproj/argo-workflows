@@ -138,14 +138,14 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 }
 
 // GetTTLStrategy return TTLStrategy based on Order of precedence:
-//1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
+// 1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
 func (w *Workflow) GetTTLStrategy() *TTLStrategy {
 	var ttlStrategy *TTLStrategy
 	// TTLStrategy from WorkflowTemplate
 	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
 		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
 	}
-	//TTLStrategy from Workflow
+	// TTLStrategy from Workflow
 	if w.Spec.GetTTLStrategy() != nil {
 		ttlStrategy = w.Spec.GetTTLStrategy()
 	}
@@ -320,9 +320,9 @@ type WorkflowSpec struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
-	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
-	//Controller will automatically add the selector with workflow name, if selector is empty.
-	//Optional: Defaults to empty.
+	// PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	// Controller will automatically add the selector with workflow name, if selector is empty.
+	// Optional: Defaults to empty.
 	// +optional
 	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 
@@ -627,7 +627,6 @@ func (tmpl *Template) GetSidecarNames() []string {
 		containerNames = append(containerNames, s.Name)
 	}
 	return containerNames
-
 }
 
 type Artifacts []Artifact
@@ -713,8 +712,7 @@ type ValueFrom struct {
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
-type SuppliedValueFrom struct {
-}
+type SuppliedValueFrom struct{}
 
 // Artifact indicates an artifact to place at a specified path
 type Artifact struct {
@@ -1207,7 +1205,7 @@ func SucceededPodNode(n NodeStatus) bool {
 
 // Children returns the children of the parent.
 func (s Nodes) Children(parentNodeId string) Nodes {
-	var childNodes = make(Nodes)
+	childNodes := make(Nodes)
 	parentNode, ok := s[parentNodeId]
 	if !ok {
 		return childNodes
@@ -1222,7 +1220,7 @@ func (s Nodes) Children(parentNodeId string) Nodes {
 
 // Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
 func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
-	var filteredNodes = make(Nodes)
+	filteredNodes := make(Nodes)
 	for _, node := range s {
 		if predicate(node) {
 			filteredNodes[node.ID] = node
@@ -1233,7 +1231,7 @@ func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 
 // Map maps the nodes to new values, e.g. `x.Hostname`
 func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
-	var values = make(map[string]interface{})
+	values := make(map[string]interface{})
 	for _, node := range s {
 		values[node.ID] = f(node)
 	}
@@ -1340,8 +1338,7 @@ type Backoff struct {
 
 // RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
 // In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
-type RetryNodeAntiAffinity struct {
-}
+type RetryNodeAntiAffinity struct{}
 
 // RetryAffinity prevents running steps on the same host.
 type RetryAffinity struct {
