@@ -118,7 +118,7 @@ The wait container can create one file itself, used for terminating the sub-proc
   * Cannot escape the privileges of the pod's service account
   * Can [`runAsNonRoot`](workflow-pod-security-context.md).
 * Scalable:
-  * It reads and writes to and from the container's disk and typcially does not use any network APIs.
+  * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource type template is used.
 * Artifacts:
   * Output artifacts can be located on the base layer (e.g. `/tmp`).
 * Configuration:
