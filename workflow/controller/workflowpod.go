@@ -147,6 +147,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
+	if !woc.execWf.Spec.Shutdown.ShouldExecute(opts.onExitPod) {
+		// Do not create pods if we are shutting down
+		woc.markNodePhase(nodeName, wfv1.NodeSkipped, fmt.Sprintf("workflow shutdown with strategy: %s", woc.execWf.Spec.Shutdown))
+		return nil, nil
+	}
+
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
@@ -275,6 +281,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addInitContainers(pod, tmpl)
 	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
+
+	for i, c := range pod.Spec.Containers {
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name}) // used to identify the container name of the process
+		pod.Spec.Containers[i] = c
+	}
 
 	// Set the container template JSON in pod annotations, which executor examines for things like
 	// artifact location/path.
@@ -412,13 +423,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "init"}
+	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel()}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "wait"}
+	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
 	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
@@ -441,6 +452,10 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Containe
 		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
 	return ctr
+}
+
+func getExecutorLogLevel() string {
+	return log.GetLevel().String()
 }
 
 // hasPrivilegedContainers tests if the main container or sidecars is privileged
@@ -605,6 +620,16 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 
 // addMetadata applies metadata specified in the template
 func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
+	if woc.wf.Spec.PodMetadata != nil {
+		// add workflow-level pod annotations and labels
+		for k, v := range woc.wf.Spec.PodMetadata.Annotations {
+			pod.ObjectMeta.Annotations[k] = v
+		}
+		for k, v := range woc.wf.Spec.PodMetadata.Labels {
+			pod.ObjectMeta.Labels[k] = v
+		}
+	}
+
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}

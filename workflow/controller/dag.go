@@ -339,7 +339,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 
 		// Release acquired lock completed task.
-		if tmpl != nil && tmpl.Synchronization != nil {
+		if tmpl != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
 		}
 

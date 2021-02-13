@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -559,6 +560,80 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	assert.NoError(t, err)
 	n = woc.wf.GetNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Add a third node that has errored.
+	childNode := "child-node-3"
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError)
+	woc.addChildNode(nodeName, childNode)
+	n = woc.wf.GetNodeByName(nodeName)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeError)
+}
+
+// TestProcessNodesWithRetries tests retrying when RetryOnTransientError is enabled
+func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(helloWorldWf)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	// Verify that there are no nodes in the wf status.
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
+	retries := wfv1.RetryStrategy{}
+	retries.Limit = intstrutil.ParsePtr("2")
+	retries.RetryPolicy = wfv1.RetryPolicyOnTransientError
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	assert.Nil(t, lastChild)
+
+	// Add child nodes.
+	for i := 0; i < 2; i++ {
+		childNode := fmt.Sprintf("child-node-%d", i)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
+		woc.addChildNode(nodeName, childNode)
+	}
+
+	n := woc.wf.GetNodeByName(nodeName)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
+	assert.NotNil(t, lastChild)
+
+	// Last child is still running. processNodesWithRetries() should return false since
+	// there should be no retries at this point.
+	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Mark lastChild as successful.
+	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	// The parent node also gets marked as Succeeded.
+	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+
+	// Mark the parent node as running again and the lastChild as errored with a message that indicates the error
+	// is transient.
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	transientEnvVarKey := "TRANSIENT_ERROR_PATTERN"
+	transientErrMsg := "This error is transient"
+	woc.markNodePhase(lastChild.Name, wfv1.NodeError, transientErrMsg)
+	_ = os.Setenv(transientEnvVarKey, transientErrMsg)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	n = woc.wf.GetNodeByName(nodeName)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	_ = os.Unsetenv(transientEnvVarKey)
 
 	// Add a third node that has errored.
 	childNode := "child-node-3"
@@ -5356,7 +5431,7 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 		assert.NotNil(t, pod)
 		nodeStatus, msg := inferFailedReason(&pod)
 		assert.Equal(t, tt.phase, nodeStatus)
-		assert.Equal(t, msg, "OOMKilled")
+		assert.Contains(t, msg, "OOMKilled")
 	}
 }
 
@@ -5753,4 +5828,36 @@ func TestRetryOnDiffHost(t *testing.T) {
 		Values:   []string{lastChild.HostNodeName},
 	}
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}
+
+var noPodsWhenShutdown = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestNoPodsWhenShutdown(t *testing.T) {
+	wf := unmarshalWF(noPodsWhenShutdown)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeSkipped, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
+	}
 }

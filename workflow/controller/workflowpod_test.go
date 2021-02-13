@@ -1298,3 +1298,69 @@ func TestPropagateMaxDuration(t *testing.T) {
 		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
 	}
 }
+
+var wfWithPodMetadata = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  podMetadata:
+    annotations:
+      workflow-level-pod-annotation: foo
+    labels:
+      workflow-level-pod-label: bar
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var wfWithPodMetadataAndTemplateMetadata = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  podMetadata:
+    annotations:
+      workflow-level-pod-annotation: foo
+    labels:
+      workflow-level-pod-label: bar
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        workflow-level-pod-annotation: fizz
+        template-level-pod-annotation: hello
+      labels:
+        workflow-level-pod-label: buzz
+        template-level-pod-label: world
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestPodMetadata(t *testing.T) {
+	wf := unmarshalWF(wfWithPodMetadata)
+	ctx := context.Background()
+	woc := newWoc(*wf)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "foo", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
+	assert.Equal(t, "bar", pod.ObjectMeta.Labels["workflow-level-pod-label"])
+
+	wf = unmarshalWF(wfWithPodMetadataAndTemplateMetadata)
+	woc = newWoc(*wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "fizz", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
+	assert.Equal(t, "buzz", pod.ObjectMeta.Labels["workflow-level-pod-label"])
+	assert.Equal(t, "hello", pod.ObjectMeta.Annotations["template-level-pod-annotation"])
+	assert.Equal(t, "world", pod.ObjectMeta.Labels["template-level-pod-label"])
+}

@@ -616,3 +616,12 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 	assert.Contains(keys, "test/template")
 	assert.Contains(keys, "test/template1")
 }
+
+func TestTemplate_GetSidecarNames(t *testing.T) {
+	m := &Template{
+		Sidecars: []UserContainer{
+			{Container: corev1.Container{Name: "sidecar-0"}},
+		},
+	}
+	assert.ElementsMatch(t, []string{"sidecar-0"}, m.GetSidecarNames())
+}

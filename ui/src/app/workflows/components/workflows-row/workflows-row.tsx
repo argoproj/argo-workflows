@@ -50,16 +50,17 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                     <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='row small-11'>
                         <div className='columns small-3'>{wf.metadata.name}</div>
                         <div className='columns small-2'>{wf.metadata.namespace}</div>
-                        <div className='columns small-2'>
+                        <div className='columns small-1'>
                             <Timestamp date={wf.status.startedAt} />
                         </div>
-                        <div className='columns small-2'>
+                        <div className='columns small-1'>
                             <Timestamp date={wf.status.finishedAt} />
                         </div>
                         <div className='columns small-1'>
                             <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
                         </div>
                         <div className='columns small-1'>{wf.status.progress || '-'}</div>
+                        <div className='columns small-2'>{wf.status.message || '-'}</div>
                         <div className='columns small-1'>
                             <div className='workflows-list__labels-container'>
                                 <div

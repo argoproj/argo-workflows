@@ -46,7 +46,7 @@ func (cm *Manager) getWorkflowKey(key string) (string, error) {
 }
 
 func (cm *Manager) CheckWorkflowExistence() {
-	log.Infof("Check the workflow existence")
+	log.Debug("Check the workflow existence")
 	for _, lock := range cm.syncLockMap {
 		keys := lock.getCurrentHolders()
 		keys = append(keys, lock.getCurrentPending()...)
@@ -171,12 +171,12 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 }
 
 func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-
 	if syncRef == nil {
 		return
 	}
+
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 
 	holderKey := getHolderKey(wf, nodeName)
 	lockName, err := GetLockName(syncRef, wf.Namespace)

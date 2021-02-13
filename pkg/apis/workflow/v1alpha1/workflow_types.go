@@ -343,6 +343,9 @@ type WorkflowSpec struct {
 
 	// RetryStrategy for all templates in the workflow.
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
+
+	// PodMetadata defines additional metadata that should be applied to workflow pods
+	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -616,6 +619,14 @@ func (tmpl *Template) GetBaseTemplate() *Template {
 
 func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
+}
+
+func (tmpl *Template) GetSidecarNames() []string {
+	var containerNames []string
+	for _, s := range tmpl.Sidecars {
+		containerNames = append(containerNames, s.Name)
+	}
+	return containerNames
 }
 
 type Artifacts []Artifact
@@ -1309,9 +1320,10 @@ func (wf *Workflow) GetOffloadNodeStatusVersion() string {
 type RetryPolicy string
 
 const (
-	RetryPolicyAlways    RetryPolicy = "Always"
-	RetryPolicyOnFailure RetryPolicy = "OnFailure"
-	RetryPolicyOnError   RetryPolicy = "OnError"
+	RetryPolicyAlways           RetryPolicy = "Always"
+	RetryPolicyOnFailure        RetryPolicy = "OnFailure"
+	RetryPolicyOnError          RetryPolicy = "OnError"
+	RetryPolicyOnTransientError RetryPolicy = "OnTransientError"
 )
 
 // Backoff is a backoff strategy to use within retryStrategy
