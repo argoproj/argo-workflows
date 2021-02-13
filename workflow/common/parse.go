@@ -8,9 +8,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 
+	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -19,38 +19,30 @@ var yamlSeparator = regexp.MustCompile(`\n---`)
 func ParseObjects(body []byte, strict bool) ([]metav1.Object, error) {
 	if jsonpkg.IsJSON(body) {
 		un := &unstructured.Unstructured{}
-		var err error
-		if strict {
-			err = jsonpkg.UnmarshalStrict(body, un)
-		} else {
-			err = jsonpkg.Unmarshal(body, un)
-		}
+		err := jsonpkg.Unmarshal(body, un)
 		if un.GetKind() != "" && err != nil {
 			// only return an error if this is a kubernetes object, otherwise, ignore
 			return nil, err
 		}
-		v, err := toWorkflowType(un)
+		v, err := toWorkflowTypeJSON(body, un.GetKind(), strict)
 		if err != nil {
 			return nil, err
 		}
 		return []metav1.Object{v}, nil
 	}
+
 	manifests := make([]metav1.Object, 0)
-	var opts []yaml.JSONOpt
-	if strict {
-		opts = append(opts, yaml.DisallowUnknownFields)
-	}
 	for _, text := range yamlSeparator.Split(string(body), -1) {
 		if strings.TrimSpace(text) == "" {
 			continue
 		}
 		un := &unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(text), un, opts...)
+		err := yaml.Unmarshal([]byte(text), un)
 		if un.GetKind() != "" && err != nil {
 			// only return an error if this is a kubernetes object, otherwise, ignore
 			return nil, err
 		}
-		v, err := toWorkflowType(un)
+		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
 		if err != nil {
 			return nil, err
 		}
@@ -59,29 +51,41 @@ func ParseObjects(body []byte, strict bool) ([]metav1.Object, error) {
 	return manifests, nil
 }
 
-func toWorkflowType(un *unstructured.Unstructured) (metav1.Object, error) {
-	var v metav1.Object
-	var err error
-	switch un.GetKind() {
-	case "CronWorkflow":
-		v = &wfv1.CronWorkflow{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
-	case "ClusterWorkflowTemplate":
-		v = &wfv1.ClusterWorkflowTemplate{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
-	case "Workflow":
-		v = &wfv1.Workflow{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
-	case "WorkflowEventBinding":
-		v = &wfv1.WorkflowEventBinding{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
-	case "WorkflowTemplate":
-		v = &wfv1.WorkflowTemplate{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
+func objectForKind(kind string) metav1.Object {
+	switch kind {
+	case wf.CronWorkflowKind:
+		return &wfv1.CronWorkflow{}
+	case wf.ClusterWorkflowTemplateKind:
+		return &wfv1.ClusterWorkflowTemplate{}
+	case wf.WorkflowKind:
+		return &wfv1.Workflow{}
+	case wf.WorkflowEventBindingKind:
+		return &wfv1.WorkflowEventBinding{}
+	case wf.WorkflowTemplateKind:
+		return &wfv1.WorkflowTemplate{}
 	default:
-		v = un
+		return &metav1.ObjectMeta{}
 	}
-	return v, err
+}
+
+func toWorkflowTypeYAML(body []byte, kind string, strict bool) (metav1.Object, error) {
+	var opts []yaml.JSONOpt
+
+	v := objectForKind(kind)
+	if strict {
+		opts = append(opts, yaml.DisallowUnknownFields)
+	}
+
+	return v, yaml.Unmarshal(body, v, opts...)
+}
+
+func toWorkflowTypeJSON(body []byte, kind string, strict bool) (metav1.Object, error) {
+	v := objectForKind(kind)
+	if strict {
+		return v, jsonpkg.UnmarshalStrict(body, v)
+	}
+
+	return v, jsonpkg.Unmarshal(body, v)
 }
 
 // SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects

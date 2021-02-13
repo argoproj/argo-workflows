@@ -875,13 +875,15 @@ func (s *CLISuite) TestTemplate() {
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"template", "lint", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "validated")
+				assert.Contains(t, output, "no linting errors found!")
 			}
 		})
 	})
 	s.Run("DirLintWithInvalidWFT", func() {
 		s.Given().RunCli([]string{"template", "lint", "testdata/workflow-templates"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
+			assert.Contains(t, output, "invalid-workflowtemplate.yaml")
+			assert.Contains(t, output, "linting errors found!")
 		})
 	})
 
@@ -974,8 +976,14 @@ func (s *CLISuite) TestCron() {
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"cron", "lint", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "cron/basic.yaml is valid")
-				assert.Contains(t, output, "Cron workflow manifests validated")
+				assert.Contains(t, output, "no linting errors found!")
+			}
+		})
+	})
+	s.Run("Lint All Kinds", func() {
+		s.Given().RunCli([]string{"lint", "--all-kinds", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "no linting errors found!")
 			}
 		})
 	})
@@ -983,18 +991,16 @@ func (s *CLISuite) TestCron() {
 		s.Given().
 			RunCli([]string{"cron", "lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
-					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+					assert.Contains(t, output, "found nothing to lint in the specified paths, failing...")
 				}
 			})
 	})
-	// Not all files in this directory are CronWorkflows, expect failure
-	s.Run("NotAllWorkflows", func() {
+	// Ignore other malformed kinds
+	s.Run("IgnoreOtherKinds", func() {
 		s.Given().
-			RunCli([]string{"cron", "lint", "testdata"}, func(t *testing.T, output string, err error) {
-				if assert.Error(t, err) {
-					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
-					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+			RunCli([]string{"cron", "lint", "cron/cron-and-malformed-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "no linting errors found!")
 				}
 			})
 	})

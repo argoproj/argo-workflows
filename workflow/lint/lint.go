@@ -18,40 +18,40 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-type (
-	ServiceClients struct {
-		WorkflowsClient               workflowpkg.WorkflowServiceClient
-		WorkflowTemplatesClient       workflowtemplatepkg.WorkflowTemplateServiceClient
-		CronWorkflowsClient           cronworkflowpkg.CronWorkflowServiceClient
-		ClusterWorkflowTemplateClient clusterworkflowtemplatepkg.ClusterWorkflowTemplateServiceClient
-	}
+type ServiceClients struct {
+	WorkflowsClient               workflowpkg.WorkflowServiceClient
+	WorkflowTemplatesClient       workflowtemplatepkg.WorkflowTemplateServiceClient
+	CronWorkflowsClient           cronworkflowpkg.CronWorkflowServiceClient
+	ClusterWorkflowTemplateClient clusterworkflowtemplatepkg.ClusterWorkflowTemplateServiceClient
+}
 
-	LintOptions struct {
-		Files            []string
-		Strict           bool
-		DefaultNamespace string
-		Formatter        Formatter
-		ServiceClients   ServiceClients
-	}
+type LintOptions struct {
+	Files            []string
+	Strict           bool
+	DefaultNamespace string
+	Formatter        Formatter
+	ServiceClients   ServiceClients
+}
 
-	LintResult struct {
-		File   string
-		Errs   []error
-		Linted bool
-	}
+// LintResult represents the result of linting objects from a single source
+type LintResult struct {
+	File   string
+	Errs   []error
+	Linted bool
+}
 
-	LintResults struct {
-		Results        []*LintResult
-		Success        bool
-		msg            string
-		fmtr           Formatter
-		anythingLinted bool
-	}
+// LintResults represents the result of linting objects from multiple sources
+type LintResults struct {
+	Results        []*LintResult
+	Success        bool
+	msg            string
+	fmtr           Formatter
+	anythingLinted bool
+}
 
-	Formatter interface {
-		Format(*LintResults) string
-	}
-)
+type Formatter interface {
+	Format(*LintResults) string
+}
 
 var (
 	lintExt = map[string]bool{
@@ -111,11 +111,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 				return err
 			}
 
-			lintRes, err := lintData(ctx, path, data, opts)
-			if err != nil {
-				return err
-			}
-			results.Results = append(results.Results, lintRes)
+			results.Results = append(results.Results, lintData(ctx, path, data, opts))
 
 			return nil
 		})
@@ -127,7 +123,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	return results.evaluate(), nil
 }
 
-func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) (*LintResult, error) {
+func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *LintResult {
 	if src == "-" {
 		src = "stdin"
 	}
@@ -139,7 +135,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) (
 	if err != nil {
 		res.Linted = true
 		res.Errs = append(res.Errs, fmt.Errorf("failed to parse objects from %s: %s", src, err))
-		return res, nil
+		return res
 	}
 
 	for i, obj := range objects {
@@ -202,10 +198,10 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) (
 		}
 	}
 
-	return res, nil
+	return res
 }
 
-func (l *LintResults) String() string {
+func (l *LintResults) Msg() string {
 	return l.msg
 }
 

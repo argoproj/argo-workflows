@@ -22,3 +22,20 @@ spec:
           imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]
+
+---
+
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: basic
+  labels:
+    argo-e2e: "true"
+spec:
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  entrypoints: main
+  templates:
+    - container:
+        image: argoproj/argosay:v2

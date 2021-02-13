@@ -21,6 +21,10 @@ func NewLintCommand() *cobra.Command {
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a file or directory of workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 			ctx, apiClient := client.NewAPIClient()
 			fmtr, err := lint.GetFormatter(format)
 			errors.CheckError(err)
@@ -36,7 +40,7 @@ func NewLintCommand() *cobra.Command {
 			})
 			errors.CheckError(err)
 
-			fmt.Print(res)
+			fmt.Print(res.Msg())
 			if !res.Success {
 				os.Exit(1)
 			}
