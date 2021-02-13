@@ -42,7 +42,7 @@ func NewListCommand() *cobra.Command {
 		listArgs      listFlags
 		allNamespaces bool
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {

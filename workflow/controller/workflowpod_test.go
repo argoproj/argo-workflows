@@ -742,7 +742,6 @@ func TestVolumesPodSubstitution(t *testing.T) {
 }
 
 func TestOutOfCluster(t *testing.T) {
-
 	verifyKubeConfigVolume := func(ctr apiv1.Container, volName, mountPath string) {
 		for _, vol := range ctr.VolumeMounts {
 			if vol.Name == volName && vol.MountPath == mountPath {
@@ -970,7 +969,6 @@ func TestSidecars(t *testing.T) {
 }
 
 func TestTemplateLocalVolumes(t *testing.T) {
-
 	volumes := []apiv1.Volume{
 		{
 			Name: "volume-name",
@@ -1037,7 +1035,6 @@ func TestWFLevelHostAliases(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.NotNil(t, pod.Spec.HostAliases)
-
 }
 
 // TestTmplLevelHostAliases verifies the ability to carry forward template level HostAliases to Podspec
@@ -1057,7 +1054,6 @@ func TestTmplLevelHostAliases(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.NotNil(t, pod.Spec.HostAliases)
-
 }
 
 // TestWFLevelSecurityContext verifies the ability to carry forward workflow level SecurityContext to Podspec
@@ -1175,7 +1171,6 @@ func TestPodSpecPatch(t *testing.T) {
 
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
-
 }
 
 func TestMainContainerCustomization(t *testing.T) {

@@ -52,10 +52,7 @@ func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string) 
 	if thisPID == 1 {
 		return nil, errors.New(errors.CodeBadRequest, "process namespace sharing is not enabled on pod")
 	}
-	delegate, err := k8sapi.NewK8sAPIExecutor(clientset, nil, podName, namespace)
-	if err != nil {
-		return nil, err
-	}
+	delegate := k8sapi.NewK8sAPIExecutor(clientset, nil, podName, namespace)
 	return &PNSExecutor{
 		K8sAPIExecutor: delegate,
 		podName:        podName,
@@ -135,7 +132,6 @@ func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath
 }
 
 func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
-
 	allContainerNames := append(containerNames, sidecarNames...)
 	go p.pollRootProcesses(ctx, allContainerNames)
 
@@ -232,7 +228,7 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, termina
 	for _, containerName := range containerNames {
 		wg.Add(1)
 		go func(containerName string) {
-			err := p.killContainer(ctx, containerName, terminationGracePeriodDuration)
+			err := p.killContainer(containerName, terminationGracePeriodDuration)
 			if err != nil && asyncErr != nil {
 				asyncErr = err
 			}
@@ -243,7 +239,7 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, termina
 	return asyncErr
 }
 
-func (p *PNSExecutor) killContainer(ctx context.Context, containerName string, terminationGracePeriodDuration time.Duration) error {
+func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriodDuration time.Duration) error {
 	pid, err := p.getContainerPID(containerName)
 	if err != nil {
 		log.Warnf("Ignoring kill container failure of %q: %v. Process assumed to have completed", containerName, err)

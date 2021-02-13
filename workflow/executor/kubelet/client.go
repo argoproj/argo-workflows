@@ -275,7 +275,6 @@ func (k *kubeletClient) getCommandOutput(containerName, command string) (*bytes.
 		return nil, err
 	}
 	return k.readFileContents(u)
-
 }
 
 // WaitForTermination of the given container, set the timeout to 0 to discard it

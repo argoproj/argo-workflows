@@ -9,7 +9,7 @@ import (
 )
 
 func NewInitCommand() *cobra.Command {
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   "init",
 		Short: "Load artifacts",
 		Run: func(cmd *cobra.Command, args []string) {

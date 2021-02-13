@@ -128,8 +128,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	assert.True(t, missedExecutionTime.IsZero())
 }
 
-type fakeLister struct {
-}
+type fakeLister struct{}
 
 func (f fakeLister) List() ([]*v1alpha1.Workflow, error) {
 	// Do nothing

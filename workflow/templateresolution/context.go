@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -24,7 +22,7 @@ type workflowTemplateInterfaceWrapper struct {
 	clientset typed.WorkflowTemplateInterface
 }
 
-func WrapWorkflowTemplateInterface(clientset v1alpha1.WorkflowTemplateInterface) WorkflowTemplateNamespacedGetter {
+func WrapWorkflowTemplateInterface(clientset typed.WorkflowTemplateInterface) WorkflowTemplateNamespacedGetter {
 	return &workflowTemplateInterfaceWrapper{clientset: clientset}
 }
 
@@ -51,7 +49,7 @@ type ClusterWorkflowTemplateGetter interface {
 	Get(name string) (*wfv1.ClusterWorkflowTemplate, error)
 }
 
-func WrapClusterWorkflowTemplateInterface(clusterClientset v1alpha1.ClusterWorkflowTemplateInterface) ClusterWorkflowTemplateGetter {
+func WrapClusterWorkflowTemplateInterface(clusterClientset typed.ClusterWorkflowTemplateInterface) ClusterWorkflowTemplateGetter {
 	return &clusterWorkflowTemplateInterfaceWrapper{clientset: clusterClientset}
 }
 
@@ -79,7 +77,7 @@ type Context struct {
 	// workflow is the Workflow where templates will be stored
 	workflow *wfv1.Workflow
 	// log is a logrus entry.
-	log *logrus.Entry
+	log *log.Entry
 }
 
 // NewContext returns new Context.
@@ -89,7 +87,7 @@ func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter Clu
 		cwftmplGetter: cwftmplGetter,
 		tmplBase:      tmplBase,
 		workflow:      workflow,
-		log:           log.WithFields(logrus.Fields{}),
+		log:           log.WithFields(log.Fields{}),
 	}
 }
 
@@ -100,7 +98,7 @@ func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, cl
 		cwftmplGetter: WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
 		tmplBase:      tmplBase,
 		workflow:      workflow,
-		log:           log.WithFields(logrus.Fields{}),
+		log:           log.WithFields(log.Fields{}),
 	}
 }
 
@@ -183,7 +181,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*C
 //  resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
 func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder, depth int) (*Context, *wfv1.Template, bool, error) {
-	ctx.log = ctx.log.WithFields(logrus.Fields{
+	ctx.log = ctx.log.WithFields(log.Fields{
 		"depth": depth,
 		"base":  common.GetTemplateGetterString(ctx.tmplBase),
 		"tmpl":  common.GetTemplateHolderString(tmplHolder),

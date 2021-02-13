@@ -16,9 +16,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-var wfClientset = fakewfclientset.NewSimpleClientset()
-var wftmplGetter = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
-var cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+var (
+	wfClientset   = fakewfclientset.NewSimpleClientset()
+	wftmplGetter  = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
+	cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+)
 
 func createWorkflowTemplate(yamlStr string) error {
 	ctx := context.Background()
@@ -805,6 +807,7 @@ spec:
       parameters:
       - name: outparam
 `
+
 var invalidOutputMultipleValueFrom = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1733,8 +1736,8 @@ func TestUnknownPodGCStrategy(t *testing.T) {
 
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 
-	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
-		wf.Spec.PodGC.Strategy = strat
+	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
+		wf.Spec.PodGC.Strategy = start
 		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}

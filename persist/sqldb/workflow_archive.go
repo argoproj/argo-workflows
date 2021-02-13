@@ -17,8 +17,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
-const archiveTableName = "argo_archived_workflows"
-const archiveLabelsTableName = archiveTableName + "_labels"
+const (
+	archiveTableName       = "argo_archived_workflows"
+	archiveLabelsTableName = archiveTableName + "_labels"
+)
 
 type archivedWorkflowMetadata struct {
 	ClusterName string             `db:"clustername"`

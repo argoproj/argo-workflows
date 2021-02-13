@@ -52,7 +52,7 @@ func initConfig() {
 }
 
 func NewRootCommand() *cobra.Command {
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   CLIName,
 		Short: "argoexec is the executor sidecar to workflow containers",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -101,7 +101,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	var cre executor.ContainerRuntimeExecutor
 	switch executorType {
 	case common.ContainerRuntimeExecutorK8sAPI:
-		cre, err = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
+		cre = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
 	case common.ContainerRuntimeExecutorKubelet:
 		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
 	case common.ContainerRuntimeExecutorPNS:

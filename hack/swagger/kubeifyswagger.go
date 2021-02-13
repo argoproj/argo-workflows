@@ -33,7 +33,7 @@ func kubeifySwagger(in, out string) {
 		}
 	}
 
-	//loop again to handle any new bad definitions
+	// loop again to handle any new bad definitions
 	for _, d := range definitions {
 		props, ok := d.(obj)["properties"].(obj)
 		if ok {

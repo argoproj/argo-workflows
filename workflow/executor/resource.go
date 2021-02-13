@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -23,6 +21,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
@@ -143,7 +142,6 @@ func (we *WorkflowExecutor) signalMonitoring(ctx context.Context) {
 
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace string, resourceName string) error {
-
 	// Monitor the SIGTERM
 	we.signalMonitoring(ctx)
 
@@ -189,7 +187,6 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace 
 			log.Warnf("Waiting for resource %s resulted in non-retryable error %v", resourceName, err)
 			return false, err
 		})
-
 	if err != nil {
 		if err == wait.ErrWaitTimeout {
 			log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
@@ -223,7 +220,6 @@ func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool 
 
 // Function to do the kubectl get -w command and then waiting on json reading.
 func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
-
 	cmd, reader, err := startKubectlWaitCmd(resourceNamespace, resourceName)
 	if argoerr.IsTransientErr(err) {
 		return true, err
@@ -241,7 +237,6 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 		}
 
 		jsonBytes, err := readJSON(reader)
-
 		if err != nil {
 			resultErr := err
 			log.Warnf("Json reader returned error %v. Calling kill (usually superfluous)", err)
