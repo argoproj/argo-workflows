@@ -23,6 +23,8 @@ Note that these environment variables may be removed at any time.
 | `TRANSIENT_ERROR_PATTERN` | `string` | The regular expression that represents additional patterns for transient errors. |
 | `WF_DEL_PROPAGATION_POLICY` | `string` | The deletion propogation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | The periodicity for GC of workflows. |
+| `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | Whether to bubble up template errors to workflow. Default true |
+| `INFORMER_WRITE_BACK` | `bool` | Whether to write back to informer instead of catching up. Deafult true |
 
 ## Executor
 
