@@ -25,7 +25,8 @@ func ParseObjects(body []byte, strict bool) ([]metav1.Object, error) {
 		} else {
 			err = jsonpkg.Unmarshal(body, un)
 		}
-		if err != nil {
+		if un.GetKind() != "" && err != nil {
+			// only return an error if this is a kubernetes object, otherwise, ignore
 			return nil, err
 		}
 		v, err := toWorkflowType(un)
@@ -45,7 +46,8 @@ func ParseObjects(body []byte, strict bool) ([]metav1.Object, error) {
 		}
 		un := &unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(text), un, opts...)
-		if err != nil {
+		if un.GetKind() != "" && err != nil {
+			// only return an error if this is a kubernetes object, otherwise, ignore
 			return nil, err
 		}
 		v, err := toWorkflowType(un)

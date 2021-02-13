@@ -137,7 +137,9 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) (
 	}
 	objects, err := common.ParseObjects(data, opts.Strict)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse objects from %s: %s", src, err)
+		res.Linted = true
+		res.Errs = append(res.Errs, fmt.Errorf("failed to parse objects from %s: %s", src, err))
+		return res, nil
 	}
 
 	for i, obj := range objects {
