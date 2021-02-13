@@ -19,15 +19,12 @@ type K8sAPIExecutor struct {
 	client *k8sAPIClient
 }
 
-func NewK8sAPIExecutor(clientset kubernetes.Interface, config *restclient.Config, podName, namespace string) (*K8sAPIExecutor, error) {
+func NewK8sAPIExecutor(clientset kubernetes.Interface, config *restclient.Config, podName, namespace string) *K8sAPIExecutor {
 	log.Infof("Creating a K8sAPI executor")
-	client, err := newK8sAPIClient(clientset, config, podName, namespace)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
+	client := newK8sAPIClient(clientset, config, podName, namespace)
 	return &K8sAPIExecutor{
 		client: client,
-	}, nil
+	}
 }
 
 func (k *K8sAPIExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {

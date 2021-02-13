@@ -252,7 +252,6 @@ func (d *DockerExecutor) getContainerID(containerName string) (string, error) {
 
 // killContainers kills a list of containerNames first with a SIGTERM then with a SIGKILL after a grace period
 func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
-
 	containerIDs, err := d.getContainerIDs(containerNames)
 	if err != nil {
 		return err

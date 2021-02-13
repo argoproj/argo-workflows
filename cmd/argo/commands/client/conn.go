@@ -12,8 +12,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 )
 
-var argoServerOpts = apiclient.ArgoServerOpts{}
-var instanceID string
+var (
+	argoServerOpts = apiclient.ArgoServerOpts{}
+	instanceID     string
+)
 
 var overrides = clientcmd.ConfigOverrides{}
 

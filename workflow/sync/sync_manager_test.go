@@ -29,6 +29,7 @@ data:
  workflow: "1"
  template: "1"
 `
+
 const wfWithStatus = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -89,6 +90,7 @@ status:
         - hello-world-prtl9
         semaphore: default/configmap/my-config/workflow
 `
+
 const wfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -285,6 +287,7 @@ status:
   phase: Running
   startedAt: "2020-06-04T19:55:11Z"
 `
+
 const wfWithMutex = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -326,7 +329,6 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 
 		ctx := context.Background()
 		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
-
 		if err != nil {
 			return 0, err
 		}
@@ -365,7 +367,6 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-
 		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
@@ -526,7 +527,6 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.NotNil(t, wf2.Status.Synchronization)
 		assert.NotNil(t, wf2.Status.Synchronization.Semaphore)
 		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
-
 	})
 }
 
@@ -542,9 +542,9 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
-		//var nextKey string
+		// var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-			//nextKey = key
+			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
@@ -584,7 +584,6 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, "semaphore-tmpl-level-xjvln-1607747183", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
-
 	})
 }
 
@@ -638,9 +637,9 @@ func TestMutexWfLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
-		//var nextKey string
+		// var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-			//nextKey = key
+			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := unmarshalWF(wfWithMutex)
 		wf1 := wf.DeepCopy()
@@ -694,7 +693,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowDeleted", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-			//nextKey = key
+			// nextKey = key
 		}, func(s string) bool {
 			return strings.Contains(s, "test1")
 		})
@@ -721,5 +720,4 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		assert.Len(semaphore.getCurrentHolders(), 0)
 		assert.Len(semaphore.getCurrentPending(), 0)
 	})
-
 }

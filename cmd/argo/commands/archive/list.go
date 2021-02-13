@@ -21,7 +21,7 @@ func NewListCommand() *cobra.Command {
 		output    string
 		chunkSize int64
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use: "list",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()

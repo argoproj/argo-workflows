@@ -55,22 +55,28 @@ func TestWorkflowHappenedBetween(t *testing.T) {
 	assert.False(t, WorkflowRanBetween(t0, t3)(Workflow{}))
 	assert.False(t, WorkflowRanBetween(t0, t1)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
-		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}},
+	}))
 	assert.False(t, WorkflowRanBetween(t1, t2)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
-		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}},
+	}))
 	assert.False(t, WorkflowRanBetween(t2, t3)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
-		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}},
+	}))
 	assert.False(t, WorkflowRanBetween(t0, t1)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
-		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}},
+	}))
 	assert.False(t, WorkflowRanBetween(t2, t3)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
-		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}},
+	}))
 	assert.True(t, WorkflowRanBetween(t0, t3)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
-		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}},
+	}))
 }
 
 func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
@@ -356,7 +362,7 @@ func TestNodes_Any(t *testing.T) {
 }
 
 func TestNodes_Children(t *testing.T) {
-	var nodes = Nodes{
+	nodes := Nodes{
 		"node_0": NodeStatus{Name: "node_0", Phase: NodeFailed, Children: []string{"node_1", "node_2"}},
 		"node_1": NodeStatus{Name: "node_1", Phase: NodeFailed, Children: []string{}},
 		"node_2": NodeStatus{Name: "node_2", Phase: NodeRunning, Children: []string{}},
@@ -376,7 +382,7 @@ func TestNodes_Children(t *testing.T) {
 }
 
 func TestNodes_Filter(t *testing.T) {
-	var nodes = Nodes{
+	nodes := Nodes{
 		"node_1": NodeStatus{ID: "node_1", Phase: NodeFailed},
 		"node_2": NodeStatus{ID: "node_2", Phase: NodeRunning},
 		"node_3": NodeStatus{ID: "node_3", Phase: NodeFailed},
@@ -395,9 +401,9 @@ func TestNodes_Filter(t *testing.T) {
 	})
 }
 
-//Map(f func(x NodeStatus) interface{}) map[string]interface{} {
+// Map(f func(x NodeStatus) interface{}) map[string]interface{} {
 func TestNodes_Map(t *testing.T) {
-	var nodes = Nodes{
+	nodes := Nodes{
 		"node_1": NodeStatus{ID: "node_1", HostNodeName: "host_1"},
 		"node_2": NodeStatus{ID: "node_2", HostNodeName: "host_2"},
 	}

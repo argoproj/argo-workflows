@@ -95,7 +95,6 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	items, err := w.wfArchive.ListWorkflows(namespace, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
-
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,7 @@ import (
 type fixedItemIntervalRateLimiter struct{}
 
 func (r *fixedItemIntervalRateLimiter) When(interface{}) time.Duration {
-	// We need to rate limit a minimum 1s, otherwise informers are unlikey to be upto date
+	// We need to rate limit a minimum 1s, otherwise informers are unlikely to be upto date
 	// and we'll operate on an out of date version of a workflow.
 	// Under high load, the informer can get many seconds behind. Increasing this to 30s
 	// would be sensible for some users.
