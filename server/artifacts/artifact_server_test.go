@@ -8,9 +8,6 @@ import (
 	"net/url"
 	"testing"
 
-	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
-
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
 	"github.com/stretchr/testify/mock"
@@ -25,6 +22,8 @@ import (
 	authmocks "github.com/argoproj/argo-workflows/v3/server/auth/mocks"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
+	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
 )
@@ -100,9 +99,11 @@ func newServer() *ArtifactServer {
 					},
 				},
 			},
-		}}
+		},
+	}
 	argo := fakewfv1.NewSimpleClientset(wf, &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"}})
+		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
+	})
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}

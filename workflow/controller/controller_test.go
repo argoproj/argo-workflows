@@ -476,6 +476,7 @@ spec:
   workflowTemplateRef:
     name: workflow-template-whalesay-template
 `
+
 const wfTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -504,8 +505,10 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
-	woc := wfOperationCtx{controller: controller,
-		wf: wf}
+	woc := wfOperationCtx{
+		controller: controller,
+		wf:         wf,
+	}
 	err := woc.setExecWorkflow()
 	assert.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)

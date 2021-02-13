@@ -19,7 +19,6 @@ func (h ClusterWorkflowTemplateServiceClient) CreateClusterWorkflowTemplate(_ co
 func (h ClusterWorkflowTemplateServiceClient) GetClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
 	return out, h.Get(in, out, "/api/v1/cluster-workflow-templates/{name}")
-
 }
 
 func (h ClusterWorkflowTemplateServiceClient) ListClusterWorkflowTemplates(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateListRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplateList, error) {

@@ -16,7 +16,8 @@ func NewLintCommand() *cobra.Command {
 		strict bool
 		format string
 	)
-	var command = &cobra.Command{
+
+	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cron workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {

@@ -39,7 +39,6 @@ func NewController(instanceIDService instanceid.Service, eventRecorderManager ev
 }
 
 func (s *Controller) Run(stopCh <-chan struct{}) {
-
 	// this `WaitGroup` allows us to wait for all events to dispatch before exiting
 	wg := sync.WaitGroup{}
 
@@ -66,7 +65,6 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 }
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
-
 	options := metav1.ListOptions{}
 	s.instanceIDService.With(&options)
 

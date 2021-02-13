@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
-
-	"github.com/argoproj/pkg/humanize"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -16,11 +15,9 @@ import (
 )
 
 func NewGetCommand() *cobra.Command {
-	var (
-		output string
-	)
+	var output string
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {

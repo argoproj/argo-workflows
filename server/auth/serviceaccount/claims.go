@@ -7,9 +7,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"k8s.io/client-go/rest"
-
 	"gopkg.in/square/go-jose.v2/jwt"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 )

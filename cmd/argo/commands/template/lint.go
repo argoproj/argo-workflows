@@ -16,7 +16,8 @@ func NewLintCommand() *cobra.Command {
 		strict bool
 		format string
 	)
-	var command = &cobra.Command{
+
+	command := &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a file or directory of workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {

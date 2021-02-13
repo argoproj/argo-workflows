@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/env"
-
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	v1Label "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,6 +40,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -228,7 +226,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		ReleaseOnCancel: true,
 		LeaseDuration:   15 * time.Second,
 		RenewDeadline:   10 * time.Second,
-		RetryPeriod:     2 * time.Second,
+		RetryPeriod:     5 * time.Second,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
 				logCtx.Info("started leading")
@@ -313,8 +311,8 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
 
-	labelSelector := v1Label.NewSelector()
-	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
+	labelSelector := labels.NewSelector()
+	req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
 	if req != nil {
 		labelSelector = labelSelector.Add(*req)
 	}
@@ -441,7 +439,8 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			propagation := metav1.DeletePropagationBackground
 			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
 				PropagationPolicy:  &propagation,
-				GracePeriodSeconds: wfc.Config.PodGCGracePeriodSeconds})
+				GracePeriodSeconds: wfc.Config.PodGCGracePeriodSeconds,
+			})
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
@@ -639,7 +638,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
-	//c.handleErr(err, key)
+	// c.handleErr(err, key)
 	return true
 }
 
@@ -903,7 +902,6 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 
 				// Enqueue the workflow for deleted pod
 				_ = wfc.enqueueWfFromPodLabel(obj)
-
 			},
 		},
 	)

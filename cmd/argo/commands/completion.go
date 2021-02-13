@@ -124,7 +124,7 @@ __argo_custom_func() {
 )
 
 func NewCompletionCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "completion SHELL",
 		Short: "output shell completion code for the specified shell (bash or zsh)",
 		Long: `Write bash or zsh shell completion code to standard output.

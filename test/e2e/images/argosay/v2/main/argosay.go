@@ -22,6 +22,7 @@ func main() {
 		panic(err)
 	}
 }
+
 func argosay(args ...string) error {
 	if len(args) == 0 {
 		args = []string{"echo"}

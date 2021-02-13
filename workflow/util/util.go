@@ -169,7 +169,6 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
 func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
-
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
 		return nil, err
@@ -813,13 +812,13 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 	} else {
 		for _, node := range nodes {
 			if SelectorMatchesNode(selector, node) {
-				//traverse all children of the node
+				// traverse all children of the node
 				var queue []string
 				queue = append(queue, node.ID)
 
 				for len(queue) > 0 {
 					childNode := queue[0]
-					//if the child isn't already in nodeIDsToReset then we add it and traverse its children
+					// if the child isn't already in nodeIDsToReset then we add it and traverse its children
 					if _, present := nodeIDsToReset[childNode]; !present {
 						nodeIDsToReset[childNode] = true
 						queue = append(queue, nodes[childNode].Children...)
