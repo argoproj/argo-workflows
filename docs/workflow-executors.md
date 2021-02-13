@@ -97,28 +97,28 @@ The init container creates these files:
 
 In the main container, the emissary creates these files: 
 
-* `/var/run/argo/outputs/parameters/${path}` All output parameters are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/parameters/tmp/message`.  
-* `/var/run/argo/outputs/artifacts/${path}.tgz` All output artifacts are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/artifacts/tmp/message.tgz`.  
+* `/var/run/argo/ctr/${containerName}/exitcode` The container exit code.
 * `/var/run/argo/ctr/${containerName}/stderr` A copy of stderr. 
 * `/var/run/argo/ctr/${containerName}/stdout`  A copy of stdout.
 
-The wait container write the exit code:
+If the container is named `main` it also copies base-layer artifacts to the shared volume:
 
-* `/var/run/argo/ctr/${containerName}/exitcode` The container exit code.
+* `/var/run/argo/outputs/parameters/${path}` All output parameters are copied here, e.g. `/tmp/message` is moved to `/var/run/argo/outputs/parameters/tmp/message`.  
+* `/var/run/argo/outputs/artifacts/${path}.tgz` All output artifacts are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/artifacts/tmp/message.tgz`.  
 
 The wait container can create one file itself, used for terminating the sub-process:
 
-* `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the signal found in this file.
+* `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the value found in this file.
 
 * Reliability:
-  * Least well-tested.
-  * Least popular.
+  * Not yet well-tested.
+  * Not yet popular.
 * More secure:
   * No `privileged` access
   * Cannot escape the privileges of the pod's service account
   * Can [`runAsNonRoot`](workflow-pod-security-context.md).
 * Scalable:
-  * It reads and writes to and from the container's disk and does not use any network APIs.
+  * It reads and writes to and from the container's disk and typcially does not use any network APIs.
 * Artifacts:
   * Output artifacts can be located on the base layer (e.g. `/tmp`).
 * Configuration:
