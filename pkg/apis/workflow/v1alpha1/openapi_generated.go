@@ -2611,7 +2611,7 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 					},
 					"labelSelector": {
 						SchemaProps: spec.SchemaProps{
-							Description: "LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.",
+							Description: "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},

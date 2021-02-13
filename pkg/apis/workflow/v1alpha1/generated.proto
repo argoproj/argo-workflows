@@ -781,7 +781,7 @@ message PodGC {
   // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
 
-  // LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.
+  // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 }
 

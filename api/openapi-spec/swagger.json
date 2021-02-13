@@ -7430,7 +7430,7 @@
       "type": "object",
       "properties": {
         "labelSelector": {
-          "description": "LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue.",
+          "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector"
         },
         "strategy": {

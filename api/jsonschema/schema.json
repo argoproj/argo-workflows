@@ -4016,7 +4016,7 @@
       "properties": {
         "labelSelector": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
-          "description": "LabelSelector is the label selector to select completed pods that match the labels to be added to the pod GC queue."
+          "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue."
         },
         "strategy": {
           "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
