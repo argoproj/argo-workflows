@@ -5,7 +5,6 @@ on:
       - "master"
       - "release-*"
       - "!release-2.8"
-      - "test-label-podgc"
   pull_request:
     branches:
       - "master"
