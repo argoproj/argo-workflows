@@ -15,10 +15,8 @@ import (
 )
 
 func NewLintCommand() *cobra.Command {
-	var (
-		strict bool
-	)
-	var command = &cobra.Command{
+	var strict bool
+	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {

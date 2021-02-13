@@ -20,7 +20,7 @@ func TestRemoveDuplicates(t *testing.T) {
 
 // func GetFailHosts(nodes wfv1.Nodes, parent string) []string {
 func TestGetFailHosts(t *testing.T) {
-	var nodes = wfv1.Nodes{
+	nodes := wfv1.Nodes{
 		"retry_node": wfv1.NodeStatus{
 			ID:       "retry_node",
 			Phase:    wfv1.NodeFailed,

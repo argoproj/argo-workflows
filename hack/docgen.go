@@ -200,8 +200,10 @@ type Set map[string]bool
 func NewDocGeneratorContext() *DocGeneratorContext {
 	return &DocGeneratorContext{
 		doneFields: make(Set),
-		queue: []string{"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
-			"io.argoproj.workflow.v1alpha1.WorkflowTemplate"},
+		queue: []string{
+			"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
+			"io.argoproj.workflow.v1alpha1.WorkflowTemplate",
+		},
 		external: []string{},
 		index:    make(map[string]Set),
 		jsonName: make(map[string]string),

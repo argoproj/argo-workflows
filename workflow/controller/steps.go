@@ -355,7 +355,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		}
 		fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+			return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 		}
 
 		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
@@ -470,7 +470,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	}
 	fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 
 	for i, item := range items {

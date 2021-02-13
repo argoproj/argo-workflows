@@ -42,7 +42,6 @@ func (w workersBusyRateLimiterWorkQueue) Get() (interface{}, bool) {
 	item, shutdown := w.RateLimitingInterface.Get()
 	w.metrics.workerBusy(w.workerType)
 	return item, shutdown
-
 }
 
 func (w workersBusyRateLimiterWorkQueue) Done(item interface{}) {

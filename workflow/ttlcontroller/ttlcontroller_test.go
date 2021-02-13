@@ -226,6 +226,7 @@ status:
     ttlStrategy:
       secondsAfterCompletion: 10
 `
+
 var wftRefWithTTLinWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -420,7 +421,6 @@ func TestTTLStrategySucceded(t *testing.T) {
 	enqueueWF(controller, un)
 	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
-
 }
 
 func TestTTLStrategyFailed(t *testing.T) {
@@ -446,8 +446,8 @@ func TestTTLStrategyFailed(t *testing.T) {
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
 	assert.Equal(t, 1, controller.workqueue.Len())
-
 }
+
 func TestNoTTLStrategyFailed(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
@@ -466,7 +466,6 @@ func TestNoTTLStrategyFailed(t *testing.T) {
 	assert.NoError(t, err)
 	enqueueWF(controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
-
 }
 
 func TestTTLStrategyFromUnstructured(t *testing.T) {

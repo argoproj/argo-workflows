@@ -59,7 +59,7 @@ func GetTaskDependencies(task *wfv1.DAGTask, ctx DagContext) (map[string]Depende
 			split := strings.Split(match, ".")
 			if split[1] == string(TaskResultAnySucceeded) || split[1] == string(TaskResultAllFailed) {
 				dependencies[split[0]] = DependencyTypeItems
-			} else if _, ok := dependencies[split[0]]; !ok { //DependencyTypeItems takes precedence
+			} else if _, ok := dependencies[split[0]]; !ok { // DependencyTypeItems takes precedence
 				dependencies[split[0]] = DependencyTypeTask
 			}
 		} else if matchGroup[4] != -1 {

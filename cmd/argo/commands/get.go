@@ -53,11 +53,9 @@ func (g getFlags) shouldPrint(node wfv1.NodeStatus) bool {
 }
 
 func NewGetCommand() *cobra.Command {
-	var (
-		getArgs getFlags
-	)
+	var getArgs getFlags
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
 		Example: `# Get information about a workflow:
@@ -315,7 +313,6 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 func attachToParent(wf *wfv1.Workflow, n renderNode,
 	nonBoundaryParentChildrenMap map[string]*nonBoundaryParentNode, boundaryID string,
 	boundaryNodeMap map[string]*boundaryNode, parentBoundaryMap map[string][]renderNode) bool {
-
 	// Check first if I am a child of a nonBoundaryParent
 	// that implies I attach to that instead of my boundary. This was already
 	// figured out in Pass 1
@@ -344,7 +341,6 @@ func attachToParent(wf *wfv1.Workflow, n renderNode,
 // This takes the map of NodeStatus and converts them into a forrest
 // of trees of renderNodes and returns the set of roots for each tree
 func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
-
 	renderTreeRoots := make(map[string]renderNode)
 
 	// Used to store all boundary nodes so future render children can attach

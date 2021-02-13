@@ -21,10 +21,8 @@ import (
 )
 
 func NewWaitCommand() *cobra.Command {
-	var (
-		ignoreNotFound bool
-	)
-	var command = &cobra.Command{
+	var ignoreNotFound bool
+	command := &cobra.Command{
 		Use:   "wait [WORKFLOW...]",
 		Short: "waits for workflows to complete",
 		Example: `# Wait on a workflow:

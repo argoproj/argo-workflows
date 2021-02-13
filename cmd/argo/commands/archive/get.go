@@ -16,10 +16,8 @@ import (
 )
 
 func NewGetCommand() *cobra.Command {
-	var (
-		output string
-	)
-	var command = &cobra.Command{
+	var output string
+	command := &cobra.Command{
 		Use: "get UID",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {

@@ -158,7 +158,7 @@ func (w *websocketReadCloser) WebsocketCallback(ws *websocket.Conn, resp *http.R
 	for {
 		_, body, err := ws.ReadMessage()
 		if len(body) > 0 {
-			//log.Debugf("%d: %s", msgType, string(body))
+			// log.Debugf("%d: %s", msgType, string(body))
 			_, writeErr := w.Write(body)
 			if writeErr != nil {
 				return writeErr
@@ -197,7 +197,7 @@ type websocketReadCloser struct {
 }
 
 func (w *websocketReadCloser) Close() error {
-	//return w.conn.Close()
+	// return w.conn.Close()
 	return nil
 }
 
@@ -310,7 +310,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	replaceMap := globalParams.Merge(localParams)
 	fstTmpl, err := fasttemplate.NewTemplate(string(tmplBytes), "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
@@ -329,7 +329,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
-	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
+	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -353,7 +353,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 
 	fstTmpl, err = fasttemplate.NewTemplate(globalReplacedTmplStr, "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	s, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {

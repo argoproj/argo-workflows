@@ -4,9 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/valyala/fasttemplate"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/valyala/fasttemplate"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -91,7 +90,6 @@ func TestDeletePod(t *testing.T) {
 }
 
 func TestNestedReplaceString(t *testing.T) {
-
 	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
 
 	test := `{{- with secret "{{inputs.parameters.message}}" -}}
@@ -162,7 +160,6 @@ func TestNestedReplaceString(t *testing.T) {
 }
 
 func TestReplaceStringWithWhiteSpace(t *testing.T) {
-
 	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
 
 	test := `{{ inputs.parameters.message }}`

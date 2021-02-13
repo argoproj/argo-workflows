@@ -34,7 +34,6 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 
 // CreatePostGresDBSession creates postgresDB session
 func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
 	}
@@ -49,7 +48,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", err
 	}
 
-	var settings = postgresql.ConnectionURL{
+	settings := postgresql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
 		Host:     cfg.GetHostname(),
@@ -80,7 +79,6 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 
 // CreateMySQLDBSession creates Mysql DB session
 func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
 	}
