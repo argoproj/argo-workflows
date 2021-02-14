@@ -4,13 +4,17 @@ metadata:
   generateName: fibonacci-
 spec:
   entrypoint: fibonacci
+  arguments:
+    parameters:
+      - name: num
+        value: 5
   templates:
     - name: fibonacci
       inputs:
         parameters:
-          - name: num0
+          - name: num
       memoize:
-        key: "{{inputs.parameters.num0}}"
+        key: "{{inputs.parameters.num}}"
         cache:
           configMap:
             name: fibonacci-m
@@ -18,16 +22,16 @@ spec:
       steps:
         - - name: fibonaccihelper
             template: fibonaccihelper
-            when: "{{inputs.parameters.num0}} != 1 && {{inputs.parameters.num0}} != 2"
+            when: "{{inputs.parameters.num}} != 1 && {{inputs.parameters.num}} != 2"
             arguments:
               parameters:
                 - name: num-1
-                  value: "{{inputs.parameters.num0}}"
+                  value: "{{inputs.parameters.num}}"
       outputs:
         parameters:
           - name: fib
             valueFrom:
-              expression: "inputs.parameters.num0 == 1? 1: inputs.parameters.num0 == 2? 1: steps.fibonaccihelper.outputs.parameters.result"
+              expression: "inputs.parameters.num == 1? 1: inputs.parameters.num == 2? 1: steps.fibonaccihelper.outputs.parameters.result"
     
     - name: fibonaccihelper
       inputs:
@@ -53,13 +57,13 @@ spec:
             template: fibonacci
             arguments:
               parameters:
-                - name: num0
+                - name: num
                   value: "{{steps.sub-1.outputs.result}}"
         - - name: fib-sub-2
             template: fibonacci
             arguments:
               parameters:
-                - name: num0
+                - name: num
                   value: "{{steps.sub-2.outputs.result}}"
         - - name: add
             template: do-math

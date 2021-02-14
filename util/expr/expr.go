@@ -6,7 +6,7 @@ import (
 
 	"github.com/antonmedv/expr"
 
-	"github.com/argoproj/argo/v3/util/json"
+	"github.com/argoproj/argo-workflows/v3/util/json"
 )
 
 func Eval(expression string, env map[string]interface{}) (interface{}, error) {
