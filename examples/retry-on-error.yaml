@@ -8,7 +8,7 @@ spec:
   templates:
   - name: error-container
     retryStrategy:
-      limit: 2
+      limit: "2"
       retryPolicy: "Always"   # Retry on errors AND failures. Also available: "OnFailure" (default), "OnError"
     container:
       image: python
