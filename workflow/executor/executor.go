@@ -512,9 +512,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 		// Trims off a single newline for user convenience
 		output = wfv1.AnyStringPtr(strings.TrimSuffix(output.String(), "\n"))
-
 		we.Template.Outputs.Parameters[i].Value = output
-
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
