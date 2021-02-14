@@ -348,6 +348,26 @@ type WorkflowSpec struct {
 	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
 }
 
+func (w *WorkflowSpec) Normalize() {
+	for i := 0; i < len(w.Templates); i++{
+		tmpl := w.Templates[i]
+		switch v := tmpl.Get().(type) {
+		case *DAGTemplate:
+			for j, task := range v.Tasks {
+				if task.Spec != nil {
+					templateName := tmpl.Name + "." + task.Name
+					task.Spec.Name = templateName
+					w.Templates = append(w.Templates, *task.Spec)
+					task.Template = templateName
+					task.Spec = nil
+				}
+				tmpl.DAG.Tasks[j] = task
+			}
+		}
+		w.Templates[i] = tmpl
+	}
+}
+
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
 func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	// If no volumeClaimGC strategy was provided, we default to the equivalent of "OnSuccess"
@@ -480,7 +500,7 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
@@ -2120,6 +2140,31 @@ func (tmpl *Template) GetType() TemplateType {
 	return TemplateTypeUnknown
 }
 
+func (m *Template) Get() interface{} {
+	if m == nil {
+		return nil
+	}
+	if m.Container != nil {
+		return m.Container
+	}
+	if m.DAG != nil {
+		return m.DAG
+	}
+	if m.Script != nil {
+		return m.Script
+	}
+	if m.Steps != nil {
+		return m.Steps
+	}
+	if m.Resource != nil {
+		return m.Resource
+	}
+	if m.Suspend != nil {
+		return m.Suspend
+	}
+	return nil
+}
+
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
@@ -2164,6 +2209,8 @@ type DAGTask struct {
 
 	// Name of template to execute
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
+
+	Spec *Template `json:"spec,omitempty" protobuf:"bytes,13,opt,name=spec"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`

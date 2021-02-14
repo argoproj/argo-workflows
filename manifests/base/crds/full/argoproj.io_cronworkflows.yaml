@@ -2403,6 +2403,7 @@ spec:
                                     type: string
                                   onExit:
                                     type: string
+                                  spec: {}
                                   template:
                                     type: string
                                   templateRef:
@@ -5735,8 +5736,6 @@ spec:
                             - name
                             type: object
                           type: array
-                      required:
-                      - name
                       type: object
                     type: array
                   tolerations:

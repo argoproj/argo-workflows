@@ -3097,22 +3097,20 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 }
 
 func (woc *wfOperationCtx) setExecWorkflow() error {
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		err := woc.setStoredWfSpec()
-		if err != nil {
-			return err
-		}
-		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
-		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
-	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+	if woc.wf.Spec.WorkflowTemplateRef == nil && woc.controller.Config.WorkflowRestrictions.MustUseReference() {
 		return fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
-	} else {
-		err := woc.controller.setWorkflowDefaults(woc.wf)
-		if err != nil {
-			return err
-		}
-		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
 	}
+
+	if err := woc.setStoredWfSpec(); err != nil {
+		return err
+	}
+	woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
+	woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
+
+	if err := woc.controller.setWorkflowDefaults(woc.wf); err != nil {
+		return err
+	}
+	woc.volumes = woc.wf.Spec.DeepCopy().Volumes
 	return nil
 }
 
@@ -3121,22 +3119,29 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
 	}
+
 	if woc.wf.Status.StoredWorkflowSpec == nil {
-		wftHolder, err := woc.fetchWorkflowSpec()
-		if err != nil {
-			return err
+		if woc.wf.Spec.WorkflowTemplateRef != nil {
+			wftHolder, err := woc.fetchWorkflowSpec()
+			if err != nil {
+				return err
+			}
+
+			// Join WFT and WfDefault metadata to Workflow metadata.
+			wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
+
+			// Join workflow, workflow template, and workflow default metadata to workflow spec.
+			mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+			if err != nil {
+				return err
+			}
+			woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
+		 } else {
+		 	woc.wf.Status.StoredWorkflowSpec = woc.wf.Spec.DeepCopy()
 		}
 
-		// Join WFT and WfDefault metadata to Workflow metadata.
-		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
+		woc.wf.Status.StoredWorkflowSpec.Normalize()
 
-		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
-		if err != nil {
-			return err
-		}
-
-		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 		woc.updated = true
 	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
 		wftHolder, err := woc.fetchWorkflowSpec()

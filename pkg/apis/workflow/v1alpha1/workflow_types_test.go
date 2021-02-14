@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/yaml"
 )
 
 func TestWorkflows(t *testing.T) {
@@ -77,6 +78,31 @@ func TestWorkflowHappenedBetween(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}},
 	}))
+}
+
+func TestWorkflowSpec_Normalize(t *testing.T) {
+	spec := &WorkflowSpec{}
+	err := yaml.Unmarshal([]byte(`
+templates:
+  - name: dag-0
+    dag:
+      tasks:
+        - name: task-0
+          spec:
+            dag:
+              tasks:
+                - name: task-0-0
+                  spec: 
+                    container:
+                      image: my-image
+`), spec)
+	assert.NoError(t, err)
+	spec.Normalize()
+	if assert.Len(t, spec.Templates, 3) {
+		assert.Equal(t, "dag-0", spec.Templates[0].Name)
+		assert.Equal(t, "dag-0.task-0", spec.Templates[1].Name)
+		assert.Equal(t, "dag-0.task-0.task-0-0", spec.Templates[2].Name)
+	}
 }
 
 func TestArtifactLocation_IsArchiveLogs(t *testing.T) {

@@ -101,6 +101,8 @@ var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.Conditions, error) {
+	wf = wf.DeepCopy()
+	wf.Spec.Normalize()
 	wfConditions := &wfv1.Conditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
@@ -1355,7 +1357,7 @@ func isValidParamOrArtifactName(p string) []string {
 }
 
 const (
-	workflowFieldNameFmt    string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
+	workflowFieldNameFmt    string = "[a-zA-Z0-9][-.a-zA-Z0-9]*"
 	workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
 	workflowFieldMaxLength  int    = 128
 )

@@ -291,6 +291,8 @@ message DAGTask {
   // Name of template to execute
   optional string template = 2;
 
+  optional Template spec = 13;
+
   // Arguments are the parameter and artifact arguments to the template
   optional Arguments arguments = 3;
 
