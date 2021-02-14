@@ -1031,7 +1031,8 @@ type WorkflowStep struct {
 
 	// WithParam expands a step into multiple parallel steps from the value in the parameter,
 	// which is expected to be a JSON list.
-	WithParam string `json:"withParam,omitempty" protobuf:"bytes,6,opt,name=withParam"`
+	WithParam      string `json:"withParam,omitempty" protobuf:"bytes,6,opt,name=withParam"`
+	WithExpression string `json:"withExpression,omitempty" protobuf:"bytes,12,opt,name=withExpression"`
 
 	// WithSequence expands a step into a numeric sequence
 	WithSequence *Sequence `json:"withSequence,omitempty" protobuf:"bytes,7,opt,name=withSequence"`
@@ -1060,7 +1061,7 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 }
 
 func (step *WorkflowStep) ShouldExpand() bool {
-	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
+	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithExpression != "" || step.WithSequence != nil
 }
 
 // Sequence expands a workflow step into numeric range
@@ -2179,7 +2180,8 @@ type DAGTask struct {
 
 	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
 	// which is expected to be a JSON list.
-	WithParam string `json:"withParam,omitempty" protobuf:"bytes,7,opt,name=withParam"`
+	WithParam      string `json:"withParam,omitempty" protobuf:"bytes,7,opt,name=withParam"`
+	WithExpression string `json:"withExpression,omitempty" protobuf:"bytes,13,opt,name=withExpression"`
 
 	// WithSequence expands a task into a numeric sequence
 	WithSequence *Sequence `json:"withSequence,omitempty" protobuf:"bytes,8,opt,name=withSequence"`
@@ -2211,7 +2213,7 @@ func (t *DAGTask) GetTemplateRef() *TemplateRef {
 }
 
 func (t *DAGTask) ShouldExpand() bool {
-	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithSequence != nil
+	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithExpression != "" || t.WithSequence != nil
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

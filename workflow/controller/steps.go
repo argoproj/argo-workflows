@@ -416,7 +416,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
-		expandedStep, err := woc.expandStep(step)
+		expandedStep, err := woc.expandStep(step, stepsCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -437,7 +437,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 }
 
 // expandStep expands a step containing withItems or withParams into multiple parallel steps
-func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
 	var items []wfv1.Item
@@ -447,6 +447,11 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(step.WithParam))
+		}
+	} else if step.WithExpression != "" {
+		items, err = woc.expandWithExpression(step.WithExpression, stepsCtx.scope.getParameters())
+		if err != nil {
+			return nil, err
 		}
 	} else if step.WithSequence != nil {
 		items, err = expandSequence(step.WithSequence)
@@ -462,6 +467,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	// very poor performance, so we just nil them out
 	step.WithItems = nil
 	step.WithParam = ""
+	step.WithExpression = ""
 	step.WithSequence = nil
 
 	stepBytes, err := json.Marshal(step)

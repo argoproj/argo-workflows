@@ -717,7 +717,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			stepNames[step.Name] = true
 			prefix := fmt.Sprintf("steps.%s", step.Name)
 			scope[fmt.Sprintf("%s.status", prefix)] = true
-			err := addItemsToScope(step.WithItems, step.WithParam, step.WithSequence, scope)
+			err := addItemsToScope(step.WithItems, step.WithParam, step.WithExpression, step.WithSequence, scope)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -742,7 +742,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 		}
 
 		for _, step := range stepGroup.Steps {
-			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
+			aggregate := len(step.WithItems) > 0 || step.WithParam != "" || step.WithExpression != ""
 			resolvedTmpl := resolvedTemplates[step.Name]
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
 
@@ -756,7 +756,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 	return nil
 }
 
-func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1.Sequence, scope map[string]interface{}) error {
+func addItemsToScope(withItems []wfv1.Item, withParam, withExpression string, withSequence *wfv1.Sequence, scope map[string]interface{}) error {
 	defined := 0
 	if len(withItems) > 0 {
 		defined++
@@ -764,11 +764,14 @@ func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1
 	if withParam != "" {
 		defined++
 	}
+	if withExpression != "" {
+		defined++
+	}
 	if withSequence != nil {
 		defined++
 	}
 	if defined > 1 {
-		return fmt.Errorf("only one of withItems, withParam, withSequence can be specified")
+		return fmt.Errorf("only one of withItems, withParam, withExpression, withSequence can be specified")
 	}
 	if len(withItems) > 0 {
 		for i := range withItems {
@@ -788,7 +791,7 @@ func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1
 				return fmt.Errorf("unsupported withItems type: %v", val)
 			}
 		}
-	} else if withParam != "" {
+	} else if withParam != "" || withExpression != "" {
 		scope["item"] = true
 		// 'item.*' is magic placeholder value which resolveAllVariables() will look for
 		// when considering if all variables are resolveable.
@@ -1163,7 +1166,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s dependency '%s' not defined",
 					tmpl.Name, task.Name, depName)
-			} else if depType == common.DependencyTypeItems && len(task.WithItems) == 0 && task.WithParam == "" && task.WithSequence == nil {
+			} else if depType == common.DependencyTypeItems && len(task.WithItems) == 0 && task.WithParam == "" && task.WithExpression == "" && task.WithSequence == nil {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s dependency '%s' uses an items-based condition such as .AnySucceeded or .AllFailed but does not contain any items",
 					tmpl.Name, task.Name, depName)
@@ -1201,10 +1204,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			ancestorTask := dagValidationCtx.GetTask(ancestor)
 			resolvedTmpl := resolvedTemplates[ancestor]
 			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
-			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
+			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != "" || ancestorTask.WithExpression != ""
 			ctx.addOutputsToScope(resolvedTmpl, ancestorPrefix, taskScope, aggregate, true)
 		}
-		err = addItemsToScope(task.WithItems, task.WithParam, task.WithSequence, taskScope)
+		err = addItemsToScope(task.WithItems, task.WithParam, task.WithExpression, task.WithSequence, taskScope)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}

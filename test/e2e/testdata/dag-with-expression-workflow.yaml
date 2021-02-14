@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-with-expression-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: task-0
+            template: pod-0
+          - name: task-1
+            template: pod-1
+            dependencies:
+              - task-0
+            arguments:
+              parameters:
+                - name: p0
+                  value: "{{item}}"
+            withExpression: |
+              array(tasks["task-0"].outputs.result)
+
+    - name: pod-0
+      container:
+        image: argoproj/argosay:v2
+        args: [ echo, "[1, 2]" ]
+
+    - name: pod-1
+      inputs:
+        parameters:
+          - name: p0
+      container:
+        image: argoproj/argosay:v2
+        args: [ echo, "{{inputs.parameters.p0}}" ]

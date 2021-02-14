@@ -6669,6 +6669,9 @@
           "description": "When is an expression in which the task should conditionally execute",
           "type": "string"
         },
+        "withExpression": {
+          "type": "string"
+        },
         "withItems": {
           "description": "WithItems expands a task into multiple parallel tasks from the items in the list",
           "type": "array",
@@ -8909,6 +8912,9 @@
         },
         "when": {
           "description": "When is an expression in which the step should conditionally execute",
+          "type": "string"
+        },
+        "withExpression": {
           "type": "string"
         },
         "withItems": {

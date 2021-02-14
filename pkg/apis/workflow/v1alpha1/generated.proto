@@ -307,6 +307,8 @@ message DAGTask {
   // which is expected to be a JSON list.
   optional string withParam = 7;
 
+  optional string withExpression = 13;
+
   // WithSequence expands a task into a numeric sequence
   optional Sequence withSequence = 8;
 
@@ -1531,6 +1533,8 @@ message WorkflowStep {
   // WithParam expands a step into multiple parallel steps from the value in the parameter,
   // which is expected to be a JSON list.
   optional string withParam = 6;
+
+  optional string withExpression = 12;
 
   // WithSequence expands a step into a numeric sequence
   optional Sequence withSequence = 7;

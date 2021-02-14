@@ -95,6 +95,22 @@ func (s *FunctionalSuite) TestTemplateLevelMutex() {
 		})
 }
 
+func (s *FunctionalSuite) TestDAGWithExpression() {
+	s.Given().
+		Workflow("@testdata/dag-with-expression-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, "to be succeeded")
+}
+
+func (s *FunctionalSuite) TestStepsWithExpression() {
+	s.Given().
+		Workflow("@testdata/steps-with-expression-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, "to be succeeded")
+}
+
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
 		Workflow(`

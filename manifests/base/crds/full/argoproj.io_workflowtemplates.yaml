@@ -2394,6 +2394,8 @@ spec:
                                 type: object
                               when:
                                 type: string
+                              withExpression:
+                                type: string
                               withItems:
                                 items:
                                   type: object

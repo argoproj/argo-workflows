@@ -178,6 +178,14 @@ const WorkflowNodeInputs = (props: Props) => (
 const WorkflowNodeOutputs = (props: Props) => (
     <>
         <h5>Outputs</h5>
+        <div className='white-box'>
+            <div className='white-box__details'>
+                <div className='row'>
+                    <WorkflowNodeResult result={props.node.outputs && props.node.outputs.result} />
+                    <WorkflowNodeExitCode exitCode={props.node.outputs && props.node.outputs.exitCode} />
+                </div>
+            </div>
+        </div>
         <WorkflowNodeParameters parameters={props.node.outputs && props.node.outputs.parameters} />
         <WorkflowNodeArtifacts {...props} artifacts={props.node.outputs && props.node.outputs.artifacts} />
     </>
@@ -203,6 +211,26 @@ const WorkflowNodeParameters = ({parameters}: {parameters: models.Parameter[]}) 
         </div>
     );
 };
+
+const WorkflowNodeResult = ({result}: {result: string}) =>
+    result ? (
+        <>
+            <div className='columns small-3'>Result</div>
+            <div className='columns small-3'>{result}</div>
+        </>
+    ) : (
+        <div className='columns small-6 text-center'>No result</div>
+    );
+
+const WorkflowNodeExitCode = ({exitCode}: {exitCode: number}) =>
+    exitCode ? (
+        <>
+            <div className='columns small-3'>Exit code</div>
+            <div className='columns small-3'>{exitCode}</div>
+        </>
+    ) : (
+        <div className='columns 6 text-center'>No exit code</div>
+    );
 
 function hasEnv(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
     return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;

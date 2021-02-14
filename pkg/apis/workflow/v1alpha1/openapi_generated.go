@@ -1086,6 +1086,12 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"withExpression": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"withSequence": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WithSequence expands a task into a numeric sequence",
@@ -5202,6 +5208,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 							Description: "WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"withExpression": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 					"withSequence": {

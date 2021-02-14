@@ -421,7 +421,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(*newTask)
+	expandedTasks, err := woc.expandTask(*newTask, dagCtx)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
@@ -629,7 +629,7 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 }
 
 // expandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
-func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask, dagCtx *dagContext) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
 	if len(task.WithItems) > 0 {
@@ -638,6 +638,15 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(task.WithParam))
+		}
+	} else if task.WithExpression != "" {
+		scope, err := woc.buildLocalScopeFromTask(dagCtx, &task)
+		if err != nil {
+			return nil, err
+		}
+		items, err = woc.expandWithExpression(task.WithExpression, scope.getParameters())
+		if err != nil {
+			return nil, err
 		}
 	} else if task.WithSequence != nil {
 		items, err = expandSequence(task.WithSequence)
@@ -657,6 +666,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	// very poor performance, so we just nil them out
 	task.WithItems = nil
 	task.WithParam = ""
+	task.WithExpression = ""
 	task.WithSequence = nil
 
 	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
