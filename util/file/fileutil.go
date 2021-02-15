@@ -9,7 +9,17 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/klauspost/pgzip"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/env"
+)
+
+var gzipImpl = env.GetString(GZipImplEnvVarKey, GZIP)
+
+const (
+	GZipImplEnvVarKey = "GZIP_IMPLEMENTATION"
+	GZIP              = "GZip"
+	PGZIP             = "PGZip"
 )
 
 type TarReader interface {
@@ -63,23 +73,52 @@ func DecodeDecompressString(content string) (string, error) {
 	return string(dBuf), nil
 }
 
+type GZipWriter interface {
+	Write(p []byte) (int, error)
+	Close() error
+}
+
+type GZipReader interface {
+	Read(p []byte) (int, error)
+	Close() error
+}
+
 // CompressContent will compress the byte array using zip writer
 func CompressContent(content []byte) []byte {
 	var buf bytes.Buffer
-	zipWriter := gzip.NewWriter(&buf)
+	var gzipWriter GZipWriter
+	switch gzipImpl {
+	case PGZIP:
+		gzipWriter = pgzip.NewWriter(&buf)
+	case GZIP:
+		gzipWriter = gzip.NewWriter(&buf)
+	default:
+		log.Warnf("%s implementation for compression is not supported. Fallback to Gzip.", gzipImpl)
+		gzipWriter = gzip.NewWriter(&buf)
+	}
 
-	_, err := zipWriter.Write(content)
+	_, err := gzipWriter.Write(content)
 	if err != nil {
 		log.Warnf("Error in compressing: %v", err)
 	}
-	close(zipWriter)
+	close(gzipWriter)
 	return buf.Bytes()
 }
 
 // DecompressContent will return the uncompressed content
 func DecompressContent(content []byte) ([]byte, error) {
 	buf := bytes.NewReader(content)
-	gZipReader, _ := gzip.NewReader(buf)
-	defer close(gZipReader)
-	return ioutil.ReadAll(gZipReader)
+
+	var gzipReader GZipReader
+	switch gzipImpl {
+	case PGZIP:
+		gzipReader, _ = pgzip.NewReader(buf)
+	case GZIP:
+		gzipReader, _ = gzip.NewReader(buf)
+	default:
+		log.Warnf("%s implementation for decompression is not supported. Fallback to Gzip.", gzipImpl)
+		gzipReader, _ = gzip.NewReader(buf)
+	}
+	defer close(gzipReader)
+	return ioutil.ReadAll(gzipReader)
 }
