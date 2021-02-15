@@ -12,14 +12,14 @@ spec:
       args: ["hello world"]
   - name: b
     retryStrategy:
-      limit: 2
+      limit: "2"
     container:
       image: alpine:latest
       command: [sh, -c]
       args: ["sleep 30; echo haha"]
   - name: c
     retryStrategy:
-      limit: 3
+      limit: "3"
     container:
       image: alpine:latest
       command: [sh, -c]
