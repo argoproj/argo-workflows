@@ -14,7 +14,7 @@ import (
 	"k8s.io/utils/env"
 )
 
-var gzipImpl = env.GetString(GZipImplEnvVarKey, GZIP)
+var gzipImpl = env.GetString(GZipImplEnvVarKey, PGZIP)
 
 const (
 	GZipImplEnvVarKey = "GZIP_IMPLEMENTATION"
@@ -93,7 +93,7 @@ func CompressContent(content []byte) []byte {
 	case GZIP:
 		gzipWriter = gzip.NewWriter(&buf)
 	default:
-		log.Warnf("%s implementation for compression is not supported. Fallback to Gzip.", gzipImpl)
+		log.Warnf("%s implementation for compression is not supported. Fallback to PGZip.", gzipImpl)
 		gzipWriter = gzip.NewWriter(&buf)
 	}
 
@@ -116,7 +116,7 @@ func DecompressContent(content []byte) ([]byte, error) {
 	case GZIP:
 		gzipReader, _ = gzip.NewReader(buf)
 	default:
-		log.Warnf("%s implementation for decompression is not supported. Fallback to Gzip.", gzipImpl)
+		log.Warnf("%s implementation for decompression is not supported. Fallback to PGZip.", gzipImpl)
 		gzipReader, _ = gzip.NewReader(buf)
 	}
 	defer close(gzipReader)
