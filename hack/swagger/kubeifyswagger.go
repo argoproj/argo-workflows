@@ -59,7 +59,7 @@ func kubeifySwagger(in, out string) {
 		}
 	}
 
-	definitions["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = obj{"type": array{"string", "integer"}}
+	definitions["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = obj{"type": "string"}
 	// "omitempty" does not work for non-nil structs, so we must change it here
 	definitions["io.argoproj.workflow.v1alpha1.CronWorkflow"].(obj)["required"] = array{"metadata", "spec"}
 	definitions["io.argoproj.workflow.v1alpha1.Workflow"].(obj)["required"] = array{"metadata", "spec"}
