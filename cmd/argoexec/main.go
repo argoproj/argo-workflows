@@ -4,11 +4,11 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands"
-	"github.com/argoproj/argo-workflows/v3/util"
-
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 func main() {
