@@ -3631,6 +3631,24 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Memoization": {
+      "description": "Memoization specifies the storage for cache that can be used for all templates at workflow level",
+      "properties": {
+        "cache": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache",
+          "description": "Cache sets and configures the kind of cache"
+        },
+        "maxAge": {
+          "description": "MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cache",
+        "maxAge"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
       "description": "MemoizationStatus is the status of this memoized node",
       "properties": {
@@ -3655,7 +3673,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Memoize": {
-      "description": "Memoization enables caching for the Outputs of the template",
+      "description": "Memoize enables caching for the Outputs of the template",
       "properties": {
         "cache": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache",
@@ -5253,6 +5271,10 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "memoization": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoization",
+          "description": "Memoization specified the memoization storage at workflow level that all templates can use."
+        },
         "metrics": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics",
           "description": "Metrics are a list of metrics emitted from this Workflow"
@@ -5720,6 +5742,10 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "memoization": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoization",
+          "description": "Memoization specified the memoization storage at workflow level that all templates can use."
         },
         "metrics": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics",

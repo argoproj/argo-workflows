@@ -523,6 +523,16 @@ message Link {
   optional string url = 3;
 }
 
+// Memoization specifies the storage for cache that can be used for all templates at workflow level
+message Memoization {
+  // Cache sets and configures the kind of cache
+  optional Cache cache = 1;
+
+  // MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
+  // than the MaxAge, it will be ignored.
+  optional string maxAge = 2;
+}
+
 // MemoizationStatus is the status of this memoized node
 message MemoizationStatus {
   // Hit indicates whether this node was created from a cache entry
@@ -535,7 +545,7 @@ message MemoizationStatus {
   optional string cacheName = 3;
 }
 
-// Memoization enables caching for the Outputs of the template
+// Memoize enables caching for the Outputs of the template
 message Memoize {
   // Key is the key to use as the caching key
   optional string key = 1;
@@ -1453,6 +1463,9 @@ message WorkflowSpec {
 
   // PodMetadata defines additional metadata that should be applied to workflow pods
   optional Metadata podMetadata = 38;
+
+  // Memoization specified the memoization storage at workflow level that all templates can use.
+  optional Memoization memoization = 39;
 }
 
 // WorkflowStatus contains overall status information about a workflow

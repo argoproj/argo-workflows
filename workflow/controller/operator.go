@@ -1515,11 +1515,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// If memoization is on, check if node output exists in cache
-	if node == nil && processedTmpl.Memoize != nil {
-		memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
+	if node == nil && processedTmpl.Memoize != nil && processedTmpl.Memoize.Key != "" {
+		cacheConfig := woc.cache(processedTmpl)
+		memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, cacheConfig.ConfigMap.Name)
 		if memoizationCache == nil {
 			err := fmt.Errorf("cache could not be found or created")
-			woc.log.WithFields(log.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
+			woc.log.WithFields(log.Fields{"cacheName": cacheConfig.ConfigMap.Name}).WithError(err)
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
 
@@ -1530,8 +1531,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 		hit := entry.Hit()
 		var outputs *wfv1.Outputs
-		if processedTmpl.Memoize.MaxAge != "" {
-			maxAge, err := time.ParseDuration(processedTmpl.Memoize.MaxAge)
+		if maxAge := woc.maxAge(processedTmpl); maxAge != "" {
+			maxAge, err := time.ParseDuration(maxAge)
 			if err != nil {
 				err := fmt.Errorf("invalid maxAge: %s", err)
 				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
@@ -1549,7 +1550,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		memoizationStatus := &wfv1.MemoizationStatus{
 			Hit:       hit,
 			Key:       processedTmpl.Memoize.Key,
-			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
+			CacheName: cacheConfig.ConfigMap.Name,
 		}
 		if hit {
 			node = woc.initializeCacheHitNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memoizationStatus)
@@ -3094,6 +3095,20 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 		return tmpl.RetryStrategy
 	}
 	return woc.execWf.Spec.RetryStrategy
+}
+
+func (woc *wfOperationCtx) cache(tmpl *wfv1.Template) *wfv1.Cache {
+	if tmpl != nil && tmpl.Memoize != nil && tmpl.Memoize.Cache != nil {
+		return tmpl.Memoize.Cache
+	}
+	return woc.execWf.Spec.Memoization.Cache
+}
+
+func (woc *wfOperationCtx) maxAge(tmpl *wfv1.Template) string {
+	if tmpl != nil && tmpl.Memoize != nil {
+		return tmpl.Memoize.MaxAge
+	}
+	return woc.execWf.Spec.Memoization.MaxAge
 }
 
 func (woc *wfOperationCtx) setExecWorkflow() error {

@@ -687,6 +687,30 @@ spec:
                       type: string
                   type: object
                 type: array
+              memoization:
+                properties:
+                  cache:
+                    properties:
+                      configMap:
+                        properties:
+                          key:
+                            type: string
+                          name:
+                            type: string
+                          optional:
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                    required:
+                    - configMap
+                    type: object
+                  maxAge:
+                    type: string
+                required:
+                - cache
+                - maxAge
+                type: object
               metrics:
                 properties:
                   prometheus:

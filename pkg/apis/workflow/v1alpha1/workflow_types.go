@@ -346,6 +346,9 @@ type WorkflowSpec struct {
 
 	// PodMetadata defines additional metadata that should be applied to workflow pods
 	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
+
+	// Memoization specified the memoization storage at workflow level that all templates can use.
+	Memoization *Memoization `json:"memoization,omitempty" protobuf:"bytes,39,opt,name=memoization"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -2567,7 +2570,16 @@ type Counter struct {
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
-// Memoization enables caching for the Outputs of the template
+// Memoization specifies the storage for cache that can be used for all templates at workflow level
+type Memoization struct {
+	// Cache sets and configures the kind of cache
+	Cache *Cache `json:"cache" protobuf:"bytes,1,opt,name=cache"`
+	// MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
+	// than the MaxAge, it will be ignored.
+	MaxAge string `json:"maxAge" protobuf:"bytes,2,opt,name=maxAge"`
+}
+
+// Memoize enables caching for the Outputs of the template
 type Memoize struct {
 	// Key is the key to use as the caching key
 	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
