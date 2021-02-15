@@ -2126,15 +2126,15 @@
 <h2 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h2>
 <p>Releasing requires a clean tree state, so back-up any untracked files in your Git directory.</p>
 <p><strong>Only once your files are backed up</strong>, run:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">git clean -fdx  # WARNING: Will delete untracked files!</span>
+<div class="codehilite"><pre><span></span><code>git clean -fdx  # WARNING: Will delete untracked files!
 </code></pre></div>
 
 <p>To generate new manifests and perform basic checks:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make prepare-release -B VERSION=v2.11.5</span>
+<div class="codehilite"><pre><span></span><code>make prepare-release -B VERSION=v2.11.5
 </code></pre></div>
 
 <p>Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make publish-release K3D=false VERSION=v2.11.5</span>
+<div class="codehilite"><pre><span></span><code>make publish-release K3D=false VERSION=v2.11.5
 </code></pre></div>
 
 <p>Wait 1h to 2h.    </p>
@@ -2157,7 +2157,7 @@ docker run argoproj/argocli:v2.11.5 version
 </ul>
 <h3 id="release-notes">Release Notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h3>
 <p>Create <a href="https://github.com/argoproj/argo-workflows/releases">the release</a> in Github. You can get some text for this using <a href="https://github.com/alexec/github-toolkit">Github Toolkit</a>:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">ght relnote v2.7.3..v2.11.4</span>
+<div class="codehilite"><pre><span></span><code>ght relnote v2.7.3..v2.11.4
 </code></pre></div>
 
 <p>Release notes checklist:</p>

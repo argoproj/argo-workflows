@@ -2060,23 +2060,23 @@
 <li>A local Kubernetes cluster</li>
 </ul>
 <p>We recommend using <a href="https://k3d.io/">K3D</a> to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">k3d cluster start --wait</span>
+<div class="codehilite"><pre><span></span><code><span class="nv">k3d</span> <span class="nv">cluster</span> <span class="nv">start</span> <span class="o">--</span><span class="k">wait</span>
 </code></pre></div>
 
 <p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context automatically.</p>
 <p>Add to /etc/hosts:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">127.0.0.1 dex</span>
-<span class="err">127.0.0.1 minio</span>
-<span class="err">127.0.0.1 postgres</span>
-<span class="err">127.0.0.1 mysql</span>
+<div class="codehilite"><pre><span></span><code><span class="mf">127.0.0.1</span> <span class="n">dex</span>
+<span class="mf">127.0.0.1</span> <span class="n">minio</span>
+<span class="mf">127.0.0.1</span> <span class="nb">pos</span><span class="n">tgres</span>
+<span class="mf">127.0.0.1</span> <span class="n">mysql</span>
 </code></pre></div>
 
 <p>To install into the “argo” namespace of your cluster: Argo and MinIO (for saving artifacts and logs):</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make start</span>
+<div class="codehilite"><pre><span></span><code>make start
 </code></pre></div>
 
 <p>If you want MySQL for the workflow archive:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make start PROFILE=mysql</span>
+<div class="codehilite"><pre><span></span><code>make start PROFILE=mysql
 </code></pre></div>
 
 <p>You’ll now have</p>
@@ -2093,9 +2093,9 @@
 <p>At this point you’ll have everything you need to use the CLI and UI.</p>
 <h2 id="clean">Clean<a class="headerlink" href="#clean" title="Permanent link">&para;</a></h2>
 <p>To clean-up everything:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make clean</span>
-<span class="err">kubectl delete ns argo</span>
-<span class="err">docker system prune -af</span>
+<div class="codehilite"><pre><span></span><code>make clean
+kubectl delete ns argo
+docker system prune -af
 </code></pre></div>
                 
                   
