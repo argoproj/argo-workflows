@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jsonrpc-plugin
+  labels:
+    app: jsonrpc-plugin
+spec:
+  selector:
+    matchLabels:
+      app: jsonrpc-plugin
+  template:
+    metadata:
+      labels:
+        app: jsonrpc-plugin
+    spec:
+      containers:
+        - name: main
+          image: argoproj/jsonrpc-plugin:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 12345

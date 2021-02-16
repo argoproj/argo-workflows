@@ -12,6 +12,8 @@ resources:
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
+  - jsonrpc-plugin-deployment.yaml
+  - jsonrpc-plugin-service.yaml
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml

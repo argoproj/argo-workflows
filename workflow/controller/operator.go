@@ -341,7 +341,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		// Workflow might be in pending state if previous PVC creation is forbidden
 		woc.markWorkflowRunning(ctx)
 	}
-
 	node, err := woc.executeTemplate(ctx, woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
 		woc.log.WithError(err).Error("error in entry template execution")
@@ -939,6 +938,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	wg.Wait()
 
 	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
+
+	woc.reconcilePluginTemplates()
 
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
@@ -1714,6 +1715,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypePlugin:
+		node, err = woc.executePluginTemplate(nodeName, orgTmpl, node, templateScope, processedTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
@@ -2025,10 +2028,10 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 }
 
 // markNodePhase marks a node with the given phase, creating the node if necessary and handles timestamps
-func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, options ...interface{}) *wfv1.NodeStatus {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
-		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message))
+		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v", woc.wf.Name, nodeName, phase))
 	}
 	if node.Phase != phase {
 		if node.Phase.Fulfilled() {
@@ -2039,11 +2042,20 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		node.Phase = phase
 		woc.updated = true
 	}
-	if len(message) > 0 {
-		if message[0] != node.Message {
-			woc.log.Infof("node %s message: %s", node.ID, message[0])
-			node.Message = message[0]
+	for _, o := range options {
+		switch v := o.(type) {
+		case string:
+			if v != node.Message {
+				woc.log.Infof("node %s message: %s", node.ID, v)
+				node.Message = v
+				woc.updated = true
+			}
+		case *wfv1.Outputs:
+			woc.log.Infof("node %q outputs: %v", node.ID, v)
+			node.Outputs = v
 			woc.updated = true
+		default:
+			panic("unsupported option type")
 		}
 	}
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
@@ -2198,7 +2210,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypePod, wfv1.NodeTypePlugin, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
 	case wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {

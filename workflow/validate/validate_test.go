@@ -2321,6 +2321,21 @@ func TestInvalidWfNoImageFieldScript(t *testing.T) {
 	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
 }
 
+func TestValidPlugin(t *testing.T) {
+	err := validateWorkflowTemplate(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: plugin
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      plugin: {}
+`)
+	assert.NoError(t, err)
+}
+
 var templateRefWithParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate

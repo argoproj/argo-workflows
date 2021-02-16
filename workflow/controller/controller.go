@@ -38,6 +38,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	pluginpkg "github.com/argoproj/argo-workflows/v3/pkg/plugin"
+	"github.com/argoproj/argo-workflows/v3/plugins"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
@@ -103,6 +105,7 @@ type WorkflowController struct {
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
+	plugins               []interface{}
 }
 
 const (
@@ -138,6 +141,14 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 
 	wfc.UpdateConfig(ctx)
 
+	for _, d := range wfc.Config.Plugins {
+		p, err := plugins.New(d)
+		if err != nil {
+			return nil, fmt.Errorf("failed to new plugin %q: %w", d, err)
+		}
+		wfc.plugins = append(wfc.plugins, p)
+	}
+
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
@@ -145,6 +156,23 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.throttler = wfc.newThrottler()
 	wfc.podQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
+
+	for _, p := range wfc.plugins {
+		id := pluginpkg.ID(p)
+		if f, ok := p.(pluginpkg.TemplateExecutor); ok {
+			resp := &pluginpkg.InitResp{}
+			if err := f.Init(pluginpkg.InitReq{}, resp); err != nil {
+				return nil, fmt.Errorf("failed to init plugin: %w", err)
+			}
+			log.Infof("init %q; supports %q template(s)", id, resp.PluginTemplateTypes)
+			for _, x := range resp.PluginTemplateTypes {
+				templatePlugins[x] = f
+			}
+		} else {
+			return nil, fmt.Errorf("plugin %q is not TemplateExecutor", id)
+		}
+	}
+	log.Infof("loaded %d plugins", len(wfc.plugins))
 
 	return &wfc, nil
 }
@@ -194,6 +222,18 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
+	for _, p := range wfc.plugins {
+		id := pluginpkg.ID(p)
+		if f, ok := p.(pluginpkg.Runnable); ok {
+			log.Infof("running %q", id)
+			go f.Run(pluginpkg.RunReq{
+				Notify: func(namespace, workflowName string) { wfc.wfQueue.AddRateLimited(namespace + "/" + workflowName) },
+				Done:   ctx.Done(),
+			})
+		} else {
+			log.Infof("plugin %q is not Runnable", id)
+		}
+	}
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())

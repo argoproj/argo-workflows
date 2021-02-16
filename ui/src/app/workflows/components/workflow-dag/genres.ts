@@ -5,6 +5,7 @@ export const genres = {
     Retry: true,
     Skipped: true,
     Suspend: true,
+    Plugin: true,
     TaskGroup: false,
     StepGroup: false,
     Collapsed: true

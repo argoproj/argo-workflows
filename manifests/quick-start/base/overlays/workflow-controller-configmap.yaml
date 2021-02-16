@@ -38,6 +38,11 @@ data:
     - name: Sensor Logs Link
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+  plugins: |
+    - package: httptemplate
+    - package: jsonrpc
+      config:
+        host: localhost:12345
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

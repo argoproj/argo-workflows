@@ -3,9 +3,11 @@ kind: Deployment
 metadata:
   name: workflow-controller
 spec:
-  replicas: 0
   template:
     spec:
       containers:
+        - name: jsonrpc-plugin
+          image: argoproj/jsonrpc-plugin:latest
+          imagePullPolicy: Never
         - name: workflow-controller
           imagePullPolicy: Never

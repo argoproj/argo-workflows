@@ -325,7 +325,7 @@ export interface Template {
     /**
      * NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.
      */
-    nodeSelector?: {[key: string]: string};
+    nodeSelector?: { [key: string]: string };
     /**
      * Outputs describe the parameters and artifacts that this template produces
      */
@@ -415,7 +415,7 @@ export interface Workflow {
 
 export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
 
-export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
+export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend' | 'Plugin';
 
 export interface NodeStatus {
     /**
@@ -478,7 +478,7 @@ export interface NodeStatus {
     /**
      * How much resource was requested.
      */
-    resourcesDuration?: {[resource: string]: number};
+    resourcesDuration?: { [resource: string]: number };
 
     /**
      * PodIP captures the IP of the pod for daemoned steps
@@ -592,7 +592,7 @@ export interface WorkflowStatus {
     /**
      * Nodes is a mapping between a node ID and the node's status.
      */
-    nodes: {[nodeId: string]: NodeStatus};
+    nodes: { [nodeId: string]: NodeStatus };
 
     /**
      * PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
@@ -605,12 +605,12 @@ export interface WorkflowStatus {
     /**
      * StoredTemplates is a mapping between a template ref and the node's status.
      */
-    storedTemplates: {[name: string]: Template};
+    storedTemplates: { [name: string]: Template };
 
     /**
      * ResourcesDuration tracks how much resources were requested.
      */
-    resourcesDuration?: {[resource: string]: number};
+    resourcesDuration?: { [resource: string]: number };
 
     /**
      * Conditions is a list of WorkflowConditions
@@ -704,7 +704,7 @@ export interface WorkflowSpec {
      * NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s).
      * This is able to be overridden by a nodeSelector specified in the template.
      */
-    nodeSelector?: {[key: string]: string};
+    nodeSelector?: { [key: string]: string };
     /**
      * OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary workflow.
      */

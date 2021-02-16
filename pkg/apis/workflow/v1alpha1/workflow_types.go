@@ -31,6 +31,7 @@ const (
 	TemplateTypeResource  TemplateType = "Resource"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
+	TemplateTypePlugin    TemplateType = "Plugin"
 	TemplateTypeUnknown   TemplateType = "Unknown"
 )
 
@@ -68,6 +69,7 @@ const (
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
+	NodeTypePlugin    NodeType = "Plugin"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -519,6 +521,8 @@ type Template struct {
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
+
+	Plugin *PluginTemplate `json:"plugin,omitempty" protobuf:"bytes,39,opt,name=plugin"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -2116,6 +2120,9 @@ func (tmpl *Template) GetType() TemplateType {
 	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
+	}
+	if tmpl.Plugin != nil {
+		return TemplateTypePlugin
 	}
 	return TemplateTypeUnknown
 }

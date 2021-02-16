@@ -481,6 +481,7 @@ func TestGetNodeType(t *testing.T) {
 		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Steps: []wfv1.ParallelSteps{}}))
 		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{DAG: &wfv1.DAGTemplate{}}))
 		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Suspend: &wfv1.SuspendTemplate{}}))
+		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Plugin: &wfv1.PluginTemplate{}}))
 	})
 }
 

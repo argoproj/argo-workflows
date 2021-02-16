@@ -46,9 +46,12 @@ if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
   pf "Argo Server" svc/argo-server 2746
 fi
 
+pf "JSON RPC Plugin" svc/jsonrpc-plugin 12345
+
+
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
   pf "Workflow Controller Metrics" svc/workflow-controller-metrics 9090
-  if [[ "$(kubectl -n argo get svc -l app=workflow-controller-pprof -o name)" != "" ]]; then
+  if [[ "$(kubectl -n argo get svc workflow-controller-pprof -o name)" != "" ]]; then
     pf "Workflow Controller PProf" svc/workflow-controller-pprof 6060
   fi
 fi

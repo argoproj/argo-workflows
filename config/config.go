@@ -103,6 +103,17 @@ type Config struct {
 
 	// Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+
+	Plugins []PluginDef `json:"plugins,omitempty"`
+}
+
+type PluginDef struct {
+	Package string       `json:"package"`
+	Config  PluginConfig `json:"config"`
+}
+
+type PluginConfig struct {
+	Host string `json:"host"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
