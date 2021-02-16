@@ -349,7 +349,7 @@ type WorkflowSpec struct {
 }
 
 func (w *WorkflowSpec) Normalize() {
-	for i := 0; i < len(w.Templates); i++{
+	for i := 0; i < len(w.Templates); i++ {
 		tmpl := w.Templates[i]
 		switch v := tmpl.Get().(type) {
 		case *DAGTemplate:

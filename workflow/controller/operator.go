@@ -3135,8 +3135,8 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 				return err
 			}
 			woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
-		 } else {
-		 	woc.wf.Status.StoredWorkflowSpec = woc.wf.Spec.DeepCopy()
+		} else {
+			woc.wf.Status.StoredWorkflowSpec = woc.wf.Spec.DeepCopy()
 		}
 
 		woc.wf.Status.StoredWorkflowSpec.Normalize()
