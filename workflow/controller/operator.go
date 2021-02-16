@@ -3119,7 +3119,6 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
 	}
-
 	if woc.wf.Status.StoredWorkflowSpec == nil {
 		if woc.wf.Spec.WorkflowTemplateRef != nil {
 			wftHolder, err := woc.fetchWorkflowSpec()

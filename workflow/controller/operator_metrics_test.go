@@ -138,6 +138,9 @@ func TestCounterMetric(t *testing.T) {
 }
 
 func getMetricStringValue(metric prometheus.Metric) (string, error) {
+	if metric == nil {
+		return "", fmt.Errorf("metric nil")
+	}
 	metricString := &dto.Metric{}
 	err := metric.Write(metricString)
 	if err != nil {
@@ -467,15 +470,11 @@ spec:
 `
 
 func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
-	cancel, controller := newController()
+	wf := unmarshalWF(testRealtimeWorkflowMetricWithGlobalParameters)
+	cancel, controller := newController(wf)
 	defer cancel()
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(testRealtimeWorkflowMetricWithGlobalParameters)
-	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-
 	woc.operate(ctx)
 
 	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
