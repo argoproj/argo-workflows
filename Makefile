@@ -592,3 +592,9 @@ check-version-warning:
 .PHONY: parse-examples
 parse-examples:
 	go run -tags fields ./hack parseexamples
+
+.PHONY: checksum
+checksum:
+	@echo "| Binary | SHA256             |"
+	@echo "|:------:|--------------------|"
+	@for f in ./dist/argo-*.gz; do shasum -a 256 "$$f" | awk '{ printf "|`%10s`|%10s|\n", $$2, $$1 }' | sed 's|\.\/dist\/||' | cat; done
