@@ -7,13 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/v3/util/env"
-
 	log "github.com/sirupsen/logrus"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 )
 
 const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
@@ -71,7 +70,6 @@ func nodeStatusVersion(s wfv1.Nodes) (string, string, error) {
 }
 
 func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (string, error) {
-
 	marshalled, version, err := nodeStatusVersion(nodes)
 	if err != nil {
 		return "", err

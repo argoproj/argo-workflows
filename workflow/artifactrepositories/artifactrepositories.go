@@ -11,11 +11,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v3/config"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	"github.com/argoproj/argo/v3/util/retry"
-	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v3/config"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
 //go:generate mockery -name Interface

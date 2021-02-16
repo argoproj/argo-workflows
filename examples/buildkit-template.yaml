@@ -33,7 +33,7 @@ spec:
   arguments:
     parameters:
       - name: repo
-        value: https://github.com/argoproj/argo
+        value: https://github.com/argoproj/argo-workflows
       - name: branch
         value: master
       - name: path

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestRemoveDuplicates(t *testing.T) {
@@ -20,7 +20,7 @@ func TestRemoveDuplicates(t *testing.T) {
 
 // func GetFailHosts(nodes wfv1.Nodes, parent string) []string {
 func TestGetFailHosts(t *testing.T) {
-	var nodes = wfv1.Nodes{
+	nodes := wfv1.Nodes{
 		"retry_node": wfv1.NodeStatus{
 			ID:       "retry_node",
 			Phase:    wfv1.NodeFailed,

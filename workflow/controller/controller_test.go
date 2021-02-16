@@ -22,21 +22,21 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v3/config"
-	"github.com/argoproj/argo/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/scheme"
-	wfextv "github.com/argoproj/argo/v3/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/v3/test"
-	armocks "github.com/argoproj/argo/v3/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo/v3/workflow/common"
-	controllercache "github.com/argoproj/argo/v3/workflow/controller/cache"
-	"github.com/argoproj/argo/v3/workflow/controller/estimation"
-	"github.com/argoproj/argo/v3/workflow/events"
-	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
-	"github.com/argoproj/argo/v3/workflow/metrics"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
+	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo-workflows/v3/test"
+	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v3/workflow/events"
+	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 var helloWorldWf = `
@@ -227,7 +227,6 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 					SecondsAfterSuccess:    pointer.Int32Ptr(10),
 					SecondsAfterFailure:    pointer.Int32Ptr(10),
 				},
-				TTLSecondsAfterFinished: pointer.Int32Ptr(7),
 			},
 		}
 	})
@@ -367,7 +366,6 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	defer cancel()
 	workflow := unmarshalWF(testDefaultWfTTL)
 	var ten int32 = 10
-	var seven int32 = 7
 	var five int32 = 5
 	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
@@ -376,7 +374,6 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
-	assert.Equal(t, *workflow.Spec.TTLSecondsAfterFinished, seven)
 	assert.NotContains(t, workflow.Labels, "foo")
 	assert.Contains(t, workflow.Labels, "label")
 	assert.Contains(t, workflow.Annotations, "annotation")
@@ -479,6 +476,7 @@ spec:
   workflowTemplateRef:
     name: workflow-template-whalesay-template
 `
+
 const wfTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -507,8 +505,10 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
-	woc := wfOperationCtx{controller: controller,
-		wf: wf}
+	woc := wfOperationCtx{
+		controller: controller,
+		wf:         wf,
+	}
 	err := woc.setExecWorkflow()
 	assert.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)

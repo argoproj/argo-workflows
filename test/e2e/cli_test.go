@@ -14,12 +14,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type CLISuite struct {
@@ -142,7 +141,6 @@ func (s *CLISuite) TestVersion() {
 			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 			})
-
 	})
 	s.Run("Default", func() {
 		s.Need(Server)
@@ -411,7 +409,7 @@ func (s *CLISuite) TestRoot() {
 			}).
 			WaitForWorkflow(createdWorkflowName).
 			Then().
-			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			})
 	})
@@ -436,7 +434,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		}).
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
@@ -467,7 +465,7 @@ func (s *CLISuite) TestNodeSuspendResume() {
 			return wf.Status.Phase == wfv1.WorkflowFailed
 		}), "suspended node").
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			if assert.Equal(t, wfv1.WorkflowFailed, status.Phase) {
 				r := regexp.MustCompile(`child '(node-suspend-[0-9]+)' failed`)
 				res := r.FindStringSubmatch(status.Message)
@@ -733,7 +731,7 @@ func (s *CLISuite) TestWorkflowLint() {
 
 func (s *CLISuite) TestWorkflowRetry() {
 	s.Need(Offloading)
-	var retryTime corev1.Time
+	var retryTime metav1.Time
 
 	s.Given().
 		Workflow("@testdata/retry-test.yaml").
@@ -763,7 +761,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 			return wf.Status.AnyActiveSuspendNode()
 		}), "suspended node").
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")
 			innerStepsPodNode := status.Nodes.FindByDisplayName("steps-inner-step1")
 
@@ -899,7 +897,6 @@ func (s *CLISuite) TestTemplate() {
 		s.Given().RunCli([]string{"template", "get", "not-found"}, func(t *testing.T, output string, err error) {
 			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, `"not-found" not found`)
-
 			}
 		}).RunCli([]string{"template", "get", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -1067,7 +1064,6 @@ func (s *CLISuite) TestCron() {
 		s.Given().RunCli([]string{"cron", "get", "not-found"}, func(t *testing.T, output string, err error) {
 			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, `\"not-found\" not found`)
-
 			}
 		}).RunCli([]string{"cron", "get", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -1252,7 +1248,6 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"delete", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "deleted")
 			})
-
 	})
 	s.Run("ResourceTemplateTerminate", func() {
 		s.Given().
@@ -1272,7 +1267,6 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"get", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Terminate'")
 			})
-
 	})
 }
 

@@ -19,13 +19,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	"github.com/argoproj/argo/v3/util/intstr"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // Reusable k8s pod spec portions used in workflow pods
@@ -147,6 +147,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
+	if !woc.execWf.Spec.Shutdown.ShouldExecute(opts.onExitPod) {
+		// Do not create pods if we are shutting down
+		woc.markNodePhase(nodeName, wfv1.NodeSkipped, fmt.Sprintf("workflow shutdown with strategy: %s", woc.execWf.Spec.Shutdown))
+		return nil, nil
+	}
+
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
@@ -166,7 +172,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if err != nil {
 		return nil, err
 	}
-	if wfDeadline == nil || opts.onExitPod { //ignore the workflow deadline for exit handler so they still run if the deadline has passed
+	if wfDeadline == nil || opts.onExitPod { // ignore the workflow deadline for exit handler so they still run if the deadline has passed
 		activeDeadlineSeconds = tmplActiveDeadlineSeconds
 	} else {
 		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
@@ -237,10 +243,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		waitCtr, err := woc.newWaitContainer(tmpl)
-		if err != nil {
-			return nil, err
-		}
+		waitCtr := woc.newWaitContainer(tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 	// NOTE: the order of the container list is significant. kubelet will pull, create, and start
@@ -275,15 +278,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// addInitContainers, addSidecars and addOutputArtifactsVolumes should be called after all
 	// volumes have been manipulated in the main container since volumeMounts are mirrored
-	err = addInitContainers(pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
-	err = addSidecars(pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
+	addInitContainers(pod, tmpl)
+	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
+
+	for i, c := range pod.Spec.Containers {
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name}) // used to identify the container name of the process
+		pod.Spec.Containers[i] = c
+	}
 
 	// Set the container template JSON in pod annotations, which executor examines for things like
 	// artifact location/path.
@@ -346,7 +348,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 
 		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
-
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
 		}
@@ -406,7 +407,7 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	}
 	fstTmpl, err := fasttemplate.NewTemplate(string(specBytes), "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	newSpecBytes, err := common.Replace(fstTmpl, podParams, true)
 	if err != nil {
@@ -422,13 +423,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "init"}
+	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel()}
 	return *ctr
 }
 
-func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
+func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "wait"}
+	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
 	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
@@ -441,7 +442,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 			},
 		}
 		// PNS_PRIVILEGED allows you to always set privileged on for PNS, this seems to be needed for certain systems
-		// https://github.com/argoproj/argo/issues/1256
+		// https://github.com/argoproj/argo-workflows/issues/1256
 		if hasPrivilegedContainers(tmpl) || os.Getenv("PNS_PRIVILEGED") == "true" {
 			// if the main or sidecar is privileged, the wait sidecar must also run privileged,
 			// in order to SIGTERM/SIGKILL the pid
@@ -450,7 +451,11 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	case "", common.ContainerRuntimeExecutorDocker:
 		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
-	return ctr, nil
+	return ctr
+}
+
+func getExecutorLogLevel() string {
+	return log.GetLevel().String()
 }
 
 // hasPrivilegedContainers tests if the main container or sidecars is privileged
@@ -615,6 +620,16 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 
 // addMetadata applies metadata specified in the template
 func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
+	if woc.wf.Spec.PodMetadata != nil {
+		// add workflow-level pod annotations and labels
+		for k, v := range woc.wf.Spec.PodMetadata.Annotations {
+			pod.ObjectMeta.Annotations[k] = v
+		}
+		for k, v := range woc.wf.Spec.PodMetadata.Labels {
+			pod.ObjectMeta.Labels[k] = v
+		}
+	}
+
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}
@@ -1040,9 +1055,9 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 
 // addInitContainers adds all init containers to the pod spec of the step
 // Optionally volume mounts from the main container to the init containers
-func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if len(tmpl.InitContainers) == 0 {
-		return nil
+		return
 	}
 	mainCtr := findMainContainer(pod)
 	if mainCtr == nil {
@@ -1055,14 +1070,13 @@ func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 		}
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
 	}
-	return nil
 }
 
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
-func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if len(tmpl.Sidecars) == 0 {
-		return nil
+		return
 	}
 	mainCtr := findMainContainer(pod)
 	if mainCtr == nil {
@@ -1075,7 +1089,6 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-	return nil
 }
 
 // verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
@@ -1087,7 +1100,7 @@ func verifyResolvedVariables(obj interface{}) error {
 	var unresolvedErr error
 	fstTmpl, err := fasttemplate.NewTemplate(string(str), "{{", "}}")
 	if err != nil {
-		return fmt.Errorf("unable to parse argo varaible: %w", err)
+		return fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
@@ -1098,8 +1111,8 @@ func verifyResolvedVariables(obj interface{}) error {
 
 // createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod
 func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMount) {
-	var allVolumesMap = make(map[string]apiv1.Volume)
-	var uniqueKeyMap = make(map[string]bool)
+	allVolumesMap := make(map[string]apiv1.Volume)
+	uniqueKeyMap := make(map[string]bool)
 	var secretVolumes []apiv1.Volume
 	var secretVolMounts []apiv1.VolumeMount
 

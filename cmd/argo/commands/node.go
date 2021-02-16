@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
 type setOps struct {
@@ -23,11 +23,9 @@ type setOps struct {
 }
 
 func NewNodeCommand() *cobra.Command {
-	var (
-		setArgs setOps
-	)
+	var setArgs setOps
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "node ACTION WORKFLOW FLAGS",
 		Short: "perform action on a node in a workflow",
 		Example: `# Set outputs to a node within a workflow:
@@ -39,7 +37,6 @@ func NewNodeCommand() *cobra.Command {
   argo node set my-wf --message "We did it!"" --node-field-selector displayName=approve
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-
 			if len(args) < 1 {
 				cmd.HelpFunc()(cmd, args)
 			}

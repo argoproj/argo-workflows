@@ -3276,7 +3276,7 @@
       "description": "DAGTemplate is a template subtype for directed acyclic graph templates",
       "properties": {
         "failFast": {
-          "description": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo/issues/1442",
+          "description": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo_workflows/issues/1442",
           "type": "boolean"
         },
         "target": {
@@ -3862,10 +3862,6 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "Time at which this node started"
         },
-        "storedTemplateID": {
-          "description": "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
-          "type": "string"
-        },
         "synchronizationStatus": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus",
           "description": "SynchronizationStatus is the synchronization status of the node"
@@ -3884,10 +3880,6 @@
         },
         "type": {
           "description": "Type indicates type of node",
-          "type": "string"
-        },
-        "workflowTemplateName": {
-          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
           "type": "string"
         }
       },
@@ -4561,10 +4553,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key."
         },
-        "arguments": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
-          "description": "Arguments hold arguments to the template. DEPRECATED: This field is not used."
-        },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
@@ -4698,14 +4686,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization",
           "description": "Synchronization holds synchronization lock configuration for this template"
         },
-        "template": {
-          "description": "Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used.",
-          "type": "string"
-        },
-        "templateRef": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef",
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template. DEPRECATED: This field is not used."
-        },
         "timeout": {
           "description": "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
           "type": "string"
@@ -4744,10 +4724,6 @@
         "name": {
           "description": "Name is the resource name of the template.",
           "type": "string"
-        },
-        "runtimeResolution": {
-          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored",
-          "type": "boolean"
         },
         "template": {
           "description": "Template is the name of referred template in the resource.",
@@ -5304,6 +5280,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC",
           "description": "PodGC describes the strategy to use when to deleting completed pods"
         },
+        "podMetadata": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
+          "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
+        },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
           "type": "integer"
@@ -5365,10 +5345,6 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "key",
           "x-kubernetes-patch-strategy": "merge"
-        },
-        "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "type": "integer"
         },
         "ttlStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy",
@@ -5772,6 +5748,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC",
           "description": "PodGC describes the strategy to use when to deleting completed pods"
         },
+        "podMetadata": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
+          "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
+        },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
           "type": "integer"
@@ -5833,10 +5813,6 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "key",
           "x-kubernetes-patch-strategy": "merge"
-        },
-        "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "type": "integer"
         },
         "ttlStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy",
@@ -8660,10 +8636,7 @@
       "type": "string"
     },
     "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
-      "type": [
-        "string",
-        "integer"
-      ]
+      "type": "string"
     },
     "sensor.CreateSensorRequest": {
       "properties": {

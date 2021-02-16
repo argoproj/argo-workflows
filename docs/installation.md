@@ -6,13 +6,13 @@ You can choose one of three common installations:
 * **namespace install** Only execute workflows in the same namespace we install in (typically `argo`).
 * **managed namespace install**: Only execute workflows in a specific namespace ([learn more](managed-namespace.md)).
 
-Choose [a manifests from the list](https://github.com/argoproj/argo/tree/stable/manifests).
+Choose [a manifests from the list](https://github.com/argoproj/argo-workflows/tree/stable/manifests).
 
 E.g.
 
 ```sh
 kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/namespace-install.yaml 
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/namespace-install.yaml 
 ```
 
 

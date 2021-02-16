@@ -9,18 +9,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo/v3/util/cmd"
-	"github.com/argoproj/argo/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {
-	var (
-		strict bool
-	)
-	var command = &cobra.Command{
+	var strict bool
+	command := &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a file or directory of workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {

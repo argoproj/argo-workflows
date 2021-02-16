@@ -5,20 +5,17 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/pkg/errors"
-
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {
-	var (
-		strict bool
-	)
-	var command = &cobra.Command{
+	var strict bool
+	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cluster workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {

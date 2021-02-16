@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/util"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -45,8 +45,8 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		woc.operate(ctx)
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
 	})
-
 }
+
 func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
@@ -65,21 +65,20 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
-
 	})
 
 	t.Run("CheckMergingWFDefaults", func(t *testing.T) {
 		wfDefaultActiveS := int64(5)
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
-		controller.Config.WorkflowDefaults = &wfv1.Workflow{Spec: wfv1.WorkflowSpec{
-			ActiveDeadlineSeconds: &wfDefaultActiveS,
-		},
+		controller.Config.WorkflowDefaults = &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				ActiveDeadlineSeconds: &wfDefaultActiveS,
+			},
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfDefaultActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
-
 	})
 	t.Run("CheckMergingWFTandWF", func(t *testing.T) {
 		wfActiveS := int64(10)
@@ -89,9 +88,10 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		wftmpl.Spec.ActiveDeadlineSeconds = &wftActiveS
 		cancel, controller := newController(wf, wftmpl)
 		defer cancel()
-		controller.Config.WorkflowDefaults = &wfv1.Workflow{Spec: wfv1.WorkflowSpec{
-			ActiveDeadlineSeconds: &wfDefaultActiveS,
-		},
+		controller.Config.WorkflowDefaults = &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				ActiveDeadlineSeconds: &wfDefaultActiveS,
+			},
 		}
 		wf.Spec.ActiveDeadlineSeconds = &wfActiveS
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -172,6 +172,7 @@ spec:
         command: [echo]
         args: ["{{workflows.parameters.a-a}} = {{workflows.parameters.g-g}}"]
 `
+
 var wfWithParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -209,7 +210,6 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 		woc.operate(ctx)
 		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
 	})
-
 }
 
 var wftWithArtifact = `

@@ -11,10 +11,10 @@ export const Help = () => (
                 <div className='help-box'>
                     <div className='help-box__ico help-box__ico--manual' />
                     <h3>Documentation</h3>
-                    <a href='https://argoproj.github.io/argo' target='_blank' className='help-box__link'>
+                    <a href='https://argoproj.github.io/argo-workflows' target='_blank' className='help-box__link'>
                         Online Help
                     </a>
-                    <a className='help-box__link' target='_blank' href={uiUrl('/apidocs')}>
+                    <a className='help-box__link' target='_blank' href={uiUrl('apidocs')}>
                         API Docs
                     </a>
                 </div>
@@ -32,7 +32,7 @@ export const Help = () => (
                 <div className='help-box'>
                     <div className='help-box__ico help-box__ico--download' />
                     <h3>Argo CLI</h3>
-                    <a className='help-box__link' target='_blank' href='https://github.com/argoproj/argo/releases/latest'>
+                    <a className='help-box__link' target='_blank' href='https://github.com/argoproj/argo-workflows/releases/latest'>
                         Releases
                     </a>
                 </div>

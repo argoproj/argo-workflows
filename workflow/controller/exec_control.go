@@ -10,9 +10,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
@@ -48,7 +48,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		// Check if we are past the workflow deadline. If we are, and the pod is still pending
 		// then we should simply delete it and mark the pod as Failed
 		if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
-			//pods that are part of an onExit handler aren't subject to the deadline
+			// pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)

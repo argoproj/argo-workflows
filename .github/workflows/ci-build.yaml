@@ -21,7 +21,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
@@ -63,7 +63,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
@@ -77,7 +77,7 @@ jobs:
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go
-        run: make pull-build-images test-images &
+        run: make test-images &
       - name: Create Kubeconfig
         run: |
           mkdir -p ~/.kube
@@ -86,6 +86,10 @@ jobs:
           echo "- name: fake_token_user" >> ~/.kube/config
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
+      - name: Start logging
+        run: |
+          mkdir -p /tmp/log/argo-e2e
+          make logs > /tmp/log/argo-e2e/pod.log &
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
@@ -94,7 +98,6 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          mkdir -p /tmp/log/argo-e2e
           git fetch --tags
           KUBECONFIG=~/.kube/config make install PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false
           KUBECONFIG=~/.kube/config make start   PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
@@ -107,11 +110,17 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }}
       - name: Upload logs
-        if: ${{ failure() }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-argo.log
           path: /tmp/log/argo-e2e/argo.log
+      - name: Upload pod logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-pod.log
+          path: /tmp/log/argo-e2e/pod.log
 
   codegen:
     name: Codegen
@@ -124,7 +133,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
@@ -152,7 +161,7 @@ jobs:
           git fetch --tags
 
           mkdir -p /home/runner/go/src/github.com/argoproj
-          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
+          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
 
           # we use -B to force make to always make targets
           make -B codegen STATIC_FILES=false

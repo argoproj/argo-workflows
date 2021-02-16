@@ -13,10 +13,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/hydrator"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 type When struct {
@@ -165,13 +165,15 @@ func (w *When) CreateCronWorkflow() *When {
 
 type Condition func(wf *wfv1.Workflow) bool
 
-var ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
-var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
-var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
-	return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-		return node.Phase == wfv1.NodeRunning
-	})
-}
+var (
+	ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
+	ToStart       Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
+	ToBeRunning   Condition = func(wf *wfv1.Workflow) bool {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Phase == wfv1.NodeRunning
+		})
+	}
+)
 var ToBeSucceeded Condition = func(wf *wfv1.Workflow) bool { return wf.Status.Phase == wfv1.WorkflowSucceeded }
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.

@@ -109,7 +109,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo/blob/master/"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo-workflows/blob/master/"+example))
 	}
 	out += dropdownCloser
 	return out
@@ -200,8 +200,10 @@ type Set map[string]bool
 func NewDocGeneratorContext() *DocGeneratorContext {
 	return &DocGeneratorContext{
 		doneFields: make(Set),
-		queue: []string{"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
-			"io.argoproj.workflow.v1alpha1.WorkflowTemplate"},
+		queue: []string{
+			"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
+			"io.argoproj.workflow.v1alpha1.WorkflowTemplate",
+		},
 		external: []string{},
 		index:    make(map[string]Set),
 		jsonName: make(map[string]string),

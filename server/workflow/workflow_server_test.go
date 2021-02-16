@@ -16,18 +16,18 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo/v3/persist/sqldb"
-	"github.com/argoproj/argo/v3/persist/sqldb/mocks"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	v1alpha "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/v3/server/auth"
-	"github.com/argoproj/argo/v3/server/auth/types"
-	testutil "github.com/argoproj/argo/v3/test/util"
-	"github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/util/instanceid"
-	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	testutil "github.com/argoproj/argo-workflows/v3/test/util"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const unlabelled = `{
@@ -119,6 +119,7 @@ const wf1 = `
     }
 }
 `
+
 const wf2 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -181,6 +182,7 @@ const wf2 = `
     }
 }
 `
+
 const wf3 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -243,6 +245,7 @@ const wf3 = `
     }
 }
 `
+
 const wf4 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -305,6 +308,7 @@ const wf4 = `
     }
 }
 `
+
 const wf5 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -395,6 +399,7 @@ const failedWf = `
     }
 }
 `
+
 const workflow1 = `
 {
   "namespace": "default",
@@ -424,6 +429,7 @@ const workflow1 = `
   }
 }
 `
+
 const workflowtmpl = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -474,6 +480,7 @@ const workflowtmpl = `
   }
 }
 `
+
 const cronwf = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -510,6 +517,7 @@ const cronwf = `
   }
 }
 `
+
 const clusterworkflowtmpl = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -561,7 +569,6 @@ const clusterworkflowtmpl = `
 `
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
-
 	var unlabelledObj, wfObj1, wfObj2, wfObj3, wfObj4, wfObj5, failedWfObj v1alpha1.Workflow
 	var wftmpl v1alpha1.WorkflowTemplate
 	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
@@ -672,7 +679,6 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 		_, err := getWorkflow(ctx, server, "test", "unlabelled")
 		assert.Error(t, err)
 	})
-
 }
 
 func TestGetLatestWorkflow(t *testing.T) {

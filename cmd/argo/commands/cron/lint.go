@@ -9,16 +9,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {
-	var (
-		strict bool
-	)
-	var command = &cobra.Command{
+	var strict bool
+	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cron workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {

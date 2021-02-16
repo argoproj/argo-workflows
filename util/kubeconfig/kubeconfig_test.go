@@ -33,9 +33,7 @@ users:
 `
 
 func Test_BasicAuthString(t *testing.T) {
-
 	t.Run("Basic Auth", func(t *testing.T) {
-
 		restConfig, err := clientcmd.RESTConfigFromKubeConfig([]byte(config))
 		assert.NoError(t, err)
 		authString, err := GetAuthString(restConfig, "")
@@ -59,6 +57,5 @@ func Test_BasicAuthString(t *testing.T) {
 			assert.Equal(t, "admin", config.Username)
 			assert.Equal(t, "admin", config.Password)
 		}
-
 	})
 }
