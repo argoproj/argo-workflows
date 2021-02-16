@@ -595,4 +595,4 @@ parse-examples:
 
 .PHONY: checksums
 checksums:
-	for f in ./dist/argo-*.gz; do shasum -a 256 "$$f" | awk ' { print $$1 }' > "$$f".sha256 ; done
+	for f in ./dist/argo-*.gz; do openssl dgst -sha256 "$$f" | awk ' { print $$2 }' > "$$f".2.sha256 ; done
