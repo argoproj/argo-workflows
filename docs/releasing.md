@@ -25,10 +25,6 @@ Publish the images and local Git changes (disabling K3D as this is faster and mo
     
 Wait 1h to 2h.
 
-Generate the `SHA256` check sums and add them to the GitHub release:
-
-    make checksum
- 
 * [ ] Check the images were pushed successfully.
 * [ ] Check the correct versions are printed.
 * [ ] Check the executor was correctly built.
