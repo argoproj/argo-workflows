@@ -2041,6 +2041,11 @@ Note that these environment variables may be removed at any time.</p>
 <td>The requeue time for the rate limiter of the workflow queue.</td>
 </tr>
 <tr>
+<td><code>GZIP_IMPLEMENTATION</code></td>
+<td><code>string</code></td>
+<td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip".</td>
+</tr>
+<tr>
 <td><code>LEADER_ELECTION_IDENTITY</code></td>
 <td><code>string</code></td>
 <td>The ID used for workflow controllers to elect a leader.</td>
