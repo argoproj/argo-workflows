@@ -9,9 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wftemplatemocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate/mocks"
+	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var lintFileData = []byte(`
@@ -42,7 +45,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: workflow-template-submittable
+  name: foo
 spec:
   entrypoint: whalesay-template
   arguments:
@@ -84,12 +87,12 @@ func TestLintFile(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, res.Success, false)
-	assert.Equal(t, res.msg, fmt.Sprintf("%s: in object #1: lint error\n", file.Name()))
+	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")
 }
 
-func TestLintFile2(t *testing.T) {
+func TestLintMultipleKinds(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
 	assert.NoError(t, err)
 	err = ioutil.WriteFile(file.Name(), lintFileData, 0644)
@@ -115,7 +118,8 @@ func TestLintFile2(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, res.Success, false)
-	assert.Equal(t, res.msg, fmt.Sprintf("%s: in object #1: lint error\n%s: in object #2: lint error\n", file.Name(), file.Name()))
+	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
+	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "foo" (WorkflowTemplate): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
 }
@@ -149,7 +153,8 @@ func TestLintStdin(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, res.Success, false)
-	assert.Equal(t, res.msg, "stdin: in object #1: lint error\nstdin: in object #2: lint error\n")
+	assert.Contains(t, res.msg, `stdin: in "steps-" (Workflow): lint error`)
+	assert.Contains(t, res.msg, `stdin: in "foo" (WorkflowTemplate): lint error`)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
 }
@@ -183,7 +188,6 @@ func TestGetFormatter(t *testing.T) {
 	}
 
 	for tname, test := range tests {
-
 		t.Run(tname, func(t *testing.T) {
 			var (
 				fmtr Formatter
@@ -203,6 +207,48 @@ func TestGetFormatter(t *testing.T) {
 			r, err := Lint(context.Background(), &LintOptions{Formatter: fmtr})
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedOutput, r.msg)
+		})
+	}
+}
+
+func TestGetObjectName(t *testing.T) {
+	tests := map[string]struct {
+		kind     string
+		obj      metav1.Object
+		objIndex int
+		expected string
+	}{
+		"WithName": {
+			kind: wf.WorkflowTemplateKind,
+			obj: &v1alpha1.WorkflowTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+			objIndex: 0,
+			expected: `"foo" (WorkflowTemplate)`,
+		},
+		"WithGenerateName": {
+			kind: wf.WorkflowKind,
+			obj: &v1alpha1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "foo-",
+				},
+			},
+			objIndex: 0,
+			expected: `"foo-" (Workflow)`,
+		},
+		"NoName": {
+			kind:     wf.CronWorkflowKind,
+			obj:      &v1alpha1.CronWorkflow{},
+			objIndex: 2,
+			expected: `"object #3" (CronWorkflow)`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, test.expected, getObjectName(test.kind, test.obj, test.objIndex))
 		})
 	}
 }

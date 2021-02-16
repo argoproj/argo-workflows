@@ -16,22 +16,24 @@ import (
 
 var yamlSeparator = regexp.MustCompile(`\n---`)
 
-func ParseObjects(body []byte, strict bool) ([]metav1.Object, error) {
+type ParseResult struct {
+	Object metav1.Object
+	Err    error
+}
+
+func ParseObjects(body []byte, strict bool) []ParseResult {
+	res := []ParseResult{}
 	if jsonpkg.IsJSON(body) {
 		un := &unstructured.Unstructured{}
 		err := jsonpkg.Unmarshal(body, un)
 		if un.GetKind() != "" && err != nil {
 			// only return an error if this is a kubernetes object, otherwise, ignore
-			return nil, err
+			return append(res, ParseResult{nil, err})
 		}
 		v, err := toWorkflowTypeJSON(body, un.GetKind(), strict)
-		if err != nil {
-			return nil, err
-		}
-		return []metav1.Object{v}, nil
+		return append(res, ParseResult{v, err})
 	}
 
-	manifests := make([]metav1.Object, 0)
 	for _, text := range yamlSeparator.Split(string(body), -1) {
 		if strings.TrimSpace(text) == "" {
 			continue
@@ -40,15 +42,13 @@ func ParseObjects(body []byte, strict bool) ([]metav1.Object, error) {
 		err := yaml.Unmarshal([]byte(text), un)
 		if un.GetKind() != "" && err != nil {
 			// only return an error if this is a kubernetes object, otherwise, ignore
-			return nil, err
+			res = append(res, ParseResult{nil, err})
+			continue
 		}
 		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
-		if err != nil {
-			return nil, err
-		}
-		manifests = append(manifests, v)
+		res = append(res, ParseResult{v, err})
 	}
-	return manifests, nil
+	return res
 }
 
 func objectForKind(kind string) metav1.Object {
@@ -69,14 +69,19 @@ func objectForKind(kind string) metav1.Object {
 }
 
 func toWorkflowTypeYAML(body []byte, kind string, strict bool) (metav1.Object, error) {
-	var opts []yaml.JSONOpt
+	var json []byte
+	var err error
 
-	v := objectForKind(kind)
 	if strict {
-		opts = append(opts, yaml.DisallowUnknownFields)
+		json, err = yaml.YAMLToJSONStrict(body)
+	} else {
+		json, err = yaml.YAMLToJSON(body)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	return v, yaml.Unmarshal(body, v, opts...)
+	return toWorkflowTypeJSON(json, kind, strict)
 }
 
 func toWorkflowTypeJSON(body []byte, kind string, strict bool) (metav1.Object, error) {
@@ -90,16 +95,16 @@ func toWorkflowTypeJSON(body []byte, kind string, strict bool) (metav1.Object, e
 
 // SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects
 func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
-	objects, err := ParseObjects(body, strict)
-	if err != nil {
-		return nil, err
-	}
 	manifests := make([]wfv1.Workflow, 0)
-	for _, obj := range objects {
+	for _, res := range ParseObjects(body, strict) {
+		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.Workflow)
 		if !ok {
 			log.Warnf("%s is not of kind Workflow. Ignoring...", obj.GetName())
 			continue
+		}
+		if err != nil { // only returns parsing errors for workflow types
+			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}
@@ -108,16 +113,16 @@ func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 
 // SplitWorkflowTemplateYAMLFile is a helper to split a body into multiple workflow template objects
 func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
-	objects, err := ParseObjects(body, strict)
-	if err != nil {
-		return nil, err
-	}
 	manifests := make([]wfv1.WorkflowTemplate, 0)
-	for _, obj := range objects {
+	for _, res := range ParseObjects(body, strict) {
+		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.WorkflowTemplate)
 		if !ok {
 			log.Warnf("%s is not of kind WorkflowTemplate. Ignoring...", obj.GetName())
 			continue
+		}
+		if err != nil { // only returns parsing errors for template types
+			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}
@@ -126,16 +131,16 @@ func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTem
 
 // SplitCronWorkflowYAMLFile is a helper to split a body into multiple workflow template objects
 func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, error) {
-	objects, err := ParseObjects(body, strict)
-	if err != nil {
-		return nil, err
-	}
 	manifests := make([]wfv1.CronWorkflow, 0)
-	for _, obj := range objects {
+	for _, res := range ParseObjects(body, strict) {
+		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.CronWorkflow)
 		if !ok {
 			log.Warnf("%s is not of kind CronWorkflow. Ignoring...", obj.GetName())
 			continue
+		}
+		if err != nil { // only returns parsing errors for cron types
+			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}
@@ -144,16 +149,16 @@ func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, e
 
 // SplitClusterWorkflowTemplateYAMLFile is a helper to split a body into multiple cluster workflow template objects
 func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
-	objects, err := ParseObjects(body, strict)
-	if err != nil {
-		return nil, err
-	}
 	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
-	for _, obj := range objects {
+	for _, res := range ParseObjects(body, strict) {
+		obj, err := res.Object, res.Err
 		v, ok := obj.(*wfv1.ClusterWorkflowTemplate)
 		if !ok {
 			log.Warnf("%s is not of kind ClusterWorkflowTemplate. Ignoring...", obj.GetName())
 			continue
+		}
+		if err != nil { // only returns parsing errors for cwft types
+			return nil, err
 		}
 		manifests = append(manifests, *v)
 	}

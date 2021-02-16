@@ -704,7 +704,7 @@ func (s *CLISuite) TestWorkflowLint() {
 		s.Given().
 			RunCli([]string{"lint", "--all-kinds", "testdata/malformed/malformed-workflowtemplate-2.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "in object #1")
+					assert.Contains(t, output, "spec.templates[0].name is required")
 					assert.Contains(t, output, "1 linting errors found!")
 				}
 			})
@@ -721,7 +721,7 @@ func (s *CLISuite) TestWorkflowLint() {
 		s.Given().
 			RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "in object #1")
+					assert.Contains(t, output, "1 linting errors found!")
 					assert.Contains(t, output, "templates.abc.tasks.a templates.whalesay inputs.parameters.message was not supplied")
 				}
 			})
@@ -883,6 +883,7 @@ func (s *CLISuite) TestTemplate() {
 		s.Given().RunCli([]string{"template", "lint", "testdata/workflow-templates"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "invalid-workflowtemplate.yaml")
+			assert.Contains(t, output, `unknown field "entrypoints"`)
 			assert.Contains(t, output, "linting errors found!")
 		})
 	})
@@ -1009,7 +1010,9 @@ func (s *CLISuite) TestCron() {
 	s.Run("AllCron", func() {
 		s.Given().
 			RunCli([]string{"cron", "lint", "cron"}, func(t *testing.T, output string, err error) {
-				assert.NoError(t, err)
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "no linting errors found!")
+				}
 			})
 	})
 

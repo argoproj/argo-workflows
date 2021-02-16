@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterworkflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -89,6 +91,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 			var r io.Reader
 			switch {
 			case path == "-":
+				path = "stdin"
 				r = os.Stdin
 			case err != nil:
 				return err
@@ -124,77 +127,84 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 }
 
 func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *LintResult {
-	if src == "-" {
-		src = "stdin"
-	}
 	res := &LintResult{
 		File: src,
 		Errs: []error{},
 	}
-	objects, err := common.ParseObjects(data, opts.Strict)
-	if err != nil {
-		res.Linted = true
-		res.Errs = append(res.Errs, fmt.Errorf("failed to parse objects from %s: %s", src, err))
-		return res
-	}
 
-	for i, obj := range objects {
-		var err error // shadow above
+	for i, pr := range common.ParseObjects(data, opts.Strict) {
+		obj, err := pr.Object, pr.Err
+		if obj == nil {
+			continue // could not parse to kubernetes object
+		}
 		// we should prefer the object's namespace
 		namespace := obj.GetNamespace()
 		if namespace == "" {
 			namespace = opts.DefaultNamespace
 		}
+		objName := ""
 
 		switch v := obj.(type) {
 		case *wfv1.ClusterWorkflowTemplate:
+			objName = getObjectName(wf.ClusterWorkflowTemplateKind, v, i)
 			if opts.ServiceClients.ClusterWorkflowTemplateClient == nil {
-				log.Debug("ignoring kind: ClusterWorkflowTemplate, not in lint options")
+				log.Debugf("ignoring %s, not in lint options", objName)
 				continue
 			}
 			res.Linted = true
-			_, err = opts.ServiceClients.ClusterWorkflowTemplateClient.LintClusterWorkflowTemplate(
-				ctx,
-				&clusterworkflowtemplatepkg.ClusterWorkflowTemplateLintRequest{Template: v},
-			)
+			if err == nil {
+				_, err = opts.ServiceClients.ClusterWorkflowTemplateClient.LintClusterWorkflowTemplate(
+					ctx,
+					&clusterworkflowtemplatepkg.ClusterWorkflowTemplateLintRequest{Template: v},
+				)
+			}
 		case *wfv1.CronWorkflow:
+			objName = getObjectName(wf.CronWorkflowKind, v, i)
 			if opts.ServiceClients.CronWorkflowsClient == nil {
-				log.Debug("ignoring kind: CronWorkflow, not in lint options kinds")
+				log.Debugf("ignoring %s, not in lint options kinds", objName)
 				continue
 			}
 			res.Linted = true
-			_, err = opts.ServiceClients.CronWorkflowsClient.LintCronWorkflow(
-				ctx,
-				&cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: v},
-			)
+			if err == nil {
+				_, err = opts.ServiceClients.CronWorkflowsClient.LintCronWorkflow(
+					ctx,
+					&cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: v},
+				)
+			}
 		case *wfv1.Workflow:
+			objName = getObjectName(wf.WorkflowKind, v, i)
 			if opts.ServiceClients.WorkflowsClient == nil {
-				log.Debug("ignoring kind: Workflow, not in lint options kinds")
+				log.Debugf("ignoring %s, not in lint options kinds", objName)
 				continue
 			}
 			res.Linted = true
-			_, err = opts.ServiceClients.WorkflowsClient.LintWorkflow(
-				ctx,
-				&workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: v},
-			)
+			if err == nil {
+				_, err = opts.ServiceClients.WorkflowsClient.LintWorkflow(
+					ctx,
+					&workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: v},
+				)
+			}
 		case *wfv1.WorkflowEventBinding:
 			// noop
 		case *wfv1.WorkflowTemplate:
+			objName = getObjectName(wf.WorkflowTemplateKind, v, i)
 			if opts.ServiceClients.WorkflowTemplatesClient == nil {
-				log.Debug("ignoring kind: WorkflowTemplate, not in lint options kinds")
+				log.Debugf("ignoring %s, not in lint options kinds", objName)
 				continue
 			}
 			res.Linted = true
-			_, err = opts.ServiceClients.WorkflowTemplatesClient.LintWorkflowTemplate(
-				ctx,
-				&workflowtemplatepkg.WorkflowTemplateLintRequest{Namespace: namespace, Template: v},
-			)
+			if err == nil {
+				_, err = opts.ServiceClients.WorkflowTemplatesClient.LintWorkflowTemplate(
+					ctx,
+					&workflowtemplatepkg.WorkflowTemplateLintRequest{Namespace: namespace, Template: v},
+				)
+			}
 		default:
 			// silently ignore unknown kinds
 		}
 
 		if err != nil {
-			res.Errs = append(res.Errs, fmt.Errorf("in object #%d: %s", i+1, err))
+			res.Errs = append(res.Errs, fmt.Errorf("in %s: %w", objName, err))
 		}
 	}
 
@@ -235,4 +245,18 @@ func (l *LintResults) evaluate() *LintResults {
 	l.msg = fmtr.Format(l)
 
 	return l
+}
+
+func getObjectName(kind string, obj metav1.Object, objIndex int) string {
+	name := ""
+	switch {
+	case obj.GetName() != "":
+		name = obj.GetName()
+	case obj.GetGenerateName() != "":
+		name = obj.GetGenerateName()
+	default:
+		name = fmt.Sprintf("object #%d", objIndex+1)
+	}
+
+	return fmt.Sprintf(`"%s" (%s)`, name, kind)
 }
