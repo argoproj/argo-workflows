@@ -73,28 +73,16 @@ func DecodeDecompressString(content string) (string, error) {
 	return string(dBuf), nil
 }
 
-type GZipWriter interface {
-	Write(p []byte) (int, error)
-	Close() error
-}
-
-type GZipReader interface {
-	Read(p []byte) (int, error)
-	Close() error
-}
-
 // CompressContent will compress the byte array using zip writer
 func CompressContent(content []byte) []byte {
 	var buf bytes.Buffer
-	var gzipWriter GZipWriter
+	var gzipWriter io.WriteCloser
 	switch gzipImpl {
-	case PGZIP:
-		gzipWriter = pgzip.NewWriter(&buf)
 	case GZIP:
 		gzipWriter = gzip.NewWriter(&buf)
 	default:
-		log.Warnf("%s implementation for compression is not supported. Fallback to PGZip.", gzipImpl)
-		gzipWriter = gzip.NewWriter(&buf)
+		log.Infof("%s implementation for compression is not supported. Fallback to PGZip.", gzipImpl)
+		gzipWriter = pgzip.NewWriter(&buf)
 	}
 
 	_, err := gzipWriter.Write(content)
@@ -108,16 +96,18 @@ func CompressContent(content []byte) []byte {
 // DecompressContent will return the uncompressed content
 func DecompressContent(content []byte) ([]byte, error) {
 	buf := bytes.NewReader(content)
-
-	var gzipReader GZipReader
+	var err error
+	var gzipReader io.ReadCloser
 	switch gzipImpl {
-	case PGZIP:
-		gzipReader, _ = pgzip.NewReader(buf)
 	case GZIP:
-		gzipReader, _ = gzip.NewReader(buf)
+		gzipReader, err = gzip.NewReader(buf)
 	default:
-		log.Warnf("%s implementation for decompression is not supported. Fallback to PGZip.", gzipImpl)
-		gzipReader, _ = gzip.NewReader(buf)
+		log.Infof("%s implementation for decompression is not supported. Fallback to PGZip.", gzipImpl)
+		gzipReader, err = pgzip.NewReader(buf)
+	}
+	if err != nil {
+		log.Warnf("Error in decompressing: %v", err)
+		return nil, err
 	}
 	defer close(gzipReader)
 	return ioutil.ReadAll(gzipReader)
