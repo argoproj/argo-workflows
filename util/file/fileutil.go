@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -81,7 +82,6 @@ func CompressContent(content []byte) []byte {
 	case GZIP:
 		gzipWriter = gzip.NewWriter(&buf)
 	default:
-		log.Infof("%s implementation for compression is not supported. Fallback to PGZip.", gzipImpl)
 		gzipWriter = pgzip.NewWriter(&buf)
 	}
 
@@ -102,12 +102,10 @@ func DecompressContent(content []byte) ([]byte, error) {
 	case GZIP:
 		gzipReader, err = gzip.NewReader(buf)
 	default:
-		log.Infof("%s implementation for decompression is not supported. Fallback to PGZip.", gzipImpl)
 		gzipReader, err = pgzip.NewReader(buf)
 	}
 	if err != nil {
-		log.Warnf("Error in decompressing: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
 	defer close(gzipReader)
 	return ioutil.ReadAll(gzipReader)
