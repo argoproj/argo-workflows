@@ -2,7 +2,7 @@ module github.com/argoproj/argo-workflows/v3
 
 go 1.15
 
-replace github.com/argoproj/pkg v0.3.0 => ../pkg
+replace github.com/argoproj/pkg v0.3.0 => ./argoproj-pkg
 
 require (
 	bou.ke/staticfiles v0.0.0-20210106104248-dd04075d4104

@@ -29,11 +29,12 @@ WORKDIR /tmp
 
 # https://blog.container-solutions.com/faster-builds-in-docker-with-go-1-11
 WORKDIR /go/src/github.com/argoproj/argo-workflows
-COPY go.mod .
-COPY go.sum .
+COPY . .
+#COPY go.mod .
+#COPY go.sum .
 RUN go mod download
 
-COPY . .
+#COPY . .
 
 ####################################################################################################
 
