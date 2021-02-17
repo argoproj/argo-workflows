@@ -100,8 +100,6 @@ func (s *FunctionalSuite) TestWorkflowTTL() {
 		Workflow(`
 metadata:
   generateName: workflow-ttl-
-  labels:
-    argo-e2e: true
 spec:
   ttlStrategy:
     secondsAfterCompletion: 0
@@ -141,8 +139,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: continue-on-fail
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
@@ -198,8 +194,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: continue-on-failed-dag
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
@@ -403,9 +397,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pending-retry-workflow-
-  labels:
-    argo-e2e: true
+  generateName: pending-retry-workflow-    
 spec:
   entrypoint: dag
   templates:
@@ -449,8 +441,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: pending-retry-workflow-with-retry-strategy-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: dag
   templates:
@@ -573,8 +563,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: param-ads
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   arguments:
@@ -610,8 +598,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: param-limit
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   arguments:
@@ -649,8 +635,6 @@ func (s *FunctionalSuite) TestInvalidCommand() {
 		Workflow(`
 metadata:
   generateName: invalid-command-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: main
   templates:
@@ -698,8 +682,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: steps-tmpl-timeout
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: hello-hello-hello
   templates:
@@ -741,8 +723,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: steps-tmpl-timeout
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: hello-hello-hello
   templates:
@@ -788,8 +768,6 @@ func (s *FunctionalSuite) TestExitCodePNSSleep() {
 kind: Workflow
 metadata:
   name: cond
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: conditional-example
   templates:
@@ -832,8 +810,6 @@ func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
 kind: Workflow
 metadata:
   name: basic
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: main
   templates:

@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: k8s-patch-
-  labels:
-    argo-e2e: "true"
 spec:
   entrypoint: patch-pod
   templates:

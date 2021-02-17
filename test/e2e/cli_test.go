@@ -1361,8 +1361,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: suspend-template
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: suspend
   templates:

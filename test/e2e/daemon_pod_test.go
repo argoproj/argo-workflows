@@ -23,8 +23,6 @@ func (s *DaemonPodSuite) TestWorkflowCompletesIfContainsDaemonPod() {
 kind: Workflow
 metadata:
   generateName: whalesay-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:

@@ -113,8 +113,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: retry-backoff-2
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: retry-backoff
   templates:

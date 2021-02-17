@@ -3,8 +3,6 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
   namespace: default
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"

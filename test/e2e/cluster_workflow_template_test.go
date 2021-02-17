@@ -47,8 +47,6 @@ kind: Workflow
 metadata:
   name: cwft-wf
   namespace: argo
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:

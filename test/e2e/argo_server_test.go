@@ -120,8 +120,6 @@ func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
 		WorkflowTemplate(`
 metadata:
   name: github-webhook
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: main
   workflowMetadata:
@@ -135,8 +133,6 @@ spec:
 		WorkflowEventBinding(`
 metadata:
   name: github-webhook
-  labels:
-    argo-e2e: true
 spec:
   event:
     selector: metadata["x-github-event"] == ["push"]
@@ -168,8 +164,6 @@ func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromEvent() {
 		WorkflowTemplate(`
 metadata:
   name: event-consumer
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: main
   workflowMetadata:
@@ -203,8 +197,6 @@ spec:
 		WorkflowEventBinding(`
 metadata:
   name: event-consumer
-  labels:
-    argo-e2e: true
 spec:
   event:
     selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
@@ -240,8 +232,6 @@ func (s *ArgoServerSuite) TestSubmitClusterWorkflowTemplateFromEvent() {
 		ClusterWorkflowTemplate(`
 metadata:
   name: event-consumer
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: main
   workflowMetadata:
@@ -255,8 +245,6 @@ spec:
 		WorkflowEventBinding(`
 metadata:
   name: event-consumer
-  labels:
-    argo-e2e: true
 spec:
   event:
     selector: true
@@ -287,8 +275,6 @@ func (s *ArgoServerSuite) TestEventOnMalformedWorkflowEventBinding() {
 		WorkflowEventBinding(`
 metadata:
   name: malformed
-  labels:
-    argo-e2e: true
 `).
 		When().
 		CreateWorkflowEventBinding().
@@ -957,8 +943,6 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -1193,7 +1177,6 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 metadata:
   name: archie
   labels:
-    argo-e2e: true
     foo: 1
 spec:
   entrypoint: run-archie
@@ -1213,7 +1196,6 @@ spec:
 metadata:
   name: betty
   labels:
-    argo-e2e: true
     foo: 2
 spec:
   entrypoint: run-betty

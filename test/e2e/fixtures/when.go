@@ -249,6 +249,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
 				w.hydrateWorkflow(wf)
+				printWorkflow(wf)
 				if condition(wf) {
 					println("Condition met after", time.Since(start).Truncate(time.Second).String())
 					w.wf = wf
