@@ -126,26 +126,30 @@ func (c *cronWorkflowServiceServer) WatchCronWorkflows(req *cronworkflowpkg.Watc
 	defer watch.Stop()
 
 	log.Debug("Piping cron workflow events to channel")
-	defer log.Debug("Result channel done")
+	defer log.Debug("cron workflow result channel done")
 
 	for {
 		select {
 		case <-ctx.Done():
+			log.Debug("cron workflow result channel done DONE")
 			return nil
 		case event, open := <-watch.ResultChan():
 			if !open {
+				log.Debug("cron workflow result channel done EOF")
 				return io.EOF
 			}
-			log.Debug("Received cron workflow event")
+			log.Debug("Received cron workflow event: %+v", event)
 			cwf, ok := event.Object.(*v1alpha1.CronWorkflow)
 			if !ok {
+				log.Debug("cron workflow result channel done !OK")
 				// object is probably metav1.Status, `FromObject` can deal with anything
 				return errors.FromObject(event.Object)
 			}
 			logCtx := log.WithFields(log.Fields{"cron workflow": cwf.Name, "type": event.Type})
-			logCtx.Debug("Sending cron workflow event")
+			logCtx.Debugf("Sending cron workflow event: %+v", cwf)
 			err = cwfs.Send(&cronworkflowpkg.CronWorkflowWatchEvent{Type: string(event.Type), Object: cwf})
 			if err != nil {
+				log.Debugf("cron workflow result channel done ERR: %s", err)
 				return err
 			}
 		}
