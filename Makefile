@@ -219,6 +219,14 @@ dist/controller.image: $(CONTROLLER_PKGS)
 	$(call docker_build,workflow-controller)
 	touch dist/controller.image
 
+# jsonrpc-plugin
+
+.PHONY: jsonrpc-plugin-image
+jsonrpc-plugin-image: dist/dist/jsonrpc-plugin.image
+dist/jsonrpc-plugin.image: $(shell find test/e2e/images/jsonrpc-plugin -type f)
+	cd test/e2e/images/jsonrpc-plugin && $(MAKE)
+	touch dist/jsonrpc-plugin.image
+
 # argoexec
 
 dist/argoexec: $(ARGOEXEC_PKGS)
@@ -419,9 +427,9 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: start
 ifeq ($(RUN_MODE),kubernetes)
-start: controller-image cli-image install executor-image
+start: jsonrpc-plugin-image controller-image cli-image install executor-image
 else
-start: install controller cli executor-image $(GOPATH)/bin/goreman
+start: install controller cli jsonrpc-plugin-image executor-image $(GOPATH)/bin/goreman
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 ifeq ($(RUN_MODE),kubernetes)
