@@ -3,8 +3,9 @@ package apiclient
 import (
 	"context"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	"google.golang.org/grpc/metadata"
+
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
 type watchIntermediary struct {
