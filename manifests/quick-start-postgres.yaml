@@ -655,6 +655,11 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
+  plugins: |
+    - package: httptemplate
+    - package: jsonrpc
+      config:
+        host: localhost:12345
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -718,6 +723,20 @@ spec:
     targetPort: 2746
   selector:
     app: argo-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jsonrpc-plugin
+  name: jsonrpc-plugin
+spec:
+  ports:
+  - port: 12345
+    protocol: TCP
+    targetPort: 12345
+  selector:
+    app: jsonrpc-plugin
 ---
 apiVersion: v1
 kind: Service
@@ -808,6 +827,28 @@ spec:
       volumes:
       - emptyDir: {}
         name: tmp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jsonrpc-plugin
+  name: jsonrpc-plugin
+spec:
+  selector:
+    matchLabels:
+      app: jsonrpc-plugin
+  template:
+    metadata:
+      labels:
+        app: jsonrpc-plugin
+    spec:
+      containers:
+      - image: argoproj/jsonrpc-plugin:latest
+        imagePullPolicy: Never
+        name: main
+        ports:
+        - containerPort: 12345
 ---
 apiVersion: apps/v1
 kind: Deployment
