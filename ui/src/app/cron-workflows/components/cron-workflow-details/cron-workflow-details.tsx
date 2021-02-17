@@ -8,6 +8,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
+import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {CronWorkflowEditor} from '../cron-workflow-editor';
@@ -42,12 +43,22 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     );
 
     useEffect(() => {
-        services.cronWorkflows
-            .get(name, namespace)
-            .then(setCronWorkflow)
-            .then(() => setEdited(false))
-            .then(() => setError(null))
-            .catch(setError);
+        const retryWatch = new RetryWatch<CronWorkflow>(
+            () => services.cronWorkflows.watch({name, namespace}),
+            () => setError(null),
+            e => {
+                if (e.type === 'DELETED') {
+                    setError(new Error('CronWorkflow deleted'));
+                } else {
+                    setCronWorkflow(e.object);
+                    setEdited(false);
+                    setError(null);
+                }
+            },
+            setError
+        );
+        retryWatch.start();
+        return () => retryWatch.stop();
     }, [namespace, name]);
 
     useEffect(() => setEdited(true), [cronWorkflow]);

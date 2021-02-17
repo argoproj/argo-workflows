@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"k8s.io/apimachinery/pkg/api/errors"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -104,6 +107,49 @@ func (c *cronWorkflowServiceServer) ResumeCronWorkflow(ctx context.Context, req 
 
 func (c *cronWorkflowServiceServer) SuspendCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowSuspendRequest) (*v1alpha1.CronWorkflow, error) {
 	return setCronWorkflowSuspend(ctx, true, req.Namespace, req.Name)
+}
+
+
+func (c *cronWorkflowServiceServer) WatchCronWorkflows(req *cronworkflowpkg.WatchCronWorkflowsRequest, cwfs cronworkflowpkg.CronWorkflowService_WatchCronWorkflowsServer) error {
+	ctx := cwfs.Context()
+	wfClient := auth.GetWfClient(ctx)
+	options := &metav1.ListOptions{}
+	if req.ListOptions != nil {
+		options = req.ListOptions
+	}
+	c.instanceIDService.With(options)
+	cwfIf := wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace)
+	watch, err := cwfIf.Watch(ctx, *options)
+	if err != nil {
+		return err
+	}
+	defer watch.Stop()
+
+	log.Debug("Piping cron workflow events to channel")
+	defer log.Debug("Result channel done")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case event, open := <-watch.ResultChan():
+			if !open {
+				return io.EOF
+			}
+			log.Debug("Received cron workflow event")
+			cwf, ok := event.Object.(*v1alpha1.CronWorkflow)
+			if !ok {
+				// object is probably metav1.Status, `FromObject` can deal with anything
+				return errors.FromObject(event.Object)
+			}
+			logCtx := log.WithFields(log.Fields{"cron workflow": cwf.Name, "type": event.Type})
+			logCtx.Debug("Sending cron workflow event")
+			err = cwfs.Send(&cronworkflowpkg.CronWorkflowWatchEvent{Type: string(event.Type), Object: cwf})
+			if err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func setCronWorkflowSuspend(ctx context.Context, setTo bool, namespace, name string) (*v1alpha1.CronWorkflow, error) {

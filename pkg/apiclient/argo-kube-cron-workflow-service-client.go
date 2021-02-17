@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"io"
 
 	"google.golang.org/grpc"
 
@@ -45,4 +46,18 @@ func (c *argoKubeCronWorkflowServiceClient) ResumeCronWorkflow(ctx context.Conte
 
 func (c *argoKubeCronWorkflowServiceClient) SuspendCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowSuspendRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
 	return c.delegate.SuspendCronWorkflow(ctx, req)
+}
+
+func (c *argoKubeCronWorkflowServiceClient) WatchCronWorkflows(ctx context.Context, req *cronworkflowpkg.WatchCronWorkflowsRequest, opts ...grpc.CallOption) (cronworkflowpkg.CronWorkflowService_WatchCronWorkflowsClient, error) {
+	intermediary := newCronWorkflowWatchIntermediary(ctx)
+	go func() {
+		defer intermediary.cancel()
+		err := c.delegate.WatchCronWorkflows(req, intermediary)
+		if err != nil {
+			intermediary.error <- err
+		} else {
+			intermediary.error <- io.EOF
+		}
+	}()
+	return intermediary, nil
 }

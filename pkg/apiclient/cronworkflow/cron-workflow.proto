@@ -55,6 +55,18 @@ message CronWorkflowResumeRequest {
     string namespace = 2;
 }
 
+message WatchCronWorkflowsRequest {
+    string namespace = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+}
+
+message CronWorkflowWatchEvent {
+    // the type of change
+    string type = 1;
+    // the cron workflow
+    github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.CronWorkflow object = 2;
+}
+
 service CronWorkflowService {
     rpc LintCronWorkflow (LintCronWorkflowRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.CronWorkflow) {
         option (google.api.http) = {
@@ -100,5 +112,9 @@ service CronWorkflowService {
 			put: "/api/v1/cron-workflows/{namespace}/{name}/suspend"
 			body: "*"
 		};
+    }
+
+    rpc WatchCronWorkflows (WatchCronWorkflowsRequest) returns (stream CronWorkflowWatchEvent) {
+        option (google.api.http).get = "/api/v1/cron-workflow-events/{namespace}";
     }
 }

@@ -50,3 +50,11 @@ func (h CronWorkflowServiceClient) DeleteCronWorkflow(_ context.Context, in *cro
 	out := &cronworkflowpkg.CronWorkflowDeletedResponse{}
 	return out, h.Delete(in, out, "/api/v1/cron-workflows/{namespace}/{name}")
 }
+
+func (h CronWorkflowServiceClient) WatchCronWorkflows(ctx context.Context, in *cronworkflowpkg.WatchCronWorkflowsRequest, opts ...grpc.CallOption) (cronworkflowpkg.CronWorkflowService_WatchCronWorkflowsClient, error) {
+	reader, err := h.EventStreamReader(in, "/api/v1/cron-workflow-events/{namespace}")
+	if err != nil {
+		return nil, err
+	}
+	return watchCronWorkflowsClient{serverSentEventsClient{ctx, reader}}, nil
+}

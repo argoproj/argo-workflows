@@ -55,3 +55,8 @@ func (c *errorTranslatingCronWorkflowServiceClient) SuspendCronWorkflow(ctx cont
 	workflow, err := c.delegate.SuspendCronWorkflow(ctx, req)
 	return workflow, grpcutil.TranslateError(err)
 }
+
+func (c *errorTranslatingCronWorkflowServiceClient) WatchCronWorkflows(ctx context.Context, req *cronworkflowpkg.WatchCronWorkflowsRequest, opts ...grpc.CallOption) (cronworkflowpkg.CronWorkflowService_WatchCronWorkflowsClient, error) {
+	workflow, err := c.delegate.WatchCronWorkflows(ctx, req)
+	return workflow, grpcutil.TranslateError(err)
+}

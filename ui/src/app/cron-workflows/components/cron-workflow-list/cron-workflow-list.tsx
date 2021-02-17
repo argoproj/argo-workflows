@@ -2,6 +2,7 @@ import {Page, SlidingPanel, Ticker} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
+import {CronWorkflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -14,6 +15,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {getNextScheduledTime} from '../../../shared/cron';
 import {Footnote} from '../../../shared/footnote';
+import {ListWatch, sortByYouth} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {CronWorkflowCreator} from '../cron-workflow-creator';
@@ -43,6 +45,8 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     private set sidePanel(sidePanel) {
         this.setQueryParams({sidePanel});
     }
+
+    private listWatch: ListWatch<CronWorkflow>;
 
     constructor(props: any) {
         super(props);
@@ -94,10 +98,31 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private fetchCronWorkflows(namespace: string): void {
-        services.cronWorkflows
-            .list(namespace)
-            .then(cronWorkflows => this.setState({error: null, namespace, cronWorkflows}, this.saveHistory))
-            .catch(error => this.setState({error}));
+        if (this.listWatch) {
+            this.listWatch.stop();
+        }
+        this.listWatch = new ListWatch(
+            () => services.cronWorkflows.list(namespace),
+            (resourceVersion: string) => services.cronWorkflows.watchFields({namespace, resourceVersion}),
+            metadata =>
+                this.setState(
+                    {
+                        error: null,
+                        namespace,
+                        cronWorkflows: []
+                    },
+                    this.saveHistory
+                ),
+            () => this.setState({error: null}),
+            cronWorkflows => this.setState({cronWorkflows}),
+            error => console.log(error),
+            sortByYouth
+        );
+        this.listWatch.start();
+        // services.cronWorkflows
+        //     .list(namespace)
+        //     .then(cronWorkflows => this.setState({error: null, namespace, cronWorkflows}, this.saveHistory))
+        //     .catch(error => this.setState({error}));
     }
 
     private renderCronWorkflows() {
