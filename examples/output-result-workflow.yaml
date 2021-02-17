@@ -7,8 +7,8 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/verify.py: |
-      assert status["phase"] = "Succeeded"
-      assert nodes["a"]["phase"] = "Succeeded"
+      assert status["phase"] == "Succeeded"
+      assert nodes["a"]["phase"] == "Succeeded"
       assert nodes["a"]["outputs"]["exitCode"] == "0"
       assert nodes["a"]["outputs"]["result"] == "foo"
 spec:

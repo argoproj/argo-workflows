@@ -124,7 +124,7 @@ spec:
   entrypoint: main
   workflowMetadata:
     labels:
-      workflows.argoproj.io/test: true
+      workflows.argoproj.io/test: "true"
   templates:
     - name: main
       container:
@@ -168,7 +168,7 @@ spec:
   entrypoint: main
   workflowMetadata:
     labels:
-      workflows.argoproj.io/test: true
+      workflows.argoproj.io/test: "true"
   arguments:
     parameters:
       - name: salutation
@@ -199,7 +199,7 @@ metadata:
   name: event-consumer
 spec:
   event:
-    selector: payload.appellation != "" && metadata["x-workflows.argoproj.io/test"] == ["true"]
+    selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
   submit:
     workflowTemplateRef:
       name: event-consumer
@@ -236,7 +236,7 @@ spec:
   entrypoint: main
   workflowMetadata:
     labels:
-      workflows.argoproj.io/test: true
+      workflows.argoproj.io/test: "true"
   templates:
     - name: main
       container:
