@@ -368,7 +368,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
+	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
 ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui lint
