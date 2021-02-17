@@ -30,7 +30,6 @@ func NewLintCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("WorkflowTemplate manifests validated\n")
 		},
 	}
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
