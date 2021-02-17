@@ -8,7 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/robertkrimen/otto"
+	_ "github.com/go-python/gpython/builtin"
+	"github.com/go-python/gpython/compile"
+	"github.com/go-python/gpython/py"
+	"github.com/go-python/gpython/vm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,14 +26,14 @@ type ExamplesSuite struct {
 	fixtures.E2ESuite
 }
 
-func jsonify(v interface{}) interface{} {
+func jsonify(v interface{}) map[string]interface{} {
 	data, _ := json.Marshal(v)
 	x := make(map[string]interface{})
 	_ = json.Unmarshal(data, &x)
 	return x
 }
 
-func (s *ExamplesSuite) Test() {
+func (s *ExamplesSuite) TestExamples() {
 	dir, err := ioutil.ReadDir("../../examples")
 	s.Assert().NoError(err)
 	for _, info := range dir {
@@ -54,18 +57,21 @@ func (s *ExamplesSuite) Test() {
 				WaitForWorkflow().
 				Then().
 				ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-					verify, ok := m.GetAnnotations()[fixtures.Verify]
-					nodes := wfv1.Nodes{}
+					verify, ok := m.GetAnnotations()[fixtures.VerifyPy]
+					nodes := py.NewStringDict()
 					for _, n := range status.Nodes {
-						nodes[n.DisplayName] = n
+						nodes[n.DisplayName] = obj(jsonify(n))
 					}
 					if ok {
-						vm := otto.New()
-						assert.NoError(t, vm.Set("metadata", jsonify(m)))
-						assert.NoError(t, vm.Set("status", jsonify(status)))
-						assert.NoError(t, vm.Set("nodes", jsonify(nodes)))
-						_, err := vm.Run(verify)
-						assert.NoError(t, err, verify)
+						obj, err := compile.Compile(verify, "<stdin>", "exec", 0, true)
+						if assert.NoError(t, err) {
+							m := py.NewModule("__main__", "", nil, py.StringDict{"nodes": nodes})
+							code, ok := obj.(*py.Code)
+							if assert.True(t, ok) {
+								_, err := vm.EvalCode(code, m.Globals, nil)
+								assert.NoError(t, err, verify)
+							}
+						}
 					} else {
 						assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 					}

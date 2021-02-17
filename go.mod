@@ -25,6 +25,7 @@ require (
 	github.com/gavv/httpexpect/v2 v2.0.3
 	github.com/go-openapi/jsonreference v0.19.5
 	github.com/go-openapi/spec v0.20.0
+	github.com/go-python/gpython v0.0.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-swagger/go-swagger v0.25.0
 	github.com/gogo/protobuf v1.3.1
@@ -42,7 +43,6 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.10.0
-	github.com/robertkrimen/otto v0.0.0-20200922221731-ef014fd054ac
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
@@ -67,7 +67,6 @@ require (
 	gopkg.in/go-playground/webhooks.v5 v5.15.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/api v0.19.6

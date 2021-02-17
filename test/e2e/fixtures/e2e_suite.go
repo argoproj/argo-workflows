@@ -28,7 +28,7 @@ import (
 const (
 	Namespace      = "argo"
 	Label          = workflow.WorkflowFullName + "/test"
-	Verify         = workflow.WorkflowFullName + "/verify"
+	VerifyPy       = workflow.WorkflowFullName + "/verify.py"
 	defaultTimeout = 30 * time.Second
 )
 
