@@ -583,7 +583,7 @@ prepare-release: check-version-warning clean codegen manifests
 	git tag -a $(VERSION) -m $(VERSION)
 
 .PHONY: publish-release
-publish-release: check-version-warning clis
+publish-release: check-version-warning clis checksums
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
@@ -595,3 +595,7 @@ check-version-warning:
 .PHONY: parse-examples
 parse-examples:
 	go run -tags fields ./hack parseexamples
+
+.PHONY: checksums
+checksums:
+	for f in ./dist/argo-*.gz; do openssl dgst -sha256 "$$f" | awk ' { print $$2 }' > "$$f".sha256 ; done
