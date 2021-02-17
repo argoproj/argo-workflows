@@ -21,7 +21,7 @@ func NewRetryCommand() *cobra.Command {
 		cliSubmitOpts cliSubmitOpts
 		retryOps      retryOps
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "retry [WORKFLOW...]",
 		Short: "retry zero or more workflows",
 		Example: `# Retry a workflow:

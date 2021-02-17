@@ -240,7 +240,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
 					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{"invalidLabel": "foo...bar"}},
+						Labels: map[string]string{"invalidLabel": "foo...bar"},
+					},
 				},
 			},
 		},
@@ -252,7 +253,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				Submit: &wfv1.Submit{
 					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
 					ObjectMeta: metav1.ObjectMeta{
-						Annotations: map[string]string{"invalidAnnotation": "foo.[..]bar"}},
+						Annotations: map[string]string{"invalidAnnotation": "foo.[..]bar"},
+					},
 				},
 			},
 		},

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/strftime"
-
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -449,7 +449,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	woc.wf.Status.Nodes[nodeID] = *node
@@ -463,7 +463,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -494,7 +494,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Add a third node that has failed.
 	childNode := "child-node-3"
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.wf.GetNodeByName(nodeName)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
@@ -517,7 +517,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -532,7 +532,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -563,7 +563,81 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 
 	// Add a third node that has errored.
 	childNode := "child-node-3"
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeError)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError)
+	woc.addChildNode(nodeName, childNode)
+	n = woc.wf.GetNodeByName(nodeName)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeError)
+}
+
+// TestProcessNodesWithRetries tests retrying when RetryOnTransientError is enabled
+func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(helloWorldWf)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	// Verify that there are no nodes in the wf status.
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
+	retries := wfv1.RetryStrategy{}
+	retries.Limit = intstrutil.ParsePtr("2")
+	retries.RetryPolicy = wfv1.RetryPolicyOnTransientError
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	assert.Nil(t, lastChild)
+
+	// Add child nodes.
+	for i := 0; i < 2; i++ {
+		childNode := fmt.Sprintf("child-node-%d", i)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
+		woc.addChildNode(nodeName, childNode)
+	}
+
+	n := woc.wf.GetNodeByName(nodeName)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
+	assert.NotNil(t, lastChild)
+
+	// Last child is still running. processNodesWithRetries() should return false since
+	// there should be no retries at this point.
+	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Mark lastChild as successful.
+	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	// The parent node also gets marked as Succeeded.
+	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+
+	// Mark the parent node as running again and the lastChild as errored with a message that indicates the error
+	// is transient.
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	transientEnvVarKey := "TRANSIENT_ERROR_PATTERN"
+	transientErrMsg := "This error is transient"
+	woc.markNodePhase(lastChild.Name, wfv1.NodeError, transientErrMsg)
+	_ = os.Setenv(transientEnvVarKey, transientErrMsg)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	n = woc.wf.GetNodeByName(nodeName)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	_ = os.Unsetenv(transientEnvVarKey)
+
+	// Add a third node that has errored.
+	childNode := "child-node-3"
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.wf.GetNodeByName(nodeName)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
@@ -586,7 +660,7 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.Backoff = &wfv1.Backoff{
@@ -603,7 +677,7 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
-	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	woc.addChildNode(nodeName, "child-node-1")
 
 	n := woc.wf.GetNodeByName(nodeName)
@@ -641,7 +715,7 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -657,7 +731,7 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	require.Nil(lastChild)
 
-	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, "child-node-1")
 
 	n := woc.wf.GetNodeByName(nodeName)
@@ -674,7 +748,7 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	require.LessOrEqual(backoff, 300)
 	require.Less(295, backoff)
 
-	woc.initializeNode("child-node-2", wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeError)
+	woc.initializeNode("child-node-2", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, "child-node-2")
 	n = woc.wf.GetNodeByName(nodeName)
 
@@ -734,7 +808,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
@@ -749,7 +823,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -1195,7 +1269,7 @@ func TestWorkflowStepRetry(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(pods.Items))
 
-	//complete the first pod
+	// complete the first pod
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -1214,7 +1288,7 @@ func TestWorkflowStepRetry(t *testing.T) {
 		assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
 		assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
 
-		//verify that after the cowsay failure pod failed, we are retrying cowsay success
+		// verify that after the cowsay failure pod failed, we are retrying cowsay success
 		assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
 	}
 }
@@ -1592,7 +1666,6 @@ func TestSuspendWithDeadline(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
-
 }
 
 var sequence = `
@@ -2159,7 +2232,6 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
 	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[1].Value)
 	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param2"])
-
 }
 
 func TestAddGlobalArtifactToScope(t *testing.T) {
@@ -2176,19 +2248,19 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 		},
 	}
 	// Make sure if the artifact is not global, don't add to scope
-	woc.addArtifactToGlobalScope(art, nil)
+	woc.addArtifactToGlobalScope(art)
 	assert.Nil(t, woc.wf.Status.Outputs)
 
 	// Now mark it as global. Verify it is added to workflow outputs
 	art.GlobalName = "global-art"
-	woc.addArtifactToGlobalScope(art, nil)
+	woc.addArtifactToGlobalScope(art)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
 	assert.Equal(t, "some/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
 
 	// Change the value and verify update is reflected
 	art.S3.Key = "new/key"
-	woc.addArtifactToGlobalScope(art, nil)
+	woc.addArtifactToGlobalScope(art)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
 	assert.Equal(t, "new/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
@@ -2196,7 +2268,7 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 	// Add a new global artifact
 	art.GlobalName = "global-art2"
 	art.S3.Key = "new/new/key"
-	woc.addArtifactToGlobalScope(art, nil)
+	woc.addArtifactToGlobalScope(art)
 	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Artifacts))
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[1].Name)
 	assert.Equal(t, "new/new/key", woc.wf.Status.Outputs.Artifacts[1].S3.Key)
@@ -2530,7 +2602,6 @@ spec:
 `
 
 func TestResolveStatuses(t *testing.T) {
-
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
@@ -2777,7 +2848,6 @@ spec:
         cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'`
 
 func TestStepWFGetNodeName(t *testing.T) {
-
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
@@ -2803,7 +2873,6 @@ func TestStepWFGetNodeName(t *testing.T) {
 }
 
 func TestDAGWFGetNodeName(t *testing.T) {
-
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
@@ -4345,7 +4414,7 @@ spec:
 `
 
 func TestConfigMapCacheLoadOperate(t *testing.T) {
-	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
 			"hi-there-world": `{"nodeID":"memoized-simple-workflow-5wj2p","outputs":{"parameters":[{"name":"hello","value":"foobar","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-simple-workflow-5wj2p/memoized-simple-workflow-5wj2p/main.log"}}]},"creationTimestamp":"2020-09-21T18:12:56Z"}`,
 		},
@@ -4474,7 +4543,7 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 }
 
 func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
-	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
 			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
 		},
@@ -4580,7 +4649,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{
 		Limit: intstrutil.ParsePtr("2"),
 		Backoff: &wfv1.Backoff{
@@ -4592,7 +4661,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node
 
 	childNode := fmt.Sprintf("child-node-%d", 0)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 
 	var opts executeTemplateOpts
@@ -4665,7 +4734,6 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, node)
 	})
-
 }
 
 func TestResubmitMemoization(t *testing.T) {
@@ -4739,7 +4807,7 @@ spec:
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	// reconcille
+	// reconcile
 	ctx := context.Background()
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -4747,7 +4815,7 @@ spec:
 	// make all created pods as successful
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(`{"parameters": [{"name": "my-param"}]}`))
 
-	// reconcille
+	// reconcile
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
@@ -5094,7 +5162,6 @@ spec:
 `
 
 func TestTemplateTimeoutDuration(t *testing.T) {
-
 	t.Run("Step Template Deadline", func(t *testing.T) {
 		wf := unmarshalWF(stepTimeoutWf)
 		cancel, controller := newController(wf)
@@ -5364,7 +5431,7 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 		assert.NotNil(t, pod)
 		nodeStatus, msg := inferFailedReason(&pod)
 		assert.Equal(t, tt.phase, nodeStatus)
-		assert.Equal(t, msg, "OOMKilled")
+		assert.Contains(t, msg, "OOMKilled")
 	}
 }
 
@@ -5695,6 +5762,7 @@ func TestParamAggregation(t *testing.T) {
 		}
 	}
 }
+
 func TestRetryOnDiffHost(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -5706,7 +5774,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 
 	hostSelector := "kubernetes.io/hostname"
 	retries := wfv1.RetryStrategy{}
@@ -5724,7 +5792,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	// Add child node.
 	childNode := fmt.Sprintf("child-node-%d", 0)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	woc.addChildNode(nodeName, childNode)
 
 	n := woc.wf.GetNodeByName(nodeName)
@@ -5760,4 +5828,36 @@ func TestRetryOnDiffHost(t *testing.T) {
 		Values:   []string{lastChild.HostNodeName},
 	}
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}
+
+var noPodsWhenShutdown = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestNoPodsWhenShutdown(t *testing.T) {
+	wf := unmarshalWF(noPodsWhenShutdown)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeSkipped, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
+	}
 }

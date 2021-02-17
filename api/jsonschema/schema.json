@@ -177,6 +177,7 @@
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Filter"
         },
         "insecure": {
+          "format": "boolean",
           "type": "boolean"
         },
         "metadata": {
@@ -277,6 +278,7 @@
           "type": "string"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -375,6 +377,7 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.CatchupConfiguration": {
       "properties": {
         "enabled": {
+          "format": "boolean",
           "title": "Enabled enables to triggered the missed schedule when eventsource restarts",
           "type": "boolean"
         },
@@ -388,6 +391,7 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.ConfigMapPersistence": {
       "properties": {
         "createIfNotExist": {
+          "format": "boolean",
           "title": "CreateIfNotExist will create configmap if it doesn't exists",
           "type": "boolean"
         },
@@ -417,6 +421,7 @@
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -700,6 +705,7 @@
           "type": "object"
         },
         "polling": {
+          "format": "boolean",
           "title": "Use polling instead of inotify",
           "type": "boolean"
         },
@@ -723,9 +729,11 @@
         },
         "insecure": {
           "description": "Insecure determines the type of connection.",
+          "format": "boolean",
           "type": "boolean"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -746,6 +754,7 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.GithubEventSource": {
       "properties": {
         "active": {
+          "format": "boolean",
           "title": "Active refers to status of the webhook for event deliveries.\nhttps://developer.github.com/webhooks/creating/#active\n+optional",
           "type": "boolean"
         },
@@ -758,6 +767,7 @@
           "type": "string"
         },
         "deleteHookOnFinish": {
+          "format": "boolean",
           "title": "DeleteHookOnFinish determines whether to delete the GitHub hook for the repository once the event source is stopped.\n+optional",
           "type": "boolean"
         },
@@ -780,6 +790,7 @@
           "type": "string"
         },
         "insecure": {
+          "format": "boolean",
           "title": "Insecure tls verification",
           "type": "boolean"
         },
@@ -817,10 +828,12 @@
           "title": "AccessToken is reference to k8 secret which holds the gitlab api access information"
         },
         "deleteHookOnFinish": {
+          "format": "boolean",
           "title": "DeleteHookOnFinish determines whether to delete the GitLab hook for the project once the event source is stopped.\n+optional",
           "type": "boolean"
         },
         "enableSSLVerification": {
+          "format": "boolean",
           "title": "EnableSSLVerification to enable ssl verification\n+optional",
           "type": "boolean"
         },
@@ -919,6 +932,7 @@
           "type": "string"
         },
         "oldest": {
+          "format": "boolean",
           "title": "When starting up a new group do we want to start from the oldest event (true) or the newest event (false), defaults to false\n+optional",
           "type": "boolean"
         },
@@ -940,6 +954,7 @@
           "title": "Consumer group for kafka client\n+optional"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -989,6 +1004,7 @@
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1022,6 +1038,7 @@
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1063,6 +1080,7 @@
           "type": "string"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1097,10 +1115,12 @@
           "type": "string"
         },
         "deleteSubscriptionOnFinish": {
+          "format": "boolean",
           "title": "DeleteSubscriptionOnFinish determines whether to delete the GCP PubSub subscription once the event source is stopped.\n+optional",
           "type": "boolean"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1137,6 +1157,7 @@
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1152,6 +1173,7 @@
           "title": "TLS configuration for the pulsar client.\n+optional"
         },
         "tlsAllowInsecureConnection": {
+          "format": "boolean",
           "title": "Whether the Pulsar client accept untrusted TLS certificate from broker.\n+optional",
           "type": "boolean"
         },
@@ -1160,6 +1182,7 @@
           "title": "Trusted TLS certificate secret.\n+optional"
         },
         "tlsValidateHostname": {
+          "format": "boolean",
           "title": "Whether the Pulsar client verify the validity of the host name from broker.\n+optional",
           "type": "boolean"
         },
@@ -1256,6 +1279,7 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.ResourceFilter": {
       "properties": {
         "afterStart": {
+          "format": "boolean",
           "title": "If the resource is created after the start time then the event is treated as valid.\n+optional",
           "type": "boolean"
         },
@@ -1315,6 +1339,7 @@
           "type": "string"
         },
         "validateSignature": {
+          "format": "boolean",
           "title": "ValidateSignature is boolean that can be set to true for SNS signature verification\n+optional",
           "type": "boolean"
         },
@@ -1333,6 +1358,7 @@
           "title": "AccessKey refers K8 secret containing aws access key"
         },
         "jsonBody": {
+          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1497,6 +1523,7 @@
           "title": "APIKey refers to K8s secret that holds Stripe API key. Used only if CreateWebhook is enabled.\n+optional"
         },
         "createWebhook": {
+          "format": "boolean",
           "title": "CreateWebhook if specified creates a new webhook programmatically.\n+optional",
           "type": "boolean"
         },
@@ -1773,6 +1800,7 @@
           "type": "array"
         },
         "secure": {
+          "format": "boolean",
           "title": "Secure refers to type of the connection between sensor to custom trigger gRPC",
           "type": "boolean"
         },
@@ -2049,6 +2077,7 @@
           "title": "Backoff before checking resource state"
         },
         "errorOnBackoffTimeout": {
+          "format": "boolean",
           "title": "ErrorOnBackoffTimeout determines whether sensor should transition to error state if the trigger policy is unable to determine\nthe state of the resource",
           "type": "boolean"
         },
@@ -2067,6 +2096,7 @@
       "description": "KafkaTrigger refers to the specification of the Kafka trigger.",
       "properties": {
         "compress": {
+          "format": "boolean",
           "title": "Compress determines whether to compress message or not.\nDefaults to false.\nIf set to true, compresses message using snappy compression.\n+optional",
           "type": "boolean"
         },
@@ -2248,6 +2278,7 @@
         },
         "errorOnFailedRound": {
           "description": "ErrorOnFailedRound if set to true, marks sensor state as `error` if the previous trigger round fails.\nOnce sensor state is set to `error`, no further triggers will be processed.",
+          "format": "boolean",
           "type": "boolean"
         },
         "eventBusName": {
@@ -2310,6 +2341,7 @@
           "title": "The unambiguous kind of this object - used in order to retrieve the appropriate kubernetes api client for this resource"
         },
         "liveObject": {
+          "format": "boolean",
           "title": "LiveObject specifies whether the resource should be directly fetched from K8s instead\nof being marshaled from the resource artifact. If set to true, the resource artifact\nmust contain the information required to uniquely identify the resource in the cluster,\nthat is, you must specify \"apiVersion\", \"kind\" as well as \"name\" and \"namespace\" meta\ndata.\nOnly valid for operation type `update`\n+optional",
           "type": "boolean"
         },
@@ -2581,6 +2613,7 @@
           "type": "string"
         },
         "verifyCert": {
+          "format": "boolean",
           "title": "VerifyCert decides whether the connection is secure or not",
           "type": "boolean"
         }
@@ -2594,26 +2627,6 @@
         },
         "value": {
           "format": "byte",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "grpc.gateway.runtime.Error": {
-      "properties": {
-        "code": {
-          "type": "integer"
-        },
-        "details": {
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          },
-          "type": "array"
-        },
-        "error": {
-          "type": "string"
-        },
-        "message": {
           "type": "string"
         }
       },
@@ -3368,6 +3381,7 @@
           "type": "string"
         },
         "emailVerified": {
+          "format": "boolean",
           "type": "boolean"
         },
         "groups": {
@@ -3862,10 +3876,6 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "Time at which this node started"
         },
-        "storedTemplateID": {
-          "description": "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
-          "type": "string"
-        },
         "synchronizationStatus": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus",
           "description": "SynchronizationStatus is the synchronization status of the node"
@@ -3884,10 +3894,6 @@
         },
         "type": {
           "description": "Type indicates type of node",
-          "type": "string"
-        },
-        "workflowTemplateName": {
-          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
           "type": "string"
         }
       },
@@ -4561,10 +4567,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key."
         },
-        "arguments": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
-          "description": "Arguments hold arguments to the template. DEPRECATED: This field is not used."
-        },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
@@ -4698,14 +4700,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization",
           "description": "Synchronization holds synchronization lock configuration for this template"
         },
-        "template": {
-          "description": "Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used.",
-          "type": "string"
-        },
-        "templateRef": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef",
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template. DEPRECATED: This field is not used."
-        },
         "timeout": {
           "description": "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
           "type": "string"
@@ -4744,10 +4738,6 @@
         "name": {
           "description": "Name is the resource name of the template.",
           "type": "string"
-        },
-        "runtimeResolution": {
-          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored",
-          "type": "boolean"
         },
         "template": {
           "description": "Template is the name of referred template in the resource.",
@@ -5031,6 +5021,7 @@
           "type": "string"
         },
         "serverDryRun": {
+          "format": "boolean",
           "type": "boolean"
         },
         "workflow": {
@@ -5152,6 +5143,7 @@
     "io.argoproj.workflow.v1alpha1.WorkflowResubmitRequest": {
       "properties": {
         "memoized": {
+          "format": "boolean",
           "type": "boolean"
         },
         "name": {
@@ -5189,6 +5181,7 @@
           "type": "string"
         },
         "restartSuccessful": {
+          "format": "boolean",
           "type": "boolean"
         }
       },
@@ -5304,6 +5297,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC",
           "description": "PodGC describes the strategy to use when to deleting completed pods"
         },
+        "podMetadata": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
+          "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
+        },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
           "type": "integer"
@@ -5365,10 +5362,6 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "key",
           "x-kubernetes-patch-strategy": "merge"
-        },
-        "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "type": "integer"
         },
         "ttlStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy",
@@ -5772,6 +5765,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC",
           "description": "PodGC describes the strategy to use when to deleting completed pods"
         },
+        "podMetadata": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
+          "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
+        },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
           "type": "integer"
@@ -5833,10 +5830,6 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "key",
           "x-kubernetes-patch-strategy": "merge"
-        },
-        "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "type": "integer"
         },
         "ttlStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy",
@@ -6505,6 +6498,7 @@
       "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
       "properties": {
         "readOnly": {
+          "format": "boolean",
           "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional",
           "type": "boolean"
         },
@@ -8660,10 +8654,7 @@
       "type": "string"
     },
     "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
-      "type": [
-        "string",
-        "integer"
-      ]
+      "type": "string"
     },
     "sensor.CreateSensorRequest": {
       "properties": {

@@ -20,10 +20,8 @@ type cliCreateOpts struct {
 }
 
 func NewCreateCommand() *cobra.Command {
-	var (
-		cliCreateOpts cliCreateOpts
-	)
-	var command = &cobra.Command{
+	var cliCreateOpts cliCreateOpts
+	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {

@@ -99,9 +99,11 @@ func newServer() *ArtifactServer {
 					},
 				},
 			},
-		}}
+		},
+	}
 	argo := fakewfv1.NewSimpleClientset(wf, &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"}})
+		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
+	})
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}

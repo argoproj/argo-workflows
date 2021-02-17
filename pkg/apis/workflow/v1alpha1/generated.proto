@@ -624,14 +624,6 @@ message NodeStatus {
   // Not applicable to virtual nodes (e.g. Retry, StepGroup)
   optional TemplateRef templateRef = 6;
 
-  // StoredTemplateID is the ID of stored template.
-  // DEPRECATED: This value is not used anymore.
-  optional string storedTemplateID = 18;
-
-  // WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-  // DEPRECATED: This value is not used anymore.
-  optional string workflowTemplateName = 19;
-
   // TemplateScope is the template scope in which the template of this node was retrieved.
   optional string templateScope = 20;
 
@@ -1054,18 +1046,6 @@ message Template {
   // Name is the name of the template
   optional string name = 1;
 
-  // Template is the name of the template which is used as the base of this template.
-  // DEPRECATED: This field is not used.
-  optional string template = 2;
-
-  // Arguments hold arguments to the template.
-  // DEPRECATED: This field is not used.
-  optional Arguments arguments = 3;
-
-  // TemplateRef is the reference to the template resource which is used as the base of this template.
-  // DEPRECATED: This field is not used.
-  optional TemplateRef templateRef = 4;
-
   // Inputs describe what inputs parameters and artifacts are supplied to this template
   optional Inputs inputs = 5;
 
@@ -1201,11 +1181,6 @@ message TemplateRef {
 
   // Template is the name of referred template in the resource.
   optional string template = 2;
-
-  // RuntimeResolution skips validation at creation time.
-  // By enabling this option, you can create the referred workflow template before the actual runtime.
-  // DEPRECATED: This value is not used anymore and is ignored
-  optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 4;
@@ -1410,14 +1385,6 @@ message WorkflowSpec {
   // primary workflow.
   optional string onExit = 17;
 
-  // TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
-  // (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
-  // deleted after ttlSecondsAfterFinished expires. If this field is unset,
-  // ttlSecondsAfterFinished will not expire. If this field is set to zero,
-  // ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-  // DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
-  optional int32 ttlSecondsAfterFinished = 18;
-
   // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
   // Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
   // deleted after the time to live expires. If this field is unset,
@@ -1483,6 +1450,9 @@ message WorkflowSpec {
 
   // RetryStrategy for all templates in the workflow.
   optional RetryStrategy retryStrategy = 37;
+
+  // PodMetadata defines additional metadata that should be applied to workflow pods
+  optional Metadata podMetadata = 38;
 }
 
 // WorkflowStatus contains overall status information about a workflow

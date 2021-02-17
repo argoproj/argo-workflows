@@ -71,7 +71,7 @@ var testItemStringTable = []struct {
 	origin interface{}
 	str    string
 }{
-	{"string", "http://www/any?query=1&query2=2", "http://www/any?query=1&query2=2"},
+	{"json-string", []string{`{"foo": "bar"}`}, `["{\"foo\": \"bar\"}"]`},
 	{"array", []int{1, 2, 3}, "[1,2,3]"},
 	{"number", 1.1, "1.1"},
 }

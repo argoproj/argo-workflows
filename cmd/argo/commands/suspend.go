@@ -11,7 +11,7 @@ import (
 )
 
 func NewSuspendCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "suspend WORKFLOW1 WORKFLOW2...",
 		Short: "suspend zero or more workflow",
 		Example: `# Suspend a workflow:

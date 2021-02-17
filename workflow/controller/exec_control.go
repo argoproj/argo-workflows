@@ -48,7 +48,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		// Check if we are past the workflow deadline. If we are, and the pod is still pending
 		// then we should simply delete it and mark the pod as Failed
 		if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
-			//pods that are part of an onExit handler aren't subject to the deadline
+			// pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)

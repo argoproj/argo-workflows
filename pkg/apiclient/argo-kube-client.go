@@ -27,8 +27,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
-var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
-var NoArgoServerErr = fmt.Errorf("this is impossible if you are not using the Argo Server, see " + help.CLI)
+var (
+	argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+	NoArgoServerErr               = fmt.Errorf("this is impossible if you are not using the Argo Server, see " + help.CLI)
+)
 
 type argoKubeClient struct {
 	instanceIDService instanceid.Service

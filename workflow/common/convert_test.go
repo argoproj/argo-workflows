@@ -52,8 +52,7 @@ spec:
   arguments: {}
   entrypoint: whalesay
   templates:
-  - arguments: {}
-    container:
+  - container:
       args:
       - hello world
       command:
@@ -159,7 +158,6 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 		assert.Contains(t, wf.Annotations, "annotation1")
 	})
 	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadata", func(t *testing.T) {
-
 		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, nil, false)
 		assert.NotNil(t, wf)
 		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
@@ -179,7 +177,6 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
 		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 	})
-
 }
 
 func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {

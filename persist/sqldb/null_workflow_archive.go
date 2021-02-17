@@ -11,8 +11,7 @@ import (
 
 var NullWorkflowArchive WorkflowArchive = &nullWorkflowArchive{}
 
-type nullWorkflowArchive struct {
-}
+type nullWorkflowArchive struct{}
 
 func (r *nullWorkflowArchive) IsEnabled() bool {
 	return false

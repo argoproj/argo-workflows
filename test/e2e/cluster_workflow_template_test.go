@@ -70,7 +70,6 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
-
 }
 
 func TestClusterWorkflowTemplateSuite(t *testing.T) {

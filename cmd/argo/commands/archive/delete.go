@@ -11,7 +11,7 @@ import (
 )
 
 func NewDeleteCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use: "delete UID...",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()

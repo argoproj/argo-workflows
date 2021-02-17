@@ -18,7 +18,6 @@ const (
 )
 
 func TestLoad(t *testing.T) {
-
 	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
 	lf, err := ioutil.TempFile("", LoadFileName)
 	assert.NoError(t, err)
@@ -35,5 +34,4 @@ func TestLoad(t *testing.T) {
 	dat, err := ioutil.ReadFile(lf.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, content, string(dat))
-
 }

@@ -14,7 +14,7 @@ func NewResubmitCommand() *cobra.Command {
 		priority      int32
 		cliSubmitOpts cliSubmitOpts
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "resubmit [WORKFLOW...]",
 		Short: "resubmit one or more workflows",
 		Example: `# Resubmit a workflow:
