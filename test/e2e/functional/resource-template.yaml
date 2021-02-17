@@ -19,7 +19,7 @@ spec:
         metadata:
           generateName: hello-world-
           labels:
-            argo-e2e: true
+            workflows.argoproj.io/test: true
         spec:
           entrypoint: whalesay
           templates:

@@ -3,7 +3,7 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: wellformed
   labels:
-
+    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: main
   templates:

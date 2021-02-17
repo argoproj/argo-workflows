@@ -2,6 +2,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: malformed
+  labels:
+    workflows.argoproj.io/test: malformed
 spec:
   arguments:
     parameters:

@@ -3,9 +3,6 @@ kind: CronWorkflow
 metadata:
   name: basic
 spec:
-  workflowMetadata:
-    labels:
-      argo-e2e: true
   schedule: "* * * * *"
   workflowSpec:
     entrypoint: main

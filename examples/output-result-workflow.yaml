@@ -2,6 +2,11 @@ kind: Workflow
 apiVersion: argoproj.io/v1alpha1
 metadata:
   generateName: output-result-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/verify: |
+      assert status.nodes[metadata.name + "A"].outputs.exitCode == 0
 spec:
   entrypoint: main
   templates:

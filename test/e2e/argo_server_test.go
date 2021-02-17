@@ -124,7 +124,7 @@ spec:
   entrypoint: main
   workflowMetadata:
     labels:
-      argo-e2e: "true"
+      workflows.argoproj.io/test: true
   templates:
     - name: main
       container:
@@ -168,7 +168,7 @@ spec:
   entrypoint: main
   workflowMetadata:
     labels:
-      argo-e2e: "true"
+      workflows.argoproj.io/test: true
   arguments:
     parameters:
       - name: salutation
@@ -199,7 +199,7 @@ metadata:
   name: event-consumer
 spec:
   event:
-    selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
+    selector: payload.appellation != "" && metadata["x-workflows.argoproj.io/test"] == ["true"]
   submit:
     workflowTemplateRef:
       name: event-consumer
@@ -236,7 +236,7 @@ spec:
   entrypoint: main
   workflowMetadata:
     labels:
-      argo-e2e: "true"
+      workflows.argoproj.io/test: true
   templates:
     - name: main
       container:
@@ -437,7 +437,7 @@ func (s *ArgoServerSuite) TestPermission() {
     "metadata": {
       "name": "test-wf-good",
       "labels": {
-         "argo-e2e": "true"
+         "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -466,7 +466,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.bearerToken = goodToken
 	s.Run("ListWFsGoodToken", func() {
 		s.e().GET("/api/v1/workflows/"+nsName).
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			Expect().
 			Status(200).
 			JSON().
@@ -486,7 +486,7 @@ func (s *ArgoServerSuite) TestPermission() {
     "metadata": {
       "name": "test-wf-bad",
       "labels": {
-         "argo-e2e": "true"
+         "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -552,7 +552,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			s.bearerToken = goodToken
 			s.Run("ListArchivedWFsGoodToken", func() {
 				s.e().GET("/api/v1/archived-workflows").
-					WithQuery("listOptions.labelSelector", "argo-e2e").
+					WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
 					Expect().
 					Status(200).
@@ -565,7 +565,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			s.Run("ListArchivedWFsBadToken", func() {
 				s.Need(fixtures.RBAC)
 				s.e().GET("/api/v1/archived-workflows").
-					WithQuery("listOptions.labelSelector", "argo-e2e").
+					WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
 					Expect().
 					Status(403)
@@ -575,7 +575,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			s.bearerToken = goodToken
 			s.Run("GetArchivedWFsGoodToken", func() {
 				s.e().GET("/api/v1/archived-workflows/"+uid).
-					WithQuery("listOptions.labelSelector", "argo-e2e").
+					WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 					Expect().
 					Status(200)
 			})
@@ -616,7 +616,7 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "true"
+         "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -644,7 +644,7 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
     "metadata": {
       "name": "hint",
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -669,7 +669,7 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
     "metadata": {
       "name": "hint",
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -701,7 +701,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "true"
+         "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -735,7 +735,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
     "metadata": {
       "generateName": "test-",
       "labels": {
-         "argo-e2e": "subject"
+         "workflows.argoproj.io/test": "subject"
       }
     },
     "spec": {
@@ -767,7 +767,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Run("List", func() {
 		j := s.e().GET("/api/v1/workflows/argo").
-			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
 			Expect().
 			Status(200).
 			JSON()
@@ -782,7 +782,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Run("ListWithFields", func() {
 		j := s.e().GET("/api/v1/workflows/argo").
-			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
 			WithQuery("fields", "-items.status.nodes,items.status.finishedAt,items.status.startedAt").
 			Expect().
 			Status(200).
@@ -893,7 +893,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
     "metadata": {
       "name": "test",
       "labels": {
-        "argo-e2e": "subject"
+        "workflows.argoproj.io/test": "subject"
       }
     },
     "spec": {
@@ -949,9 +949,6 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      argo-e2e: true
   workflowSpec:
     podGC:
       strategy: OnPodCompletion
@@ -966,7 +963,7 @@ spec:
 `)
 
 		s.e().GET("/api/v1/cron-workflows/argo").
-			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
 			Expect().
 			Status(200).
 			JSON().
@@ -997,13 +994,13 @@ spec:
       "name": "test",
       "resourceVersion": "` + resourceVersion + `",
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
       "schedule": "1 * * * *",
       "workflowMetadata": {
-        "labels": {"argo-e2e": "true"}
+        "labels": {"workflows.argoproj.io/test": "true"}
       },
       "workflowSpec": {
         "entrypoint": "whalesay",
@@ -1042,7 +1039,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeArchived, "to be archived").
+		WaitForWorkflow(fixtures.ToBeArchived).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1123,7 +1120,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart, "to start").
+		WaitForWorkflow(fixtures.ToStart).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1205,7 +1202,7 @@ spec:
         image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeArchived, "to be archived")
+		WaitForWorkflow(fixtures.ToBeArchived)
 
 	for _, tt := range []struct {
 		name     string
@@ -1227,7 +1224,7 @@ spec:
 		s.Run(tt.name, func() {
 			path := s.e().GET("/api/v1/archived-workflows").
 				WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
-				WithQuery("listOptions.labelSelector", "argo-e2e,"+tt.selector).
+				WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test,"+tt.selector).
 				Expect().
 				Status(200).
 				JSON().
@@ -1245,7 +1242,7 @@ spec:
 
 	s.Run("ListWithLimitAndOffset", func() {
 		j := s.e().GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
@@ -1265,7 +1262,7 @@ spec:
 	s.Run("ListWithMinStartedAtGood", func() {
 		fieldSelector := "metadata.namespace=argo,spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
 		s.e().GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			WithQuery("listOptions.fieldSelector", fieldSelector).
 			WithQuery("listOptions.limit", 2).
 			Expect().
@@ -1279,7 +1276,7 @@ spec:
 
 	s.Run("ListWithMinStartedAtBad", func() {
 		s.e().GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo,spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).
 			WithQuery("listOptions.limit", 2).
 			Expect().
@@ -1318,7 +1315,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "true"
+         "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -1347,7 +1344,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "subject"
+         "workflows.argoproj.io/test": "subject"
       }
     },
     "spec": {
@@ -1377,7 +1374,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			CreateWorkflowTemplates()
 
 		s.e().GET("/api/v1/workflow-templates/argo").
-			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
 			Expect().
 			Status(200).
 			JSON().
@@ -1409,7 +1406,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
       "name": "test",
       "resourceVersion": "` + resourceVersion + `",
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -1449,7 +1446,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "subject"
+         "workflows.argoproj.io/test": "subject"
       }
     },
     "spec": {
@@ -1475,7 +1472,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 			  "resourceKind": "WorkflowTemplate",
 			  "resourceName": "test",
 			  "submitOptions": {
-                "labels": "argo-e2e=true"
+                "labels": "workflows.argoproj.io/test=true"
               }
 			}`)).
 			Expect().
@@ -1489,7 +1486,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
     "metadata": {
       "name": "test",
       "labels": {
-        "argo-e2e": "subject"
+        "workflows.argoproj.io/test": "subject"
       }
     },
     "spec": {
@@ -1518,7 +1515,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 			  "resourceKind": "cronworkflow",
 			  "resourceName": "test",
 			  "submitOptions": {
-                "labels": "argo-e2e=true"
+                "labels": "workflows.argoproj.io/test=true"
               }
 			}`)).
 			Expect().
@@ -1532,7 +1529,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "subject"
+         "workflows.argoproj.io/test": "subject"
       }
     },
     "spec": {
@@ -1558,7 +1555,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 			  "resourceKind": "ClusterWorkflowTemplate",
 			  "resourceName": "test",
 			  "submitOptions": {
-                "labels": "argo-e2e=true"
+                "labels": "workflows.argoproj.io/test=true"
               }
 			}`)).
 			Expect().
@@ -1575,7 +1572,7 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
     "metadata": {
       "name": "test-event-source", 
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -1639,7 +1636,7 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
       "name": "test-event-source", 
       "resourceVersion": "` + resourceVersion + `",
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/test": "true"
       }
     },
     "spec": {
@@ -1671,7 +1668,7 @@ func (s *ArgoServerSuite) TestSensorService() {
 		"metadata":{
 			"name":"test-sensor",
 			"labels": {
-				"argo-e2e": "true"
+				"workflows.argoproj.io/test": "true"
 			}
 		},
 		"spec":{
@@ -1745,7 +1742,7 @@ func (s *ArgoServerSuite) TestSensorService() {
 			"name":"test-sensor",
 			"resourceVersion": "` + resourceVersion + `",
 			"labels": {
-				"argo-e2e": "true"
+				"workflows.argoproj.io/test": "true"
 			}
 		},
 		"spec": {

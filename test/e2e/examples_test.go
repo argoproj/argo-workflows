@@ -3,19 +3,31 @@
 package e2e
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/robertkrimen/otto"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type ExamplesSuite struct {
 	fixtures.E2ESuite
+}
+
+func jsonify(v interface{}) interface{} {
+	data, _ := json.Marshal(v)
+	x := make(map[string]interface{})
+	_ = json.Unmarshal(data, &x)
+	return x
 }
 
 func (s *ExamplesSuite) Test() {
@@ -44,7 +56,20 @@ func (s *ExamplesSuite) Test() {
 				Workflow(string(data)).
 				When().
 				SubmitWorkflow().
-				WaitForWorkflow(fixtures.ToBeSucceeded, "to be succeeded")
+				WaitForWorkflow().
+				Then().
+				ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+					verify, ok := m.GetAnnotations()[fixtures.Verify]
+					if ok {
+						vm := otto.New()
+						assert.NoError(t, vm.Set("metadata", jsonify(m)))
+						assert.NoError(t, vm.Set("status", jsonify(status)))
+						_, err := vm.Run(verify)
+						assert.NoError(t, err, verify)
+					} else {
+						assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+					}
+				})
 		})
 	}
 }
