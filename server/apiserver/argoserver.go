@@ -149,8 +149,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	config := v.(*Config)
 	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
-	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
-	var wfArchive = sqldb.NullWorkflowArchive
+	offloadRepo := sqldb.ExplosiveOffloadNodeStatusRepo
+	wfArchive := sqldb.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
 		session, tableName, err := sqldb.CreateDBSession(as.clients.Kubernetes, as.namespace, persistence)
@@ -262,7 +262,6 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
-
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
 	mux := http.NewServeMux()
@@ -335,7 +334,6 @@ func (as *argoServer) restartOnConfigChange(interface{}) error {
 
 // checkServeErr checks the error from a .Serve() call to decide if it was a graceful shutdown
 func (as *argoServer) checkServeErr(name string, err error) {
-
 	if err != nil {
 		if as.stopCh == nil {
 			// a nil stopCh indicates a graceful shutdown

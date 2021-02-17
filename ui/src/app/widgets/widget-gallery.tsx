@@ -5,7 +5,7 @@ export const WidgetGallery = ({namespace, name, label}: {namespace: string; name
     <div className='white-box'>
         <h3>Widgets</h3>
         <p>
-            These widgets can be embedded inside other applications. <a href='https://argoproj.github.io/argo/widgets'>Learn more</a>
+            These widgets can be embedded inside other applications. <a href='https://argoproj.github.io/argo-workflows/widgets'>Learn more</a>
         </p>
         {[
             {

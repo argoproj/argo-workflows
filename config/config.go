@@ -101,7 +101,7 @@ type Config struct {
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
-	//Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
+	// Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 }
 

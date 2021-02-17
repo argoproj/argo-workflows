@@ -18,11 +18,9 @@ import (
 )
 
 func NewGetCommand() *cobra.Command {
-	var (
-		output string
-	)
+	var output string
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get CRON_WORKFLOW...",
 		Short: "display details about a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {

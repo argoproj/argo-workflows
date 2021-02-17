@@ -6,14 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // TestDagXfail verifies a DAG can fail properly
@@ -404,7 +403,6 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
-
 }
 
 func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {

@@ -238,10 +238,12 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	argoClaims := &types.Claims{Claims: jwt.Claims{
-		Issuer:  issuer,
-		Subject: c.Subject,
-		Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry))},
+	argoClaims := &types.Claims{
+		Claims: jwt.Claims{
+			Issuer:  issuer,
+			Subject: c.Subject,
+			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
+		},
 		Groups:             c.Groups,
 		Email:              c.Email,
 		EmailVerified:      c.EmailVerified,

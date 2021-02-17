@@ -227,7 +227,6 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 					SecondsAfterSuccess:    pointer.Int32Ptr(10),
 					SecondsAfterFailure:    pointer.Int32Ptr(10),
 				},
-				TTLSecondsAfterFinished: pointer.Int32Ptr(7),
 			},
 		}
 	})
@@ -367,7 +366,6 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	defer cancel()
 	workflow := unmarshalWF(testDefaultWfTTL)
 	var ten int32 = 10
-	var seven int32 = 7
 	var five int32 = 5
 	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
@@ -376,7 +374,6 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
-	assert.Equal(t, *workflow.Spec.TTLSecondsAfterFinished, seven)
 	assert.NotContains(t, workflow.Labels, "foo")
 	assert.Contains(t, workflow.Labels, "label")
 	assert.Contains(t, workflow.Annotations, "annotation")
@@ -479,6 +476,7 @@ spec:
   workflowTemplateRef:
     name: workflow-template-whalesay-template
 `
+
 const wfTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -507,8 +505,10 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
-	woc := wfOperationCtx{controller: controller,
-		wf: wf}
+	woc := wfOperationCtx{
+		controller: controller,
+		wf:         wf,
+	}
 	err := woc.setExecWorkflow()
 	assert.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)

@@ -119,6 +119,7 @@ const wf1 = `
     }
 }
 `
+
 const wf2 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -181,6 +182,7 @@ const wf2 = `
     }
 }
 `
+
 const wf3 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -243,6 +245,7 @@ const wf3 = `
     }
 }
 `
+
 const wf4 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -305,6 +308,7 @@ const wf4 = `
     }
 }
 `
+
 const wf5 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -395,6 +399,7 @@ const failedWf = `
     }
 }
 `
+
 const workflow1 = `
 {
   "namespace": "default",
@@ -424,6 +429,7 @@ const workflow1 = `
   }
 }
 `
+
 const workflowtmpl = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -474,6 +480,7 @@ const workflowtmpl = `
   }
 }
 `
+
 const cronwf = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -510,6 +517,7 @@ const cronwf = `
   }
 }
 `
+
 const clusterworkflowtmpl = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -561,7 +569,6 @@ const clusterworkflowtmpl = `
 `
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
-
 	var unlabelledObj, wfObj1, wfObj2, wfObj3, wfObj4, wfObj5, failedWfObj v1alpha1.Workflow
 	var wftmpl v1alpha1.WorkflowTemplate
 	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
@@ -672,7 +679,6 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 		_, err := getWorkflow(ctx, server, "test", "unlabelled")
 		assert.Error(t, err)
 	})
-
 }
 
 func TestGetLatestWorkflow(t *testing.T) {

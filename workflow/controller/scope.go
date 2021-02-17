@@ -70,9 +70,7 @@ func (s *wfScope) resolveParameter(v string) (string, error) {
 }
 
 func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, error) {
-
 	val, err := s.resolveVar(v)
-
 	if err != nil {
 		return nil, err
 	}

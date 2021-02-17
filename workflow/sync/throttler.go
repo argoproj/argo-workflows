@@ -37,6 +37,7 @@ func NewThrottler(parallelism int, queue func(key string)) Throttler {
 		pending:     &priorityQueue{itemByKey: make(map[string]*item)},
 	}
 }
+
 func (t *throttler) Add(key string, priority int32, creationTime time.Time) {
 	t.lock.Lock()
 	defer t.lock.Unlock()

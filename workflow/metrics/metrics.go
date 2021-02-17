@@ -272,6 +272,7 @@ func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric {
 func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	return noopMetric{}
 }
+
 func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	return noopMetric{}
 }
