@@ -37,20 +37,15 @@ func (s *ExamplesSuite) Test() {
 		if info.IsDir() || !strings.HasSuffix(info.Name(), ".yaml") {
 			continue
 		}
+		data, err := ioutil.ReadFile("../../examples/" + info.Name())
+		s.Assert().NoError(err)
+		un := &unstructured.Unstructured{}
+		s.Assert().NoError(yaml.Unmarshal(data, un))
+		if un.GetLabels()[fixtures.Label] == "" {
+			continue
+		}
 		s.Run(info.Name(), func() {
 			s.DeleteResources()
-			un := &unstructured.Unstructured{}
-			data, err := ioutil.ReadFile("../../examples/" + info.Name())
-			s.Assert().NoError(err)
-			err = yaml.Unmarshal(data, un)
-			s.Assert().NoError(err)
-			if un.GetKind() != "Workflow" {
-				s.T().SkipNow()
-			}
-			if un.GetLabels()[fixtures.Label] == "" {
-				s.T().SkipNow()
-			}
-			data, err = yaml.Marshal(un)
 			s.Assert().NoError(err)
 			s.Given().
 				Workflow(string(data)).
@@ -60,10 +55,15 @@ func (s *ExamplesSuite) Test() {
 				Then().
 				ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 					verify, ok := m.GetAnnotations()[fixtures.Verify]
+					nodes := wfv1.Nodes{}
+					for _, n := range status.Nodes {
+						nodes[n.DisplayName] = n
+					}
 					if ok {
 						vm := otto.New()
 						assert.NoError(t, vm.Set("metadata", jsonify(m)))
 						assert.NoError(t, vm.Set("status", jsonify(status)))
+						assert.NoError(t, vm.Set("nodes", jsonify(nodes)))
 						_, err := vm.Run(verify)
 						assert.NoError(t, err, verify)
 					} else {

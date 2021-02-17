@@ -6,7 +6,7 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/verify: |
-      assert status.nodes[metadata.name + "A"].outputs.exitCode == 0
+      assert(nodes["a"].outputs.exitCode == 0)
 spec:
   entrypoint: main
   templates:
