@@ -58,15 +58,19 @@ func (s *ExamplesSuite) TestExamples() {
 				Then().
 				ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 					verify, ok := m.GetAnnotations()[fixtures.VerifyPy]
-					nodes := py.NewStringDict()
+					nodes := wfv1.Nodes{}
 					for _, n := range status.Nodes {
-						nodes[n.DisplayName] = obj(jsonify(n))
+						nodes[n.DisplayName] = n
 					}
 					if ok {
-						obj, err := compile.Compile(verify, "<stdin>", "exec", 0, true)
+						x, err := compile.Compile(verify, "<stdin>", "exec", 0, true)
 						if assert.NoError(t, err) {
-							m := py.NewModule("__main__", "", nil, py.StringDict{"nodes": nodes})
-							code, ok := obj.(*py.Code)
+							m := py.NewModule("__main__", "", nil, py.StringDict{
+								"metadata": obj(m),
+								"nodes":  obj(nodes),
+								"status": obj(status),
+							})
+							code, ok := x.(*py.Code)
 							if assert.True(t, ok) {
 								_, err := vm.EvalCode(code, m.Globals, nil)
 								assert.NoError(t, err, verify)
