@@ -301,7 +301,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					c.Command = woc.getCommandFor(c.Image)
 				}
 				if len(c.Command) == 0 {
-					return nil, fmt.Errorf("must specify the command when using the entrypoint executor; determine this using `docker image inspect -f '{{.Config.Cmd}}' %s` or `docker image inspect -f '{{.Config.Entrypoint}}' %s`", c.Image, c.Image)
+					return nil, fmt.Errorf("must specify the command when using the entrypoint executor; determine this using `docker image inspect -f '{{.Config.Cmd}}' %s` or `docker image inspect -f '{{.Config.Entrypoint}}' %s`, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#image-command-index", c.Image, c.Image)
 				}
 				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 			}
@@ -311,7 +311,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name}) // used to identify the container name of the process
+		c.Env = append(c.Env,
+			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
+			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(c.Name == common.MainContainerName && opts.includeScriptOutput)},
+		)
 		pod.Spec.Containers[i] = c
 	}
 

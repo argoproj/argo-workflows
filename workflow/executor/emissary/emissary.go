@@ -17,6 +17,30 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 )
 
+/*
+This executor works very differently to the others. It mounts an empty-dir on all containers at `/var/run/argo`. The main container command is replaces by a new binary `argoexec` which starts the original command in a sub-process and when it is finished, captures the outputs:
+
+The init container creates these files:
+
+* `/var/run/argo/argoexec` The binary, copied from the `argoexec` image.
+* `/var/run/argo/template` A JSON encoding of the template.
+
+In the main container, the emissary creates these files:
+
+* `/var/run/argo/ctr/${containerName}/exitcode` The container exit code.
+* `/var/run/argo/ctr/${containerName}/stderr` A copy of stderr (if needed).
+* `/var/run/argo/ctr/${containerName}/stdout`  A copy of stdout (if needed).
+
+If the container is named `main` it also copies base-layer artifacts to the shared volume:
+
+* `/var/run/argo/outputs/parameters/${path}` All output parameters are copied here, e.g. `/tmp/message` is moved to `/var/run/argo/outputs/parameters/tmp/message`.
+* `/var/run/argo/outputs/artifacts/${path}.tgz` All output artifacts are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/artifacts/tmp/message.tgz`.
+
+The wait container can create one file itself, used for terminating the sub-process:
+
+* `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the value found in this file.
+
+*/
 type emissary struct{}
 
 func New() (executor.ContainerRuntimeExecutor, error) {

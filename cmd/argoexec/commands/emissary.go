@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -23,9 +24,11 @@ import (
 )
 
 var (
-	varArgo       = "/var/run/argo"
-	containerName = os.Getenv("ARGO_CONTAINER_NAME")
-	template      = &wfv1.Template{}
+	varRunArgo          = "/var/run/argo"
+	containerName       = os.Getenv(common.EnvVarContainerName)
+	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/stderr
+	template            = &wfv1.Template{}
+	logger              = log.WithField("argo", true)
 )
 
 func NewEmissaryCommand() *cobra.Command {
@@ -36,14 +39,14 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 
 			defer func() {
-				err := ioutil.WriteFile(varArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0600)
+				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0600)
 				if err != nil {
-					println(fmt.Errorf("failed to write exit code: %w", err))
+					logger.Error(fmt.Errorf("failed to write exit code: %w", err))
 				}
 			}()
 
 			// this also indicates we've started
-			if err := os.MkdirAll(varArgo+"/ctr/"+containerName, 0700); err != nil {
+			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0700); err != nil {
 				return fmt.Errorf("failed to create ctr directory: %w", err)
 			}
 
@@ -61,7 +64,7 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 			}()
 
-			data, err := ioutil.ReadFile(varArgo + "/template")
+			data, err := ioutil.ReadFile(varRunArgo + "/template")
 			if err != nil {
 				return fmt.Errorf("failed to read template: %w", err)
 			}
@@ -78,20 +81,26 @@ func NewEmissaryCommand() *cobra.Command {
 			command := exec.Command(name, args...)
 			command.Env = os.Environ()
 			command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+			command.Stdout = os.Stdout
+			command.Stderr = os.Stderr
 
-			stdout, err := os.Create(varArgo + "/ctr/" + containerName + "/stdout")
-			if err != nil {
-				return fmt.Errorf("failed to open stdout: %w", err)
-			}
-			defer func() { _ = stdout.Close() }()
-			command.Stdout = io.MultiWriter(os.Stdout, stdout)
+			// this may not be that important an optimisation, except for very long logs we don't want to capture
+			if includeScriptOutput {
+				logger.Info("capturing script output")
+				stdout, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
+				if err != nil {
+					return fmt.Errorf("failed to open stdout: %w", err)
+				}
+				defer func() { _ = stdout.Close() }()
+				command.Stdout = io.MultiWriter(os.Stdout, stdout)
 
-			stderr, err := os.Create(varArgo + "/ctr/" + containerName + "/stderr")
-			if err != nil {
-				return fmt.Errorf("failed to open stderr: %w", err)
+				stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
+				if err != nil {
+					return fmt.Errorf("failed to open stderr: %w", err)
+				}
+				defer func() { _ = stderr.Close() }()
+				command.Stderr = io.MultiWriter(os.Stderr, stderr)
 			}
-			defer func() { _ = stderr.Close() }()
-			command.Stderr = io.MultiWriter(os.Stderr, stderr)
 
 			if err := command.Start(); err != nil {
 				return err
@@ -99,8 +108,8 @@ func NewEmissaryCommand() *cobra.Command {
 
 			go func() {
 				for {
-					data, _ := ioutil.ReadFile(varArgo + "/ctr/" + containerName + "/signal")
-					_ = os.Remove(varArgo + "/ctr/" + containerName + "/signal")
+					data, _ := ioutil.ReadFile(varRunArgo + "/ctr/" + containerName + "/signal")
+					_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 					s, _ := strconv.Atoi(string(data))
 					if s > 0 {
 						_ = syscall.Kill(command.Process.Pid, syscall.Signal(s))
@@ -121,13 +130,6 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 			}
 
-			if err := stderr.Close(); err != nil {
-				return fmt.Errorf("failed to close stderr: %w", err)
-			}
-			if err := stdout.Close(); err != nil {
-				return fmt.Errorf("failed to close stdout: %w", err)
-			}
-
 			if containerName == common.MainContainerName {
 				for _, x := range template.Outputs.Parameters {
 					if x.ValueFrom != nil && x.ValueFrom.Path != "" {
@@ -144,7 +146,7 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}
 			} else {
-				println("not saving outputs - not main container")
+				logger.Info("not saving outputs - not main container")
 			}
 
 			return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
@@ -154,15 +156,15 @@ func NewEmissaryCommand() *cobra.Command {
 
 func saveArtifact(srcPath string) error {
 	if common.FindOverlappingVolume(template, srcPath) != nil {
-		println("no need to save artifact - on overlapping volume", srcPath)
+		logger.Infof("no need to save artifact - on overlapping volume: %s", srcPath)
 		return nil
 	}
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		println("cannot save artifact", srcPath, err)
+		logger.WithError(err).Errorf("cannot save artifact %s", srcPath)
 		return nil
 	}
-	dstPath := varArgo + "/outputs/artifacts/" + srcPath + ".tgz"
-	println(srcPath, "->", dstPath)
+	dstPath := varRunArgo + "/outputs/artifacts/" + srcPath + ".tgz"
+	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
 	if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
@@ -183,20 +185,20 @@ func saveArtifact(srcPath string) error {
 
 func saveParameter(srcPath string) error {
 	if common.FindOverlappingVolume(template, srcPath) != nil {
-		println("no need to save parameter - on overlapping volume", srcPath)
+		logger.Infof("no need to save parameter - on overlapping volume: %s", srcPath)
 		return nil
 	}
 	src, err := os.Open(srcPath)
 	if os.IsNotExist(err) { // might be optional, so we ignore
-		println("cannot save parameter", srcPath, err)
+		logger.WithError(err).Errorf("cannot save parameter %s", srcPath)
 		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %w", srcPath, err)
 	}
 	defer func() { _ = src.Close() }()
-	dstPath := varArgo + "/outputs/parameters/" + srcPath
-	println(srcPath, "->", dstPath)
+	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
+	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
 	if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
 		return fmt.Errorf("failed to create directory %s: %w", z, err)

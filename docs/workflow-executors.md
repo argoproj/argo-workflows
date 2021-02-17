@@ -88,28 +88,6 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 This is the most fully featured executor.
 
-This executor works very differently to the others. It mounts an empty-dir on all containers at `/var/run/argo`. The main container command is replaces by a new binary `emissary` which starts the original command in a sub-process and when it is finished, captures the outputs:
-
-The init container creates these files:
-
-* `/var/run/argo/argoexec` The binary, copied from the `argoexec` image.
-* `/var/run/argo/template` A JSON encoding of the template.
-
-In the main container, the emissary creates these files: 
-
-* `/var/run/argo/ctr/${containerName}/exitcode` The container exit code.
-* `/var/run/argo/ctr/${containerName}/stderr` A copy of stderr. 
-* `/var/run/argo/ctr/${containerName}/stdout`  A copy of stdout.
-
-If the container is named `main` it also copies base-layer artifacts to the shared volume:
-
-* `/var/run/argo/outputs/parameters/${path}` All output parameters are copied here, e.g. `/tmp/message` is moved to `/var/run/argo/outputs/parameters/tmp/message`.  
-* `/var/run/argo/outputs/artifacts/${path}.tgz` All output artifacts are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/artifacts/tmp/message.tgz`.  
-
-The wait container can create one file itself, used for terminating the sub-process:
-
-* `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the value found in this file.
-
 * Reliability:
   * Not yet well-tested.
   * Not yet popular.
@@ -118,8 +96,19 @@ The wait container can create one file itself, used for terminating the sub-proc
   * Cannot escape the privileges of the pod's service account
   * Can [`runAsNonRoot`](workflow-pod-security-context.md).
 * Scalable:
-  * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource type template is used.
+  * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
+    type template is used.
 * Artifacts:
   * Output artifacts can be located on the base layer (e.g. `/tmp`).
 * Configuration:
-  * `command` must be specified for containers. 
+  * `command` must be specified for containers.
+
+### Image Command Index
+
+If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
+will look it up in the **image command index**. This is nothing more fancy than
+a [configuration item](workflow-controller-configmap.yaml).
+
+### Exit Code 64
+
+The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.

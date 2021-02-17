@@ -5,6 +5,11 @@ data:
       requests:
         cpu: 10m
         memory: 64Mi
+  imageCommandIndex: |
+    argoproj/argosay:v1: [cowsay]
+    argoproj/argosay:v2: [/argosay]
+    docker/whalesay:latest: [cowsay]
+    python:alpine3.6: [python3]
   artifactRepository: |
     archiveLogs: true
     s3:
@@ -17,11 +22,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  imageCommandIndex: |
-    argoproj/argosay:v1: [cowsay]
-    argoproj/argosay:v2: [/argosay]
-    docker/whalesay:latest: [cowsay]
-    python:alpine3.6: [python3]
   metricsConfig: |
     disableLegacy: true
     enabled: true

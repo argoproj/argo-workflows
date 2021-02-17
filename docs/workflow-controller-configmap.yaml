@@ -109,6 +109,14 @@ data:
     # must be one of: docker, kubelet, k8sapi, pns
     containerRuntimeExecutor: docker
 
+    # The command for each image, needed when the command is not specified and the emissary executor is used.
+    # https://argoproj.github.io/argo-workflows/workflow-executors/#image-command-index
+    imageCommandIndex:
+      argoproj/argosay:v1: [cowsay]
+      argoproj/argosay:v2: [/argosay]
+      docker/whalesay:latest: [cowsay]
+      python:alpine3.6: [python3]
+
     # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
     # (available since Argo v2.4)
     dockerSockPath: /var/someplace/else/docker.sock
@@ -269,3 +277,4 @@ data:
     #     Workflow cannot run an arbitrary Workflow, use this option.
     workflowRestrictions:
       templateReferencing: Strict
+
