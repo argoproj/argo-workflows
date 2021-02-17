@@ -66,9 +66,9 @@ func (s *ExamplesSuite) TestExamples() {
 						x, err := compile.Compile(verify, "<stdin>", "exec", 0, true)
 						if assert.NoError(t, err) {
 							m := py.NewModule("__main__", "", nil, py.StringDict{
-								"metadata": obj(m),
-								"nodes":  obj(nodes),
-								"status": obj(status),
+								"metadata": obj(jsonify(m)),
+								"nodes":    obj(nodes),
+								"status":   obj(status),
 							})
 							code, ok := x.(*py.Code)
 							if assert.True(t, ok) {
