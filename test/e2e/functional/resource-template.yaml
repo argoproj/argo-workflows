@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: resource-tmpl-wf
-  labels:
-    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: main
   templates:

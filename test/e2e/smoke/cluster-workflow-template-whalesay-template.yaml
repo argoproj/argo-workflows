@@ -2,6 +2,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-whalesay-template
+  labels:
+    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: whalesay-template
   arguments:

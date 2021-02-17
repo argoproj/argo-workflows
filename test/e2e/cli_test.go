@@ -189,7 +189,7 @@ func (s *CLISuite) TestVersion() {
 
 func (s *CLISuite) TestSubmitDryRun() {
 	s.Given().
-		RunCli([]string{"submit", "smoke/basic.yaml", "--dry-run", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "smoke/basic.yaml", "--dry-run", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "generateName: basic")
 				// dry-run should never get a UID
@@ -200,7 +200,7 @@ func (s *CLISuite) TestSubmitDryRun() {
 
 func (s *CLISuite) TestSubmitServerDryRun() {
 	s.Given().
-		RunCli([]string{"submit", "smoke/basic.yaml", "--server-dry-run", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "smoke/basic.yaml", "--server-dry-run", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "name: basic")
 				// server-dry-run should get a UID
@@ -350,7 +350,7 @@ func (s *CLISuite) TestLogProblems() {
 
 func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func() {
-		s.Given().RunCli([]string{"submit", "testdata/basic-workflow.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"submit", "testdata/basic-workflow.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -1020,7 +1020,7 @@ func (s *CLISuite) TestCron() {
 	})
 
 	s.Run("Create Schedule Override", func() {
-		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--schedule", "1 2 3 * *"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--schedule", "1 2 3 * *", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Schedule:                      1 2 3 * *")
 			}
@@ -1028,7 +1028,7 @@ func (s *CLISuite) TestCron() {
 	})
 
 	s.Run("Create Parameter Override", func() {
-		s.Given().RunCli([]string{"cron", "create", "cron/param.yaml", "-p", "message=\"bar test passed\""}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"cron", "create", "cron/param.yaml", "-p", "message=\"bar test passed\"", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "bar test passed")
 			}
@@ -1125,7 +1125,7 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 		})
 	})
 	s.Run("CreateWF", func() {
-		s.Given().RunCli([]string{"submit", "testdata/workflow-template-ref.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"submit", "testdata/workflow-template-ref.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -1142,7 +1142,7 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 		})
 	})
 	s.Run("CreateWFWithCWFTRef", func() {
-		s.Given().RunCli([]string{"submit", "testdata/cluster-workflow-template-ref.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"submit", "testdata/cluster-workflow-template-ref.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -1161,7 +1161,7 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 		Workflow("@testdata/semaphore-wf-level.yaml").
 		When().
 		CreateConfigMap("my-config", semaphoreData).
-		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "semaphore-wf-level-1")
 			}
@@ -1231,7 +1231,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 		s.Given().
 			WorkflowName("resource-tmpl-wf").
 			When().
-			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"submit", "functional/resource-template.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
 			WaitForWorkflow(fixtures.ToBeRunning).
@@ -1253,7 +1253,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 		s.Given().
 			WorkflowName("resource-tmpl-wf-1").
 			When().
-			RunCli([]string{"submit", "functional/resource-template.yaml", "--name", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"submit", "functional/resource-template.yaml", "--name", "resource-tmpl-wf-1", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
 			WaitForWorkflow(fixtures.ToBeRunning).

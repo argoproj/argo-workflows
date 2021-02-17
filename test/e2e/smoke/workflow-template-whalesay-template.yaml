@@ -3,7 +3,7 @@ kind: WorkflowTemplate
 metadata:
   name: workflow-template-whalesay-template
   labels:
-
+    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: whalesay-template
   onExit: on-exit
