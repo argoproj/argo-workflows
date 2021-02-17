@@ -67,8 +67,8 @@ func (s *ExamplesSuite) TestExamples() {
 						if assert.NoError(t, err) {
 							m := py.NewModule("__main__", "", nil, py.StringDict{
 								"metadata": obj(jsonify(m)),
-								"nodes":    obj(nodes),
-								"status":   obj(status),
+								"nodes":    obj(jsonify(nodes)),
+								"status":   obj(jsonify(status)),
 							})
 							code, ok := x.(*py.Code)
 							if assert.True(t, ok) {
