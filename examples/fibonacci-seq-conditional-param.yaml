@@ -3,12 +3,26 @@ kind: Workflow
 metadata:
   generateName: fibonacci-
 spec:
-  entrypoint: fibonacci
+  entrypoint: main
   arguments:
     parameters:
       - name: num
         value: 5
   templates:
+    - name: main
+      steps:
+        - - name: fibonaccimain
+            template: fibonacci
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{workflow.parameters.num}}"
+        - - name: printresult
+            template: printresult
+            arguments:
+              parameters:
+                - name: result
+                  value: "{{steps.fibonaccimain.outputs.parameters.fib}}"
     - name: fibonacci
       inputs:
         parameters:
@@ -94,3 +108,12 @@ spec:
         command: [python]
         source: |
           print({{inputs.parameters.a}} {{inputs.parameters.op}} {{inputs.parameters.b}})
+          
+    - name: printresult
+      inputs:
+        parameters:
+          - name: result
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.result}}"]

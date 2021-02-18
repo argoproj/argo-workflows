@@ -3,11 +3,22 @@ kind: Workflow
 metadata:
   generateName: conditional-artifacts-
 spec:
-  entrypoint: coinflip
+  entrypoint: main
   volumes:
     - name: workdir
       emptyDir: {}
   templates:
+    - name: main
+      steps:
+        - - name: coinflipmain
+            template: coinflip
+        - - name: printmessage
+            template: printmessage
+            arguments:
+              artifacts:
+                - name: message
+                  from: "{{steps.coinflipmain.outputs.artifacts.step-result}}"
+    
     - name: coinflip
       steps:
         - - name: flipcoin
@@ -36,7 +47,7 @@ spec:
       container:
         image: alpine:3.6
         command: [sh, -c]
-        args: ["sleep 30; echo \"it was heads\" > /result.txt"]
+        args: ["sleep 40; echo \"it was heads\" > /result.txt"]
         volumeMounts:
           - name: workdir
             mountPath: /mnt/vol
@@ -50,7 +61,7 @@ spec:
       container:
         image: alpine:3.6
         command: [sh, -c]
-        args: ["sleep30; echo \"it was tails\" > /result.txt"]
+        args: ["sleep 40; echo \"it was tails\" > /result.txt"]
         volumeMounts:
           - name: workdir
             mountPath: /mnt/vol
@@ -58,3 +69,13 @@ spec:
         artifacts:
           - name: tailsresult
             path: /result.txt
+
+    - name: printmessage
+      inputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["cat /tmp/message"]
