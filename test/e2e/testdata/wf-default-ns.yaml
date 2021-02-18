@@ -4,7 +4,7 @@ metadata:
   name: test-cron-wf-basic
   namespace: default
   labels:
-    argo-e2e: true
+    workflows.argoproj.io/test: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -13,7 +13,7 @@ spec:
   failedJobsHistoryLimit: 2
   workflowMetadata:
     labels:
-      argo-e2e: true
+      workflows.argoproj.io/test: "true"
   workflowSpec:
     entrypoint: whalesay
     templates:
@@ -21,5 +21,5 @@ spec:
         container:
           image: python:alpine3.6
           imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]
+          command: [ "sh", -c ]
+          args: [ "echo hello" ]
