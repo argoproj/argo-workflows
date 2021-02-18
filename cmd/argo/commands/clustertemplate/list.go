@@ -18,10 +18,8 @@ type listFlags struct {
 }
 
 func NewListCommand() *cobra.Command {
-	var (
-		listArgs listFlags
-	)
-	var command = &cobra.Command{
+	var listArgs listFlags
+	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cluster workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -42,7 +40,6 @@ func NewListCommand() *cobra.Command {
 			default:
 				log.Fatalf("Unknown output mode: %s", listArgs.output)
 			}
-
 		},
 	}
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")

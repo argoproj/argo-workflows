@@ -128,7 +128,7 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 }
 
 func TestResourceDurationMetric(t *testing.T) {
-	var nodeStatus = `
+	nodeStatus := `
       boundaryID: many-items-z26lj
       displayName: sleep(4:four)
       finishedAt: "2020-06-02T16:04:50Z"

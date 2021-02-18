@@ -9,9 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/util"
 )
 
-var (
-	testDir string
-)
+var testDir string
 
 func init() {
 	_, filename, _, ok := runtime.Caller(0)

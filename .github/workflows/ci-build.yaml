@@ -52,6 +52,8 @@ jobs:
         include:
           - test: test-cli
             containerRuntimeExecutor: docker
+          - test: test-examples
+            containerRuntimeExecutor: docker
           - test: test-functional
             containerRuntimeExecutor: docker
           - test: test-e2e-cron
@@ -77,7 +79,7 @@ jobs:
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go
-        run: make pull-build-images test-images &
+        run: make test-images &
       - name: Create Kubeconfig
         run: |
           mkdir -p ~/.kube

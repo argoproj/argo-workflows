@@ -106,11 +106,11 @@ define protoc
       -I /usr/local/include \
       -I $(CURDIR) \
       -I $(CURDIR)/vendor \
-      -I ${GOPATH}/src \
-      -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
-      -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
-      --gogofast_out=plugins=grpc:${GOPATH}/src \
-      --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
+      -I $(GOPATH)/src \
+      -I $(GOPATH)/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
+      -I $(GOPATH)/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
+      --gogofast_out=plugins=grpc:$(GOPATH)/src \
+      --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
      perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
@@ -259,6 +259,7 @@ codegen: \
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	rm -Rf vendor
 	go mod tidy
+	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
@@ -298,7 +299,7 @@ $(GOPATH)/bin/goimports:
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	go mod vendor
 	[ -e v3 ] || ln -s . v3
-	${GOPATH}/bin/go-to-protobuf \
+	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
@@ -359,7 +360,7 @@ manifests/install.yaml: $(CRDS) dist/kustomize
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.33.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.36.0
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -367,7 +368,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
+	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
 ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui lint
@@ -383,7 +384,7 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/image: argoproj/image: $(IMAGE_NAMESPACE)/' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
+	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
@@ -393,10 +394,6 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
-
-.PHONY: pull-build-images
-pull-build-images:
-	./hack/pull-build-images.sh
 
 .PHONY: argosay
 argosay: test/e2e/images/argosay/v2/argosay
@@ -487,6 +484,10 @@ test-e2e-cron:
 test-executor:
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
+.PHONY: test-examples
+test-examples:
+	$(GOTEST) -timeout 15m -count 1 --tags examples -p 1 ./test/e2e
+
 .PHONY: test-functional
 test-functional:
 	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
@@ -502,7 +503,7 @@ clean:
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
 	[ -e v3 ] || ln -s . v3
-	openapi-gen \
+	$(GOPATH)/bin/openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
@@ -513,7 +514,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	[ -e v3 ] || ln -s . v3
-	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
+	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
 		github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 		workflow:v1alpha1 \
@@ -583,7 +584,7 @@ prepare-release: check-version-warning clean codegen manifests
 	git tag -a $(VERSION) -m $(VERSION)
 
 .PHONY: publish-release
-publish-release: check-version-warning clis
+publish-release: check-version-warning clis checksums
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
@@ -595,3 +596,7 @@ check-version-warning:
 .PHONY: parse-examples
 parse-examples:
 	go run -tags fields ./hack parseexamples
+
+.PHONY: checksums
+checksums:
+	for f in ./dist/argo-*.gz; do openssl dgst -sha256 "$$f" | awk ' { print $$2 }' > "$$f".sha256 ; done

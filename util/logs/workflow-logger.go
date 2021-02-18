@@ -38,7 +38,6 @@ type sender interface {
 }
 
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
-
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
 	_, err := wfInterface.Get(ctx, req.GetName(), metav1.GetOptions{})
 	if err != nil {

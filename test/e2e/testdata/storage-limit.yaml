@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: storage-quota-limit
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: wait
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec

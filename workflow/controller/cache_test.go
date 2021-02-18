@@ -70,7 +70,7 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 
 func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
-	var MockParam = wfv1.Parameter{
+	MockParam := wfv1.Parameter{
 		Name:  "hello",
 		Value: wfv1.AnyStringPtr(MockParamValue),
 	}

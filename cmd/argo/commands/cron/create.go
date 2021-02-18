@@ -10,7 +10,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -27,7 +26,7 @@ func NewCreateCommand() *cobra.Command {
 		cliCreateOpts cliCreateOpts
 		submitOpts    wfv1.SubmitOpts
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -48,7 +47,6 @@ func NewCreateCommand() *cobra.Command {
 }
 
 func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
-
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewCronWorkflowServiceClient()
 

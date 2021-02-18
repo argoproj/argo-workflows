@@ -94,11 +94,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 
 		sgNode := woc.executeStepGroup(ctx, stepGroup.Steps, sgNodeName, &stepsCtx)
 
-		if sgNode.Fulfilled() {
-			if tmpl.Synchronization != nil {
-				woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
-			}
-		} else {
+		if !sgNode.Fulfilled() {
 			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
 			return node, nil
 		}
@@ -147,6 +143,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			}
 		}
 	}
+
 	woc.updateOutboundNodes(nodeName, tmpl)
 	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
@@ -358,7 +355,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		}
 		fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+			return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 		}
 
 		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
@@ -474,7 +471,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	}
 	fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 
 	for i, item := range items {

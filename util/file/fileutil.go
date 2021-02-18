@@ -5,11 +5,22 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
 
+	"github.com/klauspost/pgzip"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/env"
+)
+
+var gzipImpl = env.GetString(GZipImplEnvVarKey, PGZIP)
+
+const (
+	GZipImplEnvVarKey = "GZIP_IMPLEMENTATION"
+	GZIP              = "GZip"
+	PGZIP             = "PGZip"
 )
 
 type TarReader interface {
@@ -37,7 +48,7 @@ func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 	return false
 }
 
-//Close the file
+// Close the file
 func close(f io.Closer) {
 	err := f.Close()
 	if err != nil {
@@ -52,7 +63,6 @@ func CompressEncodeString(content string) string {
 
 // DecodeDecompressString will return  decode and decompress the
 func DecodeDecompressString(content string) (string, error) {
-
 	buf, err := base64.StdEncoding.DecodeString(content)
 	if err != nil {
 		return "", err
@@ -67,21 +77,36 @@ func DecodeDecompressString(content string) (string, error) {
 // CompressContent will compress the byte array using zip writer
 func CompressContent(content []byte) []byte {
 	var buf bytes.Buffer
-	zipWriter := gzip.NewWriter(&buf)
+	var gzipWriter io.WriteCloser
+	switch gzipImpl {
+	case GZIP:
+		gzipWriter = gzip.NewWriter(&buf)
+	default:
+		gzipWriter = pgzip.NewWriter(&buf)
+	}
 
-	_, err := zipWriter.Write(content)
+	_, err := gzipWriter.Write(content)
 	if err != nil {
 		log.Warnf("Error in compressing: %v", err)
 	}
-	close(zipWriter)
+	close(gzipWriter)
 	return buf.Bytes()
 }
 
 // DecompressContent will return the uncompressed content
 func DecompressContent(content []byte) ([]byte, error) {
-
 	buf := bytes.NewReader(content)
-	gZipReader, _ := gzip.NewReader(buf)
-	defer close(gZipReader)
-	return ioutil.ReadAll(gZipReader)
+	var err error
+	var gzipReader io.ReadCloser
+	switch gzipImpl {
+	case GZIP:
+		gzipReader, err = gzip.NewReader(buf)
+	default:
+		gzipReader, err = pgzip.NewReader(buf)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to decompress: %w", err)
+	}
+	defer close(gzipReader)
+	return ioutil.ReadAll(gzipReader)
 }

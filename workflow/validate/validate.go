@@ -84,9 +84,7 @@ const (
 	anyWorkflowOutputArtifactMagicValue  = "workflow.outputs.artifacts.*"
 )
 
-var (
-	placeholderGenerator = common.NewPlaceholderGenerator()
-)
+var placeholderGenerator = common.NewPlaceholderGenerator()
 
 type FakeArguments struct{}
 
@@ -522,11 +520,10 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
 	fstTmpl, err := fasttemplate.NewTemplate(tmplStr, "{{", "}}")
 	if err != nil {
-		return fmt.Errorf("unable to parse argo varaible: %w", err)
+		return fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-
 		// Skip the custom variable references
 		if !checkValidWorkflowVariablePrefix(tag) {
 			return 0, nil
@@ -954,7 +951,6 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 							return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
 						}
 					}
-
 				}
 				if tmpl.Script != nil {
 					for _, volMnt := range tmpl.Script.VolumeMounts {
@@ -1072,7 +1068,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 
 type dagValidationContext struct {
 	tasks        map[string]wfv1.DAGTask
-	dependencies map[string]map[string]common.DependencyType //map of DAG tasks, each one containing a map of [task it's dependent on] -> [dependency type]
+	dependencies map[string]map[string]common.DependencyType // map of DAG tasks, each one containing a map of [task it's dependent on] -> [dependency type]
 }
 
 func (d *dagValidationContext) GetTask(taskName string) *wfv1.DAGTask {
@@ -1176,7 +1172,6 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s dependency '%s' not defined",
 					tmpl.Name, task.Name, depName)
-
 			} else if depType == common.DependencyTypeItems && len(task.WithItems) == 0 && task.WithParam == "" && task.WithSequence == nil {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s dependency '%s' uses an items-based condition such as .AnySucceeded or .AllFailed but does not contain any items",

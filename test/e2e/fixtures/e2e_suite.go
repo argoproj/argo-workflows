@@ -6,16 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -26,9 +25,12 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-const Namespace = "argo"
-const Label = "argo-e2e"
-const defaultTimeout = 30 * time.Second
+const (
+	Namespace      = "argo"
+	Label          = workflow.WorkflowFullName + "/test"      // mark this workflow as a test
+	VerifyPy       = workflow.WorkflowFullName + "/verify.py" // python script to run to verify the workflows
+	defaultTimeout = 30 * time.Second
+)
 
 type E2ESuite struct {
 	suite.Suite
@@ -73,11 +75,12 @@ func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
 }
 
-var foreground = metav1.DeletePropagationForeground
-var background = metav1.DeletePropagationBackground
+var (
+	foreground = metav1.DeletePropagationForeground
+	background = metav1.DeletePropagationBackground
+)
 
 func (s *E2ESuite) DeleteResources() {
-
 	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
 	resources := []schema.GroupVersionResource{
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},

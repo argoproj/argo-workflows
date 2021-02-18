@@ -3,12 +3,12 @@ kind: CronWorkflow
 metadata:
   name: wellformed
   labels:
-    argo-e2e: "true"
+    workflows.argoproj.io/test: "true"
 spec:
   schedule: "* * * * *"
   workflowMetadata:
     labels:
-      argo-e2e: "true"
+      workflows.argoproj.io/test: "true"
   workflowSpec:
     entrypoint: main
     templates:

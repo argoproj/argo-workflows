@@ -10,16 +10,14 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/k8s"
 )
 
-var (
-	K8sRequestTotalMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: argoNamespace,
-			Subsystem: workflowsSubsystem,
-			Name:      "k8s_request_total",
-			Help:      "Number of kubernetes requests executed. https://argoproj.github.io/argo-workflows/metrics/#argo_workflows_k8s_request_total",
-		},
-		[]string{"kind", "verb", "status_code"},
-	)
+var K8sRequestTotalMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: argoNamespace,
+		Subsystem: workflowsSubsystem,
+		Name:      "k8s_request_total",
+		Help:      "Number of kubernetes requests executed. https://argoproj.github.io/argo-workflows/metrics/#argo_workflows_k8s_request_total",
+	},
+	[]string{"kind", "verb", "status_code"},
 )
 
 type metricsRoundTripper struct {

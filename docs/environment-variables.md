@@ -13,6 +13,7 @@ Note that these environment variables may be removed at any time.
 | `ARCHIVED_WORKFLOW_GC_PERIOD` | `time.Duration` | The periodicity for GC of archived workflows. |
 | `ARGO_TRACE` | `bool` | Whether to enable tracing statements in Argo components. |
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | The requeue time for the rate limiter of the workflow queue. |
+| `GZIP_IMPLEMENTATION` | `string` | The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip". |
 | `LEADER_ELECTION_IDENTITY` | `string` | The ID used for workflow controllers to elect a leader. |
 | `MAX_OPERATION_TIME` | `time.Duration` | The maximum time a workflow operation is allowed to run for before requeuing the workflow onto the work queue. |
 | `OFFLOAD_NODE_STATUS_TTL` | `time.Duration` | The TTL to delete the offloaded node status. Currently only used for testing. |
@@ -23,6 +24,8 @@ Note that these environment variables may be removed at any time.
 | `TRANSIENT_ERROR_PATTERN` | `string` | The regular expression that represents additional patterns for transient errors. |
 | `WF_DEL_PROPAGATION_POLICY` | `string` | The deletion propogation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | The periodicity for GC of workflows. |
+| `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | Whether to bubble up template errors to workflow. Default true |
+| `INFORMER_WRITE_BACK` | `bool` | Whether to write back to informer instead of catching up. Deafult true |
 
 ## Executor
 

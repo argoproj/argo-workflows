@@ -18,10 +18,12 @@ func (n netError) Error() string   { return string(n) }
 func (n netError) Timeout() bool   { return false }
 func (n netError) Temporary() bool { return false }
 
-var tlsHandshakeTimeoutErr net.Error = netError("net/http: TLS handshake timeout")
-var ioTimeoutErr net.Error = netError("i/o timeout")
-var connectionTimedout net.Error = netError("connection timed out")
-var transientErr net.Error = netError("this error is transient")
+var (
+	tlsHandshakeTimeoutErr net.Error = netError("net/http: TLS handshake timeout")
+	ioTimeoutErr           net.Error = netError("i/o timeout")
+	connectionTimedout     net.Error = netError("connection timed out")
+	transientErr           net.Error = netError("this error is transient")
+)
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
 
