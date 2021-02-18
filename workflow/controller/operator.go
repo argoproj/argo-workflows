@@ -80,7 +80,7 @@ type wfOperationCtx struct {
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *config.ArtifactRepository
-	// map of pods which need to be labeled with completed=true
+	// map of completed pods with summary which need to be labeled with completed=true
 	completedPods map[string]podSummary
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
@@ -107,6 +107,8 @@ type wfOperationCtx struct {
 	execWf *wfv1.Workflow
 }
 
+// podSummary describes a completed pod, e.g. whether the pod is succeeded and whether its labels matched with
+// what's in PodGC.LabelSelector when deciding whether to add this pod to the pod GC queue.
 type podSummary struct {
 	succeeded bool
 	matched   bool
