@@ -152,6 +152,9 @@ const (
 	GlobalVarWorkflowDuration = "workflow.duration"
 	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
 	GlobalVarWorkflowParameters = "workflow.parameters"
+	// GlobalVarWorkflowCronScheduleTime is workflow scheduled timestamp from CronWorkflow
+	GlobalVarWorkflowCronScheduleTime = "workflow.parameters." + workflow.CronScheduleTimeParamName
+
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
