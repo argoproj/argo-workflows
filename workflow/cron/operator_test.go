@@ -245,7 +245,7 @@ func TestSpecError(t *testing.T) {
 	assert.Contains(t, submissionErrorCond.Message, "cron schedule is malformed: end of range (12737123) above maximum (12): 12737123")
 }
 
-func TestScheduleTimeParam(t *testing.T){
+func TestScheduleTimeParam(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	err := yaml.Unmarshal([]byte(scheduledWf), &cronWf)
 	assert.NoError(t, err)
@@ -253,19 +253,20 @@ func TestScheduleTimeParam(t *testing.T){
 	cs := fake.NewSimpleClientset()
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
-		wfClientset: cs,
-		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
-		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
-		cronWf:      &cronWf,
-		log:         logrus.WithFields(logrus.Fields{}),
-		metrics:     testMetrics,
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logrus.WithFields(logrus.Fields{}),
+		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 	}
 	woc.Run()
 	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
+	assert.NoError(t, err)
 	assert.Equal(t, wsl.Items.Len(), 1)
 	wf := wsl.Items[0]
-	assert.NotNil(t,wf)
+	assert.NotNil(t, wf)
 	assert.Len(t, wf.Spec.Arguments.Parameters, 1)
 	assert.Equal(t, wf.Spec.Arguments.Parameters[0].Name, "cronScheduleTime")
 	assert.NotEmpty(t, wf.Spec.Arguments.Parameters[0].Value.String())
