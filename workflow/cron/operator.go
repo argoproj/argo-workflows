@@ -89,9 +89,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	wf := common.ConvertCronWorkflowToWorkflowWithName(woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime))
 
-	params := []string{fmt.Sprintf("%s=%s", workflow.CronScheduleTimeParamName, scheduledRuntime.Format(time.RFC3339)),}
-
-	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{Parameters: params})
+	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{Parameters: getWorkflowParameters(scheduledRuntime)})
 	if err != nil {
 		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
 		if errors.IsAlreadyExists(err) {
@@ -378,6 +376,10 @@ func inferScheduledTime() time.Time {
 
 	log.Infof("inferred scheduled time: %s", scheduledTime)
 	return scheduledTime
+}
+
+func getWorkflowParameters(scheduledRuntime time.Time) []string {
+	return []string{fmt.Sprintf("%s=%s", workflow.CronScheduleTimeParamName, scheduledRuntime.Format(time.RFC3339))}
 }
 
 func getChildWorkflowName(cronWorkflowName string, scheduledRuntime time.Time) string {
