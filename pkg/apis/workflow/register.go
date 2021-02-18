@@ -27,5 +27,5 @@ const (
 	ClusterWorkflowTemplateShortName string = "cwftmpl"
 	ClusterWorkflowTemplateFullName  string = ClusterWorkflowTemplatePlural + "." + Group
 	WorkflowEventBindingKind         string = "WorkflowEventBinding"
-	CronScheduleTimeParamName        string = "cronScheduleTime"
+	CronScheduleTimeParamName        string = "scheduledTime"
 )
