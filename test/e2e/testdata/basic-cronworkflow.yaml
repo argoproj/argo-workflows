@@ -2,13 +2,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: basic
-  labels:
-    argo-e2e: true
 spec:
+  schedule: "* * * * *"
   workflowMetadata:
     labels:
-      argo-e2e: true
-  schedule: "* * * * *"
+      workflows.argoproj.io/test: "true"
   workflowSpec:
     entrypoint: main
     templates:

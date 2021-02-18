@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: workflow-template-with-enum-values
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: argosay
   arguments:
