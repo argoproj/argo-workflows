@@ -2,12 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: basic
-  labels:
-    argo-e2e: true
 spec:
   workflowMetadata:
     labels:
-      argo-e2e: true
+
   entrypoint: main
   templates:
     - name: main

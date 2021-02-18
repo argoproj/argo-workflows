@@ -1,0 +1,43 @@
+# This workflows shows capturing the result code of a workflow.
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  generateName: output-result-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
+      assert nodes["a"]["phase"] == "Succeeded"
+      assert nodes["a"]["outputs"]["exitCode"] == "0"
+      assert nodes["a"]["outputs"]["result"] == "foo"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            arguments:
+              parameters:
+                - name: p-0
+                  value: "foo"
+            template: pod-0
+          - name: b
+            template: pod-0
+            dependencies:
+              - a
+            arguments:
+              parameters:
+                - name: p-0
+                  value: "{{tasks.a.outputs.result}}"
+    - name: pod-0
+      inputs:
+        parameters:
+          - name: p-0
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - "{{inputs.parameters.p-0}}"
+          - /dev/stdout
