@@ -115,7 +115,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                 ),
             () => this.setState({error: null}),
             cronWorkflows => this.setState({cronWorkflows}),
-            error => console.log(error),
+            error => this.setState({error}),
             sortByYouth
         );
         this.listWatch.start();

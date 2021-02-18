@@ -138,7 +138,7 @@ func (c *cronWorkflowServiceServer) WatchCronWorkflows(req *cronworkflowpkg.Watc
 				log.Debug("cron workflow result channel done EOF")
 				return io.EOF
 			}
-			log.Debug("Received cron workflow event: %+v", event)
+			log.Debugf("Received cron workflow event: %v", event)
 			cwf, ok := event.Object.(*v1alpha1.CronWorkflow)
 			if !ok {
 				log.Debug("cron workflow result channel done !OK")
