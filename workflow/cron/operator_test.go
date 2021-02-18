@@ -268,6 +268,6 @@ func TestScheduleTimeParam(t *testing.T) {
 	wf := wsl.Items[0]
 	assert.NotNil(t, wf)
 	assert.Len(t, wf.Spec.Arguments.Parameters, 1)
-	assert.Equal(t, wf.Spec.Arguments.Parameters[0].Name, "cronScheduleTime")
+	assert.Equal(t, wf.Spec.Arguments.Parameters[0].Name, "scheduledTime")
 	assert.NotEmpty(t, wf.Spec.Arguments.Parameters[0].Value.String())
 }
