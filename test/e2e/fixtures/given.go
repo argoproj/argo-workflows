@@ -100,6 +100,12 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 
 func (g *Given) checkLabels(m metav1.Object) {
 	g.t.Helper()
+	if m.GetLabels() == nil {
+		m.SetLabels(map[string]string{})
+	}
+	if m.GetLabels()[Label] == "" {
+		m.GetLabels()[Label] = "true"
+	}
 	if m.GetLabels()[Label] == "" {
 		g.t.Fatalf("%s%s does not have %s label", m.GetName(), m.GetGenerateName(), Label)
 	}

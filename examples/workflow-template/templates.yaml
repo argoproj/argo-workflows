@@ -44,11 +44,6 @@ spec:
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
   - name: inner-steps
-    synchronization:
-      semaphore:
-        configMapKeyRef:
-          name: my-config
-          key: template
     steps:
     - - name: inner-hello1
         templateRef:

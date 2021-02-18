@@ -3,7 +3,7 @@ kind: CronWorkflow
 metadata:
   name: malformed
   labels:
-    argo-e2e: malformed
+    workflows.argoproj.io/test: malformed
 spec:
   workflowSpec:
     arguments:
