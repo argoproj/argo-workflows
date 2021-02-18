@@ -484,6 +484,10 @@ test-e2e-cron:
 test-executor:
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
+.PHONY: test-examples
+test-examples:
+	$(GOTEST) -timeout 15m -count 1 --tags examples -p 1 ./test/e2e
+
 .PHONY: test-functional
 test-functional:
 	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e

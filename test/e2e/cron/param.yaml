@@ -3,7 +3,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-param
   labels:
-    argo-e2e: true
+    workflows.argoproj.io/test: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -12,7 +12,7 @@ spec:
   failedJobsHistoryLimit: 2
   workflowMetadata:
     labels:
-      argo-e2e: true
+      workflows.argoproj.io/test: "true"
   workflowSpec:
     entrypoint: whalesay
     arguments:
