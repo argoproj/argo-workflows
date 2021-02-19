@@ -13,6 +13,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -267,7 +268,6 @@ func TestScheduleTimeParam(t *testing.T) {
 	assert.Equal(t, wsl.Items.Len(), 1)
 	wf := wsl.Items[0]
 	assert.NotNil(t, wf)
-	assert.Len(t, wf.Spec.Arguments.Parameters, 1)
-	assert.Equal(t, wf.Spec.Arguments.Parameters[0].Name, "scheduledTime")
-	assert.NotEmpty(t, wf.Spec.Arguments.Parameters[0].Value.String())
+	assert.Len(t, wf.GetAnnotations(), 1)
+	assert.NotEmpty(t, wf.GetAnnotations()[common.AnnotationKeyCronWfScheduledTime])
 }

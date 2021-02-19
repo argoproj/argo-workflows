@@ -481,6 +481,13 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.Format(time.RFC3339)
+	if annotation := woc.wf.ObjectMeta.GetAnnotations(); annotation !=nil {
+		val, ok := annotation[common.AnnotationKeyCronWfScheduledTime]
+		if ok {
+			woc.globalParams[common.GlobalVarWorkflowCronScheduleTime] = val
+		}
+	}
+
 	if woc.execWf.Spec.Priority != nil {
 		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.execWf.Spec.Priority))
 	}

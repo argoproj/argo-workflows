@@ -51,6 +51,8 @@ const (
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 
+	AnnotationKeyCronWfScheduledTime =workflow.WorkflowFullName + "/scheduled-time"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
@@ -153,7 +155,7 @@ const (
 	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// GlobalVarWorkflowCronScheduleTime is workflow scheduled timestamp from CronWorkflow
-	GlobalVarWorkflowCronScheduleTime = "workflow.parameters." + workflow.CronScheduleTimeParamName
+	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
 
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
