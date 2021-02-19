@@ -7,6 +7,8 @@ import (
 
 type ContainerRuntimeExecutors []ContainerRuntimeExecutor
 
+// select the correct executor to use
+// this may return an empty string of there is not executor found
 func (e ContainerRuntimeExecutors) Select(labels labels.Labels) (string, error) {
 	for _, c := range e {
 		ok, err := c.Matches(labels)

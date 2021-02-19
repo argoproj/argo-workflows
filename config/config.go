@@ -109,10 +109,13 @@ type Config struct {
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
 	name, err := c.ContainerRuntimeExecutors.Select(labels)
-	if name != "" {
-		return name, err
+	if err != nil {
+		return "", err
 	}
-	return c.ContainerRuntimeExecutor, err
+	if name != "" {
+		return name, nil
+	}
+	return c.ContainerRuntimeExecutor, nil
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

@@ -384,8 +384,7 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/image: argoproj/image: $(IMAGE_NAMESPACE)/' | sed 's/:latest/:$(VERSION)/' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
+	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
