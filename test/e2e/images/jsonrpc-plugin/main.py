@@ -1,26 +1,20 @@
-import asyncio
-import json
+from flask import Flask, request, jsonify
+
+api = Flask(__name__)
+api.config["DEBUG"] = True
 
 
-async def handle(reader, writer):
-    req = json.loads(await reader.readline())
+@api.route('/', methods=['POST'])
+def rpc():
+    req = request.json
     result = {
         "init": {"pluginTemplateTypes": ["hello"]},
         "executeNode": {"phase": "Succeeded", "message": "hi"},
         "reconcileNode": {}
     }[req['method']]
     resp = {"id": 0, "jsonrpc": "2.0", "result": result}
-
-    writer.write(json.dumps(resp).encode())
-    await writer.drain()
-
-    writer.close()
+    return jsonify(resp)
 
 
-async def main():
-    server = await asyncio.start_server(handle, '127.0.0.1', 12345)
-    async with server:
-        await server.serve_forever()
-
-
-asyncio.run(main())
+if __name__ == '__main__':
+    api.run(port=12345)

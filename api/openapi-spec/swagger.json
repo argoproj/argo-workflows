@@ -2993,6 +2993,56 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/nodes/{nodeId}": {
+      "put": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "WorkflowService_SetNode",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SetNodeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SetNodeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/resubmit": {
       "put": {
         "tags": [
@@ -7813,6 +7863,26 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
+    },
+    "io.argoproj.workflow.v1alpha1.SetNodeRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "node": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
+        },
+        "nodeId": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SetNodeResponse": {
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Submit": {
       "type": "object",

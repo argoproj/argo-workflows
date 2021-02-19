@@ -222,7 +222,7 @@ dist/controller.image: $(CONTROLLER_PKGS)
 # jsonrpc-plugin
 
 .PHONY: jsonrpc-plugin-image
-jsonrpc-plugin-image: dist/dist/jsonrpc-plugin.image
+jsonrpc-plugin-image: dist/jsonrpc-plugin.image
 
 dist/jsonrpc-plugin.image: $(shell find test/e2e/images/jsonrpc-plugin -type f)
 	cd test/e2e/images/jsonrpc-plugin && $(MAKE)

@@ -637,10 +637,7 @@ data:
     path: /metrics
     port: 9090
   plugins: |
-    - package: httptemplate
-    - package: jsonrpc
-      config:
-        host: localhost:12345
+    - url: http://localhost:12345
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

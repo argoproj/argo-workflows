@@ -47,6 +47,11 @@ func (h WorkflowServiceClient) DeleteWorkflow(_ context.Context, in *workflowpkg
 	return out, h.Delete(in, out, "/api/v1/workflows/{namespace}/{name}")
 }
 
+func (h Facade) SetNode(ctx context.Context, in *workflowpkg.SetNodeRequest, _ ...grpc.CallOption) (*workflowpkg.SetNodeResponse, error) {
+	out := &workflowpkg.SetNodeResponse{}
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/nodes/{nodeId}")
+}
+
 func (h WorkflowServiceClient) RetryWorkflow(_ context.Context, in *workflowpkg.WorkflowRetryRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
 	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/retry")

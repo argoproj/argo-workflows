@@ -939,8 +939,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
 
-	woc.reconcilePluginTemplates()
-
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
 	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or

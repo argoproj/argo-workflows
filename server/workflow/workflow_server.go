@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -288,6 +289,29 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 	return &workflowpkg.WorkflowDeleteResponse{}, nil
+}
+
+func (s *workflowServer) SetNode(ctx context.Context, req *workflowpkg.SetNodeRequest) (*workflowpkg.SetNodeResponse, error) {
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if err := s.validateWorkflow(wf); err != nil {
+		return nil, err
+	}
+	data, err := json.Marshal(map[string]interface{}{
+		"status": map[string]interface{}{
+			"nodes": map[string]interface{}{
+				req.NodeId: req.Node,
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Patch(ctx, req.Name, types.MergePatchType, data, metav1.PatchOptions{})
+	return &workflowpkg.SetNodeResponse{}, err
 }
 
 func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.WorkflowRetryRequest) (*wfv1.Workflow, error) {

@@ -289,6 +289,36 @@ func (_m *WorkflowServiceClient) RetryWorkflow(ctx context.Context, in *workflow
 	return r0, r1
 }
 
+// SetNode provides a mock function with given fields: ctx, in, opts
+func (_m *WorkflowServiceClient) SetNode(ctx context.Context, in *workflow.SetNodeRequest, opts ...grpc.CallOption) (*workflow.SetNodeResponse, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, in)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	var r0 *workflow.SetNodeResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *workflow.SetNodeRequest, ...grpc.CallOption) *workflow.SetNodeResponse); ok {
+		r0 = rf(ctx, in, opts...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workflow.SetNodeResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *workflow.SetNodeRequest, ...grpc.CallOption) error); ok {
+		r1 = rf(ctx, in, opts...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SetWorkflow provides a mock function with given fields: ctx, in, opts
 func (_m *WorkflowServiceClient) SetWorkflow(ctx context.Context, in *workflow.WorkflowSetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	_va := make([]interface{}, len(opts))

@@ -26,30 +26,12 @@ type TemplateExecutor interface {
 		 * do nothing
 	*/
 	ExecuteNode(req ExecuteNodeReq, resp *wfv1.NodeStatus) error
-	/*
-	   This functions is called whenever a reconciliation happens for a plugin template node.
-
-	   It will be call once per reconciliation until it returns that the nodes has completed.
-
-	   Options:
-	    * return an error
-	    * set the phase of the node status
-	    * do nothing
-	*/
-
-	ReconcileNode(req ReconcileNodeReq, resp *wfv1.NodeStatus) error
 }
 
 type InitReq struct{}
 
 type InitResp struct {
 	PluginTemplateTypes []string `json:"pluginTemplateTypes"`
-}
-
-type ReconcileNodeReq struct {
-	Workflow metav1.ObjectMeta `json:"workflow"`
-	Template wfv1.Template     `json:"template"`
-	Node     wfv1.NodeStatus   `json:"node"`
 }
 
 type ExecuteNodeReq struct {

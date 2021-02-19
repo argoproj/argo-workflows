@@ -186,6 +186,8 @@ Workflow is the definition of a workflow resource
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
+
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
@@ -528,6 +530,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
 
@@ -890,6 +894,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
+
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
@@ -1208,6 +1214,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
 
@@ -1845,6 +1853,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
 
@@ -2836,6 +2846,13 @@ Memoization enables caching for the Outputs of the template
 
 _No description available_
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
+</details>
+
 ## ResourceTemplate
 
 ResourceTemplate is a template subtype to manipulate kubernetes resources
@@ -3550,6 +3567,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
+
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata.yaml)
@@ -4035,6 +4054,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
 
@@ -5229,6 +5250,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
 

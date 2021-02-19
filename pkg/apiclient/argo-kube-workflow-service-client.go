@@ -51,6 +51,10 @@ func (c *argoKubeWorkflowServiceClient) DeleteWorkflow(ctx context.Context, req 
 	return c.delegate.DeleteWorkflow(ctx, req)
 }
 
+func (c *argoKubeWorkflowServiceClient) SetNode(ctx context.Context, req *workflowpkg.SetNodeRequest, _ ...grpc.CallOption) (*workflowpkg.SetNodeResponse, error) {
+	return c.delegate.SetNode(ctx, req)
+}
+
 func (c *argoKubeWorkflowServiceClient) RetryWorkflow(ctx context.Context, req *workflowpkg.WorkflowRetryRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	return c.delegate.RetryWorkflow(ctx, req)
 }

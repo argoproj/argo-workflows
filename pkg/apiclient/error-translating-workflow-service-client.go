@@ -46,6 +46,11 @@ func (c *errorTranslatingWorkflowServiceClient) DeleteWorkflow(ctx context.Conte
 	return workflow, grpcutil.TranslateError(err)
 }
 
+func (c *errorTranslatingWorkflowServiceClient) SetNode(ctx context.Context, req *workflowpkg.SetNodeRequest, _ ...grpc.CallOption) (*workflowpkg.SetNodeResponse, error) {
+	resp, err := c.delegate.SetNode(ctx, req)
+	return resp, grpcutil.TranslateError(err)
+}
+
 func (c *errorTranslatingWorkflowServiceClient) RetryWorkflow(ctx context.Context, req *workflowpkg.WorkflowRetryRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	workflow, err := c.delegate.RetryWorkflow(ctx, req)
 	return workflow, grpcutil.TranslateError(err)

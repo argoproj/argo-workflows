@@ -656,10 +656,7 @@ data:
         name: argo-postgres-config
         key: password
   plugins: |
-    - package: httptemplate
-    - package: jsonrpc
-      config:
-        host: localhost:12345
+    - url: http://localhost:12345
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
