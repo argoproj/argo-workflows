@@ -11,6 +11,7 @@ run:
     - cli
     - cron
     - executor
+    - examples
     - functional
 linters:
   enable:

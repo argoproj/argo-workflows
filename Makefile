@@ -368,7 +368,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
+	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
 ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui lint
@@ -483,6 +483,10 @@ test-e2e-cron:
 .PHONY: test-executor
 test-executor:
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
+
+.PHONY: test-examples
+test-examples:
+	$(GOTEST) -timeout 15m -count 1 --tags examples -p 1 ./test/e2e
 
 .PHONY: test-functional
 test-functional:
