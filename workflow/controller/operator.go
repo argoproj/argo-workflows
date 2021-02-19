@@ -912,14 +912,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			match := true
-			if woc.execWf.Spec.PodGC != nil && woc.execWf.Spec.PodGC.LabelSelector != nil {
-				labelsMap, err := metav1.LabelSelectorAsMap(woc.execWf.Spec.PodGC.LabelSelector)
+			if woc.execWf.Spec.PodGC.GetLabelSelector() != nil {
+				var podLabels labels.Set = pod.GetLabels()
+				match, err = woc.execWf.Spec.PodGC.Matches(podLabels)
 				if err != nil {
 					woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
+					return
 				}
-				labelSelector := labels.SelectorFromSet(labelsMap)
-				var podLabels labels.Set = pod.GetLabels()
-				match = labelSelector.Matches(podLabels)
 			}
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {

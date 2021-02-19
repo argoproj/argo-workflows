@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/url"
 	"path"
 	"reflect"
@@ -755,6 +756,23 @@ type PodGC struct {
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
 	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
+}
+
+// Matches returns whether the pod labels match with the label selector specified in podGC.
+func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
+	if err != nil {
+		return false, err
+	}
+	return selector.Matches(labels), nil
+}
+
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
+	if podGC != nil && podGC.LabelSelector != nil {
+		return podGC.LabelSelector
+	}
+	return nil
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
