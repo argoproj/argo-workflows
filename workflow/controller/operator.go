@@ -599,16 +599,17 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
+	labelSelector := woc.execWf.Spec.PodGC.GetLabelSelector()
 	for podName, podSummary := range woc.completedPods {
 		if woc.execWf.Spec.PodGC != nil {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:
-				if (woc.execWf.Spec.PodGC.LabelSelector == nil && podSummary.succeeded) ||
-					(woc.execWf.Spec.PodGC.LabelSelector != nil && podSummary.succeeded && podSummary.matched) {
+				if (labelSelector == nil && podSummary.succeeded) ||
+					(labelSelector != nil && podSummary.succeeded && podSummary.matched) {
 					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 				}
 			case wfv1.PodGCOnPodCompletion:
-				if woc.execWf.Spec.PodGC.LabelSelector == nil || (woc.execWf.Spec.PodGC.LabelSelector != nil && podSummary.matched) {
+				if labelSelector == nil || podSummary.matched {
 					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 				}
 			}

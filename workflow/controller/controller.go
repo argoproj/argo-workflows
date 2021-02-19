@@ -629,12 +629,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 			}
 		}
 		if doPodGC {
+			labelSelector := woc.execWf.Spec.PodGC.GetLabelSelector()
 			for podName, podSummary := range woc.completedPods {
-				if woc.execWf.Spec.PodGC != nil {
-					if woc.execWf.Spec.PodGC.LabelSelector == nil ||
-						woc.execWf.Spec.PodGC.LabelSelector != nil && podSummary.matched {
-						woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
-					}
+				if labelSelector == nil || podSummary.matched {
+					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 				}
 			}
 		}
