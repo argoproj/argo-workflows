@@ -62,14 +62,16 @@ func (ossDriver *OSSArtifactDriver) Save(path string, outputArtifact *wfv1.Artif
 				return false, nil
 			}
 			bucketName := outputArtifact.OSS.Bucket
-			exists, err := osscli.IsBucketExist(bucketName)
-			if err != nil {
-				return false, fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, err)
-			}
-			if !exists && outputArtifact.OSS.CreateBucketIfNotPresent {
-				err = osscli.CreateBucket(bucketName)
+			if outputArtifact.OSS.CreateBucketIfNotPresent {
+				exists, err := osscli.IsBucketExist(bucketName)
 				if err != nil {
-					log.Warnf("failed to automatically create bucket %s when it's not present: %v", bucketName, err)
+					return false, fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, err)
+				}
+				if !exists {
+					err = osscli.CreateBucket(bucketName)
+					if err != nil {
+						log.Warnf("failed to automatically create bucket %s when it's not present: %v", bucketName, err)
+					}
 				}
 			}
 			bucket, err := osscli.Bucket(bucketName)
