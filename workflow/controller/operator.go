@@ -2661,17 +2661,11 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 			return woc.requeueIfTransientErr(err, node.Name)
 		}
 	} else {
-		inputData, err := data.ProcessInputParameters(tmpl.Inputs.Parameters)
+		transformedData, err := data.ProcessData(tmpl.Data, newWorkflowExecutorSourceProcessor())
 		if err != nil {
-			errorMessage := fmt.Sprintf("could not process input parameters: %s", err)
+			errorMessage := fmt.Sprintf("could not process data: %s", err)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMessage), fmt.Errorf(errorMessage)
 		}
-		transformedData, err := data.ProcessTransformation(inputData, tmpl.Data.Transformation)
-		if err != nil {
-			errorMessage := fmt.Sprintf("could not transform data: %s", err)
-			return woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMessage), fmt.Errorf(errorMessage)
-		}
-
 		node = woc.finalizeTransformNode(nodeName, transformedData)
 	}
 

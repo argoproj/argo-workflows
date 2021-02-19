@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	data2 "github.com/argoproj/argo-workflows/v3/workflow/data"
+
 	"k8s.io/utils/pointer"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/data"
 )
 
 func (we *WorkflowExecutor) Data(ctx context.Context) error {
@@ -15,47 +16,12 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 		return nil
 	}
 
-	var data interface{}
-	var err error
-	switch {
-	case dataTemplate.Source != nil:
-		switch {
-		case dataTemplate.Source.WithArtifactPaths != nil:
-			data, err = we.processWithArtifactPaths(ctx, dataTemplate.Source.WithArtifactPaths)
-			if err != nil {
-				return fmt.Errorf("unable to source artifact paths: %w", err)
-			}
-		}
-	// We could logically add another case here to process inputs when we determine we need a Pod to run certain transformations
-	default:
-		return fmt.Errorf("internal error: should not launch data Pod if no source is used")
-	}
-
-	data, err = data2.ProcessTransformation(data, dataTemplate.Transformation)
+	transformedData, err := data.ProcessData(dataTemplate, newWorkflowExecutorSourceProcessor(ctx, we))
 	if err != nil {
-		return fmt.Errorf("unable to process transformation: %w", err)
+		return fmt.Errorf("unable to process data template: %w", err)
 	}
 
-	return we.processOutput(ctx, data)
-}
-
-func (we *WorkflowExecutor) processWithArtifactPaths(ctx context.Context, artifacts *wfv1.WithArtifactPaths) ([]string, error) {
-	driverArt, err := we.newDriverArt(&artifacts.Artifact)
-	if err != nil {
-		return nil, err
-	}
-	artDriver, err := we.InitDriver(ctx, driverArt)
-	if err != nil {
-		return nil, err
-	}
-
-	var files []string
-	files, err = artDriver.ListObjects(&artifacts.Artifact)
-	if err != nil {
-		return nil, err
-	}
-
-	return files, nil
+	return we.processOutput(ctx, transformedData)
 }
 
 func (we *WorkflowExecutor) processOutput(ctx context.Context, data interface{}) error {

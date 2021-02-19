@@ -458,7 +458,7 @@ func getExecutorLogLevel() string {
 	return log.GetLevel().String()
 }
 
-func (woc *wfOperationCtx) newProcessArtifactsContainer(artifacts wfv1.WithArtifactPaths) apiv1.Container {
+func (woc *wfOperationCtx) newProcessArtifactsContainer(artifacts wfv1.ArtifactPaths) apiv1.Container {
 	container := woc.newExecContainer("process-artifacts", &wfv1.Template{})
 	bytes, _ := json.Marshal(artifacts)
 	container.ImagePullPolicy = apiv1.PullNever

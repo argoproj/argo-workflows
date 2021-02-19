@@ -32,26 +32,21 @@ spec:
             value: "{{steps.collect-artifact.outputs.result}}"
 
   - name: generate-artifacts
+    inputs:
+      parameters:
+          - name: processed
     data:
       source:
-        withArtifactPaths:
+        artifactPaths:
           s3:
-            bucket: test
-            endpoint: minio:9000
-            insecure: true
-            accessKeySecret:
-              name: my-minio-cred
-              key: accesskey
-            secretKeySecret:
-              name: my-minio-cred
-              key: secretkey
+            bucket: "test"
       transformation:
         - filter:
             regex: "\\.py"
         #- filter:
         #    regex: "lunch"
-        #- group:
-        #    batch: 2
+        - group:
+            batch: 2
         #- group:
         #    regex: ".+?\\.(.+?)$"
 
@@ -61,14 +56,7 @@ spec:
         - name: processed
     data:
       transformation:
-        #- filter:
-        #    regex: ".+?\\.pdf$"
-        #- group:
-        #    batch: 1
-        - map:
-            replace:
-              old: ".done"
-              new: ".final"
+        - expression: "filter(data, {# > 3})"
 
   - name: process-message
     inputs:

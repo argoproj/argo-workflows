@@ -2434,7 +2434,7 @@ spec:
                           type: string
                         source:
                           properties:
-                            withArtifactPaths:
+                            artifactPaths:
                               properties:
                                 archive:
                                   properties:
@@ -2730,42 +2730,16 @@ spec:
                               required:
                               - name
                               type: object
+                            raw:
+                              type: string
                           type: object
                         transformation:
                           items:
                             properties:
-                              filter:
-                                properties:
-                                  regex:
-                                    type: string
-                                type: object
-                              group:
-                                properties:
-                                  batch:
-                                    type: integer
-                                  regex:
-                                    type: string
-                                required:
-                                - batch
-                                - regex
-                                type: object
-                              map:
-                                properties:
-                                  replace:
-                                    properties:
-                                      new:
-                                        type: string
-                                      old:
-                                        type: string
-                                    required:
-                                    - new
-                                    - old
-                                    type: object
-                                required:
-                                - replace
-                                type: object
+                              expression:
+                                type: string
                             required:
-                            - map
+                            - expression
                             type: object
                           type: array
                       required:

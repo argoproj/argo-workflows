@@ -18,15 +18,16 @@ const (
 )
 
 func (d *Data) UsePod() bool {
-	if d.Source == nil {
+	// If we're not using artifact paths, only use a pod if PodPolicy is set to Always
+	if d.Source == nil || d.Source.ArtifactPaths == nil {
 		return d.PodPolicy == PodPolicyAlways
 	}
 	return true
 }
 
 func (d *Data) GetArtifactIfAny() *Artifact {
-	if d.Source != nil && d.Source.WithArtifactPaths != nil {
-		return &d.Source.WithArtifactPaths.Artifact
+	if d.Source != nil && d.Source.ArtifactPaths != nil {
+		return &d.Source.ArtifactPaths.Artifact
 	}
 	return nil
 }
@@ -34,48 +35,25 @@ func (d *Data) GetArtifactIfAny() *Artifact {
 type Transformation []TransformationStep
 
 type TransformationStep struct {
-	// Filter is the strategy in how to filter files
-	Filter *Filter `json:"filter,omitempty"`
-
-	// Map is the strategy in how to map files
-	Map *MapTransform `json:"map"`
-
-	// Group is the strategy in how to aggregate files
-	Group *Group `json:"group,omitempty"`
+	// Expression defines an expr expression to apply
+	Expression string `json:"expression"`
 }
 
 // DataSource sources external data into a data template
 type DataSource struct {
-	// WithArtifactPaths is a data transformation that collects a list of artifact paths
-	WithArtifactPaths *WithArtifactPaths `json:"withArtifactPaths,omitempty"`
+	// Raw is raw data
+	Raw string `json:"raw,omitempty"`
+
+	// ArtifactPaths is a data transformation that collects a list of artifact paths
+	ArtifactPaths *ArtifactPaths `json:"artifactPaths,omitempty"`
 }
 
-// WithArtifactPaths expands a step from a collection of artifacts
-type WithArtifactPaths struct {
+// ArtifactPaths expands a step from a collection of artifacts
+type ArtifactPaths struct {
 	// Artifact is the artifact location from which to source the artifacts, it can be a directory
 	Artifact `json:",inline"`
 }
 
-// Filter is the strategy in how to aggregate files
-type Filter struct {
-	// Regex applies a regex filter to all files in a directory
-	Regex string `json:"regex,omitempty"`
-}
-
-// Group is the strategy in how to aggregate files
-type Group struct {
-	// Regex applies a regex and aggregates based on a capture group
-	Regex string `json:"regex"`
-	// Batch groups into batches of specified size
-	Batch int `json:"batch"`
-}
-
-// Map is the strategy in how to map files
-type MapTransform struct {
-	Replace *Replace `json:"replace"`
-}
-
-type Replace struct {
-	Old string `json:"old"`
-	New string `json:"new"`
+type SourceProcessor interface {
+	ProcessArtifactPaths(*ArtifactPaths) (interface{}, error)
 }
