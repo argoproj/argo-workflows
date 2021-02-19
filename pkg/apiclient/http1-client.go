@@ -3,13 +3,13 @@ package apiclient
 import (
 	"context"
 
-	"github.com/argoproj/argo/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo/v3/pkg/apiclient/http1"
-	infopkg "github.com/argoproj/argo/v3/pkg/apiclient/info"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/http1"
+	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
 type httpClient http1.Facade
@@ -38,6 +38,6 @@ func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http1.InfoServiceClient(h), nil
 }
 
-func newHTTP1Client(baseUrl string, auth string) (context.Context, Client, error) {
-	return context.Background(), httpClient(http1.NewFacade(baseUrl, auth)), nil
+func newHTTP1Client(baseUrl string, auth string, insecureSkipVerify bool) (context.Context, Client, error) {
+	return context.Background(), httpClient(http1.NewFacade(baseUrl, auth, insecureSkipVerify)), nil
 }

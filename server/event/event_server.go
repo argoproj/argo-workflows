@@ -8,12 +8,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	eventpkg "github.com/argoproj/argo/v3/pkg/apiclient/event"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/server/auth"
-	"github.com/argoproj/argo/v3/server/event/dispatch"
-	"github.com/argoproj/argo/v3/util/instanceid"
-	"github.com/argoproj/argo/v3/workflow/events"
+	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/event/dispatch"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/events"
 )
 
 type Controller struct {
@@ -39,7 +39,6 @@ func NewController(instanceIDService instanceid.Service, eventRecorderManager ev
 }
 
 func (s *Controller) Run(stopCh <-chan struct{}) {
-
 	// this `WaitGroup` allows us to wait for all events to dispatch before exiting
 	wg := sync.WaitGroup{}
 
@@ -66,7 +65,6 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 }
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
-
 	options := metav1.ListOptions{}
 	s.instanceIDService.With(&options)
 

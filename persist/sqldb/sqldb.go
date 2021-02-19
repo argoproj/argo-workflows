@@ -11,9 +11,9 @@ import (
 	"upper.io/db.v3/mysql"
 	"upper.io/db.v3/postgresql"
 
-	"github.com/argoproj/argo/v3/config"
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 // CreateDBSession creates the dB session
@@ -34,7 +34,6 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 
 // CreatePostGresDBSession creates postgresDB session
 func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
 	}
@@ -49,7 +48,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", err
 	}
 
-	var settings = postgresql.ConnectionURL{
+	settings := postgresql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
 		Host:     cfg.GetHostname(),
@@ -80,7 +79,6 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 
 // CreateMySQLDBSession creates Mysql DB session
 func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
 	}

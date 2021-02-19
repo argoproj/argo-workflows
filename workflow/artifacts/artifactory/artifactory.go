@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type ArtifactoryArtifactDriver struct {
@@ -16,7 +16,6 @@ type ArtifactoryArtifactDriver struct {
 
 // Download artifact from an artifactory URL
 func (a *ArtifactoryArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
-
 	lf, err := os.Create(path)
 	if err != nil {
 		return err
@@ -51,7 +50,6 @@ func (a *ArtifactoryArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 
 // UpLoad artifact to an artifactory URL
 func (a *ArtifactoryArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
-
 	f, err := os.Open(path)
 	if err != nil {
 		return err

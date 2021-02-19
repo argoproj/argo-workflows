@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/artifacts/raw"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
 )
 
 const (
@@ -18,7 +18,6 @@ const (
 )
 
 func TestLoad(t *testing.T) {
-
 	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
 	lf, err := ioutil.TempFile("", LoadFileName)
 	assert.NoError(t, err)
@@ -35,5 +34,4 @@ func TestLoad(t *testing.T) {
 	dat, err := ioutil.ReadFile(lf.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, content, string(dat))
-
 }

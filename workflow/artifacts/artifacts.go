@@ -4,17 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/argoproj/argo/v3/workflow/artifacts/gcs"
-	"github.com/argoproj/argo/v3/workflow/artifacts/oss"
-
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/artifacts/artifactory"
-	"github.com/argoproj/argo/v3/workflow/artifacts/git"
-	"github.com/argoproj/argo/v3/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo/v3/workflow/artifacts/http"
-	"github.com/argoproj/argo/v3/workflow/artifacts/raw"
-	"github.com/argoproj/argo/v3/workflow/artifacts/resource"
-	"github.com/argoproj/argo/v3/workflow/artifacts/s3"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/artifactory"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
 )
 
 // ArtifactDriver is the interface for loading and saving of artifacts
@@ -36,7 +35,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var accessKey string
 		var secretKey string
 
-		if art.S3.AccessKeySecret.Name != "" {
+		if art.S3.AccessKeySecret != nil && art.S3.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
@@ -118,7 +117,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var accessKey string
 		var secretKey string
 
-		if art.OSS.AccessKeySecret.Name != "" {
+		if art.OSS.AccessKeySecret != nil && art.OSS.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
@@ -141,7 +140,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 
 	if art.GCS != nil {
 		driver := gcs.ArtifactDriver{}
-		if art.GCS.ServiceAccountKeySecret.Name != "" {
+		if art.GCS.ServiceAccountKeySecret != nil && art.GCS.ServiceAccountKeySecret.Name != "" {
 			serviceAccountKeyBytes, err := ri.GetSecret(ctx, art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
 			if err != nil {
 				return nil, err

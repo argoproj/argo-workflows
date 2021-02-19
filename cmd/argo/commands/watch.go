@@ -12,20 +12,17 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/workflow/packer"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
 
 func NewWatchCommand() *cobra.Command {
-	var (
-		getArgs getFlags
-	)
+	var getArgs getFlags
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "watch WORKFLOW",
 		Short: "watch a workflow until it completes",
 		Example: `# Watch a workflow:
@@ -53,8 +50,6 @@ func NewWatchCommand() *cobra.Command {
 }
 
 func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflow string, getArgs getFlags) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{

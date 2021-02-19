@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var wfDefaults = `
@@ -46,6 +46,7 @@ var wfDefaults = `
         secret: 
           secretName: test
 `
+
 var simpleWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -62,6 +63,7 @@ spec:
       command: [cowsay]
       args: ["hello world"]
 `
+
 var wf_wfdefaultResult = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -108,6 +110,7 @@ spec:
       secret: 
         secretName: test
 `
+
 var simpleWFT = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -130,6 +133,7 @@ spec:
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
 `
+
 var storedSpecResult = `
 {
    "activeDeadlineSeconds": 7200,
@@ -250,7 +254,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 			SecondsAfterCompletion: pointer.Int32Ptr(10),
 		}
 
-		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
+		wf := wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
 			Spec: wfv1.WorkflowSpec{
 				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"},
 				Entrypoint:          "Test",
@@ -285,7 +290,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 			SecondsAfterCompletion: pointer.Int32Ptr(10),
 		}
 
-		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
+		wf := wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
 			Spec: wfv1.WorkflowSpec{
 				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"},
 				Entrypoint:          "Test",
@@ -296,7 +302,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 				},
 			},
 		}
-		//resultSpec.Arguments.Parameters = append(resultSpec.Arguments.Parameters, args.Parameters...)
+		// resultSpec.Arguments.Parameters = append(resultSpec.Arguments.Parameters, args.Parameters...)
 		resultSpec.Entrypoint = "Test"
 		resultSpec.TTLStrategy = &ttlStrategy
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
@@ -308,5 +314,4 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		assert.Contains(woc.execWf.Spec.Arguments.Parameters, param)
 		assert.Contains(woc.wf.Status.StoredWorkflowSpec.Arguments.Artifacts, art)
 	})
-
 }

@@ -11,7 +11,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
 )
 
 type Callback func(pod *corev1.Pod, data []byte) error

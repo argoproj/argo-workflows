@@ -41,7 +41,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
-    const [name] = useState(match.params.name);
+    const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -81,8 +81,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         if (workflowOperation.title === 'DELETE') {
                                             navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
                                         } else {
-                                            // navigation.goto does not seem to work here
-                                            document.location.href = uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`);
+                                            setName(wf.metadata.name);
                                         }
                                     })
                                     .catch(setError);

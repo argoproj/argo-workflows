@@ -16,14 +16,15 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/server/auth"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	"github.com/argoproj/argo/v3/util/instanceid"
-	"github.com/argoproj/argo/v3/util/labels"
-	waitutil "github.com/argoproj/argo/v3/util/wait"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/creator"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
+	"github.com/argoproj/argo-workflows/v3/util/labels"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 )
 
 type Operation struct {
@@ -192,12 +193,7 @@ func expressionEnvironment(ctx context.Context, namespace, discriminator string,
 		"metadata":      metaData(ctx),
 		"payload":       payload,
 	}
-	data, err := json.Marshal(src)
-	if err != nil {
-		return nil, err
-	}
-	env := make(map[string]interface{})
-	return env, json.Unmarshal(data, &env)
+	return jsonutil.Jsonify(src)
 }
 
 func metaData(ctx context.Context) map[string]interface{} {

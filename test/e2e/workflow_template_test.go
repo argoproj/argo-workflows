@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type WorkflowTemplateSuite struct {
@@ -23,7 +23,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplate() {
 		WorkflowName("my-wf").
 		When().
 		CreateWorkflowTemplates().
-		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "--name", "my-wf", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "--name", "my-wf", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
 		WaitForWorkflow().
@@ -45,8 +45,6 @@ func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 kind: Workflow
 metadata:
   generateName: workflow-template-nested-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:
@@ -67,7 +65,6 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		})
-
 }
 
 func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
@@ -76,7 +73,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
 		WorkflowName("my-wf-with-enum").
 		When().
 		CreateWorkflowTemplates().
-		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-with-enum-values", "--name", "my-wf-with-enum", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-with-enum-values", "--name", "my-wf-with-enum", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
 		WaitForWorkflow().

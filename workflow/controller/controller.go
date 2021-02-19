@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	v1Label "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,30 +31,31 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/argo/v3"
-	"github.com/argoproj/argo/v3/config"
-	argoErr "github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	wfextvv1alpha1 "github.com/argoproj/argo/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	authutil "github.com/argoproj/argo/v3/util/auth"
-	"github.com/argoproj/argo/v3/util/diff"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	"github.com/argoproj/argo/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo/v3/workflow/common"
-	controllercache "github.com/argoproj/argo/v3/workflow/controller/cache"
-	"github.com/argoproj/argo/v3/workflow/controller/estimation"
-	"github.com/argoproj/argo/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo/v3/workflow/controller/informer"
-	"github.com/argoproj/argo/v3/workflow/controller/pod"
-	"github.com/argoproj/argo/v3/workflow/cron"
-	"github.com/argoproj/argo/v3/workflow/events"
-	"github.com/argoproj/argo/v3/workflow/hydrator"
-	"github.com/argoproj/argo/v3/workflow/metrics"
-	"github.com/argoproj/argo/v3/workflow/sync"
-	"github.com/argoproj/argo/v3/workflow/ttlcontroller"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3/config"
+	argoErr "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
+	"github.com/argoproj/argo-workflows/v3/util/diff"
+	"github.com/argoproj/argo-workflows/v3/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
+	"github.com/argoproj/argo-workflows/v3/workflow/cron"
+	"github.com/argoproj/argo-workflows/v3/workflow/events"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/sync"
+	"github.com/argoproj/argo-workflows/v3/workflow/ttlcontroller"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // WorkflowController is the controller for workflow resources
@@ -226,7 +226,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		ReleaseOnCancel: true,
 		LeaseDuration:   15 * time.Second,
 		RenewDeadline:   10 * time.Second,
-		RetryPeriod:     2 * time.Second,
+		RetryPeriod:     5 * time.Second,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
 				logCtx.Info("started leading")
@@ -311,8 +311,8 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
 
-	labelSelector := v1Label.NewSelector()
-	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
+	labelSelector := labels.NewSelector()
+	req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
 	if req != nil {
 		labelSelector = labelSelector.Add(*req)
 	}
@@ -437,7 +437,10 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 		case deletePod:
 			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(ctx, podName, metav1.DeleteOptions{PropagationPolicy: &propagation})
+			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
+				PropagationPolicy:  &propagation,
+				GracePeriodSeconds: wfc.Config.PodGCGracePeriodSeconds,
+			})
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
@@ -454,15 +457,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
-	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
-	periodicity := 5 * time.Minute
-	if ok {
-		var err error
-		periodicity, err = time.ParseDuration(value)
-		if err != nil {
-			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse WORKFLOW_GC_PERIOD")
-		}
-	}
+	periodicity := env.LookupEnvDurationOr("WORKFLOW_GC_PERIOD", 5*time.Minute)
 	log.Infof("Performing periodic GC every %v", periodicity)
 	ticker := time.NewTicker(periodicity)
 	for {
@@ -510,15 +505,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 }
 
 func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
-	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
-	periodicity := 24 * time.Hour
-	if ok {
-		var err error
-		periodicity, err = time.ParseDuration(value)
-		if err != nil {
-			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_GC_PERIOD")
-		}
-	}
+	periodicity := env.LookupEnvDurationOr("ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
 	if wfc.Config.Persistence == nil {
 		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
@@ -651,7 +638,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
-	//c.handleErr(err, key)
+	// c.handleErr(err, key)
 	return true
 }
 
@@ -915,7 +902,6 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 
 				// Enqueue the workflow for deleted pod
 				_ = wfc.enqueueWfFromPodLabel(obj)
-
 			},
 		},
 	)

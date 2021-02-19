@@ -18,7 +18,7 @@ export const FilterDropDown = (props: FilterDropDownProps) => {
         <DropDown
             isMenu={true}
             anchor={() => (
-                <div className={classNames('top-bar__filter', {'top-bar__filter--selected': true})} title='Filter'>
+                <div className={classNames('top-bar__filter')} title='Filter'>
                     <i className='argo-icon-filter' aria-hidden='true' />
                     <i className='fa fa-angle-down' aria-hidden='true' />
                 </div>

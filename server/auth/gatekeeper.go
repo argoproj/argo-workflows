@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -22,13 +21,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	workflow "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/v3/server/auth/serviceaccount"
-	"github.com/argoproj/argo/v3/server/auth/sso"
-	"github.com/argoproj/argo/v3/server/auth/types"
-	servertypes "github.com/argoproj/argo/v3/server/types"
-	"github.com/argoproj/argo/v3/util/kubeconfig"
-	"github.com/argoproj/argo/v3/workflow/common"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/server/auth/serviceaccount"
+	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
+	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type ContextKey string
@@ -174,6 +174,8 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			}
 			return clients, claims, nil
 		} else {
+			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+			log.WithFields(log.Fields{"subject": claims.Subject}).Info("using the default service account for user")
 			return s.clients, claims, nil
 		}
 	default:
@@ -201,14 +203,9 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[i]) > precedence(serviceAccounts[j]) })
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
-		data, err := json.Marshal(claims)
+		v, err := jsonutil.Jsonify(claims)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshall claims: %w", err)
-		}
-		v := make(map[string]interface{})
-		err = json.Unmarshal(data, &v)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshall claims: %w", err)
 		}
 		result, err := expr.Eval(rule, v)
 		if err != nil {
@@ -230,6 +227,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 			return nil, err
 		}
 		claims.ServiceAccountName = serviceAccount.Name
+		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
 		return clients, nil
 	}

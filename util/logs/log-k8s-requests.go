@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/v3/util/k8s"
+	"github.com/argoproj/argo-workflows/v3/util/k8s"
 )
 
 type k8sLogRoundTripper struct {

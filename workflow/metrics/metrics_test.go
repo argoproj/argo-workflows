@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func write(metric prometheus.Metric) dto.Metric {

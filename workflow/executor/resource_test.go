@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/executor/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
 )
 
 // TestResourceFlags tests whether Resource Flags
@@ -33,7 +33,6 @@ func TestResourceFlags(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
 	args, err := we.getKubectlArguments("fake", "../../examples/hello-world.yaml", fakeFlags)
 

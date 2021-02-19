@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type DaemonPodSuite struct {
@@ -23,8 +23,6 @@ func (s *DaemonPodSuite) TestWorkflowCompletesIfContainsDaemonPod() {
 kind: Workflow
 metadata:
   generateName: whalesay-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:
@@ -48,7 +46,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, "to be succeeded").
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.False(t, status.FinishedAt.IsZero())

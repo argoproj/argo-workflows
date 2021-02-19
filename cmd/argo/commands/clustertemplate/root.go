@@ -5,7 +5,7 @@ import (
 )
 
 func NewClusterTemplateCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:     "cluster-template",
 		Aliases: []string{"cwftmpl", "cwft"},
 		Short:   "manipulate cluster workflow templates",

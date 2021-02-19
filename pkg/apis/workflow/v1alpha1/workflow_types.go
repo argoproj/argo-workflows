@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/argoproj/argo/v3/util/slice"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -138,14 +138,14 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 }
 
 // GetTTLStrategy return TTLStrategy based on Order of precedence:
-//1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
+// 1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
 func (w *Workflow) GetTTLStrategy() *TTLStrategy {
 	var ttlStrategy *TTLStrategy
 	// TTLStrategy from WorkflowTemplate
 	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
 		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
 	}
-	//TTLStrategy from Workflow
+	// TTLStrategy from Workflow
 	if w.Spec.GetTTLStrategy() != nil {
 		ttlStrategy = w.Spec.GetTTLStrategy()
 	}
@@ -278,14 +278,6 @@ type WorkflowSpec struct {
 	// primary workflow.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,17,opt,name=onExit"`
 
-	// TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
-	// (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
-	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
-	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
-	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-	// DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
-	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"bytes,18,opt,name=ttlSecondsAfterFinished"`
-
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
 	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
 	// deleted after the time to live expires. If this field is unset,
@@ -328,9 +320,9 @@ type WorkflowSpec struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
-	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
-	//Controller will automatically add the selector with workflow name, if selector is empty.
-	//Optional: Defaults to empty.
+	// PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	// Controller will automatically add the selector with workflow name, if selector is empty.
+	// Optional: Defaults to empty.
 	// +optional
 	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 
@@ -351,6 +343,9 @@ type WorkflowSpec struct {
 
 	// RetryStrategy for all templates in the workflow.
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
+
+	// PodMetadata defines additional metadata that should be applied to workflow pods
+	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -365,14 +360,6 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 }
 
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
-	if wfs.TTLSecondsAfterFinished != nil {
-		if wfs.TTLStrategy == nil {
-			ttlstrategy := TTLStrategy{SecondsAfterCompletion: wfs.TTLSecondsAfterFinished}
-			wfs.TTLStrategy = &ttlstrategy
-		} else if wfs.TTLStrategy.SecondsAfterCompletion == nil {
-			wfs.TTLStrategy.SecondsAfterCompletion = wfs.TTLSecondsAfterFinished
-		}
-	}
 	return wfs.TTLStrategy
 }
 
@@ -494,18 +481,6 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 type Template struct {
 	// Name is the name of the template
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
-
-	// Template is the name of the template which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-
-	// Arguments hold arguments to the template.
-	// DEPRECATED: This field is not used.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
-
-	// TemplateRef is the reference to the template resource which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
@@ -635,23 +610,6 @@ type Template struct {
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
 
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-var _ TemplateReferenceHolder = &Template{}
-
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-func (tmpl *Template) GetTemplateName() string {
-	if tmpl.Template != "" {
-		return tmpl.Template
-	} else {
-		return tmpl.Name
-	}
-}
-
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-func (tmpl *Template) GetTemplateRef() *TemplateRef {
-	return tmpl.TemplateRef
-}
-
 // GetBaseTemplate returns a base template content.
 func (tmpl *Template) GetBaseTemplate() *Template {
 	baseTemplate := tmpl.DeepCopy()
@@ -661,6 +619,14 @@ func (tmpl *Template) GetBaseTemplate() *Template {
 
 func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
+}
+
+func (tmpl *Template) GetSidecarNames() []string {
+	var containerNames []string
+	for _, s := range tmpl.Sidecars {
+		containerNames = append(containerNames, s.Name)
+	}
+	return containerNames
 }
 
 type Artifacts []Artifact
@@ -746,8 +712,7 @@ type ValueFrom struct {
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
-type SuppliedValueFrom struct {
-}
+type SuppliedValueFrom struct{}
 
 // Artifact indicates an artifact to place at a specified path
 type Artifact struct {
@@ -1119,10 +1084,6 @@ type TemplateRef struct {
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	// Template is the name of referred template in the resource.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-	// RuntimeResolution skips validation at creation time.
-	// By enabling this option, you can create the referred workflow template before the actual runtime.
-	// DEPRECATED: This value is not used anymore and is ignored
-	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
@@ -1244,7 +1205,7 @@ func SucceededPodNode(n NodeStatus) bool {
 
 // Children returns the children of the parent.
 func (s Nodes) Children(parentNodeId string) Nodes {
-	var childNodes = make(Nodes)
+	childNodes := make(Nodes)
 	parentNode, ok := s[parentNodeId]
 	if !ok {
 		return childNodes
@@ -1259,7 +1220,7 @@ func (s Nodes) Children(parentNodeId string) Nodes {
 
 // Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
 func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
-	var filteredNodes = make(Nodes)
+	filteredNodes := make(Nodes)
 	for _, node := range s {
 		if predicate(node) {
 			filteredNodes[node.ID] = node
@@ -1270,7 +1231,7 @@ func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 
 // Map maps the nodes to new values, e.g. `x.Hostname`
 func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
-	var values = make(map[string]interface{})
+	values := make(map[string]interface{})
 	for _, node := range s {
 		values[node.ID] = f(node)
 	}
@@ -1359,9 +1320,10 @@ func (wf *Workflow) GetOffloadNodeStatusVersion() string {
 type RetryPolicy string
 
 const (
-	RetryPolicyAlways    RetryPolicy = "Always"
-	RetryPolicyOnFailure RetryPolicy = "OnFailure"
-	RetryPolicyOnError   RetryPolicy = "OnError"
+	RetryPolicyAlways           RetryPolicy = "Always"
+	RetryPolicyOnFailure        RetryPolicy = "OnFailure"
+	RetryPolicyOnError          RetryPolicy = "OnError"
+	RetryPolicyOnTransientError RetryPolicy = "OnTransientError"
 )
 
 // Backoff is a backoff strategy to use within retryStrategy
@@ -1376,8 +1338,7 @@ type Backoff struct {
 
 // RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
 // In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
-type RetryNodeAntiAffinity struct {
-}
+type RetryNodeAntiAffinity struct{}
 
 // RetryAffinity prevents running steps on the same host.
 type RetryAffinity struct {
@@ -1556,14 +1517,6 @@ type NodeStatus struct {
 	// TemplateRef is the reference to the template resource which this node corresponds to.
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
-
-	// StoredTemplateID is the ID of stored template.
-	// DEPRECATED: This value is not used anymore.
-	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
-
-	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-	// DEPRECATED: This value is not used anymore.
-	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
 
 	// TemplateScope is the template scope in which the template of this node was retrieved.
 	TemplateScope string `json:"templateScope,omitempty" protobuf:"bytes,20,opt,name=templateScope"`
@@ -2200,7 +2153,7 @@ type DAGTemplate struct {
 	// before failing the DAG itself.
 	// The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to
 	// completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
-	// More info and example about this feature at https://github.com/argoproj/argo/issues/1442
+	// More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442
 	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,3,opt,name=failFast"`
 }
 

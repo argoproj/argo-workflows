@@ -2,22 +2,21 @@ package commands
 
 import (
 	"context"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
@@ -25,6 +24,7 @@ type cliSubmitOpts struct {
 	output   string // --output
 	wait     bool   // --wait
 	watch    bool   // --watch
+	verify   bool   // --verify
 	log      bool   // --log
 	strict   bool   // --strict
 	priority *int32 // --priority
@@ -38,7 +38,7 @@ func NewSubmitCommand() *cobra.Command {
 		priority      int32
 		from          string
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "submit [FILE... | --from `kind/name]",
 		Short: "submit a workflow",
 		Example: `# Submit multiple workflows from files:
@@ -67,7 +67,7 @@ func NewSubmitCommand() *cobra.Command {
 			}
 
 			if !cliSubmitOpts.watch && len(cliSubmitOpts.getArgs.status) > 0 {
-				logrus.Warn("--status should only be used with --watch")
+				log.Warn("--status should only be used with --watch")
 			}
 
 			ctx, apiClient := client.NewAPIClient()
@@ -88,6 +88,8 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
+	command.Flags().BoolVar(&cliSubmitOpts.verify, "verify", false, "verify completed workflows by running the Python code in the workflows.argoproj.io/verify.py annotation")
+	errors.CheckError(command.Flags().MarkHidden("verify"))
 	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
@@ -157,7 +159,6 @@ func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 }
 
 func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
-
 	parts := strings.SplitN(resourceIdentifier, "/", 2)
 	if len(parts) != 2 {
 		log.Fatalf("resource identifier '%s' is malformed. Should be `kind/name`, e.g. cronwf/hello-world-cwf", resourceIdentifier)
@@ -185,7 +186,6 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 }
 
 func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
-
 	validateOptions(workflows, submitOpts, cliOpts)
 
 	if len(workflows) == 0 {
@@ -259,5 +259,8 @@ func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		for _, workflow := range workflowNames {
 			watchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.getArgs)
 		}
+	}
+	if cliSubmitOpts.verify {
+		verifyWorkflows(ctx, serviceClient, namespace, workflowNames)
 	}
 }

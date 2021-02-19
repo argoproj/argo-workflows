@@ -9,7 +9,7 @@ information. This is intended to be an **indicative but not accurate** value.
 
 ## Calculation
 
-The calculation is always an estimate, and is calculated by [duration.go](https://github.com/argoproj/argo/blob/master/util/resource/duration.go) 
+The calculation is always an estimate, and is calculated by [duration.go](https://github.com/argoproj/argo-workflows/blob/master/util/resource/duration.go) 
 based on container duration, specified pod resource requests, limits, or (for memory and CPU) 
 defaults. 
 

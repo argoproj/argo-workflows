@@ -10,9 +10,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/hydrator"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 type Given struct {
@@ -100,6 +100,12 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 
 func (g *Given) checkLabels(m metav1.Object) {
 	g.t.Helper()
+	if m.GetLabels() == nil {
+		m.SetLabels(map[string]string{})
+	}
+	if m.GetLabels()[Label] == "" {
+		m.GetLabels()[Label] = "true"
+	}
 	if m.GetLabels()[Label] == "" {
 		g.t.Fatalf("%s%s does not have %s label", m.GetName(), m.GetGenerateName(), Label)
 	}

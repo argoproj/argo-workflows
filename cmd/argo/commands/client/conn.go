@@ -8,12 +8,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/v3/pkg/apiclient"
-	"github.com/argoproj/argo/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
+	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 )
 
-var argoServerOpts = apiclient.ArgoServerOpts{}
-var instanceID string
+var (
+	argoServerOpts = apiclient.ArgoServerOpts{}
+	instanceID     string
+)
 
 var overrides = clientcmd.ConfigOverrides{}
 

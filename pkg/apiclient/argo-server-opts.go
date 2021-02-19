@@ -1,6 +1,8 @@
 package apiclient
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ArgoServerOpts struct {
 	// argo server host port, must be `host:port`, e.g. localhost:2746

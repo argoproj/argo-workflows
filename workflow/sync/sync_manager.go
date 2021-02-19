@@ -7,12 +7,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type NextWorkflow func(string)
-type GetSyncLimit func(string) (int, error)
-type IsWorkflowDeleted func(string) bool
+type (
+	NextWorkflow      func(string)
+	GetSyncLimit      func(string) (int, error)
+	IsWorkflowDeleted func(string) bool
+)
 
 type Manager struct {
 	syncLockMap  map[string]Semaphore
@@ -44,7 +46,7 @@ func (cm *Manager) getWorkflowKey(key string) (string, error) {
 }
 
 func (cm *Manager) CheckWorkflowExistence() {
-	log.Infof("Check the workflow existence")
+	log.Debug("Check the workflow existence")
 	for _, lock := range cm.syncLockMap {
 		keys := lock.getCurrentHolders()
 		keys = append(keys, lock.getCurrentPending()...)
@@ -94,11 +96,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 				mutex := cm.syncLockMap[holding.Mutex]
 				if mutex == nil {
-					mutex, err := cm.initializeMutex(holding.Mutex)
-					if err != nil {
-						log.Warnf("Synchronization Mutex %s initialization failed. %v", holding.Mutex, err)
-						continue
-					}
+					mutex := cm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
 						resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
 						mutex.acquire(resourceKey)
@@ -133,7 +131,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 		case wfv1.SynchronizationTypeSemaphore:
 			lock, err = cm.initializeSemaphore(lockKey)
 		case wfv1.SynchronizationTypeMutex:
-			lock, err = cm.initializeMutex(lockKey)
+			lock = cm.initializeMutex(lockKey)
 		default:
 			return false, false, "", fmt.Errorf("unknown Synchronization Type")
 		}
@@ -173,12 +171,12 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 }
 
 func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-
 	if syncRef == nil {
 		return
 	}
+
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 
 	holderKey := getHolderKey(wf, nodeName)
 	lockName, err := GetLockName(syncRef, wf.Namespace)
@@ -312,8 +310,8 @@ func (cm *Manager) initializeSemaphore(semaphoreName string) (Semaphore, error) 
 	return NewSemaphore(semaphoreName, limit, cm.nextWorkflow, "semaphore"), nil
 }
 
-func (cm *Manager) initializeMutex(mutexName string) (Semaphore, error) {
-	return NewMutex(mutexName, cm.nextWorkflow), nil
+func (cm *Manager) initializeMutex(mutexName string) Semaphore {
+	return NewMutex(mutexName, cm.nextWorkflow)
 }
 
 func (cm *Manager) isSemaphoreSizeChanged(semaphore Semaphore) (bool, int, error) {

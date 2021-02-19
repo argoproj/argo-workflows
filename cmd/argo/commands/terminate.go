@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type terminateOption struct {
@@ -43,7 +43,7 @@ func (t *terminateOption) convertToWorkflows(names []string) wfv1.Workflows {
 func NewTerminateCommand() *cobra.Command {
 	t := &terminateOption{}
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "terminate WORKFLOW WORKFLOW2...",
 		Short: "terminate zero or more workflows immediately",
 		Example: `# Terminate a workflow:

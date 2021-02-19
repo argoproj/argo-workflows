@@ -3,12 +3,12 @@ package retry
 import (
 	apiv1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // GetFailHosts returns slice of all child nodes with fail or error status
 func GetFailHosts(nodes wfv1.Nodes, parent string) []string {
-	var hostNames = []string{}
+	hostNames := []string{}
 	failNodes := nodes.Children(parent).
 		Filter(func(x wfv1.NodeStatus) bool { return x.Phase == wfv1.NodeFailed || x.Phase == wfv1.NodeError }).
 		Map(func(x wfv1.NodeStatus) interface{} { return x.HostNodeName })

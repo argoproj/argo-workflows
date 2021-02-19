@@ -9,8 +9,10 @@ import (
 // * cleanup is a noun - e.g "The cleanup"
 // * clean-up is a verb - e.g. "I clean-up"
 
-type podCleanupKey = string // describes the pod to cleanup + the cleanup action to take
-type podCleanupAction = string
+type (
+	podCleanupKey    = string // describes the pod to cleanup + the cleanup action to take
+	podCleanupAction = string
+)
 
 const (
 	deletePod         podCleanupAction = "deletePod"
@@ -27,5 +29,4 @@ func parsePodCleanupKey(k podCleanupKey) (namespace string, podName string, acti
 		return "", "", ""
 	}
 	return parts[0], parts[1], parts[2]
-
 }
