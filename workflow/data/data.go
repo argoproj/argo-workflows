@@ -1,9 +1,11 @@
 package data
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/antonmedv/expr"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/sirupsen/logrus"
 )
 
 func ProcessData(data *wfv1.Data, processor wfv1.SourceProcessor) (interface{}, error) {
@@ -30,11 +32,13 @@ func processSource(source *wfv1.DataSource, processor wfv1.SourceProcessor) (int
 				return nil, fmt.Errorf("unable to source artifact paths: %w", err)
 			}
 		case source.Raw != "":
-			data = source.Raw
+			err = json.Unmarshal([]byte(source.Raw), &data)
+			if err != nil {
+				return nil, fmt.Errorf("unable to unmarshal raw source: %w", err)
+			}
 		}
-	// We could logically add another case here to process inputs when we determine we need a Pod to run certain transformations
 	default:
-		return nil, fmt.Errorf("internal error: should not launch data Pod if no source is used")
+		return nil, fmt.Errorf("no source is used for data template")
 	}
 
 	return data, nil
@@ -43,11 +47,13 @@ func processSource(source *wfv1.DataSource, processor wfv1.SourceProcessor) (int
 func processTransformation(data interface{}, transformation *wfv1.Transformation) (interface{}, error) {
 	var err error
 	for i, step := range *transformation {
+		preData := data
 		switch {
 		case step.Expression != "":
 			data, err = processExpression(step.Expression, data)
 		}
 		if err != nil {
+			logrus.Debugf("data state at time of error: %+v, type: %T", preData, preData)
 			return nil, fmt.Errorf("error processing data step %d: %w", i, err)
 		}
 	}

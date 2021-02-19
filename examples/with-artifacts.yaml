@@ -32,31 +32,31 @@ spec:
             value: "{{steps.collect-artifact.outputs.result}}"
 
   - name: generate-artifacts
-    inputs:
-      parameters:
-          - name: processed
     data:
       source:
         artifactPaths:
           s3:
-            bucket: "test"
+            bucket: test
+            endpoint: minio:9000
+            insecure: true
+            accessKeySecret:
+              name: my-minio-cred
+              key: accesskey
+            secretKeySecret:
+              name: my-minio-cred
+              key: secretkey
       transformation:
-        - filter:
-            regex: "\\.py"
-        #- filter:
-        #    regex: "lunch"
-        - group:
-            batch: 2
-        #- group:
-        #    regex: ".+?\\.(.+?)$"
+        - expression: "filter(data, {# endsWith \".py\"})"
 
   - name: collect-artifacts
     inputs:
       parameters:
         - name: processed
     data:
+      source:
+        raw: "{{inputs.parameters.processed}}"
       transformation:
-        - expression: "filter(data, {# > 3})"
+        - expression: "map(data, {# + \".collected\"})"
 
   - name: process-message
     inputs:
@@ -65,7 +65,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo \"{{inputs.parameters.file}}.done\" > /tmp/f.txt"]
+      args: ["echo \"{{inputs.parameters.file}}.processed\" > /tmp/f.txt"]
     outputs:
       parameters:
         - name: processed
