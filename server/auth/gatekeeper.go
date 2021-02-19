@@ -174,6 +174,8 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			}
 			return clients, claims, nil
 		} else {
+			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+			log.WithFields(log.Fields{"subject": claims.Subject}).Info("using the default service account for user")
 			return s.clients, claims, nil
 		}
 	default:
@@ -230,6 +232,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 			return nil, err
 		}
 		claims.ServiceAccountName = serviceAccount.Name
+		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
 		return clients, nil
 	}

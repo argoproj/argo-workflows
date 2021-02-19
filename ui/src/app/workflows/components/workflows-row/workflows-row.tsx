@@ -31,24 +31,24 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
     public render() {
         const wf = this.props.workflow;
         return (
-            <div className='workflows-list__row-container'>
-                <div className='row argo-table-list__row'>
-                    <div className='columns small-1 workflows-list__status'>
-                        <input
-                            type='checkbox'
-                            className='workflows-list__status--checkbox'
-                            checked={this.props.checked}
-                            onClick={e => {
-                                e.stopPropagation();
-                            }}
-                            onChange={e => {
-                                this.props.select(this.props.workflow);
-                            }}
-                        />
-                        <PhaseIcon value={wf.status.phase} />
-                    </div>
-                    <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='row small-11'>
-                        <div className='columns small-3'>{wf.metadata.name}</div>
+            <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
+                <div className='workflows-list__row-container'>
+                    <div className='row argo-table-list__row'>
+                        <div className='columns small-1 workflows-list__status'>
+                            <input
+                                type='checkbox'
+                                className='workflows-list__status--checkbox'
+                                checked={this.props.checked}
+                                onClick={e => {
+                                    e.stopPropagation();
+                                }}
+                                onChange={e => {
+                                    this.props.select(this.props.workflow);
+                                }}
+                            />
+                            <PhaseIcon value={wf.status.phase} />
+                        </div>
+                        <div className='columns small-2'>{wf.metadata.name}</div>
                         <div className='columns small-2'>{wf.metadata.namespace}</div>
                         <div className='columns small-1'>
                             <Timestamp date={wf.status.startedAt} />
@@ -81,20 +81,20 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 </div>
                             </div>
                         </div>
-                    </Link>
-                    {this.state.hideDrawer ? (
-                        <span />
-                    ) : (
-                        <WorkflowDrawer
-                            name={wf.metadata.name}
-                            namespace={wf.metadata.namespace}
-                            onChange={key => {
-                                this.props.onChange(key);
-                            }}
-                        />
-                    )}
+                        {this.state.hideDrawer ? (
+                            <span />
+                        ) : (
+                            <WorkflowDrawer
+                                name={wf.metadata.name}
+                                namespace={wf.metadata.namespace}
+                                onChange={key => {
+                                    this.props.onChange(key);
+                                }}
+                            />
+                        )}
+                    </div>
                 </div>
-            </div>
+            </Link>
         );
     }
 }

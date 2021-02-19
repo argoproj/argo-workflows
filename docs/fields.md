@@ -168,6 +168,8 @@ Workflow is the definition of a workflow resource
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
+
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -508,6 +510,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
@@ -868,6 +872,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
+
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -1185,6 +1191,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
+
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -1446,6 +1454,8 @@ Arguments to a template
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
+
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-workflow.yaml)
@@ -1640,8 +1650,6 @@ Synchronization holds synchronization lock configuration
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -1819,6 +1827,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
@@ -2175,8 +2185,6 @@ SynchronizationStatus stores the status of semaphore and mutex.
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2360,6 +2368,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
+
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-workflow.yaml)
@@ -2511,8 +2521,6 @@ SemaphoreRef is a reference of Semaphore
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2587,6 +2595,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
+
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -2751,6 +2761,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -3198,8 +3210,6 @@ _No description available_
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -3533,6 +3543,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
+
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata.yaml)
@@ -3593,6 +3605,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
+
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -3998,6 +4012,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
@@ -4534,6 +4550,8 @@ A single application container that you want to run within a pod.
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
+
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -4660,8 +4678,6 @@ Selects a key from a ConfigMap.
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -5190,6 +5206,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
