@@ -1,23 +1,22 @@
 package template
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint"
 )
 
 func NewLintCommand() *cobra.Command {
-	var strict bool
+	var (
+		strict bool
+		format string
+	)
+
 	command := &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a file or directory of workflow template manifests",
@@ -26,95 +25,29 @@ func NewLintCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			err := ServerSideLint(args, strict)
-			if err != nil {
-				log.Fatal(err)
+			ctx, apiClient := client.NewAPIClient()
+			fmtr, err := lint.GetFormatter(format)
+			errors.CheckError(err)
+
+			res, err := lint.Lint(ctx, &lint.LintOptions{
+				ServiceClients: lint.ServiceClients{
+					WorkflowTemplatesClient: apiClient.NewWorkflowTemplateServiceClient(),
+				},
+				Files:            args,
+				Strict:           strict,
+				DefaultNamespace: client.Namespace(),
+				Formatter:        fmtr,
+			})
+			errors.CheckError(err)
+
+			fmt.Print(res.Msg())
+			if !res.Success {
+				os.Exit(1)
 			}
-			fmt.Printf("WorkflowTemplate manifests validated\n")
 		},
 	}
+
+	command.Flags().StringVar(&format, "format", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
 	return command
-}
-
-func ServerSideLint(args []string, strict bool) error {
-	validateDir := cmdutil.MustIsDir(args[0])
-
-	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
-
-	invalid := false
-	if validateDir {
-		if len(args) > 1 {
-			fmt.Printf("Validation of a single directory supported")
-			os.Exit(1)
-		}
-		walkFunc := func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info == nil || info.IsDir() {
-				return nil
-			}
-			fileExt := filepath.Ext(info.Name())
-			switch fileExt {
-			case ".yaml", ".yml", ".json":
-			default:
-				return nil
-			}
-			wfTmpls, err := validate.ParseWfTmplFromFile(path, strict)
-			if err != nil {
-				log.Error(err)
-				invalid = true
-			}
-			for _, wfTmpl := range wfTmpls {
-				if wfTmpl.Namespace == "" {
-					wfTmpl.Namespace = client.Namespace()
-				}
-				err := ServerLintValidation(ctx, serviceClient, wfTmpl, wfTmpl.Namespace)
-				if err != nil {
-					log.Error(err)
-					invalid = true
-				}
-			}
-			return nil
-		}
-		err := filepath.Walk(args[0], walkFunc)
-		if err != nil {
-			log.Error(err)
-			invalid = true
-		}
-	} else {
-		for _, arg := range args {
-			wfTmpls, err := validate.ParseWfTmplFromFile(arg, strict)
-			if err != nil {
-				log.Error(err)
-				invalid = true
-			}
-			for _, wfTmpl := range wfTmpls {
-				if wfTmpl.Namespace == "" {
-					wfTmpl.Namespace = client.Namespace()
-				}
-				err := ServerLintValidation(ctx, serviceClient, wfTmpl, wfTmpl.Namespace)
-				if err != nil {
-					log.Error(err)
-					invalid = true
-				}
-			}
-		}
-	}
-	if invalid {
-		log.Fatalf("Errors encountered in validation")
-	}
-	fmt.Printf("WorkflowTemplate manifests validated\n")
-	return nil
-}
-
-func ServerLintValidation(ctx context.Context, client workflowtemplatepkg.WorkflowTemplateServiceClient, wfTmpl wfv1.WorkflowTemplate, ns string) error {
-	wfTmplReq := workflowtemplatepkg.WorkflowTemplateLintRequest{
-		Namespace: ns,
-		Template:  &wfTmpl,
-	}
-	_, err := client.LintWorkflowTemplate(ctx, &wfTmplReq)
-	return err
 }
