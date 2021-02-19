@@ -1,9 +1,9 @@
-package e2e
+package python
 
 import (
-	"reflect"
-
 	"github.com/go-python/gpython/py"
+
+	"github.com/argoproj/argo-workflows/v3/util/json"
 )
 
 func obj(v interface{}) py.Object {
@@ -19,7 +19,8 @@ func obj(v interface{}) py.Object {
 	case map[string]interface{}:
 		return dict(x)
 	default:
-		panic(reflect.TypeOf(x).String())
+		v, _ := json.Jsonify(v)
+		return obj(v)
 	}
 }
 
