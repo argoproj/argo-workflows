@@ -40,5 +40,4 @@ func TestContainerRuntimeExecutors(t *testing.T) {
 		_, err := x.Select(labels.Set(map[string]string{"bar": ""}))
 		assert.Error(t, err)
 	})
-
 }
