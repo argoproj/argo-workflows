@@ -17,7 +17,7 @@ metadata:
       e.g. have a certain labels use certain executors.
 
     # this workflow will only run on workflows version v3.0.0
-    workflows.argoproj.io/version: '>= 3.0.0'
+    workflows.argoproj.io/version: ">= 3.0.0"
 
     # this workflow will fail because the k8sapi executor does not support base-layer outputs
     workflows.argoproj.io/verify.py: |

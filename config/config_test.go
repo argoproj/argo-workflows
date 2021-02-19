@@ -87,9 +87,8 @@ func TestContainerRuntimeExecutor(t *testing.T) {
 				MatchLabels: map[string]string{"!": "!"},
 			}},
 		}}
-		executor, err := c.GetContainerRuntimeExecutor(labels.Set{})
+		_, err := c.GetContainerRuntimeExecutor(labels.Set{})
 		assert.Error(t, err)
-		assert.Equal(t, "foo", executor)
 	})
 	t.Run("NoError", func(t *testing.T) {
 		c := Config{ContainerRuntimeExecutor: "foo", ContainerRuntimeExecutors: ContainerRuntimeExecutors{
