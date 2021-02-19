@@ -5,7 +5,7 @@ metadata:
 spec:
   workflowMetadata:
     labels:
-      workflows.argoproj.io/test: true
+      workflows.argoproj.io/test: "true"
   entrypoint: main
   templates:
     - name: main

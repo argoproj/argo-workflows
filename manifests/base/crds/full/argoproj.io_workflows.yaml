@@ -520,6 +520,8 @@ spec:
                               type: object
                             bucket:
                               type: string
+                            createBucketIfNotPresent:
+                              type: boolean
                             endpoint:
                               type: string
                             key:
@@ -1408,6 +1410,8 @@ spec:
                               type: object
                             bucket:
                               type: string
+                            createBucketIfNotPresent:
+                              type: boolean
                             endpoint:
                               type: string
                             key:
@@ -2256,6 +2260,8 @@ spec:
                                               type: object
                                             bucket:
                                               type: string
+                                            createBucketIfNotPresent:
+                                              type: boolean
                                             endpoint:
                                               type: string
                                             key:
@@ -3220,6 +3226,8 @@ spec:
                                     type: object
                                   bucket:
                                     type: string
+                                  createBucketIfNotPresent:
+                                    type: boolean
                                   endpoint:
                                     type: string
                                   key:
@@ -3661,6 +3669,8 @@ spec:
                                     type: object
                                   bucket:
                                     type: string
+                                  createBucketIfNotPresent:
+                                    type: boolean
                                   endpoint:
                                     type: string
                                   key:
@@ -6833,6 +6843,8 @@ spec:
                                     type: object
                                   bucket:
                                     type: string
+                                  createBucketIfNotPresent:
+                                    type: boolean
                                   endpoint:
                                     type: string
                                   key:
@@ -7191,6 +7203,8 @@ spec:
                                     type: object
                                   bucket:
                                     type: string
+                                  createBucketIfNotPresent:
+                                    type: boolean
                                   endpoint:
                                     type: string
                                   key:
@@ -7574,6 +7588,8 @@ spec:
                               type: object
                             bucket:
                               type: string
+                            createBucketIfNotPresent:
+                              type: boolean
                             endpoint:
                               type: string
                             key:
@@ -8842,6 +8858,8 @@ spec:
                               type: object
                             bucket:
                               type: string
+                            createBucketIfNotPresent:
+                              type: boolean
                             endpoint:
                               type: string
                             key:
@@ -9690,6 +9708,8 @@ spec:
                                               type: object
                                             bucket:
                                               type: string
+                                            createBucketIfNotPresent:
+                                              type: boolean
                                             endpoint:
                                               type: string
                                             key:
@@ -10654,6 +10674,8 @@ spec:
                                     type: object
                                   bucket:
                                     type: string
+                                  createBucketIfNotPresent:
+                                    type: boolean
                                   endpoint:
                                     type: string
                                   key:
@@ -11095,6 +11117,8 @@ spec:
                                     type: object
                                   bucket:
                                     type: string
+                                  createBucketIfNotPresent:
+                                    type: boolean
                                   endpoint:
                                     type: string
                                   key:
@@ -13649,6 +13673,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 key:
@@ -14537,6 +14563,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 key:
@@ -15385,6 +15413,8 @@ spec:
                                                   type: object
                                                 bucket:
                                                   type: string
+                                                createBucketIfNotPresent:
+                                                  type: boolean
                                                 endpoint:
                                                   type: string
                                                 key:
@@ -16349,6 +16379,8 @@ spec:
                                         type: object
                                       bucket:
                                         type: string
+                                      createBucketIfNotPresent:
+                                        type: boolean
                                       endpoint:
                                         type: string
                                       key:
@@ -16790,6 +16822,8 @@ spec:
                                         type: object
                                       bucket:
                                         type: string
+                                      createBucketIfNotPresent:
+                                        type: boolean
                                       endpoint:
                                         type: string
                                       key:

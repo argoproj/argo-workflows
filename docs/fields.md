@@ -230,6 +230,8 @@ Workflow is the definition of a workflow resource
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
@@ -574,6 +576,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
@@ -938,6 +942,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
@@ -1259,6 +1265,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
@@ -1553,6 +1561,13 @@ _No description available_
 ## ExecutorConfig
 
 ExecutorConfig holds configurations of an executor container.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -1898,6 +1913,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
@@ -2168,6 +2185,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
@@ -2414,6 +2433,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
 
@@ -3409,6 +3430,7 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 |:----------:|:----------:|---------------|
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
 |`bucket`|`string`|Bucket is the name of the bucket|
+|`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
@@ -3484,6 +3506,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 
@@ -3574,6 +3598,8 @@ MetricLabel is a single label for a prometheus metric
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 </details>
 
 ### Fields
@@ -4099,6 +4125,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
@@ -4623,6 +4651,8 @@ A single application container that you want to run within a pod.
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
@@ -5295,6 +5325,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
@@ -5790,6 +5822,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 

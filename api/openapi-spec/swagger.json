@@ -7383,6 +7383,10 @@
           "description": "Bucket is the name of the bucket",
           "type": "string"
         },
+        "createBucketIfNotPresent": {
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
+          "type": "boolean"
+        },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
           "type": "string"

@@ -610,6 +610,12 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  containerRuntimeExecutor: docker
+  containerRuntimeExecutors: |
+    - name: k8sapi
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: k8sapi
   executor: |
     resources:
       requests:
@@ -637,7 +643,9 @@ data:
     path: /metrics
     port: 9090
   plugins: |
-    - url: http://localhost:12345
+    - package: http
+      config:
+        url: http://localhost:12345
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

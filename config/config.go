@@ -44,6 +44,8 @@ type Config struct {
 	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
 	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
 
+	ContainerRuntimeExecutors ContainerRuntimeExecutors `json:"containerRuntimeExecutors,omitempty"`
+
 	// KubeletPort is needed when using the kubelet containerRuntimeExecutor, default to 10250
 	KubeletPort int `json:"kubeletPort,omitempty"`
 
@@ -114,6 +116,17 @@ type Plugin struct {
 
 type PluginConfig struct {
 	URL string `json:"url"`
+}
+
+func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
+	name, err := c.ContainerRuntimeExecutors.Select(labels)
+	if err != nil {
+		return "", err
+	}
+	if name != "" {
+		return name, nil
+	}
+	return c.ContainerRuntimeExecutor, nil
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -27,6 +26,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -203,14 +203,9 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[i]) > precedence(serviceAccounts[j]) })
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
-		data, err := json.Marshal(claims)
+		v, err := jsonutil.Jsonify(claims)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshall claims: %w", err)
-		}
-		v := make(map[string]interface{})
-		err = json.Unmarshal(data, &v)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshall claims: %w", err)
 		}
 		result, err := expr.Eval(rule, v)
 		if err != nil {

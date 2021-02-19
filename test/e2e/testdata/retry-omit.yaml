@@ -22,12 +22,12 @@ spec:
     - container:
         args:
           - exit
-          - 0
+          - "0"
         image: argoproj/argosay:v2
       name: pass
     - container:
         args:
           - exit
-          - 1
+          - "1"
         image: argoproj/argosay:v2
       name: fail

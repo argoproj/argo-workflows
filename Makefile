@@ -43,6 +43,7 @@ endif
 ifneq ($(CI),)
 AUTH_MODE             := client
 endif
+
 # Which mode to run in:
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
@@ -393,7 +394,7 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply -f -
+	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
@@ -494,8 +495,8 @@ test-executor:
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
 .PHONY: test-examples
-test-examples:
-	$(GOTEST) -timeout 15m -count 1 --tags examples -p 1 ./test/e2e
+test-examples: ./dist/argo
+	./hack/test-examples.sh
 
 .PHONY: test-functional
 test-functional:
