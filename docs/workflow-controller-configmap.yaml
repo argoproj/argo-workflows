@@ -276,12 +276,13 @@ data:
     # RBAC Config. >= v2.12
     rbac:
       enabled: false
-  # workflowRequirements restricts the Workflows that the controller will process.
+
+  # workflowRestrictions restricts the Workflows that the controller will process.
   # Current options:
-  #   referenceOnly: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller
+  #   Strict: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller
   #     to set a "library" of templates that may be run by its operator, limiting arbitrary Workflow execution.
-  #   strictReferenceOnly: Only Workflows using "workflowTemplateRef" will be processed and the controller will enforce
+  #   Secure: Only Workflows using "workflowTemplateRef" will be processed and the controller will enforce
   #     that the WorkflowTemplate that is referenced hasn't changed between operations. If you want to make sure the operator of the
   #     Workflow cannot run an arbitrary Workflow, use this option.
-  workflowRequirements: |
-    referenceOnly: true
+  workflowRestrictions: |
+    templateReferencing: Strict

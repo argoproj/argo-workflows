@@ -17,13 +17,13 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/server/auth"
-	"github.com/argoproj/argo/v3/util/instanceid"
-	"github.com/argoproj/argo/v3/workflow/artifactrepositories"
-	artifact "github.com/argoproj/argo/v3/workflow/artifacts"
-	"github.com/argoproj/argo/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
+	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 type ArtifactServer struct {
@@ -44,7 +44,6 @@ func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
-
 	ctx, err := a.gateKeeping(r)
 	if err != nil {
 		w.WriteHeader(401)
@@ -75,7 +74,6 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
-
 	ctx, err := a.gateKeeping(r)
 	if err != nil {
 		w.WriteHeader(401)
@@ -165,7 +163,6 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	}
 
 	file, err := os.Open(tmpPath)
-
 	if err != nil {
 		return err
 	}
@@ -173,7 +170,6 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	defer file.Close()
 
 	stats, err := file.Stat()
-
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/common/model"
 	v1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var (
@@ -185,8 +185,8 @@ func getPodPhaseGauges() map[v1.PodPhase]prometheus.Gauge {
 	return map[v1.PodPhase]prometheus.Gauge{
 		v1.PodPending: prometheus.NewGauge(getOptsByPhase(v1.PodPending)),
 		v1.PodRunning: prometheus.NewGauge(getOptsByPhase(v1.PodRunning)),
-		//v1.PodSucceeded: prometheus.NewGauge(getOptsByPhase(v1.PodSucceeded)),
-		//v1.PodFailed:    prometheus.NewGauge(getOptsByPhase(v1.PodFailed)),
+		// v1.PodSucceeded: prometheus.NewGauge(getOptsByPhase(v1.PodSucceeded)),
+		// v1.PodFailed:    prometheus.NewGauge(getOptsByPhase(v1.PodFailed)),
 	}
 }
 

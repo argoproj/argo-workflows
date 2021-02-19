@@ -11,10 +11,10 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
 // dagContext holds context information about this context's DAG
@@ -126,7 +126,6 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
-
 	// targetTaskPhases keeps track of all the phases of the target tasks. This is necessary because some target tasks may
 	// be omitted and will not have an explicit phase. We would still like to deduce a phase for those tasks in order to
 	// determine the overall phase of the DAG. To do so, an omitted task always inherits the phase of its parents, with
@@ -340,7 +339,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 
 		// Release acquired lock completed task.
-		if tmpl != nil && tmpl.Synchronization != nil {
+		if tmpl != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
 		}
 
@@ -376,7 +375,6 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			} else {
 				woc.addChildNode(taskGroupNode.Name, taskNodeName)
 			}
-
 		} else {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
@@ -539,7 +537,6 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 // resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
 // NOTE: by now, input parameters should have been substituted throughout the template
 func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
-
 	scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 	if err != nil {
 		return nil, err
@@ -559,7 +556,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 
 	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
@@ -664,7 +661,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 
 	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {

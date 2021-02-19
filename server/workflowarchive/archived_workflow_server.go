@@ -13,11 +13,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo/v3/persist/sqldb"
-	workflowarchivepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
 )
 
 type archivedWorkflowServer struct {
@@ -95,7 +95,6 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	items, err := w.wfArchive.ListWorkflows(namespace, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
-
 	if err != nil {
 		return nil, err
 	}

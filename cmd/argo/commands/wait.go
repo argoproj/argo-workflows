@@ -14,17 +14,15 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 func NewWaitCommand() *cobra.Command {
-	var (
-		ignoreNotFound bool
-	)
-	var command = &cobra.Command{
+	var ignoreNotFound bool
+	command := &cobra.Command{
 		Use:   "wait [WORKFLOW...]",
 		Short: "waits for workflows to complete",
 		Example: `# Wait on a workflow:

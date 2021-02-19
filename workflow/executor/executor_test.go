@@ -11,15 +11,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/executor/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
 )
 
 const (
-	fakePodName     = "fake-test-pod-1234567890"
-	fakeNamespace   = "default"
-	fakeAnnotations = "/tmp/podannotationspath"
-	fakeContainerID = "abc123"
+	fakePodName       = "fake-test-pod-1234567890"
+	fakeNamespace     = "default"
+	fakeAnnotations   = "/tmp/podannotationspath"
+	fakeContainerName = "main"
 )
 
 func TestSaveParameters(t *testing.T) {
@@ -45,9 +45,8 @@ func TestSaveParameters(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
-	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("has a newline\n", nil)
+	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("has a newline\n", nil)
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
@@ -135,9 +134,8 @@ func TestDefaultParameters(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
-	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
+	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
@@ -169,9 +167,8 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
-	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
+	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
@@ -242,7 +239,6 @@ func TestUntar(t *testing.T) {
 }
 
 func TestChmod(t *testing.T) {
-
 	type perm struct {
 		dir  string
 		file string
@@ -296,7 +292,6 @@ func TestChmod(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
 	}
-
 }
 
 func TestSaveArtifacts(t *testing.T) {
@@ -329,7 +324,6 @@ func TestSaveArtifacts(t *testing.T) {
 		PodAnnotationsPath: fakeAnnotations,
 		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
 	}
 
 	ctx := context.Background()

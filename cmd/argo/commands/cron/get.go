@@ -12,17 +12,15 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
-	var (
-		output string
-	)
+	var output string
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get CRON_WORKFLOW...",
 		Short: "display details about a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {

@@ -6,12 +6,12 @@ import (
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	client "github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowarchivepkg "github.com/argoproj/argo/v3/pkg/apiclient/workflowarchive"
+	client "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 )
 
 func NewDeleteCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use: "delete UID...",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()

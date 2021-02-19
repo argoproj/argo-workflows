@@ -18,12 +18,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/v3/server/apiserver"
-	"github.com/argoproj/argo/v3/server/auth"
-	"github.com/argoproj/argo/v3/server/types"
-	"github.com/argoproj/argo/v3/util/help"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/server/apiserver"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/help"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -43,7 +43,7 @@ func NewServerCommand() *cobra.Command {
 		accessControlAllowOrigin string
 	)
 
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   "server",
 		Short: "Start the Argo Server",
 		Example: fmt.Sprintf(`
@@ -90,7 +90,7 @@ See %s`, help.ArgoSever),
 				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
 				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
 			} else {
-				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo/tls/")
+				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
 			}
 
 			modes := auth.Modes{}
@@ -99,7 +99,7 @@ See %s`, help.ArgoSever),
 				errors.CheckError(err)
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
-				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo/argo-server-auth-mode/")
+				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo-workflows/argo-server-auth-mode/")
 			}
 
 			opts := apiserver.ArgoServerOpts{

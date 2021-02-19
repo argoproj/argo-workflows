@@ -1,6 +1,6 @@
-module github.com/argoproj/argo/v3
+module github.com/argoproj/argo-workflows/v3
 
-go 1.13
+go 1.15
 
 require (
 	bou.ke/staticfiles v0.0.0-20210106104248-dd04075d4104
@@ -9,6 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.1 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
+	github.com/TwinProduction/go-color v0.0.3
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible
 	github.com/antonmedv/expr v1.8.8
 	github.com/argoproj/argo-events v1.2.0
@@ -24,6 +25,7 @@ require (
 	github.com/gavv/httpexpect/v2 v2.0.3
 	github.com/go-openapi/jsonreference v0.19.5
 	github.com/go-openapi/spec v0.20.0
+	github.com/go-python/gpython v0.0.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-swagger/go-swagger v0.25.0
 	github.com/gogo/protobuf v1.3.1
@@ -33,6 +35,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/imkira/go-interpol v1.1.0 // indirect
+	github.com/klauspost/pgzip v1.2.5
 	github.com/mattn/goreman v0.3.7
 	github.com/minio/minio-go/v7 v7.0.2
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b

@@ -1,9 +1,0 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: malformed
-spec:
-  entrypoint: no
-  arguments:
-    parameters:
-      someParam: "Hello, world!"

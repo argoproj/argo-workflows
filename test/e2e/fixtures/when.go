@@ -2,9 +2,9 @@ package fixtures
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -13,10 +13,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/hydrator"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 type When struct {
@@ -163,27 +163,38 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
-type Condition func(wf *wfv1.Workflow) bool
+type Condition func(wf *wfv1.Workflow) (bool, string)
 
-var ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
-var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
-var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
-	return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-		return node.Phase == wfv1.NodeRunning
-	})
+var (
+	ToBeCompleted Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Labels[common.LabelKeyCompleted] == "true", "to be completed"
+	}
+	ToStart     Condition = func(wf *wfv1.Workflow) (bool, string) { return !wf.Status.StartedAt.IsZero(), "to start" }
+	ToBeRunning Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Phase == wfv1.NodeRunning
+		}), "to be running"
+	}
+)
+
+var ToBeSucceeded Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Phase == wfv1.WorkflowSucceeded, "to be succeeded"
 }
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
 // This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
 // creates a lot of warning messages in the logs that are cause by misuse rather than actual problems.
-var ToBeDone Condition = func(wf *wfv1.Workflow) bool {
-	return ToBeCompleted(wf) && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending"
+var ToBeDone Condition = func(wf *wfv1.Workflow) (bool, string) {
+	toBeCompleted, _ := ToBeCompleted(wf)
+	return toBeCompleted && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", "to be done"
 }
 
-var ToBeArchived Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }
+var ToBeArchived Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived", "to be archived"
+}
 
-var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) bool {
-	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil
+var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil, "to be waiting on a mutub"
 }
 
 // Wait for a workflow to meet a condition:
@@ -201,17 +212,12 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		workflowName = w.wf.Name
 	}
 	condition := ToBeDone
-	message := "to be done"
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
 			timeout = v
 		case string:
-			if strings.Contains(v, " ") {
-				message = v
-			} else {
-				workflowName = v
-			}
+			workflowName = v
 		case Condition:
 			condition = v
 		default:
@@ -226,7 +232,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		fieldSelector = "metadata.name=" + workflowName
 	}
 
-	println("Waiting", timeout.String(), "for workflow", fieldSelector, message)
+	println("Waiting", timeout.String(), "for workflow", fieldSelector)
 
 	ctx := context.Background()
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
@@ -246,21 +252,22 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
 				w.hydrateWorkflow(wf)
-				if condition(wf) {
-					println("Condition met after", time.Since(start).Truncate(time.Second).String())
+				printWorkflow(wf)
+				if ok, message := condition(wf); ok {
+					println(fmt.Sprintf("Condition %q met after %s", message, time.Since(start).Truncate(time.Second)))
 					w.wf = wf
 					return w
 				}
 				// once done the workflow is done, the condition can never be met
 				// rather than wait maybe 30s for something that can never happen
-				if ToBeDone(wf) {
+				if ok, _ = ToBeDone(wf); ok {
 					w.t.Fatalf("condition never and cannot be met because the workflow is done")
 				}
 			} else {
 				w.t.Fatal("not ok")
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, message)
+			w.t.Fatalf("timeout after %v waiting for condition", timeout)
 		}
 	}
 }
@@ -366,7 +373,7 @@ func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 	w.t.Helper()
 	ctx := context.Background()
 	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(ctx, &corev1.ResourceQuota{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{"argo-e2e": "true"}},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
 		Spec:       corev1.ResourceQuotaSpec{Hard: rl},
 	}, metav1.CreateOptions{})
 	if err != nil {

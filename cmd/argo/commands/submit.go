@@ -13,11 +13,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
-	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
@@ -38,7 +38,7 @@ func NewSubmitCommand() *cobra.Command {
 		priority      int32
 		from          string
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "submit [FILE... | --from `kind/name]",
 		Short: "submit a workflow",
 		Example: `# Submit multiple workflows from files:
@@ -157,7 +157,6 @@ func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 }
 
 func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
-
 	parts := strings.SplitN(resourceIdentifier, "/", 2)
 	if len(parts) != 2 {
 		log.Fatalf("resource identifier '%s' is malformed. Should be `kind/name`, e.g. cronwf/hello-world-cwf", resourceIdentifier)
@@ -185,7 +184,6 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 }
 
 func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
-
 	validateOptions(workflows, submitOpts, cliOpts)
 
 	if len(workflows) == 0 {

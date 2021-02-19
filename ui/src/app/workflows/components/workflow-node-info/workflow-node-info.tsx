@@ -3,6 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Artifact, NodeStatus, Workflow} from '../../../../models';
 import {Button} from '../../../shared/components/button';
 import {DropDownButton} from '../../../shared/components/drop-down-button';
 import {DurationPanel} from '../../../shared/components/duration-panel';
@@ -166,34 +167,70 @@ const WorkflowNodeSummary = (props: Props) => {
     );
 };
 
-const WorkflowNodeInputs = (props: {inputs: models.Inputs}) => {
-    const parameters = (props.inputs.parameters || []).map(artifact => ({
-        title: artifact.name,
-        value: artifact.value
-    }));
-    const artifacts = (props.inputs.artifacts || []).map(artifact => ({
-        title: artifact.name,
-        value: artifact.path
-    }));
+const WorkflowNodeInputs = (props: Props) => (
+    <>
+        <h5>Inputs</h5>
+        <WorkflowNodeParameters parameters={props.node.inputs && props.node.inputs.parameters} />
+        <WorkflowNodeArtifacts {...props} artifacts={props.node.inputs && props.node.inputs.artifacts} />
+    </>
+);
+
+const WorkflowNodeOutputs = (props: Props) => (
+    <>
+        <h5>Outputs</h5>
+        <div className='white-box'>
+            <div className='white-box__details'>
+                <div className='row'>
+                    <WorkflowNodeResult result={props.node.outputs && props.node.outputs.result} />
+                    <WorkflowNodeExitCode exitCode={props.node.outputs && props.node.outputs.exitCode} />
+                </div>
+            </div>
+        </div>
+        <WorkflowNodeParameters parameters={props.node.outputs && props.node.outputs.parameters} />
+        <WorkflowNodeArtifacts {...props} artifacts={props.node.outputs && props.node.outputs.artifacts} />
+    </>
+);
+
+const WorkflowNodeParameters = ({parameters}: {parameters: models.Parameter[]}) => {
     return (
         <div className='white-box'>
             <div className='white-box__details'>
-                {parameters.length > 0 && [
-                    <div className='row white-box__details-row' key='title'>
-                        <p>Parameters</p>
-                    </div>,
-                    <AttributeRows key='attrs' attributes={parameters} />
-                ]}
-                {artifacts.length > 0 && [
-                    <div className='row white-box__details-row' key='title'>
-                        <p>Input Artifacts</p>
-                    </div>,
-                    <AttributeRows key='attrs' attributes={artifacts} />
-                ]}
+                {parameters && parameters.length > 0 ? (
+                    <>
+                        <div className='row white-box__details-row' key='title'>
+                            <p>Parameters</p>
+                        </div>
+                        <AttributeRows key='attrs' attributes={parameters.map(x => ({title: x.name, value: x.value}))} />
+                    </>
+                ) : (
+                    <div className='row'>
+                        <div className='columns small-12 text-center'>No parameters</div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
+
+const WorkflowNodeResult = ({result}: {result: string}) =>
+    result ? (
+        <>
+            <div className='columns small-3'>Result</div>
+            <div className='columns small-3'>{result}</div>
+        </>
+    ) : (
+        <div className='columns small-6 text-center'>No result</div>
+    );
+
+const WorkflowNodeExitCode = ({exitCode}: {exitCode: number}) =>
+    exitCode ? (
+        <>
+            <div className='columns small-3'>Exit code</div>
+            <div className='columns small-3'>{exitCode}</div>
+        </>
+    ) : (
+        <div className='columns 6 text-center'>No exit code</div>
+    );
 
 function hasEnv(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
     return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
@@ -309,11 +346,10 @@ class WorkflowNodeContainers extends React.Component<Props, {selectedSidecar: st
     }
 }
 
-const WorkflowNodeArtifacts = (props: Props) => {
+const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; archived: boolean; artifacts: Artifact[]}) => {
     const artifacts =
-        (props.node.outputs &&
-            props.node.outputs.artifacts &&
-            props.node.outputs.artifacts.map(artifact =>
+        (props.artifacts &&
+            props.artifacts.map(artifact =>
                 Object.assign({}, artifact, {
                     downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.archived),
                     stepName: props.node.name,
@@ -326,7 +362,7 @@ const WorkflowNodeArtifacts = (props: Props) => {
         <div className='white-box'>
             {artifacts.length === 0 && (
                 <div className='row'>
-                    <div className='columns small-12 text-center'>No data to display</div>
+                    <div className='columns small-12 text-center'>No artifacts</div>
                 </div>
             )}
             {artifacts.length > 0 && props.archived && (
@@ -351,7 +387,7 @@ const WorkflowNodeArtifacts = (props: Props) => {
                             <span title={artifact.path} className='muted'>
                                 {artifact.path}
                             </span>
-                            <span title={artifact.dateCreated.toString()} className='muted'>
+                            <span title={artifact.dateCreated} className='muted'>
                                 <Timestamp date={artifact.dateCreated} />
                             </span>
                         </div>
@@ -374,7 +410,6 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: (
                         <div>
                             <WorkflowNodeSummary {...props} />
-                            {props.node.inputs && <WorkflowNodeInputs inputs={props.node.inputs} />}
                         </div>
                     )
                 },
@@ -384,9 +419,14 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: <WorkflowNodeContainers {...props} />
                 },
                 {
-                    title: 'OUTPUT ARTIFACTS',
-                    key: 'artifacts',
-                    content: <WorkflowNodeArtifacts {...props} />
+                    title: 'INPUTS/OUTPUTS',
+                    key: 'inputs-outputs',
+                    content: (
+                        <>
+                            <WorkflowNodeInputs {...props} />
+                            <WorkflowNodeOutputs {...props} />
+                        </>
+                    )
                 }
             ]}
         />

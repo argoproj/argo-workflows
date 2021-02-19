@@ -3,65 +3,51 @@ package clustertemplate
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-
-	"github.com/spf13/cobra"
 
 	"github.com/argoproj/pkg/errors"
+	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint"
 )
 
 func NewLintCommand() *cobra.Command {
 	var (
 		strict bool
+		format string
 	)
-	var command = &cobra.Command{
+
+	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cluster workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
+			fmtr, err := lint.GetFormatter(format)
+			errors.CheckError(err)
 
-			lint := func(file string) error {
-				cwfTmpls, err := validate.ParseCWfTmplFromFile(file, strict)
-				if err != nil {
-					return err
-				}
-				for _, cfwft := range cwfTmpls {
-					_, err := serviceClient.LintClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest{Template: &cfwft})
-					if err != nil {
-						return err
-					}
-				}
-				fmt.Printf("%s is valid\n", file)
-				return nil
-			}
+			res, err := lint.Lint(ctx, &lint.LintOptions{
+				ServiceClients: lint.ServiceClients{
+					ClusterWorkflowTemplateClient: apiClient.NewClusterWorkflowTemplateServiceClient(),
+				},
+				Files:            args,
+				Strict:           strict,
+				DefaultNamespace: client.Namespace(),
+				Formatter:        fmtr,
+			})
+			errors.CheckError(err)
 
-			for _, file := range args {
-				stat, err := os.Stat(file)
-				errors.CheckError(err)
-				if stat.IsDir() {
-					err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
-						fileExt := filepath.Ext(info.Name())
-						switch fileExt {
-						case ".yaml", ".yml", ".json":
-						default:
-							return nil
-						}
-						return lint(path)
-					})
-					errors.CheckError(err)
-				} else {
-					err := lint(file)
-					errors.CheckError(err)
-				}
+			fmt.Print(res.Msg())
+			if !res.Success {
+				os.Exit(1)
 			}
-			fmt.Printf("Cluster Workflow Template manifests validated\n")
 		},
 	}
+
+	command.Flags().StringVar(&format, "format", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
 	return command
 }

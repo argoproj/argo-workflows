@@ -3,12 +3,11 @@ package raw
 import (
 	"os"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type RawArtifactDriver struct {
-}
+type RawArtifactDriver struct{}
 
 // Store raw content as artifact
 func (a *RawArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {

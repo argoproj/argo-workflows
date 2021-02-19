@@ -13,12 +13,14 @@ import (
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/util/instanceid"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
-const archiveTableName = "argo_archived_workflows"
-const archiveLabelsTableName = archiveTableName + "_labels"
+const (
+	archiveTableName       = "argo_archived_workflows"
+	archiveLabelsTableName = archiveTableName + "_labels"
+)
 
 type archivedWorkflowMetadata struct {
 	ClusterName string             `db:"clustername"`

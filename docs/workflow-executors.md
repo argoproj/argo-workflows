@@ -23,6 +23,8 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Configuration:
     * No additional configuration needed.
 
+**Note**: when using docker as workflow executors, messages printed in both `stdout` and `stderr` are captured in the [Argo variable](./variables.md#scripttemplate) `.outputs.result`.
+
 ## Kubelet (kubelet)
 
 * Reliability:
@@ -31,7 +33,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Secure
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
-    * [`runAsNonRoot`](workflow-pod-security-context.md) - TBD, see [#4186](https://github.com/argoproj/argo/issues/4186)
+    * [`runAsNonRoot`](workflow-pod-security-context.md) - TBD, see [#4186](https://github.com/argoproj/argo-workflows/issues/4186)
 * Scalable:
     * Operations performed against the local Kubelet
 * Artifacts:

@@ -1,11 +1,11 @@
 package v1alpha1
 
 import (
-	"github.com/argoproj/argo/v3/pkg/apis/workflow"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
 // SchemeGroupVersion is group version used to register these objects

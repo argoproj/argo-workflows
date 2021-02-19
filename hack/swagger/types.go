@@ -1,4 +1,6 @@
 package main
 
-type obj = map[string]interface{}
-type array = []interface{}
+type (
+	obj   = map[string]interface{}
+	array = []interface{}
+)

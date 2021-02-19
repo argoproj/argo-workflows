@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -23,7 +23,7 @@ func NewDeleteCommand() *cobra.Command {
 		allNamespaces bool
 		dryRun        bool
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]]",
 		Short: "delete workflows",
 		Example: `# Delete a workflow:

@@ -17,7 +17,7 @@ Use this mode if:
 * You want a drop-in replacement for the Argo UI.
 * If you need to prevent users from directly accessing the database.
 
-Hosted mode is provided as part of the standard [manifests](https://github.com/argoproj/argo/blob/master/manifests), [specifically in argo-server-deployment.yaml](https://github.com/argoproj/argo/blob/master/manifests/base/argo-server/argo-server-deployment.yaml) .
+Hosted mode is provided as part of the standard [manifests](https://github.com/argoproj/argo-workflows/blob/master/manifests), [specifically in argo-server-deployment.yaml](https://github.com/argoproj/argo-workflows/blob/master/manifests/base/argo-server/argo-server-deployment.yaml) .
 
 ## Local Mode
 
@@ -145,4 +145,4 @@ spec:
             path: /argo(/|$)(.*)
 ```
 
-[Learn more](https://github.com/argoproj/argo/issues/3080)
+[Learn more](https://github.com/argoproj/argo-workflows/issues/3080)

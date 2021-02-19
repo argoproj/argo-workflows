@@ -36,6 +36,7 @@ func TestModes_Add(t *testing.T) {
 		}
 	})
 }
+
 func TestModes_GetMode(t *testing.T) {
 	m := Modes{
 		Client: true,

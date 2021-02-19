@@ -3,6 +3,7 @@ import * as React from 'react';
 import {ConcurrencyPolicy, CronWorkflowSpec} from '../../../models';
 import {NumberInput} from '../../shared/components/number-input';
 import {TextInput} from '../../shared/components/text-input';
+import {ScheduleValidator} from './schedule-validator';
 
 export const CronWorkflowSpecEditor = ({onChange, spec}: {spec: CronWorkflowSpec; onChange: (spec: CronWorkflowSpec) => void}) => {
     return (
@@ -12,6 +13,7 @@ export const CronWorkflowSpecEditor = ({onChange, spec}: {spec: CronWorkflowSpec
                     <div className='columns small-3'>Schedule</div>
                     <div className='columns small-9'>
                         <TextInput value={spec.schedule} onChange={schedule => onChange({...spec, schedule})} />
+                        <ScheduleValidator schedule={spec.schedule} />
                     </div>
                 </div>
                 <div className='row white-box__details-row'>

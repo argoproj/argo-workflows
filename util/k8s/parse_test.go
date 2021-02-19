@@ -1,4 +1,4 @@
-package metrics
+package k8s
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_parseRequest(t *testing.T) {
+func Test_ParseRequest(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
 		method   string
@@ -26,7 +26,7 @@ func Test_parseRequest(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			x, _ := url.Parse(tt.url)
-			verb, kind := parseRequest(&http.Request{Method: tt.method, URL: x})
+			verb, kind := ParseRequest(&http.Request{Method: tt.method, URL: x})
 			assert.Equal(t, tt.wantVerb, verb)
 			assert.Equal(t, tt.wantKind, kind)
 		})

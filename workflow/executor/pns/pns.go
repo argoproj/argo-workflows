@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -16,72 +15,57 @@ import (
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/util/archive"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	waitutil "github.com/argoproj/argo/v3/util/wait"
-	"github.com/argoproj/argo/v3/workflow/common"
-	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
-	argowait "github.com/argoproj/argo/v3/workflow/executor/common/wait"
-	osspecific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/archive"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/k8sapi"
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
+var errContainerNameNotFound = fmt.Errorf("container name not found")
+
 type PNSExecutor struct {
-	clientset *kubernetes.Clientset
+	*k8sapi.K8sAPIExecutor
 	podName   string
 	namespace string
 
+	containers map[string]string // container name -> container ID
+
 	// ctrIDToPid maps a containerID to a process ID
 	ctrIDToPid map[string]int
-	// pidToCtrID maps a process ID to a container ID
-	pidToCtrID map[int]string
 
 	// pidFileHandles holds file handles to all root containers
-	pidFileHandles map[int]*fileInfo
+	pidFileHandles map[int]*os.File
 
 	// thisPID is the pid of this process
 	thisPID int
-	// mainFS holds a file descriptor to the main filesystem, allowing the executor to access the
-	// filesystem after the main process exited
-	mainFS *os.File
 	// rootFS holds a file descriptor to the root filesystem, allowing the executor to exit out of a chroot
 	rootFS *os.File
-	// debug enables additional debugging
-	debug bool
-	// hasOutputs indicates if the template has outputs. determines if we need to
-	hasOutputs bool
 }
 
-type fileInfo struct {
-	file os.File
-	info os.FileInfo
-}
-
-func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string, hasOutputs bool) (*PNSExecutor, error) {
+func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string) (*PNSExecutor, error) {
 	thisPID := os.Getpid()
-	log.Infof("Creating PNS executor (namespace: %s, pod: %s, pid: %d, hasOutputs: %v)", namespace, podName, thisPID, hasOutputs)
+	log.Infof("Creating PNS executor (namespace: %s, pod: %s, pid: %d)", namespace, podName, thisPID)
 	if thisPID == 1 {
 		return nil, errors.New(errors.CodeBadRequest, "process namespace sharing is not enabled on pod")
 	}
+	delegate := k8sapi.NewK8sAPIExecutor(clientset, nil, podName, namespace)
 	return &PNSExecutor{
-		clientset:      clientset,
+		K8sAPIExecutor: delegate,
 		podName:        podName,
 		namespace:      namespace,
+		containers:     make(map[string]string),
 		ctrIDToPid:     make(map[string]int),
-		pidToCtrID:     make(map[int]string),
-		pidFileHandles: make(map[int]*fileInfo),
+		pidFileHandles: make(map[int]*os.File),
 		thisPID:        thisPID,
-		debug:          log.GetLevel() == log.DebugLevel,
-		hasOutputs:     hasOutputs,
 	}, nil
 }
 
-func (p *PNSExecutor) GetFileContents(containerID string, sourcePath string) (string, error) {
-	err := p.enterChroot()
+func (p *PNSExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {
+	err := p.enterChroot(containerName)
 	if err != nil {
 		return "", err
 	}
@@ -94,15 +78,15 @@ func (p *PNSExecutor) GetFileContents(containerID string, sourcePath string) (st
 }
 
 // enterChroot enters chroot of the main container
-func (p *PNSExecutor) enterChroot() error {
-	if p.mainFS == nil {
-		return errors.InternalErrorf("could not chroot into main for artifact collection: container may have exited too quickly")
+func (p *PNSExecutor) enterChroot(containerName string) error {
+	pid, err := p.getContainerPID(containerName)
+	if err != nil {
+		return fmt.Errorf("failed to get container PID: %w", err)
 	}
-	if err := p.mainFS.Chdir(); err != nil {
+	if err := p.pidFileHandles[pid].Chdir(); err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chdir to main filesystem: %v", err)
 	}
-	err := osspecific.CallChroot()
-	if err != nil {
+	if err := osspecific.CallChroot(); err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chroot to main filesystem: %v", err)
 	}
 	return nil
@@ -121,7 +105,7 @@ func (p *PNSExecutor) exitChroot() error {
 }
 
 // CopyFile copies a source file in a container to a local path
-func (p *PNSExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) (err error) {
+func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath string, compressionLevel int) (err error) {
 	destFile, err := os.Create(destPath)
 	if err != nil {
 		return err
@@ -138,7 +122,7 @@ func (p *PNSExecutor) CopyFile(containerID string, sourcePath string, destPath s
 		}
 	}()
 	w := bufio.NewWriter(destFile)
-	err = p.enterChroot()
+	err = p.enterChroot(containerName)
 	if err != nil {
 		return err
 	}
@@ -147,53 +131,60 @@ func (p *PNSExecutor) CopyFile(containerID string, sourcePath string, destPath s
 	return err
 }
 
-func (p *PNSExecutor) WaitInit() error {
-	if !p.hasOutputs {
-		return nil
-	}
-	go p.pollRootProcesses(time.Minute)
+func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
+	allContainerNames := append(containerNames, sidecarNames...)
+	go p.pollRootProcesses(ctx, allContainerNames)
+
 	// Secure a filehandle on our own root. This is because we will chroot back and forth from
 	// the main container's filesystem, to our own.
 	rootFS, err := os.Open("/")
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return fmt.Errorf("failed to open my own root: %w", err)
 	}
 	p.rootFS = rootFS
-	return nil
-}
 
-// Wait for the container to complete
-func (p *PNSExecutor) Wait(ctx context.Context, containerID string) error {
-	mainPID, err := p.getContainerPID(containerID)
-	if err != nil {
-		log.Warnf("Failed to get main PID: %v", err)
-		if !p.hasOutputs {
-			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
-			return nil
-		}
-		return argowait.UntilTerminated(ctx, p.clientset, p.namespace, p.podName, containerID)
-	}
-	log.Infof("Main pid identified as %d", mainPID)
-	for pid, f := range p.pidFileHandles {
-		if pid == mainPID {
-			log.Info("Successfully secured file handle on main container root filesystem")
-			p.mainFS = &f.file
-		} else {
-			log.Infof("Closing root filehandle for non-main pid %d", pid)
-			_ = f.file.Close()
-		}
-	}
-	if p.mainFS == nil {
-		log.Warn("Failed to secure file handle on main container's root filesystem. Output artifacts from base image layer will fail")
+	if !p.haveContainers(allContainerNames) { // allow some additional time for polling to get this data
+		time.Sleep(3 * time.Second)
 	}
 
-	// wait for pid to complete
-	log.Infof("Waiting for main pid %d to complete", mainPID)
-	err = executil.WaitPID(mainPID)
-	if err != nil {
-		return err
+	if !p.haveContainers(containerNames) {
+		log.Info("container PID still unknown (maybe due to short running main container)")
+		err := p.K8sAPIExecutor.Until(ctx, func(pod *corev1.Pod) bool {
+			for _, c := range pod.Status.ContainerStatuses {
+				containerID := execcommon.GetContainerID(c.ContainerID)
+				p.containers[c.Name] = containerID
+				log.Infof("mapped container name %q to container ID %q", c.Name, containerID)
+			}
+			return p.haveContainers(allContainerNames)
+		})
+		if err != nil {
+			return err
+		}
 	}
-	log.Infof("Main pid %d completed", mainPID)
+
+	for _, containerName := range containerNames {
+		pid, err := p.getContainerPID(containerName)
+		if err != nil {
+			return err
+		}
+		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				p, err := gops.FindProcess(pid)
+				if err != nil {
+					return fmt.Errorf("failed to find %q process: %w", containerName, err)
+				}
+				if p == nil {
+					log.Infof("%q pid %d completed", containerName, pid)
+					return nil
+				}
+				time.Sleep(3 * time.Second)
+			}
+		}
+	}
 	return nil
 }
 
@@ -202,68 +193,56 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerID string) error {
 // It opens file handles on all root pids because at this point, we do not yet know which pid is the
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
-func (p *PNSExecutor) pollRootProcesses(timeout time.Duration) {
-	log.Warnf("Polling root processes (%v)", timeout)
-	deadline := time.Now().Add(timeout)
+func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	for {
-		p.updateCtrIDMap()
-		if p.mainFS != nil {
-			log.Info("Stopped root processes polling due to successful securing of main root fs")
-			break
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if err := p.secureRootFiles(); err != nil {
+				log.WithError(err).Warn("failed to secure root files")
+			}
+			if p.haveContainers(containerNames) {
+				return
+			}
+			time.Sleep(50 * time.Millisecond)
 		}
-		if time.Now().After(deadline) {
-			log.Warnf("Polling root processes timed out (%v)", timeout)
-			break
+	}
+}
+
+func (d *PNSExecutor) haveContainers(containerNames []string) bool {
+	for _, n := range containerNames {
+		if d.ctrIDToPid[d.containers[n]] == 0 {
+			return false
 		}
-		time.Sleep(50 * time.Millisecond)
 	}
+	return true
 }
 
-func (p *PNSExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
-	if !combinedOutput {
-		log.Warn("non combined output unsupported")
-	}
-	opts := corev1.PodLogOptions{
-		Container: common.MainContainerName,
-		Follow:    true,
-	}
-	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream(ctx)
-}
-
-func (p *PNSExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
-	log.Infof("Getting exit code of %s", containerID)
-	_, containerStatus, err := p.GetTerminatedContainerStatus(ctx, containerID)
-	if err != nil {
-		return "", fmt.Errorf("could not get container status: %s", err)
-	}
-	if containerStatus.State.Terminated != nil {
-		return fmt.Sprint(containerStatus.State.Terminated.ExitCode), nil
-	}
-	return "", nil
-}
-
-// Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (p *PNSExecutor) Kill(ctx context.Context, containerIDs []string) error {
+// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
+func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	var asyncErr error
 	wg := sync.WaitGroup{}
-	for _, cid := range containerIDs {
+	for _, containerName := range containerNames {
 		wg.Add(1)
-		go func(containerID string) {
-			err := p.killContainer(containerID)
+		go func(containerName string) {
+			err := p.killContainer(containerName, terminationGracePeriodDuration)
 			if err != nil && asyncErr != nil {
 				asyncErr = err
 			}
 			wg.Done()
-		}(cid)
+		}(containerName)
 	}
 	wg.Wait()
 	return asyncErr
 }
 
-func (p *PNSExecutor) killContainer(containerID string) error {
-	pid, err := p.getContainerPID(containerID)
+func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriodDuration time.Duration) error {
+	pid, err := p.getContainerPID(containerName)
 	if err != nil {
-		log.Warnf("Ignoring kill container failure of %s: %v. Process assumed to have completed", containerID, err)
+		log.Warnf("Ignoring kill container failure of %q: %v. Process assumed to have completed", containerName, err)
 		return nil
 	}
 	// On Unix systems, FindProcess always succeeds and returns a Process
@@ -274,8 +253,7 @@ func (p *PNSExecutor) killContainer(containerID string) error {
 	if err != nil {
 		log.Warnf("Failed to SIGTERM pid %d: %v", pid, err)
 	}
-
-	waitPIDOpts := executil.WaitPIDOpts{Timeout: execcommon.KillGracePeriod * time.Second}
+	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration}
 	err = executil.WaitPID(pid, waitPIDOpts)
 	if err == nil {
 		log.Infof("PID %d completed", pid)
@@ -294,111 +272,76 @@ func (p *PNSExecutor) killContainer(containerID string) error {
 
 // getContainerPID returns the pid associated with the container id. Returns error if it was unable
 // to be determined because no running root processes exist with that container ID
-func (p *PNSExecutor) getContainerPID(containerID string) (int, error) {
-	pid, ok := p.ctrIDToPid[containerID]
-	if ok {
-		return pid, nil
-	}
-	p.updateCtrIDMap()
-	pid, ok = p.ctrIDToPid[containerID]
+func (p *PNSExecutor) getContainerPID(containerName string) (int, error) {
+	containerID, ok := p.containers[containerName]
 	if !ok {
-		return -1, errors.InternalErrorf("Failed to determine pid for containerID %s: container may have exited too quickly", containerID)
+		return 0, fmt.Errorf("container ID not found for container name %q", containerName)
+	}
+	pid := p.ctrIDToPid[containerID]
+	if pid == 0 {
+		return 0, fmt.Errorf("pid not found for container ID %q", containerID)
 	}
 	return pid, nil
 }
 
-// updateCtrIDMap updates the mapping between container IDs to PIDs
-func (p *PNSExecutor) updateCtrIDMap() {
-	allProcs, err := gops.Processes()
+func containerNameForPID(pid int) (string, error) {
+	data, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/environ", pid))
 	if err != nil {
-		log.Warnf("Failed to list processes: %v", err)
-		return
+		return "", err
 	}
-	for _, proc := range allProcs {
-		pid := proc.Pid()
-		if pid == 1 || pid == p.thisPID || proc.PPid() != 0 {
-			// ignore the pause container, our own pid, and non-root processes
-			continue
+	prefix := common.EnvVarContainerName + "="
+	for _, l := range strings.Split(string(data), "\000") {
+		if strings.HasPrefix(l, prefix) {
+			return strings.TrimPrefix(l, prefix), nil
 		}
+	}
+	return "", errContainerNameNotFound
+}
 
-		// Useful code for debugging:
-		if p.debug {
-			if data, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/root", pid) + "/etc/os-release"); err == nil {
-				log.Infof("pid %d: %s", pid, string(data))
-				_, _ = parseContainerID(pid)
+func (p *PNSExecutor) secureRootFiles() error {
+	processes, err := gops.Processes()
+	if err != nil {
+		return err
+	}
+	for _, proc := range processes {
+		err = func() error {
+			pid := proc.Pid()
+			if pid == 1 || pid == p.thisPID || proc.PPid() != 0 {
+				// ignore the pause container, our own pid, and non-root processes
+				return nil
 			}
-		}
 
-		if p.hasOutputs && p.mainFS == nil {
-			rootPath := fmt.Sprintf("/proc/%d/root", pid)
-			currInfo, err := os.Stat(rootPath)
+			fs, err := os.Open(fmt.Sprintf("/proc/%d/root", pid))
 			if err != nil {
-				log.Warnf("Failed to stat %s: %v", rootPath, err)
-				continue
+				return err
 			}
-			log.Infof("pid %d: %v", pid, currInfo)
-			prevInfo := p.pidFileHandles[pid]
 
-			// Secure the root filehandle of the process. NOTE if the file changed, it means that
 			// the main container may have switched (e.g. gone from busybox to the user's container)
-			if prevInfo == nil || !os.SameFile(prevInfo.info, currInfo) {
-				fs, err := os.Open(rootPath)
-				if err != nil {
-					log.Warnf("Failed to open %s: %v", rootPath, err)
-					continue
-				}
-				log.Infof("Secured filehandle on %s", rootPath)
-				p.pidFileHandles[pid] = &fileInfo{
-					info: currInfo,
-					file: *fs,
-				}
-				if prevInfo != nil {
-					_ = prevInfo.file.Close()
-				}
+			if prevInfo, ok := p.pidFileHandles[pid]; ok {
+				_ = prevInfo.Close()
 			}
-		}
+			p.pidFileHandles[pid] = fs
+			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
 
-		// Update maps of pids to container ids
-		if _, ok := p.pidToCtrID[pid]; !ok {
 			containerID, err := parseContainerID(pid)
 			if err != nil {
-				log.Warnf("Failed to identify containerID for process %d", pid)
-				continue
+				return err
 			}
-			log.Infof("containerID %s mapped to pid %d", containerID, pid)
 			p.ctrIDToPid[containerID] = pid
-			p.pidToCtrID[pid] = containerID
+			log.Infof("mapped pid %d to container ID %q", pid, containerID)
+			containerName, err := containerNameForPID(pid)
+			if err != nil {
+				return err
+			}
+			p.containers[containerName] = containerID
+			log.Infof("mapped container name %q to container ID %q and pid %d", containerName, containerID, pid)
+			return nil
+		}()
+		if err != nil {
+			log.WithError(err).Warnf("failed to secure root file handle for %d", proc.Pid())
 		}
 	}
-}
-
-var backoffOver30s = wait.Backoff{
-	Duration: 1 * time.Second,
-	Steps:    7,
-	Factor:   2,
-}
-
-func (p *PNSExecutor) GetTerminatedContainerStatus(ctx context.Context, containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
-	var pod *corev1.Pod
-	var containerStatus *corev1.ContainerStatus
-	// Under high load, the Kubernetes API may be unresponsive for some time (30s). This would have failed the workflow
-	// previously (<=v2.11) but a 30s back-off mitigates this.
-	err := waitutil.Backoff(backoffOver30s, func() (bool, error) {
-		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(ctx, p.podName, metav1.GetOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(err), err
-		}
-		for _, containerStatusRes := range podRes.Status.ContainerStatuses {
-			if execcommon.GetContainerID(&containerStatusRes) != containerID {
-				continue
-			}
-			pod = podRes
-			containerStatus = &containerStatusRes
-			return containerStatus.State.Terminated != nil, nil
-		}
-		return false, nil
-	})
-	return pod, containerStatus, err
+	return nil
 }
 
 // parseContainerID parses the containerID of a pid

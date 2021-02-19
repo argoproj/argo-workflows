@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/v3/server/auth"
-	"github.com/argoproj/argo/v3/server/auth/types"
-	testutil "github.com/argoproj/argo/v3/test/util"
-	"github.com/argoproj/argo/v3/util/instanceid"
-	"github.com/argoproj/argo/v3/workflow/common"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	testutil "github.com/argoproj/argo-workflows/v3/test/util"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {

@@ -5,7 +5,7 @@ that `kubectl` does not, such as YAML validation, workflow visualization, parame
 and resubmits, suspend and resume, and more.
 
 ```sh
-kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 kubectl get wf -n argo
 kubectl get wf hello-world-xxx -n argo
 kubectl get po -n argo --selector=workflows.argoproj.io/workflow=hello-world-xxx

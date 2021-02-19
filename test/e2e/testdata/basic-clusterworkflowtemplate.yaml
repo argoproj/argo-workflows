@@ -2,12 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: ClusterWorkflowTemplate
 metadata:
   name: basic
-  labels:
-    argo-e2e: true
 spec:
   workflowMetadata:
     labels:
-      argo-e2e: true
+      workflows.argoproj.io/test: "true"
   entrypoint: main
   templates:
     - name: main

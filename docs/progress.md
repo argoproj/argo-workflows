@@ -6,7 +6,7 @@
 
 When you run a workflow, the controller will report on its progress.
 
-We define progress as two numbers, `N/M` such that `0 <= N <= M and 0 <= M <= 1`. 
+We define progress as two numbers, `N/M` such that `0 <= N <= M and 0 <= M`. 
 
 * `N` is the number of completed tasks.
 * `M` is the total number of tasks.

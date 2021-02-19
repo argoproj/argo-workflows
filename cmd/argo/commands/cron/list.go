@@ -9,14 +9,13 @@ import (
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
-
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {
@@ -25,10 +24,8 @@ type listFlags struct {
 }
 
 func NewListCommand() *cobra.Command {
-	var (
-		listArgs listFlags
-	)
-	var command = &cobra.Command{
+	var listArgs listFlags
+	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cron workflows",
 		Run: func(cmd *cobra.Command, args []string) {

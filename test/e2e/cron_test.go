@@ -17,9 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type CronSuite struct {
@@ -49,8 +49,6 @@ func (s *CronSuite) TestBasic() {
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -97,8 +95,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-timezone
-  labels:
-    argo-e2e: true
 spec:
   schedule: "%s"
   timezone: "%s"
@@ -126,8 +122,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-suspend
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -162,8 +156,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-resume
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -198,8 +190,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-forbid
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -234,7 +224,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-allow
   labels:
-    argo-e2e: true
+    
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -267,8 +257,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-replace
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Replace"
@@ -306,8 +294,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-succeed-1
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -343,8 +329,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-fail-1
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"

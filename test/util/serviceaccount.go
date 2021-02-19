@@ -21,7 +21,9 @@ func CreateServiceAccountWithToken(ctx context.Context, clientset kubernetes.Int
 			Annotations: map[string]string{
 				corev1.ServiceAccountNameKey: sa.Name,
 				corev1.ServiceAccountUIDKey:  string(sa.UID),
-			}}, Type: corev1.SecretTypeServiceAccountToken},
+			},
+		}, Type: corev1.SecretTypeServiceAccountToken,
+	},
 		metav1.CreateOptions{})
 	if err != nil {
 		return nil, err

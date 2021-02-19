@@ -7,11 +7,10 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"gopkg.in/square/go-jose.v2/jwt"
 	"k8s.io/client-go/rest"
 
-	"gopkg.in/square/go-jose.v2/jwt"
-
-	"github.com/argoproj/argo/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 )
 
 func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {

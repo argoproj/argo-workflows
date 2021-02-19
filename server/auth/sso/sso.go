@@ -22,8 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo/v3/server/auth/rbac"
-	"github.com/argoproj/argo/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/auth/rbac"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 )
 
 const (
@@ -238,10 +238,12 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	argoClaims := &types.Claims{Claims: jwt.Claims{
-		Issuer:  issuer,
-		Subject: c.Subject,
-		Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry))},
+	argoClaims := &types.Claims{
+		Claims: jwt.Claims{
+			Issuer:  issuer,
+			Subject: c.Subject,
+			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
+		},
 		Groups:             c.Groups,
 		Email:              c.Email,
 		EmailVerified:      c.EmailVerified,

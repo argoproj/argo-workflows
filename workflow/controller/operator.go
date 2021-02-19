@@ -32,29 +32,29 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v3/config"
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/util"
-	"github.com/argoproj/argo/v3/util/diff"
-	envutil "github.com/argoproj/argo/v3/util/env"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	"github.com/argoproj/argo/v3/util/intstr"
-	"github.com/argoproj/argo/v3/util/resource"
-	"github.com/argoproj/argo/v3/util/retry"
-	waitutil "github.com/argoproj/argo/v3/util/wait"
-	"github.com/argoproj/argo/v3/workflow/common"
-	controllercache "github.com/argoproj/argo/v3/workflow/controller/cache"
-	"github.com/argoproj/argo/v3/workflow/controller/estimation"
-	"github.com/argoproj/argo/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo/v3/workflow/metrics"
-	"github.com/argoproj/argo/v3/workflow/progress"
-	argosync "github.com/argoproj/argo/v3/workflow/sync"
-	"github.com/argoproj/argo/v3/workflow/templateresolution"
-	wfutil "github.com/argoproj/argo/v3/workflow/util"
-	"github.com/argoproj/argo/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/diff"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/resource"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/progress"
+	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -262,7 +262,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 		// Validate the execution wfSpec
 		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
-
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(ctx, msg)
@@ -293,7 +292,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation(ctx)
 		if err == nil {
-			err = woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
@@ -628,7 +627,7 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
-// See https://github.com/argoproj/argo/issues/913
+// See https://github.com/argoproj/argo-workflows/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
@@ -674,7 +673,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		// There is something about having informer indexers (introduced in v2.12) that means we are more likely to operate on the
 		// previous version of the workflow. This means under high load, a previously successful workflow could
 		// be operated on again. This can error (e.g. if any pod was deleted as part of clean-up). This check prevents that.
-		// https://github.com/argoproj/argo/issues/4798
+		// https://github.com/argoproj/argo-workflows/issues/4798
 		if currWf.Status.Fulfilled() {
 			return nil, fmt.Errorf("must never update completed workflows")
 		}
@@ -829,6 +828,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	case wfv1.RetryPolicyOnError:
 		retryOnFailed = false
 		retryOnError = true
+	case wfv1.RetryPolicyOnTransientError:
+		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(errors.InternalError(lastChildNode.Message)) {
+			retryOnFailed = true
+			retryOnError = true
+		}
 	case wfv1.RetryPolicyOnFailure, "":
 		retryOnFailed = true
 		retryOnError = false
@@ -998,8 +1002,8 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
-//fails any suspended and pending nodes if the workflow deadline has passed
-func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() error {
+// fails any suspended and pending nodes if the workflow deadline has passed
+func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
 	deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
 	if woc.execWf.Spec.Shutdown != "" || deadlineExceeded {
 		for _, node := range woc.wf.Status.Nodes {
@@ -1014,13 +1018,12 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 			}
 		}
 	}
-	return nil
 }
 
 // countActivePods counts the number of active (Pending/Running) pods.
 // Optionally restricts it to a template invocation (boundaryID)
 func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
-	var boundaryID = ""
+	boundaryID := ""
 	if len(boundaryIDs) > 0 {
 		boundaryID = boundaryIDs[0]
 	}
@@ -1047,7 +1050,7 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 
 // countActiveChildren counts the number of active (Pending/Running) children nodes of parent parentName
 func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
-	var boundaryID = ""
+	boundaryID := ""
 	if len(boundaryIDs) > 0 {
 		boundaryID = boundaryIDs[0]
 	}
@@ -1272,110 +1275,64 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
-	for _, ctr := range pod.Status.InitContainerStatuses {
-		// Virtual Kubelet environment will not set the terminate on waiting container
-		// https://github.com/argoproj/argo/issues/3879
-		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
-		if ctr.State.Waiting != nil {
-			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+	order := func(n string) int {
+		order, ok := map[string]int{
+			common.InitContainerName: 0,
+			common.MainContainerName: 1,
+			common.WaitContainerName: 2,
+		}[n]
+		if ok {
+			return order
 		}
-		if ctr.State.Terminated == nil {
-			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
-			continue
-		}
-		if ctr.State.Terminated.ExitCode == 0 {
-			continue
-		}
-		errMsg := "failed to load artifacts"
-		for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
-			if msg != "" {
-				errMsg += ": " + msg
-				break
-			}
-		}
-		// NOTE: we consider artifact load issues as Error instead of Failed
-		return wfv1.NodeError, errMsg
+		return 3
 	}
-	failMessages := make(map[string]string)
-	for _, ctr := range pod.Status.ContainerStatuses {
+
+	ctrs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
+	sort.Slice(ctrs, func(i, j int) bool { return order(ctrs[i].Name) < order(ctrs[j].Name) })
+
+	for _, ctr := range ctrs {
+
 		// Virtual Kubelet environment will not set the terminate on waiting container
-		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/argoproj/argo-workflows/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
 
 		if ctr.State.Waiting != nil {
 			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
 		}
-		if ctr.State.Terminated == nil {
+		t := ctr.State.Terminated
+		if t == nil {
 			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.Name, ctr.Name)
 			continue
 		}
-		if ctr.State.Terminated.ExitCode == 0 {
+		if t.ExitCode == 0 {
 			continue
 		}
-		if ctr.State.Terminated.Message == "" && ctr.State.Terminated.Reason == "OOMKilled" {
-			failMessages[ctr.Name] = ctr.State.Terminated.Reason
-			continue
-		}
-		if ctr.Name == common.WaitContainerName {
-			errDetails := ""
-			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
-				if msg != "" {
-					errDetails = msg
-					break
-				}
-			}
-			if errDetails == "" {
-				// executor is expected to annotate a message to the pod upon any errors.
-				// If we failed to see the annotated message, it is likely the pod ran with
-				// insufficient privileges. Give a hint to that effect.
-				errDetails = fmt.Sprintf("verify serviceaccount %s:%s has necessary privileges", pod.ObjectMeta.Namespace, pod.Spec.ServiceAccountName)
-			}
-			errMsg := fmt.Sprintf("failed to save outputs: %s", errDetails)
-			failMessages[ctr.Name] = errMsg
-			continue
-		}
-		if ctr.State.Terminated.Message != "" {
-			errMsg := ctr.State.Terminated.Message
-			if ctr.Name != common.MainContainerName {
-				errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
-			}
-			failMessages[ctr.Name] = errMsg
-			continue
-		}
-		errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
-		if ctr.Name != common.MainContainerName {
-			if ctr.State.Terminated.ExitCode == 137 || ctr.State.Terminated.ExitCode == 143 {
+
+		msg := fmt.Sprintf("exit code %d: %s; %s; %s", t.ExitCode, t.Reason, t.Message, annotatedMsg)
+
+		switch ctr.Name {
+		case common.InitContainerName:
+			return wfv1.NodeError, msg
+		case common.MainContainerName:
+			return wfv1.NodeFailed, msg
+		case common.WaitContainerName:
+			// executor is expected to annotate a message to the pod upon any errors.
+			// If we failed to see the annotated message, it is likely the pod ran with
+			// insufficient privileges. Give a hint to that effect.
+			return wfv1.NodeError, fmt.Sprintf("%s; verify serviceaccount %s:%s has necessary privileges", msg, pod.Namespace, pod.Spec.ServiceAccountName)
+		default:
+			if t.ExitCode == 137 || t.ExitCode == 143 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
 				// forcibly killed the container, which we ignore the error for.
 				// Java code 143 is a normal exit 128 + 15 https://github.com/elastic/elasticsearch/issues/31847
-				log.Infof("Ignoring %d exit code of sidecar '%s'", ctr.State.Terminated.ExitCode, ctr.Name)
-				continue
+				log.Infof("Ignoring %d exit code of container '%s'", t.ExitCode, ctr.Name)
+			} else {
+				return wfv1.NodeFailed, msg
 			}
-			errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
 		}
-		failMessages[ctr.Name] = errMsg
-	}
-	if failMsg, ok := failMessages[common.MainContainerName]; ok {
-		_, ok = failMessages[common.WaitContainerName]
-		isResourceTemplate := !ok
-		if isResourceTemplate && annotatedMsg != "" {
-			// For resource templates, we prefer the annotated message
-			// over the vanilla exit code 1 error
-			return wfv1.NodeFailed, annotatedMsg
-		}
-		return wfv1.NodeFailed, failMsg
-	}
-	if failMsg, ok := failMessages[common.WaitContainerName]; ok {
-		return wfv1.NodeError, failMsg
 	}
 
-	// If we get here, both the main and wait container succeeded. Iterate the fail messages to
-	// identify the sidecar which failed and return the message.
-	for _, failMsg := range failMessages {
-		return wfv1.NodeFailed, failMsg
-	}
 	// If we get here, we have detected that the main/wait containers succeed but the sidecar(s)
 	// were  SIGKILL'd. The executor may have had to forcefully terminate the sidecar (kill -9),
 	// resulting in a 137 exit code (which we had ignored earlier). If failMessages is empty, it
@@ -1432,7 +1389,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 			}
 		}
 
-		//continue
+		// continue
 		if err != nil {
 			return err
 		}
@@ -1610,9 +1567,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 	if node != nil {
 		if node.Fulfilled() {
-			if processedTmpl.Synchronization != nil {
-				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
-			}
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if processedTmpl.Metrics != nil {
 				// Check if this node completed between executions. If it did, emit metrics. If a node completes within
@@ -1770,18 +1726,21 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
 
-		if processedTmpl.Synchronization != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
-		}
+		woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
 		retryStrategy := woc.retryStrategy(processedTmpl)
 		if retryStrategy == nil ||
 			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
 			return node, err
 		}
+	}
+
+	if node.Fulfilled() {
+		woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 	}
 
 	if processedTmpl.Metrics != nil {
@@ -1812,7 +1771,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Swap the node back to retry node
 	if retryNodeName != "" {
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
-		if !retryNode.Fulfilled() && node.Fulfilled() { //if the retry child has completed we need to update outself
+		if !retryNode.Fulfilled() && node.Fulfilled() { // if the retry child has completed we need to update outself
 			node, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
@@ -2321,7 +2280,6 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
-
 	var variableRefName string
 	if parentTmpl.DAG != nil {
 		variableRefName = "{{tasks." + name + ".outputs.result}}"
@@ -2450,7 +2408,7 @@ func (woc *wfOperationCtx) addOutputsToGlobalScope(outputs *wfv1.Outputs) {
 		woc.addParamToGlobalScope(param)
 	}
 	for _, art := range outputs.Artifacts {
-		woc.addArtifactToGlobalScope(art, nil)
+		woc.addArtifactToGlobalScope(art)
 	}
 }
 
@@ -2470,11 +2428,13 @@ func parseLoopIndex(s string) int {
 	}
 	return val
 }
+
 func (n loopNodes) Less(i, j int) bool {
 	left := parseLoopIndex(n[i].DisplayName)
 	right := parseLoopIndex(n[j].DisplayName)
 	return left < right
 }
+
 func (n loopNodes) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
@@ -2575,7 +2535,7 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 
 // addArtifactToGlobalScope exports any desired node outputs to the global scope
 // Optionally adds to a local scope if supplied
-func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact, scope *wfScope) {
+func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 	if art.GlobalName == "" {
 		return
 	}
@@ -2589,9 +2549,6 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact, scope *wf
 				art.Path = ""
 				if !reflect.DeepEqual(woc.wf.Status.Outputs.Artifacts[i], art) {
 					woc.wf.Status.Outputs.Artifacts[i] = art
-					if scope != nil {
-						scope.addArtifactToScope(globalArtName, art)
-					}
 					woc.log.Infof("overwriting %s: %v", globalArtName, art)
 					woc.updated = true
 				}
@@ -2607,9 +2564,6 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact, scope *wf
 	art.Path = ""
 	woc.log.Infof("setting %s: %v", globalArtName, art)
 	woc.wf.Status.Outputs.Artifacts = append(woc.wf.Status.Outputs.Artifacts, art)
-	if scope != nil {
-		scope.addArtifactToScope(globalArtName, art)
-	}
 	woc.updated = true
 }
 
@@ -2635,7 +2589,6 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-
 	node := woc.wf.GetNodeByName(nodeName)
 
 	if node == nil {
@@ -2867,7 +2820,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	}
 	fstTmpl, err := fasttemplate.NewTemplate(string(volumesBytes), "{{", "}}")
 	if err != nil {
-		return fmt.Errorf("unable to parse argo varaible: %w", err)
+		return fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	newVolumesStr, err := common.Replace(fstTmpl, params, true)
 	if err != nil {
@@ -2939,7 +2892,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 		}
 		fstTmpl, err := fasttemplate.NewTemplate(string(metricTmplBytes), "{{", "}}")
 		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
+			woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo variable for metric '%s': %s", metricTmpl.Name, err))
 			continue
 		}
 		replacedValue, err := common.Replace(fstTmpl, localScope, false)
@@ -2999,7 +2952,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			// Finally substitute value parameters
 			fstTmpl, err = fasttemplate.NewTemplate(metricSpec.GetValueString(), "{{", "}}")
 			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo variable for metric '%s': %s", metricTmpl.Name, err))
 				continue
 			}
 			replacedValue, err := common.Replace(fstTmpl, localScope, false)
@@ -3038,7 +2991,6 @@ func (woc *wfOperationCtx) reportMetricEmissionError(errorString string) {
 }
 
 func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
-
 	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
@@ -3202,7 +3154,6 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		}
 		if mergedWf.Spec.String() != woc.wf.Status.StoredWorkflowSpec.String() {
 			return fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
-
 		}
 	}
 	return nil

@@ -16,10 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/v3/workflow/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // The goal of this class is to stream the logs of the workflow you want.
@@ -38,7 +38,6 @@ type sender interface {
 }
 
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
-
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
 	_, err := wfInterface.Get(ctx, req.GetName(), metav1.GetOptions{})
 	if err != nil {

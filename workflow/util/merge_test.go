@@ -23,6 +23,7 @@ spec:
   workflowTemplateRef:
     name: workflow-template-submittable
 `
+
 var patchWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -112,6 +113,7 @@ spec:
       secret: 
         secretName: test
 `
+
 var wft = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -221,7 +223,7 @@ func TestJoinWfSpecs(t *testing.T) {
 	assert := assert.New(t)
 	wfDefault := unmarshalWF(wfDefault)
 	wf1 := unmarshalWF(wf)
-	//wf1 := unmarshalWF(wf1)
+	// wf1 := unmarshalWF(wf1)
 	wft := unmarshalWFT(wft)
 	result := unmarshalWF(resultSpec)
 

@@ -5,9 +5,9 @@ import (
 
 	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/v3/errors"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // wfScope contains the current scope of variables available when executing a template
@@ -70,9 +70,7 @@ func (s *wfScope) resolveParameter(v string) (string, error) {
 }
 
 func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, error) {
-
 	val, err := s.resolveVar(v)
-
 	if err != nil {
 		return nil, err
 	}

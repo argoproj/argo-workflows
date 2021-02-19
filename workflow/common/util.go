@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os/exec"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -25,14 +24,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/v3/errors"
-	"github.com/argoproj/argo/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/util"
-	errorsutil "github.com/argoproj/argo/v3/util/errors"
-	waitutil "github.com/argoproj/argo/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -158,7 +155,7 @@ func (w *websocketReadCloser) WebsocketCallback(ws *websocket.Conn, resp *http.R
 	for {
 		_, body, err := ws.ReadMessage()
 		if len(body) > 0 {
-			//log.Debugf("%d: %s", msgType, string(body))
+			// log.Debugf("%d: %s", msgType, string(body))
 			_, writeErr := w.Write(body)
 			if writeErr != nil {
 				return writeErr
@@ -197,7 +194,7 @@ type websocketReadCloser struct {
 }
 
 func (w *websocketReadCloser) Close() error {
-	//return w.conn.Close()
+	// return w.conn.Close()
 	return nil
 }
 
@@ -310,7 +307,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	replaceMap := globalParams.Merge(localParams)
 	fstTmpl, err := fasttemplate.NewTemplate(string(tmplBytes), "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
@@ -329,7 +326,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
-	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
+	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -353,7 +350,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 
 	fstTmpl, err = fasttemplate.NewTemplate(globalReplacedTmplStr, "{{", "}}")
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	s, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
@@ -499,104 +496,6 @@ func DeletePod(ctx context.Context, c kubernetes.Interface, podName, namespace s
 	return err
 }
 
-var yamlSeparator = regexp.MustCompile(`\n---`)
-
-// SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects
-func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.Workflow, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var wf wfv1.Workflow
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
-		if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
-			name := wf.Kind
-			if wf.Name != "" {
-				name = fmt.Sprintf("%s '%s'", name, wf.Name)
-			}
-			log.Warnf("%s is not of kind Workflow. Ignoring...", name)
-			// If we get here, it was a k8s manifest which was not of type 'Workflow'
-			// We ignore these since we only care about Workflow manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, wf)
-	}
-	return manifests, nil
-}
-
-// SplitWorkflowTemplateYAMLFile is a helper to split a body into multiple workflow template objects
-func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.WorkflowTemplate, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var wftmpl wfv1.WorkflowTemplate
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &wftmpl, opts...)
-		if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
-			name := wftmpl.Kind
-			if wftmpl.Name != "" {
-				name = fmt.Sprintf("%s '%s'", name, wftmpl.Name)
-			}
-			log.Warnf("%s is not of kind WorkflowTemplate. Ignoring...", name)
-			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
-			// We ignore these since we only care about WorkflowTemplate manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, wftmpl)
-	}
-	return manifests, nil
-}
-
-// SplitCronWorkflowYAMLFile is a helper to split a body into multiple workflow template objects
-func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.CronWorkflow, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var cronWf wfv1.CronWorkflow
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &cronWf, opts...)
-		if cronWf.Kind != "" && cronWf.Kind != workflow.CronWorkflowKind {
-			name := cronWf.Kind
-			if cronWf.Name != "" {
-				name = fmt.Sprintf("%s '%s'", name, cronWf.Name)
-			}
-			log.Warnf("%s is not of kind CronWorkflow. Ignoring...", name)
-			// If we get here, it was a k8s manifest which was not of type 'CronWorkflow'
-			// We ignore these since we only care about CronWorkflow manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, cronWf)
-	}
-	return manifests, nil
-}
-
 // MergeReferredTemplate merges a referred template to the receiver template.
 func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
 	// Copy the referred template to deep copy template types.
@@ -705,34 +604,6 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	} else {
 		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
 	}
-}
-
-// SplitClusterWorkflowTemplateYAMLFile is a helper to split a body into multiple cluster workflow template objects
-func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var cwftmpl wfv1.ClusterWorkflowTemplate
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &cwftmpl, opts...)
-		if cwftmpl.Kind != "" && cwftmpl.Kind != workflow.ClusterWorkflowTemplateKind {
-			log.Warnf("%s is not a cluster workflow template", cwftmpl.Kind)
-			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
-			// We ignore these since we only care about WorkflowTemplate manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, cwftmpl)
-	}
-	return manifests, nil
 }
 
 func GenerateOnExitNodeName(parentDisplayName string) string {

@@ -39,7 +39,6 @@ spec:
 `
 
 func TestUnmarshalCWFT(t *testing.T) {
-
 	clusterwfts, err := unmarshalClusterWorkflowTemplates([]byte(cwfts), false)
 	if assert.NoError(t, err) {
 		assert.Equal(t, 2, len(clusterwfts))

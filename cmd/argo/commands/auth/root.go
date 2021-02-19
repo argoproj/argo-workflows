@@ -5,7 +5,7 @@ import (
 )
 
 func NewAuthCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use: "auth",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
