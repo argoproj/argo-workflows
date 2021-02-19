@@ -70,7 +70,7 @@ spec:
 
 `
 	_, err = SplitWorkflowYAMLFile([]byte(invalidWf), false)
-	assert.EqualError(t, err, `error unmarshaling JSON: while decoding JSON: json: unknown field "doesNotExist"`)
+	assert.EqualError(t, err, `json: unknown field "doesNotExist"`)
 }
 
 func TestDeletePod(t *testing.T) {

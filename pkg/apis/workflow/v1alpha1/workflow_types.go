@@ -2034,6 +2034,9 @@ type OSSBucket struct {
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
+	CreateBucketIfNotPresent bool `json:"createBucketIfNotPresent,omitempty" protobuf:"varint,5,opt,name=createBucketIfNotPresent"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
