@@ -43,6 +43,7 @@ endif
 ifneq ($(CI),)
 AUTH_MODE             := client
 endif
+
 # Which mode to run in:
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
@@ -485,8 +486,8 @@ test-executor:
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
 .PHONY: test-examples
-test-examples:
-	$(GOTEST) -timeout 15m -count 1 --tags examples -p 1 ./test/e2e
+test-examples: ./dist/argo
+	./hack/test-examples.sh
 
 .PHONY: test-functional
 test-functional:
