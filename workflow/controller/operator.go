@@ -906,7 +906,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				var podLabels labels.Set = pod.GetLabels()
 				match, err = woc.execWf.Spec.PodGC.Matches(podLabels)
 				if err != nil {
-					woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
+					woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to parse label selector %s for pod GC: %v", woc.execWf.Spec.PodGC.LabelSelector, err))
 					return
 				}
 			}
@@ -915,7 +915,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					return
 				}
 				if match {
-					woc.completedPods[pod.ObjectMeta.Name] = pod.Status.Phase
+					woc.completedPods[pod.Name] = pod.Status.Phase
 				}
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
@@ -925,7 +925,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				}
 			}
 			if node.Succeeded() && match {
-				woc.completedPods[pod.ObjectMeta.Name] = pod.Status.Phase
+				woc.completedPods[pod.Name] = pod.Status.Phase
 			}
 		}
 	}
