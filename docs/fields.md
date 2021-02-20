@@ -3408,6 +3408,7 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 |:----------:|:----------:|---------------|
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
 |`bucket`|`string`|Bucket is the name of the bucket|
+|`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
