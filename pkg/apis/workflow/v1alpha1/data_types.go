@@ -54,6 +54,6 @@ type ArtifactPaths struct {
 	Artifact `json:",inline"`
 }
 
-type SourceProcessor interface {
+type DataSourceProcessor interface {
 	ProcessArtifactPaths(*ArtifactPaths) (interface{}, error)
 }

@@ -2661,7 +2661,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 			return woc.requeueIfTransientErr(err, node.Name)
 		}
 	} else {
-		transformedData, err := data.ProcessData(tmpl.Data, newWorkflowExecutorSourceProcessor())
+		transformedData, err := data.ProcessData(tmpl.Data, newOperatorDataSourceProcessor())
 		if err != nil {
 			errorMessage := fmt.Sprintf("could not process data: %s", err)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMessage), fmt.Errorf(errorMessage)

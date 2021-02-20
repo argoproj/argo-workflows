@@ -37,14 +37,6 @@ spec:
         artifactPaths:
           s3:
             bucket: test
-            endpoint: minio:9000
-            insecure: true
-            accessKeySecret:
-              name: my-minio-cred
-              key: accesskey
-            secretKeySecret:
-              name: my-minio-cred
-              key: secretkey
       transformation:
         - expression: "filter(data, {# endsWith \".py\"})"
 
@@ -65,7 +57,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo \"{{inputs.parameters.file}}.processed\" > /tmp/f.txt"]
+      args: ["echo \"{{inputs.parameters.file}}.processed\" | tee /tmp/f.txt"]
     outputs:
       parameters:
         - name: processed

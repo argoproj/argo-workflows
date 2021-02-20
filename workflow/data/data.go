@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ProcessData(data *wfv1.Data, processor wfv1.SourceProcessor) (interface{}, error) {
+func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface{}, error) {
 	sourcedData, err := processSource(data.Source, processor)
 	if err != nil {
 		return nil, fmt.Errorf("unable to process data source: %w", err)
@@ -20,7 +20,7 @@ func ProcessData(data *wfv1.Data, processor wfv1.SourceProcessor) (interface{}, 
 	return transformedData, nil
 }
 
-func processSource(source *wfv1.DataSource, processor wfv1.SourceProcessor) (interface{}, error) {
+func processSource(source *wfv1.DataSource, processor wfv1.DataSourceProcessor) (interface{}, error) {
 	var data interface{}
 	var err error
 	switch {

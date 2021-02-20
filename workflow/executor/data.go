@@ -16,7 +16,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 		return nil
 	}
 
-	transformedData, err := data.ProcessData(dataTemplate, newWorkflowExecutorSourceProcessor(ctx, we))
+	transformedData, err := data.ProcessData(dataTemplate, newExecutorDataSourceProcessor(ctx, we))
 	if err != nil {
 		return fmt.Errorf("unable to process data template: %w", err)
 	}

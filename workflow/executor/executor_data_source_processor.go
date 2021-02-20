@@ -6,19 +6,19 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type workflowExecutorSourceProcessor struct {
+type executorDataSourceProcessor struct {
 	ctx context.Context
 	we *WorkflowExecutor
 }
 
-func newWorkflowExecutorSourceProcessor(ctx context.Context, we *WorkflowExecutor) *workflowExecutorSourceProcessor {
-	return &workflowExecutorSourceProcessor{
+func newExecutorDataSourceProcessor(ctx context.Context, we *WorkflowExecutor) *executorDataSourceProcessor {
+	return &executorDataSourceProcessor{
 		ctx: ctx,
 		we:  we,
 	}
 }
 
-func (ep *workflowExecutorSourceProcessor) ProcessArtifactPaths(artifacts *wfv1.ArtifactPaths) (interface{}, error) {
+func (ep *executorDataSourceProcessor) ProcessArtifactPaths(artifacts *wfv1.ArtifactPaths) (interface{}, error) {
 	driverArt, err := ep.we.newDriverArt(&artifacts.Artifact)
 	if err != nil {
 		return nil, err
