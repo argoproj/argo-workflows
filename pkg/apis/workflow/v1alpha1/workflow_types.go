@@ -770,6 +770,14 @@ func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
 	return selector.Matches(labels), nil
 }
 
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
+	if podGC != nil && podGC.LabelSelector != nil {
+		return podGC.LabelSelector
+	}
+	return nil
+}
+
 // VolumeClaimGC describes how to delete volumes from completed Workflows
 type VolumeClaimGC struct {
 	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"

@@ -901,28 +901,31 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
-			var podLabels labels.Set = pod.GetLabels()
-			match, err := woc.execWf.Spec.PodGC.Matches(podLabels)
-			if err != nil {
-				woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
-				return
+			match := true
+			if woc.execWf.Spec.PodGC.GetLabelSelector() != nil {
+				var podLabels labels.Set = pod.GetLabels()
+				match, err = woc.execWf.Spec.PodGC.Matches(podLabels)
+				if err != nil {
+					woc.log.Warnf("Failed to parse label selector for pod GC: %s", woc.execWf.Spec.PodGC.LabelSelector)
+					return
+				}
 			}
-			if match {
-				if node.Fulfilled() && !node.IsDaemoned() {
-					if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
-						return
-					}
-					woc.completedPods[pod.ObjectMeta.Name] = pod.Status.Phase
-					if woc.shouldPrintPodSpec(node) {
-						printPodSpecLog(pod, woc.wf.Name)
-					}
-					if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
-						woc.onNodeComplete(&node)
-					}
+			if node.Fulfilled() && !node.IsDaemoned() {
+				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
+					return
 				}
-				if node.Succeeded() {
+				if match {
 					woc.completedPods[pod.ObjectMeta.Name] = pod.Status.Phase
 				}
+				if woc.shouldPrintPodSpec(node) {
+					printPodSpecLog(pod, woc.wf.Name)
+				}
+				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
+					woc.onNodeComplete(&node)
+				}
+			}
+			if node.Succeeded() && match {
+				woc.completedPods[pod.ObjectMeta.Name] = pod.Status.Phase
 			}
 		}
 	}
