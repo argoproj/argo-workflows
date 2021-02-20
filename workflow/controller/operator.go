@@ -2648,7 +2648,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 		return node, nil
 	}
 
-	if tmpl.Data.UsePod() {
+	if tmpl.Data.UsePod() || woc.controller.Config.WorkflowRestrictions.MustUsePodWithDataTemplate() {
 		dataTemplate, err := json.Marshal(tmpl.Data)
 		if err != nil {
 			return node, fmt.Errorf("could not marhsal data in transformation: %w", err)
