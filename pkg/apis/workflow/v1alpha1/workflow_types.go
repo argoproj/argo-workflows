@@ -760,19 +760,14 @@ type PodGC struct {
 
 // Matches returns whether the pod labels match with the label selector specified in podGC.
 func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+	if podGC == nil {
+		return true, nil
+	}
 	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
 	if err != nil {
 		return false, err
 	}
 	return selector.Matches(labels), nil
-}
-
-// GetLabelSelector gets the label selector from podGC.
-func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
-	if podGC != nil && podGC.LabelSelector != nil {
-		return podGC.LabelSelector
-	}
-	return nil
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows

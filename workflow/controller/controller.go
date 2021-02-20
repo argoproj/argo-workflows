@@ -629,11 +629,8 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 			}
 		}
 		if doPodGC {
-			labelSelector := woc.execWf.Spec.PodGC.GetLabelSelector()
-			for podName, podSummary := range woc.completedPods {
-				if labelSelector == nil || podSummary.matched {
-					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
-				}
+			for podName := range woc.completedPods {
+				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 			}
 		}
 	}
