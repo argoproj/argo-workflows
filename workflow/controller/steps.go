@@ -202,7 +202,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	}
 
 	// Next, expand the step's withItems (if any)
-	stepGroup, err = woc.expandStepGroup(ctx, sgNodeName, stepGroup, stepsCtx)
+	stepGroup, err = woc.expandStepGroup(sgNodeName, stepGroup, stepsCtx)
 	if err != nil {
 		return woc.markNodeError(sgNodeName, err)
 	}
@@ -409,7 +409,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 }
 
 // expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems/withParam
-func (woc *wfOperationCtx) expandStepGroup(ctx context.Context, sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
 		if !step.ShouldExpand() {

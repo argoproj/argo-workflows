@@ -522,7 +522,7 @@ type Template struct {
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
 
 	// Data is a data template
-	Data *Data `json:"data,omitempty"`
+	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge

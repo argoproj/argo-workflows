@@ -22,7 +22,7 @@ import (
 	authmocks "github.com/argoproj/argo-workflows/v3/server/auth/mocks"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
-	common2 "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
@@ -37,7 +37,7 @@ func mustParse(text string) *url.URL {
 }
 
 type fakeArtifactDriver struct {
-	common2.ArtifactDriver
+	artifactscommon.ArtifactDriver
 	data []byte
 }
 
@@ -109,7 +109,7 @@ func newServer() *ArtifactServer {
 	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
 
-	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (common2.ArtifactDriver, error) {
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
 	}
 

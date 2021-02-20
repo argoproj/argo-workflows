@@ -177,7 +177,6 @@
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Filter"
         },
         "insecure": {
-          "format": "boolean",
           "type": "boolean"
         },
         "metadata": {
@@ -278,7 +277,6 @@
           "type": "string"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -377,7 +375,6 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.CatchupConfiguration": {
       "properties": {
         "enabled": {
-          "format": "boolean",
           "title": "Enabled enables to triggered the missed schedule when eventsource restarts",
           "type": "boolean"
         },
@@ -391,7 +388,6 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.ConfigMapPersistence": {
       "properties": {
         "createIfNotExist": {
-          "format": "boolean",
           "title": "CreateIfNotExist will create configmap if it doesn't exists",
           "type": "boolean"
         },
@@ -421,7 +417,6 @@
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -705,7 +700,6 @@
           "type": "object"
         },
         "polling": {
-          "format": "boolean",
           "title": "Use polling instead of inotify",
           "type": "boolean"
         },
@@ -729,11 +723,9 @@
         },
         "insecure": {
           "description": "Insecure determines the type of connection.",
-          "format": "boolean",
           "type": "boolean"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -754,7 +746,6 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.GithubEventSource": {
       "properties": {
         "active": {
-          "format": "boolean",
           "title": "Active refers to status of the webhook for event deliveries.\nhttps://developer.github.com/webhooks/creating/#active\n+optional",
           "type": "boolean"
         },
@@ -767,7 +758,6 @@
           "type": "string"
         },
         "deleteHookOnFinish": {
-          "format": "boolean",
           "title": "DeleteHookOnFinish determines whether to delete the GitHub hook for the repository once the event source is stopped.\n+optional",
           "type": "boolean"
         },
@@ -790,7 +780,6 @@
           "type": "string"
         },
         "insecure": {
-          "format": "boolean",
           "title": "Insecure tls verification",
           "type": "boolean"
         },
@@ -828,12 +817,10 @@
           "title": "AccessToken is reference to k8 secret which holds the gitlab api access information"
         },
         "deleteHookOnFinish": {
-          "format": "boolean",
           "title": "DeleteHookOnFinish determines whether to delete the GitLab hook for the project once the event source is stopped.\n+optional",
           "type": "boolean"
         },
         "enableSSLVerification": {
-          "format": "boolean",
           "title": "EnableSSLVerification to enable ssl verification\n+optional",
           "type": "boolean"
         },
@@ -932,7 +919,6 @@
           "type": "string"
         },
         "oldest": {
-          "format": "boolean",
           "title": "When starting up a new group do we want to start from the oldest event (true) or the newest event (false), defaults to false\n+optional",
           "type": "boolean"
         },
@@ -954,7 +940,6 @@
           "title": "Consumer group for kafka client\n+optional"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1004,7 +989,6 @@
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1038,7 +1022,6 @@
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1080,7 +1063,6 @@
           "type": "string"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1115,12 +1097,10 @@
           "type": "string"
         },
         "deleteSubscriptionOnFinish": {
-          "format": "boolean",
           "title": "DeleteSubscriptionOnFinish determines whether to delete the GCP PubSub subscription once the event source is stopped.\n+optional",
           "type": "boolean"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1157,7 +1137,6 @@
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1173,7 +1152,6 @@
           "title": "TLS configuration for the pulsar client.\n+optional"
         },
         "tlsAllowInsecureConnection": {
-          "format": "boolean",
           "title": "Whether the Pulsar client accept untrusted TLS certificate from broker.\n+optional",
           "type": "boolean"
         },
@@ -1182,7 +1160,6 @@
           "title": "Trusted TLS certificate secret.\n+optional"
         },
         "tlsValidateHostname": {
-          "format": "boolean",
           "title": "Whether the Pulsar client verify the validity of the host name from broker.\n+optional",
           "type": "boolean"
         },
@@ -1279,7 +1256,6 @@
     "github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.ResourceFilter": {
       "properties": {
         "afterStart": {
-          "format": "boolean",
           "title": "If the resource is created after the start time then the event is treated as valid.\n+optional",
           "type": "boolean"
         },
@@ -1339,7 +1315,6 @@
           "type": "string"
         },
         "validateSignature": {
-          "format": "boolean",
           "title": "ValidateSignature is boolean that can be set to true for SNS signature verification\n+optional",
           "type": "boolean"
         },
@@ -1358,7 +1333,6 @@
           "title": "AccessKey refers K8 secret containing aws access key"
         },
         "jsonBody": {
-          "format": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
         },
@@ -1523,7 +1497,6 @@
           "title": "APIKey refers to K8s secret that holds Stripe API key. Used only if CreateWebhook is enabled.\n+optional"
         },
         "createWebhook": {
-          "format": "boolean",
           "title": "CreateWebhook if specified creates a new webhook programmatically.\n+optional",
           "type": "boolean"
         },
@@ -1800,7 +1773,6 @@
           "type": "array"
         },
         "secure": {
-          "format": "boolean",
           "title": "Secure refers to type of the connection between sensor to custom trigger gRPC",
           "type": "boolean"
         },
@@ -2077,7 +2049,6 @@
           "title": "Backoff before checking resource state"
         },
         "errorOnBackoffTimeout": {
-          "format": "boolean",
           "title": "ErrorOnBackoffTimeout determines whether sensor should transition to error state if the trigger policy is unable to determine\nthe state of the resource",
           "type": "boolean"
         },
@@ -2096,7 +2067,6 @@
       "description": "KafkaTrigger refers to the specification of the Kafka trigger.",
       "properties": {
         "compress": {
-          "format": "boolean",
           "title": "Compress determines whether to compress message or not.\nDefaults to false.\nIf set to true, compresses message using snappy compression.\n+optional",
           "type": "boolean"
         },
@@ -2278,7 +2248,6 @@
         },
         "errorOnFailedRound": {
           "description": "ErrorOnFailedRound if set to true, marks sensor state as `error` if the previous trigger round fails.\nOnce sensor state is set to `error`, no further triggers will be processed.",
-          "format": "boolean",
           "type": "boolean"
         },
         "eventBusName": {
@@ -2341,7 +2310,6 @@
           "title": "The unambiguous kind of this object - used in order to retrieve the appropriate kubernetes api client for this resource"
         },
         "liveObject": {
-          "format": "boolean",
           "title": "LiveObject specifies whether the resource should be directly fetched from K8s instead\nof being marshaled from the resource artifact. If set to true, the resource artifact\nmust contain the information required to uniquely identify the resource in the cluster,\nthat is, you must specify \"apiVersion\", \"kind\" as well as \"name\" and \"namespace\" meta\ndata.\nOnly valid for operation type `update`\n+optional",
           "type": "boolean"
         },
@@ -2613,7 +2581,6 @@
           "type": "string"
         },
         "verifyCert": {
-          "format": "boolean",
           "title": "VerifyCert decides whether the connection is secure or not",
           "type": "boolean"
         }
@@ -2627,6 +2594,26 @@
         },
         "value": {
           "format": "byte",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "grpc.gateway.runtime.Error": {
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          },
+          "type": "array"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
           "type": "string"
         }
       },
@@ -2822,6 +2809,87 @@
           "description": "S3 contains S3 artifact location details"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactPaths": {
+      "description": "ArtifactPaths expands a step from a collection of artifacts",
+      "properties": {
+        "archive": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchiveStrategy",
+          "description": "Archive controls how the artifact will be saved to the artifact repository."
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
+        "artifactory": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
+          "description": "Artifactory contains artifactory artifact location details"
+        },
+        "from": {
+          "description": "From allows an artifact to reference an artifact from a previous step",
+          "type": "string"
+        },
+        "gcs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact",
+          "description": "GCS contains GCS artifact location details"
+        },
+        "git": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact",
+          "description": "Git contains git artifact location details"
+        },
+        "globalName": {
+          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "type": "string"
+        },
+        "hdfs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSArtifact",
+          "description": "HDFS contains HDFS artifact location details"
+        },
+        "http": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact",
+          "description": "HTTP contains HTTP artifact location details"
+        },
+        "mode": {
+          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "type": "integer"
+        },
+        "name": {
+          "description": "name of the artifact. must be unique within a template's inputs/outputs.",
+          "type": "string"
+        },
+        "optional": {
+          "description": "Make Artifacts optional, if Artifacts doesn't generate or exist",
+          "type": "boolean"
+        },
+        "oss": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact",
+          "description": "OSS contains OSS artifact location details"
+        },
+        "path": {
+          "description": "Path is the container path to the artifact",
+          "type": "string"
+        },
+        "raw": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact",
+          "description": "Raw contains raw artifact location details"
+        },
+        "recurseMode": {
+          "description": "If mode is set, apply the permission recursively into the artifact if it is a folder",
+          "type": "boolean"
+        },
+        "s3": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact",
+          "description": "S3 contains S3 artifact location details"
+        },
+        "subPath": {
+          "description": "SubPath allows an artifact to be sourced from a subpath within the specified source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
@@ -3311,6 +3379,43 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Data": {
+      "description": "Data is a data template",
+      "properties": {
+        "podPolicy": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DataSource",
+          "description": "Source sources external data into a data template"
+        },
+        "transformation": {
+          "description": "Transformation applies a set of transformations",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TransformationStep"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "transformation"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.DataSource": {
+      "description": "DataSource sources external data into a data template",
+      "properties": {
+        "artifactPaths": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactPaths",
+          "description": "ArtifactPaths is a data transformation that collects a list of artifact paths"
+        },
+        "raw": {
+          "description": "Raw is raw data",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Event": {
       "properties": {
         "selector": {
@@ -3381,7 +3486,6 @@
           "type": "string"
         },
         "emailVerified": {
-          "format": "boolean",
           "type": "boolean"
         },
         "groups": {
@@ -4583,6 +4687,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate",
           "description": "DAG template subtype which runs a DAG"
         },
+        "data": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Data",
+          "description": "Data is a data template"
+        },
         "executor": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig",
           "description": "Executor holds configurations of the executor container."
@@ -4744,6 +4852,18 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.TransformationStep": {
+      "properties": {
+        "expression": {
+          "description": "Expression defines an expr expression to apply",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.UpdateCronWorkflowRequest": {
@@ -5021,7 +5141,6 @@
           "type": "string"
         },
         "serverDryRun": {
-          "format": "boolean",
           "type": "boolean"
         },
         "workflow": {
@@ -5143,7 +5262,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowResubmitRequest": {
       "properties": {
         "memoized": {
-          "format": "boolean",
           "type": "boolean"
         },
         "name": {
@@ -5181,7 +5299,6 @@
           "type": "string"
         },
         "restartSuccessful": {
-          "format": "boolean",
           "type": "boolean"
         }
       },
@@ -6498,7 +6615,6 @@
       "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
       "properties": {
         "readOnly": {
-          "format": "boolean",
           "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional",
           "type": "boolean"
         },
