@@ -50,8 +50,6 @@ func NewWatchCommand() *cobra.Command {
 }
 
 func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflow string, getArgs getFlags) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{

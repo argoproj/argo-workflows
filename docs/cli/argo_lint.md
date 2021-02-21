@@ -13,8 +13,10 @@ argo lint FILE... [flags]
 ### Options
 
 ```
-  -h, --help     help for lint
-      --strict   perform strict workflow validation (default true)
+      --all-kinds       Lint all kinds, not just workflows
+      --format string   Linting results output format. One of: pretty|simple (default "pretty")
+  -h, --help            help for lint
+      --strict          Perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands

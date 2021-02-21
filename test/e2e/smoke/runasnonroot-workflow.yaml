@@ -3,7 +3,6 @@ kind: Workflow
 metadata:
   generateName: runasnonroot-
   labels:
-
 spec:
   entrypoint: main
   securityContext:
