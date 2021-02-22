@@ -1059,7 +1059,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 						message = "Step exceeded its deadline"
 					}
 					log.Info(message)
-					_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, message)
+					util.WriteTeriminateMessage(message)
 					log.Infof("Killing main container")
 					terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 					err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration)
@@ -1077,6 +1077,9 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 	sidecarNames := we.Template.GetSidecarNames()
+	if len(sidecarNames) == 0 {
+		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
+	}
 	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
