@@ -5929,7 +5929,7 @@ spec:
     name: generate-artifacts
   - data:
       source:
-        raw: '["foo/script.py.processed","script.py.processed"]'
+        %s
       transformation:
       - expression: map(data, {# + ".collected"})
     inputs:
@@ -6082,8 +6082,9 @@ status:
 
 `
 
+// Test that an in-memory transformation is done correctly
 func TestInMemoryDataNode(t *testing.T) {
-	wf := unmarshalWF(inMemoryDataNode)
+	wf := unmarshalWF(fmt.Sprintf(inMemoryDataNode, `raw: '["foo/script.py.processed","script.py.processed"]'`))
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -6095,5 +6096,39 @@ func TestInMemoryDataNode(t *testing.T) {
 	if assert.NotNil(t, node) {
 		assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 		assert.Equal(t, `["foo/script.py.processed.collected","script.py.processed.collected"]`, *node.Outputs.Result)
+	}
+}
+
+// Test that a pod is created when necessary
+func TestDataTemplateCreatesPod(t *testing.T) {
+	wf := unmarshalWF(fmt.Sprintf(inMemoryDataNode, `artifactPaths: {s3: {bucket: "test"}}`))
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("collect-artifact")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	}
+}
+
+// Test a pod is creted when the workflow restriction specifies to, even if not necessary
+func TestDataPodPolicyAlways(t *testing.T) {
+	wf := unmarshalWF(fmt.Sprintf(inMemoryDataNode, `raw: '["foo/script.py.processed","script.py.processed"]'`))
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{DataTemplatePodPolicy: config.DataPodPolicyAlways}
+
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("collect-artifact")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
 	}
 }
