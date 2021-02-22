@@ -32,9 +32,7 @@ type ArtifactDriver struct {
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
-var (
-	sshURLRegex = regexp.MustCompile("^(ssh://)?([^/:]*?)@[^@]+$")
-)
+var sshURLRegex = regexp.MustCompile("^(ssh://)?([^/:]*?)@[^@]+$")
 
 func GetUser(url string) (string, bool) {
 	matches := sshURLRegex.FindStringSubmatch(url)
