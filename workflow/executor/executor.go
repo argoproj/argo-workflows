@@ -1059,7 +1059,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 						message = "Step exceeded its deadline"
 					}
 					log.Info(message)
-					util.WriteTeriminateMessage(message)
+					_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, message)
 					log.Infof("Killing main container")
 					terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 					err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration)
