@@ -610,6 +610,12 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  containerRuntimeExecutor: docker
+  containerRuntimeExecutors: |
+    - name: k8sapi
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: k8sapi
   executor: |
     resources:
       requests:

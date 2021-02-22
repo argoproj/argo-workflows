@@ -52,6 +52,8 @@ jobs:
         include:
           - test: test-cli
             containerRuntimeExecutor: docker
+          - test: test-examples
+            containerRuntimeExecutor: docker
           - test: test-functional
             containerRuntimeExecutor: docker
           - test: test-e2e-cron
@@ -99,8 +101,14 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           git fetch --tags
-          KUBECONFIG=~/.kube/config make install PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start   PROFILE=mysql E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=true DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          PROFILE=mysql
+          ALWAYS_OFFLOAD_NODE_STATUS=true
+          if [ "${{matrix.test}}" = test-examples ]; then
+            PROFILE=minimal
+            ALWAYS_OFFLOAD_NODE_STATUS=false
+          fi
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go
@@ -110,17 +118,11 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }}
       - name: Upload logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-argo.log
-          path: /tmp/log/argo-e2e/argo.log
-      - name: Upload pod logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-pod.log
-          path: /tmp/log/argo-e2e/pod.log
+          path: /tmp/log/argo-e2e
 
   codegen:
     name: Codegen

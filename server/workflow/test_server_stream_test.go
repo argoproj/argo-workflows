@@ -18,7 +18,7 @@ func (t testServerStream) SetHeader(md metadata.MD) error {
 }
 
 func (t testServerStream) SendHeader(md metadata.MD) error {
-	panic("implement me")
+	return nil
 }
 
 func (t testServerStream) SetTrailer(md metadata.MD) {

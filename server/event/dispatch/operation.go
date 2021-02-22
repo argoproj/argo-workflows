@@ -20,6 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/labels"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -192,12 +193,7 @@ func expressionEnvironment(ctx context.Context, namespace, discriminator string,
 		"metadata":      metaData(ctx),
 		"payload":       payload,
 	}
-	data, err := json.Marshal(src)
-	if err != nil {
-		return nil, err
-	}
-	env := make(map[string]interface{})
-	return env, json.Unmarshal(data, &env)
+	return jsonutil.Jsonify(src)
 }
 
 func metaData(ctx context.Context) map[string]interface{} {

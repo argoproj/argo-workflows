@@ -67,8 +67,6 @@ func waitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 }
 
 func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{

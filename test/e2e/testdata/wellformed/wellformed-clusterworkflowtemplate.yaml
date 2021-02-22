@@ -3,7 +3,7 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: wellformed
   labels:
-    argo-e2e: "true"
+    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: main
   templates:

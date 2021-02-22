@@ -6133,6 +6133,14 @@ func (m *OSSBucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i--
+	if m.CreateBucketIfNotPresent {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x28
 	if m.SecretKeySecret != nil {
 		{
 			size, err := m.SecretKeySecret.MarshalToSizedBuffer(dAtA[:i])
@@ -6360,6 +6368,18 @@ func (m *PodGC) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.LabelSelector != nil {
+		{
+			size, err := m.LabelSelector.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
 	i -= len(m.Strategy)
 	copy(dAtA[i:], m.Strategy)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Strategy)))
@@ -10339,6 +10359,7 @@ func (m *OSSBucket) Size() (n int) {
 		l = m.SecretKeySecret.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	n += 2
 	return n
 }
 
@@ -10425,6 +10446,10 @@ func (m *PodGC) Size() (n int) {
 	_ = l
 	l = len(m.Strategy)
 	n += 1 + l + sovGenerated(uint64(l))
+	if m.LabelSelector != nil {
+		l = m.LabelSelector.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	return n
 }
 
@@ -12204,6 +12229,7 @@ func (this *OSSBucket) String() string {
 		`Bucket:` + fmt.Sprintf("%v", this.Bucket) + `,`,
 		`AccessKeySecret:` + strings.Replace(fmt.Sprintf("%v", this.AccessKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
 		`SecretKeySecret:` + strings.Replace(fmt.Sprintf("%v", this.SecretKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`CreateBucketIfNotPresent:` + fmt.Sprintf("%v", this.CreateBucketIfNotPresent) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -12267,6 +12293,7 @@ func (this *PodGC) String() string {
 	}
 	s := strings.Join([]string{`&PodGC{`,
 		`Strategy:` + fmt.Sprintf("%v", this.Strategy) + `,`,
+		`LabelSelector:` + strings.Replace(fmt.Sprintf("%v", this.LabelSelector), "LabelSelector", "v11.LabelSelector", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -21652,6 +21679,26 @@ func (m *OSSBucket) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateBucketIfNotPresent", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CreateBucketIfNotPresent = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -22261,6 +22308,42 @@ func (m *PodGC) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Strategy = PodGCStrategy(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LabelSelector", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LabelSelector == nil {
+				m.LabelSelector = &v11.LabelSelector{}
+			}
+			if err := m.LabelSelector.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
