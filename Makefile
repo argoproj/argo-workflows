@@ -391,6 +391,7 @@ ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
+endif
 ifeq ($(RUN_MODE),kubernetes)
 	# scale to 2 replicas so we touch upon leader election
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2
@@ -589,6 +590,7 @@ prepare-release: check-version-warning clean codegen manifests
 publish-release: check-version-warning clis checksums
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
+
 endif
 
 .PHONY: check-version-warning
