@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -22,7 +23,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
@@ -134,7 +134,7 @@ func (we *WorkflowExecutor) signalMonitoring(ctx context.Context) {
 		for {
 			<-sigs
 			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, "Received user signal to terminate the workflow")
+			util.WriteTeriminateMessage("Received user signal to terminate the workflow")
 			os.Exit(130)
 		}
 	}()

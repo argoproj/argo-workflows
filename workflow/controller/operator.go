@@ -1270,7 +1270,6 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		// Pod has a nice error message. Use that.
 		return wfv1.NodeFailed, pod.Status.Message
 	}
-	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
 
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
@@ -1310,14 +1309,8 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		}
 
 		msg := fmt.Sprintf("%s (exit code %d)", t.Reason, t.ExitCode)
-		splitChar := ":"
 		if t.Message != "" {
-			msg = fmt.Sprintf("%s%s %s", msg, splitChar, t.Message)
-			splitChar = ","
-		}
-		if annotatedMsg != "" && annotatedMsg != t.Message {
-			msg = fmt.Sprintf("%s%s %s", msg, splitChar, annotatedMsg)
-			splitChar = ","
+			msg = fmt.Sprintf("%s: %s", msg, t.Message)
 		}
 
 		switch ctr.Name {
@@ -1326,10 +1319,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		case common.MainContainerName:
 			return wfv1.NodeFailed, msg
 		case common.WaitContainerName:
-			// executor is expected to annotate a message to the pod upon any errors.
-			// If we failed to see the annotated message, it is likely the pod ran with
-			// insufficient privileges. Give a hint to that effect.
-			return wfv1.NodeError, fmt.Sprintf("%s%s verify serviceaccount %s:%s has necessary privileges", msg, splitChar, pod.Namespace, pod.Spec.ServiceAccountName)
+			return wfv1.NodeError, msg
 		default:
 			if t.ExitCode == 137 || t.ExitCode == 143 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
