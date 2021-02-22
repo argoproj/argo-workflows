@@ -148,7 +148,7 @@ over time, we are no longer interested in the previous metric and can assume it 
 In summary, whenever you want to track a particular metric over time, you should use the same metric name _and_ metric
 labels wherever it is emitted. This is how these metrics are "linked" as belonging to the same series.
 
-### Exploiting metrics with Grafana
+### Grafana Dashboard for Argo Controller Metrics
 
 Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/13927) Grafana dashboard.
 
