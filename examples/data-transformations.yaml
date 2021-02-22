@@ -59,7 +59,7 @@ spec:
                 key: secretkey
 
         transformation:
-          - expression: "filter(data, {# endsWith \".log\"})"
+          - expression: "filter(data, {# endsWith \".py\"})"
 
     - name: collect-artifacts
       inputs:
