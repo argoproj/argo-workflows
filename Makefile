@@ -350,7 +350,7 @@ dist/kustomize:
 	dist/kustomize version
 
 # generates several installation files
-manifests/install.yaml: $(CRDS) dist/kustomize
+manifests/install.yaml: $(MANIFESTS) dist/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -386,10 +386,12 @@ install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
 	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
+endif
 ifeq ($(RUN_MODE),kubernetes)
 	# scale to 2 replicas so we touch upon leader election
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2
