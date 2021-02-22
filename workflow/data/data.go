@@ -13,7 +13,7 @@ func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface
 	if err != nil {
 		return nil, fmt.Errorf("unable to process data source: %w", err)
 	}
-	transformedData, err := processTransformation(sourcedData, data.Transformation)
+	transformedData, err := processTransformation(sourcedData, &data.Transformation)
 	if err != nil {
 		return nil, fmt.Errorf("unable to process data transformation: %w", err)
 	}

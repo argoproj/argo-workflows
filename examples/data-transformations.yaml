@@ -1,5 +1,3 @@
-# This example demonstrates the ability to pass artifacts
-# from one step to the next.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -7,68 +5,94 @@ metadata:
 spec:
   entrypoint: artifact-example
   templates:
-  - name: artifact-example
-    steps:
-    - - name: generate-artifact
-        template: generate-artifacts
-    - - name: process-artifact
-        template: process-message
-        withParam: "{{steps.generate-artifact.outputs.result}}"
-        arguments:
-          parameters:
+    - name: artifact-example
+      steps:
+        - - name: generate-artifact
+            template: generate-artifacts
+        - - name: process-artifact
+            template: process-message
+            withParam: "{{steps.generate-artifact.outputs.result}}"
+            arguments:
+              artifacts:
+                - name: file
+                  s3:
+                    bucket: test
+                    key: "{{item}}"
+                    endpoint: minio:9000
+                    insecure: true
+                    accessKeySecret:
+                      name: my-minio-cred
+                      key: accesskey
+                    secretKeySecret:
+                      name: my-minio-cred
+                      key: secretkey
+
+              parameters:
+                - name: file-name
+                  value: "{{item}}"
+        - - name: collect-artifact
+            template: collect-artifacts
+            arguments:
+              parameters:
+                - name: processed
+                  value: "{{steps.process-artifact.outputs.parameters.processed}}"
+        - - name: print-artifact
+            template: print-message
+            arguments:
+              parameters:
+                - name: file
+                  value: "{{steps.collect-artifact.outputs.result}}"
+
+    - name: generate-artifacts
+      data:
+        source:
+          artifactPaths:
+            s3:
+              bucket: test
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+
+        transformation:
+          - expression: "filter(data, {# endsWith \".log\"})"
+
+    - name: collect-artifacts
+      inputs:
+        parameters:
+          - name: processed
+      data:
+        source:
+          raw: "{{inputs.parameters.processed}}"
+        transformation:
+          - expression: "map(data, {# + \".collected\"})"
+
+    - name: process-message
+      inputs:
+        parameters:
+          - name: file-name
+        artifacts:
           - name: file
-            value: "{{item}}"
-    - - name: collect-artifact
-        template: collect-artifacts
-        arguments:
-          parameters:
-            - name: processed
-              value: "{{steps.process-artifact.outputs.parameters.processed}}"
-    - - name: print-artifact
-        template: print-message
-        arguments:
-          parameters:
+            path: /file
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["cat /file && echo \"{{inputs.parameters.file-name}}.processed\" | tee /tmp/f.txt"]
+      outputs:
+        parameters:
+          - name: processed
+            valueFrom:
+              path: /tmp/f.txt
+
+    - name: print-message
+      inputs:
+        parameters:
           - name: file
-            value: "{{steps.collect-artifact.outputs.result}}"
-
-  - name: generate-artifacts
-    data:
-      source:
-        artifactPaths:
-          s3:
-            bucket: test
-      transformation:
-        - expression: "filter(data, {# endsWith \".py\"})"
-
-  - name: collect-artifacts
-    inputs:
-      parameters:
-        - name: processed
-    data:
-      source:
-        raw: "{{inputs.parameters.processed}}"
-      transformation:
-        - expression: "map(data, {# + \".collected\"})"
-
-  - name: process-message
-    inputs:
-      parameters:
-      - name: file
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["echo \"{{inputs.parameters.file}}.processed\" | tee /tmp/f.txt"]
-    outputs:
-      parameters:
-        - name: processed
-          valueFrom:
-            path: /tmp/f.txt
-
-  - name: print-message
-    inputs:
-      parameters:
-      - name: file
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["echo {{inputs.parameters.file}}"]
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.file}}"]
