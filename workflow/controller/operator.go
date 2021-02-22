@@ -1317,6 +1317,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		}
 		if annotatedMsg != "" && annotatedMsg != t.Message {
 			msg = fmt.Sprintf("%s%s %s", msg, splitChar, annotatedMsg)
+			splitChar = ","
 		}
 
 		switch ctr.Name {
