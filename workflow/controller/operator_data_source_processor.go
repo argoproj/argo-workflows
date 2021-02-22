@@ -12,5 +12,5 @@ func newOperatorDataSourceProcessor() *operatorDataSourceProcessor {
 }
 
 func (ep *operatorDataSourceProcessor) ProcessArtifactPaths(_ *wfv1.ArtifactPaths) (interface{}, error) {
-	return nil, fmt.Errorf("internal error: operatorDataSourceProcessor is not able to process artifactPaths, a pod should have been launched ")
+	return nil, fmt.Errorf("internal error: operatorDataSourceProcessor is not able to process artifactPaths, a pod should have been launched")
 }
