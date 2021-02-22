@@ -7057,6 +7057,11 @@
 </thead>
 <tbody>
 <tr>
+<td align="center"><code>labelSelector</code></td>
+<td align="center"><a href="#labelselector"><code>LabelSelector</code></a></td>
+<td>LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.</td>
+</tr>
+<tr>
 <td align="center"><code>strategy</code></td>
 <td align="center"><code>string</code></td>
 <td>Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"</td>
@@ -11896,6 +11901,30 @@
 </tr>
 </tbody>
 </table>
+<h2 id="labelselector">LabelSelector<a class="headerlink" href="#labelselector" title="Permanent link">&para;</a></h2>
+<p>A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.</p>
+<h3 id="fields_80">Fields<a class="headerlink" href="#fields_80" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="center">Field Name</th>
+<th align="center">Field Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>matchExpressions</code></td>
+<td align="center"><code>Array&lt;</code><a href="#labelselectorrequirement"><code>LabelSelectorRequirement</code></a><code>&gt;</code></td>
+<td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+</tr>
+<tr>
+<td align="center"><code>matchLabels</code></td>
+<td align="center"><code>Map&lt; string , string &gt;</code></td>
+<td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="intorstring">IntOrString<a class="headerlink" href="#intorstring" title="Permanent link">&para;</a></h2>
 <p><em>No description available</em></p>
 <details>
@@ -12168,7 +12197,7 @@
 </ul>
 </details>
 
-<h3 id="fields_80">Fields<a class="headerlink" href="#fields_80" title="Permanent link">&para;</a></h3>
+<h3 id="fields_81">Fields<a class="headerlink" href="#fields_81" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12303,7 +12332,7 @@
 </ul>
 </details>
 
-<h3 id="fields_81">Fields<a class="headerlink" href="#fields_81" title="Permanent link">&para;</a></h3>
+<h3 id="fields_82">Fields<a class="headerlink" href="#fields_82" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12347,7 +12376,7 @@
 </ul>
 </details>
 
-<h3 id="fields_82">Fields<a class="headerlink" href="#fields_82" title="Permanent link">&para;</a></h3>
+<h3 id="fields_83">Fields<a class="headerlink" href="#fields_83" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12376,7 +12405,7 @@
 </table>
 <h2 id="envfromsource">EnvFromSource<a class="headerlink" href="#envfromsource" title="Permanent link">&para;</a></h2>
 <p>EnvFromSource represents the source of a set of ConfigMaps</p>
-<h3 id="fields_83">Fields<a class="headerlink" href="#fields_83" title="Permanent link">&para;</a></h3>
+<h3 id="fields_84">Fields<a class="headerlink" href="#fields_84" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12405,7 +12434,7 @@
 </table>
 <h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
 <p>Lifecycle describes actions that the management system should take in response to container lifecycle events. For the PostStart and PreStop lifecycle handlers, management of the container blocks until the action is complete, unless the container process fails, in which case the handler is aborted.</p>
-<h3 id="fields_84">Fields<a class="headerlink" href="#fields_84" title="Permanent link">&para;</a></h3>
+<h3 id="fields_85">Fields<a class="headerlink" href="#fields_85" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12429,7 +12458,7 @@
 </table>
 <h2 id="probe">Probe<a class="headerlink" href="#probe" title="Permanent link">&para;</a></h2>
 <p>Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.</p>
-<h3 id="fields_85">Fields<a class="headerlink" href="#fields_85" title="Permanent link">&para;</a></h3>
+<h3 id="fields_86">Fields<a class="headerlink" href="#fields_86" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12492,7 +12521,7 @@
 </ul>
 </details>
 
-<h3 id="fields_86">Fields<a class="headerlink" href="#fields_86" title="Permanent link">&para;</a></h3>
+<h3 id="fields_87">Fields<a class="headerlink" href="#fields_87" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12560,7 +12589,7 @@
 </ul>
 </details>
 
-<h3 id="fields_87">Fields<a class="headerlink" href="#fields_87" title="Permanent link">&para;</a></h3>
+<h3 id="fields_88">Fields<a class="headerlink" href="#fields_88" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12593,7 +12622,7 @@
 </ul>
 </details>
 
-<h3 id="fields_88">Fields<a class="headerlink" href="#fields_88" title="Permanent link">&para;</a></h3>
+<h3 id="fields_89">Fields<a class="headerlink" href="#fields_89" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12657,7 +12686,7 @@
 </table>
 <h2 id="volumedevice">VolumeDevice<a class="headerlink" href="#volumedevice" title="Permanent link">&para;</a></h2>
 <p>volumeDevice describes a mapping of a raw block device within a container.</p>
-<h3 id="fields_89">Fields<a class="headerlink" href="#fields_89" title="Permanent link">&para;</a></h3>
+<h3 id="fields_90">Fields<a class="headerlink" href="#fields_90" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12708,7 +12737,7 @@
 </ul>
 </details>
 
-<h3 id="fields_90">Fields<a class="headerlink" href="#fields_90" title="Permanent link">&para;</a></h3>
+<h3 id="fields_91">Fields<a class="headerlink" href="#fields_91" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12763,7 +12792,7 @@
 </ul>
 </details>
 
-<h3 id="fields_91">Fields<a class="headerlink" href="#fields_91" title="Permanent link">&para;</a></h3>
+<h3 id="fields_92">Fields<a class="headerlink" href="#fields_92" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12792,7 +12821,7 @@
 </table>
 <h2 id="managedfieldsentry">ManagedFieldsEntry<a class="headerlink" href="#managedfieldsentry" title="Permanent link">&para;</a></h2>
 <p>ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource that the fieldset applies to.</p>
-<h3 id="fields_92">Fields<a class="headerlink" href="#fields_92" title="Permanent link">&para;</a></h3>
+<h3 id="fields_93">Fields<a class="headerlink" href="#fields_93" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12845,7 +12874,7 @@
 </ul>
 </details>
 
-<h3 id="fields_93">Fields<a class="headerlink" href="#fields_93" title="Permanent link">&para;</a></h3>
+<h3 id="fields_94">Fields<a class="headerlink" href="#fields_94" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12889,7 +12918,7 @@
 </table>
 <h2 id="nodeaffinity">NodeAffinity<a class="headerlink" href="#nodeaffinity" title="Permanent link">&para;</a></h2>
 <p>Node affinity is a group of node affinity scheduling rules.</p>
-<h3 id="fields_94">Fields<a class="headerlink" href="#fields_94" title="Permanent link">&para;</a></h3>
+<h3 id="fields_95">Fields<a class="headerlink" href="#fields_95" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12913,7 +12942,7 @@
 </table>
 <h2 id="podaffinity">PodAffinity<a class="headerlink" href="#podaffinity" title="Permanent link">&para;</a></h2>
 <p>Pod affinity is a group of inter pod affinity scheduling rules.</p>
-<h3 id="fields_95">Fields<a class="headerlink" href="#fields_95" title="Permanent link">&para;</a></h3>
+<h3 id="fields_96">Fields<a class="headerlink" href="#fields_96" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12937,7 +12966,7 @@
 </table>
 <h2 id="podantiaffinity">PodAntiAffinity<a class="headerlink" href="#podantiaffinity" title="Permanent link">&para;</a></h2>
 <p>Pod anti affinity is a group of inter pod anti affinity scheduling rules.</p>
-<h3 id="fields_96">Fields<a class="headerlink" href="#fields_96" title="Permanent link">&para;</a></h3>
+<h3 id="fields_97">Fields<a class="headerlink" href="#fields_97" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12970,7 +12999,7 @@
 </ul>
 </details>
 
-<h3 id="fields_97">Fields<a class="headerlink" href="#fields_97" title="Permanent link">&para;</a></h3>
+<h3 id="fields_98">Fields<a class="headerlink" href="#fields_98" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -12989,41 +13018,6 @@
 <td align="center"><code>value</code></td>
 <td align="center"><code>string</code></td>
 <td><em>No description available</em></td>
-</tr>
-</tbody>
-</table>
-<h2 id="labelselector">LabelSelector<a class="headerlink" href="#labelselector" title="Permanent link">&para;</a></h2>
-<p>A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.</p>
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-<ul>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml">daemoned-stateful-set-with-service.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml">event-consumer-workfloweventbinding.yaml</a>
-</ul>
-</details>
-
-<h3 id="fields_98">Fields<a class="headerlink" href="#fields_98" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th align="center">Field Name</th>
-<th align="center">Field Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center"><code>matchExpressions</code></td>
-<td align="center"><code>Array&lt;</code><a href="#labelselectorrequirement"><code>LabelSelectorRequirement</code></a><code>&gt;</code></td>
-<td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
-</tr>
-<tr>
-<td align="center"><code>matchLabels</code></td>
-<td align="center"><code>Map&lt; string , string &gt;</code></td>
-<td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
 </tr>
 </tbody>
 </table>
@@ -14524,6 +14518,35 @@
 </tr>
 </tbody>
 </table>
+<h2 id="labelselectorrequirement">LabelSelectorRequirement<a class="headerlink" href="#labelselectorrequirement" title="Permanent link">&para;</a></h2>
+<p>A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.</p>
+<h3 id="fields_132">Fields<a class="headerlink" href="#fields_132" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="center">Field Name</th>
+<th align="center">Field Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>key</code></td>
+<td align="center"><code>string</code></td>
+<td>key is the label key that the selector applies to.</td>
+</tr>
+<tr>
+<td align="center"><code>operator</code></td>
+<td align="center"><code>string</code></td>
+<td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+</tr>
+<tr>
+<td align="center"><code>values</code></td>
+<td align="center"><code>Array&lt; string &gt;</code></td>
+<td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="envvarsource">EnvVarSource<a class="headerlink" href="#envvarsource" title="Permanent link">&para;</a></h2>
 <p>EnvVarSource represents a source for the value of an EnvVar.</p>
 <details>
@@ -14567,7 +14590,7 @@
 </ul>
 </details>
 
-<h3 id="fields_132">Fields<a class="headerlink" href="#fields_132" title="Permanent link">&para;</a></h3>
+<h3 id="fields_133">Fields<a class="headerlink" href="#fields_133" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14601,7 +14624,7 @@
 </table>
 <h2 id="configmapenvsource">ConfigMapEnvSource<a class="headerlink" href="#configmapenvsource" title="Permanent link">&para;</a></h2>
 <p>ConfigMapEnvSource selects a ConfigMap to populate the environment variables with.The contents of the target ConfigMap's Data field will represent the key-value pairs as environment variables.</p>
-<h3 id="fields_133">Fields<a class="headerlink" href="#fields_133" title="Permanent link">&para;</a></h3>
+<h3 id="fields_134">Fields<a class="headerlink" href="#fields_134" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14625,7 +14648,7 @@
 </table>
 <h2 id="secretenvsource">SecretEnvSource<a class="headerlink" href="#secretenvsource" title="Permanent link">&para;</a></h2>
 <p>SecretEnvSource selects a Secret to populate the environment variables with.The contents of the target Secret's Data field will represent the key-value pairs as environment variables.</p>
-<h3 id="fields_134">Fields<a class="headerlink" href="#fields_134" title="Permanent link">&para;</a></h3>
+<h3 id="fields_135">Fields<a class="headerlink" href="#fields_135" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14649,7 +14672,7 @@
 </table>
 <h2 id="handler">Handler<a class="headerlink" href="#handler" title="Permanent link">&para;</a></h2>
 <p>Handler defines a specific action that should be taken</p>
-<h3 id="fields_135">Fields<a class="headerlink" href="#fields_135" title="Permanent link">&para;</a></h3>
+<h3 id="fields_136">Fields<a class="headerlink" href="#fields_136" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14678,7 +14701,7 @@
 </table>
 <h2 id="execaction">ExecAction<a class="headerlink" href="#execaction" title="Permanent link">&para;</a></h2>
 <p>ExecAction describes a "run in container" action.</p>
-<h3 id="fields_136">Fields<a class="headerlink" href="#fields_136" title="Permanent link">&para;</a></h3>
+<h3 id="fields_137">Fields<a class="headerlink" href="#fields_137" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14712,7 +14735,7 @@
 </ul>
 </details>
 
-<h3 id="fields_137">Fields<a class="headerlink" href="#fields_137" title="Permanent link">&para;</a></h3>
+<h3 id="fields_138">Fields<a class="headerlink" href="#fields_138" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14751,7 +14774,7 @@
 </table>
 <h2 id="tcpsocketaction">TCPSocketAction<a class="headerlink" href="#tcpsocketaction" title="Permanent link">&para;</a></h2>
 <p>TCPSocketAction describes an action based on opening a socket</p>
-<h3 id="fields_138">Fields<a class="headerlink" href="#fields_138" title="Permanent link">&para;</a></h3>
+<h3 id="fields_139">Fields<a class="headerlink" href="#fields_139" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14790,7 +14813,7 @@
 
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <p>Adds and removes POSIX capabilities from running containers.</p>
-<h3 id="fields_139">Fields<a class="headerlink" href="#fields_139" title="Permanent link">&para;</a></h3>
+<h3 id="fields_140">Fields<a class="headerlink" href="#fields_140" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14816,7 +14839,7 @@
 <p>FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.Each key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:<name>', where <name> is the name of a field in a struct, or key in a map 'v:<value>', where <value> is the exact json formatted value of a list item 'i:<index>', where <index> is position of a item in a list 'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set.The exact format is defined in sigs.k8s.io/structured-merge-diff</p>
 <h2 id="preferredschedulingterm">PreferredSchedulingTerm<a class="headerlink" href="#preferredschedulingterm" title="Permanent link">&para;</a></h2>
 <p>An empty preferred scheduling term matches all objects with implicit weight 0 (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).</p>
-<h3 id="fields_140">Fields<a class="headerlink" href="#fields_140" title="Permanent link">&para;</a></h3>
+<h3 id="fields_141">Fields<a class="headerlink" href="#fields_141" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14840,7 +14863,7 @@
 </table>
 <h2 id="nodeselector">NodeSelector<a class="headerlink" href="#nodeselector" title="Permanent link">&para;</a></h2>
 <p>A node selector represents the union of the results of one or more label queries over a set of nodes; that is, it represents the OR of the selectors represented by the node selector terms.</p>
-<h3 id="fields_141">Fields<a class="headerlink" href="#fields_141" title="Permanent link">&para;</a></h3>
+<h3 id="fields_142">Fields<a class="headerlink" href="#fields_142" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14859,7 +14882,7 @@
 </table>
 <h2 id="weightedpodaffinityterm">WeightedPodAffinityTerm<a class="headerlink" href="#weightedpodaffinityterm" title="Permanent link">&para;</a></h2>
 <p>The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)</p>
-<h3 id="fields_142">Fields<a class="headerlink" href="#fields_142" title="Permanent link">&para;</a></h3>
+<h3 id="fields_143">Fields<a class="headerlink" href="#fields_143" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14883,7 +14906,7 @@
 </table>
 <h2 id="podaffinityterm">PodAffinityTerm<a class="headerlink" href="#podaffinityterm" title="Permanent link">&para;</a></h2>
 <p>Defines a set of pods (namely those matching the labelSelector relative to the given namespace(s)) that this pod should be co-located (affinity) or not co-located (anti-affinity) with, where co-located is defined as running on a node whose value of the label with key <topologyKey> matches that of any node on which a pod of the set of pods is running</p>
-<h3 id="fields_143">Fields<a class="headerlink" href="#fields_143" title="Permanent link">&para;</a></h3>
+<h3 id="fields_144">Fields<a class="headerlink" href="#fields_144" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -14907,35 +14930,6 @@
 <td align="center"><code>topologyKey</code></td>
 <td align="center"><code>string</code></td>
 <td>This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="labelselectorrequirement">LabelSelectorRequirement<a class="headerlink" href="#labelselectorrequirement" title="Permanent link">&para;</a></h2>
-<p>A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.</p>
-<h3 id="fields_144">Fields<a class="headerlink" href="#fields_144" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th align="center">Field Name</th>
-<th align="center">Field Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center"><code>key</code></td>
-<td align="center"><code>string</code></td>
-<td>key is the label key that the selector applies to.</td>
-</tr>
-<tr>
-<td align="center"><code>operator</code></td>
-<td align="center"><code>string</code></td>
-<td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
-</tr>
-<tr>
-<td align="center"><code>values</code></td>
-<td align="center"><code>Array&lt; string &gt;</code></td>
-<td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
 </tr>
 </tbody>
 </table>
