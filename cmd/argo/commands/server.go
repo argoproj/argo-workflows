@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
@@ -87,8 +88,13 @@ See %s`, help.ArgoSever),
 			if secure {
 				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
 				errors.CheckError(err)
-				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
-				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
+				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+				errors.CheckError(err)
+				tlsConfig = &tls.Config{
+					Certificates: []tls.Certificate{cer},
+					InsecureSkipVerify: false, // InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
+					MinVersion:         uint16(tlsMinVersion),
+				}
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
 			}
