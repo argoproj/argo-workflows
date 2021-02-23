@@ -17,7 +17,7 @@ func NewVersionCommand() *cobra.Command {
 	var short bool
 	cmd := cobra.Command{
 		Use:   "version",
-		Short: "Print version information",
+		Short: "print version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.PrintVersion(CLIName, argo.GetVersion(), short)
 			if _, ok := os.LookupEnv("ARGO_SERVER"); ok {
