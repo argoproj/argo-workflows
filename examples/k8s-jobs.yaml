@@ -49,7 +49,7 @@ spec:
         valueFrom:
           jsonPath: '{.metadata.name}'
       # job-obj is extracted using a jq filter and is equivalent to:
-      # `kubectl get job <jobname> -o json | jq -c '.'
+      # `kubectl get job <jobname> -o json | jq -rc '.'
       # which returns the entire job object in json format
       - name: job-obj
         valueFrom:
