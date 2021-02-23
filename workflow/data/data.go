@@ -21,30 +21,35 @@ func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface
 }
 
 func processSource(source *wfv1.DataSource, processor wfv1.DataSourceProcessor) (interface{}, error) {
+	if source == nil {
+		return nil, fmt.Errorf("no source is used for data template")
+	}
+
 	var data interface{}
 	var err error
 	switch {
-	case source != nil:
-		switch {
-		case source.ArtifactPaths != nil:
-			data, err = processor.ProcessArtifactPaths(source.ArtifactPaths)
-			if err != nil {
-				return nil, fmt.Errorf("unable to source artifact paths: %w", err)
-			}
-		case source.Raw != "":
-			err = json.Unmarshal([]byte(source.Raw), &data)
-			if err != nil {
-				return nil, fmt.Errorf("unable to unmarshal raw source: %w", err)
-			}
+	case source.ArtifactPaths != nil:
+		data, err = processor.ProcessArtifactPaths(source.ArtifactPaths)
+		if err != nil {
+			return nil, fmt.Errorf("unable to source artifact paths: %w", err)
+		}
+	case source.Raw != "":
+		err = json.Unmarshal([]byte(source.Raw), &data)
+		if err != nil {
+			return nil, fmt.Errorf("unable to unmarshal raw source: %w", err)
 		}
 	default:
-		return nil, fmt.Errorf("no source is used for data template")
+		return nil, fmt.Errorf("no valid source is used for data template")
 	}
 
 	return data, nil
 }
 
 func processTransformation(data interface{}, transformation *wfv1.Transformation) (interface{}, error) {
+	if transformation == nil {
+		return data, nil
+	}
+
 	var err error
 	for i, step := range *transformation {
 		preData := data
