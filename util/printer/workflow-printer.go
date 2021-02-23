@@ -76,16 +76,48 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		}
 		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority)
 		if opts.Output == "wide" {
-			pending, running, completed := countPendingRunningCompleted(&wf)
+			pending, running, completed := countPendingRunningCompletedNodes(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
 			_, _ = fmt.Fprintf(w, "\t%s", parameterString(wf.Spec.Arguments.Parameters))
 		}
 		_, _ = fmt.Fprintf(w, "\n")
 	}
+
+	completed, incomplete := countCompletedWorkflows(wfList)
+	if completed > 100 || incomplete > 100 {
+		_, _ = fmt.Fprint(w, "\n")
+		fmt.Fprintf(w, "You have at least ")
+		if incomplete > 100 {
+			fmt.Fprintf(w, "%d incomplete ", incomplete)
+		}
+		if incomplete > 100 && completed > 100 {
+			fmt.Fprintf(w, "and ")
+		}
+		if completed > 100 {
+			fmt.Fprintf(w, "%d completed ", completed)
+		}
+		fmt.Fprint(w, "workflows. Reducing the total number of workflows will reduce your costs.\n")
+		fmt.Fprintf(w, "Learn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
+	}
 	_ = w.Flush()
 }
 
-func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
+// countCompletedWorkflows returns the number of completed and incomplete workflows
+func countCompletedWorkflows(wfList []wfv1.Workflow) (int, int) {
+	completed := 0
+	incomplete := 0
+	for _, wf := range wfList {
+		if wf.Status.Phase.Completed() {
+			completed++
+		} else {
+			incomplete++
+		}
+	}
+	return completed, incomplete
+}
+
+// countPendingRunningCompletedNodes returns the number of pending, running and completed workflow nodes
+func countPendingRunningCompletedNodes(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
