@@ -19,6 +19,7 @@ func NewGetCommand() *cobra.Command {
 	var output string
 	command := &cobra.Command{
 		Use: "get UID",
+		Short: "get a workflow in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)

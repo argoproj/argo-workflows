@@ -1,10 +1,10 @@
 ## argo archive list
 
-
+list workflows in the archive
 
 ### Synopsis
 
-
+list workflows in the archive
 
 ```
 argo archive list [flags]
@@ -52,5 +52,5 @@ argo archive list [flags]
 
 ### SEE ALSO
 
-* [argo archive](argo_archive.md)	 - 
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 

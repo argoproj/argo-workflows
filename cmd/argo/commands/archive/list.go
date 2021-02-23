@@ -23,6 +23,7 @@ func NewListCommand() *cobra.Command {
 	)
 	command := &cobra.Command{
 		Use: "list",
+		Short: "list workflows in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
