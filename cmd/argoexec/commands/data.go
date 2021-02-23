@@ -8,7 +8,7 @@ import (
 )
 
 func NewDataCommand() *cobra.Command {
-	var command = cobra.Command{
+	command := cobra.Command{
 		Use:   "data",
 		Short: "Process data",
 		Run: func(cmd *cobra.Command, args []string) {

@@ -8,7 +8,7 @@ import (
 
 type executorDataSourceProcessor struct {
 	ctx context.Context
-	we *WorkflowExecutor
+	we  *WorkflowExecutor
 }
 
 func newExecutorDataSourceProcessor(ctx context.Context, we *WorkflowExecutor) *executorDataSourceProcessor {
@@ -36,4 +36,3 @@ func (ep *executorDataSourceProcessor) ProcessArtifactPaths(artifacts *wfv1.Arti
 
 	return files, nil
 }
-

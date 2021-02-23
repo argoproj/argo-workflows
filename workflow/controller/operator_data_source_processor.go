@@ -2,10 +2,11 @@ package controller
 
 import (
 	"fmt"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type operatorDataSourceProcessor struct {}
+type operatorDataSourceProcessor struct{}
 
 func newOperatorDataSourceProcessor() *operatorDataSourceProcessor {
 	return &operatorDataSourceProcessor{}

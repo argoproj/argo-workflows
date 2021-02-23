@@ -458,14 +458,6 @@ func getExecutorLogLevel() string {
 	return log.GetLevel().String()
 }
 
-func (woc *wfOperationCtx) newProcessArtifactsContainer(artifacts wfv1.ArtifactPaths) apiv1.Container {
-	container := woc.newExecContainer("process-artifacts", &wfv1.Template{})
-	bytes, _ := json.Marshal(artifacts)
-	container.ImagePullPolicy = apiv1.PullNever
-	container.Command = []string{"argoexec", "artifacts", fmt.Sprintf("%s", bytes)}
-	return *container
-}
-
 // hasPrivilegedContainers tests if the main container or sidecars is privileged
 func hasPrivilegedContainers(tmpl *wfv1.Template) bool {
 	if containerIsPrivileged(tmpl.Container) {

@@ -9,8 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
-type ArtifactDriver struct {
-}
+type ArtifactDriver struct{}
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 

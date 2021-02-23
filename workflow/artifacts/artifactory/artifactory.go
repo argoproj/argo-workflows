@@ -20,7 +20,6 @@ var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // Download artifact from an artifactory URL
 func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
-
 	lf, err := os.Create(path)
 	if err != nil {
 		return err
@@ -55,7 +54,6 @@ func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 
 // UpLoad artifact to an artifactory URL
 func (a *ArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
-
 	f, err := os.Open(path)
 	if err != nil {
 		return err

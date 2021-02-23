@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/workflow/data"
 	"math"
 	"os"
 	"reflect"
@@ -50,6 +49,7 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v3/workflow/data"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/progress"
 	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
@@ -2678,7 +2678,6 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 		}
 		node = woc.finalizeTransformNode(nodeName, transformedData)
 	}
-
 
 	return node, nil
 }

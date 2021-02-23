@@ -3,9 +3,11 @@ package data
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/antonmedv/expr"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/sirupsen/logrus"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface{}, error) {

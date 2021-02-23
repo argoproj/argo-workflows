@@ -9,7 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type testDataSourceProcessor struct {}
+type testDataSourceProcessor struct{}
 
 var _ v1alpha1.DataSourceProcessor = &testDataSourceProcessor{}
 
@@ -17,7 +17,7 @@ func (t testDataSourceProcessor) ProcessArtifactPaths(*v1alpha1.ArtifactPaths) (
 	return []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, nil
 }
 
-type nullTestDataSourceProcessor struct {}
+type nullTestDataSourceProcessor struct{}
 
 var _ v1alpha1.DataSourceProcessor = &nullTestDataSourceProcessor{}
 
@@ -44,10 +44,10 @@ func TestProcessSource(t *testing.T) {
 		assert.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
 	}
 
-	data, err = processSource(artifactPathsSource, &nullTestDataSourceProcessor{})
+	_, err = processSource(artifactPathsSource, &nullTestDataSourceProcessor{})
 	assert.Error(t, err)
 
-	data, err = processSource(&v1alpha1.DataSource{}, &nullTestDataSourceProcessor{})
+	_, err = processSource(&v1alpha1.DataSource{}, &nullTestDataSourceProcessor{})
 	assert.Error(t, err)
 }
 
@@ -70,7 +70,6 @@ func TestProcessTransformation(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, []interface{}{"goo/foo.py"}, filtered)
 	}
-
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {# contains '/'})`}, {Expression: `filter(data, {# contains 'foo'})`}}
 	filtered, err = processTransformation(files, filterFiles)
@@ -97,7 +96,7 @@ func TestProcessTransformation(t *testing.T) {
 	}
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {not(# contains '/')})`}, {Expression: `map(data, {# + '.processed'})`}, {}}
-	filtered, err = processTransformation(files, filterFiles)
+	_, err = processTransformation(files, filterFiles)
 	assert.NoError(t, err)
 
 	filtered, err = processTransformation(files, nil)
@@ -111,6 +110,6 @@ func TestProcessTransformation(t *testing.T) {
 	}
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `map(data, {# + '.processed'}`}}
-	filtered, err = processTransformation(files, filterFiles)
+	_, err = processTransformation(files, filterFiles)
 	assert.Error(t, err)
 }
