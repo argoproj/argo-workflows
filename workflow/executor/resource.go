@@ -23,6 +23,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
@@ -348,37 +349,47 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		var cmd *exec.Cmd
+		var args []string
+		var cmdName string
 		if param.ValueFrom.JSONPath != "" {
-			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
+			args = []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
 			if resourceNamespace != "" {
 				args = append(args, "-n", resourceNamespace)
 			}
-			cmd = exec.Command("kubectl", args...)
+			cmdName = "kubectl"
 		} else if param.ValueFrom.JQFilter != "" {
 			resArgs := []string{resourceName}
 			if resourceNamespace != "" {
 				resArgs = append(resArgs, "-n", resourceNamespace)
 			}
 			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
-			cmd = exec.Command("sh", "-c", cmdStr)
+			args = append(args, "-c", cmdStr)
 		} else {
 			continue
 		}
-		log.Info(cmd.Args)
-		out, err := cmd.Output()
-		if err != nil {
-			// We have a default value to use instead of returning an error
-			if param.ValueFrom.Default != nil {
-				out = []byte(param.ValueFrom.Default.String())
-			} else {
-				if exErr, ok := err.(*exec.ExitError); ok {
-					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+		var output string
+		err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+			var err error
+			cmd := exec.Command(cmdName, args...)
+			log.Info(cmd.Args)
+			out, err := cmd.Output()
+			if err != nil {
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != nil {
+					out = []byte(param.ValueFrom.Default.String())
+				} else {
+					if exErr, ok := err.(*exec.ExitError); ok {
+						log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+					}
+					return !argoerr.IsTransientErr(err), err
 				}
-				return errors.InternalWrapError(err)
 			}
+			output = string(out)
+			return true, nil
+		})
+		if err != nil {
+			return errors.InternalWrapError(err)
 		}
-		output := string(out)
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
