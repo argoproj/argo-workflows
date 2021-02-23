@@ -21,6 +21,7 @@ Note that these environment variables may be removed at any time.
 | `RETRY_BACKOFF_DURATION` | `time.Duration` | The retry backoff duration when retrying API calls. |
 | `RETRY_BACKOFF_FACTOR` | `float` | The retry backoff factor when retrying API calls. |
 | `RETRY_BACKOFF_STEPS` | `int` | The retry backoff steps when retrying API calls. |
+| `TLS_MIN_VERSION` | `int` | The minimum TLS version to use. [Reference](https://golang.org/pkg/crypto/tls/).  |
 | `TRANSIENT_ERROR_PATTERN` | `string` | The regular expression that represents additional patterns for transient errors. |
 | `WF_DEL_PROPAGATION_POLICY` | `string` | The deletion propogation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | The periodicity for GC of workflows. |
