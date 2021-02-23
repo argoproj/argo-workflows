@@ -621,11 +621,15 @@ data:
       requests:
         cpu: 10m
         memory: 64Mi
-  imageCommandIndex: |
-    argoproj/argosay:v1: [cowsay]
-    argoproj/argosay:v2: [/argosay]
-    docker/whalesay:latest: [cowsay]
-    python:alpine3.6: [python3]
+  images: |
+    argoproj/argosay:v1:
+      command: [cowsay]
+    argoproj/argosay:v2:
+      command: [/argosay]
+    docker/whalesay:latest:
+       command: [cowsay]
+    python:alpine3.6:
+       command: [python3]
   links: |
     - name: Workflow Link
       scope: workflow

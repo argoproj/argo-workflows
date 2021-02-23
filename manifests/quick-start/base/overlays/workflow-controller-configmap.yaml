@@ -11,11 +11,15 @@ data:
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: k8sapi
-  imageCommandIndex: |
-    argoproj/argosay:v1: [cowsay]
-    argoproj/argosay:v2: [/argosay]
-    docker/whalesay:latest: [cowsay]
-    python:alpine3.6: [python3]
+  images: |
+    argoproj/argosay:v1:
+      command: [cowsay]
+    argoproj/argosay:v2:
+      command: [/argosay]
+    docker/whalesay:latest:
+       command: [cowsay]
+    python:alpine3.6:
+       command: [python3]
   artifactRepository: |
     archiveLogs: true
     s3:

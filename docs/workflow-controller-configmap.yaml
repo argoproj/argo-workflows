@@ -137,7 +137,7 @@ data:
 
   # The command for each image, needed when the command is not specified and the emissary executor is used.
   # https://argoproj.github.io/argo-workflows/workflow-executors/#image-command-index
-  imageCommandIndex: |
+  images: |
     argoproj/argosay:v1: [cowsay]
     argoproj/argosay:v2: [/argosay]
     docker/whalesay:latest: [cowsay]

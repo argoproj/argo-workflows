@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -297,11 +298,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 		for i, c := range pod.Spec.Containers {
 			if c.Name != common.WaitContainerName {
+				// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 				if len(c.Command) == 0 {
-					c.Command = woc.getCommandFor(c.Image)
+					x := woc.getImage(c.Image)
+					c.Command = x.Command
+					c.Args = x.Args
 				}
 				if len(c.Command) == 0 {
-					return nil, fmt.Errorf("must specify the command when using the entrypoint executor; determine this using `docker image inspect -f '{{.Config.Cmd}}' %s` or `docker image inspect -f '{{.Config.Entrypoint}}' %s`, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#image-command-index", c.Image, c.Image)
+					return nil, fmt.Errorf("when using the emissary executor you must either explictly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary")
 				}
 				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 			}
@@ -425,11 +429,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	return created, nil
 }
 
-func (woc *wfOperationCtx) getCommandFor(image string) []string {
-	if woc.controller.Config.ImageCommandIndex == nil {
-		return nil
+func (woc *wfOperationCtx) getImage(image string) config.Image {
+	if woc.controller.Config.Images == nil {
+		return config.Image{}
 	}
-	return woc.controller.Config.ImageCommandIndex[image]
+	return woc.controller.Config.Images[image]
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
