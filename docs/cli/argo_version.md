@@ -1,10 +1,10 @@
 ## argo version
 
-Print version information
+print version information
 
 ### Synopsis
 
-Print version information
+print version information
 
 ```
 argo version [flags]
