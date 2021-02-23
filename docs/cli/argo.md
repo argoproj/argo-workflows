@@ -100,8 +100,8 @@ argo [flags]
 
 ### SEE ALSO
 
-* [argo archive](argo_archive.md)	 - 
-* [argo auth](argo_auth.md)	 - 
+* [argo archive](argo_archive.md)	 - manage the workflow archive
+* [argo auth](argo_auth.md)	 - manage authentication settings
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
 * [argo cron](argo_cron.md)	 - manage cron workflows
@@ -114,13 +114,13 @@ argo [flags]
 * [argo resubmit](argo_resubmit.md)	 - resubmit one or more workflows
 * [argo resume](argo_resume.md)	 - resume zero or more workflows
 * [argo retry](argo_retry.md)	 - retry zero or more workflows
-* [argo server](argo_server.md)	 - Start the Argo Server
+* [argo server](argo_server.md)	 - start the Argo Server
 * [argo stop](argo_stop.md)	 - stop zero or more workflows allowing all exit handlers to run
 * [argo submit](argo_submit.md)	 - submit a workflow
 * [argo suspend](argo_suspend.md)	 - suspend zero or more workflow
 * [argo template](argo_template.md)	 - manipulate workflow templates
 * [argo terminate](argo_terminate.md)	 - terminate zero or more workflows immediately
-* [argo version](argo_version.md)	 - Print version information
+* [argo version](argo_version.md)	 - print version information
 * [argo wait](argo_wait.md)	 - waits for workflows to complete
 * [argo watch](argo_watch.md)	 - watch a workflow until it completes
 

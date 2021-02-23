@@ -12,7 +12,8 @@ import (
 
 func NewDeleteCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use: "delete UID...",
+		Use:   "delete UID...",
+		Short: "delete a workflow in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()

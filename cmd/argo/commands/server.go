@@ -45,7 +45,7 @@ func NewServerCommand() *cobra.Command {
 
 	command := cobra.Command{
 		Use:   "server",
-		Short: "Start the Argo Server",
+		Short: "start the Argo Server",
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoSever),
 		Run: func(c *cobra.Command, args []string) {
