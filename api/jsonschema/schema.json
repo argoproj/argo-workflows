@@ -4316,9 +4316,6 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "key"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ScriptTemplate": {

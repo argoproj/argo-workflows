@@ -584,8 +584,6 @@ spec:
                               type: object
                             useSDKCreds:
                               type: boolean
-                          required:
-                          - key
                           type: object
                         subPath:
                           type: string
@@ -1493,8 +1491,6 @@ spec:
                               type: object
                             useSDKCreds:
                               type: boolean
-                          required:
-                          - key
                           type: object
                       type: object
                     automountServiceAccountToken:
@@ -2347,8 +2343,6 @@ spec:
                                               type: object
                                             useSDKCreds:
                                               type: boolean
-                                          required:
-                                          - key
                                           type: object
                                         subPath:
                                           type: string
@@ -2678,6 +2672,8 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    createBucketIfNotPresent:
+                                      type: boolean
                                     endpoint:
                                       type: string
                                     key:
@@ -2750,8 +2746,6 @@ spec:
                                       type: object
                                     useSDKCreds:
                                       type: boolean
-                                  required:
-                                  - key
                                   type: object
                                 subPath:
                                   type: string
@@ -3630,8 +3624,6 @@ spec:
                                     type: object
                                   useSDKCreds:
                                     type: boolean
-                                required:
-                                - key
                                 type: object
                               subPath:
                                 type: string
@@ -4073,8 +4065,6 @@ spec:
                                     type: object
                                   useSDKCreds:
                                     type: boolean
-                                required:
-                                - key
                                 type: object
                               subPath:
                                 type: string

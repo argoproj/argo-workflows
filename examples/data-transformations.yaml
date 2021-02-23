@@ -1,11 +1,12 @@
+# See doc docs/data-sourcing-and-transformation.md
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-passing-
+  generateName: data-transformations-
 spec:
-  entrypoint: artifact-example
+  entrypoint: data-transformations
   templates:
-    - name: artifact-example
+    - name: data-transformations
       steps:
         - - name: generate-artifact
             template: generate-artifacts
@@ -47,6 +48,7 @@ spec:
       data:
         source:
           artifactPaths:
+            name: test-bucket
             s3:
               bucket: test
               endpoint: minio:9000
