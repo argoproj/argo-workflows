@@ -44,6 +44,8 @@ Workflow is the definition of a workflow resource
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -91,6 +93,8 @@ Workflow is the definition of a workflow resource
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -387,6 +391,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -436,6 +442,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -750,6 +758,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -799,6 +809,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -1071,6 +1083,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -1120,6 +1134,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -1398,6 +1414,8 @@ Arguments to a template
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
@@ -1425,6 +1443,8 @@ Arguments to a template
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
@@ -1717,6 +1737,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -1766,6 +1788,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -2136,7 +2160,11 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
@@ -2238,6 +2266,8 @@ Artifact indicates an artifact to place at a specified path
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
@@ -2280,6 +2310,7 @@ Artifact indicates an artifact to place at a specified path
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
+|`fromExpression`|`string`|Expression is an expression in which the artifact should conditionally include|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
@@ -2350,6 +2381,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
@@ -2707,6 +2740,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
@@ -2734,6 +2769,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
@@ -2842,6 +2879,8 @@ Memoization enables caching for the Outputs of the template
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>
 
@@ -2906,9 +2945,13 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-param-result.yaml)
 
@@ -2988,6 +3031,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -3011,6 +3056,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
@@ -3461,6 +3508,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
+
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -3497,6 +3546,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |:----------:|:----------:|---------------|
 |`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
+|`fromExpression`|`string`|Expression is an expression in which the parameter should conditionally include|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3561,9 +3611,13 @@ MetricLabel is a single label for a prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
@@ -3670,6 +3724,8 @@ Cache is the configuration for the type of cache to be used
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>
@@ -3913,6 +3969,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -3962,6 +4020,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -4338,6 +4398,8 @@ Volume represents a named volume in a pod that may be accessed by any container 
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
@@ -4462,6 +4524,8 @@ A single application container that you want to run within a pod.
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -4509,6 +4573,8 @@ A single application container that you want to run within a pod.
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -4884,6 +4950,8 @@ VolumeMount describes a mounting of a Volume within a container.
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
@@ -5111,6 +5179,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
 
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
@@ -5160,6 +5230,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/forever.yaml)
 
@@ -5454,6 +5526,8 @@ Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data fie
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>
 
@@ -5495,6 +5569,8 @@ Represents an empty directory for a pod. Empty directory volumes support ownersh
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
@@ -5770,6 +5846,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
@@ -6074,6 +6152,8 @@ Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap'
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>

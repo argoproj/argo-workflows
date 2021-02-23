@@ -77,7 +77,7 @@ message Artifact {
   // If mode is set, apply the permission recursively into the artifact if it is a folder
   optional bool recurseMode = 10;
 
-  // FromExpression is an expression in which the artifact should conditionally include
+  // FromExpression, if defined, is evaluated to specify the value for the artifact
   optional string fromExpression = 11;
 }
 
@@ -1227,7 +1227,7 @@ message ValueFrom {
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
 
-  // Expression is an expression in which the parameter should conditionally include
+  // Expression, if defined, is evaluated to specify the value for the parameter
   optional string expression = 8;
 }
 

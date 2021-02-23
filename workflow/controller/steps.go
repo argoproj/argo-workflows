@@ -48,11 +48,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	stepTemplateScope := tmplCtx.GetTemplateScope()
 
 	stepsCtx := stepsContext{
-		boundaryID: node.ID,
-		scope: &wfScope{
-			tmpl:  tmpl,
-			scope: make(map[string]interface{}),
-		},
+		boundaryID:     node.ID,
+		scope:          CreateScope(tmpl),
 		tmplCtx:        tmplCtx,
 		onExitTemplate: opts.onExitTemplate,
 	}

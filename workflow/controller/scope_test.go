@@ -3,16 +3,13 @@ package controller
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-
 	"github.com/stretchr/testify/assert"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
-	scope := wfScope{
-		tmpl:  nil,
-		scope: make(map[string]interface{}),
-	}
+	scope := CreateScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
 
@@ -29,10 +26,7 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 }
 
 func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtifactString string) {
-	scope := wfScope{
-		tmpl:  nil,
-		scope: make(map[string]interface{}),
-	}
+	scope := CreateScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
 	originalArtifact := artifact.DeepCopy()
@@ -244,7 +238,8 @@ func TestSubPathResolution(t *testing.T) {
 
 func TestResolveParameters(t *testing.T) {
 	assert := assert.New(t)
-	tmpl := wfv1.Template{Name: "test",
+	tmpl := wfv1.Template{
+		Name: "test",
 		Inputs: wfv1.Inputs{
 			Parameters: []wfv1.Parameter{
 				{
@@ -259,20 +254,25 @@ func TestResolveParameters(t *testing.T) {
 			Artifacts: nil,
 		},
 	}
-	env := map[string]interface{}{
-		"steps.t1.outputs.parameters.result": 4,
-		"workflows.arguments.param":          "head",
-	}
-	scope := wfScope{
-		tmpl:  &tmpl,
-		scope: env,
-	}
+
+	scope := CreateScope(&tmpl)
+	scope.addParamToScope("steps.t1.outputs.parameters.result", "4")
+	scope.addParamToScope("workflows.arguments.param", "head")
+
 	valFrom := &wfv1.ValueFrom{
-		Expression: "inputs.parameters.one == 1 ? inputs.parameters.one+inputs.parameters.two: steps.t1.outputs.parameters.result",
+		Expression: "inputs.parameters.one == '1' ? inputs.parameters.two: steps.t1.outputs.parameters.result",
 	}
 	result, err := scope.resolveParameter(valFrom)
 	assert.NoError(err)
-	assert.Equal("3", result)
+	assert.Equal("2", result)
+
+	valFrom = &wfv1.ValueFrom{
+		Parameter: "{{steps.t1.outputs.parameters.result}}",
+	}
+	result, err = scope.resolveParameter(valFrom)
+	assert.NoError(err)
+	assert.Equal("4", result)
+
 	valFrom = &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result :workflows.arguments.param",
 	}

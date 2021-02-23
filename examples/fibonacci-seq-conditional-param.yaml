@@ -2,12 +2,19 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: fibonacci-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
+      assert nodes["printresult"]["phase"] == "Succeeded"
+      assert nodes["printresult"]["outputs"]["exitCode"] == "0"
 spec:
   entrypoint: main
   arguments:
     parameters:
       - name: num
-        value: 5
+        value: "5"
   templates:
     - name: main
       steps:
@@ -29,6 +36,7 @@ spec:
           - name: num
       memoize:
         key: "{{inputs.parameters.num}}"
+        maxAge: "30s"
         cache:
           configMap:
             name: fibonacci-m
@@ -36,7 +44,7 @@ spec:
       steps:
         - - name: fibonaccihelper
             template: fibonaccihelper
-            when: "{{inputs.parameters.num}} != 1 && {{inputs.parameters.num}} != 2"
+            when: "{{inputs.parameters.num}} != '1' && {{inputs.parameters.num}} != '2'"
             arguments:
               parameters:
                 - name: num-1
@@ -45,7 +53,7 @@ spec:
         parameters:
           - name: fib
             valueFrom:
-              expression: "inputs.parameters.num == 1? 1: inputs.parameters.num == 2? 1: steps.fibonaccihelper.outputs.parameters.result"
+              expression: "inputs.parameters.num == '1'? '1': inputs.parameters.num == '2'? '1': steps.fibonaccihelper.outputs.parameters.result"
     
     - name: fibonaccihelper
       inputs:
@@ -61,7 +69,7 @@ spec:
                 - {name: b, value: "1"}
         - - name: sub-2
             template: do-math
-            when: "{{inputs.parameters.num-1}} != 1 && {{inputs.parameters.num-1}} != 2"
+            when: "{{inputs.parameters.num-1}} != '1' && {{inputs.parameters.num-1}} != '2'"
             arguments:
               parameters:
                 - {name: a, value: "{{inputs.parameters.num-1}}"}
@@ -116,4 +124,10 @@ spec:
       container:
         image: alpine:latest
         command: [sh, -c]
-        args: ["echo {{inputs.parameters.result}}"]
+        args: ["sleep 1; echo -n {{inputs.parameters.result}} > /tmp/result.txt"]
+#        args: ["echo {{inputs.parameters.result}}"]
+      outputs:
+        parameters:
+          - name: fibresult
+            valueFrom:
+              path: /tmp/result.txt

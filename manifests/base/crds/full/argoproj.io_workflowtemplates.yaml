@@ -342,6 +342,8 @@ spec:
                           type: object
                         from:
                           type: string
+                        fromExpression:
+                          type: string
                         gcs:
                           properties:
                             bucket:
@@ -613,6 +615,8 @@ spec:
                             default:
                               type: string
                             event:
+                              type: string
+                            expression:
                               type: string
                             jqFilter:
                               type: string
@@ -2082,6 +2086,8 @@ spec:
                                           type: object
                                         from:
                                           type: string
+                                        fromExpression:
+                                          type: string
                                         gcs:
                                           properties:
                                             bucket:
@@ -2353,6 +2359,8 @@ spec:
                                             default:
                                               type: string
                                             event:
+                                              type: string
+                                            expression:
                                               type: string
                                             jqFilter:
                                               type: string
@@ -3048,6 +3056,8 @@ spec:
                                 type: object
                               from:
                                 type: string
+                              fromExpression:
+                                type: string
                               gcs:
                                 properties:
                                   bucket:
@@ -3320,6 +3330,8 @@ spec:
                                     type: string
                                   event:
                                     type: string
+                                  expression:
+                                    type: string
                                   jqFilter:
                                     type: string
                                   jsonPath:
@@ -3490,6 +3502,8 @@ spec:
                                 - url
                                 type: object
                               from:
+                                type: string
+                              fromExpression:
                                 type: string
                               gcs:
                                 properties:
@@ -3764,6 +3778,8 @@ spec:
                                   default:
                                     type: string
                                   event:
+                                    type: string
+                                  expression:
                                     type: string
                                   jqFilter:
                                     type: string

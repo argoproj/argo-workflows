@@ -2,6 +2,13 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: conditional-artifacts-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
+      assert nodes["printmessage"]["phase"] == "Succeeded"
+      assert nodes["printmessage"]["outputs"]["exitCode"] == "0"
 spec:
   entrypoint: main
   volumes:
@@ -17,7 +24,7 @@ spec:
             arguments:
               artifacts:
                 - name: message
-                  from: "{{steps.coinflipmain.outputs.artifacts.step-result}}"
+                  from: "{{steps.coinflipmain.outputs.artifacts.stepresult}}"
     
     - name: coinflip
       steps:
@@ -31,7 +38,7 @@ spec:
             when: "{{steps.flipcoin.outputs.result}} == tails"
       outputs:
         artifacts:
-          - name: step-result
+          - name: stepresult
             fromExpression: "steps.flipcoin.outputs.result == 'heads'?steps.heads.outputs.artifacts.headsresult:steps.tails.outputs.artifacts.tailsresult"
     
     - name: flipcoin1
@@ -44,10 +51,13 @@ spec:
           print(result)
           
     - name: heads
-      container:
-        image: alpine:3.6
-        command: [sh, -c]
-        args: ["sleep 40; echo \"it was heads\" > /result.txt"]
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          file = open("result.txt", "w")
+          file.write("it was heads")
+          file.close()
         volumeMounts:
           - name: workdir
             mountPath: /mnt/vol
@@ -55,13 +65,14 @@ spec:
         artifacts:
           - name: headsresult
             path: /result.txt
-
-            
     - name: tails
-      container:
-        image: alpine:3.6
-        command: [sh, -c]
-        args: ["sleep 40; echo \"it was tails\" > /result.txt"]
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          file = open("result.txt", "w")
+          file.write("it was tails")
+          file.close()
         volumeMounts:
           - name: workdir
             mountPath: /mnt/vol
@@ -69,13 +80,12 @@ spec:
         artifacts:
           - name: tailsresult
             path: /result.txt
-
     - name: printmessage
       inputs:
         artifacts:
           - name: message
             path: /tmp/message
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v1
         command: [sh, -c]
         args: ["cat /tmp/message"]

@@ -133,11 +133,8 @@ github.com/apache/openwhisk-client-go v0.0.0-20190915054138-716c6f973eb2/go.mod 
 github.com/apache/pulsar-client-go v0.1.1/go.mod h1:mlxC65KL1BLhGO2bnT9zWMttVzR2czVPb27D477YpyU=
 github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAFAONtv2Dr7HUI=
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
-github.com/argoproj/argo v2.5.2+incompatible h1:ciB/KCPIxD2VItjR93DfgvUb5Z0rOYJ6qk6ktz18rv4=
 github.com/argoproj/argo-events v1.2.0 h1:CjF8hVUkeflhaOt9uWjJK6ai6b4pw0CCUUmOnmhWnNY=
 github.com/argoproj/argo-events v1.2.0/go.mod h1:eY+egQNBLXAz/AF4mqgHsMMa4Aur7frHjUfBg+RpX04=
-github.com/argoproj/argo/v3 v3.0.0-rc1 h1:I/O/nNor+KramlG3HOyEMtfVKjCbvwxp/ZqXV554p9A=
-github.com/argoproj/argo/v3 v3.0.0-rc1/go.mod h1:8fgy7MYY7eRtSTZrbjBJVlk3pDXwGr+PuQc2pF4mtUI=
 github.com/argoproj/pkg v0.3.0 h1:0xxNHc9duXZt1TlDVVsBzcGm8S/V5Bc3eNqawz3wFo8=
 github.com/argoproj/pkg v0.3.0/go.mod h1:F4TZgInLUEjzsWFB/BTJBsewoEy0ucnKSq6vmQiD/yc=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=

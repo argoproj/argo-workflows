@@ -18,6 +18,15 @@ type wfScope struct {
 	scope map[string]interface{}
 }
 
+func CreateScope(tmpl *wfv1.Template) *wfScope {
+	scope := &wfScope{
+		tmpl:  tmpl,
+		scope: make(map[string]interface{}),
+	}
+	scope.includeTmplParamsArts()
+	return scope
+}
+
 // getParameters returns a map of strings intended to be used simple string substitution
 func (s *wfScope) getParameters() common.Parameters {
 	params := make(common.Parameters)
@@ -38,24 +47,27 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 	s.scope[key] = artifact
 }
 
+// includeTmplParamsArts include template input parameters and artifacts in scope
+func (s *wfScope) includeTmplParamsArts() {
+	if s.tmpl == nil {
+		return
+	}
+	for _, param := range s.tmpl.Inputs.Parameters {
+		key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+		s.scope[key] = s.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+	}
+	for _, param := range s.tmpl.Inputs.Artifacts {
+		key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
+		s.scope[key] = s.tmpl.Inputs.GetArtifactByName(param.Name)
+	}
+}
+
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
-
 	v = strings.TrimPrefix(v, "{{")
 	v = strings.TrimSuffix(v, "}}")
-	parts := strings.Split(v, ".")
-	prefix := parts[0]
-	switch prefix {
-	case "steps", "tasks", "workflow":
-		val, ok := s.scope[v]
-		if ok {
-			return val, nil
-		}
-	case "inputs":
-		art := s.tmpl.Inputs.GetArtifactByName(parts[2])
-		if art != nil {
-			return *art, nil
-		}
+	if val, ok := s.scope[v]; ok {
+		return val, nil
 	}
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve: {{%s}}", v)
 }
@@ -70,7 +82,7 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (string, error) {
 	var val interface{}
 	var err error
 	if p.Expression != "" {
-		val, err = expr.Eval(p.Expression, s.getAllParamArtifact())
+		val, err = expr.Eval(p.Expression, s.scope)
 	} else {
 		val, err = s.resolveVar(p.Parameter)
 	}
@@ -84,27 +96,6 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (string, error) {
 	return fmt.Sprintf("%v", val), nil
 }
 
-func (s *wfScope) getAllParamArtifact() map[string]interface{} {
-
-	paramArtMap := make(map[string]interface{})
-	for key, val := range s.scope {
-		if _, ok := val.(*wfv1.AnyString); ok {
-			paramArtMap[key] = val.(*wfv1.AnyString).Value()
-		} else {
-			paramArtMap[key] = val
-		}
-	}
-	for _, param := range s.tmpl.Inputs.Parameters {
-		key := fmt.Sprintf("inputs.parameters.%s", strings.TrimSpace(param.Name))
-		paramArtMap[key] = s.tmpl.Inputs.GetParameterByName(param.Name).Value.Value()
-	}
-	for _, param := range s.tmpl.Inputs.Artifacts {
-		key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
-		paramArtMap[key] = s.tmpl.Inputs.GetArtifactByName(param.Name)
-	}
-	return paramArtMap
-}
-
 func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Artifact, error) {
 	if art == nil {
 		return nil, nil
@@ -115,7 +106,7 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Art
 	var err error
 	var val interface{}
 	if art.FromExpression != "" {
-		val, err = expr.Eval(art.FromExpression, s.getAllParamArtifact())
+		val, err = expr.Eval(art.FromExpression, s.scope)
 	} else {
 		val, err = s.resolveVar(art.From)
 	}
