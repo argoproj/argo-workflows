@@ -15,6 +15,7 @@ import (
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/argoproj/argo-workflows/v3/util/slice"
@@ -759,6 +760,28 @@ type Artifact struct {
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
+}
+
+// Matches returns whether the pod labels match with the label selector specified in podGC.
+func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+	if podGC == nil {
+		return true, nil
+	}
+	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
+	if err != nil {
+		return false, err
+	}
+	return selector.Matches(labels), nil
+}
+
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
+	if podGC != nil && podGC.LabelSelector != nil {
+		return podGC.LabelSelector
+	}
+	return nil
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows

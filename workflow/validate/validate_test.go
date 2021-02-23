@@ -1729,8 +1729,8 @@ spec:
       args: ["hello world"]
 `
 
-// TestUnknownPodGCStrategy verifies pod gc strategy is correct.
-func TestUnknownPodGCStrategy(t *testing.T) {
+// TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
+func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
@@ -1738,6 +1738,10 @@ func TestUnknownPodGCStrategy(t *testing.T) {
 
 	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
 		wf.Spec.PodGC.Strategy = start
+		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+		assert.NoError(t, err)
+
+		wf.Spec.PodGC.LabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{"evicted": "true"}}
 		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
