@@ -22,7 +22,7 @@ func NewListCommand() *cobra.Command {
 		chunkSize int64
 	)
 	command := &cobra.Command{
-		Use: "list",
+		Use:   "list",
 		Short: "list workflows in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()

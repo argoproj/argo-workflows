@@ -6,7 +6,7 @@ import (
 
 func NewArchiveCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use: "archive",
+		Use:   "archive",
 		Short: "manage the workflow archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
