@@ -1,3 +1,6 @@
+# This example demonstrates the ability to assign the parameter value based on expression
+# Step/DAG template output parameter will have expression to choose the parameter value.
+
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -36,7 +39,7 @@ spec:
           - name: num
       memoize:
         key: "{{inputs.parameters.num}}"
-        maxAge: "30s"
+        maxAge: "120s"
         cache:
           configMap:
             name: fibonacci-m
@@ -44,7 +47,7 @@ spec:
       steps:
         - - name: fibonaccihelper
             template: fibonaccihelper
-            when: "{{inputs.parameters.num}} != '1' && {{inputs.parameters.num}} != '2'"
+            when: "{{inputs.parameters.num}} != 1 && {{inputs.parameters.num}} != 2"
             arguments:
               parameters:
                 - name: num-1
@@ -69,7 +72,7 @@ spec:
                 - {name: b, value: "1"}
         - - name: sub-2
             template: do-math
-            when: "{{inputs.parameters.num-1}} != '1' && {{inputs.parameters.num-1}} != '2'"
+            when: "{{inputs.parameters.num-1}} != 1 && {{inputs.parameters.num-1}} != 2"
             arguments:
               parameters:
                 - {name: a, value: "{{inputs.parameters.num-1}}"}

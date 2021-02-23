@@ -1,3 +1,10 @@
+# conditional-artifacts provide a way to choose the output artifacts based on expression.
+# In this example
+# the 'coinflip' step template  has two steps which will run based `when` condition.
+# Based on condition one of step may not execute. So Step template output artifact should assign
+# executed step output artifacts.
+# `fromExpression` in output parameter can have expression to select the artifacts.
+
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
