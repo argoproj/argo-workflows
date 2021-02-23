@@ -110,6 +110,21 @@ spec:
         args: ["{{inputs.parameters.message}}"]
 ```
 
+### Adding labels/annotations to Workflows with `workflowMetadata`
+
+To automatically add labels and/or annotations to Workflows created from `WorkflowTemplates`, use `workflowMetadata`.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-submittable
+spec:
+  workflowMetadata:
+    labels:
+      example-label: example-value
+```
+
 ## Referencing other `WorkflowTemplates`
 
 You can reference `templates` from another `WorkflowTemplates` (see the [difference between the two](#workflowtemplate-vs-template)) using a `templateRef` field.
