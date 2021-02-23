@@ -91,7 +91,7 @@ See %s`, help.ArgoSever),
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				errors.CheckError(err)
 				tlsConfig = &tls.Config{
-					Certificates: []tls.Certificate{cer},
+					Certificates:       []tls.Certificate{cer},
 					InsecureSkipVerify: false, // InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
 					MinVersion:         uint16(tlsMinVersion),
 				}
