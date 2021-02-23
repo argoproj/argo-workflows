@@ -3,7 +3,6 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  containerRuntimeExecutor: pns
   workflowDefaults: |
     spec:
       activeDeadlineSeconds: 300

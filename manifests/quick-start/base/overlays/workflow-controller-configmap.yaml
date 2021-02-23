@@ -5,6 +5,12 @@ data:
       requests:
         cpu: 10m
         memory: 64Mi
+  containerRuntimeExecutor: docker
+  containerRuntimeExecutors: |
+    - name: k8sapi
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: k8sapi
   imageCommandIndex: |
     argoproj/argosay:v1: [cowsay]
     argoproj/argosay:v2: [/argosay]

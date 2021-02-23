@@ -1,16 +1,15 @@
 package flatten
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
+
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 )
 
 func toMap(in interface{}) map[string]interface{} {
-	data, _ := json.Marshal(in)
-	out := make(map[string]interface{})
-	_ = json.Unmarshal(data, &out)
-	return out
+	v, _ := jsonutil.Jsonify(in)
+	return v
 }
 
 func flattenWithPrefix(in map[string]interface{}, out map[string]string, prefix string) {

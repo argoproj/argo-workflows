@@ -8,6 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -204,6 +205,15 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	log.Debug("Piping events to channel")
 	defer log.Debug("Result channel done")
 
+	// Eagerly send the headers so that we can begin our keepalive loop if no results are received
+	// immediately.  Without this, we cannot detect a streaming response, and we can't write to the
+	// response since a subsequent write by the stream causes an error.
+	err = ws.SendHeader(metadata.MD{})
+
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -249,6 +259,12 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 
 	log.Debug("Piping events to channel")
 	defer log.Debug("Result channel done")
+
+	err = ws.SendHeader(metadata.MD{})
+
+	if err != nil {
+		return err
+	}
 
 	for {
 		select {
@@ -507,6 +523,13 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 		return err
 	}
 	req.Name = wf.Name
+
+	err = ws.SendHeader(metadata.MD{})
+
+	if err != nil {
+		return err
+	}
+
 	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 

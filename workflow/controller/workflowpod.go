@@ -236,7 +236,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	if woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
@@ -262,7 +262,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
-	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
@@ -290,7 +290,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
 
-	if woc.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && tmpl.GetType() != wfv1.TemplateTypeResource {
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && tmpl.GetType() != wfv1.TemplateTypeResource {
 		for i, c := range pod.Spec.InitContainers {
 			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 			pod.Spec.InitContainers[i] = c
@@ -468,7 +468,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
-	switch woc.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
 			Capabilities: &apiv1.Capabilities{
@@ -529,15 +529,20 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		},
 		{
 			Name:  common.EnvVarContainerRuntimeExecutor,
-			Value: woc.controller.GetContainerRuntimeExecutor(),
+			Value: woc.getContainerRuntimeExecutor(),
 		},
 	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
-	switch woc.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
+	case common.ContainerRuntimeExecutorK8sAPI:
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.getContainerRuntimeExecutor(),
+			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
 				ValueFrom: &apiv1.EnvVarSource{
@@ -577,7 +582,7 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 			},
 		})
 	}
-	switch woc.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 	case common.ContainerRuntimeExecutorEmissary:
 		volumes = append(volumes, volumeVarArgo)
