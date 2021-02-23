@@ -110,6 +110,7 @@ type Config struct {
 	// https://argoproj.github.io/argo-workflows/workflow-executors/#images
 	Images map[string]Image `json:"images,omitempty"`
 }
+
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
 	name, err := c.ContainerRuntimeExecutors.Select(labels)
 	if err != nil {
