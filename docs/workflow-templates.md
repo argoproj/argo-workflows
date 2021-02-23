@@ -112,6 +112,8 @@ spec:
 
 ### Adding labels/annotations to Workflows with `workflowMetadata`
 
+> 2.10.2 and after
+
 To automatically add labels and/or annotations to Workflows created from `WorkflowTemplates`, use `workflowMetadata`.
 
 ```yaml
