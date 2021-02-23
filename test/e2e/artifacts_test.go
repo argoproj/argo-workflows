@@ -76,8 +76,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: default-params
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: start
   templates:

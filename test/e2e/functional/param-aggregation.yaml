@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: parameter-aggregation-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: parameter-aggregation
   templates:

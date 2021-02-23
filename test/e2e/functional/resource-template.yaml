@@ -2,33 +2,32 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: resource-tmpl-wf
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: main
   templates:
-  - name: main
-    steps:
-    - - name: a
-        template: wf1
-  - name: wf1
-    resource:
-      action: create
-      successCondition: status.phase == Test
-      manifest: |
-        apiVersion: argoproj.io/v1alpha1
-        kind: Workflow
-        metadata:
-          generateName: hello-world-
-          labels:
-            argo-e2e: true
-        spec:
-          entrypoint: whalesay
-          templates:
-            - name: whalesay
-              resources:
-                requests:
-                  cpu: 3
-              container:
-                image: argoproj/argosay:v2
-                args: [echo, ":) Hello Argo!"]
+    - name: main
+      steps:
+        - - name: a
+            template: wf1
+    - name: wf1
+      resource:
+        action: create
+        successCondition: status.phase == Test
+        setOwnerReference: true
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: hello-world-
+            labels:
+              workflows.argoproj.io/test: "true"
+          spec:
+            entrypoint: whalesay
+            templates:
+              - name: whalesay
+                resources:
+                  requests:
+                    cpu: 3
+                container:
+                  image: argoproj/argosay:v2
+                  args: [echo, ":) Hello Argo!"]

@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -64,7 +65,7 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 		if !result.Valid() {
 			errorDescriptions := []string{}
 			for _, err := range result.Errors() {
-				errorDescriptions = append(errorDescriptions, err.Description())
+				errorDescriptions = append(errorDescriptions, fmt.Sprintf("%s in %s", err.Description(), err.Context().String()))
 			}
 			failed[path] = errorDescriptions
 		}

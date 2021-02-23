@@ -1,10 +1,11 @@
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Event} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Notice} from '../../shared/components/notice';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ToggleButton} from '../../shared/components/toggle-button';
+import debounce from '../../shared/debounce';
 import {ListWatch} from '../../shared/list-watch';
 import {services} from '../../shared/services';
 
@@ -46,6 +47,44 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
         return () => lw.stop();
     }, [showAll, hideNormal]);
 
+    const tableRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const calculateTooltips = () => {
+            const table = tableRef.current;
+
+            if (table) {
+                const columns = table.querySelectorAll<HTMLDivElement>('.argo-table-list__row .columns');
+
+                // querySelectorAll does not return an array, it returns a NodeList which is not necessarily
+                // iterable in older browsers.  As of 2/9/21, we target es5 with typescript, meaning it's
+                // not valid to use `for of` loops with NodeList.  When that target is changed or if
+                // downlevelIteration is enabled, we can swap this to use a `for of` loop.
+
+                // tslint:disable-next-line:prefer-for-of
+                for (let i = 0; i < columns.length; i++) {
+                    const col = columns[i];
+
+                    if (col.scrollWidth > col.clientWidth) {
+                        col.title = col.textContent;
+                    } else {
+                        col.title = '';
+                    }
+                }
+            }
+        };
+
+        const [debouncedCalculateTooltips, cleanup] = debounce(calculateTooltips, 1000);
+
+        window.addEventListener('resize', debouncedCalculateTooltips);
+        calculateTooltips();
+
+        return () => {
+            cleanup();
+            window.removeEventListener('resize', debouncedCalculateTooltips);
+        };
+    });
+
     return (
         <>
             <div style={{margin: 20}}>
@@ -62,7 +101,7 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                     <i className='fa fa-spin fa-circle-notch' /> Waiting for events. Still waiting for data? Try changing the filters.
                 </Notice>
             ) : (
-                <div className='argo-table-list'>
+                <div ref={tableRef} className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1'>Type</div>
                         <div className='columns small-2'>Last Seen</div>

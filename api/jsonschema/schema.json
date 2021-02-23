@@ -3915,6 +3915,10 @@
           "description": "Bucket is the name of the bucket",
           "type": "string"
         },
+        "createBucketIfNotPresent": {
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
+          "type": "boolean"
+        },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
           "type": "string"
@@ -4010,6 +4014,10 @@
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
       "properties": {
+        "labelSelector": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue."
+        },
         "strategy": {
           "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
           "type": "string"

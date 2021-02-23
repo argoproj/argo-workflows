@@ -724,6 +724,9 @@ message OSSBucket {
 
   // SecretKeySecret is the secret selector to the bucket's secret key
   optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 4;
+
+  // CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
+  optional bool createBucketIfNotPresent = 5;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -777,6 +780,9 @@ message Parameter {
 message PodGC {
   // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
+
+  // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 }
 
 // Prometheus is a prometheus metric to be emitted

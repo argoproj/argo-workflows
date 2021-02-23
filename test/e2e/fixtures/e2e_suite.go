@@ -27,7 +27,7 @@ import (
 
 const (
 	Namespace      = "argo"
-	Label          = "argo-e2e"
+	Label          = workflow.WorkflowFullName + "/test" // mark this workflow as a test
 	defaultTimeout = 30 * time.Second
 )
 
