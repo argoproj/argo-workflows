@@ -88,7 +88,7 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve expression: %s", err)
+		return "", err
 	}
 	if val == nil {
 		return "", nil
@@ -111,7 +111,7 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Art
 		val, err = s.resolveVar(art.From)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("unable to resolve artifact: %s", err)
+		return nil, err
 	}
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {

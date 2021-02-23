@@ -711,7 +711,7 @@ type ValueFrom struct {
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 
-	// Expression, if defined, is evaluated to specify the value for the parameter
+	// Expression, if defined, is evaluated to specify the value for the parameter.
 	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
@@ -752,7 +752,7 @@ type Artifact struct {
 	// If mode is set, apply the permission recursively into the artifact if it is a folder
 	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
 
-	// FromExpression, if defined, is evaluated to specify the value for the artifact
+	// FromExpression, if defined, is evaluated to specify the value for the artifact.
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 }
 
