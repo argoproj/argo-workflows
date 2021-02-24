@@ -47,6 +47,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
     useEffect(() => {
+        return history.listen((newLocation) => {
+            const queryParams = new URLSearchParams(newLocation.search);
+            setSidePanel(queryParams.get('sidePanel'));
+            setNodeId(queryParams.get('nodeId'));
+            setTab(queryParams.get('tab') || 'workflow');
+        })
+    },[history]);
+
+    useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, sidePanel}));
     }, [namespace, name, tab, nodeId, sidePanel]);
 
