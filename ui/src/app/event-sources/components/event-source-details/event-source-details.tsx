@@ -11,6 +11,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceEditor} from '../event-source-editor';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
@@ -25,6 +26,14 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
     const name = match.params.name;
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
     const [selectedNode, setSelectedNode] = useState<string>(queryParams.get('selectedNode'));
+
+    useEffect(
+        useQueryParams(history, p => {
+            setTab(p.get('tab'));
+            setSelectedNode(p.get('selectedNode'));
+        }),
+        [history]
+    );
 
     useEffect(
         () =>
