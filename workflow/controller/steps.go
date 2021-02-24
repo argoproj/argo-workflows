@@ -390,7 +390,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 				continue
 			}
 
-			resolvedArt, err := scope.resolveArtifact(&art, art.SubPath)
+			resolvedArt, err := scope.resolveArtifact(&art)
 			if err != nil {
 				if art.Optional {
 					continue

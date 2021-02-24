@@ -83,33 +83,27 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (string, error) {
 	var err error
 	if p.Expression != "" {
 		val, err = expr.Eval(p.Expression, s.scope)
+		return val.(string), err
 	} else {
 		val, err = s.resolveVar(p.Parameter)
+		return val.(string), err
 	}
-
-	if err != nil {
-		return "", err
-	}
-	if val == nil {
-		return "", nil
-	}
-	return fmt.Sprintf("%v", val), nil
 }
 
-func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Artifact, error) {
-	if art == nil {
+func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
+	if art == nil || (art.From == "" && art.FromExpression == "" ){
 		return nil, nil
 	}
-	if art.From == "" && art.FromExpression == "" {
-		return nil, nil
-	}
+
 	var err error
 	var val interface{}
+
 	if art.FromExpression != "" {
 		val, err = expr.Eval(art.FromExpression, s.scope)
 	} else {
 		val, err = s.resolveVar(art.From)
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +112,8 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact, subPath string) (*wfv1.Art
 		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%v}} is not an artifact", art)
 	}
 
-	if subPath != "" {
-		fstTmpl := fasttemplate.New(subPath, "{{", "}}")
+	if art.SubPath != "" {
+		fstTmpl := fasttemplate.New(art.SubPath, "{{", "}}")
 		resolvedSubPath, err := common.Replace(fstTmpl, s.getParameters(), true)
 		if err != nil {
 			return nil, err

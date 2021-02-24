@@ -484,9 +484,6 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		if art.From != "" {
 			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
 		}
-		if art.FromExpression != "" {
-			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
-		}
 		errPrefix := fmt.Sprintf("templates.%s.%s", tmpl.Name, artRef)
 		err = validateArtifactLocation(errPrefix, art.ArtifactLocation)
 		if err != nil {
