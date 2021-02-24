@@ -562,6 +562,40 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
+func Test_createWorkflowPod_emissary(t *testing.T) {
+	t.Run("NoCommand", func(t *testing.T) {
+		woc := newWoc()
+		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
+		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+		assert.Error(t, err)
+	})
+	t.Run("CommandNoArgs", func(t *testing.T) {
+		woc := newWoc()
+		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
+		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "foo"}, pod.Spec.Containers[1].Command)
+	})
+	t.Run("NoCommandWithImageIndex", func(t *testing.T) {
+		woc := newWoc()
+		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
+		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
+			assert.Equal(t, []string{"my-args"}, pod.Spec.Containers[1].Args)
+		}
+	})
+	t.Run("NoCommandWithArgsWithImageIndex", func(t *testing.T) {
+		woc := newWoc()
+		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
+		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
+			assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
+		}
+	})
+}
+
 // TestVolumeAndVolumeMounts verifies the ability to carry forward volumes and volumeMounts from workflow.spec
 func TestVolumeAndVolumeMounts(t *testing.T) {
 	volumes := []apiv1.Volume{
