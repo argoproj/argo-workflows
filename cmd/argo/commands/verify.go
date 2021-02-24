@@ -13,7 +13,8 @@ import (
 )
 
 func verifyWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string) {
-	_, _ = fmt.Fprintln(os.Stderr, "verifying workflows...")
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "VERIFICATION")
 	failAtEnd := false
 	for _, name := range workflowNames {
 		wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
