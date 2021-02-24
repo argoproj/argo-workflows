@@ -78,7 +78,7 @@ status:
 	wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime] = "2021-02-19T10:29:05-08:00"
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)
-	assert. Equal(t, expectedWf, string(wfString))
+	assert.Equal(t, expectedWf, string(wfString))
 
 	cronWfInstanceIdString := `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow

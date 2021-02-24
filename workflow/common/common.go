@@ -48,7 +48,7 @@ const (
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 
-	AnnotationKeyCronWfScheduledTime =workflow.WorkflowFullName + "/scheduled-time"
+	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation

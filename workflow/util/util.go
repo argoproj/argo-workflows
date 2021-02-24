@@ -248,6 +248,21 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		}
 	}
 	wf.SetLabels(wfLabels)
+	wfAnnotations := wf.GetAnnotations()
+	if wfAnnotations == nil {
+		wfAnnotations = make(map[string]string)
+	}
+	if opts.Annotations != "" {
+		fmt.Println(opts.Annotations)
+		passedAnnotations, err := cmdutil.ParseLabels(opts.Annotations)
+		if err != nil {
+			return fmt.Errorf("expected Annotations of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
+		}
+		for k, v := range passedAnnotations {
+			wfAnnotations[k] = v
+		}
+	}
+	wf.SetAnnotations(wfAnnotations)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
