@@ -47,7 +47,8 @@ const (
 	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
-
+	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when workflow
+	// get scheduled by Cronworkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels

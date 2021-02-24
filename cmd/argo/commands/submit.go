@@ -98,7 +98,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
 	command.Flags().StringVar(&cliSubmitOpts.getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
 	command.Flags().StringVar(&cliSubmitOpts.getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
-	command.Flags().StringVar(&cliSubmitOpts.scheduledTime, "scheduled-time", "", "Submit from an existing cron workflow with schedule-time. time format is '2006-01-02T15:04:05Z07:00'(RFC3339)")
+	command.Flags().StringVar(&cliSubmitOpts.scheduledTime, "scheduled-time", "", "Override the workflow's scheduledTime parameter (useful for backfilling). The time must be RFC3339")
 
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
