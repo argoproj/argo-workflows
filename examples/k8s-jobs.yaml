@@ -1,12 +1,19 @@
-# This example demonstrates the 'resource' template type, which provides a
-# convenient way to create/update/delete any type of kubernetes resources
-# in a workflow. The resource template type accepts any k8s manifest
-# (including CRDs) and can perform any kubectl action against it (e.g. create,
-# apply, delete, patch).
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: k8s-jobs-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This example demonstrates the 'resource' template type, which provides a
+      convenient way to create/update/delete any type of kubernetes resources
+      in a workflow. The resource template type accepts any k8s manifest
+      (including CRDs) and can perform any kubectl action against it (e.g. create,
+      apply, delete, patch). This example also demonstrates the use of `jsonPath`
+      and `jqFilter` in its output parameters.
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: pi-tmpl
   templates:
