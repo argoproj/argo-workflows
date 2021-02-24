@@ -28,6 +28,14 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     const [edited, setEdited] = useState(false);
     const [error, setError] = useState<Error>();
 
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setSidePanel(newQueryParams.get('sidePanel'));
+            setTab(newQueryParams.get('tab'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

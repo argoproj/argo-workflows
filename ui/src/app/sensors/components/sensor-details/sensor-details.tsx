@@ -30,6 +30,14 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setTab(newQueryParams.get('tab'));
+            setSelectedLogNode(newQueryParams.get('selectedLogNode'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

@@ -25,6 +25,14 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setSidePanel(newQueryParams.get('sidePanel'));
+            setTab(newQueryParams.get('tab'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

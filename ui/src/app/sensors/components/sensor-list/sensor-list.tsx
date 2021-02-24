@@ -32,6 +32,15 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
+
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setSidePanel(newQueryParams.get('sidePanel') === 'true');
+            setSelectedNode(newQueryParams.get('selectedNode'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

@@ -29,6 +29,14 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
+
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setSidePanel(newQueryParams.get('sidePanel') === 'true');
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

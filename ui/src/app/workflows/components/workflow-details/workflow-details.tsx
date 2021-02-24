@@ -47,13 +47,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
     useEffect(() => {
-        return history.listen((newLocation) => {
-            const queryParams = new URLSearchParams(newLocation.search);
-            setSidePanel(queryParams.get('sidePanel'));
-            setNodeId(queryParams.get('nodeId'));
-            setTab(queryParams.get('tab') || 'workflow');
-        })
-    },[history]);
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setTab(newQueryParams.get('tab') || 'workflow');
+            setNodeId(newQueryParams.get('nodeId'));
+            setSidePanel(newQueryParams.get('sidePanel'));
+        });
+    }, [history]);
 
     useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, sidePanel}));

@@ -42,6 +42,18 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
     const [expanded, setExpanded] = useState(queryParams.get('expanded') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
+
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setShowFlow(newQueryParams.get('showFlow') === 'true');
+            setShowWorkflows(newQueryParams.get('showWorkflows') !== 'false');
+            setExpanded(newQueryParams.get('expanded') === 'true');
+            setSelectedNode(newQueryParams.get('selectedNode'));
+            setTab(newQueryParams.get('tab'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

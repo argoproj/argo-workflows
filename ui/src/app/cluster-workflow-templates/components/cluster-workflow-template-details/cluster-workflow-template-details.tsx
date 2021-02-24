@@ -30,6 +30,14 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
     const [template, setTemplate] = useState<ClusterWorkflowTemplate>();
     const [edited, setEdited] = useState(false);
 
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setSidePanel(newQueryParams.get('sidePanel') === 'true');
+            setTab(newQueryParams.get('tab'));
+        });
+    }, [history]);
+
     useEffect(() => setEdited(true), [template]);
     useEffect(() => {
         history.push(historyUrl('cluster-workflow-templates/{name}', {name, sidePanel, tab}));

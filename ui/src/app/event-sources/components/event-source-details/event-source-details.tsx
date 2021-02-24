@@ -26,6 +26,14 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
     const [selectedNode, setSelectedNode] = useState<string>(queryParams.get('selectedNode'));
 
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setTab(newQueryParams.get('tab'));
+            setSelectedNode(newQueryParams.get('selectedNode'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

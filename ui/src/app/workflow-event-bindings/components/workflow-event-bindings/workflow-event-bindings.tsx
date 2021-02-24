@@ -34,6 +34,14 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
+
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setSelectedWorkflowEventBinding(newQueryParams.get('selectedWorkflowEventBinding'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(

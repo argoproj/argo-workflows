@@ -34,6 +34,16 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
+
+    useEffect(() => {
+        return history.listen(newLocation => {
+            const newQueryParams = new URLSearchParams(newLocation.search);
+            setSidePanel(newQueryParams.get('sidePanel') === 'true');
+            setSelectedNode(newQueryParams.get('selectedNode'));
+            setTab(newQueryParams.get('tab'));
+        });
+    }, [history]);
+
     useEffect(
         () =>
             history.push(
