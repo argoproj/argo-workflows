@@ -50,6 +50,7 @@ type PrintOpts struct {
 	NoHeaders bool
 	Namespace bool
 	Output    string
+	NoNudges  bool
 }
 
 func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
@@ -84,7 +85,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	}
 
 	completed, incomplete := countCompletedWorkflows(wfList)
-	if completed > 100 || incomplete > 100 {
+	if !opts.NoNudges && completed > 100 || incomplete > 100 {
 		_, _ = fmt.Fprint(w, "\n")
 		fmt.Fprintf(w, "You have at least ")
 		if incomplete > 100 {

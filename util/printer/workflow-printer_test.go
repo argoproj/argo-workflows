@@ -137,6 +137,12 @@ func TestPrintWorkflowCostOptimization(t *testing.T) {
 	}
 	completedAndIncompleteWorkflows := append(completedWorkflows, incompleteWorkflows...)
 
+	t.Run("NoNudgesEnabled", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(completedWorkflows, &b, PrintOpts{NoNudges: true}))
+		assert.NotContains(t, b.String(), "You have at least 101 completed workflows. Reducing the total number of workflows will reduce your costs."+
+			"\nLearn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
+	})
 	t.Run("CostOptimizationOnCompletedWorkflows", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(completedWorkflows, &b, PrintOpts{}))
