@@ -72,21 +72,14 @@ func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve: {{%s}}", v)
 }
 
-func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (string, error) {
-	if p == nil {
+func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
+	if p == nil || (p.Parameter == "" && p.Expression == "") {
 		return "", nil
 	}
-	if p.Parameter == "" && p.Expression == "" {
-		return "", nil
-	}
-	var val interface{}
-	var err error
 	if p.Expression != "" {
-		val, err = expr.Eval(p.Expression, s.scope)
-		return val.(string), err
+		return expr.Eval(p.Expression, s.scope)
 	} else {
-		val, err = s.resolveVar(p.Parameter)
-		return val.(string), err
+		return s.resolveVar(p.Parameter)
 	}
 }
 
