@@ -87,18 +87,18 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	completed, incomplete := countCompletedWorkflows(wfList)
 	if !opts.NoNudges && completed > 100 || incomplete > 100 {
 		_, _ = fmt.Fprint(w, "\n")
-		fmt.Fprintf(w, "You have at least ")
+		_, _ = fmt.Fprint(w, "You have at least ")
 		if incomplete > 100 {
-			fmt.Fprintf(w, "%d incomplete ", incomplete)
+			_, _ = fmt.Fprintf(w, "%d incomplete ", incomplete)
 		}
 		if incomplete > 100 && completed > 100 {
-			fmt.Fprintf(w, "and ")
+			_, _ = fmt.Fprint(w, "and ")
 		}
 		if completed > 100 {
-			fmt.Fprintf(w, "%d completed ", completed)
+			_, _ = fmt.Fprintf(w, "%d completed ", completed)
 		}
-		fmt.Fprint(w, "workflows. Reducing the total number of workflows will reduce your costs.\n")
-		fmt.Fprintf(w, "Learn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
+		_, _ = fmt.Fprint(w, "workflows. Reducing the total number of workflows will reduce your costs.\n")
+		_, _ = fmt.Fprint(w, "Learn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
 	}
 	_ = w.Flush()
 }
