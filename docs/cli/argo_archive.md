@@ -1,10 +1,10 @@
 ## argo archive
 
-
+manage the workflow archive
 
 ### Synopsis
 
-
+manage the workflow archive
 
 ```
 argo archive [flags]
@@ -50,7 +50,7 @@ argo archive [flags]
 ### SEE ALSO
 
 * [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo archive delete](argo_archive_delete.md)	 - 
-* [argo archive get](argo_archive_get.md)	 - 
-* [argo archive list](argo_archive_list.md)	 - 
+* [argo archive delete](argo_archive_delete.md)	 - delete a workflow in the archive
+* [argo archive get](argo_archive_get.md)	 - get a workflow in the archive
+* [argo archive list](argo_archive_list.md)	 - list workflows in the archive
 
