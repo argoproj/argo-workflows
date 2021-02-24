@@ -5,7 +5,7 @@ type Data struct {
 	PodPolicy PodPolicy `json:"podPolicy,omitempty" protobuf:"bytes,1,opt,name=podPolicy,casttype=PodPolicy"`
 
 	// Source sources external data into a data template
-	Source *DataSource `json:"source,omitempty" protobuf:"bytes,2,opt,name=source"`
+	Source DataSource `json:"source" protobuf:"bytes,2,opt,name=source"`
 
 	// Transformation applies a set of transformations
 	Transformation Transformation `json:"transformation" protobuf:"bytes,3,rep,name=transformation"`
@@ -19,17 +19,14 @@ const (
 
 func (d *Data) UsePod() bool {
 	// If we're not using artifact paths, only use a pod if PodPolicy is set to Always
-	if d.Source == nil || d.Source.ArtifactPaths == nil {
+	if d.Source.ArtifactPaths == nil {
 		return d.PodPolicy == PodPolicyAlways
 	}
 	return true
 }
 
 func (d *Data) GetArtifactIfAny() *Artifact {
-	if d.Source != nil && d.Source.ArtifactPaths != nil {
-		return &d.Source.ArtifactPaths.Artifact
-	}
-	return nil
+	return &d.Source.ArtifactPaths.Artifact
 }
 
 type Transformation []TransformationStep

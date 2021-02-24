@@ -6797,6 +6797,7 @@
       "description": "Data is a data template",
       "type": "object",
       "required": [
+        "source",
         "transformation"
       ],
       "properties": {

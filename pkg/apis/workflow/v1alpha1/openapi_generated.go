@@ -1332,6 +1332,7 @@ func schema_pkg_apis_workflow_v1alpha1_Data(ref common.ReferenceCallback) common
 					"source": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Source sources external data into a data template",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DataSource"),
 						},
 					},
@@ -1350,7 +1351,7 @@ func schema_pkg_apis_workflow_v1alpha1_Data(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"transformation"},
+				Required: []string{"source", "transformation"},
 			},
 		},
 		Dependencies: []string{

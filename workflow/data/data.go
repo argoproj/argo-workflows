@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/antonmedv/expr"
-	"github.com/sirupsen/logrus"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -22,11 +20,7 @@ func ProcessData(data *wfv1.Data, processor wfv1.DataSourceProcessor) (interface
 	return transformedData, nil
 }
 
-func processSource(source *wfv1.DataSource, processor wfv1.DataSourceProcessor) (interface{}, error) {
-	if source == nil {
-		return nil, fmt.Errorf("no source is used for data template")
-	}
-
+func processSource(source wfv1.DataSource, processor wfv1.DataSourceProcessor) (interface{}, error) {
 	var data interface{}
 	var err error
 	switch {
@@ -54,13 +48,11 @@ func processTransformation(data interface{}, transformation *wfv1.Transformation
 
 	var err error
 	for i, step := range *transformation {
-		preData := data
 		switch {
 		case step.Expression != "":
 			data, err = processExpression(step.Expression, data)
 		}
 		if err != nil {
-			logrus.Debugf("data state at time of error: %+v, type: %T", preData, preData)
 			return nil, fmt.Errorf("error processing data step %d: %w", i, err)
 		}
 	}

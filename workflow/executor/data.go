@@ -21,11 +21,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 		return fmt.Errorf("unable to process data template: %w", err)
 	}
 
-	return we.processOutput(ctx, transformedData)
-}
-
-func (we *WorkflowExecutor) processOutput(ctx context.Context, data interface{}) error {
-	out, err := json.Marshal(data)
+	out, err := json.Marshal(transformedData)
 	if err != nil {
 		return err
 	}

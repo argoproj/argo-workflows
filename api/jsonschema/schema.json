@@ -3398,6 +3398,7 @@
         }
       },
       "required": [
+        "source",
         "transformation"
       ],
       "type": "object"

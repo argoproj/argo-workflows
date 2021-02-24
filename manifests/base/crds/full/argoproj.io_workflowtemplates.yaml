@@ -2765,6 +2765,7 @@ spec:
                             type: object
                           type: array
                       required:
+                      - source
                       - transformation
                       type: object
                     executor:

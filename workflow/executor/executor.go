@@ -738,7 +738,6 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	log.Infof("Annotation: %s", outputBytes)
 	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 

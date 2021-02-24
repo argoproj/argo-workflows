@@ -26,13 +26,13 @@ func (t nullTestDataSourceProcessor) ProcessArtifactPaths(*v1alpha1.ArtifactPath
 }
 
 func TestProcessSource(t *testing.T) {
-	rawSource := &v1alpha1.DataSource{Raw: `["foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"]`}
+	rawSource := v1alpha1.DataSource{Raw: `["foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"]`}
 	data, err := processSource(rawSource, nil)
 	if assert.NoError(t, err) {
 		assert.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
 	}
 
-	rawSource = &v1alpha1.DataSource{Raw: `[["foo.py", "bar.pdf"], ["goo/foo.py", "moo/bar.pdf"]]`}
+	rawSource = v1alpha1.DataSource{Raw: `[["foo.py", "bar.pdf"], ["goo/foo.py", "moo/bar.pdf"]]`}
 	data, err = processSource(rawSource, nil)
 	if assert.NoError(t, err) {
 		assert.Equal(t, []interface{}{[]interface{}{"foo.py", "bar.pdf"}, []interface{}{"goo/foo.py", "moo/bar.pdf"}}, data)
