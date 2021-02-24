@@ -29,6 +29,10 @@ function progress(n: NodeStatus) {
     return (new Date().getTime() - new Date(n.startedAt).getTime()) / 1000 / n.estimatedDuration;
 }
 
+function getNodeLabelTemplateName(n: NodeStatus): string {
+    return n.templateName || (n.templateRef && n.templateRef.template + '/' + n.templateRef.name) || 'no template';
+}
+
 function nodeLabel(n: NodeStatus) {
     const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
     return {
@@ -37,7 +41,7 @@ function nodeLabel(n: NodeStatus) {
         icon: icons[phase] || icons.Pending,
         progress: phase === 'Running' && progress(n),
         classNames: phase,
-        tags: new Set([n.templateName])
+        tags: new Set([getNodeLabelTemplateName(n)])
     };
 }
 
@@ -64,7 +68,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.prepareGraph();
 
         const tags: {[key: string]: boolean} = {};
-        Object.values(this.props.nodes || {}).forEach(n => (tags[n.templateName] = true));
+        Object.values(this.props.nodes || {}).forEach(n => (tags[getNodeLabelTemplateName(n)] = true));
 
         return (
             <GraphPanel
