@@ -10,6 +10,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {WorkflowTemplateEditor} from '../workflow-template-editor';
@@ -25,13 +26,13 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-    useEffect(() => {
-        return history.listen(newLocation => {
-            const newQueryParams = new URLSearchParams(newLocation.search);
-            setSidePanel(newQueryParams.get('sidePanel'));
-            setTab(newQueryParams.get('tab'));
-        });
-    }, [history]);
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel'));
+            setTab(p.get('tab'));
+        }),
+        [history]
+    );
 
     useEffect(
         () =>

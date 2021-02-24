@@ -22,6 +22,7 @@ import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {RetryObservable} from '../../../shared/retry-observable';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {buildGraph} from './build-graph';
@@ -43,16 +44,16 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
 
-    useEffect(() => {
-        return history.listen(newLocation => {
-            const newQueryParams = new URLSearchParams(newLocation.search);
-            setShowFlow(newQueryParams.get('showFlow') === 'true');
-            setShowWorkflows(newQueryParams.get('showWorkflows') !== 'false');
-            setExpanded(newQueryParams.get('expanded') === 'true');
-            setSelectedNode(newQueryParams.get('selectedNode'));
-            setTab(newQueryParams.get('tab'));
-        });
-    }, [history]);
+    useEffect(
+        useQueryParams(history, p => {
+            setShowFlow(p.get('showFlow') === 'true');
+            setShowWorkflows(p.get('showWorkflows') !== 'false');
+            setExpanded(p.get('expanded') === 'true');
+            setSelectedNode(p.get('selectedNode'));
+            setTab(p.get('tab'));
+        }),
+        [history]
+    );
 
     useEffect(
         () =>

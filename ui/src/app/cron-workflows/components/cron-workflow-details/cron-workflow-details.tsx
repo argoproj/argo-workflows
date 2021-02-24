@@ -9,6 +9,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {CronWorkflowEditor} from '../cron-workflow-editor';
 
@@ -28,13 +29,13 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     const [edited, setEdited] = useState(false);
     const [error, setError] = useState<Error>();
 
-    useEffect(() => {
-        return history.listen(newLocation => {
-            const newQueryParams = new URLSearchParams(newLocation.search);
-            setSidePanel(newQueryParams.get('sidePanel'));
-            setTab(newQueryParams.get('tab'));
-        });
-    }, [history]);
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel'));
+            setTab(p.get('tab'));
+        }),
+        [history]
+    );
 
     useEffect(
         () =>

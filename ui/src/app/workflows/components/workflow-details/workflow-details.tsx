@@ -14,6 +14,7 @@ import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
@@ -46,14 +47,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
-    useEffect(() => {
-        return history.listen(newLocation => {
-            const newQueryParams = new URLSearchParams(newLocation.search);
-            setTab(newQueryParams.get('tab') || 'workflow');
-            setNodeId(newQueryParams.get('nodeId'));
-            setSidePanel(newQueryParams.get('sidePanel'));
-        });
-    }, [history]);
+    useEffect(
+        useQueryParams(history, p => {
+            setTab(p.get('tab') || 'workflow');
+            setNodeId(p.get('nodeId'));
+            setSidePanel(p.get('sidePanel'));
+        }),
+        [history]
+    );
 
     useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, sidePanel}));

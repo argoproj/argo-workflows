@@ -15,6 +15,7 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {WorkflowTemplateCreator} from '../workflow-template-creator';
 
 require('./workflow-template-list.scss');
@@ -30,12 +31,12 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
 
-    useEffect(() => {
-        return history.listen(newLocation => {
-            const newQueryParams = new URLSearchParams(newLocation.search);
-            setSidePanel(newQueryParams.get('sidePanel') === 'true');
-        });
-    }, [history]);
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel') === 'true');
+        }),
+        [history]
+    );
 
     useEffect(
         () =>

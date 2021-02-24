@@ -18,6 +18,7 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceCreator} from '../event-source-creator';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
@@ -35,14 +36,14 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
 
-    useEffect(() => {
-        return history.listen(newLocation => {
-            const newQueryParams = new URLSearchParams(newLocation.search);
-            setSidePanel(newQueryParams.get('sidePanel') === 'true');
-            setSelectedNode(newQueryParams.get('selectedNode'));
-            setTab(newQueryParams.get('tab'));
-        });
-    }, [history]);
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel') === 'true');
+            setSelectedNode(p.get('selectedNode'));
+            setTab(p.get('tab'));
+        }),
+        [history]
+    );
 
     useEffect(
         () =>
