@@ -147,7 +147,15 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
 	wfc := &WorkflowController{
-		Config: config.Config{ExecutorImage: "executor:latest"},
+		Config: config.Config{
+			ExecutorImage: "executor:latest",
+			Images: map[string]config.Image{
+				"my-image": {
+					Command: []string{"my-cmd"},
+					Args:    []string{"my-args"},
+				},
+			},
+		},
 		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
 			S3: &config.S3ArtifactRepository{
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
