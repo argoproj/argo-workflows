@@ -1732,6 +1732,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#tls-min-version" title="TLS Min Version" class="md-nav__link">
+    TLS Min Version
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2052,6 +2059,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#tls-min-version" title="TLS Min Version" class="md-nav__link">
+    TLS Min Version
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2081,14 +2095,15 @@
 <blockquote>
 <p>v2.8 and after</p>
 </blockquote>
-<p>If you're running Argo Server you have three options with increasing transport security (note - you should also be running <a href="../argo-server/#auth-mode">authentication</a>):</p>
+<p>If you're running Argo Server you have three options with increasing transport security (note - you should also be
+running <a href="../argo-server/#auth-mode">authentication</a>):</p>
 <h2 id="plain-text">Plain Text<a class="headerlink" href="#plain-text" title="Permanent link">&para;</a></h2>
-<p><em>Recommended for: dev</em> </p>
-<p>This is the default setting: everything is sent in plain text. </p>
+<p><em>Recommended for: dev</em></p>
+<p>This is the default setting: everything is sent in plain text.</p>
 <p>To secure the UI you may front it with a HTTPS proxy.</p>
 <h2 id="encrypted">Encrypted<a class="headerlink" href="#encrypted" title="Permanent link">&para;</a></h2>
 <p><em>Recommended for: development and test environments</em></p>
-<p>You can encrypt connections without any real effort. </p>
+<p>You can encrypt connections without any real effort.</p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
 <div class="highlight"><pre><span></span><code>argo server --secure
 </code></pre></div>
@@ -2100,14 +2115,16 @@
 export ARGO_INSECURE_SKIP_VERIFY=true
 argo --secure --insecure-skip-verify list
 </code></pre></div>
-<p>Tip: Don't forget to update your readiness probe to use HTTPS. To do so, edit your <code>argo-server</code> Deployment's <code>readinessProbe</code> spec: </p>
+<p>Tip: Don't forget to update your readiness probe to use HTTPS. To do so, edit your <code>argo-server</code>
+Deployment's <code>readinessProbe</code> spec:</p>
 <div class="highlight"><pre><span></span><code>readinessProbe:
     httpGet: 
         scheme: HTTPS
 </code></pre></div>
 <h3 id="encrypted-and-verified">Encrypted and Verified<a class="headerlink" href="#encrypted-and-verified" title="Permanent link">&para;</a></h3>
 <p><em>Recommended for: production environments</em></p>
-<p>Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates and this out of scope of this documentation.</p>
+<p>Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates and this out of scope of this
+documentation.</p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
 <div class="highlight"><pre><span></span><code>argo server --secure
 </code></pre></div>
@@ -2118,6 +2135,35 @@ argo --secure --insecure-skip-verify list
 <div class="highlight"><pre><span></span><code>export ARGO_SECURE=true
 argo list
 </code></pre></div>
+<h3 id="tls-min-version">TLS Min Version<a class="headerlink" href="#tls-min-version" title="Permanent link">&para;</a></h3>
+<p>Set <code>TLS_MIN_VERSION</code> to be the minimum TLS version to use. This is v1.2 by default.</p>
+<p>This must be one of these <a href="https://golang.org/pkg/crypto/tls/">int values</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1.0</td>
+<td>769</td>
+</tr>
+<tr>
+<td>v1.1</td>
+<td>770</td>
+</tr>
+<tr>
+<td>v1.2</td>
+<td>771</td>
+</tr>
+<tr>
+<td>v1.3</td>
+<td>772</td>
+</tr>
+</tbody>
+</table>
                 
                   
                 
