@@ -4,14 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +23,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -449,11 +448,7 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	if err != nil {
 		return nil, err
 	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(specBytes), "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	newSpecBytes, err := common.Replace(fstTmpl, podParams, true)
+	newSpecBytes, err := template.Replace(string(specBytes), podParams, true)
 	if err != nil {
 		return nil, err
 	}
@@ -1137,16 +1132,9 @@ func verifyResolvedVariables(obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	var unresolvedErr error
-	fstTmpl, err := fasttemplate.NewTemplate(string(str), "{{", "}}")
-	if err != nil {
-		return fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-		return 0, nil
+	return template.Validate(string(str), func(tag string) error {
+		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 	})
-	return unresolvedErr
 }
 
 // createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod

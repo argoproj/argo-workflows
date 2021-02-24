@@ -20,7 +20,6 @@ import (
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -2702,7 +2702,7 @@ func parseStringToDuration(durationString string) (time.Duration, error) {
 	return suspendDuration, nil
 }
 
-func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
+func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
 	replaceMap := make(map[string]string)
 	var newName string
 
@@ -2743,7 +2743,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
-	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
+	newStepStr, err := tmpl.Replace(replaceMap, false)
 	if err != nil {
 		return "", err
 	}
@@ -2823,11 +2823,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(volumesBytes), "{{", "}}")
-	if err != nil {
-		return fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	newVolumesStr, err := common.Replace(fstTmpl, params, true)
+	newVolumesStr, err := template.Replace(string(volumesBytes), params, true)
 	if err != nil {
 		return err
 	}
@@ -2895,12 +2891,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
 			continue
 		}
-		fstTmpl, err := fasttemplate.NewTemplate(string(metricTmplBytes), "{{", "}}")
-		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo variable for metric '%s': %s", metricTmpl.Name, err))
-			continue
-		}
-		replacedValue, err := common.Replace(fstTmpl, localScope, false)
+		replacedValue, err := template.Replace(string(metricTmplBytes), localScope, false)
 		if err != nil {
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
 			continue
@@ -2934,7 +2925,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError("real time metrics can only be used with metric variables")
 				continue
 			}
-			value = strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}")
+			value = strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}") // TODO
 			valueFunc, ok := realTimeScope[value]
 			if !ok {
 				woc.reportMetricEmissionError(fmt.Sprintf("'%s' is not available as a real time metric", value))
@@ -2955,12 +2946,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			metricSpec := metricTmpl.DeepCopy()
 
 			// Finally substitute value parameters
-			fstTmpl, err = fasttemplate.NewTemplate(metricSpec.GetValueString(), "{{", "}}")
-			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo variable for metric '%s': %s", metricTmpl.Name, err))
-				continue
-			}
-			replacedValue, err := common.Replace(fstTmpl, localScope, false)
+			replacedValue, err := template.Replace(metricSpec.GetValueString(), localScope, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue

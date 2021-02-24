@@ -17,7 +17,6 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -34,6 +33,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test"
 	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
@@ -5092,15 +5092,13 @@ func Test_processItem(t *testing.T) {
 	}
 	taskBytes, err := json.Marshal(task)
 	assert.NoError(t, err)
-	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
-	assert.NoError(t, err)
-
 	var items []wfv1.Item
 	err = json.Unmarshal([]byte(task.WithParam), &items)
 	assert.NoError(t, err)
 
 	var newTask wfv1.DAGTask
-	newTaskName, err := processItem(fstTmpl, "task-name", 0, items[0], &newTask)
+	tmpl, _ := template.New(string(taskBytes))
+	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask)
 	if assert.NoError(t, err) {
 		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}

@@ -1,12 +1,9 @@
 package controller
 
 import (
-	"strings"
-
-	"github.com/valyala/fasttemplate"
-
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -38,23 +35,16 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
-	v = strings.TrimPrefix(v, "{{")
-	v = strings.TrimSuffix(v, "}}")
-	parts := strings.Split(v, ".")
-	prefix := parts[0]
-	switch prefix {
-	case "steps", "tasks", "workflow":
-		val, ok := s.scope[v]
-		if ok {
-			return val, nil
-		}
-	case "inputs":
-		art := s.tmpl.Inputs.GetArtifactByName(parts[2])
-		if art != nil {
-			return *art, nil
+	m := make(map[string]interface{})
+	for k, v := range s.scope {
+		m[k] = v
+	}
+	if s.tmpl != nil {
+		for _, a := range s.tmpl.Inputs.Artifacts {
+			m["inputs."+a.Name] = a // special case for artifacts
 		}
 	}
-	return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve: {{%s}}", v)
+	return template.ResolveVar(v, m)
 }
 
 func (s *wfScope) resolveParameter(v string) (string, error) {
@@ -76,12 +66,11 @@ func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, err
 	}
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {
-		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact: %q", v, val)
 	}
 
 	if subPath != "" {
-		fstTmpl := fasttemplate.New(subPath, "{{", "}}")
-		resolvedSubPath, err := common.Replace(fstTmpl, s.getParameters(), true)
+		resolvedSubPath, err := template.Replace(subPath, s.getParameters(), true)
 		if err != nil {
 			return nil, err
 		}

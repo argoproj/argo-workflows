@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/antonmedv/expr"
-	"github.com/valyala/fasttemplate"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
@@ -554,12 +554,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-
-	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
+	newTaskStr, err := template.Replace(string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
 	if err != nil {
 		return nil, err
 	}
@@ -659,14 +654,14 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	task.WithParam = ""
 	task.WithSequence = nil
 
-	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
+	tmpl, err := template.New(string(taskBytes))
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(fstTmpl, task.Name, i, item, &newTask)
+		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask)
 		if err != nil {
 			return nil, err
 		}
