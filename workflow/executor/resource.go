@@ -21,8 +21,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
@@ -125,7 +125,7 @@ func (g gjsonLabels) Get(label string) string {
 
 // signalMonitoring start the goroutine which listens for a SIGUSR2.
 // Upon receiving of the signal, We update the pod annotation and exit the process.
-func (we *WorkflowExecutor) signalMonitoring(ctx context.Context) {
+func (we *WorkflowExecutor) signalMonitoring() {
 	log.Infof("Starting SIGUSR2 signal monitor")
 	sigs := make(chan os.Signal, 1)
 
@@ -134,7 +134,7 @@ func (we *WorkflowExecutor) signalMonitoring(ctx context.Context) {
 		for {
 			<-sigs
 			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, "Received user signal to terminate the workflow")
+			util.WriteTeriminateMessage("Received user signal to terminate the workflow")
 			os.Exit(130)
 		}
 	}()
@@ -143,7 +143,7 @@ func (we *WorkflowExecutor) signalMonitoring(ctx context.Context) {
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace string, resourceName string) error {
 	// Monitor the SIGTERM
-	we.signalMonitoring(ctx)
+	we.signalMonitoring()
 
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil

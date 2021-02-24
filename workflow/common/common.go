@@ -39,9 +39,6 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
-	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
-	// communicate errors encountered by the executor during artifact load/save, etc...
-	AnnotationKeyNodeMessage = workflow.WorkflowFullName + "/node-message"
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
 	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs

@@ -26,6 +26,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -79,10 +80,8 @@ type wfOperationCtx struct {
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *config.ArtifactRepository
-	// map of pods which need to be labeled with completed=true
-	completedPods map[string]bool
-	// map of pods which is identified as succeeded=true
-	succeededPods map[string]bool
+	// map of completed pods with their corresponding phases
+	completedPods map[string]apiv1.PodPhase
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -151,8 +150,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		completedPods:          make(map[string]bool),
-		succeededPods:          make(map[string]bool),
+		completedPods:          make(map[string]apiv1.PodPhase),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
@@ -255,7 +253,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.markWorkflowFailed(ctx, msg)
 			return
 		}
-		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
+		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
@@ -462,6 +460,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 }
 
+func (woc *wfOperationCtx) getContainerRuntimeExecutor() string {
+	return woc.controller.GetContainerRuntimeExecutor(labels.Set(woc.wf.Labels))
+}
+
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	if woc.execWf.Spec.ActiveDeadlineSeconds == nil {
 		return nil
@@ -597,20 +599,18 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
-	if woc.execWf.Spec.PodGC != nil {
-		switch woc.execWf.Spec.PodGC.Strategy {
-		case wfv1.PodGCOnPodSuccess:
-			for podName := range woc.succeededPods {
+	for podName, podPhase := range woc.completedPods {
+		if woc.execWf.Spec.PodGC != nil {
+			switch woc.execWf.Spec.PodGC.Strategy {
+			case wfv1.PodGCOnPodSuccess:
+				if podPhase == apiv1.PodSucceeded {
+					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+				}
+			case wfv1.PodGCOnPodCompletion:
 				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
 			}
-		case wfv1.PodGCOnPodCompletion:
-			for podName := range woc.completedPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
-			}
-		}
-	} else {
-		// label pods which will not be deleted
-		for podName := range woc.completedPods {
+		} else {
+			// label pods which will not be deleted
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
 	}
@@ -908,11 +908,22 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
+			match := true
+			if woc.execWf.Spec.PodGC.GetLabelSelector() != nil {
+				var podLabels labels.Set = pod.GetLabels()
+				match, err = woc.execWf.Spec.PodGC.Matches(podLabels)
+				if err != nil {
+					woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to parse label selector %s for pod GC: %v", woc.execWf.Spec.PodGC.LabelSelector, err))
+					return
+				}
+			}
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 					return
 				}
-				woc.completedPods[pod.ObjectMeta.Name] = true
+				if match {
+					woc.completedPods[pod.Name] = pod.Status.Phase
+				}
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
@@ -920,8 +931,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					woc.onNodeComplete(&node)
 				}
 			}
-			if node.Succeeded() {
-				woc.succeededPods[pod.ObjectMeta.Name] = true
+			if node.Succeeded() && match {
+				woc.completedPods[pod.Name] = pod.Status.Phase
 			}
 		}
 	}
@@ -1272,7 +1283,6 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		// Pod has a nice error message. Use that.
 		return wfv1.NodeFailed, pod.Status.Message
 	}
-	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
 
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
@@ -1311,7 +1321,10 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			continue
 		}
 
-		msg := fmt.Sprintf("exit code %d: %s; %s; %s", t.ExitCode, t.Reason, t.Message, annotatedMsg)
+		msg := fmt.Sprintf("%s (exit code %d)", t.Reason, t.ExitCode)
+		if t.Message != "" {
+			msg = fmt.Sprintf("%s: %s", msg, t.Message)
+		}
 
 		switch ctr.Name {
 		case common.InitContainerName:
@@ -1319,10 +1332,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		case common.MainContainerName:
 			return wfv1.NodeFailed, msg
 		case common.WaitContainerName:
-			// executor is expected to annotate a message to the pod upon any errors.
-			// If we failed to see the annotated message, it is likely the pod ran with
-			// insufficient privileges. Give a hint to that effect.
-			return wfv1.NodeError, fmt.Sprintf("%s; verify serviceaccount %s:%s has necessary privileges", msg, pod.Namespace, pod.Spec.ServiceAccountName)
+			return wfv1.NodeError, msg
 		default:
 			if t.ExitCode == 137 || t.ExitCode == 143 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec

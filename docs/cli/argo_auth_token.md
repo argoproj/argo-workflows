@@ -49,5 +49,5 @@ argo auth token [flags]
 
 ### SEE ALSO
 
-* [argo auth](argo_auth.md)	 - 
+* [argo auth](argo_auth.md)	 - manage authentication settings
 

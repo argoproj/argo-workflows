@@ -3,6 +3,8 @@ package apiclient
 import (
 	"context"
 
+	"google.golang.org/grpc/metadata"
+
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
@@ -23,6 +25,13 @@ func (c *logsIntermediary) Recv() (*workflowpkg.LogEntry, error) {
 	case logEntry := <-c.logEntries:
 		return logEntry, nil
 	}
+}
+
+func (c *logsIntermediary) SendHeader(metadata.MD) error {
+	// We invoke `SendHeader` in order to eagerly flush headers to allow us to send period
+	// keepalives when using HTTP/1 and Server Sent Events, so we need to implement this here,
+	// though we don't use the meta for anything.
+	return nil
 }
 
 func newLogsIntermediary(ctx context.Context) *logsIntermediary {
