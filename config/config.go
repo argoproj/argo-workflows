@@ -106,8 +106,8 @@ type Config struct {
 	// Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 
-	// Images is an indexes for looking up the commands for images.
-	// https://argoproj.github.io/argo-workflows/workflow-executors/#images
+	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
+	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary
 	Images map[string]Image `json:"images,omitempty"`
 }
 
