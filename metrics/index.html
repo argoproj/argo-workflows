@@ -1785,6 +1785,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#grafana-dashboard-for-argo-controller-metrics" title="Grafana Dashboard for Argo Controller Metrics" class="md-nav__link">
+    Grafana Dashboard for Argo Controller Metrics
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2329,6 +2336,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#grafana-dashboard-for-argo-controller-metrics" title="Grafana Dashboard for Argo Controller Metrics" class="md-nav__link">
+    Grafana Dashboard for Argo Controller Metrics
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2485,6 +2499,8 @@ will be updated with the new value. Since, in effect, we are interested on the e
 over time, we are no longer interested in the previous metric and can assume it has already been scraped.</p>
 <p>In summary, whenever you want to track a particular metric over time, you should use the same metric name <em>and</em> metric
 labels wherever it is emitted. This is how these metrics are "linked" as belonging to the same series.</p>
+<h3 id="grafana-dashboard-for-argo-controller-metrics">Grafana Dashboard for Argo Controller Metrics<a class="headerlink" href="#grafana-dashboard-for-argo-controller-metrics" title="Permanent link">&para;</a></h3>
+<p>Please see the <a href="https://grafana.com/grafana/dashboards/13927">Argo Workflows metrics</a> Grafana dashboard.</p>
 <h2 id="defining-metrics">Defining metrics<a class="headerlink" href="#defining-metrics" title="Permanent link">&para;</a></h2>
 <p>Metrics are defined in-place on the Workflow/Step/Task where they are emitted from. Metrics are always processed <em>after</em>
 the Workflow/Step/Task completes, with the exception of <a href="#realtime-metrics">realtime metrics</a>.</p>
