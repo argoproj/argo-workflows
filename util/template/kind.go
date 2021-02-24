@@ -3,7 +3,7 @@ package template
 import (
 	"strings"
 
-	jsonutil "github.com/argoproj/argo-workflows/v3/workflow/json"
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 )
 
 type kind = string // defines the prefix symbol that determines the syntax of the tag
