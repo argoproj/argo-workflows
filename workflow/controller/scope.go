@@ -91,7 +91,7 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (string, error) {
 }
 
 func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
-	if art == nil || (art.From == "" && art.FromExpression == "" ){
+	if art == nil || (art.From == "" && art.FromExpression == "") {
 		return nil, nil
 	}
 

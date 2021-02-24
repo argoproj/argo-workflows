@@ -21,6 +21,7 @@ func TestEval(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(2, result)
 }
+
 func TestGetVariable(t *testing.T) {
 	assert := assert.New(t)
 	expr := "(steps.flipcoin.outputs.result == 'head')?steps.heads.outputs.result:steps.tails.outputs.result"

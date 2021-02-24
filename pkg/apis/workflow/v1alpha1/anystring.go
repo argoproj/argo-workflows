@@ -50,4 +50,3 @@ func (i AnyString) MarshalJSON() ([]byte, error) {
 func (i AnyString) String() string {
 	return string(i)
 }
-

@@ -3,8 +3,6 @@ package expr
 import (
 	"fmt"
 	"strings"
-
-
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/file"
 	"github.com/antonmedv/expr/parser/lexer"
