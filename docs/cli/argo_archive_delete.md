@@ -1,10 +1,10 @@
 ## argo archive delete
 
-
+delete a workflow in the archive
 
 ### Synopsis
 
-
+delete a workflow in the archive
 
 ```
 argo archive delete UID... [flags]
@@ -49,5 +49,5 @@ argo archive delete UID... [flags]
 
 ### SEE ALSO
 
-* [argo archive](argo_archive.md)	 - 
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 
