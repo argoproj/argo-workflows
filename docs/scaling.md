@@ -40,7 +40,7 @@ data:
 
 > v2.9 and after
 
-You'll may need to pass the instance ID to the CLI:
+You may need to pass the instance ID to the CLI:
 
 ```
 argo --instanceid i1 submit my-wf.yaml
