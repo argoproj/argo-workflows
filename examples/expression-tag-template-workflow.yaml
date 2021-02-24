@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: expression-template-
+  generateName: expression-tag-template-
   labels:
     workflows.argoproj.io/test: "true"
   annotations:
