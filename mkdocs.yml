@@ -140,6 +140,7 @@ nav:
       - scaling.md
       - cost-optimisation.md
       - windows.md
+      - environment-variables.md
   - Developer Guide:
       - CONTRIBUTING.md
       - architecture.md
