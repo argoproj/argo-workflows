@@ -3,6 +3,8 @@ package commands
 import (
 	"bytes"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 	"testing"
 	"text/tabwriter"
 	"time"
@@ -366,5 +368,47 @@ status:
    ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
    ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
    ├─ sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
+		assert.Contains(t, output, "This workflow does not have security context set. "+
+			"You can run your workflow pods more securely by setting it.\n"+
+			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
+	})
+}
+
+func Test_printWorkflowHelperNudges(t *testing.T) {
+	securedWf := wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "my-ns"},
+		Spec: wfv1.WorkflowSpec{
+			Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
+				{Name: "my-param", Value: wfv1.AnyStringPtr("my-value")},
+			}},
+			Priority: pointer.Int32Ptr(2),
+			Templates: []wfv1.Template{
+				{Name: "t0", Container: &corev1.Container{}},
+			},
+			SecurityContext: &corev1.PodSecurityContext{},
+		},
+		Status: wfv1.WorkflowStatus{
+			Phase: wfv1.WorkflowSucceeded,
+		},
+	}
+
+	insecureWf := securedWf
+	insecureWf.Spec.SecurityContext = nil
+
+	securityNudges := "This workflow does not have security context set. " +
+		"You can run your workflow pods more securely by setting it.\n" +
+		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
+
+	t.Run("NoNudges", func(t *testing.T) {
+		output := printWorkflowHelper(&insecureWf, getFlags{noNudges: true})
+		assert.NotContains(t, output, securityNudges)
+	})
+	t.Run("SecuredWorkflow", func(t *testing.T) {
+		output := printWorkflowHelper(&securedWf, getFlags{})
+		assert.NotContains(t, output, securityNudges)
+	})
+	t.Run("InsecureWorkflow", func(t *testing.T) {
+		output := printWorkflowHelper(&insecureWf, getFlags{})
+		assert.Contains(t, output, securityNudges)
 	})
 }
