@@ -30,7 +30,7 @@ function progress(n: NodeStatus) {
 }
 
 function getNodeLabelTemplateName(n: NodeStatus): string {
-    return n.templateName || n.templateRef.template + '/' + n.templateRef.name;
+    return n.templateName || (n.templateRef && n.templateRef.template + '/' + n.templateRef.name) || 'no template';
 }
 
 function nodeLabel(n: NodeStatus) {
