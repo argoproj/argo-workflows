@@ -1,10 +1,10 @@
 ## argo archive get
 
-
+get a workflow in the archive
 
 ### Synopsis
 
-
+get a workflow in the archive
 
 ```
 argo archive get UID [flags]
@@ -50,5 +50,5 @@ argo archive get UID [flags]
 
 ### SEE ALSO
 
-* [argo archive](argo_archive.md)	 - 
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 

@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -28,7 +29,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-// Reusable k8s pod spec portions used in workflow pods
 var (
 	// volumePodMetadata makes available the pod metadata available as a file
 	// to the executor's init and sidecar containers. Specifically, the template
@@ -53,7 +53,16 @@ var (
 		Name:      volumePodMetadata.Name,
 		MountPath: common.PodMetadataMountPath,
 	}
-
+	volumeVarArgo = apiv1.Volume{
+		Name: "var-run-argo",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	volumeMountVarArgo = apiv1.VolumeMount{
+		Name:      volumeVarArgo.Name,
+		MountPath: "/var/run/argo",
+	}
 	hostPathSocket = apiv1.HostPathSocket
 )
 
@@ -254,7 +263,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
-	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
@@ -282,8 +291,34 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
 
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && tmpl.GetType() != wfv1.TemplateTypeResource {
+		for i, c := range pod.Spec.InitContainers {
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+			pod.Spec.InitContainers[i] = c
+		}
+		for i, c := range pod.Spec.Containers {
+			if c.Name != common.WaitContainerName {
+				// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
+				if len(c.Command) == 0 {
+					x := woc.getImage(c.Image)
+					c.Command = x.Command
+					c.Args = x.Args
+				}
+				if len(c.Command) == 0 {
+					return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary")
+				}
+				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+			pod.Spec.Containers[i] = c
+		}
+	}
+
 	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name}) // used to identify the container name of the process
+		c.Env = append(c.Env,
+			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
+			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(c.Name == common.MainContainerName && opts.includeScriptOutput)},
+		)
 		pod.Spec.Containers[i] = c
 	}
 
@@ -394,6 +429,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	return created, nil
 }
 
+func (woc *wfOperationCtx) getImage(image string) config.Image {
+	if woc.controller.Config.Images == nil {
+		return config.Image{}
+	}
+	return woc.controller.Config.Images[image]
+}
+
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
 func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
@@ -479,27 +521,26 @@ func containerIsPrivileged(ctr *apiv1.Container) bool {
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
-	var execEnvVars []apiv1.EnvVar
-	execEnvVars = append(execEnvVars, apiv1.EnvVar{
-		Name: common.EnvVarPodName,
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.name",
+	execEnvVars := []apiv1.EnvVar{
+		{
+			Name: common.EnvVarPodName,
+			ValueFrom: &apiv1.EnvVarSource{
+				FieldRef: &apiv1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.name",
+				},
 			},
 		},
-	})
+		{
+			Name:  common.EnvVarContainerRuntimeExecutor,
+			Value: woc.getContainerRuntimeExecutor(),
+		},
+	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
 	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorK8sAPI:
-		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.getContainerRuntimeExecutor(),
-			},
-		)
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
@@ -521,13 +562,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			apiv1.EnvVar{
 				Name:  common.EnvVarKubeletInsecure,
 				Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
-			},
-		)
-	case common.ContainerRuntimeExecutorPNS:
-		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.getContainerRuntimeExecutor(),
 			},
 		)
 	}
@@ -554,10 +588,13 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 	}
 	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
-		return volumes
+	case common.ContainerRuntimeExecutorEmissary:
+		volumes = append(volumes, volumeVarArgo)
 	default:
-		return append(volumes, woc.getVolumeDockerSock(tmpl))
+		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
 	}
+	volumes = append(volumes, tmpl.Volumes...)
+	return volumes
 }
 
 func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
@@ -598,6 +635,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
+
 	executorServiceAccountName := ""
 	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
 		executorServiceAccountName = tmpl.Executor.ServiceAccountName
