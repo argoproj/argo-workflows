@@ -18,7 +18,8 @@ func Workflow(wf *wfv1.Workflow) error {
 		nodes[n.DisplayName] = n
 	}
 	return python.Run(verify, map[string]interface{}{
-		"metadata": wf,
+		"metadata": wf.ObjectMeta,
+		"spec":     wf.Spec,
 		"nodes":    nodes,
 		"status":   wf.Status,
 	})
