@@ -216,7 +216,7 @@ endif
 .PHONY: controller-image
 controller-image: dist/controller.image
 
-dist/controller.image: $(CONTROLLER_PKGS)
+dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
 	$(call docker_build,workflow-controller)
 	touch dist/controller.image
 
