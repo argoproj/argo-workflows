@@ -499,6 +499,19 @@
     WorkflowTemplate Spec
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-labelsannotations-to-workflows-with-workflowmetadata" title="Adding labels/annotations to Workflows with workflowMetadata" class="md-nav__link">
+    Adding labels/annotations to Workflows with workflowMetadata
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2116,6 +2129,19 @@
     WorkflowTemplate Spec
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-labelsannotations-to-workflows-with-workflowmetadata" title="Adding labels/annotations to Workflows with workflowMetadata" class="md-nav__link">
+    Adding labels/annotations to Workflows with workflowMetadata
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2297,6 +2323,20 @@ and convert it to a <code>WorkflowTemplate</code> by substituting <code>kind: Wo
         <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay</span>
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="adding-labelsannotations-to-workflows-with-workflowmetadata">Adding labels/annotations to Workflows with <code>workflowMetadata</code><a class="headerlink" href="#adding-labelsannotations-to-workflows-with-workflowmetadata" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>2.10.2 and after</p>
+</blockquote>
+<p>To automatically add labels and/or annotations to Workflows created from <code>WorkflowTemplates</code>, use <code>workflowMetadata</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow-template-submittable</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">workflowMetadata</span><span class="p">:</span>
+    <span class="nt">labels</span><span class="p">:</span>
+      <span class="nt">example-label</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-value</span>
 </code></pre></div>
 <h2 id="referencing-other-workflowtemplates">Referencing other <code>WorkflowTemplates</code><a class="headerlink" href="#referencing-other-workflowtemplates" title="Permanent link">&para;</a></h2>
 <p>You can reference <code>templates</code> from another <code>WorkflowTemplates</code> (see the <a href="#workflowtemplate-vs-template">difference between the two</a>) using a <code>templateRef</code> field.
