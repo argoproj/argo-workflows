@@ -19,6 +19,7 @@ argo list [flags]
       --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                    help for list
       --no-headers              Don't print headers (default print headers).
+      --no-nudges               Don't print the cost optimization nudges
       --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
   -o, --output string           Output format. One of: wide|name
       --prefix string           Filter workflows by prefix
