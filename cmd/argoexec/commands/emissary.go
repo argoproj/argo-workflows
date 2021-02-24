@@ -82,7 +82,7 @@ func NewEmissaryCommand() *cobra.Command {
 			command := exec.Command(name, args...)
 			command.Env = os.Environ()
 			command.SysProcAttr = &syscall.SysProcAttr{}
-
+			osspecific.Setpgid(command.SysProcAttr)
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
 

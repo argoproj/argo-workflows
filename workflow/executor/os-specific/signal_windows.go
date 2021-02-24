@@ -23,3 +23,7 @@ func Kill(pid int, s syscall.Signal) error {
 	}
 	return p.Signal(s)
 }
+
+func Setpgid(a *syscall.SysProcAttr) {
+	// this does not exist on windows
+}
