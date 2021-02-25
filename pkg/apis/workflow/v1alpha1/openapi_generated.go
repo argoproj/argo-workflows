@@ -1323,12 +1323,6 @@ func schema_pkg_apis_workflow_v1alpha1_Data(ref common.ReferenceCallback) common
 				Description: "Data is a data template",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"podPolicy": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Source sources external data into a data template",

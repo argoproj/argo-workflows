@@ -2,27 +2,11 @@ package v1alpha1
 
 // Data is a data template
 type Data struct {
-	PodPolicy PodPolicy `json:"podPolicy,omitempty" protobuf:"bytes,1,opt,name=podPolicy,casttype=PodPolicy"`
-
 	// Source sources external data into a data template
-	Source DataSource `json:"source" protobuf:"bytes,2,opt,name=source"`
+	Source DataSource `json:"source" protobuf:"bytes,1,opt,name=source"`
 
 	// Transformation applies a set of transformations
-	Transformation Transformation `json:"transformation" protobuf:"bytes,3,rep,name=transformation"`
-}
-
-type PodPolicy string
-
-const (
-	PodPolicyAlways PodPolicy = "Always"
-)
-
-func (d *Data) UsePod() bool {
-	// If we're not using artifact paths, only use a pod if PodPolicy is set to Always
-	if d.Source.ArtifactPaths == nil {
-		return d.PodPolicy == PodPolicyAlways
-	}
-	return true
+	Transformation Transformation `json:"transformation" protobuf:"bytes,2,rep,name=transformation"`
 }
 
 func (d *Data) GetArtifactIfAny() *Artifact {

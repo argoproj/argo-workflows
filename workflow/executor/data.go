@@ -13,7 +13,7 @@ import (
 func (we *WorkflowExecutor) Data(ctx context.Context) error {
 	dataTemplate := we.Template.Data
 	if dataTemplate == nil {
-		return nil
+		return fmt.Errorf("no data template found")
 	}
 
 	transformedData, err := data.ProcessData(dataTemplate, newExecutorDataSourceProcessor(ctx, we))

@@ -3382,9 +3382,6 @@
     "io.argoproj.workflow.v1alpha1.Data": {
       "description": "Data is a data template",
       "properties": {
-        "podPolicy": {
-          "type": "string"
-        },
         "source": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DataSource",
           "description": "Source sources external data into a data template"

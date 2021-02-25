@@ -49,7 +49,6 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/data"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/progress"
 	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
@@ -1992,23 +1991,6 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl 
 	return node
 }
 
-func (woc *wfOperationCtx) finalizeTransformNode(nodeName string, data interface{}) *wfv1.NodeStatus {
-	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.wf.Status.Nodes[nodeID]
-	node.Phase = wfv1.NodeSucceeded
-	node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-
-	raw, err := json.Marshal(data)
-	if err != nil {
-		return woc.markNodePhase(nodeName, wfv1.NodeFailed, fmt.Sprintf("could not marshal data: %s", err))
-	}
-	node.Outputs = &wfv1.Outputs{Result: pointer.StringPtr(string(raw))}
-
-	woc.wf.Status.Nodes[nodeID] = node
-	woc.updated = true
-	return &node
-}
-
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
@@ -2658,25 +2640,16 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 		return node, nil
 	}
 
-	if tmpl.Data.UsePod() {
-		dataTemplate, err := json.Marshal(tmpl.Data)
-		if err != nil {
-			return node, fmt.Errorf("could not marhsal data in transformation: %w", err)
-		}
+	dataTemplate, err := json.Marshal(tmpl.Data)
+	if err != nil {
+		return node, fmt.Errorf("could not marhsal data in transformation: %w", err)
+	}
 
-		mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
-		mainCtr.Command = []string{"argoexec", "data", string(dataTemplate)}
-		_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
-		if err != nil {
-			return woc.requeueIfTransientErr(err, node.Name)
-		}
-	} else {
-		transformedData, err := data.ProcessData(tmpl.Data, newOperatorDataSourceProcessor())
-		if err != nil {
-			errorMessage := fmt.Sprintf("could not process data: %s", err)
-			return woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMessage), fmt.Errorf(errorMessage)
-		}
-		node = woc.finalizeTransformNode(nodeName, transformedData)
+	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
+	mainCtr.Command = []string{"argoexec", "data", string(dataTemplate)}
+	_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
+	if err != nil {
+		return woc.requeueIfTransientErr(err, node.Name)
 	}
 
 	return node, nil

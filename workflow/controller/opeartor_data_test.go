@@ -194,10 +194,6 @@ status:
       id: artifact-passing-z9j6n-3901312826
       name: artifact-passing-z9j6n[3]
       phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 3
-        memory: 1
       startedAt: "2021-02-22T18:01:09Z"
       templateScope: local/artifact-passing-z9j6n
       type: StepGroup
@@ -227,7 +223,6 @@ status:
       type: Pod
   phase: Running
   startedAt: "2021-02-22T18:01:00Z"
-
 `
 
 // Test that a pod is created when necessary

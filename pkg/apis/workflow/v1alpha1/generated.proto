@@ -353,13 +353,11 @@ message DAGTemplate {
 
 // Data is a data template
 message Data {
-  optional string podPolicy = 1;
-
   // Source sources external data into a data template
-  optional DataSource source = 2;
+  optional DataSource source = 1;
 
   // Transformation applies a set of transformations
-  repeated TransformationStep transformation = 3;
+  repeated TransformationStep transformation = 2;
 }
 
 // DataSource sources external data into a data template

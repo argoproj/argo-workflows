@@ -2,13 +2,13 @@
 
 ![alpha](assets/alpha.svg)
 
-> v3.0 and after
+> v3.1 and after
 
 #### Development
 
 We have intentionally made this feature available with only bare-bones functionality. Our hope is that we are able to build this feature with our community's feedback. If you have ideas and use cases for this feature, please open an [enhancement proposal](https://github.com/argoproj/argo-workflows/issues/new?assignees=&labels=enhancement&template=enhancement_proposal.md) on GitHub.
 
-Aditionally, please take a look at our current ideas at the bottom of this document.
+Additionally, please take a look at our current ideas at the bottom of this document.
 
 ## Introduction
 Users often source and transform data as part of their workflows. The `data` template provides first-class support for these common operations.
@@ -63,27 +63,12 @@ However, if you would like to force Argo to offload the transformation to a Pod 
       ...
 ```
 
-If you are the manager of the Argo controller and you would like to force your users to always offload transformations to pods, you can specify so in [workflow restrictions](workflow-restrictions.md). This can be used as a security or prevention measure to protect the controller from large transformations that may explode its memory usage.
-
 ## Spec
 
 A `data` template must always contain a `source`. Current available sources:
 
 * `artifactPaths`: generates a list of artifact paths from the artifact repository specified
-* `raw`: reads raw input. This is useful when passing data to the template as an input parameter:
-    
-    ```yaml
-    - name: collect-artifacts
-      inputs:
-        parameters:
-          - name: processed
-      data:
-        source:
-          raw: "{{inputs.parameters.processed}}"
-        transformation:
-          - expression: "map(data, {# + \".collected\"})"
-    ```
-  
+
 A `data` template may contain any number of transformations (or zero). The transformations will be applied serially in order. Current available transformations:
 
 * `expression`: an [`expr`](https://github.com/antonmedv/expr) expression. See language definition [here](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md). When defining `expr` expressions Argo will pass the available data to the environment as a variable called `data` (see example above).

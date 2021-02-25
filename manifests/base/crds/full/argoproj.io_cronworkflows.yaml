@@ -2474,8 +2474,6 @@ spec:
                           type: object
                         data:
                           properties:
-                            podPolicy:
-                              type: string
                             source:
                               properties:
                                 artifactPaths:
