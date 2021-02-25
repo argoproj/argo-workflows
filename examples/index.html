@@ -3111,7 +3111,7 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 </code></pre></div>
 <ul>
 <li><code>limit</code> is the maximum number of times the container will be retried.</li>
-<li><code>retryPolicy</code> specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"</li>
+<li><code>retryPolicy</code> specifies if a container will be retried on failure, error, both, or only transient errors (e.g. i/o or TLS handshake timeout). "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError", and "OnTransientError" (available after v3.0.0-rc2).</li>
 <li><code>backoff</code> is an exponential backoff</li>
 <li><code>nodeAntiAffinity</code> prevents running steps on the same host.  Current implementation allows only empty <code>nodeAntiAffinity</code> (i.e. <code>nodeAntiAffinity: {}</code>) and by default it uses label <code>kubernetes.io/hostname</code> as the selector.</li>
 </ul>
