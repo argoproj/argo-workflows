@@ -112,7 +112,9 @@ spec:
 
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	assert.NoError(t, err)
-	wf = ConvertCronWorkflowToWorkflowWithProperties(&cronWf, "test-name", time.Now())
+	scheduledTime, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05-07:00")
+	assert.NoError(t, err)
+	wf = ConvertCronWorkflowToWorkflowWithProperties(&cronWf, "test-name", scheduledTime)
 	assert.Equal(t, "test-name", wf.Name)
 	assert.Len(t, wf.GetAnnotations(), 2)
 	assert.NotEmpty(t, wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime])

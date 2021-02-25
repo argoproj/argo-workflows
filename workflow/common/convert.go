@@ -20,12 +20,12 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	return toWorkflow(*cronWf, meta)
 }
 
-func ConvertCronWorkflowToWorkflowWithProperties(cronWf *wfv1.CronWorkflow, name string, scheduleTime time.Time) *wfv1.Workflow {
+func ConvertCronWorkflowToWorkflowWithProperties(cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
 	meta := metav1.ObjectMeta{
 		Name:   name,
 		Labels: make(map[string]string),
 		Annotations: map[string]string{
-			AnnotationKeyCronWfScheduledTime: scheduleTime.Format(time.RFC3339),
+			AnnotationKeyCronWfScheduledTime: scheduledTime.Format(time.RFC3339),
 		},
 	}
 	return toWorkflow(*cronWf, meta)
