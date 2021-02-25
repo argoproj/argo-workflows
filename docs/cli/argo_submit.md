@@ -51,7 +51,7 @@ argo submit [FILE... | --from `kind/name] [flags]
   -p, --parameter stringArray        pass an input parameter
   -f, --parameter-file string        pass a file containing all input parameters
       --priority int32               workflow priority
-      --scheduled-time string        Submit from an existing cron workflow with schedule-time. time format is '2006-01-02T15:04:05Z07:00'(RFC3339)
+      --scheduled-time string        Override the workflow's scheduledTime parameter (useful for backfilling). The time must be RFC3339
       --server-dry-run               send request to server with dry-run flag which will modify the workflow without creating it
       --serviceaccount string        run all pods in the workflow using specified serviceaccount
       --status string                Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.
