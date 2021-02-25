@@ -38,6 +38,7 @@ import (
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
+	"github.com/argoproj/argo-workflows/v3/workflow/util/outputs"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -731,26 +732,29 @@ func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
 
 // StoreOutputs annotation to the pod indicating all the outputs.
 func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
-	outputs := we.Template.Outputs.DeepCopy()
+	o := we.Template.Outputs.DeepCopy()
 	if logArt != nil {
-		outputs.Artifacts = append(outputs.Artifacts, *logArt)
+		o.Artifacts = append(o.Artifacts, *logArt)
 	}
 
-	if !outputs.HasOutputs() {
+	if !o.HasOutputs() {
 		return nil
 	}
 
-	data, err := json.Marshal(outputs)
+	data, err := json.Marshal(o)
 	if err != nil {
 		return err
 	}
 
-	{
+	{ // termination message is very cheap to do and does not need any RBAC
 		message, err := util.ReadTerminationMessage()
 		if err != nil {
 			return err
 		}
-		message = util.MuxContainerStatusMessage(message, data)
+		message, err = outputs.Mux(message, o)
+		if err != nil {
+			return err
+		}
 		if len(message) > 4096 {
 			log.Warn("cannot write termination message as message with outputs would be too long")
 		} else {
@@ -759,7 +763,7 @@ func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artif
 			return nil
 		}
 	}
-	{
+	{ // config map allows for larger outputs, and does not need `pod patch` RBAC
 		log.Info("Creating a config map with outputs")
 		err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
 			_, err := we.ClientSet.CoreV1().ConfigMaps(we.Namespace).Create(ctx, &apiv1.ConfigMap{
@@ -778,7 +782,7 @@ func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artif
 			return err
 		}
 	}
-	{
+	{ // for historical reason, we can `pod patch`
 		log.Infof("Annotating pod with outputs")
 		return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(data))
 	}
