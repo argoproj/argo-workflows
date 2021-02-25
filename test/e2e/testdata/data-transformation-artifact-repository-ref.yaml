@@ -6,8 +6,8 @@ metadata:
     argo-e2e: "true"
 spec:
   entrypoint: artifact-example
-    artifactRepositoryRef:
-      key: my-key
+  artifactRepositoryRef:
+    key: my-key
   templates:
     - name: artifact-example
       steps:
@@ -50,7 +50,7 @@ spec:
         source:
           artifactPaths:
             s3:
-              bucket: test
+              bucket: my-bucket
         transformation:
           - expression: "filter(data, {# endsWith \".py\"})"
 
