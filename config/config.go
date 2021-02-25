@@ -107,7 +107,7 @@ type Config struct {
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
-	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary
+	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
 }
 
