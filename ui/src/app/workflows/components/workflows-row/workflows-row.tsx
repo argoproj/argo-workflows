@@ -1,6 +1,5 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
-import {Link} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {DurationPanel} from '../../../shared/components/duration-panel';
