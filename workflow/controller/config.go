@@ -23,7 +23,7 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		return err
 	}
 	log.Info("Configuration:\n" + string(bytes))
-	if wfc.cliExecutorImage == "" {
+	if wfc.executorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "--executor-image flag to workflow-controller is missing")
 	}
 	wfc.Config = *config
@@ -83,11 +83,6 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory()
 	return nil
-}
-
-// executorImage returns the image to use for the workflow executor
-func (wfc *WorkflowController) executorImage() string {
-	return wfc.cliExecutorImage
 }
 
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor

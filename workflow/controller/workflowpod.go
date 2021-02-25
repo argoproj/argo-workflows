@@ -602,7 +602,7 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:            name,
-		Image:           woc.controller.executorImage(),
+		Image:           woc.controller.executorImage,
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
 		VolumeMounts: []apiv1.VolumeMount{
