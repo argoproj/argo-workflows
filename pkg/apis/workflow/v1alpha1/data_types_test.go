@@ -7,10 +7,7 @@ import (
 )
 
 func TestGetArtifactIfAny(t *testing.T) {
-	data := &Data{}
-	assert.Nil(t, data.GetArtifactIfAny())
-
-	data = &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{Artifact{Name: "foo"}}}}
+	data := &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{Artifact{Name: "foo"}}}}
 	art := data.GetArtifactIfAny()
 	if assert.NotNil(t, art) {
 		assert.Equal(t, "foo", art.Name)
