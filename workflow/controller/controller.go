@@ -70,8 +70,8 @@ type WorkflowController struct {
 	// get the artifact repository
 	artifactRepositories artifactrepositories.Interface
 
-	// executorImage is the executor image as specified from the command line
-	executorImage string
+	// cliExecutorImage is the executor image as specified from the command line
+	cliExecutorImage string
 
 	// cliExecutorImagePullPolicy is the executor imagePullPolicy as specified from the command line
 	cliExecutorImagePullPolicy string
@@ -127,7 +127,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
-		executorImage:              executorImage,
+		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
@@ -163,7 +163,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTL
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.managedNamespace, wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -185,7 +185,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d, pod cleanup: %d", wfWorkers, podWorkers, podCleanupWorkers)
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.managedNamespace, workflowResyncPeriod, wfc.tweakListOptions, indexers)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers(ctx)
@@ -468,7 +468,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 		case <-ticker.C:
 			if wfc.offloadNodeStatusRepo.IsEnabled() {
 				log.Info("Performing periodic workflow GC")
-				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.managedNamespace)
+				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list old offloaded nodes")
 					continue
@@ -846,7 +846,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context) *cache.ListWatch {
-	c := wfc.kubeclientset.CoreV1().Pods(wfc.managedNamespace)
+	c := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
@@ -924,6 +924,10 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 		}
 	}
 	return nil
+}
+
+func (wfc *WorkflowController) GetManagedNamespace() string {
+	return wfc.managedNamespace
 }
 
 func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
