@@ -927,7 +927,10 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {
-	return wfc.managedNamespace
+	if wfc.managedNamespace != "" {
+		return wfc.managedNamespace
+	}
+	return wfc.Config.Namespace
 }
 
 func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {

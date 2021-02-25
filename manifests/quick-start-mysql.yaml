@@ -647,6 +647,7 @@ data:
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
   metricsConfig: |
+    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090

@@ -11,7 +11,7 @@ import (
 func TestUpdateConfig(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	err := controller.updateConfig(&config.Config{Parallelism: 1})
+	err := controller.updateConfig(&config.Config{ExecutorImage: "argoexec:latest"})
 	assert.NoError(t, err)
 	assert.NotNil(t, controller.Config)
 	assert.NotNil(t, controller.archiveLabelSelector)

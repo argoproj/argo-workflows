@@ -147,8 +147,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
 	wfc := &WorkflowController{
-		cliExecutorImage: "executor:latest",
 		Config: config.Config{
+			ExecutorImage: "executor:latest",
 			Images: map[string]config.Image{
 				"my-image": {
 					Command: []string{"my-cmd"},
