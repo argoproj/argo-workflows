@@ -750,7 +750,7 @@ func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artif
 		if err != nil {
 			return err
 		}
-		message = util.JoinContainerStatusMessage(message, data)
+		message = util.MuxContainerStatusMessage(message, data)
 		if len(message) > 4096 {
 			log.Warn("cannot write termination message as message with outputs would be too long")
 		} else {
