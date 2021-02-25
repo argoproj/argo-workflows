@@ -219,7 +219,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	leaderName := "workflow-controller"
 	if wfc.Config.InstanceID != "" {
-		leaderName = fmt.Sprintf("%s-%s",  leaderName, wfc.Config.InstanceID)
+		leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
 	}
 
 	var cancel context.CancelFunc
