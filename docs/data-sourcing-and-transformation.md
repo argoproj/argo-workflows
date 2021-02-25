@@ -47,22 +47,6 @@ In Argo, this operation would be written as:
       - expression: "map(data, {# + \".ready\"})"
 ```
 
-## In-Memory Transformations
-
-If possible, Argo will choose to perform the specified transformation in its own memory, saving the need to create a pod in the cluster for said transformation. Because of this, in-memory transformations are near instantaneously completed (much like a [cached/memoized node](memoization.md)).
-
-Currently, Argo will always choose to perform the transformation in memory if it does not use `artifactPaths` to source the data.
-
-However, if you would like to force Argo to offload the transformation to a Pod regardless, you can specify it by using `podPolicy: "Always"`:
-
-```yaml
-- name: generate-artifacts
-  data:
-    podPolicy: "Always"
-    source:
-      ...
-```
-
 ## Spec
 
 A `data` template must always contain a `source`. Current available sources:
