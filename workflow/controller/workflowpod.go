@@ -307,7 +307,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					}
 				}
 				if len(c.Command) == 0 {
-					return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary")
+					return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
 				}
 				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 			}
@@ -542,13 +542,8 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
 	switch woc.getContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorK8sAPI:
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.getContainerRuntimeExecutor(),
-			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
 				ValueFrom: &apiv1.EnvVarSource{
