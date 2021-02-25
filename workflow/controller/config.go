@@ -23,8 +23,8 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		return err
 	}
 	log.Info("Configuration:\n" + string(bytes))
-	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
-		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
+	if wfc.cliExecutorImage == "" {
+		return errors.Errorf(errors.CodeBadRequest, "--executor-image flag to workflow-controller is missing")
 	}
 	wfc.Config = *config
 	if wfc.session != nil {
@@ -87,19 +87,14 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 
 // executorImage returns the image to use for the workflow executor
 func (wfc *WorkflowController) executorImage() string {
-	if wfc.cliExecutorImage != "" {
-		return wfc.cliExecutorImage
-	}
-	return wfc.Config.ExecutorImage
+	return wfc.cliExecutorImage
 }
 
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor
 func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	if wfc.cliExecutorImagePullPolicy != "" {
 		return apiv1.PullPolicy(wfc.cliExecutorImagePullPolicy)
-	} else if wfc.Config.Executor != nil && wfc.Config.Executor.ImagePullPolicy != "" {
-		return wfc.Config.Executor.ImagePullPolicy
 	} else {
-		return apiv1.PullPolicy(wfc.Config.ExecutorImagePullPolicy)
+		return wfc.Config.Executor.ImagePullPolicy
 	}
 }

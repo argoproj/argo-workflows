@@ -20,20 +20,8 @@ type Config struct {
 	// NodeEvents configures how node events are omitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
 
-	// ExecutorImage is the image name of the executor to use when running pods
-	// DEPRECATED: use --executor-image flag to workflow-controller instead
-	ExecutorImage string `json:"executorImage,omitempty"`
-
-	// ExecutorImagePullPolicy is the imagePullPolicy of the executor to use when running pods
-	// DEPRECATED: use `executor.imagePullPolicy` in configmap instead
-	ExecutorImagePullPolicy string `json:"executorImagePullPolicy,omitempty"`
-
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
-
-	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
-	// DEPRECATED: use `executor.resources` in configmap instead
-	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
 	// MainContainer holds container customization for the main container
 	MainContainer *apiv1.Container `json:"mainContainer,omitempty"`
@@ -54,10 +42,6 @@ type Config struct {
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
-
-	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
-	// DEPRECATED: support will be remove in a future release
-	Namespace string `json:"namespace,omitempty"`
 
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
 	// contains an arbitrary value that is carried forward into its pod labels, under the key
@@ -351,9 +335,6 @@ func (r *HDFSArtifactRepository) IntoArtifactLocation(l *wfv1.ArtifactLocation) 
 type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
 	Enabled *bool `json:"enabled,omitempty"`
-	// DisableLegacy turns off legacy metrics
-	// DEPRECATED: Legacy metrics are now removed, this field is ignored
-	DisableLegacy bool `json:"disableLegacy,omitempty"`
 	// MetricsTTL sets how often custom metrics are cleared from memory
 	MetricsTTL TTL `json:"metricsTTL,omitempty"`
 	// Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
