@@ -3,12 +3,11 @@ package emissary
 import (
 	"io"
 	"os"
-
-	"github.com/argoproj/argo-workflows/v3/workflow/util/path"
+	"os/exec"
 )
 
 func copyBinary() error {
-	name, err := path.Search("argoexec")
+	name, err := exec.LookPath("argoexec")
 	if err != nil {
 		return err
 	}
