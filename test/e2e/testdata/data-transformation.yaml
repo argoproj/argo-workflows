@@ -38,12 +38,6 @@ spec:
               parameters:
                 - name: file-name
                   value: "{{item}}"
-        - - name: collect-artifact
-            template: collect-artifacts
-            arguments:
-              parameters:
-                - name: processed
-                  value: "{{steps.process-artifact.outputs.parameters.processed}}"
 
     - name: generate-artifacts
       inputs:
@@ -87,16 +81,6 @@ spec:
                 key: secretkey
         transformation:
           - expression: "filter(data, {# endsWith \".py\"})"
-
-    - name: collect-artifacts
-      inputs:
-        parameters:
-          - name: processed
-      data:
-        source:
-          raw: "{{inputs.parameters.processed}}"
-        transformation:
-          - expression: "map(data, {# + \".collected\"})"
 
     - name: process-message
       inputs:

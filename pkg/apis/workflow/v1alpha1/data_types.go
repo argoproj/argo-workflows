@@ -38,11 +38,8 @@ type TransformationStep struct {
 
 // DataSource sources external data into a data template
 type DataSource struct {
-	// Raw is raw data
-	Raw string `json:"raw,omitempty" protobuf:"bytes,1,opt,name=raw"`
-
 	// ArtifactPaths is a data transformation that collects a list of artifact paths
-	ArtifactPaths *ArtifactPaths `json:"artifactPaths,omitempty" protobuf:"bytes,2,opt,name=artifactPaths"`
+	ArtifactPaths *ArtifactPaths `json:"artifactPaths,omitempty" protobuf:"bytes,1,opt,name=artifactPaths"`
 }
 
 // ArtifactPaths expands a step from a collection of artifacts

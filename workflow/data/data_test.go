@@ -26,20 +26,8 @@ func (t nullTestDataSourceProcessor) ProcessArtifactPaths(*v1alpha1.ArtifactPath
 }
 
 func TestProcessSource(t *testing.T) {
-	rawSource := v1alpha1.DataSource{Raw: `["foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"]`}
-	data, err := processSource(rawSource, nil)
-	if assert.NoError(t, err) {
-		assert.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
-	}
-
-	rawSource = v1alpha1.DataSource{Raw: `[["foo.py", "bar.pdf"], ["goo/foo.py", "moo/bar.pdf"]]`}
-	data, err = processSource(rawSource, nil)
-	if assert.NoError(t, err) {
-		assert.Equal(t, []interface{}{[]interface{}{"foo.py", "bar.pdf"}, []interface{}{"goo/foo.py", "moo/bar.pdf"}}, data)
-	}
-
-	artifactPathsSource := &v1alpha1.DataSource{ArtifactPaths: &v1alpha1.ArtifactPaths{}}
-	data, err = processSource(artifactPathsSource, &testDataSourceProcessor{})
+	artifactPathsSource := v1alpha1.DataSource{ArtifactPaths: &v1alpha1.ArtifactPaths{}}
+	data, err := processSource(artifactPathsSource, &testDataSourceProcessor{})
 	if assert.NoError(t, err) {
 		assert.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
 	}
@@ -47,7 +35,7 @@ func TestProcessSource(t *testing.T) {
 	_, err = processSource(artifactPathsSource, &nullTestDataSourceProcessor{})
 	assert.Error(t, err)
 
-	_, err = processSource(&v1alpha1.DataSource{}, &nullTestDataSourceProcessor{})
+	_, err = processSource(v1alpha1.DataSource{}, &nullTestDataSourceProcessor{})
 	assert.Error(t, err)
 }
 

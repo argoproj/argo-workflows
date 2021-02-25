@@ -364,11 +364,8 @@ message Data {
 
 // DataSource sources external data into a data template
 message DataSource {
-  // Raw is raw data
-  optional string raw = 1;
-
   // ArtifactPaths is a data transformation that collects a list of artifact paths
-  optional ArtifactPaths artifactPaths = 2;
+  optional ArtifactPaths artifactPaths = 1;
 }
 
 message Event {

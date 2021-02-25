@@ -10,13 +10,7 @@ func TestPodPolicy(t *testing.T) {
 	data := &Data{}
 	assert.False(t, data.UsePod())
 
-	data = &Data{Source: DataSource{Raw: "hi"}}
-	assert.False(t, data.UsePod())
-
 	data = &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{Artifact{}}}}
-	assert.True(t, data.UsePod())
-
-	data = &Data{PodPolicy: PodPolicyAlways, Source: DataSource{Raw: "hi"}}
 	assert.True(t, data.UsePod())
 }
 

@@ -1,7 +1,6 @@
 package data
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/antonmedv/expr"
@@ -28,11 +27,6 @@ func processSource(source wfv1.DataSource, processor wfv1.DataSourceProcessor) (
 		data, err = processor.ProcessArtifactPaths(source.ArtifactPaths)
 		if err != nil {
 			return nil, fmt.Errorf("unable to source artifact paths: %w", err)
-		}
-	case source.Raw != "":
-		err = json.Unmarshal([]byte(source.Raw), &data)
-		if err != nil {
-			return nil, fmt.Errorf("unable to unmarshal raw source: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("no valid source is used for data template")

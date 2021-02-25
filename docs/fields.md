@@ -3481,8 +3481,6 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
-
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 </details>
 
@@ -3772,7 +3770,6 @@ DataSource sources external data into a data template
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`artifactPaths`|[`ArtifactPaths`](#artifactpaths)|ArtifactPaths is a data transformation that collects a list of artifact paths|
-|`raw`|`string`|Raw is raw data|
 
 ## TransformationStep
 

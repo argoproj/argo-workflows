@@ -851,10 +851,6 @@ func (s *FunctionalSuite) TestDataTransformation() {
 			}
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
-			collect := status.Nodes.FindByDisplayName("collect-artifact")
-			if assert.NotNil(t, collect) {
-				assert.Equal(t, `["foo/script.py.processed.collected","script.py.processed.collected"]`, *collect.Outputs.Result)
-			}
 		})
 }
 

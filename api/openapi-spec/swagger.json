@@ -6824,10 +6824,6 @@
         "artifactPaths": {
           "description": "ArtifactPaths is a data transformation that collects a list of artifact paths",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactPaths"
-        },
-        "raw": {
-          "description": "Raw is raw data",
-          "type": "string"
         }
       }
     },

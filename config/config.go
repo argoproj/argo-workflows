@@ -362,7 +362,6 @@ type MetricsConfig struct {
 
 type WorkflowRestrictions struct {
 	TemplateReferencing   TemplateReferencing   `json:"templateReferencing,omitempty"`
-	DataTemplatePodPolicy DataTemplatePodPolicy `json:"dataTemplatePodPolicy,omitempty"`
 }
 
 type TemplateReferencing string
@@ -370,12 +369,6 @@ type TemplateReferencing string
 const (
 	TemplateReferencingStrict TemplateReferencing = "Strict"
 	TemplateReferencingSecure TemplateReferencing = "Secure"
-)
-
-type DataTemplatePodPolicy string
-
-const (
-	DataPodPolicyAlways DataTemplatePodPolicy = "Always"
 )
 
 func (req *WorkflowRestrictions) MustUseReference() bool {
@@ -390,11 +383,4 @@ func (req *WorkflowRestrictions) MustNotChangeSpec() bool {
 		return false
 	}
 	return req.TemplateReferencing == TemplateReferencingSecure
-}
-
-func (req *WorkflowRestrictions) MustUsePodWithDataTemplate() bool {
-	if req == nil {
-		return false
-	}
-	return req.DataTemplatePodPolicy == DataPodPolicyAlways
 }

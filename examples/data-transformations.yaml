@@ -31,18 +31,6 @@ spec:
               parameters:
                 - name: file-name
                   value: "{{item}}"
-        - - name: collect-artifact
-            template: collect-artifacts
-            arguments:
-              parameters:
-                - name: processed
-                  value: "{{steps.process-artifact.outputs.parameters.processed}}"
-        - - name: print-artifact
-            template: print-message
-            arguments:
-              parameters:
-                - name: file
-                  value: "{{steps.collect-artifact.outputs.result}}"
 
     - name: generate-artifacts
       data:
@@ -63,16 +51,6 @@ spec:
         transformation:
           - expression: "filter(data, {# endsWith \".py\"})"
 
-    - name: collect-artifacts
-      inputs:
-        parameters:
-          - name: processed
-      data:
-        source:
-          raw: "{{inputs.parameters.processed}}"
-        transformation:
-          - expression: "map(data, {# + \".collected\"})"
-
     - name: process-message
       inputs:
         parameters:
@@ -90,11 +68,3 @@ spec:
             valueFrom:
               path: /tmp/f.txt
 
-    - name: print-message
-      inputs:
-        parameters:
-          - name: file
-      container:
-        image: alpine:latest
-        command: [sh, -c]
-        args: ["echo {{inputs.parameters.file}}"]

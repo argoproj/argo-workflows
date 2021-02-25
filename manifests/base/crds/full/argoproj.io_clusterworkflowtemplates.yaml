@@ -2753,8 +2753,6 @@ spec:
                               required:
                               - name
                               type: object
-                            raw:
-                              type: string
                           type: object
                         transformation:
                           items:

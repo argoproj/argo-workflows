@@ -1366,13 +1366,6 @@ func schema_pkg_apis_workflow_v1alpha1_DataSource(ref common.ReferenceCallback) 
 				Description: "DataSource sources external data into a data template",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"raw": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Raw is raw data",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"artifactPaths": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactPaths is a data transformation that collects a list of artifact paths",
