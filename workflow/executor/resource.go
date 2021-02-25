@@ -134,7 +134,7 @@ func (we *WorkflowExecutor) signalMonitoring() {
 		for {
 			<-sigs
 			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			util.WriteTeriminateMessage("Received user signal to terminate the workflow")
+			util.WriteTerminationMessage("Received user signal to terminate the workflow")
 			os.Exit(130)
 		}
 	}()
@@ -382,6 +382,6 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
-	err := we.AnnotateOutputs(ctx, nil)
+	err := we.StoreOutputs(ctx, nil)
 	return err
 }

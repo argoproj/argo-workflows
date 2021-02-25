@@ -418,6 +418,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
   - pods/log
   verbs:
   - get
@@ -428,6 +434,7 @@ rules:
   - workflows
   verbs:
   - create
+  - patch
   - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1

@@ -534,6 +534,12 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			},
 		},
 		{
+			Name: common.EnvVarPodUID,
+			ValueFrom: &apiv1.EnvVarSource{
+				FieldRef: &apiv1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.uid"},
+			},
+		},
+		{
 			Name:  common.EnvVarContainerRuntimeExecutor,
 			Value: woc.getContainerRuntimeExecutor(),
 		},

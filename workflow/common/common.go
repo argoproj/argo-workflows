@@ -42,6 +42,12 @@ const (
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
 	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
+	// Deprecated: Newly created workflows should use a role that has `workflow patch` rather than `pod patch` for
+	// a higher level of security.
+	// However, any workflows in-flight when an upgrade occurs will still have pods that will communicate outputs
+	// using this method.
+	// Additionally, at the time of upgrade, no users will have updated their roles, so this is still needed for that
+	// reason as well.
 	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
 	// AnnotationKeyExecutionControl is the pod metadata annotation key containing execution control parameters
 	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
@@ -58,6 +64,8 @@ const (
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
+	// LabelKeyNode
+	LabelKeyNode = workflow.WorkflowFullName + "/node"
 	// LabelKeyWorkflowArchivingStatus indicates if a workflow needs archiving or not:
 	// * `` - does not need archiving ... yet
 	// * `Pending` - pending archiving
@@ -102,6 +110,8 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
+	// EnvVarPodUID
+	EnvVarPodUID = "ARGO_POD_UID"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr

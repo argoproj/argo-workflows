@@ -1178,18 +1178,39 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
-	if ok && node.Outputs == nil {
-		updated = true
-		woc.log.Infof("Setting node %v outputs", node.ID)
-		var outputs wfv1.Outputs
-		err := json.Unmarshal([]byte(outputStr), &outputs)
-		if err != nil {
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
-			node.Phase = wfv1.NodeError
-		} else {
-			node.Outputs = &outputs
+	if node.Outputs == nil {
+		for _, c := range pod.Status.ContainerStatuses {
+			if c.State.Terminated == nil || c.Name != common.WaitContainerName {
+				continue
+			}
+			_, outputs, err := util.SplitContainerStatusMessage(c.State.Terminated.Message)
+			log.WithField("outputs", outputs).WithField("message", c.State.Terminated.Message).WithError(err).Debug("outputs")
+			if err != nil {
+				return woc.markNodeError(node.Name, err)
+			} else if outputs != nil {
+				woc.log.Infof("Setting node %v outputs from termination message", node.ID)
+				node.Outputs = outputs
+				updated = true
+			} else if s, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+				woc.log.Infof("Setting node %v outputs from annotation", node.ID)
+				outputs := &wfv1.Outputs{}
+				if err := json.Unmarshal([]byte(s), outputs); err != nil {
+					return woc.markNodeError(node.Name, err)
+				} else {
+					node.Outputs = outputs
+					updated = true
+				}
+			} else {
+				obj, _, _ := woc.controller.configMapInformer.GetStore().GetByKey(pod.Namespace + "/" + pod.Name)
+				cm, ok := obj.(*apiv1.ConfigMap)
+				if ok {
+					woc.log.Infof("Setting node %v outputs from config map", node.ID)
+					if err := json.Unmarshal([]byte(cm.Data["outputs"]), &node.Outputs); err != nil {
+						return woc.markNodeError(node.Name, err)
+					}
+					updated = true
+				}
+			}
 		}
 	}
 	if node.Phase != newPhase {
@@ -1315,8 +1336,9 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		}
 
 		msg := fmt.Sprintf("%s (exit code %d)", t.Reason, t.ExitCode)
-		if t.Message != "" {
-			msg = fmt.Sprintf("%s: %s", msg, t.Message)
+		message, _, _ := util.SplitContainerStatusMessage(t.Message)
+		if message != "" {
+			msg = fmt.Sprintf("%s: %s", msg, message)
 		}
 
 		switch ctr.Name {
@@ -2240,7 +2262,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 
 // getTemplateOutputsFromScope resolves a template's outputs from the scope of the template
 func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Outputs, error) {
-	if !tmpl.Outputs.HasOutputs() {
+	if !tmpl.HasOutputs() {
 		return nil, nil
 	}
 	var outputs wfv1.Outputs

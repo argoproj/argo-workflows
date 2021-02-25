@@ -2164,6 +2164,10 @@ func (tmpl *Template) IsLeaf() bool {
 	return false
 }
 
+func (m *Template) HasOutputs() bool {
+	return m != nil && m.Outputs.HasOutputs()
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG

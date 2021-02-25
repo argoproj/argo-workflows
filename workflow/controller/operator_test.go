@@ -4587,7 +4587,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	sampleOutputs := wfv1.Outputs{
+	sampleOutputs := &wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
@@ -4595,7 +4595,8 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(testutil.MustMarshallJSON(sampleOutputs)))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	withOutputs(woc, sampleOutputs)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
@@ -4610,7 +4611,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	testutil.MustUnmarshallJSON(rawEntry, &entry)
 
 	if assert.NotNil(t, entry.Outputs) {
-		assert.Equal(t, sampleOutputs, *entry.Outputs)
+		assert.Equal(t, sampleOutputs, entry.Outputs)
 	}
 }
 
@@ -4813,7 +4814,8 @@ spec:
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	// make all created pods as successful
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(`{"parameters": [{"name": "my-param"}]}`))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	withOutputs(woc, &wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "my-param"}}})
 
 	// reconcile
 	woc = newWorkflowOperationCtx(woc.wf, controller)

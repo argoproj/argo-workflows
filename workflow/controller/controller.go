@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	informercorev1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -88,6 +89,7 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
+	configMapInformer     cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
@@ -190,6 +192,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
+	wfc.configMapInformer = wfc.newConfigMapInformer()
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -197,9 +200,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
+	go wfc.configMapInformer.Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.configMapInformer.HasSynced) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
@@ -911,6 +915,12 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 		},
 	)
 	return informer
+}
+
+func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
+	return informercorev1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{}, func(o *metav1.ListOptions) {
+		o.LabelSelector = common.LabelKeyNode
+	})
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes

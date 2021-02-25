@@ -9,6 +9,7 @@ import (
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -94,7 +95,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
-
+	podUID := types.UID(os.Getenv(common.EnvVarPodUID))
 	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
 	checkErr(err)
 
@@ -113,7 +114,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre, *tmpl)
+	wfExecutor := executor.NewExecutor(clientset, podName, podUID, namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor
@@ -122,7 +123,7 @@ func initExecutor() *executor.WorkflowExecutor {
 // checkErr is a convenience function to panic upon error
 func checkErr(err error) {
 	if err != nil {
-		util.WriteTeriminateMessage(err.Error())
+		util.WriteTerminationMessage(err.Error())
 		panic(err.Error())
 	}
 }

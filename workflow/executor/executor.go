@@ -22,7 +22,9 @@ import (
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
@@ -60,6 +62,7 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName            string
+	podUID             types.UID
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
 	Namespace          string
@@ -86,7 +89,6 @@ type Initializer interface {
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
 	GetFileContents(containerName string, sourcePath string) (string, error)
-
 	// CopyFile copies a source file in a container to a local path
 	CopyFile(containerName, sourcePath, destPath string, compressionLevel int) error
 
@@ -107,9 +109,10 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, podName string, podUID types.UID, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
+		podUID:             podUID,
 		ClientSet:          clientset,
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
@@ -124,11 +127,11 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 // HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error
 func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 	if r := recover(); r != nil {
-		util.WriteTeriminateMessage(fmt.Sprintf("%v", r))
+		util.WriteTerminationMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
 		if len(we.errors) > 0 {
-			util.WriteTeriminateMessage(we.errors[0].Error())
+			util.WriteTerminationMessage(we.errors[0].Error())
 		}
 	}
 }
@@ -726,8 +729,8 @@ func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
 	return nil
 }
 
-// AnnotateOutputs annotation to the pod indicating all the outputs.
-func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
+// StoreOutputs annotation to the pod indicating all the outputs.
+func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	if logArt != nil {
 		outputs.Artifacts = append(outputs.Artifacts, *logArt)
@@ -736,12 +739,49 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if !outputs.HasOutputs() {
 		return nil
 	}
-	log.Infof("Annotating pod with output")
-	outputBytes, err := json.Marshal(outputs)
+
+	data, err := json.Marshal(outputs)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return err
 	}
-	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
+
+	{
+		message, err := util.ReadTerminationMessage()
+		if err != nil {
+			return err
+		}
+		message = util.JoinContainerStatusMessage(message, data)
+		if len(message) > 4096 {
+			log.Warn("cannot write termination message as message with outputs would be too long")
+		} else {
+			log.Info("Updating termination message with outputs")
+			util.WriteTerminationMessage(message)
+			return nil
+		}
+	}
+	{
+		log.Info("Creating a config map with outputs")
+		err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+			_, err := we.ClientSet.CoreV1().ConfigMaps(we.Namespace).Create(ctx, &apiv1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   we.PodName,
+					Labels: map[string]string{common.LabelKeyNode: "true"},
+					OwnerReferences: []metav1.OwnerReference{
+						{APIVersion: "v1", Kind: "Pod", Name: we.PodName, UID: we.podUID}, // add ownership reference so we get deleted when needed
+					},
+				},
+				Data: map[string]string{"outputs": string(data)},
+			}, metav1.CreateOptions{})
+			return !errorsutil.IsTransientErr(err), err
+		})
+		if !apierr.IsForbidden(err) {
+			return err
+		}
+	}
+	{
+		log.Infof("Annotating pod with outputs")
+		return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(data))
+	}
 }
 
 // AddError adds an error to the list of encountered errors durign execution
@@ -1061,7 +1101,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 						message = "Step exceeded its deadline"
 					}
 					log.Info(message)
-					util.WriteTeriminateMessage(message)
+					util.WriteTerminationMessage(message)
 					log.Infof("Killing main container")
 					terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 					err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration)

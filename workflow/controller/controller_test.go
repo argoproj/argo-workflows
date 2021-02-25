@@ -30,7 +30,6 @@ import (
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo-workflows/v3/test"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -196,9 +195,11 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
+		wfc.configMapInformer = wfc.newPodInformer(ctx)
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
+		go wfc.configMapInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		wfc.waitForCacheSync(ctx)
@@ -278,16 +279,14 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
-type with func(pod *apiv1.Pod)
-
-func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }
-
-func withAnnotation(key, val string) with {
-	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
+func withOutputs(woc *wfOperationCtx, o *wfv1.Outputs) {
+	n := woc.wf.Status.Nodes[woc.wf.Name]
+	n.Outputs = o
+	woc.wf.Status.Nodes[woc.wf.Name] = n
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
-func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
+func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -298,9 +297,6 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			pod.Status.Phase = phase
 			if phase == apiv1.PodFailed {
 				pod.Status.Message = "Pod failed"
-			}
-			for _, w := range with {
-				w(&pod)
 			}
 			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
 			if err != nil {

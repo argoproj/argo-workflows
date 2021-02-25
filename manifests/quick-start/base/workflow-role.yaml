@@ -15,6 +15,13 @@ rules:
       # pod patch is used to annotate the step's outputs back to controller (e.g. artifact location)
       # This is ONLY needed if the step/task has outputs that are used by another step or task.
       - patch
+  # configmap create is used to share the step's outputs back to controller
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
   # logs get/watch are used to get the pods logs for script outputs, and for log archival
   - apiGroups:
       - ""
@@ -31,4 +38,5 @@ rules:
       - workflows
     verbs:
       - create
+      - patch
       - get

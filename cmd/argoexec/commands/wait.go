@@ -75,7 +75,7 @@ func waitContainer(ctx context.Context) error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	err = wfExecutor.AnnotateOutputs(ctx, logArt)
+	err = wfExecutor.StoreOutputs(ctx, logArt)
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
