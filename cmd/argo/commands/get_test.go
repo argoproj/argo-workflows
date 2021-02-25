@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	testutil "github.com/argoproj/argo-workflows/v3/test/util"
@@ -376,19 +375,9 @@ status:
 
 func Test_printWorkflowHelperNudges(t *testing.T) {
 	securedWf := wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "my-ns"},
+		ObjectMeta: metav1.ObjectMeta{},
 		Spec: wfv1.WorkflowSpec{
-			Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
-				{Name: "my-param", Value: wfv1.AnyStringPtr("my-value")},
-			}},
-			Priority: pointer.Int32Ptr(2),
-			Templates: []wfv1.Template{
-				{Name: "t0", Container: &corev1.Container{}},
-			},
 			SecurityContext: &corev1.PodSecurityContext{},
-		},
-		Status: wfv1.WorkflowStatus{
-			Phase: wfv1.WorkflowSucceeded,
 		},
 	}
 
@@ -399,10 +388,6 @@ func Test_printWorkflowHelperNudges(t *testing.T) {
 		"You can run your workflow pods more securely by setting it.\n" +
 		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
 
-	t.Run("NoNudges", func(t *testing.T) {
-		output := printWorkflowHelper(&insecureWf, getFlags{noNudges: true})
-		assert.NotContains(t, output, securityNudges)
-	})
 	t.Run("SecuredWorkflow", func(t *testing.T) {
 		output := printWorkflowHelper(&securedWf, getFlags{})
 		assert.NotContains(t, output, securityNudges)

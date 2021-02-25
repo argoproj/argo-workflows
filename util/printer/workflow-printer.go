@@ -24,6 +24,7 @@ func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) err
 	switch opts.Output {
 	case "", "wide":
 		printTable(workflows, out, opts)
+		printCostOptimizationNudges(workflows, out)
 	case "name":
 		for _, wf := range workflows {
 			_, _ = fmt.Fprintln(out, wf.ObjectMeta.Name)
@@ -50,7 +51,6 @@ type PrintOpts struct {
 	NoHeaders bool
 	Namespace bool
 	Output    string
-	NoNudges  bool
 }
 
 func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
@@ -83,24 +83,35 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		}
 		_, _ = fmt.Fprintf(w, "\n")
 	}
+	_ = w.Flush()
+}
 
+// printCostOptimizationNudges prints cost optimization nudges for workflows
+func printCostOptimizationNudges(wfList []wfv1.Workflow, out io.Writer) {
 	completed, incomplete := countCompletedWorkflows(wfList)
-	if !opts.NoNudges && completed > 100 || incomplete > 100 {
-		_, _ = fmt.Fprint(w, "\n")
-		_, _ = fmt.Fprint(w, "You have at least ")
+	if completed > 100 || incomplete > 100 {
+		_, _ = fmt.Fprint(out, "\nYou have at least ")
 		if incomplete > 100 {
-			_, _ = fmt.Fprintf(w, "%d incomplete ", incomplete)
+			_, _ = fmt.Fprintf(out, "%d incomplete ", incomplete)
 		}
 		if incomplete > 100 && completed > 100 {
-			_, _ = fmt.Fprint(w, "and ")
+			_, _ = fmt.Fprint(out, "and ")
 		}
 		if completed > 100 {
-			_, _ = fmt.Fprintf(w, "%d completed ", completed)
+			_, _ = fmt.Fprintf(out, "%d completed ", completed)
 		}
-		_, _ = fmt.Fprint(w, "workflows. Reducing the total number of workflows will reduce your costs.\n")
-		_, _ = fmt.Fprint(w, "Learn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
+		_, _ = fmt.Fprintln(out, "workflows. Reducing the total number of workflows will reduce your costs.")
+		_, _ = fmt.Fprintln(out, "Learn more at https://argoproj.github.io/argo-workflows/cost-optimisation/")
 	}
-	_ = w.Flush()
+}
+
+// PrintSecurityNudges prints security nudges for single workflow
+func PrintSecurityNudges(wf wfv1.Workflow, out io.Writer) {
+	if wf.Spec.SecurityContext == nil {
+		_, _ = fmt.Fprintln(out, "\nThis workflow does not have security context set. "+
+			"You can run your workflow pods more securely by setting it.")
+		_, _ = fmt.Fprintln(out, "Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/")
+	}
 }
 
 // countCompletedWorkflows returns the number of completed and incomplete workflows

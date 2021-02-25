@@ -29,7 +29,6 @@ const onExitSuffix = "onExit"
 type getFlags struct {
 	output                  string
 	nodeFieldSelectorString string
-	noNudges                bool
 
 	// Only used for backwards compatibility
 	status string
@@ -90,7 +89,6 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().BoolVar(&noUtf8, "no-utf8", false, "Use plain 7-bits ascii characters")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
-	command.Flags().BoolVar(&getArgs.noNudges, "no-nudges", false, "Don't print the security nudges")
 	return command
 }
 
@@ -213,11 +211,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		_ = w.Flush()
 		out += writerBuffer.String()
 	}
-	if !getArgs.noNudges && wf.Spec.SecurityContext == nil {
-		out += "\nThis workflow does not have security context set. " +
-			"You can run your workflow pods more securely by setting it.\n" +
-			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
-	}
+	writerBuffer := new(bytes.Buffer)
+	printer.PrintSecurityNudges(*wf, writerBuffer)
+	out += writerBuffer.String()
 	return out
 }
 
