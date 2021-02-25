@@ -15,7 +15,7 @@ const annotationName = workflow.WorkflowFullName + "/verify.py"
 func Workflow(wf *wfv1.Workflow) error {
 	verify, ok := wf.GetAnnotations()[annotationName]
 	if !ok {
-		return fmt.Errorf("connot verify workflow: annotation %s not found", annotationName)
+		return fmt.Errorf("cannot verify workflow: annotation %s not found", annotationName)
 	}
 	nodes := wfv1.Nodes{}
 	for _, n := range wf.Status.Nodes {
