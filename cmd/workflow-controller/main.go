@@ -35,21 +35,22 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig             clientcmd.ClientConfig
-		configMap                string // --configmap
-		executorImage            string // --executor-image
-		executorImagePullPolicy  string // --executor-image-pull-policy
-		containerRuntimeExecutor string
-		logLevel                 string // --loglevel
-		glogLevel                int    // --gloglevel
-		workflowWorkers          int    // --workflow-workers
-		workflowTTLWorkers       int    // --workflow-ttl-workers
-		podWorkers               int    // --pod-workers
-		podCleanupWorkers        int    // --pod-cleanup-workers
-		burst                    int
-		qps                      float32
-		namespaced               bool   // --namespaced
-		managedNamespace         string // --managed-namespace
+		clientConfig                  clientcmd.ClientConfig
+		configMap                     string // --configmap
+		executorImage                 string // --executor-image
+		executorImagePullPolicy       string // --executor-image-pull-policy
+		containerRuntimeExecutor      string
+		logLevel                      string // --loglevel
+		glogLevel                     int    // --gloglevel
+		workflowWorkers               int    // --workflow-workers
+		workflowTTLWorkers            int    // --workflow-ttl-workers
+		podWorkers                    int    // --pod-workers
+		podCleanupWorkers             int    // --pod-cleanup-workers
+		burst                         int
+		qps                           float32
+		leaderElectionHealthCheckPort int    // --leader-election-health-check-port
+		namespaced                    bool   // --namespaced
+		managedNamespace              string // --managed-namespace
 	)
 
 	command := cobra.Command{
@@ -94,7 +95,7 @@ func NewRootCommand() *cobra.Command {
 			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
 			errors.CheckError(err)
 
-			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
+			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers, leaderElectionHealthCheckPort)
 
 			go func() {
 				log.Println(http.ListenAndServe("localhost:6060", nil))
@@ -119,6 +120,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
+	command.Flags().IntVar(&leaderElectionHealthCheckPort, "leader-election-health-check-port", 0, "The port for the leader election health check server, which will start if the port is non-zero")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	return &command

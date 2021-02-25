@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -21,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -111,6 +113,10 @@ const (
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
+	// This is the timeout that determines the time beyond the lease expiry to be
+	// allowed for timeout. Checks within the timeout period after the lease
+	// expires will still return healthy.
+	leaderHealthzAdaptorTimeout = 20 * time.Second
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -177,7 +183,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers, leaderElectionHealthCheckPort int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 	defer wfc.podCleanupQueue.ShutDown()
@@ -222,6 +228,25 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		instanceID = wfc.Config.InstanceID
 	}
 
+	// Create leader election health checker
+	leaderElectionChecker := leaderelection.NewLeaderHealthzAdaptor(leaderHealthzAdaptorTimeout)
+	var checks []healthz.HealthChecker = nil
+	if leaderElectionHealthCheckPort != 0 {
+		checks = append(checks, leaderElectionChecker)
+		mux := http.NewServeMux()
+		healthz.InstallPathHandler(mux, "/healthz", checks...)
+		healthCheckServer := &http.Server{
+			Addr:    fmt.Sprintf(":%d", leaderElectionHealthCheckPort),
+			Handler: mux,
+		}
+		go func() {
+			log.Infof("Start listening to %d for health check", leaderElectionHealthCheckPort)
+			if err := healthCheckServer.ListenAndServe(); err != nil {
+				log.Fatalf("Error starting server for health check: %v", err)
+			}
+		}()
+	}
+
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
@@ -232,6 +257,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		LeaseDuration:   15 * time.Second,
 		RenewDeadline:   10 * time.Second,
 		RetryPeriod:     5 * time.Second,
+		WatchDog:        leaderElectionChecker,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
 				logCtx.Info("started leading")

@@ -149,6 +149,7 @@ github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bketelsen/crypt v0.0.3-0.20200106085610-5cbc8cc4026c/go.mod h1:MKsuJmJgSg28kpZDP6UIiPt0e0Oz0kqKNGyRaWEPv84=
+github.com/blang/semver v3.5.0+incompatible h1:CGxCgetQ64DKk7rdZ++Vfnb1+ogGNnB17OJKJXD2Cfs=
 github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9 h1:mV+hh0rMjzrhg7Jc/GKwpa+y/0BMHGOHdM9yY1GYyFI=
 github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9/go.mod h1:nDeXEIaeDV+mAK1gBD3/RJH67DYPC0GdaznWN7sB07s=
@@ -1391,6 +1392,8 @@ k8s.io/apimachinery v0.19.6/go.mod h1:6sRbGRAVY5DOCuZwB5XkqguBqpqLU6q/kOaOdk29z6
 k8s.io/apiserver v0.17.0/go.mod h1:ABM+9x/prjINN6iiffRVNCBR2Wk7uY4z+EtEGZD48cg=
 k8s.io/apiserver v0.18.2/go.mod h1:Xbh066NqrZO8cbsoenCwyDJ1OSi8Ag8I2lezeHxzwzw=
 k8s.io/apiserver v0.19.2/go.mod h1:FreAq0bJ2vtZFj9Ago/X0oNGC51GfubKK/ViOKfVAOA=
+k8s.io/apiserver v0.19.6 h1:nRjEbEyX0diwAZT7GndrCUwX9OQw8v+CCHPZwYLBwK8=
+k8s.io/apiserver v0.19.6/go.mod h1:05XquZxCDzQ27ebk7uV2LrFIK4lm5Yt47XkkUvLAoAM=
 k8s.io/client-go v0.17.0/go.mod h1:TYgR6EUHs6k45hb6KWjVD6jFZvJV4gHDikv/It0xz+k=
 k8s.io/client-go v0.17.8/go.mod h1:SJsDS64AAtt9VZyeaQMb4Ck5etCitZ/FwajWdzua5eY=
 k8s.io/client-go v0.18.2/go.mod h1:Xcm5wVGXX9HAA2JJ2sSBUn3tCJ+4SVlCbl2MNNv+CIU=
@@ -1405,6 +1408,9 @@ k8s.io/code-generator v0.19.6/go.mod h1:lwEq3YnLYb/7uVXLorOJfxg+cUu2oihFhHZ0n9NI
 k8s.io/component-base v0.17.0/go.mod h1:rKuRAokNMY2nn2A6LP/MiwpoaMRHpfRnrPaUJJj1Yoc=
 k8s.io/component-base v0.18.2/go.mod h1:kqLlMuhJNHQ9lz8Z7V5bxUUtjFZnrypArGl58gmDfUM=
 k8s.io/component-base v0.19.2/go.mod h1:g5LrsiTiabMLZ40AR6Hl45f088DevyGY+cCE2agEIVo=
+k8s.io/component-base v0.19.6 h1:V76d3rIEWvP95peWgRycKslQnEwlaPy4UORvh3+YBbU=
+k8s.io/component-base v0.19.6/go.mod h1:8Btsf8J00/fVDa/YFmXjei7gVkcFrlKZXjSeP4SZNJg=
+k8s.io/gengo v0.0.0-20190128074634-0689ccc1d7d6 h1:4s3/R4+OYYYUKptXPhZKjQ04WJ6EhQQVFdjOFvCazDk=
 k8s.io/gengo v0.0.0-20190128074634-0689ccc1d7d6/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20190822140433-26a664648505/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20200114144118-36b2048a9120/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
