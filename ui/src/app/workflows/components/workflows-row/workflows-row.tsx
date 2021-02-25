@@ -31,24 +31,26 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
     public render() {
         const wf = this.props.workflow;
         return (
-                <div className='workflows-list__row-container'>
-                    <div className='row argo-table-list__row'>
-                        <div className='columns small-1 workflows-list__status'>
-                            <input
-                                type='checkbox'
-                                className='workflows-list__status--checkbox'
-                                checked={this.props.checked}
-                                onClick={e => {
-                                    e.stopPropagation();
-                                }}
-                                onChange={e => {
-                                    this.props.select(this.props.workflow);
-                                }}
-                            />
-                            <PhaseIcon value={wf.status.phase} />
-                        </div>
-
-                        <a href={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='small-11 row' ref={(el) => el && el.style.setProperty('max-width', '91.6666666667%', 'important')}>
+            <div className='workflows-list__row-container'>
+                <div className='row argo-table-list__row'>
+                    <div className='columns small-1 workflows-list__status'>
+                        <input
+                            type='checkbox'
+                            className='workflows-list__status--checkbox'
+                            checked={this.props.checked}
+                            onClick={e => {
+                                e.stopPropagation();
+                            }}
+                            onChange={e => {
+                                this.props.select(this.props.workflow);
+                            }}
+                        />
+                        <PhaseIcon value={wf.status.phase} />
+                    </div>
+                    <a
+                        href={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}
+                        className='small-11 row'
+                        ref={el => el && el.style.setProperty('max-width', '91.6666666667%', 'important')}>
                         <div className='columns small-2'>{wf.metadata.name}</div>
                         <div className='columns small-2'>{wf.metadata.namespace}</div>
                         <div className='columns small-1'>
@@ -93,9 +95,9 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 }}
                             />
                         )}
-                        </a>
-                    </div>
+                    </a>
                 </div>
+            </div>
         );
     }
 }
