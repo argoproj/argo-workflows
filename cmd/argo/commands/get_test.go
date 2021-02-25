@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -366,5 +367,33 @@ status:
    ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
    ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
    ├─ sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
+		assert.Contains(t, output, "This workflow does not have security context set. "+
+			"You can run your workflow pods more securely by setting it.\n"+
+			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
+	})
+}
+
+func Test_printWorkflowHelperNudges(t *testing.T) {
+	securedWf := wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{},
+		Spec: wfv1.WorkflowSpec{
+			SecurityContext: &corev1.PodSecurityContext{},
+		},
+	}
+
+	insecureWf := securedWf
+	insecureWf.Spec.SecurityContext = nil
+
+	securityNudges := "This workflow does not have security context set. " +
+		"You can run your workflow pods more securely by setting it.\n" +
+		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
+
+	t.Run("SecuredWorkflow", func(t *testing.T) {
+		output := printWorkflowHelper(&securedWf, getFlags{})
+		assert.NotContains(t, output, securityNudges)
+	})
+	t.Run("InsecureWorkflow", func(t *testing.T) {
+		output := printWorkflowHelper(&insecureWf, getFlags{})
+		assert.Contains(t, output, securityNudges)
 	})
 }
