@@ -21,7 +21,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
-	"github.com/argoproj/argo-workflows/v3/workflow/util/path"
 )
 
 var (
@@ -74,7 +73,7 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
-			name, err = path.Search(name)
+			name, err = exec.LookPath(name)
 			if err != nil {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
