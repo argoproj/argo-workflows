@@ -45,7 +45,7 @@ spec:
             name: fibonacci-m
             key: fibonacci-cache
       steps:
-        - - name: fibonaccihelper
+        - - name: fibonacci-helper
             template: fibonaccihelper
             when: "{{inputs.parameters.num}} != 1 && {{inputs.parameters.num}} != 2"
             arguments:
@@ -56,8 +56,8 @@ spec:
         parameters:
           - name: fib
             valueFrom:
-              expression: "inputs.parameters.num == '1'? '1': inputs.parameters.num == '2'? '1': steps.fibonaccihelper.outputs.parameters.result"
-    
+              # If template name has "-" then variable path should have steps['fibonacci-helper']
+              expression: "number(inputs.parameters.num) == 1? 1: number(inputs.parameters.num) == 2? 1: steps['fibonacci-helper'].outputs.parameters.result"
     - name: fibonaccihelper
       inputs:
         parameters:
@@ -127,10 +127,4 @@ spec:
       container:
         image: alpine:latest
         command: [sh, -c]
-        args: ["sleep 1; echo -n {{inputs.parameters.result}} > /tmp/result.txt"]
-#        args: ["echo {{inputs.parameters.result}}"]
-      outputs:
-        parameters:
-          - name: fibresult
-            valueFrom:
-              path: /tmp/result.txt
+        args: ["echo {{inputs.parameters.result}}"]

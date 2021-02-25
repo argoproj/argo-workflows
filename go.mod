@@ -19,6 +19,7 @@ require (
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
+	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
@@ -39,6 +40,7 @@ require (
 	github.com/mattn/goreman v0.3.7
 	github.com/minio/minio-go/v7 v7.0.2
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
+	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/client_model v0.2.0

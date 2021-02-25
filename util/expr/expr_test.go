@@ -22,36 +22,29 @@ func TestEval(t *testing.T) {
 	assert.Equal(2, result)
 }
 
-func TestGetVariable(t *testing.T) {
+func TestExprFunctions(t *testing.T) {
 	assert := assert.New(t)
-	expr := "(steps.flipcoin.outputs.result == 'head')?steps.heads.outputs.result:steps.tails.outputs.result"
-	variables := GetExprIdentifers(expr)
-	assert.Len(variables, 3)
-	assert.Contains(variables, "steps.flipcoin.outputs.result")
-	assert.Contains(variables, "steps.heads.outputs.result")
-	assert.Contains(variables, "steps.tails.outputs.result")
-	expr = "(steps.flipcoin.outputs.result == 2)?steps.heads.outputs.result:steps.tails.outputs.result"
-	variables = GetExprIdentifers(expr)
-	assert.Len(variables, 3)
-	assert.Contains(variables, "steps.flipcoin.outputs.result")
-	assert.Contains(variables, "steps.heads.outputs.result")
-	assert.Contains(variables, "steps.tails.outputs.result")
-
-	expr = "(steps.flipcoin.outputs.result == 2)?4:steps.tails.outputs.result"
-	variables = GetExprIdentifers(expr)
-	assert.Len(variables, 2)
-	assert.Contains(variables, "steps.flipcoin.outputs.result")
-	assert.Contains(variables, "steps.tails.outputs.result")
-
-	expr = `steps.heads.outputs.result+steps.tails.outputs.result`
-	variables = GetExprIdentifers(expr)
-	assert.Len(variables, 2)
-	assert.Contains(variables, "steps.heads.outputs.result")
-	assert.Contains(variables, "steps.tails.outputs.result")
-	expr = `(steps.heads.outputs.result+steps.tails.outputs.result)==steps.flipcoin.outputs.result`
-	variables = GetExprIdentifers(expr)
-	assert.Len(variables, 3)
-	assert.Contains(variables, "steps.heads.outputs.result")
-	assert.Contains(variables, "steps.tails.outputs.result")
-	assert.Contains(variables, "steps.flipcoin.outputs.result")
+	env := map[string]interface{}{
+		"a.n":    1,
+		"a.s":    "1",
+		"a.json": "{ \"empId\": \"1\", \"empName\" : \"test\"}",
+	}
+	t.Run("ExprNumberFunction", func(t *testing.T) {
+		exp := "number(a.s) == 1? true: false"
+		result, err := Eval(exp, env)
+		assert.NoError(err)
+		assert.Equal(true, result)
+	})
+	t.Run("ExprStringFunction", func(t *testing.T) {
+		exp := "string(a.n) == '1'? true: false"
+		result, err := Eval(exp, env)
+		assert.NoError(err)
+		assert.Equal(true, result)
+	})
+	t.Run("ExprJsonFunction", func(t *testing.T) {
+		exp := "jsonpath(a.json, '$.empId') == '1'? true: false"
+		result, err := Eval(exp, env)
+		assert.NoError(err)
+		assert.Equal(true, result)
+	})
 }

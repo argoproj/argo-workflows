@@ -1,0 +1,79 @@
+# conditional-parameter provide a way to choose the output parameters based on expression.
+# In this example
+# the 'coinflip' step template has two steps which will run based `when` condition.
+# Based on condition one of step may not execute. So Step template output parameter should assign
+# executed step output result.
+# `expression` in output parameter can have expression to select the artifacts.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-parameter-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
+      assert nodes["printmessage"]["phase"] == "Succeeded"
+      assert nodes["printmessage"]["outputs"]["exitCode"] == "0"
+spec:
+  entrypoint: main
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  templates:
+    - name: main
+      steps:
+        - - name: coinflipmain
+            template: coinflip
+        - - name: printmessage
+            template: printmessage
+
+    
+    - name: coinflip
+      steps:
+        - - name: flipcoin
+            template: flipcoin1
+        - - name: heads
+            template: heads
+            when: "{{steps.flipcoin.outputs.result}} == heads"
+          - name: tails
+            template: tails
+            when: "{{steps.flipcoin.outputs.result}} == tails"
+      outputs:
+        parameters:
+          - name: stepresult
+            valueFrom:
+              expression: "steps.flipcoin.outputs.result == 'heads'? steps.heads.outputs.result : steps.tails.outputs.result"
+    
+    - name: flipcoin1
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          import random
+          result = "heads" if random.randint(0,1) == 0 else "tails"
+          print(result)
+          
+    - name: heads
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: [" echo heads"]
+
+    - name: tails
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: [" echo tails"]
+
+    - name: printmessage
+      inputs:
+        parameters:
+          - name: message
+            valueFrom:
+              Expression: "steps.flipcoin.outputs.result == 'heads'? steps.heads.outputs.result : steps.tails.outputs.result"
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.message}}"]
