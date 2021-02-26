@@ -2051,6 +2051,21 @@ Note that these environment variables may be removed at any time.</p>
 <td>The ID used for workflow controllers to elect a leader.</td>
 </tr>
 <tr>
+<td><code>LEADER_ELECTION_LEASE_DURATION</code></td>
+<td><code>time.Duration</code></td>
+<td>The duration that non-leader candidates will wait to force acquire leadership.</td>
+</tr>
+<tr>
+<td><code>LEADER_ELECTION_RENEW_DEADLINE</code></td>
+<td><code>time.Duration</code></td>
+<td>The duration that the acting master will retry refreshing leadership before giving up.</td>
+</tr>
+<tr>
+<td><code>LEADER_ELECTION_RETRY_PERIOD</code></td>
+<td><code>time.Duration</code></td>
+<td>The duration that the leader election clients should wait between tries of actions.</td>
+</tr>
+<tr>
 <td><code>MAX_OPERATION_TIME</code></td>
 <td><code>time.Duration</code></td>
 <td>The maximum time a workflow operation is allowed to run for before requeuing the workflow onto the work queue.</td>
