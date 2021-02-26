@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
 	"time"
@@ -145,7 +146,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		node, branchPhase := nodes[curr.nodeId], curr.phase
 
 		if !node.Fulfilled() {
-			return wfv1.NodeRunning
+			continue
 		}
 
 		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
@@ -177,9 +178,11 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 
 	// We only succeed if all the target tasks have been considered (i.e. its nodes created) and there are no failures
 	failFast := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
+	logrus.Infof("SIMON failFast is: %b", failFast)
 	result := wfv1.NodeSucceeded
 	for _, depName := range targetTasks {
 		branchPhase := targetTaskPhases[d.taskNodeID(depName)]
+		logrus.Infof("SIMON branchPhase for '%s' is: %s", depName, branchPhase)
 		if branchPhase == "" {
 			result = wfv1.NodeRunning
 			// If failFast is disabled, we will want to let all tasks complete before checking for failures
