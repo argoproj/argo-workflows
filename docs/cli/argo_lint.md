@@ -26,10 +26,10 @@ argo lint FILE... [flags]
 ### Options
 
 ```
-  -h, --help                 help for lint
+  -h, --help            help for lint
       --kinds strings   Which kinds will be linted. Can be: workflow|workflow-template|cron-workflow|cluster-workflow-template (default [all])
-  -o, --output string        Linting results output format. One of: pretty|simple (default "pretty")
-      --strict               Perform strict workflow validation (default true)
+  -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
+      --strict          Perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands
