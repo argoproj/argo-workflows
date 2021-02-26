@@ -20,7 +20,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util/path"
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 var (
@@ -58,8 +58,8 @@ func NewEmissaryCommand() *cobra.Command {
 			defer signal.Reset()
 			go func() {
 				for s := range signals {
-					if s != syscall.SIGCHLD {
-						_ = syscall.Kill(-os.Getpid(), s.(syscall.Signal))
+					if !osspecific.IsSIGCHLD(s) {
+						_ = osspecific.Kill(-os.Getpid(), s.(syscall.Signal))
 					}
 				}
 			}()
@@ -73,14 +73,15 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
-			name, err = path.Search(name)
+			name, err = exec.LookPath(name)
 			if err != nil {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
 			command := exec.Command(name, args...)
 			command.Env = os.Environ()
-			command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+			command.SysProcAttr = &syscall.SysProcAttr{}
+			osspecific.Setpgid(command.SysProcAttr)
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
 
@@ -112,7 +113,7 @@ func NewEmissaryCommand() *cobra.Command {
 					_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 					s, _ := strconv.Atoi(string(data))
 					if s > 0 {
-						_ = syscall.Kill(command.Process.Pid, syscall.Signal(s))
+						_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
 					}
 					time.Sleep(2 * time.Second)
 				}

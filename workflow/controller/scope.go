@@ -40,6 +40,7 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	v = strings.TrimPrefix(v, "{{")
 	v = strings.TrimSuffix(v, "}}")
+	v = strings.TrimSpace(v)
 	parts := strings.Split(v, ".")
 	prefix := parts[0]
 	switch prefix {

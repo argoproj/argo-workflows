@@ -49,6 +49,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Equinor](https://www.equinor.com/)
 1. [Fairwinds](https://fairwinds.com/)
 1. [FOLIO](http://corp.folio-sec.com/)
+1. [FreeWheel](https://freewheel.com/)
 1. [Fynd Trak](https://trak.fynd.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
