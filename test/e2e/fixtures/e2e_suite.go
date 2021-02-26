@@ -76,7 +76,6 @@ func (s *E2ESuite) BeforeTest(string, string) {
 
 var (
 	foreground = metav1.DeletePropagationForeground
-	background = metav1.DeletePropagationBackground
 )
 
 func (s *E2ESuite) DeleteResources() {
