@@ -2683,8 +2683,6 @@ Data is a data template
 
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
-
 - [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
