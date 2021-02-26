@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: data-transformation
+  labels:
+    argo-e2e: "true"
+spec:
+  entrypoint: artifact-example
+  artifactRepositoryRef:
+    key: my-key
+  templates:
+    - name: artifact-example
+      steps:
+        - - name: generate-artifact
+            template: generate-artifacts
+            withItems: ['script.py', 'doc.pdf', 'foo/script.py', 'foo/doc.pdf']
+            arguments:
+              parameters:
+                - name: file-name
+                  value: "{{item}}"
+        - - name: get-artifact-path
+            template: get-artifact-paths
+        - - name: process-artifact
+            template: process-message
+            withParam: "{{steps.get-artifact-path.outputs.result}}"
+            arguments:
+              parameters:
+                - name: file-name
+                  value: "{{item}}"
+
+    - name: generate-artifacts
+      inputs:
+        parameters:
+          - name: file-name
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - hello
+          - "/mnt/{{inputs.parameters.file-name}}"
+      outputs:
+        artifacts:
+          - name: file
+            path: "/mnt/{{inputs.parameters.file-name}}"
+            s3:
+              key: "{{inputs.parameters.file-name}}"
+
+    - name: get-artifact-paths
+      data:
+        source:
+          artifactPaths:
+            s3:
+              bucket: my-bucket
+        transformation:
+          - expression: "filter(data, {# endsWith \".py\"})"
+
+    - name: process-message
+      inputs:
+        parameters:
+          - name: file-name
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["echo \"{{inputs.parameters.file-name}}.processed\""]

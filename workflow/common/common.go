@@ -107,6 +107,8 @@ const (
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
+	// EnvVarIncludeScriptOutput capture the stdout and stderr
+	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
 	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`
@@ -129,6 +131,9 @@ const (
 
 	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
 	ContainerRuntimeExecutorPNS = "pns"
+
+	// ContainerRuntimeExecutorEmissary indicates to use emissary container runtime executor
+	ContainerRuntimeExecutorEmissary = "emissary"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 

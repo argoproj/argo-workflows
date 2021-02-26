@@ -111,6 +111,12 @@ message ArtifactLocation {
   optional GCSArtifact gcs = 9;
 }
 
+// ArtifactPaths expands a step from a collection of artifacts
+message ArtifactPaths {
+  // Artifact is the artifact location from which to source the artifacts, it can be a directory
+  optional Artifact artifact = 1;
+}
+
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 message ArtifactRepositoryRef {
   // The name of the config map. Defaults to "artifact-repositories".
@@ -343,6 +349,21 @@ message DAGTemplate {
   // completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
   // More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442
   optional bool failFast = 3;
+}
+
+// Data is a data template
+message Data {
+  // Source sources external data into a data template
+  optional DataSource source = 1;
+
+  // Transformation applies a set of transformations
+  repeated TransformationStep transformation = 2;
+}
+
+// DataSource sources external data into a data template
+message DataSource {
+  // ArtifactPaths is a data transformation that collects a list of artifact paths
+  optional ArtifactPaths artifactPaths = 1;
 }
 
 message Event {
@@ -1093,6 +1114,9 @@ message Template {
   // Suspend template subtype which can suspend a workflow when reaching the step
   optional SuspendTemplate suspend = 16;
 
+  // Data is a data template
+  optional Data data = 39;
+
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
   // +patchMergeKey=name
@@ -1193,6 +1217,11 @@ message TemplateRef {
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 4;
+}
+
+message TransformationStep {
+  // Expression defines an expr expression to apply
+  optional string expression = 1;
 }
 
 // UserContainer is a container specified by a user.

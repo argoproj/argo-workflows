@@ -216,7 +216,7 @@ endif
 .PHONY: controller-image
 controller-image: dist/controller.image
 
-dist/controller.image: $(CONTROLLER_PKGS)
+dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
 	$(call docker_build,workflow-controller)
 	touch dist/controller.image
 
@@ -377,7 +377,7 @@ endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go
+test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
@@ -410,6 +410,9 @@ endif
 
 test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
 	cd test/e2e/images/argosay/v2 && GOOS=linux CGO_ENABLED=0 go build -ldflags '-w -s' -o argosay ./main
+
+dist/argosay: test/e2e/images/argosay/v2/main/argosay.go
+	go build -ldflags '-w -s' -o dist/argosay ./test/e2e/images/argosay/v2/main
 
 .PHONY: test-images
 test-images:
@@ -590,6 +593,7 @@ prepare-release: check-version-warning clean codegen manifests
 publish-release: check-version-warning clis checksums
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
+
 endif
 
 .PHONY: check-version-warning

@@ -1,0 +1,70 @@
+# See doc docs/data-sourcing-and-transformation.md
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: data-transformations-
+spec:
+  entrypoint: data-transformations
+  templates:
+    - name: data-transformations
+      steps:
+        - - name: generate-artifact
+            template: generate-artifacts
+        - - name: process-artifact
+            template: process-message
+            withParam: "{{steps.generate-artifact.outputs.result}}"
+            arguments:
+              artifacts:
+                - name: file
+                  s3:
+                    bucket: test
+                    key: "{{item}}"
+                    endpoint: minio:9000
+                    insecure: true
+                    accessKeySecret:
+                      name: my-minio-cred
+                      key: accesskey
+                    secretKeySecret:
+                      name: my-minio-cred
+                      key: secretkey
+
+              parameters:
+                - name: file-name
+                  value: "{{item}}"
+
+    - name: generate-artifacts
+      data:
+        source:
+          artifactPaths:
+            name: test-bucket
+            s3:
+              bucket: test
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+
+        transformation:
+          - expression: "filter(data, {# endsWith \".py\"})"
+
+    - name: process-message
+      inputs:
+        parameters:
+          - name: file-name
+        artifacts:
+          - name: file
+            path: /file
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["cat /file && echo \"{{inputs.parameters.file-name}}.processed\" | tee /tmp/f.txt"]
+      outputs:
+        parameters:
+          - name: processed
+            valueFrom:
+              path: /tmp/f.txt
+

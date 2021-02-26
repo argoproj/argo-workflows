@@ -105,6 +105,10 @@ type Config struct {
 
 	// Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+
+	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
+	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
+	Images map[string]Image `json:"images,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
@@ -361,7 +365,7 @@ type MetricsConfig struct {
 }
 
 type WorkflowRestrictions struct {
-	TemplateReferencing TemplateReferencing `json:"templateReferencing"`
+	TemplateReferencing TemplateReferencing `json:"templateReferencing,omitempty"`
 }
 
 type TemplateReferencing string
