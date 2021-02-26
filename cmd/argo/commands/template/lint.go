@@ -46,7 +46,7 @@ func NewLintCommand() *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output output. One of: pretty|simple")
+	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
 	return command
 }

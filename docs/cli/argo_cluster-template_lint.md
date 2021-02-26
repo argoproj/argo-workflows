@@ -14,7 +14,7 @@ argo cluster-template lint FILE... [flags]
 
 ```
   -h, --help            help for lint
-  -o, --output string   Linting results output output. One of: pretty|simple (default "pretty")
+  -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
       --strict          perform strict workflow validation (default true)
 ```
 

@@ -47,7 +47,7 @@ func NewLintCommand() *cobra.Command {
 	}
 
 	command.Flags().StringSliceVar(&lintKinds, "lint-kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
-	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output output. One of: pretty|simple")
+	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
 
 	return command
