@@ -80,6 +80,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
 
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
@@ -426,6 +428,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag-targets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-targets.yaml)
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
@@ -792,6 +796,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
 
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
@@ -1115,6 +1121,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
 
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
@@ -1427,6 +1435,8 @@ Arguments to a template
 - [`dag-targets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-targets.yaml)
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -1764,6 +1774,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
 
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
@@ -1979,6 +1991,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
+|`data`|[`Data`](#data)|Data is a data template|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
@@ -2149,6 +2162,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
@@ -2248,6 +2263,8 @@ Artifact indicates an artifact to place at a specified path
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
@@ -2355,6 +2372,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-targets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-targets.yaml)
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -2650,6 +2669,37 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 |`target`|`string`|Target are one or more names of targets to execute in a DAG|
 |`tasks`|`Array<`[`DAGTask`](#dagtask)`>`|Tasks are a list of DAG tasks|
 
+## Data
+
+Data is a data template
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
+
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
+
+- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
+
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`source`|[`DataSource`](#datasource)|Source sources external data into a data template|
+|`transformation`|`Array<`[`TransformationStep`](#transformationstep)`>`|Transformation applies a set of transformations|
+
 ## UserContainer
 
 UserContainer is a container specified by a user.
@@ -2739,6 +2789,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`dag-targets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-targets.yaml)
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -3018,6 +3070,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -3474,6 +3528,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -3680,6 +3736,70 @@ DAGTask represents a node in the graph during DAG execution
 |`withParam`|`string`|WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.|
 |`withSequence`|[`Sequence`](#sequence)|WithSequence expands a task into a numeric sequence|
 
+## DataSource
+
+DataSource sources external data into a data template
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip-recursive.yaml)
+
+- [`coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip.yaml)
+
+- [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/colored-logs.yaml)
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
+
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-param-result.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
+
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
+
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
+
+- [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-script.yaml)
+
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
+
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`artifactPaths`|[`ArtifactPaths`](#artifactpaths)|ArtifactPaths is a data transformation that collects a list of artifact paths|
+
+## TransformationStep
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`expression`|`string`|Expression defines an expr expression to apply|
+
 ## Cache
 
 Cache is the configuration for the type of cache to be used
@@ -3879,6 +3999,39 @@ Amount represent a numeric amount.
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 </details>
 
+## ArtifactPaths
+
+ArtifactPaths expands a step from a collection of artifacts
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
+|`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
+|`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`from`|`string`|From allows an artifact to reference an artifact from a previous step|
+|`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
+|`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
+|`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
+|`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
+|`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
+|`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.|
+|`name`|`string`|name of the artifact. must be unique within a template's inputs/outputs.|
+|`optional`|`boolean`|Make Artifacts optional, if Artifacts doesn't generate or exist|
+|`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
+|`path`|`string`|Path is the container path to the artifact|
+|`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
+|`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
+|`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
+|`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
+
 # External Fields
 
 
@@ -3967,6 +4120,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`dag-targets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-targets.yaml)
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
@@ -4526,6 +4681,8 @@ A single application container that you want to run within a pod.
 - [`dag-targets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-targets.yaml)
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
@@ -5153,6 +5310,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`dag-targets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-targets.yaml)
 
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
@@ -5788,6 +5947,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 

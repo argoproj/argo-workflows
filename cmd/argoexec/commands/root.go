@@ -64,6 +64,7 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(NewInitCommand())
 	command.AddCommand(NewResourceCommand())
 	command.AddCommand(NewWaitCommand())
+	command.AddCommand(NewDataCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)

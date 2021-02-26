@@ -34,6 +34,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
@@ -580,7 +581,7 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 }
 
 // InitDriver initializes an instance of an artifact driver
-func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifact.ArtifactDriver, error) {
+func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
 	driver, err := artifact.NewDriver(ctx, art, we)
 	if err == artifact.ErrUnsupportedDriver {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
