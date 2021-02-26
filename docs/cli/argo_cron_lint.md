@@ -13,8 +13,8 @@ argo cron lint FILE... [flags]
 ### Options
 
 ```
-      --format string   Linting results output format. One of: pretty|simple (default "pretty")
   -h, --help            help for lint
+  -o, --output string   Linting results output output. One of: pretty|simple (default "pretty")
       --strict          perform strict validation (default true)
 ```
 

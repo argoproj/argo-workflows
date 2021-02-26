@@ -1,22 +1,35 @@
 ## argo lint
 
-validate files or directories of workflow manifests
+validate files or directories of manifests
 
 ### Synopsis
 
-validate files or directories of workflow manifests
+validate files or directories of manifests
 
 ```
 argo lint FILE... [flags]
 ```
 
+### Examples
+
+```
+# Lint all manifests in a specified directory:
+
+  argo lint ./manifests
+
+# Lint only manifests of kinds Workflow and CronWorkflow from stdin:
+
+  cat manifests.yaml | argo lint --lint-kinds=wf,cwf -
+
+```
+
 ### Options
 
 ```
-      --all-kinds       Lint all kinds, not just workflows
-      --format string   Linting results output format. One of: pretty|simple (default "pretty")
-  -h, --help            help for lint
-      --strict          Perform strict workflow validation (default true)
+  -h, --help                 help for lint
+      --lint-kinds strings   Which kinds will be linted. Can be: workflow|workflow-template|cron-workflow|cluster-workflow-template (default [all])
+  -o, --output string        Linting results output output. One of: pretty|simple (default "pretty")
+      --strict               Perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands

@@ -1,7 +1,6 @@
 package template
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/argoproj/pkg/errors"
@@ -14,7 +13,7 @@ import (
 func NewLintCommand() *cobra.Command {
 	var (
 		strict bool
-		format string
+		output string
 	)
 
 	command := &cobra.Command{
@@ -26,7 +25,7 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			ctx, apiClient := client.NewAPIClient()
-			fmtr, err := lint.GetFormatter(format)
+			fmtr, err := lint.GetFormatter(output)
 			errors.CheckError(err)
 
 			res, err := lint.Lint(ctx, &lint.LintOptions{
@@ -37,17 +36,17 @@ func NewLintCommand() *cobra.Command {
 				Strict:           strict,
 				DefaultNamespace: client.Namespace(),
 				Formatter:        fmtr,
+				Output:           os.Stdout,
 			})
 			errors.CheckError(err)
 
-			fmt.Print(res.Msg())
 			if !res.Success {
 				os.Exit(1)
 			}
 		},
 	}
 
-	command.Flags().StringVar(&format, "format", "pretty", "Linting results output format. One of: pretty|simple")
+	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output output. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
 	return command
 }

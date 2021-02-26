@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +34,9 @@ type LintOptions struct {
 	DefaultNamespace string
 	Formatter        Formatter
 	ServiceClients   ServiceClients
+	// Output if not nil, will print the linting results after
+	// source has been linted. Otherwise, nothing is printed.
+	Output io.Writer
 }
 
 // LintResult represents the result of linting objects from a single source
@@ -52,7 +56,8 @@ type LintResults struct {
 }
 
 type Formatter interface {
-	Format(*LintResults) string
+	Format(*LintResult) string
+	Summarize(*LintResults) string
 }
 
 var (
@@ -81,9 +86,14 @@ func GetFormatter(fmtr string) (Formatter, error) {
 // Lint reads all files, returns linting errors of all of the enitities of the specified kinds.
 // Entities of other kinds are ignored.
 func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
+	var fmtr Formatter = defaultFormatter
+	if opts.Formatter != nil {
+		fmtr = opts.Formatter
+	}
+
 	results := &LintResults{
 		Results: []*LintResult{},
-		fmtr:    opts.Formatter,
+		fmtr:    fmtr,
 	}
 
 	for _, file := range opts.Files {
@@ -105,7 +115,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 			case info.IsDir():
 				return nil // skip
 			default:
-				log.Warnf("ignoring file with unknown extension: %s", path)
+				log.Debugf("ignoring file with unknown extension: %s", path)
 				return nil
 			}
 
@@ -114,7 +124,15 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 				return err
 			}
 
-			results.Results = append(results.Results, lintData(ctx, path, data, opts))
+			res := lintData(ctx, path, data, opts)
+			results.Results = append(results.Results, res)
+
+			if opts.Output != nil {
+				_, err = opts.Output.Write([]byte(results.fmtr.Format(res)))
+				if err != nil {
+					return err
+				}
+			}
 
 			return nil
 		})
@@ -123,7 +141,13 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 		}
 	}
 
-	return results.evaluate(), nil
+	results.evaluate()
+	if opts.Output != nil {
+		_, err := opts.Output.Write([]byte(results.fmtr.Summarize(results)))
+		return results, err
+	}
+
+	return results, nil
 }
 
 func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *LintResult {
@@ -200,7 +224,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 				)
 			}
 		default:
-			// silently ignore unknown kinds
+			continue // silently ignore unknown kinds
 		}
 
 		if err != nil {
@@ -237,14 +261,20 @@ func (l *LintResults) evaluate() *LintResults {
 	}
 
 	l.Success = success
-
-	var fmtr Formatter = defaultFormatter
-	if l.fmtr != nil {
-		fmtr = l.fmtr
-	}
-	l.msg = fmtr.Format(l)
+	l.msg = l.buildMsg()
 
 	return l
+}
+
+func (l *LintResults) buildMsg() string {
+	sb := &strings.Builder{}
+	for _, r := range l.Results {
+		sb.WriteString(l.fmtr.Format(r))
+	}
+
+	sb.WriteString(l.fmtr.Summarize(l))
+
+	return sb.String()
 }
 
 func getObjectName(kind string, obj metav1.Object, objIndex int) string {
