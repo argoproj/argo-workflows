@@ -38,7 +38,7 @@ import (
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
-	"github.com/argoproj/argo-workflows/v3/workflow/util/outputs"
+	outputsmuxer "github.com/argoproj/argo-workflows/v3/workflow/util/outputs/muxer"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -751,7 +751,7 @@ func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artif
 		if err != nil {
 			return err
 		}
-		message, err = outputs.Mux(message, o)
+		message, err = outputsmuxer.Mux(message, o)
 		if err != nil {
 			return err
 		}

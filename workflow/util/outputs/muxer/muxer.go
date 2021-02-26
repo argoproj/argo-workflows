@@ -1,4 +1,4 @@
-package outputs
+package muxer
 
 import (
 	"encoding/json"
@@ -9,16 +9,18 @@ import (
 )
 
 func Demux(message string) (string, *wfv1.Outputs, error) {
-	parts := strings.SplitN(message, "|", 2)
-	message = parts[0]
-	if len(parts) < 2 {
+	i := strings.Index(message, `|{`) // we use `|` as the delimiter, but we'll actually always see `|{`, this reduces the risk of match which should not be allowed
+	if i < 0 {
 		return message, nil, nil
 	}
 	outputs := &wfv1.Outputs{}
-	return message, outputs, json.Unmarshal([]byte(parts[1]), outputs)
+	return message[0:i], outputs, json.Unmarshal([]byte(message[i+1:]), outputs)
 }
 
 func Mux(message string, outputs *wfv1.Outputs) (string, error) {
+	if outputs == nil {
+		return message, nil
+	}
 	data, err := json.Marshal(outputs)
 	if err != nil {
 		return "", err

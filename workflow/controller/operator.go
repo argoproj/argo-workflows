@@ -54,6 +54,7 @@ import (
 	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	outputsmuxer "github.com/argoproj/argo-workflows/v3/workflow/util/outputs/muxer"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
@@ -1183,7 +1184,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			if c.State.Terminated == nil || c.Name != common.WaitContainerName {
 				continue
 			}
-			_, outputs, err := util.DemuxMessage(c.State.Terminated.Message)
+			_, outputs, err := outputsmuxer.Demux(c.State.Terminated.Message)
 			log.WithField("outputs", outputs).WithField("message", c.State.Terminated.Message).WithError(err).Debug("outputs")
 			if err != nil {
 				return woc.markNodeError(node.Name, err)
@@ -1336,7 +1337,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		}
 
 		msg := fmt.Sprintf("%s (exit code %d)", t.Reason, t.ExitCode)
-		message, _, _ := util.DemuxMessage(t.Message)
+		message, _, _ := outputsmuxer.Demux(t.Message)
 		if message != "" {
 			msg = fmt.Sprintf("%s: %s", msg, message)
 		}
