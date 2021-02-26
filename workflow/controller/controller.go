@@ -217,15 +217,15 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	logCtx := log.WithField("id", nodeID)
 
-	instanceID := "default-instance-id"
+	leaderName := "workflow-controller"
 	if wfc.Config.InstanceID != "" {
-		instanceID = wfc.Config.InstanceID
+		leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
 	}
 
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: instanceID, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
 		},
 		ReleaseOnCancel: true,
