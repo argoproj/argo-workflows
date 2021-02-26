@@ -74,9 +74,7 @@ func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
 }
 
-var (
-	foreground = metav1.DeletePropagationForeground
-)
+var foreground = metav1.DeletePropagationForeground
 
 func (s *E2ESuite) DeleteResources() {
 	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
