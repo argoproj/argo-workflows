@@ -2642,7 +2642,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 
 	dataTemplate, err := json.Marshal(tmpl.Data)
 	if err != nil {
-		return node, fmt.Errorf("could not marhsal data in transformation: %w", err)
+		return node, fmt.Errorf("could not marshal data in transformation: %w", err)
 	}
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)

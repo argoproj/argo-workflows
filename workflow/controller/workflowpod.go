@@ -1169,7 +1169,7 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	}
 
 	if tmpl.Data != nil {
-		if art := tmpl.Data.GetArtifactIfAny(); art != nil {
+		if art, needed := tmpl.Data.Source.GetArtifactIfNeeded(); needed {
 			createSecretVolume(allVolumesMap, *art, uniqueKeyMap)
 		}
 	}

@@ -9,8 +9,11 @@ type Data struct {
 	Transformation Transformation `json:"transformation" protobuf:"bytes,2,rep,name=transformation"`
 }
 
-func (d *Data) GetArtifactIfAny() *Artifact {
-	return &d.Source.ArtifactPaths.Artifact
+func (ds *DataSource) GetArtifactIfNeeded() (*Artifact, bool) {
+	if ds.ArtifactPaths != nil {
+		return &ds.ArtifactPaths.Artifact, true
+	}
+	return nil, false
 }
 
 type Transformation []TransformationStep

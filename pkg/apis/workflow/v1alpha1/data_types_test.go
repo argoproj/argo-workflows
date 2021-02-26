@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetArtifactIfAny(t *testing.T) {
-	data := &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{Artifact{Name: "foo"}}}}
-	art := data.GetArtifactIfAny()
-	if assert.NotNil(t, art) {
+func TestGetArtifactIfNeeded(t *testing.T) {
+	data := &DataSource{ArtifactPaths: &ArtifactPaths{Artifact{Name: "foo"}}}
+	art, needed := data.GetArtifactIfNeeded()
+	if assert.True(t, needed) {
 		assert.Equal(t, "foo", art.Name)
 	}
 }
