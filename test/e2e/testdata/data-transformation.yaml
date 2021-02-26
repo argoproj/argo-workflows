@@ -25,7 +25,7 @@ spec:
               artifacts:
                 - name: file
                   s3:
-                    bucket: test
+                    bucket: my-bucket
                     key: "{{item}}"
                     endpoint: minio:9000
                     insecure: true
@@ -54,7 +54,7 @@ spec:
           - name: file
             path: "/mnt/{{inputs.parameters.file-name}}"
             s3:
-              bucket: test
+              bucket: my-bucket
               key: "{{inputs.parameters.file-name}}"
               endpoint: minio:9000
               insecure: true
@@ -70,7 +70,7 @@ spec:
         source:
           artifactPaths:
             s3:
-              bucket: test
+              bucket: my-bucket
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
