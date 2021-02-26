@@ -135,6 +135,18 @@ data:
   # disable the TLS verification of the kubelet executor (default: false)
   kubeletInsecure: false
 
+  # The command/args for each image, needed when the command is not specified and the emissary executor is used.
+  # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
+  images: |
+    argoproj/argosay:v1:
+      command: [cowsay]
+    argoproj/argosay:v2:
+      command: [/argosay]
+    docker/whalesay:latest:
+       command: [cowsay]
+    python:alpine3.6:
+       command: [python3]
+
   # executor controls how the init and wait container should be customized
   # (available since Argo v2.3)
   executor: |

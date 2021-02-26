@@ -77,6 +77,10 @@ type WorkflowExecutor struct {
 	errors []error
 }
 
+type Initializer interface {
+	Init(tmpl wfv1.Template) error
+}
+
 //go:generate mockery -name ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
@@ -1082,6 +1086,13 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
+}
+
+func (we *WorkflowExecutor) Init() error {
+	if i, ok := we.RuntimeExecutor.(Initializer); ok {
+		return i.Init(we.Template)
+	}
+	return nil
 }
 
 // LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file

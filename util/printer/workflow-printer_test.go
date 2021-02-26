@@ -26,6 +26,7 @@ func TestPrintWorkflows(t *testing.T) {
 				Templates: []wfv1.Template{
 					{Name: "t0", Container: &corev1.Container{}},
 				},
+				SecurityContext: &corev1.PodSecurityContext{},
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase:      wfv1.WorkflowRunning,
@@ -92,5 +93,73 @@ my-wf   Running   0s    3s         2          1/2/3   my-param=my-value
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Output: "yaml"}))
 		assert.NotEmpty(t, b.String())
+	})
+}
+
+func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
+	completedWorkflows := wfv1.Workflows{}
+	for i := 0; i < 101; i++ {
+		completedWorkflows = append(completedWorkflows,
+			wfv1.Workflow{
+				Status: wfv1.WorkflowStatus{
+					Phase: wfv1.WorkflowSucceeded,
+				},
+			})
+	}
+	incompleteWorkflows := wfv1.Workflows{}
+	for i := 0; i < 101; i++ {
+		incompleteWorkflows = append(incompleteWorkflows,
+			wfv1.Workflow{
+				Status: wfv1.WorkflowStatus{
+					Phase: wfv1.WorkflowRunning,
+				},
+			})
+	}
+	completedAndIncompleteWorkflows := append(completedWorkflows, incompleteWorkflows...)
+
+	t.Run("CostOptimizationOnCompletedWorkflows", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(completedWorkflows, &b, PrintOpts{}))
+		assert.Contains(t, b.String(), "\nYou have at least 101 completed workflows. "+
+			"Reducing the total number of workflows will reduce your costs."+
+			"\nLearn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
+	})
+	t.Run("CostOptimizationOnIncompleteWorkflows", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(incompleteWorkflows, &b, PrintOpts{}))
+		assert.Contains(t, b.String(), "\nYou have at least 101 incomplete workflows. "+
+			"Reducing the total number of workflows will reduce your costs."+
+			"\nLearn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
+	})
+	t.Run("CostOptimizationOnCompletedAndIncompleteWorkflows", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(completedAndIncompleteWorkflows, &b, PrintOpts{}))
+		assert.Contains(t, b.String(), "\nYou have at least 101 incomplete and 101 completed workflows. "+
+			"Reducing the total number of workflows will reduce your costs."+
+			"\nLearn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
+	})
+}
+
+func TestPrintWorkflowSecurityNudges(t *testing.T) {
+	secureWorkflow := wfv1.Workflow{
+		Spec: wfv1.WorkflowSpec{
+			SecurityContext: &corev1.PodSecurityContext{},
+		},
+	}
+	insecureWorkflow := wfv1.Workflow{
+		Spec: wfv1.WorkflowSpec{},
+	}
+
+	t.Run("SecurityNudgesForSingleInsecureWorkflow", func(t *testing.T) {
+		var b bytes.Buffer
+		PrintSecurityNudges(insecureWorkflow, &b)
+		assert.Contains(t, b.String(), "\nThis workflow does not have security context set. "+
+			"You can run your workflow pods more securely by setting it.\n"+
+			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
+	})
+	t.Run("NoSecurityNudgesForSecureWorkflow", func(t *testing.T) {
+		var b bytes.Buffer
+		PrintSecurityNudges(secureWorkflow, &b)
+		assert.NotContains(t, b.String(), "security context")
 	})
 }
