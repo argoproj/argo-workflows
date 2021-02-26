@@ -13,7 +13,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible
 	github.com/antonmedv/expr v1.8.8
 	github.com/argoproj/argo-events v1.2.0
-	github.com/argoproj/pkg v0.5.0
+	github.com/argoproj/pkg v0.6.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31

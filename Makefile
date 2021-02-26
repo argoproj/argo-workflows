@@ -593,6 +593,7 @@ prepare-release: check-version-warning clean codegen manifests
 publish-release: check-version-warning clis checksums
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
+
 endif
 
 .PHONY: check-version-warning

@@ -9,16 +9,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
-// OSSArtifactDriver is a driver for OSS
-type OSSArtifactDriver struct {
+// ArtifactDriver is a driver for OSS
+type ArtifactDriver struct {
 	Endpoint  string
 	AccessKey string
 	SecretKey string
 }
 
-func (ossDriver *OSSArtifactDriver) newOSSClient() (*oss.Client, error) {
+var _ common.ArtifactDriver = &ArtifactDriver{}
+
+func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
 	if err != nil {
 		log.Warnf("Failed to create new OSS client: %v", err)
@@ -28,7 +31,7 @@ func (ossDriver *OSSArtifactDriver) newOSSClient() (*oss.Client, error) {
 }
 
 // Downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
-func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			log.Infof("OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
@@ -52,7 +55,7 @@ func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path stri
 }
 
 // Saves an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
-func (ossDriver *OSSArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			log.Infof("OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
@@ -86,4 +89,8 @@ func (ossDriver *OSSArtifactDriver) Save(path string, outputArtifact *wfv1.Artif
 			return true, nil
 		})
 	return err
+}
+
+func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
