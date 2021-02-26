@@ -32,6 +32,7 @@ const (
 	TemplateTypeResource  TemplateType = "Resource"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
+	TemplateTypeData      TemplateType = "Data"
 	TemplateTypeUnknown   TemplateType = "Unknown"
 )
 
@@ -520,6 +521,9 @@ type Template struct {
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
+
+	// Data is a data template
+	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -1782,7 +1786,7 @@ type S3Artifact struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
 
 	// Key is the key in the bucket where the artifact resides
-	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
 func (s *S3Artifact) GetKey() (string, error) {
@@ -2009,7 +2013,6 @@ func (h *HTTPArtifact) HasLocation() bool {
 
 // GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
-
 	// Bucket is the name of the bucket
 	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
@@ -2140,6 +2143,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
+	if tmpl.Data != nil {
+		return TemplateTypeData
+	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
@@ -2149,7 +2155,7 @@ func (tmpl *Template) GetType() TemplateType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
@@ -2158,7 +2164,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false

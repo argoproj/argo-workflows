@@ -6229,6 +6229,87 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactPaths": {
+      "description": "ArtifactPaths expands a step from a collection of artifacts",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "archive": {
+          "description": "Archive controls how the artifact will be saved to the artifact repository.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchiveStrategy"
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
+        "artifactory": {
+          "description": "Artifactory contains artifactory artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "from": {
+          "description": "From allows an artifact to reference an artifact from a previous step",
+          "type": "string"
+        },
+        "gcs": {
+          "description": "GCS contains GCS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
+        },
+        "git": {
+          "description": "Git contains git artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
+        },
+        "globalName": {
+          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "type": "string"
+        },
+        "hdfs": {
+          "description": "HDFS contains HDFS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSArtifact"
+        },
+        "http": {
+          "description": "HTTP contains HTTP artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
+        },
+        "mode": {
+          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "type": "integer"
+        },
+        "name": {
+          "description": "name of the artifact. must be unique within a template's inputs/outputs.",
+          "type": "string"
+        },
+        "optional": {
+          "description": "Make Artifacts optional, if Artifacts doesn't generate or exist",
+          "type": "boolean"
+        },
+        "oss": {
+          "description": "OSS contains OSS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact"
+        },
+        "path": {
+          "description": "Path is the container path to the artifact",
+          "type": "string"
+        },
+        "raw": {
+          "description": "Raw contains raw artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
+        },
+        "recurseMode": {
+          "description": "If mode is set, apply the permission recursively into the artifact if it is a folder",
+          "type": "boolean"
+        },
+        "s3": {
+          "description": "S3 contains S3 artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        },
+        "subPath": {
+          "description": "SubPath allows an artifact to be sourced from a subpath within the specified source",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
       "type": "object",
       "properties": {
@@ -6709,6 +6790,37 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Data": {
+      "description": "Data is a data template",
+      "type": "object",
+      "required": [
+        "source",
+        "transformation"
+      ],
+      "properties": {
+        "source": {
+          "description": "Source sources external data into a data template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DataSource"
+        },
+        "transformation": {
+          "description": "Transformation applies a set of transformations",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TransformationStep"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.DataSource": {
+      "description": "DataSource sources external data into a data template",
+      "type": "object",
+      "properties": {
+        "artifactPaths": {
+          "description": "ArtifactPaths is a data transformation that collects a list of artifact paths",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactPaths"
         }
       }
     },
@@ -7571,9 +7683,6 @@
     "io.argoproj.workflow.v1alpha1.S3Artifact": {
       "description": "S3Artifact is the location of an S3 artifact",
       "type": "object",
-      "required": [
-        "key"
-      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -7995,6 +8104,10 @@
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
         },
+        "data": {
+          "description": "Data is a data template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Data"
+        },
         "executor": {
           "description": "Executor holds configurations of the executor container.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
@@ -8150,6 +8263,18 @@
         },
         "template": {
           "description": "Template is the name of referred template in the resource.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.TransformationStep": {
+      "type": "object",
+      "required": [
+        "expression"
+      ],
+      "properties": {
+        "expression": {
+          "description": "Expression defines an expr expression to apply",
           "type": "string"
         }
       }
