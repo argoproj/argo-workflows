@@ -1,7 +1,7 @@
 package template
 
 func Replace(s string, replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	t, err := New(s)
+	t, err := NewTemplate(s)
 	if err != nil {
 		return "", err
 	}

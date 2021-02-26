@@ -654,7 +654,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	task.WithParam = ""
 	task.WithSequence = nil
 
-	tmpl, err := template.New(string(taskBytes))
+	tmpl, err := template.NewTemplate(string(taskBytes))
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}

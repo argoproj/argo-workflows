@@ -463,7 +463,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	t, err := template.New(string(stepBytes))
+	t, err := template.NewTemplate(string(stepBytes))
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}

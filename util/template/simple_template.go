@@ -9,10 +9,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
-const (
-	kindSimple kind = "" // default is simple, i.e. no prefix
-)
-
 func simpleReplace(w io.Writer, tag string, replaceMap map[string]string, allowUnresolved bool) (int, error) {
 	replacement, ok := replaceMap[strings.TrimSpace(tag)]
 	if !ok {

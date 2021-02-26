@@ -7,7 +7,7 @@ import (
 	"github.com/valyala/fasttemplate"
 )
 
-func Validate(s string, f func(tag string) error) error {
+func Validate(s string, validator func(tag string) error) error {
 	t, err := fasttemplate.NewTemplate(s, prefix, suffix)
 	if err != nil {
 		return err
@@ -18,7 +18,7 @@ func Validate(s string, f func(tag string) error) error {
 		case kindExpression:
 			return 0, nil // we do not validate expression templates
 		default:
-			return 0, f(tag)
+			return 0, validator(tag)
 		}
 	})
 	return err

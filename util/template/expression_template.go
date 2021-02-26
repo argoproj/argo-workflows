@@ -5,16 +5,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/Masterminds/sprig"
 	"github.com/antonmedv/expr"
-	"github.com/doublerebel/bellows"
 )
-
-const kindExpression kind = "="
 
 func init() {
 	if os.Getenv("EXPRESSION_TEMPLATES") != "false" {
-		kinds = append(kinds, kindExpression)
+		registerKind(kindExpression)
 	}
 }
 
@@ -30,12 +26,6 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return 0, fmt.Errorf("failed to evaluate expression %q", expression)
 	}
 	return w.Write([]byte(fmt.Sprintf("%v", result)))
-}
-
-func newEnv(m map[string]interface{}) map[string]interface{} {
-	env := bellows.Expand(m)
-	env["sprig"] = sprig.GenericFuncMap()
-	return env
 }
 
 func envMap(replaceMap map[string]string) map[string]interface{} {
