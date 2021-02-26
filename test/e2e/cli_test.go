@@ -1000,7 +1000,7 @@ func (s *CLISuite) TestCron() {
 		})
 	})
 	s.Run("Lint All Kinds", func() {
-		s.Given().RunCli([]string{"lint", "--all-kinds", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"lint", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "no linting errors found!")
 			}
