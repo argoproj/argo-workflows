@@ -713,7 +713,7 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 	s.Run("Lint Only Workflows", func() {
 		s.Given().
-			RunCli([]string{"lint", "--lint-kinds", "wf", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"lint", "--kinds", "wf", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
 					assert.Contains(t, output, "found nothing to lint in the specified paths, failing...")
 				}
@@ -747,7 +747,7 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 	s.Run("Lint Only CronWorkflows", func() {
 		s.Given().
-			RunCli([]string{"lint", "--lint-kinds", "cwf", "cron/cron-and-malformed-template.yaml"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"lint", "--kinds", "cwf", "cron/cron-and-malformed-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "no linting errors found")
 				}

@@ -31,7 +31,7 @@ func NewLintCommand() *cobra.Command {
 
 # Lint only manifests of kinds Workflow and CronWorkflow from stdin:
 
-  cat manifests.yaml | argo lint --lint-kinds=wf,cwf -
+  cat manifests.yaml | argo lint --kinds=wf,cwf -
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
@@ -46,7 +46,7 @@ func NewLintCommand() *cobra.Command {
 		},
 	}
 
-	command.Flags().StringSliceVar(&lintKinds, "lint-kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
+	command.Flags().StringSliceVar(&lintKinds, "kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
 	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
 

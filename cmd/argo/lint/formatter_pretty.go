@@ -14,13 +14,8 @@ const (
 type formatterPretty struct{}
 
 const (
-	clear     = "\x1b[0m"
 	underline = "\x1b[4m"
 )
-
-func withAttribute(s, attr string) string {
-	return fmt.Sprintf("%s%s%s", attr, s, clear)
-}
 
 func (f formatterPretty) Format(l *LintResult) string {
 	if !l.Linted {
@@ -32,7 +27,7 @@ func (f formatterPretty) Format(l *LintResult) string {
 	}
 
 	sb := &strings.Builder{}
-	fmt.Fprintf(sb, "%s:\n", withAttribute(l.File, underline)) // print source name
+	fmt.Fprintf(sb, "%s:\n", color.Ize(underline, l.File)) // print source name
 
 	for _, e := range l.Errs {
 		fmt.Fprintf(sb, "%s%s %s\n", lintIndentation, color.Ize(color.Red, "✖"), e)
