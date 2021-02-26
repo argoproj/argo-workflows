@@ -95,7 +95,7 @@ func (s *E2ESuite) DeleteResources() {
 
 	ctx := context.Background()
 	for _, r := range resources {
-		err := s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{PropagationPolicy: &background}, hasTestLabel)
+		err := s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{PropagationPolicy: &foreground}, hasTestLabel)
 		s.CheckError(err)
 	}
 
