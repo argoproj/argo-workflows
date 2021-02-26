@@ -177,7 +177,7 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 	if cliOpts.scheduledTime != "" {
 		_, err := time.Parse(time.RFC3339, cliOpts.scheduledTime)
 		if err != nil {
-			log.Fatalf("scheduled-time contains invalid time.RFC3339 format. time.RFC3339 should be `2006-01-02T15:04:05Z07:00`.  e.g.: `2006-01-02T15:04:05-07:00`")
+			log.Fatalf("scheduled-time contains invalid time.RFC3339 format. (e.g.: `2006-01-02T15:04:05-07:00`)")
 		}
 		submitOpts.Annotations = fmt.Sprintf("%s=%s", common.AnnotationKeyCronWfScheduledTime, cliOpts.scheduledTime)
 	}
