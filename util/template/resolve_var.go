@@ -9,7 +9,7 @@ import (
 )
 
 func ResolveVar(s string, m map[string]interface{}) (interface{}, error) {
-	tag := strings.TrimSuffix(strings.TrimPrefix(s, prefix), suffix)
+	tag := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(s, prefix), suffix))
 	kind, expression := parseTag(tag)
 	switch kind {
 	case kindExpression:
