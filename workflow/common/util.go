@@ -5,17 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +26,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
@@ -180,11 +178,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := globalParams.Merge(localParams)
-	fstTmpl, err := fasttemplate.NewTemplate(string(tmplBytes), "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap, true)
+	globalReplacedTmplStr, err := template.Replace(string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -223,11 +217,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		}
 	}
 
-	fstTmpl, err = fasttemplate.NewTemplate(globalReplacedTmplStr, "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	s, err := Replace(fstTmpl, replaceMap, true)
+	s, err := template.Replace(globalReplacedTmplStr, replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -237,43 +227,6 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		return nil, errors.InternalWrapError(err)
 	}
 	return &newTmpl, nil
-}
-
-// Replace executes basic string substitution of a template with replacement values.
-// allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template.
-func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	var unresolvedErr error
-	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		replacement, ok := replaceMap[strings.TrimSpace(tag)]
-		if !ok {
-			// Attempt to resolve nested tags, if possible
-			if index := strings.LastIndex(tag, "{{"); index > 0 {
-				nestedTagPrefix := tag[:index]
-				nestedTag := tag[index+2:]
-				if replacement, ok := replaceMap[nestedTag]; ok {
-					replacement = strconv.Quote(replacement)
-					replacement = replacement[1 : len(replacement)-1]
-					return w.Write([]byte("{{" + nestedTagPrefix + replacement))
-				}
-			}
-			if allowUnresolved {
-				// just write the same string back
-				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
-			}
-			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-			return 0, nil
-		}
-		// The following escapes any special characters (e.g. newlines, tabs, etc...)
-		// in preparation for substitution
-		replacement = strconv.Quote(replacement)
-		replacement = replacement[1 : len(replacement)-1]
-		return w.Write([]byte(replacement))
-	})
-	if unresolvedErr != nil {
-		return "", unresolvedErr
-	}
-	return replacedTmpl, nil
 }
 
 // RunCommand is a convenience function to run/log a command and log the stderr upon failure
