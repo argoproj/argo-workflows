@@ -110,8 +110,6 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
-	// EnvVarPodUID
-	EnvVarPodUID = "ARGO_POD_UID"
 	// EnvVarWorkflowName
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarContainerName container the container's name for the current pod
