@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: http-template-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      http:
+        method: GET
+        url: https://gist.githubusercontent.com/alexec/3d7cb0ca9977bffac298be721caa2456/raw/71ef43acad43e1f0f91c52eb4765c6133ebac8a3/outputs.json

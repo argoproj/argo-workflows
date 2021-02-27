@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -26,10 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
@@ -38,7 +41,6 @@ import (
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
-	outputsmuxer "github.com/argoproj/argo-workflows/v3/workflow/util/outputs/muxer"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -64,8 +66,10 @@ const (
 type WorkflowExecutor struct {
 	PodName            string
 	podUID             types.UID
+	workflowName       string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
+	workflowInterface  workflow.Interface
 	Namespace          string
 	PodAnnotationsPath string
 	ExecutionControl   *common.ExecutionControl
@@ -110,11 +114,13 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, podName string, podUID types.UID, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, workflowInterface workflow.Interface, podName string, podUUID types.UID, workflowName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
-		podUID:             podUID,
+		podUID:             podUUID,
+		workflowName:       workflowName,
 		ClientSet:          clientset,
+		workflowInterface:  workflowInterface,
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
@@ -732,50 +738,23 @@ func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
 
 // StoreOutputs annotation to the pod indicating all the outputs.
 func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
-	o := we.Template.Outputs.DeepCopy()
+	outputs := we.Template.Outputs.DeepCopy()
 	if logArt != nil {
-		o.Artifacts = append(o.Artifacts, *logArt)
+		outputs.Artifacts = append(outputs.Artifacts, *logArt)
 	}
 
-	if !o.HasOutputs() {
+	if !outputs.HasOutputs() {
 		return nil
 	}
 
-	data, err := json.Marshal(o)
-	if err != nil {
-		return err
-	}
-
-	{ // termination message is very cheap to do and does not need any RBAC
-		message, err := util.ReadTerminationMessage()
-		if err != nil {
-			return err
-		}
-		message, err = outputsmuxer.Mux(message, o)
-		if err != nil {
-			return err
-		}
-		if len(message) > 4096 {
-			log.Warn("cannot write termination message as message with outputs would be too long")
-		} else {
-			log.Info("Updating termination message with outputs")
-			util.WriteTerminationMessage(message)
-			return nil
-		}
-	}
 	{ // config map allows for larger outputs, and does not need `pod patch` RBAC
-		log.Info("Creating a config map with outputs")
+		log.Info("Patching thing with outputs")
+		data, err := json.Marshal(&wfv1.WorkflowThing{Status: wfv1.WorkflowThingStatus{Nodes: wfv1.Nodes{we.PodName: wfv1.NodeStatus{Outputs: outputs}}}})
+		if err != nil {
+			return err
+		}
 		err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-			_, err := we.ClientSet.CoreV1().ConfigMaps(we.Namespace).Create(ctx, &apiv1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   we.PodName,
-					Labels: map[string]string{common.LabelKeyNode: "true"},
-					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "v1", Kind: "Pod", Name: we.PodName, UID: we.podUID}, // add ownership reference so we get deleted when needed
-					},
-				},
-				Data: map[string]string{"outputs": string(data)},
-			}, metav1.CreateOptions{})
+			_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowThings(we.Namespace).Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
 			return !errorsutil.IsTransientErr(err), err
 		})
 		if !apierr.IsForbidden(err) {
@@ -784,6 +763,10 @@ func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artif
 	}
 	{ // for historical reason, we can `pod patch`
 		log.Infof("Annotating pod with outputs")
+		data, err := json.Marshal(outputs)
+		if err != nil {
+			return err
+		}
 		return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(data))
 	}
 }
@@ -1146,6 +1129,80 @@ func (we *WorkflowExecutor) LoadExecutionControl() error {
 			return nil
 		}
 		return err
+	}
+	return nil
+}
+
+func (we *WorkflowExecutor) Agent(ctx context.Context) error {
+
+	workflows := we.workflowInterface.ArgoprojV1alpha1().Workflows(we.Namespace)
+	workflowThings := we.workflowInterface.ArgoprojV1alpha1().WorkflowThings(we.Namespace)
+
+	for {
+		w, err := workflows.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + we.workflowName})
+		if err != nil {
+			return err
+		}
+		for event := range w.ResultChan() {
+			if event.Type == watch.Deleted {
+				return nil
+			}
+			wf, ok := event.Object.(*wfv1.Workflow)
+			if !ok {
+				return apierr.FromObject(event.Object)
+			}
+			for _, n := range wf.Status.Nodes {
+				if n.Phase != wfv1.NodePending {
+					continue
+				}
+				tmpl := wf.GetTemplateByName(n.TemplateName)
+				switch n.Type {
+				case wfv1.NodeTypeHTTP:
+					result := wfv1.NodeStatus{}
+					err := we.executeHTTPTemplate(ctx, tmpl)
+					if err != nil {
+						result.Phase = wfv1.NodeFailed
+						result.Message = err.Error()
+					} else {
+						result.Phase = wfv1.NodeSucceeded
+					}
+					data, err := json.Marshal(&wfv1.WorkflowThing{Status: wfv1.WorkflowThingStatus{Nodes: wfv1.Nodes{n.ID: result}}})
+					if err != nil {
+						return err
+					}
+					_, err = workflowThings.Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+}
+
+func (we *WorkflowExecutor) executeHTTPTemplate(ctx context.Context, tmpl *wfv1.Template) error {
+	h := tmpl.HTTP
+	in, err := http.NewRequest(h.Method, h.URL, bytes.NewBuffer(h.Body))
+	if err != nil {
+		return err
+	}
+	for _, v := range h.Headers {
+		value := v.Value
+		if v.ValueFrom != nil || v.ValueFrom.SecretKeyRef != nil {
+			secret, err := util.GetSecrets(ctx, we.ClientSet, we.Namespace, v.ValueFrom.SecretKeyRef.Name, v.ValueFrom.SecretKeyRef.Key)
+			if err != nil {
+				return err
+			}
+			value = string(secret)
+		}
+		in.Header.Add(v.Name, value)
+	}
+	out, err := http.DefaultClient.Do(in)
+	if err != nil {
+		return err
+	}
+	if out.StatusCode >= 300 {
+		return fmt.Errorf(out.Status)
 	}
 	return nil
 }

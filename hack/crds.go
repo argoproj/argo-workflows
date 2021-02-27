@@ -34,7 +34,7 @@ func cleanCRD(filename string) {
 		properties := schema["properties"].(obj)["spec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
 		properties.(obj)["container"].(obj)["required"] = []string{"image"}
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
-	case "workfloweventbindings.argoproj.io":
+	case "workfloweventbindings.argoproj.io", "workflowthings.argoproj.io":
 		// noop
 	default:
 		panic(name)

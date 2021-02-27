@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
-	informercorev1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -89,7 +88,7 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
-	configMapInformer     cache.SharedIndexInformer
+	workflowThingInformer cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
@@ -192,7 +191,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
-	wfc.configMapInformer = wfc.newConfigMapInformer()
+	wfc.workflowThingInformer = wfextvv1alpha1.NewWorkflowThingInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
+	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -200,10 +200,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.configMapInformer.Run(ctx.Done())
+	go wfc.workflowThingInformer.Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.configMapInformer.HasSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.workflowThingInformer.HasSynced) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
@@ -768,6 +768,20 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			},
 		},
 	)
+	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: func(obj interface{}) {
+			key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if key == "" {
+				return
+			}
+			namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+			err := wfc.kubeclientset.CoreV1().Pods(namespace).Delete(ctx, name+"-agent", metav1.DeleteOptions{})
+			if err != nil {
+				log.WithError(err).Error()
+			}
+		},
+	})
+
 	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
@@ -792,6 +806,18 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			}
 		},
 	})
+}
+
+func (wfc *WorkflowController) addWorkflowThingInformerHandlers() {
+	wfc.wfInformer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(old, new interface{}) {
+				x, ok := new.(*wfv1.WorkflowThing)
+				if ok {
+					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Name)
+				}
+			},
+		})
 }
 
 func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interface{}) {
@@ -881,46 +907,44 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
 	informer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err != nil {
-					return
-				}
-				wfc.podQueue.Add(key)
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				return obj.(*apiv1.Pod).Annotations[common.LabelKeyWorkflow] != ""
 			},
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err != nil {
-					return
-				}
-				oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
-				if oldPod.ResourceVersion == newPod.ResourceVersion {
-					return
-				}
-				if !pod.SignificantPodChange(oldPod, newPod) {
-					log.WithField("key", key).Info("insignificant pod change")
-					diff.LogChanges(oldPod, newPod)
-					return
-				}
-				wfc.podQueue.Add(key)
-			},
-			DeleteFunc: func(obj interface{}) {
-				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-				// key function.
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(obj)
+					if err != nil {
+						return
+					}
+					wfc.podQueue.Add(key)
+				},
+				UpdateFunc: func(old, new interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(new)
+					if err != nil {
+						return
+					}
+					oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
+					if oldPod.ResourceVersion == newPod.ResourceVersion {
+						return
+					}
+					if !pod.SignificantPodChange(oldPod, newPod) {
+						log.WithField("key", key).Info("insignificant pod change")
+						diff.LogChanges(oldPod, newPod)
+						return
+					}
+					wfc.podQueue.Add(key)
+				},
+				DeleteFunc: func(obj interface{}) {
+					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+					// key function.
 
-				// Enqueue the workflow for deleted pod
-				_ = wfc.enqueueWfFromPodLabel(obj)
-			},
-		},
+					// Enqueue the workflow for deleted pod
+					_ = wfc.enqueueWfFromPodLabel(obj)
+				},
+			}},
 	)
 	return informer
-}
-
-func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
-	return informercorev1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{}, func(o *metav1.ListOptions) {
-		o.LabelSelector = common.LabelKeyNode
-	})
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes

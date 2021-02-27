@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v3"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
@@ -61,6 +62,7 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
+	command.AddCommand(NewAgentCommand())
 	command.AddCommand(NewEmissaryCommand())
 	command.AddCommand(NewInitCommand())
 	command.AddCommand(NewResourceCommand())
@@ -95,7 +97,6 @@ func initExecutor() *executor.WorkflowExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
-	podUID := types.UID(os.Getenv(common.EnvVarPodUID))
 	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
 	checkErr(err)
 
@@ -114,7 +115,17 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, podName, podUID, namespace, podAnnotationsPath, cre, *tmpl)
+	wfExecutor := executor.NewExecutor(
+		clientset,
+		workflow.NewForConfigOrDie(config),
+		podName,
+		types.UID(os.Getenv(common.EnvVarPodUID)),
+		os.Getenv(common.EnvVarWorkflowName),
+		namespace,
+		podAnnotationsPath,
+		cre,
+		*tmpl,
+	)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor

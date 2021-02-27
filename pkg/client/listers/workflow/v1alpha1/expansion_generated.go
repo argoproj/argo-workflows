@@ -37,3 +37,11 @@ type WorkflowTemplateListerExpansion interface{}
 // WorkflowTemplateNamespaceListerExpansion allows custom methods to be added to
 // WorkflowTemplateNamespaceLister.
 type WorkflowTemplateNamespaceListerExpansion interface{}
+
+// WorkflowThingListerExpansion allows custom methods to be added to
+// WorkflowThingLister.
+type WorkflowThingListerExpansion interface{}
+
+// WorkflowThingNamespaceListerExpansion allows custom methods to be added to
+// WorkflowThingNamespaceLister.
+type WorkflowThingNamespaceListerExpansion interface{}

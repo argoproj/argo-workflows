@@ -18,6 +18,8 @@ type Interface interface {
 	WorkflowEventBindings() WorkflowEventBindingInformer
 	// WorkflowTemplates returns a WorkflowTemplateInformer.
 	WorkflowTemplates() WorkflowTemplateInformer
+	// WorkflowThings returns a WorkflowThingInformer.
+	WorkflowThings() WorkflowThingInformer
 }
 
 type version struct {
@@ -54,4 +56,9 @@ func (v *version) WorkflowEventBindings() WorkflowEventBindingInformer {
 // WorkflowTemplates returns a WorkflowTemplateInformer.
 func (v *version) WorkflowTemplates() WorkflowTemplateInformer {
 	return &workflowTemplateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// WorkflowThings returns a WorkflowThingInformer.
+func (v *version) WorkflowThings() WorkflowThingInformer {
+	return &workflowThingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -540,6 +540,10 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			},
 		},
 		{
+			Name:  common.EnvVarWorkflowName,
+			Value: woc.wf.Name,
+		},
+		{
 			Name:  common.EnvVarContainerRuntimeExecutor,
 			Value: woc.getContainerRuntimeExecutor(),
 		},

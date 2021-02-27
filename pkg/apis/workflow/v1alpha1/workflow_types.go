@@ -30,6 +30,7 @@ const (
 	TemplateTypeSteps     TemplateType = "Steps"
 	TemplateTypeScript    TemplateType = "Script"
 	TemplateTypeResource  TemplateType = "Resource"
+	TemplateTypeHTTP      TemplateType = "HTTP"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
 	TemplateTypeUnknown   TemplateType = "Unknown"
@@ -62,6 +63,7 @@ type NodeType string
 // Node types
 const (
 	NodeTypePod       NodeType = "Pod"
+	NodeTypeHTTP      NodeType = "HTTP"
 	NodeTypeSteps     NodeType = "Steps"
 	NodeTypeStepGroup NodeType = "StepGroup"
 	NodeTypeDAG       NodeType = "DAG"
@@ -514,6 +516,8 @@ type Template struct {
 
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty" protobuf:"bytes,14,opt,name=resource"`
+
+	HTTP *HTTPTemplate `json:"http,omitempty" protobuf:"bytes,39,opt,name=http"`
 
 	// DAG template subtype which runs a DAG
 	DAG *DAGTemplate `json:"dag,omitempty" protobuf:"bytes,15,opt,name=dag"`
@@ -2140,6 +2144,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
+	if tmpl.HTTP != nil {
+		return TemplateTypeHTTP
+	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
@@ -2158,7 +2165,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeHTTP:
 		return true
 	}
 	return false

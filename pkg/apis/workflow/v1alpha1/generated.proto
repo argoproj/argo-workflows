@@ -469,6 +469,28 @@ message HTTPArtifact {
   repeated Header headers = 2;
 }
 
+message HTTPHeader {
+  optional string name = 1;
+
+  optional string value = 2;
+
+  optional HTTPHeaderSource valueFrom = 3;
+}
+
+message HTTPHeaderSource {
+  optional k8s.io.api.core.v1.SecretKeySelector secretKeyRef = 1;
+}
+
+message HTTPTemplate {
+  optional string method = 1;
+
+  optional string url = 2;
+
+  repeated HTTPHeader headers = 3;
+
+  optional bytes body = 4;
+}
+
 // Header indicate a key-value request header to be used when fetching artifacts over HTTP
 message Header {
   // Name is the header name
@@ -1084,6 +1106,8 @@ message Template {
   // Resource template subtype which can run k8s resources
   optional ResourceTemplate resource = 14;
 
+  optional HTTPTemplate http = 39;
+
   // DAG template subtype which runs a DAG
   optional DAGTemplate dag = 15;
 
@@ -1588,6 +1612,26 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
+}
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowThing {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowThingStatus status = 2;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowThingList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowThing items = 2;
+}
+
+message WorkflowThingStatus {
+  map<string, NodeStatus> nodes = 1;
 }
 
 // ZipStrategy will unzip zipped input artifacts

@@ -1035,6 +1035,8 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 		return wfv1.NodeTypeDAG
 	case wfv1.TemplateTypeSteps:
 		return wfv1.NodeTypeSteps
+	case wfv1.TemplateTypeHTTP:
+		return wfv1.NodeTypeHTTP
 	case wfv1.TemplateTypeSuspend:
 		return wfv1.NodeTypeSuspend
 	}

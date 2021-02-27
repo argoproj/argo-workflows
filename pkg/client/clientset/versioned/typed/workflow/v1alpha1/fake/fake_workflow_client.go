@@ -32,6 +32,10 @@ func (c *FakeArgoprojV1alpha1) WorkflowTemplates(namespace string) v1alpha1.Work
 	return &FakeWorkflowTemplates{c, namespace}
 }
 
+func (c *FakeArgoprojV1alpha1) WorkflowThings(namespace string) v1alpha1.WorkflowThingInterface {
+	return &FakeWorkflowThings{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeArgoprojV1alpha1) RESTClient() rest.Interface {

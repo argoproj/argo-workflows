@@ -15,6 +15,7 @@ type ArgoprojV1alpha1Interface interface {
 	WorkflowsGetter
 	WorkflowEventBindingsGetter
 	WorkflowTemplatesGetter
+	WorkflowThingsGetter
 }
 
 // ArgoprojV1alpha1Client is used to interact with features provided by the argoproj.io group.
@@ -40,6 +41,10 @@ func (c *ArgoprojV1alpha1Client) WorkflowEventBindings(namespace string) Workflo
 
 func (c *ArgoprojV1alpha1Client) WorkflowTemplates(namespace string) WorkflowTemplateInterface {
 	return newWorkflowTemplates(c, namespace)
+}
+
+func (c *ArgoprojV1alpha1Client) WorkflowThings(namespace string) WorkflowThingInterface {
+	return newWorkflowThings(c, namespace)
 }
 
 // NewForConfig creates a new ArgoprojV1alpha1Client for the given config.

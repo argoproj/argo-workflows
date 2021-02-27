@@ -418,9 +418,9 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps
+  - workflowthing
   verbs:
-  - create
+  - patch
 - apiGroups:
   - ""
   resources:

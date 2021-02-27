@@ -54,7 +54,6 @@ import (
 	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
-	outputsmuxer "github.com/argoproj/argo-workflows/v3/workflow/util/outputs/muxer"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
@@ -957,42 +956,54 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
 	// we can re-submit it.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Phase.Fulfilled() || node.StartedAt.IsZero() {
-			// node is not a pod, it is already complete, or it can be re-run.
+		if node.Phase.Fulfilled() || node.StartedAt.IsZero() {
+			// node is already complete, or it can be re-run.
 			continue
 		}
-		if seenPod, ok := seenPods[nodeID]; !ok {
-
-			// grace-period to allow informer sync
-			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
-			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
-
-			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
-			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() {
-				continue
+		switch node.Type {
+		case wfv1.NodeTypeHTTP:
+			obj, _, _ := woc.controller.workflowThingInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+			thing, ok := obj.(*wfv1.WorkflowThing)
+			if ok {
+				x := thing.Status.Nodes[node.ID]
+				if x.Fulfilled() {
+					woc.markNodePhase(node.Name, x.Phase, x.Message, x.Outputs)
+				}
 			}
-			if recentlyStarted {
-				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
-				// In this case, the workflow will only be requeued after the resync period (20m). This means
-				// workflow will not update for 20m. Requeuing here prevents that happening.
-				woc.requeue()
-				continue
-			}
+		case wfv1.NodeTypePod:
+			if seenPod, ok := seenPods[nodeID]; !ok {
 
-			if node.Daemoned != nil && *node.Daemoned {
-				node.Daemoned = nil
-				woc.updated = true
-			}
-			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
-		} else {
-			// At this point we are certain that the pod associated with our node is running or has been run;
-			// it is safe to extract the k8s-node information given this knowledge.
-			if node.HostNodeName != seenPod.Spec.NodeName {
-				node.HostNodeName = seenPod.Spec.NodeName
-				woc.wf.Status.Nodes[nodeID] = node
-				woc.updated = true
+				// grace-period to allow informer sync
+				recentlyStarted := recentlyStarted(node)
+				woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+				metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
+
+				// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
+				// again instead of marking it as an error. Check if that's the case.
+				if node.Pending() {
+					continue
+				}
+				if recentlyStarted {
+					// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
+					// In this case, the workflow will only be requeued after the resync period (20m). This means
+					// workflow will not update for 20m. Requeuing here prevents that happening.
+					woc.requeue()
+					continue
+				}
+
+				if node.Daemoned != nil && *node.Daemoned {
+					node.Daemoned = nil
+					woc.updated = true
+				}
+				woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
+			} else {
+				// At this point we are certain that the pod associated with our node is running or has been run;
+				// it is safe to extract the k8s-node information given this knowledge.
+				if node.HostNodeName != seenPod.Spec.NodeName {
+					node.HostNodeName = seenPod.Spec.NodeName
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
+				}
 			}
 		}
 	}
@@ -1068,7 +1079,7 @@ func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
 			continue
 		}
 		switch node.Type {
-		case wfv1.NodeTypePod, wfv1.NodeTypeSteps, wfv1.NodeTypeDAG:
+		case wfv1.NodeTypePod, wfv1.NodeTypeHTTP, wfv1.NodeTypeSteps, wfv1.NodeTypeDAG:
 		default:
 			continue
 		}
@@ -1184,13 +1195,11 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			if c.State.Terminated == nil || c.Name != common.WaitContainerName {
 				continue
 			}
-			_, outputs, err := outputsmuxer.Demux(c.State.Terminated.Message)
-			log.WithField("outputs", outputs).WithField("message", c.State.Terminated.Message).WithError(err).Debug("outputs")
-			if err != nil {
-				return woc.markNodeError(node.Name, err)
-			} else if outputs != nil {
-				woc.log.Infof("Setting node %v outputs from termination message", node.ID)
-				node.Outputs = outputs
+			obj, _, _ := woc.controller.workflowThingInformer.GetStore().GetByKey(pod.Namespace + "/" + pod.Name)
+			cm, ok := obj.(*wfv1.WorkflowThing)
+			if ok {
+				woc.log.Infof("Setting node %v outputs from workflow thing", node.ID)
+				node.Outputs = cm.Status.Nodes[node.ID].Outputs
 				updated = true
 			} else if s, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
 				woc.log.Infof("Setting node %v outputs from annotation", node.ID)
@@ -1199,16 +1208,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 					return woc.markNodeError(node.Name, err)
 				} else {
 					node.Outputs = outputs
-					updated = true
-				}
-			} else {
-				obj, _, _ := woc.controller.configMapInformer.GetStore().GetByKey(pod.Namespace + "/" + pod.Name)
-				cm, ok := obj.(*apiv1.ConfigMap)
-				if ok {
-					woc.log.Infof("Setting node %v outputs from config map", node.ID)
-					if err := json.Unmarshal([]byte(cm.Data["outputs"]), &node.Outputs); err != nil {
-						return woc.markNodeError(node.Name, err)
-					}
 					updated = true
 				}
 			}
@@ -1337,9 +1336,8 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		}
 
 		msg := fmt.Sprintf("%s (exit code %d)", t.Reason, t.ExitCode)
-		message, _, _ := outputsmuxer.Demux(t.Message)
-		if message != "" {
-			msg = fmt.Sprintf("%s: %s", msg, message)
+		if t.Message != "" {
+			msg = fmt.Sprintf("%s: %s", msg, t.Message)
 		}
 
 		switch ctr.Name {
@@ -1745,6 +1743,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeResource(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeDAG:
 		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeHTTP:
+		node, err = woc.executeHTTP(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
@@ -2058,10 +2058,10 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 }
 
 // markNodePhase marks a node with the given phase, creating the node if necessary and handles timestamps
-func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, opts ...interface{}) *wfv1.NodeStatus {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
-		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message))
+		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v", woc.wf.Name, nodeName, phase))
 	}
 	if node.Phase != phase {
 		if node.Phase.Fulfilled() {
@@ -2072,11 +2072,16 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		node.Phase = phase
 		woc.updated = true
 	}
-	if len(message) > 0 {
-		if message[0] != node.Message {
-			woc.log.Infof("node %s message: %s", node.ID, message[0])
-			node.Message = message[0]
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case string:
+			node.Message = v
 			woc.updated = true
+		case *wfv1.Outputs:
+			node.Outputs = v
+			woc.updated = true
+		default:
+			panic("invalid type")
 		}
 	}
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
@@ -2231,7 +2236,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypePod, wfv1.NodeTypeHTTP, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
 	case wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {

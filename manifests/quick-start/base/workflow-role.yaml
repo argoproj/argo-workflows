@@ -15,13 +15,13 @@ rules:
       # pod patch is used to annotate the step's outputs back to controller (e.g. artifact location)
       # This is ONLY needed if the step/task has outputs that are used by another step or task.
       - patch
-  # configmap create is used to share the step's outputs back to controller
+  # thing patch is used to share the step's outputs back to controller
   - apiGroups:
-      - ""
+      - argoproj.io
     resources:
-      - configmaps
+      - workflowthings
     verbs:
-      - create
+      - patch
   # logs get/watch are used to get the pods logs for script outputs, and for log archival
   - apiGroups:
       - ""
@@ -30,13 +30,14 @@ rules:
     verbs:
       - get
       - watch
-  # This allows one workflow to create another.
-  # This is only needed for resource templates.
   - apiGroups:
       - argoproj.io
     resources:
       - workflows
     verbs:
+      - watch
+      # This allows one workflow to create another.
+      # E.g. for resource templates.
       - create
       - patch
       - get
