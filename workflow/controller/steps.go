@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/Knetic/govaluate"
-	"github.com/valyala/fasttemplate"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
@@ -353,12 +353,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-		}
-
-		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
+		newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
 			return nil, err
 		}
@@ -468,14 +463,14 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
+	t, err := template.NewTemplate(string(stepBytes))
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
 	}
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(fstTmpl, step.Name, i, item, &newStep)
+		newStepName, err := processItem(t, step.Name, i, item, &newStep)
 		if err != nil {
 			return nil, err
 		}
