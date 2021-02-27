@@ -1149,6 +1149,9 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
+			if wf.Annotations[common.LabelKeyCompleted] == "true" {
+				return nil
+			}
 			for _, n := range wf.Status.Nodes {
 				if n.Phase != wfv1.NodePending {
 					continue
