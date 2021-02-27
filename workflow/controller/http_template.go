@@ -82,6 +82,7 @@ func (woc *wfOperationCtx) executeHTTP(ctx context.Context, nodeName string, tem
 					ShareProcessNamespace: pointer.BoolPtr(woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS),
 					Volumes:               woc.createVolumes(tmpl),
 					Containers:            []apiv1.Container{*c},
+					RestartPolicy:         apiv1.RestartPolicyOnFailure, // if it is successful, that is fine
 				},
 			}, metav1.CreateOptions{})
 			if err != nil && !apierr.IsAlreadyExists(err) {

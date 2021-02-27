@@ -192,7 +192,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.workflowThingInformer = wfextvv1alpha1.NewWorkflowThingInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
-	wfc.addWorkflowInformerHandlers(ctx)
+	wfc.addWorkflowThingInformerHandlers()
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -777,11 +777,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 			err := wfc.kubeclientset.CoreV1().Pods(namespace).Delete(ctx, name+"-agent", metav1.DeleteOptions{})
 			if err != nil {
-				log.WithError(err).Error()
+				log.WithError(err).Error("failed to delete agent pod")
 			}
 		},
 	})
-
 	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
@@ -812,8 +811,7 @@ func (wfc *WorkflowController) addWorkflowThingInformerHandlers() {
 	wfc.wfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
-				x, ok := new.(*wfv1.WorkflowThing)
-				if ok {
+				if x, ok := new.(*wfv1.WorkflowThing); ok {
 					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Name)
 				}
 			},
@@ -942,7 +940,8 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 					// Enqueue the workflow for deleted pod
 					_ = wfc.enqueueWfFromPodLabel(obj)
 				},
-			}},
+			},
+		},
 	)
 	return informer
 }

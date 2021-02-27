@@ -1132,7 +1132,6 @@ func (we *WorkflowExecutor) LoadExecutionControl() error {
 }
 
 func (we *WorkflowExecutor) Agent(ctx context.Context) error {
-
 	workflows := we.workflowInterface.ArgoprojV1alpha1().Workflows(we.Namespace)
 	workflowThings := we.workflowInterface.ArgoprojV1alpha1().WorkflowThings(we.Namespace)
 
