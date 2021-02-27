@@ -59,6 +59,9 @@ func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	go func() {
 		for range time.Tick(time.Second) {
 			if wf != nil {
+				if !wf.Status.FinishedAt.IsZero() {
+					return
+				}
 				printWorkflowStatus(wf, getArgs)
 			}
 		}
@@ -71,6 +74,7 @@ func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			errors.CheckError(err)
 			wf = e.Object
 			if e.Type == string(watch.Deleted) || !wf.Status.FinishedAt.IsZero() {
+				printWorkflowStatus(wf, getArgs) // make sure we print one last time
 				return
 			}
 		}
