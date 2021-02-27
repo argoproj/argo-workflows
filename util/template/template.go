@@ -31,7 +31,7 @@ type impl struct {
 }
 
 func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	env := exprenv.WithDefaults(envMap(replaceMap))
+	env := exprenv.GetFuncMap(envMap(replaceMap))
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.Template.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)

@@ -24,19 +24,19 @@ spec:
                 - name: foo
                   value: "{{=item}}"
             # withParam must be a JSON list encoded as a string, so you use `toJson` to perform the conversion
-            withParam: "{{=sprig.toJson(filter([1, 3], {# > 1}))}}"
+            withParam: "{{=toJson(filter([1, 3], {# > 1}))}}"
     - name: pod-0
       inputs:
         parameters:
           - name: foo
       container:
         image: argoproj/argosay:v2
-        # in this example, we use `sprig.atoi` to cast a parameter (which are ALWAYS strings) to an int so we can
+        # in this example, we use `asInt` to cast a parameter (which are ALWAYS strings) to an int so we can
         # multiple by 10
         args:
           - echo
           - |
-            hello {{=sprig.atoi(inputs.parameters.foo) * 10}} @ {{=sprig.date('2006', workflow.creationTimestamp)}}
+            hello {{=asInt(inputs.parameters.foo) * 10}} @ {{=sprig.date('2006', workflow.creationTimestamp)}}
           - /output
       outputs:
         parameters:

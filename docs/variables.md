@@ -15,17 +15,17 @@ spec:
   entrypoint: whalesay
   arguments:
     parameters:
-    - name: message
-      value: hello world
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
       - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"] 
+        value: hello world
+  templates:
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [ cowsay ]
+        args: [ "{{inputs.parameters.message}}" ] 
 ```
 
 The following variables are made available to reference various metadata of a workflow:
@@ -75,13 +75,33 @@ Map a list:
 map([1, 2], { # * 2 })
 ```
 
-You can also use [Sprig functions](http://masterminds.github.io/sprig/):
+We provide some core functions:
 
 Cast to int:
 
 ```
-sprig.int(inputs.parameters["my-int-param"])
+asInt(inputs.parameters["my-int-param"])
 ```
+
+Cast to flloat:
+
+```
+asFloat(inputs.parameters["my-float-param"])
+```
+
+Cast to string:
+
+```
+string(1)
+```
+
+Convert to a JSON string (needed for `withParam`):
+
+```
+toJson([1, 2])
+```
+
+You can also use [Sprig functions](http://masterminds.github.io/sprig/):
 
 Trim a string:
 
@@ -89,14 +109,8 @@ Trim a string:
 sprig.trim(inputs.parameters["my-string-param"])
 ```
 
-Convert to a JSON string (needed for `withParam`):
-
-```
-sprig.toJson([1, 2])
-```
-
-!!! Warning 
-    In Sprig functions, errors are not often not raised. E.g. if `int` is used on an invalid value, it returns `0`. Please review the Sprig documentation to understand which functions do and which do not.
+!!! Warning In Sprig functions, errors are not often not raised. E.g. if `int` is used on an invalid value, it
+returns `0`. Please review the Sprig documentation to understand which functions do and which do not.
 
 ## Reference
 
