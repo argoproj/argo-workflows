@@ -746,7 +746,7 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	}
 
 	{ // config map allows for larger outputs, and does not need `pod patch` RBAC
-		log.Info("Patching thing with outputs")
+		log.Info("Patching workflow thing with outputs")
 		data, err := json.Marshal(&wfv1.WorkflowThing{Status: wfv1.WorkflowThingStatus{Nodes: wfv1.Nodes{we.PodName: wfv1.NodeStatus{Outputs: outputs}}}})
 		if err != nil {
 			return err
@@ -755,7 +755,7 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 			_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowThings(we.Namespace).Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
 			return !errorsutil.IsTransientErr(err), err
 		})
-		if !apierr.IsForbidden(err) {
+		if !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
 			return err
 		}
 	}
