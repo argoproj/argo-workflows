@@ -81,6 +81,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		logCtx := logCtx.WithField("podName", pod.GetName())
 		logCtx.WithFields(log.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug("Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
+			logFormatter, err := NewLogFormatter(pod.Annotations["workflows.argoproj.io/logs-format"])
+			if err != nil {
+				logCtx.WithError(err).Warn("failed to generate workflow log formatter, fallback to RawLogFormatter")
+				logFormatter = &RawLogFormatter{}
+			}
+
 			streamedPods[pod.UID] = true
 			wg.Add(1)
 			go func(podName string) {
@@ -100,21 +106,25 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					default:
 						line := scanner.Text()
 						parts := strings.SplitN(line, " ", 2)
-						content := parts[1]
+						rawContent := parts[1]
 						timestamp, err := time.Parse(time.RFC3339, parts[0])
 						if err != nil {
 							logCtx.Errorf("unable to decode or infer timestamp from log line: %s", err)
 							// The current timestamp is the next best substitute. This won't be shown, but will be used
 							// for sorting
 							timestamp = time.Now()
-							content = line
+							rawContent = line
 						}
 						// You might ask - why don't we let the client do this? Well, it is because
 						// this is the same as how this works for `kubectl logs`
 						if req.GetLogOptions().Timestamps {
-							content = line
+							rawContent = line
 						}
-						logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
+						content, err := logFormatter.Format(rawContent)
+						if err != nil {
+							logCtx.Warn(err)
+						}
+						logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": rawContent}).Debug("Log line")
 						unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 					}
 				}
