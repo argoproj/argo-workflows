@@ -20,7 +20,6 @@ import (
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -1213,25 +1213,30 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 	if node.Outputs == nil {
-		for _, c := range pod.Status.ContainerStatuses {
-			if c.State.Terminated == nil || c.Name != common.WaitContainerName {
-				continue
-			}
-			obj, _, _ := woc.controller.workflowAgentInformer.GetStore().GetByKey(pod.Namespace + "/" + pod.Name)
-			cm, ok := obj.(*wfv1.WorkflowAgent)
-			if ok {
-				woc.log.Infof("Setting node %v outputs from workflow thing", node.ID)
-				node.Outputs = cm.Status.Nodes[node.ID].Outputs
+		obj, _, _ := woc.controller.workflowAgentInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+		if x, ok := obj.(*wfv1.WorkflowAgent); ok {
+			woc.log.Infof("Setting node %v outputs from workflow agent", node.ID)
+			node.Outputs = x.Status.Nodes[node.ID].Outputs
+			updated = true
+		}
+	}
+	if node.Outputs == nil {
+		obj, _, _ := woc.controller.workflowNodeInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
+		if x, ok := obj.(*wfv1.WorkflowNode); ok {
+			woc.log.Infof("Setting node %v outputs from workflow node", node.ID)
+			node.Outputs = x.Status.Outputs
+			updated = true
+		}
+	}
+	if node.Outputs == nil {
+		if s, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+			woc.log.Infof("Setting node %v outputs from annotation", node.ID)
+			outputs := &wfv1.Outputs{}
+			if err := json.Unmarshal([]byte(s), outputs); err != nil {
+				return woc.markNodeError(node.Name, err)
+			} else {
+				node.Outputs = outputs
 				updated = true
-			} else if s, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-				woc.log.Infof("Setting node %v outputs from annotation", node.ID)
-				outputs := &wfv1.Outputs{}
-				if err := json.Unmarshal([]byte(s), outputs); err != nil {
-					return woc.markNodeError(node.Name, err)
-				} else {
-					node.Outputs = outputs
-					updated = true
-				}
 			}
 		}
 	}
@@ -1769,6 +1774,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeHTTP(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeData:
+		node, err = woc.executeData(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
@@ -2679,6 +2686,29 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	return node, err
 }
 
+func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	} else if !node.Pending() {
+		return node, nil
+	}
+
+	dataTemplate, err := json.Marshal(tmpl.Data)
+	if err != nil {
+		return node, fmt.Errorf("could not marshal data in transformation: %w", err)
+	}
+
+	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
+	mainCtr.Command = []string{"argoexec", "data", string(dataTemplate)}
+	_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
+	if err != nil {
+		return woc.requeueIfTransientErr(err, node.Name)
+	}
+
+	return node, nil
+}
+
 func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
@@ -2751,7 +2781,7 @@ func parseStringToDuration(durationString string) (time.Duration, error) {
 	return suspendDuration, nil
 }
 
-func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
+func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
 	replaceMap := make(map[string]string)
 	var newName string
 
@@ -2792,7 +2822,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
-	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
+	newStepStr, err := tmpl.Replace(replaceMap, false)
 	if err != nil {
 		return "", err
 	}
@@ -2872,11 +2902,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(volumesBytes), "{{", "}}")
-	if err != nil {
-		return fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	newVolumesStr, err := common.Replace(fstTmpl, params, true)
+	newVolumesStr, err := template.Replace(string(volumesBytes), params, true)
 	if err != nil {
 		return err
 	}
@@ -2944,12 +2970,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
 			continue
 		}
-		fstTmpl, err := fasttemplate.NewTemplate(string(metricTmplBytes), "{{", "}}")
-		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo variable for metric '%s': %s", metricTmpl.Name, err))
-			continue
-		}
-		replacedValue, err := common.Replace(fstTmpl, localScope, false)
+		replacedValue, err := template.Replace(string(metricTmplBytes), localScope, false)
 		if err != nil {
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
 			continue
@@ -3004,12 +3025,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			metricSpec := metricTmpl.DeepCopy()
 
 			// Finally substitute value parameters
-			fstTmpl, err = fasttemplate.NewTemplate(metricSpec.GetValueString(), "{{", "}}")
-			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo variable for metric '%s': %s", metricTmpl.Name, err))
-				continue
-			}
-			replacedValue, err := common.Replace(fstTmpl, localScope, false)
+			replacedValue, err := template.Replace(metricSpec.GetValueString(), localScope, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue

@@ -74,10 +74,7 @@ func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
 }
 
-var (
-	foreground = metav1.DeletePropagationForeground
-	background = metav1.DeletePropagationBackground
-)
+var foreground = metav1.DeletePropagationForeground
 
 func (s *E2ESuite) DeleteResources() {
 	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
@@ -95,7 +92,7 @@ func (s *E2ESuite) DeleteResources() {
 
 	ctx := context.Background()
 	for _, r := range resources {
-		err := s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{PropagationPolicy: &background}, hasTestLabel)
+		err := s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{PropagationPolicy: &foreground}, hasTestLabel)
 		s.CheckError(err)
 	}
 

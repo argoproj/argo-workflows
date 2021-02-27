@@ -37,6 +37,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
@@ -586,7 +587,7 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 }
 
 // InitDriver initializes an instance of an artifact driver
-func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifact.ArtifactDriver, error) {
+func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
 	driver, err := artifact.NewDriver(ctx, art, we)
 	if err == artifact.ErrUnsupportedDriver {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
@@ -743,28 +744,45 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 		return nil
 	}
 
-	{ // config map allows for larger outputs, and does not need `pod patch` RBAC
-		log.Info("Patching workflow thing with outputs")
-		data, err := json.Marshal(&wfv1.WorkflowAgent{Status: wfv1.WorkflowAgentStatus{Nodes: wfv1.Nodes{we.PodName: wfv1.NodeStatus{Outputs: outputs}}}})
-		if err != nil {
-			return err
-		}
-		err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-			_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowAgents(we.Namespace).Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
-			return !errorsutil.IsTransientErr(err), err
-		})
-		if !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
-			return err
-		}
+	if err := we.patchWorkflowNodeWithOutputs(ctx, outputs); !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
+		return err
 	}
-	{ // for historical reason, we can `pod patch`
-		log.Infof("Annotating pod with outputs")
-		data, err := json.Marshal(outputs)
-		if err != nil {
-			return err
-		}
-		return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(data))
+
+	return we.annotatePodWithOutputs(ctx, outputs)
+}
+
+// nolint:unused
+func (we *WorkflowExecutor) patchWorkflowAgentWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Info("Patching workflow agent with outputs")
+	data, err := json.Marshal(&wfv1.WorkflowAgent{Status: wfv1.WorkflowAgentStatus{Nodes: wfv1.Nodes{we.PodName: wfv1.NodeStatus{Outputs: outputs}}}})
+	if err != nil {
+		return err
 	}
+	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+		_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowAgents(we.Namespace).Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
+		return !errorsutil.IsTransientErr(err), err
+	})
+}
+
+func (we *WorkflowExecutor) patchWorkflowNodeWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Info("Patching workflow node with outputs")
+	data, err := json.Marshal(&wfv1.WorkflowNode{Status: wfv1.NodeStatus{Outputs: outputs}})
+	if err != nil {
+		return err
+	}
+	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+		_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowNodes(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
+		return !errorsutil.IsTransientErr(err), err
+	})
+}
+
+func (we *WorkflowExecutor) annotatePodWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Infof("Annotating pod with outputs")
+	data, err := json.Marshal(outputs)
+	if err != nil {
+		return err
+	}
+	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(data))
 }
 
 // AddError adds an error to the list of encountered errors durign execution

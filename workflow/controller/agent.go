@@ -151,7 +151,7 @@ func (woc *wfOperationCtx) deleteAgent(ctx context.Context) error {
 	}
 	logCtx.Info("deleting agent")
 	err := woc.controller.kubeclientset.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-	if err != nil && apierr.IsNotFound(err) {
+	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
 	return nil

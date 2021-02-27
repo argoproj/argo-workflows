@@ -33,6 +33,7 @@ const (
 	TemplateTypeHTTP      TemplateType = "HTTP"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
+	TemplateTypeData      TemplateType = "Data"
 	TemplateTypeUnknown   TemplateType = "Unknown"
 )
 
@@ -517,13 +518,17 @@ type Template struct {
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty" protobuf:"bytes,14,opt,name=resource"`
 
-	HTTP *HTTPTemplate `json:"http,omitempty" protobuf:"bytes,39,opt,name=http"`
-
 	// DAG template subtype which runs a DAG
 	DAG *DAGTemplate `json:"dag,omitempty" protobuf:"bytes,15,opt,name=dag"`
 
+	// HTTP template subtype which makes a HTTP request
+	HTTP *HTTPTemplate `json:"http,omitempty" protobuf:"bytes,40,opt,name=http"`
+
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
+
+	// Data is a data template
+	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -1786,7 +1791,7 @@ type S3Artifact struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
 
 	// Key is the key in the bucket where the artifact resides
-	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
 func (s *S3Artifact) GetKey() (string, error) {
@@ -2013,7 +2018,6 @@ func (h *HTTPArtifact) HasLocation() bool {
 
 // GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
-
 	// Bucket is the name of the bucket
 	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
@@ -2144,6 +2148,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
+	if tmpl.Data != nil {
+		return TemplateTypeData
+	}
 	if tmpl.HTTP != nil {
 		return TemplateTypeHTTP
 	}
@@ -2156,7 +2163,7 @@ func (tmpl *Template) GetType() TemplateType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
@@ -2165,7 +2172,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeHTTP:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
 		return true
 	}
 	return false

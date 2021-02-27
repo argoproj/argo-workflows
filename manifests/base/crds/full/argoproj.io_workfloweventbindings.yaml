@@ -328,8 +328,6 @@ spec:
                                   type: object
                                 useSDKCreds:
                                   type: boolean
-                              required:
-                              - key
                               type: object
                             subPath:
                               type: string

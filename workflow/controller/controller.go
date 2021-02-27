@@ -165,7 +165,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTL
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.wfInformer, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -207,7 +207,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.workflowNodeInformer.Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.workflowAgentInformer.HasSynced) {
+	if !cache.WaitForCacheSync(
+		ctx.Done(),
+		wfc.wfInformer.HasSynced,
+		wfc.wftmplInformer.Informer().HasSynced,
+		wfc.podInformer.HasSynced,
+		wfc.workflowAgentInformer.HasSynced,
+		wfc.workflowNodeInformer.HasSynced,
+	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
@@ -225,21 +232,21 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	logCtx := log.WithField("id", nodeID)
 
-	instanceID := "default-instance-id"
+	leaderName := "workflow-controller"
 	if wfc.Config.InstanceID != "" {
-		instanceID = wfc.Config.InstanceID
+		leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
 	}
 
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: instanceID, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
 		},
 		ReleaseOnCancel: true,
-		LeaseDuration:   15 * time.Second,
-		RenewDeadline:   10 * time.Second,
-		RetryPeriod:     5 * time.Second,
+		LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+		RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+		RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
 				logCtx.Info("started leading")
@@ -802,8 +809,8 @@ func (wfc *WorkflowController) addWorkflowAgentInformerHandlers() {
 	wfc.workflowAgentInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(_, new interface{}) {
-				if agent, ok := new.(*wfv1.WorkflowAgent); ok {
-					wfc.wfQueue.AddRateLimited(agent.Namespace + "/" + agent.Name)
+				if x, ok := new.(*wfv1.WorkflowAgent); ok {
+					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Name)
 				}
 			},
 		},
@@ -814,8 +821,8 @@ func (wfc *WorkflowController) addWorkflowNodeInformerHandlers() {
 	wfc.workflowNodeInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(_, new interface{}) {
-				if n, ok := new.(*wfv1.WorkflowNode); ok {
-					wfc.wfQueue.AddRateLimited(n.Namespace + "/" + n.Labels[common.LabelKeyWorkflow])
+				if x, ok := new.(*wfv1.WorkflowNode); ok {
+					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Labels[common.LabelKeyWorkflow])
 				}
 			},
 		},
@@ -911,7 +918,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 	informer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return obj.(*apiv1.Pod).Annotations[common.LabelKeyWorkflow] != ""
+				return obj.(*apiv1.Pod).Annotations[common.LabelKeyWorkflow] != "" // filter out agent pods which are not labelled with workflow
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
