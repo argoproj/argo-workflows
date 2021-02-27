@@ -65,7 +65,6 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName            string
-	podUID             types.UID
 	workflowName       string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
@@ -114,10 +113,9 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, workflowInterface workflow.Interface, podName string, podUUID types.UID, workflowName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, workflowInterface workflow.Interface, podName, workflowName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
-		podUID:             podUUID,
 		workflowName:       workflowName,
 		ClientSet:          clientset,
 		workflowInterface:  workflowInterface,

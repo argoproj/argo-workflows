@@ -9,7 +9,6 @@ import (
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -115,17 +114,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(
-		clientset,
-		workflow.NewForConfigOrDie(config),
-		podName,
-		types.UID(os.Getenv(common.EnvVarPodUID)),
-		os.Getenv(common.EnvVarWorkflowName),
-		namespace,
-		podAnnotationsPath,
-		cre,
-		*tmpl,
-	)
+	wfExecutor := executor.NewExecutor(clientset, workflow.NewForConfigOrDie(config), podName, os.Getenv(common.EnvVarWorkflowName), namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor
