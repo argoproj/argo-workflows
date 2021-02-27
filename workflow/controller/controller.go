@@ -169,7 +169,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTL
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.wfInformer, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -223,9 +223,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	logCtx := log.WithField("id", nodeID)
 
-	instanceID := "default-instance-id"
+	leaderName := "workflow-controller"
 	if wfc.Config.InstanceID != "" {
-		instanceID = wfc.Config.InstanceID
+		leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
 	}
 
 	// Create leader election health checker
@@ -250,13 +250,13 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: instanceID, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
 		},
 		ReleaseOnCancel: true,
-		LeaseDuration:   15 * time.Second,
-		RenewDeadline:   10 * time.Second,
-		RetryPeriod:     5 * time.Second,
+		LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+		RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+		RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 		WatchDog:        leaderElectionChecker,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {

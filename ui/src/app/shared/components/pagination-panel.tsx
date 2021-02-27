@@ -23,7 +23,7 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                     }>
                     Next page <i className='fa fa-chevron-right' />
                 </button>
-                {this.props.pagination.limit <= this.props.numRecords ? (
+                {this.props.pagination.limit > 0 && this.props.pagination.limit <= this.props.numRecords ? (
                     <>
                         <WarningIcon /> Workflows cannot be globally sorted when paginated
                     </>

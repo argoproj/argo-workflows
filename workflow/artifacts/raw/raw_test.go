@@ -27,7 +27,7 @@ func TestLoad(t *testing.T) {
 	art.Raw = &wfv1.RawArtifact{
 		Data: content,
 	}
-	driver := &raw.RawArtifactDriver{}
+	driver := &raw.ArtifactDriver{}
 	err = driver.Load(art, lf.Name())
 	assert.NoError(t, err)
 

@@ -6,6 +6,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/artifactory"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
@@ -16,21 +17,12 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
 )
 
-// ArtifactDriver is the interface for loading and saving of artifacts
-type ArtifactDriver interface {
-	// Load accepts an artifact source URL and places it at specified path
-	Load(inputArtifact *wfv1.Artifact, path string) error
-
-	// Save uploads the path to artifact destination
-	Save(path string, outputArtifact *wfv1.Artifact) error
-}
-
 var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
 
-type NewDriverFunc func(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error)
+type NewDriverFunc func(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error)
 
 // NewDriver initializes an instance of an artifact driver
-func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error) {
+func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string
@@ -48,7 +40,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			secretKey = secretKeyBytes
 		}
 
-		driver := s3.S3ArtifactDriver{
+		driver := s3.ArtifactDriver{
 			Endpoint:    art.S3.Endpoint,
 			AccessKey:   accessKey,
 			SecretKey:   secretKey,
@@ -60,10 +52,10 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return &driver, nil
 	}
 	if art.HTTP != nil {
-		return &http.HTTPArtifactDriver{}, nil
+		return &http.ArtifactDriver{}, nil
 	}
 	if art.Git != nil {
-		gitDriver := git.GitArtifactDriver{
+		gitDriver := git.ArtifactDriver{
 			InsecureIgnoreHostKey: art.Git.InsecureIgnoreHostKey,
 		}
 		if art.Git.UsernameSecret != nil {
@@ -99,7 +91,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		if err != nil {
 			return nil, err
 		}
-		driver := artifactory.ArtifactoryArtifactDriver{
+		driver := artifactory.ArtifactDriver{
 			Username: usernameBytes,
 			Password: passwordBytes,
 		}
@@ -110,7 +102,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return hdfs.CreateDriver(ctx, ri, art.HDFS)
 	}
 	if art.Raw != nil {
-		return &raw.RawArtifactDriver{}, nil
+		return &raw.ArtifactDriver{}, nil
 	}
 
 	if art.OSS != nil {
@@ -130,7 +122,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			secretKey = string(secretKeyBytes)
 		}
 
-		driver := oss.OSSArtifactDriver{
+		driver := oss.ArtifactDriver{
 			Endpoint:  art.OSS.Endpoint,
 			AccessKey: accessKey,
 			SecretKey: secretKey,

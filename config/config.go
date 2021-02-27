@@ -365,7 +365,7 @@ type MetricsConfig struct {
 }
 
 type WorkflowRestrictions struct {
-	TemplateReferencing TemplateReferencing `json:"templateReferencing"`
+	TemplateReferencing TemplateReferencing `json:"templateReferencing,omitempty"`
 }
 
 type TemplateReferencing string
