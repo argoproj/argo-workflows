@@ -124,8 +124,6 @@ github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAF
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
 github.com/argoproj/argo-events v1.2.0 h1:CjF8hVUkeflhaOt9uWjJK6ai6b4pw0CCUUmOnmhWnNY=
 github.com/argoproj/argo-events v1.2.0/go.mod h1:eY+egQNBLXAz/AF4mqgHsMMa4Aur7frHjUfBg+RpX04=
-github.com/argoproj/pkg v0.6.0 h1:q6413Dtl8keWXjScb99GD5tzTuZugXQeTnd/+mRj3yI=
-github.com/argoproj/pkg v0.6.0/go.mod h1:DmT4fN1ihGS0VBa0kHwpL+hoRAi8WdMFsUDa1QTZd+M=
 github.com/argoproj/pkg v0.7.0 h1:fhCONBGjX5FuB+AlpXHc1Lo3FGuNDB7Zr+Q7S0my5ck=
 github.com/argoproj/pkg v0.7.0/go.mod h1:ra+bQPmbVAoEL+gYSKesuigt4m49i3Qa3mE/xQcjCiA=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
