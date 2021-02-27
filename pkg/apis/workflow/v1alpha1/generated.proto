@@ -1291,6 +1291,34 @@ message Workflow {
   optional WorkflowStatus status = 3;
 }
 
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowAgent {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowAgentSpec spec = 2;
+
+  optional WorkflowAgentStatus status = 3;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowAgentList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowAgent items = 2;
+}
+
+message WorkflowAgentSpec {
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated Template templates = 1;
+}
+
+message WorkflowAgentStatus {
+  map<string, NodeStatus> nodes = 1;
+}
+
 // WorkflowEventBinding is the definition of an event resource
 // +genclient
 // +genclient:noStatus
@@ -1325,6 +1353,24 @@ message WorkflowList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated Workflow items = 2;
+}
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowNode {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional Template spec = 2;
+
+  optional NodeStatus status = 3;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowNodeList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowNode items = 2;
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -1612,26 +1658,6 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
-}
-
-// +genclient
-// +genclient:noStatus
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowThing {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional WorkflowThingStatus status = 2;
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowThingList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  repeated WorkflowThing items = 2;
-}
-
-message WorkflowThingStatus {
-  map<string, NodeStatus> nodes = 1;
 }
 
 // ZipStrategy will unzip zipped input artifacts

@@ -3516,6 +3516,9 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeaderSource"
         }
       },
+      "required": [
+        "name"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.HTTPHeaderSource": {
@@ -3524,6 +3527,30 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPTemplate": {
+      "properties": {
+        "body": {
+          "format": "byte",
+          "type": "string"
+        },
+        "headers": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
+          },
+          "type": "array"
+        },
+        "method": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Header": {
@@ -4612,6 +4639,9 @@
           "x-kubernetes-patch-merge-key": "ip",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "http": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPTemplate"
+        },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
           "items": {
@@ -5024,6 +5054,57 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.WorkflowAgent": {
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowAgentSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowAgentStatus"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec",
+        "status"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowAgentSpec": {
+      "properties": {
+        "templates": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          },
+          "type": "array",
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowAgentStatus": {
+      "properties": {
+        "nodes": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.WorkflowCreateRequest": {
       "properties": {
         "createOptions": {
@@ -5152,6 +5233,33 @@
       "required": [
         "metadata",
         "items"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowNode": {
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec",
+        "status"
       ],
       "type": "object"
     },
@@ -5905,61 +6013,6 @@
           "type": "string"
         }
       },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowThing": {
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
-          "type": "string"
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "metadata": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
-        },
-        "spec": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowThingSpec"
-        },
-        "status": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowThingStatus"
-        }
-      },
-      "required": [
-        "metadata",
-        "spec",
-        "status"
-      ],
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowThingSpec": {
-      "properties": {
-        "templates": {
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          },
-          "type": "object"
-        }
-      },
-      "required": [
-        "templates"
-      ],
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowThingStatus": {
-      "properties": {
-        "nodes": {
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
-          },
-          "type": "object"
-        }
-      },
-      "required": [
-        "nodes"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {

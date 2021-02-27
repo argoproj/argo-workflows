@@ -19,8 +19,10 @@ rules:
   - apiGroups:
       - argoproj.io
     resources:
-      - workflowthings
+      - workflowagents
+      - workflownodes
     verbs:
+      - watch
       - patch
   # logs get/watch are used to get the pods logs for script outputs, and for log archival
   - apiGroups:
@@ -30,14 +32,12 @@ rules:
     verbs:
       - get
       - watch
+  # This allows one workflow to create another.
+  # This is only needed for resource templates.
   - apiGroups:
       - argoproj.io
     resources:
       - workflows
     verbs:
-      - watch
-      # This allows one workflow to create another.
-      # E.g. for resource templates.
       - create
-      - patch
       - get

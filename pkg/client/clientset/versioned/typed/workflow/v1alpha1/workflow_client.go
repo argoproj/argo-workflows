@@ -13,9 +13,10 @@ type ArgoprojV1alpha1Interface interface {
 	ClusterWorkflowTemplatesGetter
 	CronWorkflowsGetter
 	WorkflowsGetter
+	WorkflowAgentsGetter
 	WorkflowEventBindingsGetter
+	WorkflowNodesGetter
 	WorkflowTemplatesGetter
-	WorkflowThingsGetter
 }
 
 // ArgoprojV1alpha1Client is used to interact with features provided by the argoproj.io group.
@@ -35,16 +36,20 @@ func (c *ArgoprojV1alpha1Client) Workflows(namespace string) WorkflowInterface {
 	return newWorkflows(c, namespace)
 }
 
+func (c *ArgoprojV1alpha1Client) WorkflowAgents(namespace string) WorkflowAgentInterface {
+	return newWorkflowAgents(c, namespace)
+}
+
 func (c *ArgoprojV1alpha1Client) WorkflowEventBindings(namespace string) WorkflowEventBindingInterface {
 	return newWorkflowEventBindings(c, namespace)
 }
 
-func (c *ArgoprojV1alpha1Client) WorkflowTemplates(namespace string) WorkflowTemplateInterface {
-	return newWorkflowTemplates(c, namespace)
+func (c *ArgoprojV1alpha1Client) WorkflowNodes(namespace string) WorkflowNodeInterface {
+	return newWorkflowNodes(c, namespace)
 }
 
-func (c *ArgoprojV1alpha1Client) WorkflowThings(namespace string) WorkflowThingInterface {
-	return newWorkflowThings(c, namespace)
+func (c *ArgoprojV1alpha1Client) WorkflowTemplates(namespace string) WorkflowTemplateInterface {
+	return newWorkflowTemplates(c, namespace)
 }
 
 // NewForConfig creates a new ArgoprojV1alpha1Client for the given config.

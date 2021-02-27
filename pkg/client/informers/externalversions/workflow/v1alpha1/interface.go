@@ -14,12 +14,14 @@ type Interface interface {
 	CronWorkflows() CronWorkflowInformer
 	// Workflows returns a WorkflowInformer.
 	Workflows() WorkflowInformer
+	// WorkflowAgents returns a WorkflowAgentInformer.
+	WorkflowAgents() WorkflowAgentInformer
 	// WorkflowEventBindings returns a WorkflowEventBindingInformer.
 	WorkflowEventBindings() WorkflowEventBindingInformer
+	// WorkflowNodes returns a WorkflowNodeInformer.
+	WorkflowNodes() WorkflowNodeInformer
 	// WorkflowTemplates returns a WorkflowTemplateInformer.
 	WorkflowTemplates() WorkflowTemplateInformer
-	// WorkflowThings returns a WorkflowThingInformer.
-	WorkflowThings() WorkflowThingInformer
 }
 
 type version struct {
@@ -48,17 +50,22 @@ func (v *version) Workflows() WorkflowInformer {
 	return &workflowInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// WorkflowAgents returns a WorkflowAgentInformer.
+func (v *version) WorkflowAgents() WorkflowAgentInformer {
+	return &workflowAgentInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // WorkflowEventBindings returns a WorkflowEventBindingInformer.
 func (v *version) WorkflowEventBindings() WorkflowEventBindingInformer {
 	return &workflowEventBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// WorkflowNodes returns a WorkflowNodeInformer.
+func (v *version) WorkflowNodes() WorkflowNodeInformer {
+	return &workflowNodeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // WorkflowTemplates returns a WorkflowTemplateInformer.
 func (v *version) WorkflowTemplates() WorkflowTemplateInformer {
 	return &workflowTemplateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// WorkflowThings returns a WorkflowThingInformer.
-func (v *version) WorkflowThings() WorkflowThingInformer {
-	return &workflowThingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

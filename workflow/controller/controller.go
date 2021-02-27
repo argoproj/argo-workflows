@@ -88,7 +88,8 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
-	workflowThingInformer cache.SharedIndexInformer
+	workflowAgentInformer cache.SharedIndexInformer
+	workflowNodeInformer  cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
@@ -191,8 +192,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
-	wfc.workflowThingInformer = wfextvv1alpha1.NewWorkflowThingInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
-	wfc.addWorkflowThingInformerHandlers()
+	wfc.workflowAgentInformer = wfextvv1alpha1.NewWorkflowAgentInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
+	wfc.addWorkflowAgentInformerHandlers()
+	wfc.workflowNodeInformer = wfextvv1alpha1.NewWorkflowNodeInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
+	wfc.addWorkflowNodeInformerHandlers()
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -200,10 +203,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.workflowThingInformer.Run(ctx.Done())
+	go wfc.workflowAgentInformer.Run(ctx.Done())
+	go wfc.workflowNodeInformer.Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.workflowThingInformer.HasSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.workflowAgentInformer.HasSynced) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
@@ -768,19 +772,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			},
 		},
 	)
-	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: func(obj interface{}) {
-			key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if key == "" {
-				return
-			}
-			namespace, name, _ := cache.SplitMetaNamespaceKey(key)
-			err := wfc.kubeclientset.CoreV1().Pods(namespace).Delete(ctx, name+"-agent", metav1.DeleteOptions{})
-			if err != nil {
-				log.WithError(err).Error("failed to delete agent pod")
-			}
-		},
-	})
 	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
@@ -807,15 +798,28 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	})
 }
 
-func (wfc *WorkflowController) addWorkflowThingInformerHandlers() {
-	wfc.wfInformer.AddEventHandler(
+func (wfc *WorkflowController) addWorkflowAgentInformerHandlers() {
+	wfc.workflowAgentInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				if x, ok := new.(*wfv1.WorkflowThing); ok {
-					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Name)
+			UpdateFunc: func(_, new interface{}) {
+				if agent, ok := new.(*wfv1.WorkflowAgent); ok {
+					wfc.wfQueue.AddRateLimited(agent.Namespace + "/" + agent.Name)
 				}
 			},
-		})
+		},
+	)
+}
+
+func (wfc *WorkflowController) addWorkflowNodeInformerHandlers() {
+	wfc.workflowNodeInformer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(_, new interface{}) {
+				if n, ok := new.(*wfv1.WorkflowNode); ok {
+					wfc.wfQueue.AddRateLimited(n.Namespace + "/" + n.Labels[common.LabelKeyWorkflow])
+				}
+			},
+		},
+	)
 }
 
 func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interface{}) {

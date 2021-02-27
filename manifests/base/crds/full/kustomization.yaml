@@ -7,4 +7,5 @@ resources:
 - argoproj.io_workflows.yaml
 - argoproj.io_workflowtemplates.yaml
 - argoproj.io_workfloweventbindings.yaml
-- argoproj.io_workflowthings.yaml
+- argoproj.io_workflowagents.yaml
+- argoproj.io_workflownodes.yaml

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -27,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -747,12 +745,12 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 
 	{ // config map allows for larger outputs, and does not need `pod patch` RBAC
 		log.Info("Patching workflow thing with outputs")
-		data, err := json.Marshal(&wfv1.WorkflowThing{Status: wfv1.WorkflowThingStatus{Nodes: wfv1.Nodes{we.PodName: wfv1.NodeStatus{Outputs: outputs}}}})
+		data, err := json.Marshal(&wfv1.WorkflowAgent{Status: wfv1.WorkflowAgentStatus{Nodes: wfv1.Nodes{we.PodName: wfv1.NodeStatus{Outputs: outputs}}}})
 		if err != nil {
 			return err
 		}
 		err = waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-			_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowThings(we.Namespace).Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
+			_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowAgents(we.Namespace).Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
 			return !errorsutil.IsTransientErr(err), err
 		})
 		if !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
@@ -1127,82 +1125,6 @@ func (we *WorkflowExecutor) LoadExecutionControl() error {
 			return nil
 		}
 		return err
-	}
-	return nil
-}
-
-func (we *WorkflowExecutor) Agent(ctx context.Context) error {
-	workflows := we.workflowInterface.ArgoprojV1alpha1().Workflows(we.Namespace)
-	workflowThings := we.workflowInterface.ArgoprojV1alpha1().WorkflowThings(we.Namespace)
-
-	for {
-		w, err := workflows.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + we.workflowName})
-		if err != nil {
-			return err
-		}
-		for event := range w.ResultChan() {
-			if event.Type == watch.Deleted {
-				return nil
-			}
-			wf, ok := event.Object.(*wfv1.Workflow)
-			if !ok {
-				return apierr.FromObject(event.Object)
-			}
-			if wf.Annotations[common.LabelKeyCompleted] == "true" {
-				return nil
-			}
-			for _, n := range wf.Status.Nodes {
-				if n.Phase != wfv1.NodePending {
-					continue
-				}
-				tmpl := wf.GetTemplateByName(n.TemplateName)
-				switch n.Type {
-				case wfv1.NodeTypeHTTP:
-					result := wfv1.NodeStatus{}
-					err := we.executeHTTPTemplate(ctx, tmpl)
-					if err != nil {
-						result.Phase = wfv1.NodeFailed
-						result.Message = err.Error()
-					} else {
-						result.Phase = wfv1.NodeSucceeded
-					}
-					data, err := json.Marshal(&wfv1.WorkflowThing{Status: wfv1.WorkflowThingStatus{Nodes: wfv1.Nodes{n.ID: result}}})
-					if err != nil {
-						return err
-					}
-					_, err = workflowThings.Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-}
-
-func (we *WorkflowExecutor) executeHTTPTemplate(ctx context.Context, tmpl *wfv1.Template) error {
-	h := tmpl.HTTP
-	in, err := http.NewRequest(h.Method, h.URL, bytes.NewBuffer(h.Body))
-	if err != nil {
-		return err
-	}
-	for _, v := range h.Headers {
-		value := v.Value
-		if v.ValueFrom != nil || v.ValueFrom.SecretKeyRef != nil {
-			secret, err := util.GetSecrets(ctx, we.ClientSet, we.Namespace, v.ValueFrom.SecretKeyRef.Name, v.ValueFrom.SecretKeyRef.Key)
-			if err != nil {
-				return err
-			}
-			value = string(secret)
-		}
-		in.Header.Add(v.Name, value)
-	}
-	out, err := http.DefaultClient.Do(in)
-	if err != nil {
-		return err
-	}
-	if out.StatusCode >= 300 {
-		return fmt.Errorf(out.Status)
 	}
 	return nil
 }

@@ -1991,6 +1991,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
+|`http`|[`HTTPTemplate`](#httptemplate)|_No description available_|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
@@ -2659,6 +2660,45 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 |`failFast`|`boolean`|This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo_workflows/issues/1442|
 |`target`|`string`|Target are one or more names of targets to execute in a DAG|
 |`tasks`|`Array<`[`DAGTask`](#dagtask)`>`|Tasks are a list of DAG tasks|
+
+## HTTPTemplate
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
+
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
+
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
+
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
+
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`body`|`byte`|_No description available_|
+|`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|_No description available_|
+|`method`|`string`|_No description available_|
+|`url`|`string`|_No description available_|
 
 ## UserContainer
 
@@ -3694,6 +3734,17 @@ DAGTask represents a node in the graph during DAG execution
 |`withParam`|`string`|WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.|
 |`withSequence`|[`Sequence`](#sequence)|WithSequence expands a task into a numeric sequence|
 
+## HTTPHeader
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|_No description available_|
+|`value`|`string`|_No description available_|
+|`valueFrom`|[`HTTPHeaderSource`](#httpheadersource)|_No description available_|
+
 ## Cache
 
 Cache is the configuration for the type of cache to be used
@@ -3892,6 +3943,54 @@ Amount represent a numeric amount.
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 </details>
+
+## HTTPHeaderSource
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
+
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
+
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
+
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
+
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
+
+- [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
+
+- [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 
 # External Fields
 

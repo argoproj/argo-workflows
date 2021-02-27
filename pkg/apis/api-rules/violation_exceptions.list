@@ -6,6 +6,8 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,GitArtifact,Fetch
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HDFSConfig,Addresses
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPArtifact,Headers
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPTemplate,Body
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPTemplate,Headers
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Histogram,Buckets
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Inputs,Parameters
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Metrics,Prometheus
@@ -25,6 +27,7 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Template,Steps
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Template,Tolerations
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Template,Volumes
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowAgentSpec,Templates
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowSpec,HostAliases
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowSpec,ImagePullSecrets
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowSpec,Templates

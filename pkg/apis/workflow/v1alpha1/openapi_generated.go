@@ -46,6 +46,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSConfig":                  schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSKrbConfig":               schema_pkg_apis_workflow_v1alpha1_HDFSKrbConfig(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact":                schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader":                  schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource":            schema_pkg_apis_workflow_v1alpha1_HTTPHeaderSource(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPTemplate":                schema_pkg_apis_workflow_v1alpha1_HTTPTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header":                      schema_pkg_apis_workflow_v1alpha1_Header(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Histogram":                   schema_pkg_apis_workflow_v1alpha1_Histogram(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs":                      schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
@@ -96,10 +99,16 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Version":                     schema_pkg_apis_workflow_v1alpha1_Version(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC":               schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow":                    schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgent":               schema_pkg_apis_workflow_v1alpha1_WorkflowAgent(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgentList":           schema_pkg_apis_workflow_v1alpha1_WorkflowAgentList(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgentSpec":           schema_pkg_apis_workflow_v1alpha1_WorkflowAgentSpec(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgentStatus":         schema_pkg_apis_workflow_v1alpha1_WorkflowAgentStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":        schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingList":    schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec":    schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowList":                schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowNode":                schema_pkg_apis_workflow_v1alpha1_WorkflowNode(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowNodeList":            schema_pkg_apis_workflow_v1alpha1_WorkflowNodeList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec":                schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus":              schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStep":                schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
@@ -107,10 +116,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateList":        schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef":         schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec":        schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThing":               schema_pkg_apis_workflow_v1alpha1_WorkflowThing(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThingList":           schema_pkg_apis_workflow_v1alpha1_WorkflowThingList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThingSpec":           schema_pkg_apis_workflow_v1alpha1_WorkflowThingSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThingStatus":         schema_pkg_apis_workflow_v1alpha1_WorkflowThingStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ZipStrategy":                 schema_pkg_apis_workflow_v1alpha1_ZipStrategy(ref),
 	}
 }
@@ -1652,6 +1657,105 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"valueFrom": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource"),
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_HTTPHeaderSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"secretKeyRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_HTTPTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"method": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"headers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"),
+									},
+								},
+							},
+						},
+					},
+					"body": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "byte",
+						},
+					},
+				},
+				Required: []string{"url"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"},
 	}
 }
 
@@ -3780,6 +3884,11 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
 						},
 					},
+					"http": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPTemplate"),
+						},
+					},
 					"dag": {
 						SchemaProps: spec.SchemaProps{
 							Description: "DAG template subtype which runs a DAG",
@@ -4001,7 +4110,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -4492,6 +4601,162 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_WorkflowAgent(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgentSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgentStatus"),
+						},
+					},
+				},
+				Required: []string{"metadata", "spec", "status"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgentSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgentStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowAgentList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgent"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowAgent", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowAgentSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"templates": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowAgentStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"nodes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4657,6 +4922,101 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref common.ReferenceCallback
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowNode(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"),
+						},
+					},
+				},
+				Required: []string{"metadata", "spec", "status"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowNodeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowNode"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowNode", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -5731,159 +6091,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_WorkflowThing(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThingSpec"),
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThingStatus"),
-						},
-					},
-				},
-				Required: []string{"metadata", "spec", "status"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThingSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThingStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_WorkflowThingList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThing"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"metadata", "items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowThing", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_WorkflowThingSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"templates": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"templates"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_WorkflowThingStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"nodes": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"nodes"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"},
 	}
 }
 

@@ -607,6 +607,13 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
 	}
+	for _, n := range woc.wf.Status.Nodes.Filter(func(n wfv1.NodeStatus) bool {
+		return n.Fulfilled() && n.Type == wfv1.NodeTypeHTTP
+	}) {
+		if err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowNodes(woc.wf.Namespace).Delete(ctx, n.ID, metav1.DeleteOptions{}); err != nil {
+			woc.log.WithError(err).Warn("failed to clean-up workflow node")
+		}
+	}
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -962,14 +969,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		}
 		switch node.Type {
 		case wfv1.NodeTypeHTTP:
-			obj, _, _ := woc.controller.workflowThingInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
-			thing, ok := obj.(*wfv1.WorkflowThing)
-			if ok {
-				x := thing.Status.Nodes[node.ID]
-				if x.Fulfilled() {
-					woc.markNodePhase(node.Name, x.Phase, x.Message, x.Outputs)
-				}
-			}
+			// woc.reconcileNodeWithWorkflowAgent(node)
+			woc.reconcileNodeWithWorkflowNode(node)
 		case wfv1.NodeTypePod:
 			if seenPod, ok := seenPods[nodeID]; !ok {
 
@@ -1008,6 +1009,27 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// nolint:unused
+func (woc *wfOperationCtx) reconcileNodeWithWorkflowAgent(node wfv1.NodeStatus) {
+	obj, _, _ := woc.controller.workflowAgentInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+	x, ok := obj.(*wfv1.WorkflowAgent)
+	if ok {
+		if x := x.Status.Nodes[node.ID]; x.Fulfilled() {
+			woc.markNodePhase(node.Name, x.Phase, x.Message, x.Outputs)
+		}
+	}
+}
+
+func (woc *wfOperationCtx) reconcileNodeWithWorkflowNode(node wfv1.NodeStatus) {
+	obj, _, _ := woc.controller.workflowNodeInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
+	x, ok := obj.(*wfv1.WorkflowNode)
+	if ok {
+		if x := x.Status; x.Fulfilled() {
+			woc.markNodePhase(node.Name, x.Phase, x.Message, x.Outputs)
+		}
+	}
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
@@ -1195,8 +1217,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			if c.State.Terminated == nil || c.Name != common.WaitContainerName {
 				continue
 			}
-			obj, _, _ := woc.controller.workflowThingInformer.GetStore().GetByKey(pod.Namespace + "/" + pod.Name)
-			cm, ok := obj.(*wfv1.WorkflowThing)
+			obj, _, _ := woc.controller.workflowAgentInformer.GetStore().GetByKey(pod.Namespace + "/" + pod.Name)
+			cm, ok := obj.(*wfv1.WorkflowAgent)
 			if ok {
 				woc.log.Infof("Setting node %v outputs from workflow thing", node.ID)
 				node.Outputs = cm.Status.Nodes[node.ID].Outputs
@@ -1893,12 +1915,11 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
 			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
-			err := woc.deletePDBResource(ctx)
-			if err != nil {
-				woc.wf.Status.Phase = wfv1.WorkflowError
-				woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeError)
-				woc.updated = true
-				woc.wf.Status.Message = err.Error()
+			if err := woc.deletePDBResource(ctx); err != nil {
+				woc.markWorkflowError(ctx, err)
+			}
+			if err := woc.deleteAgent(ctx); err != nil {
+				woc.markWorkflowError(ctx, err)
 			}
 			if woc.controller.wfArchive.IsEnabled() {
 				if woc.controller.isArchivable(woc.wf) {

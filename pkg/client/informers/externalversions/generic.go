@@ -43,12 +43,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().CronWorkflows().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workflows"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().Workflows().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("workflowagents"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowAgents().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workfloweventbindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowEventBindings().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("workflownodes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowNodes().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workflowtemplates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowTemplates().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("workflowthings"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowThings().Informer()}, nil
 
 	}
 

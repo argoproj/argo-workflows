@@ -24,16 +24,20 @@ func (c *FakeArgoprojV1alpha1) Workflows(namespace string) v1alpha1.WorkflowInte
 	return &FakeWorkflows{c, namespace}
 }
 
+func (c *FakeArgoprojV1alpha1) WorkflowAgents(namespace string) v1alpha1.WorkflowAgentInterface {
+	return &FakeWorkflowAgents{c, namespace}
+}
+
 func (c *FakeArgoprojV1alpha1) WorkflowEventBindings(namespace string) v1alpha1.WorkflowEventBindingInterface {
 	return &FakeWorkflowEventBindings{c, namespace}
 }
 
-func (c *FakeArgoprojV1alpha1) WorkflowTemplates(namespace string) v1alpha1.WorkflowTemplateInterface {
-	return &FakeWorkflowTemplates{c, namespace}
+func (c *FakeArgoprojV1alpha1) WorkflowNodes(namespace string) v1alpha1.WorkflowNodeInterface {
+	return &FakeWorkflowNodes{c, namespace}
 }
 
-func (c *FakeArgoprojV1alpha1) WorkflowThings(namespace string) v1alpha1.WorkflowThingInterface {
-	return &FakeWorkflowThings{c, namespace}
+func (c *FakeArgoprojV1alpha1) WorkflowTemplates(namespace string) v1alpha1.WorkflowTemplateInterface {
+	return &FakeWorkflowTemplates{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
