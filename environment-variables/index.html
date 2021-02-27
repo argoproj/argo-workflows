@@ -1472,10 +1472,12 @@
       
       
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5" checked>
     
     <label class="md-nav__link" for="nav-5">
       Operator Manual
@@ -1763,6 +1765,63 @@
   </li>
 
         
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Environment Variables
+      </label>
+    
+    <a href="./" title="Environment Variables" class="md-nav__link md-nav__link--active">
+      Environment Variables
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#controller" title="Controller" class="md-nav__link">
+    Controller
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#executor" title="Executor" class="md-nav__link">
+    Executor
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
       </ul>
     </nav>
   </li>
@@ -2041,6 +2100,11 @@ Note that these environment variables may be removed at any time.</p>
 <td>The requeue time for the rate limiter of the workflow queue.</td>
 </tr>
 <tr>
+<td><code>EXPRESSION_TEMPLATES</code></td>
+<td><code>bool</code></td>
+<td>Escape hatch to disable expression templates. Default <code>true</code>.</td>
+</tr>
+<tr>
 <td><code>GZIP_IMPLEMENTATION</code></td>
 <td><code>string</code></td>
 <td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip".</td>
@@ -2175,6 +2239,41 @@ Note that these environment variables may be removed at any time.</p>
       
         
 <footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../windows/" title="Windows Container Support" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Windows Container Support
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../CONTRIBUTING/" title="Contributing" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Contributing
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
