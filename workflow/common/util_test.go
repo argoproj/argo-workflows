@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/valyala/fasttemplate"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -87,87 +86,4 @@ func TestDeletePod(t *testing.T) {
 		err := DeletePod(ctx, kube, "not-exists", "my-ms")
 		assert.NoError(t, err)
 	})
-}
-
-func TestNestedReplaceString(t *testing.T) {
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
-
-	test := `{{- with secret "{{inputs.parameters.message}}" -}}
-    {{ .Data.data.gitcreds }}
-  {{- end }}`
-	fstTmpl, err := fasttemplate.NewTemplate(test, "{{", "}}")
-	if assert.NoError(t, err) {
-		replacement, err := Replace(fstTmpl, replaceMap, true)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "{{- with secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
-		}
-	}
-
-	test = `{{- with {{ secret "{{inputs.parameters.message}}" -}}
-    {{ .Data.data.gitcreds }}
-  {{- end }}`
-	fstTmpl, err = fasttemplate.NewTemplate(test, "{{", "}}")
-	if assert.NoError(t, err) {
-		replacement, err := Replace(fstTmpl, replaceMap, true)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "{{- with {{ secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
-		}
-	}
-
-	test = `{{- with {{ secret "{{inputs.parameters.message}}" -}} }}
-    {{ .Data.data.gitcreds }}
-  {{- end }}`
-	fstTmpl, err = fasttemplate.NewTemplate(test, "{{", "}}")
-	if assert.NoError(t, err) {
-		replacement, err := Replace(fstTmpl, replaceMap, true)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "{{- with {{ secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
-		}
-	}
-
-	test = `{{- with secret "{{inputs.parameters.message}}" -}} }}
-    {{ .Data.data.gitcreds }}
-  {{- end }}`
-	fstTmpl, err = fasttemplate.NewTemplate(test, "{{", "}}")
-	if assert.NoError(t, err) {
-		replacement, err := Replace(fstTmpl, replaceMap, true)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "{{- with secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
-		}
-	}
-
-	test = `{{- with {{ {{ }} secret "{{inputs.parameters.message}}" -}} }}
-    {{ .Data.data.gitcreds }}
-  {{- end }}`
-	fstTmpl, err = fasttemplate.NewTemplate(test, "{{", "}}")
-	if assert.NoError(t, err) {
-		replacement, err := Replace(fstTmpl, replaceMap, true)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "{{- with {{ {{ }} secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
-		}
-	}
-
-	test = `{{- with {{ {{ }} secret "{{does-not-exist}}" -}} }}
-    {{ .Data.data.gitcreds }}
-  {{- end }}`
-	fstTmpl, err = fasttemplate.NewTemplate(test, "{{", "}}")
-	if assert.NoError(t, err) {
-		replacement, err := Replace(fstTmpl, replaceMap, true)
-		if assert.NoError(t, err) {
-			assert.Equal(t, test, replacement)
-		}
-	}
-}
-
-func TestReplaceStringWithWhiteSpace(t *testing.T) {
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
-
-	test := `{{ inputs.parameters.message }}`
-	fstTmpl, err := fasttemplate.NewTemplate(test, "{{", "}}")
-	if assert.NoError(t, err) {
-		replacement, err := Replace(fstTmpl, replaceMap, true)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "hello world", replacement)
-		}
-	}
 }
