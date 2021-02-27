@@ -3,14 +3,13 @@ package commands
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
@@ -53,48 +52,27 @@ func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
-			FieldSelector:   util.GenerateFieldSelectorFromWorkflowName(workflow),
-			ResourceVersion: "0",
+			FieldSelector: util.GenerateFieldSelectorFromWorkflowName(workflow),
 		},
 	}
-	stream, err := serviceClient.WatchWorkflows(ctx, req)
-	errors.CheckError(err)
-
-	wfChan := make(chan *wfv1.Workflow)
+	var wf *wfv1.Workflow
 	go func() {
-		for {
-			event, err := stream.Recv()
-			if err == io.EOF {
-				log.Debug("Re-establishing workflow watch")
-				stream, err = serviceClient.WatchWorkflows(ctx, req)
-				errors.CheckError(err)
-				continue
+		for range time.Tick(time.Second) {
+			if wf != nil {
+				printWorkflowStatus(wf, getArgs)
 			}
-			errors.CheckError(err)
-			if event == nil {
-				continue
-			}
-			wfChan <- event.Object
 		}
 	}()
-
-	var wf *wfv1.Workflow
-	ticker := time.NewTicker(time.Second)
 	for {
-		select {
-		case newWf := <-wfChan:
-			// If we get a new event, update our workflow
-			if newWf == nil {
+		stream, err := serviceClient.WatchWorkflows(ctx, req)
+		errors.CheckError(err)
+		for {
+			e, err := stream.Recv()
+			errors.CheckError(err)
+			wf = e.Object
+			if e.Type == string(watch.Deleted) || !wf.Status.FinishedAt.IsZero() {
 				return
 			}
-			wf = newWf
-		case <-ticker.C:
-			// If we don't, refresh the workflow screen every second
-		}
-
-		printWorkflowStatus(wf, getArgs)
-		if wf != nil && !wf.Status.FinishedAt.IsZero() {
-			return
 		}
 	}
 }
