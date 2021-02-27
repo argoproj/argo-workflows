@@ -193,6 +193,39 @@ spec:
     served: true
     storage: true
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: workflowthings.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: WorkflowThing
+    listKind: WorkflowThingList
+    plural: workflowthings
+    singular: workflowthing
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - status
+        type: object
+    served: true
+    storage: true
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:

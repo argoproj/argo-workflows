@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -46,6 +47,14 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 		return []byte{}, errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
 	}
 	return val, nil
+}
+
+// Write the Terminate message in pod spec
+func WriteTeriminateMessage(message string) {
+	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0644)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Merge the two parameters Slice

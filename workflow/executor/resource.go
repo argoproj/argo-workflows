@@ -134,7 +134,7 @@ func (we *WorkflowExecutor) signalMonitoring() {
 		for {
 			<-sigs
 			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			util.WriteTerminationMessage("Received user signal to terminate the workflow")
+			util.WriteTeriminateMessage("Received user signal to terminate the workflow")
 			os.Exit(130)
 		}
 	}()

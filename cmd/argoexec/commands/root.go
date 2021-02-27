@@ -134,7 +134,7 @@ func initExecutor() *executor.WorkflowExecutor {
 // checkErr is a convenience function to panic upon error
 func checkErr(err error) {
 	if err != nil {
-		util.WriteTerminationMessage(err.Error())
+		util.WriteTeriminateMessage(err.Error())
 		panic(err.Error())
 	}
 }

@@ -112,6 +112,8 @@ Workflow is the definition of a workflow resource
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -458,6 +460,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -824,6 +828,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -1146,6 +1152,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -1795,6 +1803,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -3388,6 +3398,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
@@ -3579,6 +3591,8 @@ MetricLabel is a single label for a prometheus metric
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -3999,6 +4013,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -5185,6 +5201,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
