@@ -42,7 +42,7 @@ const (
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
 	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
-	// Deprecated: Newly created workflows should use a role that has `workflow patch` rather than `pod patch` for
+	// Deprecated:  Newly created workflows should use a role that has `workflowthing patch` rather than `pod patch` for
 	// a higher level of security.
 	// However, any workflows in-flight when an upgrade occurs will still have pods that will communicate outputs
 	// using this method.

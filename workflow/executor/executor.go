@@ -734,8 +734,8 @@ func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
 	return nil
 }
 
-// StoreOutputs annotation to the pod indicating all the outputs.
-func (we *WorkflowExecutor) StoreOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
+// AnnotateOutputs annotation to the pod indicating all the outputs.
+func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	if logArt != nil {
 		outputs.Artifacts = append(outputs.Artifacts, *logArt)

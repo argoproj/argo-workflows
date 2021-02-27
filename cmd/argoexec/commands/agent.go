@@ -7,12 +7,11 @@ import (
 )
 
 func NewAgentCommand() *cobra.Command {
-	command := cobra.Command{
+	return &cobra.Command{
 		Use:          "agent",
 		SilenceUsage: true, // this prevents confusing usage message being printed on error
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return initExecutor().Agent(context.Background())
 		},
 	}
-	return &command
 }
