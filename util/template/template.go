@@ -6,7 +6,7 @@ import (
 
 	"github.com/valyala/fasttemplate"
 
-	exprenv "github.com/argoproj/argo-workflows/v3/util/exrp/env"
+	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 )
 
 const (
@@ -31,7 +31,7 @@ type impl struct {
 }
 
 func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	env := exprenv.New(envMap(replaceMap))
+	env := exprenv.WithDefaults(envMap(replaceMap))
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.Template.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)

@@ -2925,7 +2925,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError("real time metrics can only be used with metric variables")
 				continue
 			}
-			value = strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}") // TODO
+			value = strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}")
 			valueFunc, ok := realTimeScope[value]
 			if !ok {
 				woc.reportMetricEmissionError(fmt.Sprintf("'%s' is not available as a real time metric", value))

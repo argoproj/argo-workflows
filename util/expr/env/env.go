@@ -5,7 +5,7 @@ import (
 	"github.com/doublerebel/bellows"
 )
 
-func New(m map[string]interface{}) map[string]interface{} {
+func WithDefaults(m map[string]interface{}) map[string]interface{} {
 	env := bellows.Expand(m)
 	env["sprig"] = sprig.GenericFuncMap()
 	return env

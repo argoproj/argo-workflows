@@ -41,7 +41,7 @@ func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	}
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
-			m["inputs."+a.Name] = a // special case for artifacts
+			m["inputs.artifacts."+a.Name] = a // special case for artifacts
 		}
 	}
 	return template.ResolveVar(v, m)
