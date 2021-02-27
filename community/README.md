@@ -41,7 +41,7 @@ Contributors will be asked to read and sign a [CLA](https://github.com/argoproj/
 
 ## Community Meetings
 
-Approvers and owners for each project are responsible for organizing regular community meetings to provide status updates and solicit feedback.
+Approvers and owners for each project are responsible for organizing regular community meetings to provide status updates and solicit feedback. The meeting calendar can be found in [Google calendar](https://calendar.google.com/calendar/u/0/embed?src=argoproj@gmail.com) or with this [ICS link](https://calendar.google.com/calendar/ical/argoproj%40gmail.com/public/basic.ics).
 
 * Meeting agendas should be published at least one week prior to the meeting.
 * Community members should be able to attend the meetings remotely.
