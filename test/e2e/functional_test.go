@@ -792,18 +792,6 @@ spec:
 		})
 }
 
-func (s *FunctionalSuite) TestK8SJSONPatch() {
-	s.Given().
-		Workflow("@functional/k8s-patch.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
-}
-
 func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
@@ -832,6 +820,42 @@ spec:
 					assert.Equal(t, c.Resources.Limits.Cpu().String(), "100m")
 				}
 			}
+		})
+}
+
+func (s *FunctionalSuite) TestDataTransformation() {
+	s.Given().
+		Workflow("@testdata/data-transformation.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(1 * time.Minute).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			paths := status.Nodes.FindByDisplayName("get-artifact-path")
+			if assert.NotNil(t, paths) {
+				assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
+			}
+			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
+		})
+}
+
+func (s *FunctionalSuite) TestDataTransformationArtifactRepositoryRef() {
+	s.Given().
+		Workflow("@testdata/data-transformation-artifact-repository-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(1 * time.Minute).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			paths := status.Nodes.FindByDisplayName("get-artifact-path")
+			if assert.NotNil(t, paths) {
+				assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
+			}
+			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
 		})
 }
 

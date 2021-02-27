@@ -57,75 +57,6 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 	return volMnt
 }
 
-// KillPodContainer is a convenience function to issue a kill signal to a container in a pod
-// It gives a 15 second grace period before issuing SIGKILL
-// NOTE: this only works with containers that have sh
-func KillPodContainer(restConfig *rest.Config, namespace string, pod string, container string) error {
-	exec, err := ExecPodContainer(restConfig, namespace, pod, container, true, true, "sh", "-c", "kill 1; sleep 15; kill -9 1")
-	if err != nil {
-		return err
-	}
-	// Stream will initiate the command. We do want to wait for the result so we launch as a goroutine
-	go func() {
-		_, _, err := GetExecutorOutput(exec)
-		if err != nil {
-			log.Warnf("Kill command failed (expected to fail with 137): %v", err)
-			return
-		}
-		log.Infof("Kill of %s (%s) successfully issued", pod, container)
-	}()
-	return nil
-}
-
-// ContainerLogStream returns an io.ReadCloser for a container's log stream using the websocket
-// interface. This was implemented in the hopes that we could selectively choose stdout from stderr,
-// but due to https://github.com/kubernetes/kubernetes/issues/28167, it is not possible to discern
-// stdout from stderr using the K8s API server, so this function is unused, instead preferring the
-// pod logs interface from client-go. It's left as a reference for when issue #28167 is eventually
-// resolved.
-func ContainerLogStream(config *rest.Config, namespace string, pod string, container string) (io.ReadCloser, error) {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	logRequest := clientset.CoreV1().RESTClient().Get().
-		Resource("pods").
-		Name(pod).
-		Namespace(namespace).
-		SubResource("log").
-		Param("container", container)
-	u := logRequest.URL()
-	switch u.Scheme {
-	case "https":
-		u.Scheme = "wss"
-	case "http":
-		u.Scheme = "ws"
-	default:
-		return nil, errors.Errorf("", "Malformed URL %s", u.String())
-	}
-
-	log.Info(u.String())
-	wsrc := websocketReadCloser{
-		&bytes.Buffer{},
-	}
-
-	wrappedRoundTripper, err := roundTripperFromConfig(config, wsrc.WebsocketCallback)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-
-	// Send the request and let the callback do its work
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    u,
-	}
-	_, err = wrappedRoundTripper.RoundTrip(req)
-	if err != nil && !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &wsrc, nil
-}
-
 type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
 
 type WebsocketRoundTripper struct {
@@ -139,62 +70,6 @@ func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, erro
 		defer util.Close(conn)
 	}
 	return resp, d.Do(conn, resp, err)
-}
-
-func (w *websocketReadCloser) WebsocketCallback(ws *websocket.Conn, resp *http.Response, err error) error {
-	if err != nil {
-		if resp != nil && resp.StatusCode != http.StatusOK {
-			buf := new(bytes.Buffer)
-			_, _ = buf.ReadFrom(resp.Body)
-			return errors.InternalErrorf("Can't connect to log endpoint (%d): %s", resp.StatusCode, buf.String())
-		}
-		return errors.InternalErrorf("Can't connect to log endpoint: %s", err.Error())
-	}
-
-	for {
-		_, body, err := ws.ReadMessage()
-		if len(body) > 0 {
-			// log.Debugf("%d: %s", msgType, string(body))
-			_, writeErr := w.Write(body)
-			if writeErr != nil {
-				return writeErr
-			}
-		}
-		if err != nil {
-			if err == io.EOF {
-				log.Infof("websocket closed: %v", err)
-				return nil
-			}
-			log.Warnf("websocket error: %v", err)
-			return err
-		}
-	}
-}
-
-func roundTripperFromConfig(config *rest.Config, callback RoundTripCallback) (http.RoundTripper, error) {
-	tlsConfig, err := rest.TLSConfigFor(config)
-	if err != nil {
-		return nil, err
-	}
-	// Create a roundtripper which will pass in the final underlying websocket connection to a callback
-	wsrt := &WebsocketRoundTripper{
-		Do: callback,
-		Dialer: &websocket.Dialer{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: tlsConfig,
-		},
-	}
-	// Make sure we inherit all relevant security headers
-	return rest.HTTPWrappersForConfig(config, wsrt)
-}
-
-type websocketReadCloser struct {
-	*bytes.Buffer
-}
-
-func (w *websocketReadCloser) Close() error {
-	// return w.conn.Close()
-	return nil
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
@@ -411,11 +286,6 @@ func AddPodAnnotation(ctx context.Context, c kubernetes.Interface, podName, name
 	return addPodMetadata(ctx, c, "annotations", podName, namespace, key, value, backoff)
 }
 
-// AddPodLabel adds an label to pod
-func AddPodLabel(ctx context.Context, c kubernetes.Interface, podName, namespace, key, value string) error {
-	return addPodMetadata(ctx, c, "labels", podName, namespace, key, value, defaultPatchBackoff)
-}
-
 // addPodMetadata is helper to either add a pod label or annotation to the pod
 func addPodMetadata(ctx context.Context, c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
 	metadata := map[string]interface{}{
@@ -448,100 +318,6 @@ func DeletePod(ctx context.Context, c kubernetes.Interface, podName, namespace s
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
-}
-
-// MergeReferredTemplate merges a referred template to the receiver template.
-func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
-	// Copy the referred template to deep copy template types.
-	newTmpl := referred.DeepCopy()
-
-	newTmpl.Name = tmpl.Name
-
-	if len(tmpl.Inputs.Parameters) > 0 {
-		parameters := make([]wfv1.Parameter, len(tmpl.Inputs.Parameters))
-		copy(parameters, tmpl.Inputs.Parameters)
-		newTmpl.Inputs.Parameters = parameters
-	}
-	if len(tmpl.Inputs.Artifacts) > 0 {
-		artifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
-		copy(artifacts, tmpl.Inputs.Artifacts)
-		newTmpl.Inputs.Artifacts = artifacts
-	}
-
-	if len(tmpl.Outputs.Parameters) > 0 {
-		parameters := make([]wfv1.Parameter, len(tmpl.Outputs.Parameters))
-		copy(parameters, tmpl.Outputs.Parameters)
-		newTmpl.Outputs.Parameters = parameters
-	}
-	if len(tmpl.Outputs.Artifacts) > 0 {
-		artifacts := make([]wfv1.Artifact, len(tmpl.Outputs.Artifacts))
-		copy(artifacts, tmpl.Outputs.Artifacts)
-		newTmpl.Outputs.Artifacts = artifacts
-	}
-
-	if len(tmpl.NodeSelector) > 0 {
-		m := make(map[string]string, len(tmpl.NodeSelector))
-		for k, v := range tmpl.NodeSelector {
-			m[k] = v
-		}
-		newTmpl.NodeSelector = m
-	}
-	if tmpl.Affinity != nil {
-		newTmpl.Affinity = tmpl.Affinity.DeepCopy()
-	}
-	if len(newTmpl.Metadata.Annotations) > 0 || len(tmpl.Metadata.Labels) > 0 {
-		newTmpl.Metadata = *tmpl.Metadata.DeepCopy()
-	}
-	if tmpl.Daemon != nil {
-		v := *tmpl.Daemon
-		newTmpl.Daemon = &v
-	}
-	if len(tmpl.Volumes) > 0 {
-		volumes := make([]apiv1.Volume, len(tmpl.Volumes))
-		copy(volumes, tmpl.Volumes)
-		newTmpl.Volumes = volumes
-	}
-	if len(tmpl.InitContainers) > 0 {
-		containers := make([]wfv1.UserContainer, len(tmpl.InitContainers))
-		copy(containers, tmpl.InitContainers)
-		newTmpl.InitContainers = containers
-	}
-	if len(tmpl.Sidecars) > 0 {
-		containers := make([]wfv1.UserContainer, len(tmpl.Sidecars))
-		copy(containers, tmpl.Sidecars)
-		newTmpl.Sidecars = containers
-	}
-	if tmpl.ArchiveLocation != nil {
-		newTmpl.ArchiveLocation = tmpl.ArchiveLocation.DeepCopy()
-	}
-	if tmpl.ActiveDeadlineSeconds != nil {
-		v := *tmpl.ActiveDeadlineSeconds
-		newTmpl.ActiveDeadlineSeconds = &v
-	}
-	if tmpl.RetryStrategy != nil {
-		newTmpl.RetryStrategy = tmpl.RetryStrategy.DeepCopy()
-	}
-	if tmpl.Parallelism != nil {
-		v := *tmpl.Parallelism
-		newTmpl.Parallelism = &v
-	}
-	if len(tmpl.Tolerations) != 0 {
-		tolerations := make([]apiv1.Toleration, len(tmpl.Tolerations))
-		copy(tolerations, tmpl.Tolerations)
-		newTmpl.Tolerations = tolerations
-	}
-	if tmpl.SchedulerName != "" {
-		newTmpl.SchedulerName = tmpl.SchedulerName
-	}
-	if tmpl.PriorityClassName != "" {
-		newTmpl.PriorityClassName = tmpl.PriorityClassName
-	}
-	if tmpl.Priority != nil {
-		v := *tmpl.Priority
-		newTmpl.Priority = &v
-	}
-
-	return newTmpl, nil
 }
 
 // GetTemplateGetterString returns string of TemplateHolder.

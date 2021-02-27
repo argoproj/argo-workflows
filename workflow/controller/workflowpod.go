@@ -247,7 +247,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if tmpl.GetType() != wfv1.TemplateTypeResource {
+	if tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData {
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
@@ -306,7 +306,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					}
 				}
 				if len(c.Command) == 0 {
-					return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary")
+					return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
 				}
 				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 			}
@@ -537,13 +537,8 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
 	switch woc.getContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorK8sAPI:
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.getContainerRuntimeExecutor(),
-			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
 				ValueFrom: &apiv1.EnvVarSource{
@@ -752,7 +747,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
 	default:
 		return nil
 	}
@@ -845,6 +840,14 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 			break
 		}
 	}
+	if tmpl.Data != nil {
+		for idx, container := range pod.Spec.Containers {
+			if container.Name == common.MainContainerName {
+				pod.Spec.Containers[idx].VolumeMounts = append(pod.Spec.Containers[idx].VolumeMounts, volumeMounts...)
+				break
+			}
+		}
+	}
 
 	return nil
 }
@@ -911,7 +914,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		}
 	}
 	if mainCtrIndex == -1 {
-		panic("Could not find main or wait container in pod spec")
+		panic("Could not find main container in pod spec")
 	}
 	mainCtr := &pod.Spec.Containers[mainCtrIndex]
 
@@ -953,7 +956,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 // them to the wait sidecar. In order for this to work, we mirror all volume mounts in the main
 // container under a well-known path.
 func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if tmpl.GetType() == wfv1.TemplateTypeResource {
+	if tmpl.GetType() == wfv1.TemplateTypeResource || tmpl.GetType() == wfv1.TemplateTypeData {
 		return
 	}
 	mainCtrIndex := -1
@@ -1151,6 +1154,12 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	}
 	for _, art := range tmpl.Inputs.Artifacts {
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+	}
+
+	if tmpl.Data != nil {
+		if art, needed := tmpl.Data.Source.GetArtifactIfNeeded(); needed {
+			createSecretVolume(allVolumesMap, *art, uniqueKeyMap)
+		}
 	}
 
 	for volMountName, val := range allVolumesMap {

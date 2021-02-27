@@ -811,7 +811,7 @@ spec:
 ```
 
 * `limit` is the maximum number of times the container will be retried.
-* `retryPolicy` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
+* `retryPolicy` specifies if a container will be retried on failure, error, both, or only transient errors (e.g. i/o or TLS handshake timeout). "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError", and "OnTransientError" (available after v3.0.0-rc2).
 * `backoff` is an exponential backoff
 * `nodeAntiAffinity` prevents running steps on the same host.  Current implementation allows only empty `nodeAntiAffinity` (i.e. `nodeAntiAffinity: {}`) and by default it uses label `kubernetes.io/hostname` as the selector.
 

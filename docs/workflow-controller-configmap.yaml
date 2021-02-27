@@ -136,7 +136,7 @@ data:
   kubeletInsecure: false
 
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
-  # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary
+  # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
   images: |
     argoproj/argosay:v1:
       command: [cowsay]
