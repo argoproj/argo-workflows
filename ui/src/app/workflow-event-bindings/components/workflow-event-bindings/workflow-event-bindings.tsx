@@ -16,6 +16,7 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {ID} from './id';
 
 const introductionText = (
@@ -34,6 +35,14 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(match.params.namespace || '');
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
+
+    useEffect(
+        useQueryParams(history, p => {
+            setSelectedWorkflowEventBinding(p.get('selectedWorkflowEventBinding'));
+        }),
+        [history]
+    );
+
     useEffect(
         () =>
             history.push(

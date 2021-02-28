@@ -211,6 +211,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		_ = w.Flush()
 		out += writerBuffer.String()
 	}
+	writerBuffer := new(bytes.Buffer)
+	printer.PrintSecurityNudges(*wf, writerBuffer)
+	out += writerBuffer.String()
 	return out
 }
 

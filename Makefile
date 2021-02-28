@@ -216,7 +216,7 @@ endif
 .PHONY: controller-image
 controller-image: dist/controller.image
 
-dist/controller.image: $(CONTROLLER_PKGS)
+dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
 	$(call docker_build,workflow-controller)
 	touch dist/controller.image
 
@@ -593,6 +593,7 @@ prepare-release: check-version-warning clean codegen manifests
 publish-release: check-version-warning clis checksums
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
+
 endif
 
 .PHONY: check-version-warning

@@ -20,6 +20,11 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 	assert.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
+	// Ensure that we allow whitespaces in between names and brackets
+	resolvedArtifact, err = scope.resolveArtifact("{{ steps.test.outputs.artifacts.art }}", "")
+	assert.NoError(t, err)
+	assert.Equal(t, resolvedArtifact, artifact)
+
 	// Ensure that adding a subpath results in an error being thrown
 	_, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	assert.Error(t, err)
