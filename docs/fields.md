@@ -1456,6 +1456,8 @@ Arguments to a template
 
 - [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
 
+- [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
+
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
