@@ -744,7 +744,7 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 		return nil
 	}
 
-	if err := we.patchWorkflowNodeWithOutputs(ctx, outputs); !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
+	if err := we.createWorkflowNodeWithOutputs(ctx, outputs); !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
 		return err
 	}
 
@@ -764,14 +764,17 @@ func (we *WorkflowExecutor) patchWorkflowAgentWithOutputs(ctx context.Context, o
 	})
 }
 
-func (we *WorkflowExecutor) patchWorkflowNodeWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
-	log.Info("Patching workflow node with outputs")
-	data, err := json.Marshal(&wfv1.WorkflowNode{Status: wfv1.NodeStatus{Outputs: outputs}})
-	if err != nil {
-		return err
+func (we *WorkflowExecutor) createWorkflowNodeWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Info("Creating workflow node with outputs")
+	x := &wfv1.WorkflowNode{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   we.PodName,
+			Labels: map[string]string{common.LabelKeyWorkflow: we.workflowName},
+		},
+		Status: wfv1.NodeStatus{Outputs: outputs},
 	}
 	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowNodes(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
+		_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowNodes(we.Namespace).Create(ctx, x, metav1.CreateOptions{})
 		return !errorsutil.IsTransientErr(err), err
 	})
 }

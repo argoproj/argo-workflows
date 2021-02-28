@@ -918,7 +918,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 	informer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return obj.(*apiv1.Pod).Annotations[common.LabelKeyWorkflow] != "" // filter out agent pods which are not labelled with workflow
+				return obj.(*apiv1.Pod).Labels[common.LabelKeyWorkflow] != "" // filter out agent pods which are not labelled with workflow
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {

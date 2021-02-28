@@ -22,6 +22,9 @@ rules:
       - workflowagents
       - workflownodes
     verbs:
+      # used by workflow pod to create outputs
+      - create
+      # used by agent to watch and return results
       - watch
       - patch
   # logs get/watch are used to get the pods logs for script outputs, and for log archival

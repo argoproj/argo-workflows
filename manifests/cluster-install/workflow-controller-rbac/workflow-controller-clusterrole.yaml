@@ -37,6 +37,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workflowsagents
+  - workflowsnodes
   verbs:
   - get
   - list
