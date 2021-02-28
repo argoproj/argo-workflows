@@ -2520,6 +2520,8 @@ spec:
                                   type: object
                                 from:
                                   type: string
+                                fromExpression:
+                                  type: string
                                 gcs:
                                   properties:
                                     bucket:
@@ -10290,6 +10292,8 @@ spec:
                                   type: object
                                 from:
                                   type: string
+                                fromExpression:
+                                  type: string
                                 gcs:
                                   properties:
                                     bucket:
@@ -16335,6 +16339,8 @@ spec:
                                       - url
                                       type: object
                                     from:
+                                      type: string
+                                    fromExpression:
                                       type: string
                                     gcs:
                                       properties:

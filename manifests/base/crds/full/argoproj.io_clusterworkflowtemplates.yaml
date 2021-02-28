@@ -2511,6 +2511,8 @@ spec:
                                   type: object
                                 from:
                                   type: string
+                                fromExpression:
+                                  type: string
                                 gcs:
                                   properties:
                                     bucket:

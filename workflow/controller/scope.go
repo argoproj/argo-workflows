@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/expr"
@@ -69,7 +70,6 @@ func (s *wfScope) resolveVar(v string) (interface{}, error) {
 		for _, a := range s.tmpl.Inputs.Artifacts {
 			m["inputs.artifacts."+a.Name] = a // special case for artifacts
 		}
-
 	}
 	return template.ResolveVar(v, m)
 }

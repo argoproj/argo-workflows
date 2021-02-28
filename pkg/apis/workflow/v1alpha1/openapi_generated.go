@@ -548,6 +548,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 							Format:      "",
 						},
 					},
+					"fromExpression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FromExpression, if defined, is evaluated to specify the value for the artifact",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},

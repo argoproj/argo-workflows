@@ -6256,6 +6256,10 @@
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
         },
+        "fromExpression": {
+          "description": "FromExpression, if defined, is evaluated to specify the value for the artifact",
+          "type": "string"
+        },
         "gcs": {
           "description": "GCS contains GCS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
