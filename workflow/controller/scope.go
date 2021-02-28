@@ -3,9 +3,11 @@ package controller
 import (
 	"fmt"
 
+	"github.com/antonmedv/expr"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -79,7 +81,8 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
 		return "", nil
 	}
 	if p.Expression != "" {
-		return expr.Eval(p.Expression, s.scope)
+		env := env.GetFuncMap(s.scope)
+		return expr.Eval(p.Expression, env)
 	} else {
 		return s.resolveVar(p.Parameter)
 	}
@@ -94,7 +97,8 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 	var val interface{}
 
 	if art.FromExpression != "" {
-		val, err = expr.Eval(art.FromExpression, s.scope)
+		env := env.GetFuncMap(s.scope)
+		val, err = expr.Eval(art.FromExpression, env)
 	} else {
 		val, err = s.resolveVar(art.From)
 	}

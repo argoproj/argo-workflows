@@ -28,7 +28,10 @@ spec:
             template: coinflip
         - - name: printmessage
             template: printmessage
-
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{steps.coinflipmain.outputs.parameters.stepresult}}"
     
     - name: coinflip
       steps:
