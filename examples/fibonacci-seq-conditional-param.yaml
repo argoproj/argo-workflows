@@ -1,5 +1,4 @@
-# This example demonstrates the ability to assign the parameter value based on expression
-# Step/DAG template output parameter will have expression to choose the parameter value.
+# This example demonstrates fibonacci sequence problem using conditional parameter feature.
 
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -57,7 +56,7 @@ spec:
           - name: fib
             valueFrom:
               # If template name has "-" then variable path should have steps['fibonacci-helper']
-              expression: "number(inputs.parameters.num) == 1? 1: number(inputs.parameters.num) == 2? 1: steps['fibonacci-helper'].outputs.parameters.result"
+              expression: "asInt(inputs.parameters.num) == 1? 1: asInt(inputs.parameters.num) == 2? 1: steps['fibonacci-helper'].outputs.parameters.result"
     - name: fibonaccihelper
       inputs:
         parameters:

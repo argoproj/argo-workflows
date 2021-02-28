@@ -35,18 +35,18 @@ spec:
     
     - name: coinflip
       steps:
-        - - name: flipcoin
+        - - name: flip-coin
             template: flipcoin1
         - - name: heads
             template: heads
-            when: "{{steps.flipcoin.outputs.result}} == heads"
+            when: "{{steps.flip-coin.outputs.result}} == heads"
           - name: tails
             template: tails
-            when: "{{steps.flipcoin.outputs.result}} == tails"
+            when: "{{steps.flip-coin.outputs.result}} == tails"
       outputs:
         artifacts:
           - name: stepresult
-            fromExpression: "steps.flipcoin.outputs.result == 'heads'?steps.heads.outputs.artifacts.headsresult:steps.tails.outputs.artifacts.tailsresult"
+            fromExpression: "steps['flip-coin'].outputs.result == 'heads'?steps.heads.outputs.artifacts.headsresult:steps.tails.outputs.artifacts.tailsresult"
     
     - name: flipcoin1
       script:
