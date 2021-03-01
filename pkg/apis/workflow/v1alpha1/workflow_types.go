@@ -1527,6 +1527,16 @@ type Condition struct {
 	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
 
+type NodeResult struct {
+	Phase   NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
+	Message string    `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
+	Outputs *Outputs  `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
+}
+
+func (in NodeResult) Fulfilled() bool {
+	return in.Phase.Fulfilled()
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
@@ -1748,6 +1758,10 @@ func (n NodeStatus) GetDuration() time.Duration {
 		return 0
 	}
 	return n.FinishedAt.Sub(n.StartedAt.Time)
+}
+
+func (in NodeStatus) HasOutputs() bool {
+	return in.Outputs != nil
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

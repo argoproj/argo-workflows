@@ -112,6 +112,7 @@ const (
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarWorkflowName
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
+	EnvVarWorkflowNodeResourceVersion = "ARGO_WORKFLOW_NODES_RESOURCE_VERSION"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr

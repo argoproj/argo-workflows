@@ -644,6 +644,14 @@ message MutexStatus {
   repeated MutexHolding waiting = 2;
 }
 
+message NodeResult {
+  optional string phase = 1;
+
+  optional string message = 2;
+
+  optional Outputs outputs = 3;
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 message NodeStatus {
   // ID is a unique identifier of a node within the worklow
@@ -1322,7 +1330,7 @@ message Workflow {
 }
 
 // +genclient
-// +genclient:noStatus
+// +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowAgent {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -1343,10 +1351,12 @@ message WorkflowAgentSpec {
   // +patchStrategy=merge
   // +patchMergeKey=name
   repeated Template templates = 1;
+
+  map<string, NodeStatus> nodes = 2;
 }
 
 message WorkflowAgentStatus {
-  map<string, NodeStatus> nodes = 1;
+  map<string, NodeResult> nodes = 1;
 }
 
 // WorkflowEventBinding is the definition of an event resource
@@ -1386,14 +1396,14 @@ message WorkflowList {
 }
 
 // +genclient
-// +genclient:noStatus
+// +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowNode {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional Template spec = 2;
 
-  optional NodeStatus status = 3;
+  optional NodeResult status = 3;
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

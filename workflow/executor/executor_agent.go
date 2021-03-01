@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -42,11 +41,17 @@ func (we *WorkflowExecutor) agentUsingWorkflowAgent(ctx context.Context) error {
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
-			for _, n := range x.Status.Nodes.Filter(func(n wfv1.NodeStatus) bool { return !n.Fulfilled() }) {
+			for nodeID, n := range x.Spec.Nodes {
+				if x.Status.Nodes[nodeID].Fulfilled() {
+					continue
+				}
 				tmpl := x.GetTemplateByName(n.TemplateName)
+				if tmpl == nil {
+					return fmt.Errorf("tmpl nil")
+				}
 				switch n.Type {
 				case wfv1.NodeTypeHTTP:
-					result := wfv1.NodeStatus{}
+					result := wfv1.NodeResult{}
 					if outputs, err := we.executeHTTPTemplate(ctx, *tmpl); err != nil {
 						result.Phase = wfv1.NodeFailed
 						result.Message = err.Error()
@@ -54,11 +59,10 @@ func (we *WorkflowExecutor) agentUsingWorkflowAgent(ctx context.Context) error {
 						result.Phase = wfv1.NodeSucceeded
 						result.Outputs = outputs
 					}
-					data, err := json.Marshal(&wfv1.WorkflowAgent{Status: wfv1.WorkflowAgentStatus{Nodes: wfv1.Nodes{n.ID: result}}})
-					if err != nil {
-						return err
-					}
-					if _, err := i.Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{}); err != nil {
+					x.Status.Nodes[nodeID] = result
+					// con: we cannot patch status sub-resource, we must update the whole thing
+					// could result in race-condition errors
+					if _, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{}); err != nil {
 						return err
 					}
 				default:
@@ -84,25 +88,21 @@ func (we *WorkflowExecutor) agentUsingWorkflowNode(ctx context.Context) error {
 			if event.Type != watch.Added { // we only process add events because all updates we do ourselves
 				continue
 			}
-			if x.Status.Fulfilled() {
+			if x.Status != nil && x.Status.Fulfilled() {
 				continue
 			}
 			tmpl := x.Spec
+			x.Status = &wfv1.NodeResult{}
 			switch tmpl.GetType() {
 			case wfv1.TemplateTypeHTTP:
-				result := wfv1.NodeStatus{}
-				if outputs, err := we.executeHTTPTemplate(ctx, tmpl); err != nil {
-					result.Phase = wfv1.NodeFailed
-					result.Message = err.Error()
+				if outputs, err := we.executeHTTPTemplate(ctx, *tmpl); err != nil {
+					x.Status.Phase = wfv1.NodeFailed
+					x.Status.Message = err.Error()
 				} else {
-					result.Phase = wfv1.NodeSucceeded
-					result.Outputs = outputs
+					x.Status.Phase = wfv1.NodeSucceeded
+					x.Status.Outputs = outputs
 				}
-				data, err := json.Marshal(&wfv1.WorkflowNode{Status: result})
-				if err != nil {
-					return err
-				}
-				if _, err := i.Patch(ctx, x.Name, types.MergePatchType, data, metav1.PatchOptions{}); err != nil {
+				if _, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{}); err != nil {
 					return err
 				}
 			default:

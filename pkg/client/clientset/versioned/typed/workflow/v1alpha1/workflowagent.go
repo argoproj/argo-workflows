@@ -24,6 +24,7 @@ type WorkflowAgentsGetter interface {
 type WorkflowAgentInterface interface {
 	Create(ctx context.Context, workflowAgent *v1alpha1.WorkflowAgent, opts v1.CreateOptions) (*v1alpha1.WorkflowAgent, error)
 	Update(ctx context.Context, workflowAgent *v1alpha1.WorkflowAgent, opts v1.UpdateOptions) (*v1alpha1.WorkflowAgent, error)
+	UpdateStatus(ctx context.Context, workflowAgent *v1alpha1.WorkflowAgent, opts v1.UpdateOptions) (*v1alpha1.WorkflowAgent, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
 	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.WorkflowAgent, error)
@@ -112,6 +113,22 @@ func (c *workflowAgents) Update(ctx context.Context, workflowAgent *v1alpha1.Wor
 		Namespace(c.ns).
 		Resource("workflowagents").
 		Name(workflowAgent.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(workflowAgent).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *workflowAgents) UpdateStatus(ctx context.Context, workflowAgent *v1alpha1.WorkflowAgent, opts v1.UpdateOptions) (result *v1alpha1.WorkflowAgent, err error) {
+	result = &v1alpha1.WorkflowAgent{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("workflowagents").
+		Name(workflowAgent.Name).
+		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(workflowAgent).
 		Do(ctx).

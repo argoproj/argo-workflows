@@ -65,6 +65,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex":                       schema_pkg_apis_workflow_v1alpha1_Mutex(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexHolding":                schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexStatus":                 schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult":                  schema_pkg_apis_workflow_v1alpha1_NodeResult(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus":                  schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus":   schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NoneStrategy":                schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
@@ -2407,6 +2408,37 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexHolding"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_NodeResult(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"outputs": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"},
 	}
 }
 
@@ -4965,7 +4997,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowAgentStatus(ref common.ReferenceC
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult"),
 									},
 								},
 							},
@@ -4975,7 +5007,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowAgentStatus(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult"},
 	}
 }
 
@@ -5182,7 +5214,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowNode(ref common.ReferenceCallback
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult"),
 						},
 					},
 				},
@@ -5190,7 +5222,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowNode(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 

@@ -7348,6 +7348,20 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.NodeResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.NodeStatus": {
       "description": "NodeStatus contains status information about an individual node in the workflow",
       "type": "object",
@@ -8638,7 +8652,7 @@
         "nodes": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
           }
         }
       }
@@ -8795,7 +8809,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
         },
         "status": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
         }
       }
     },

@@ -607,13 +607,70 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
 	}
-	for _, n := range woc.wf.Status.Nodes.Filter(func(n wfv1.NodeStatus) bool {
-		return n.Fulfilled() && n.Type == wfv1.NodeTypeHTTP
-	}) {
-		if err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowNodes(woc.wf.Namespace).Delete(ctx, n.ID, metav1.DeleteOptions{}); err != nil {
-			woc.log.WithError(err).Warn("failed to clean-up workflow node")
+
+	if err := woc.cleanUpWorkflowAgent(ctx); err != nil {
+		woc.log.WithError(err).Error("failed to clean-up workflow agent")
+	}
+	if err := woc.cleanUpWorkflowNodes(ctx); err != nil {
+		woc.log.WithError(err).Error("failed to clean-up workflow nodes")
+	}
+}
+
+// nolint:unused
+func (woc *wfOperationCtx) cleanUpWorkflowAgent(ctx context.Context) error {
+	obj, exists, err := woc.controller.workflowAgentInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	x, ok := obj.(*wfv1.WorkflowAgent)
+	if !ok {
+		return fmt.Errorf("not agent")
+	}
+	// con: clean-up complex
+	// con: clean-up important to ensure work can be done
+	// con: manual intervention difficult
+	y := make(map[string]wfv1.Template)
+	for nodeID, n := range x.Spec.Nodes {
+		if x.Status != nil && x.Status.Nodes != nil && x.Status.Nodes[nodeID].Fulfilled() {
+			delete(x.Status.Nodes, nodeID)
+		} else {
+			y[n.TemplateName] = *x.GetTemplateByName(n.TemplateName)
 		}
 	}
+	x.Spec.Templates = nil
+	for _, t := range y {
+		x.Spec.Templates = append(x.Spec.Templates, t)
+	}
+	// https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources
+	// PUT/POST/PATCH requests to the custom resource ignore changes to the status stanza.
+	i := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowAgents(woc.wf.Namespace)
+	// pro: 2 updates only
+	// con: ordering important (no atomicity)
+	if _, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+	if _, err := i.Update(ctx, x, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) cleanUpWorkflowNodes(ctx context.Context) error {
+	for _, n := range woc.wf.Status.Nodes.Filter(func(n wfv1.NodeStatus) bool {
+		return n.Fulfilled() && (n.Type == wfv1.NodeTypeHTTP || n.HasOutputs())
+	}) {
+		// pro: manual intervention easy
+		// pro: clean-up simple
+		// con: N deletes
+		// con: bug would mean N resources hang around until workflow deletion
+		if err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowNodes(woc.wf.Namespace).Delete(ctx, n.ID, metav1.DeleteOptions{}); err != nil && !apierr.IsNotFound(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -1214,7 +1271,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 	if node.Outputs == nil {
 		obj, _, _ := woc.controller.workflowAgentInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
-		if x, ok := obj.(*wfv1.WorkflowAgent); ok {
+		if x, ok := obj.(*wfv1.WorkflowAgent); ok && x.Status != nil {
 			woc.log.Infof("Setting node %v outputs from workflow agent", node.ID)
 			node.Outputs = x.Status.Nodes[node.ID].Outputs
 			updated = true
@@ -1222,7 +1279,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 	if node.Outputs == nil {
 		obj, _, _ := woc.controller.workflowNodeInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
-		if x, ok := obj.(*wfv1.WorkflowNode); ok {
+		if x, ok := obj.(*wfv1.WorkflowNode); ok && x.Status != nil {
 			woc.log.Infof("Setting node %v outputs from workflow node", node.ID)
 			node.Outputs = x.Status.Outputs
 			updated = true

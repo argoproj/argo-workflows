@@ -86,6 +86,18 @@ func (c *FakeWorkflowNodes) Update(ctx context.Context, workflowNode *v1alpha1.W
 	return obj.(*v1alpha1.WorkflowNode), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeWorkflowNodes) UpdateStatus(ctx context.Context, workflowNode *v1alpha1.WorkflowNode, opts v1.UpdateOptions) (*v1alpha1.WorkflowNode, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(workflownodesResource, "status", c.ns, workflowNode), &v1alpha1.WorkflowNode{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.WorkflowNode), err
+}
+
 // Delete takes name of the workflowNode and deletes it. Returns an error if one occurs.
 func (c *FakeWorkflowNodes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.

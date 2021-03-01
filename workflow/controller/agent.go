@@ -20,25 +20,28 @@ func (woc *wfOperationCtx) scheduleNodeOnAgent(ctx context.Context, tmpl wfv1.Te
 	if err := woc.createAgent(ctx); err != nil {
 		return err
 	}
-	// return woc.scheduleNodeOnAgentUsingWorkflowAgent(ctx, tmpl, node)
+	if err := woc.scheduleNodeOnAgentUsingWorkflowAgent(ctx, tmpl, node); err != nil {
+		return err
+	}
 	return woc.scheduleNodeOnAgentUsingWorkflowNode(ctx, tmpl, node)
 }
 
-// nolint:unused
 func (woc *wfOperationCtx) scheduleNodeOnAgentUsingWorkflowAgent(ctx context.Context, tmpl wfv1.Template, node wfv1.NodeStatus) error {
 	obj, _, err := woc.controller.workflowAgentInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
 	if err != nil {
 		return err
 	}
-	t, ok := obj.(*wfv1.WorkflowAgent)
+	a, ok := obj.(*wfv1.WorkflowAgent)
+	// con: scheduling complex
+	// con: potentially resource too large for all data, would result is delay in work being done
 	if ok {
-		_, ok = t.Status.Nodes[node.ID] // must (a) agent must exist and (b) agent must know about node
+		_, ok = a.Spec.Nodes[node.ID] // must (a) agent must exist and (b) agent must know about node
 	}
 	if ok {
-		woc.log.Info("node already scheduled an agent")
+		woc.log.Info("node already scheduled an agent using workflow agent")
 		return nil
 	}
-	woc.log.Info("scheduling node on agent")
+	woc.log.Info("scheduling node on agent using workflow agent")
 	i := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowAgents(woc.wf.Namespace)
 	x := &wfv1.WorkflowAgent{
 		ObjectMeta: metav1.ObjectMeta{
@@ -47,8 +50,10 @@ func (woc *wfOperationCtx) scheduleNodeOnAgentUsingWorkflowAgent(ctx context.Con
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)), // make sure it is deleted when the workflow is deleted
 			},
 		},
-		Spec:   wfv1.WorkflowAgentSpec{Templates: []wfv1.Template{tmpl}},
-		Status: wfv1.WorkflowAgentStatus{Nodes: wfv1.Nodes{node.ID: node}},
+		Spec: wfv1.WorkflowAgentSpec{
+			Templates: []wfv1.Template{tmpl},
+			Nodes:     wfv1.Nodes{node.ID: node},
+		},
 	}
 	data, err := json.Marshal(x)
 	if err != nil {
@@ -72,21 +77,22 @@ func (woc *wfOperationCtx) scheduleNodeOnAgentUsingWorkflowNode(ctx context.Cont
 		return err
 	}
 	if exists {
-		woc.log.Info("node already scheduled an agent")
+		woc.log.Info("node already scheduled an agent using workflow node")
 		return nil
 	}
-	woc.log.Info("scheduling node on agent")
+	woc.log.Info("scheduling node on agent using workflow node")
 	i := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowNodes(woc.wf.Namespace)
 	x := &wfv1.WorkflowNode{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   woc.wf.Name,
+			Name:   node.ID,
 			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)), // make sure it is deleted when the workflow is deleted
 			},
 		},
-		Spec: tmpl,
+		Spec: &tmpl,
 	}
+	// con: N nodes per workflow
 	if _, err := i.Create(ctx, x, metav1.CreateOptions{}); err != nil && !apierr.IsAlreadyExists(err) { // already exist can happen very rarely - if informer is behind
 		return err
 	}

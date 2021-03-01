@@ -9,17 +9,18 @@ metadata:
       This example patches
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
+      assert metadata["annotations"]["foo"] == "bar"
 spec:
   entrypoint: main
   templates:
-  - name: main
-    resource:
-      action: patch
-      mergeStrategy: json
-      flags:
-      - pod
-      - "{{pod.name}}"
-      manifest: |
-        - op: add
-          path: /metadata/annotations/foo
-          value: bar
+    - name: main
+      resource:
+        action: patch
+        mergeStrategy: json
+        flags:
+          - workflow
+          - "{{workflow.name}}"
+        manifest: |
+          - op: add
+            path: /metadata/annotations/foo
+            value: bar

@@ -411,6 +411,30 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
+	// con: you can't avoid this with status update, but for pod, only ever one status update can happen
+	workflowNodeResourceVersion := ""
+
+	if opts.includeScriptOutput || tmpl.HasOutputs() || (tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.IsArchiveLogs()) {
+		woc.log.WithField("nodeID", nodeID).Info("creating workflow node for outputs")
+		x, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowNodes(woc.wf.Namespace).Create(ctx, &wfv1.WorkflowNode{
+			ObjectMeta: metav1.ObjectMeta{Name: pod.Name},
+		}, metav1.CreateOptions{})
+		if x != nil {
+			workflowNodeResourceVersion = x.ResourceVersion
+		}
+		if err != nil && !apierr.IsAlreadyExists(err) {
+			return nil, err
+		}
+	}
+
+	for i, c := range pod.Spec.Containers {
+		c.Env = append(c.Env, apiv1.EnvVar{
+			Name:  common.EnvVarWorkflowNodeResourceVersion,
+			Value: workflowNodeResourceVersion,
+		})
+		pod.Spec.Containers[i] = c
+	}
+
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {

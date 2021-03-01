@@ -24,7 +24,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
@@ -744,37 +743,44 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 		return nil
 	}
 
-	if err := we.createWorkflowNodeWithOutputs(ctx, outputs); !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
+	if err := we.annotatePodWithOutputs(ctx, outputs); !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
 		return err
 	}
 
-	return we.annotatePodWithOutputs(ctx, outputs)
+	return we.updateWorkflowNodeStatusWithOutputs(ctx, outputs)
 }
 
 // nolint:unused
 func (we *WorkflowExecutor) patchWorkflowAgentWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
 	log.Info("Patching workflow agent with outputs")
-	data, err := json.Marshal(&wfv1.WorkflowAgent{Status: wfv1.WorkflowAgentStatus{Nodes: wfv1.Nodes{we.PodName: wfv1.NodeStatus{Outputs: outputs}}}})
-	if err != nil {
-		return err
-	}
+	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowAgents(we.Namespace)
 	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowAgents(we.Namespace).Patch(ctx, we.workflowName, types.MergePatchType, data, metav1.PatchOptions{})
+		// con: 2 requests requires `workflowagent get/update`
+		// con: can error due to race
+		x, err := i.Get(ctx, we.workflowName, metav1.GetOptions{})
+		if err != nil && !errorsutil.IsTransientErr(err) {
+			return false, err
+		}
+		x.Status.Nodes[we.PodName] = wfv1.NodeResult{Outputs: outputs}
+		_, err = i.UpdateStatus(ctx, x, metav1.UpdateOptions{})
 		return !errorsutil.IsTransientErr(err), err
 	})
 }
 
-func (we *WorkflowExecutor) createWorkflowNodeWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
-	log.Info("Creating workflow node with outputs")
+func (we *WorkflowExecutor) updateWorkflowNodeStatusWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Info("Patching workflow node status with outputs")
 	x := &wfv1.WorkflowNode{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   we.PodName,
-			Labels: map[string]string{common.LabelKeyWorkflow: we.workflowName},
+			Name:                       we.PodName,
+			ResourceVersion:            os.Getenv(common.EnvVarWorkflowNodeResourceVersion),
 		},
-		Status: wfv1.NodeStatus{Outputs: outputs},
+		Status:     &wfv1.NodeResult{Outputs: outputs},
 	}
+	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowNodes(we.Namespace)
 	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		_, err := we.workflowInterface.ArgoprojV1alpha1().WorkflowNodes(we.Namespace).Create(ctx, x, metav1.CreateOptions{})
+		// pro: 1 request
+		// pro: no race condition
+		_, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{})
 		return !errorsutil.IsTransientErr(err), err
 	})
 }

@@ -14,19 +14,25 @@ rules:
       - watch
       # pod patch is used to annotate the step's outputs back to controller (e.g. artifact location)
       # This is ONLY needed if the step/task has outputs that are used by another step or task.
-      - patch
-  # thing patch is used to share the step's outputs back to controller
+      # Deprecated: in v3.1, use `update workflownodes/status` instead.
+      # - patch
+  #  used to share the step's outputs back to controller
   - apiGroups:
       - argoproj.io
     resources:
       - workflowagents
       - workflownodes
     verbs:
-      # used by workflow pod to create outputs
-      - create
-      # used by agent to watch and return results
+      # get only needed for agent
+      - get
       - watch
-      - patch
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowagents/status
+      - workflownodes/status
+    verbs:
+      - update
   # logs get/watch are used to get the pods logs for script outputs, and for log archival
   - apiGroups:
       - ""
@@ -43,4 +49,5 @@ rules:
       - workflows
     verbs:
       - create
+      - patch
       - get

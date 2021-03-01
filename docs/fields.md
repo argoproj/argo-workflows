@@ -2209,6 +2209,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
 
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
@@ -2425,6 +2427,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
+
+- [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 

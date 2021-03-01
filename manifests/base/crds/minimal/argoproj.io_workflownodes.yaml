@@ -29,8 +29,8 @@ spec:
             x-kubernetes-preserve-unknown-fields: true
         required:
         - metadata
-        - spec
-        - status
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
