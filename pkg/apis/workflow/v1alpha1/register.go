@@ -42,10 +42,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CronWorkflowList{},
 		&ClusterWorkflowTemplate{},
 		&ClusterWorkflowTemplateList{},
-		&WorkflowAgent{},
-		&WorkflowAgentList{},
-		&WorkflowNode{},
-		&WorkflowNodeList{},
+		&WorkflowTaskSet{},
+		&WorkflowTaskSetList{},
+		&WorkflowTask{},
+		&WorkflowTaskList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

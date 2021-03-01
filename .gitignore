@@ -39,3 +39,4 @@ git-ask-pass.sh
 pprof
 pkg/apiclient/sensor/sensor.swagger.json
 pkg/apiclient/eventsource/eventsource.swagger.json
+/v3/

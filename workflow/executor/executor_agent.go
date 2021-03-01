@@ -21,13 +21,13 @@ import (
 )
 
 func (we *WorkflowExecutor) Agent(ctx context.Context) error {
-	// return we.agentUsingWorkflowAgent(ctx)
-	return we.agentUsingWorkflowNode(ctx)
+	// return we.agentUsingTaskSet(ctx)
+	return we.agentUsingTasks(ctx)
 }
 
 // nolint:unused
-func (we *WorkflowExecutor) agentUsingWorkflowAgent(ctx context.Context) error {
-	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowAgents(we.Namespace)
+func (we *WorkflowExecutor) agentUsingTaskSet(ctx context.Context) error {
+	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace)
 	for {
 		w, err := i.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + we.workflowName})
 		if err != nil {
@@ -37,7 +37,7 @@ func (we *WorkflowExecutor) agentUsingWorkflowAgent(ctx context.Context) error {
 			if event.Type == watch.Deleted {
 				return nil // we're done when deleted: exit with code 0
 			}
-			x, ok := event.Object.(*wfv1.WorkflowAgent)
+			x, ok := event.Object.(*wfv1.WorkflowTaskSet)
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
@@ -73,15 +73,15 @@ func (we *WorkflowExecutor) agentUsingWorkflowAgent(ctx context.Context) error {
 	}
 }
 
-func (we *WorkflowExecutor) agentUsingWorkflowNode(ctx context.Context) error {
-	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowNodes(we.Namespace)
+func (we *WorkflowExecutor) agentUsingTasks(ctx context.Context) error {
+	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowTasks(we.Namespace)
 	for {
 		w, err := i.Watch(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + we.workflowName})
 		if err != nil {
 			return err
 		}
 		for event := range w.ResultChan() {
-			x, ok := event.Object.(*wfv1.WorkflowNode)
+			x, ok := event.Object.(*wfv1.WorkflowTask)
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}

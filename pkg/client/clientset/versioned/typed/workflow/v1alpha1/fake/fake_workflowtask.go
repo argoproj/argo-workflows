@@ -14,8 +14,8 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-// FakeWorkflowNodes implements WorkflowNodeInterface
-type FakeWorkflowNodes struct {
+// FakeWorkflowTasks implements WorkflowTaskInterface
+type FakeWorkflowTasks struct {
 	Fake *FakeArgoprojV1alpha1
 	ns   string
 }
@@ -24,8 +24,8 @@ var workflowtasksResource = schema.GroupVersionResource{Group: "argoproj.io", Ve
 
 var workflowtasksKind = schema.GroupVersionKind{Group: "argoproj.io", Version: "v1alpha1", Kind: "WorkflowTask"}
 
-// Get takes name of the workflowNode, and returns the corresponding workflowNode object, and an error if there is any.
-func (c *FakeWorkflowNodes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.WorkflowTask, err error) {
+// Get takes name of the workflowTask, and returns the corresponding workflowTask object, and an error if there is any.
+func (c *FakeWorkflowTasks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.WorkflowTask, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(workflowtasksResource, c.ns, name), &v1alpha1.WorkflowTask{})
 
@@ -35,8 +35,8 @@ func (c *FakeWorkflowNodes) Get(ctx context.Context, name string, options v1.Get
 	return obj.(*v1alpha1.WorkflowTask), err
 }
 
-// List takes label and field selectors, and returns the list of WorkflowNodes that match those selectors.
-func (c *FakeWorkflowNodes) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.WorkflowTaskList, err error) {
+// List takes label and field selectors, and returns the list of WorkflowTasks that match those selectors.
+func (c *FakeWorkflowTasks) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.WorkflowTaskList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(workflowtasksResource, workflowtasksKind, c.ns, opts), &v1alpha1.WorkflowTaskList{})
 
@@ -57,17 +57,17 @@ func (c *FakeWorkflowNodes) List(ctx context.Context, opts v1.ListOptions) (resu
 	return list, err
 }
 
-// Watch returns a watch.Interface that watches the requested workflowNodes.
-func (c *FakeWorkflowNodes) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+// Watch returns a watch.Interface that watches the requested workflowTasks.
+func (c *FakeWorkflowTasks) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(workflowtasksResource, c.ns, opts))
 
 }
 
-// Create takes the representation of a workflowNode and creates it.  Returns the server's representation of the workflowNode, and an error, if there is any.
-func (c *FakeWorkflowNodes) Create(ctx context.Context, workflowNode *v1alpha1.WorkflowTask, opts v1.CreateOptions) (result *v1alpha1.WorkflowTask, err error) {
+// Create takes the representation of a workflowTask and creates it.  Returns the server's representation of the workflowTask, and an error, if there is any.
+func (c *FakeWorkflowTasks) Create(ctx context.Context, workflowTask *v1alpha1.WorkflowTask, opts v1.CreateOptions) (result *v1alpha1.WorkflowTask, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(workflowtasksResource, c.ns, workflowNode), &v1alpha1.WorkflowTask{})
+		Invokes(testing.NewCreateAction(workflowtasksResource, c.ns, workflowTask), &v1alpha1.WorkflowTask{})
 
 	if obj == nil {
 		return nil, err
@@ -75,10 +75,10 @@ func (c *FakeWorkflowNodes) Create(ctx context.Context, workflowNode *v1alpha1.W
 	return obj.(*v1alpha1.WorkflowTask), err
 }
 
-// Update takes the representation of a workflowNode and updates it. Returns the server's representation of the workflowNode, and an error, if there is any.
-func (c *FakeWorkflowNodes) Update(ctx context.Context, workflowNode *v1alpha1.WorkflowTask, opts v1.UpdateOptions) (result *v1alpha1.WorkflowTask, err error) {
+// Update takes the representation of a workflowTask and updates it. Returns the server's representation of the workflowTask, and an error, if there is any.
+func (c *FakeWorkflowTasks) Update(ctx context.Context, workflowTask *v1alpha1.WorkflowTask, opts v1.UpdateOptions) (result *v1alpha1.WorkflowTask, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(workflowtasksResource, c.ns, workflowNode), &v1alpha1.WorkflowTask{})
+		Invokes(testing.NewUpdateAction(workflowtasksResource, c.ns, workflowTask), &v1alpha1.WorkflowTask{})
 
 	if obj == nil {
 		return nil, err
@@ -88,9 +88,9 @@ func (c *FakeWorkflowNodes) Update(ctx context.Context, workflowNode *v1alpha1.W
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeWorkflowNodes) UpdateStatus(ctx context.Context, workflowNode *v1alpha1.WorkflowTask, opts v1.UpdateOptions) (*v1alpha1.WorkflowTask, error) {
+func (c *FakeWorkflowTasks) UpdateStatus(ctx context.Context, workflowTask *v1alpha1.WorkflowTask, opts v1.UpdateOptions) (*v1alpha1.WorkflowTask, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(workflowtasksResource, "status", c.ns, workflowNode), &v1alpha1.WorkflowTask{})
+		Invokes(testing.NewUpdateSubresourceAction(workflowtasksResource, "status", c.ns, workflowTask), &v1alpha1.WorkflowTask{})
 
 	if obj == nil {
 		return nil, err
@@ -98,8 +98,8 @@ func (c *FakeWorkflowNodes) UpdateStatus(ctx context.Context, workflowNode *v1al
 	return obj.(*v1alpha1.WorkflowTask), err
 }
 
-// Delete takes name of the workflowNode and deletes it. Returns an error if one occurs.
-func (c *FakeWorkflowNodes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+// Delete takes name of the workflowTask and deletes it. Returns an error if one occurs.
+func (c *FakeWorkflowTasks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(workflowtasksResource, c.ns, name), &v1alpha1.WorkflowTask{})
 
@@ -107,15 +107,15 @@ func (c *FakeWorkflowNodes) Delete(ctx context.Context, name string, opts v1.Del
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeWorkflowNodes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeWorkflowTasks) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(workflowtasksResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.WorkflowTaskList{})
 	return err
 }
 
-// Patch applies the patch and returns the patched workflowNode.
-func (c *FakeWorkflowNodes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.WorkflowTask, err error) {
+// Patch applies the patch and returns the patched workflowTask.
+func (c *FakeWorkflowTasks) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.WorkflowTask, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(workflowtasksResource, c.ns, name, pt, data, subresources...), &v1alpha1.WorkflowTask{})
 

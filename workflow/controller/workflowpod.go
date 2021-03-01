@@ -415,8 +415,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	workflowNodeResourceVersion := ""
 
 	if opts.includeScriptOutput || tmpl.HasOutputs() || (tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.IsArchiveLogs()) {
-		woc.log.WithField("nodeID", nodeID).Info("creating workflow node for outputs")
-		x, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowNodes(woc.wf.Namespace).Create(ctx, &wfv1.WorkflowNode{
+		// con: we need to create a task for any pod that has outputs
+		woc.log.WithField("nodeID", nodeID).Info("creating task for outputs")
+		x, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTasks(woc.wf.Namespace).Create(ctx, &wfv1.WorkflowTask{
 			ObjectMeta: metav1.ObjectMeta{Name: pod.Name},
 		}, metav1.CreateOptions{})
 		if x != nil {
@@ -429,7 +430,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	for i, c := range pod.Spec.Containers {
 		c.Env = append(c.Env, apiv1.EnvVar{
-			Name:  common.EnvVarWorkflowNodeResourceVersion,
+			Name:  common.EnvVarWorkflowTaskResourceVersion,
 			Value: workflowNodeResourceVersion,
 		})
 		pod.Spec.Containers[i] = c

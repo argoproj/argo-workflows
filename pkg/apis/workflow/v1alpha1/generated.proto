@@ -1329,36 +1329,6 @@ message Workflow {
   optional WorkflowStatus status = 3;
 }
 
-// +genclient
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowAgent {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional WorkflowAgentSpec spec = 2;
-
-  optional WorkflowAgentStatus status = 3;
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowAgentList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  repeated WorkflowAgent items = 2;
-}
-
-message WorkflowAgentSpec {
-  // +patchStrategy=merge
-  // +patchMergeKey=name
-  repeated Template templates = 1;
-
-  map<string, NodeStatus> nodes = 2;
-}
-
-message WorkflowAgentStatus {
-  map<string, NodeResult> nodes = 1;
-}
-
 // WorkflowEventBinding is the definition of an event resource
 // +genclient
 // +genclient:noStatus
@@ -1393,24 +1363,6 @@ message WorkflowList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated Workflow items = 2;
-}
-
-// +genclient
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowNode {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional Template spec = 2;
-
-  optional NodeResult status = 3;
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowNodeList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  repeated WorkflowNode items = 2;
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -1662,6 +1614,56 @@ message WorkflowStep {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+}
+
+// +genclient
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Template",type="string",JSONPath=".spec.name",description="Template"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status"
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTask {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional Template spec = 2;
+
+  optional NodeResult status = 3;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowTask items = 2;
+}
+
+// +genclient
+// +kubebuilder:subresource:status
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskSet {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowTaskSetSpec spec = 2;
+
+  optional WorkflowTaskSetStatus status = 3;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskSetList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowTaskSet items = 2;
+}
+
+message WorkflowTaskSetSpec {
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated Template templates = 1;
+
+  map<string, NodeStatus> nodes = 2;
+}
+
+message WorkflowTaskSetStatus {
+  map<string, NodeResult> nodes = 1;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

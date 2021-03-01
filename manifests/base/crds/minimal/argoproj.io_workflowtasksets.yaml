@@ -1,14 +1,14 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: workflownodes.argoproj.io
+  name: workflowtasksets.argoproj.io
 spec:
   group: argoproj.io
   names:
-    kind: WorkflowNode
-    listKind: WorkflowNodeList
-    plural: workflownodes
-    singular: workflownode
+    kind: WorkflowTaskSet
+    listKind: WorkflowTaskSetList
+    plural: workflowtasksets
+    singular: workflowtaskset
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -29,6 +29,7 @@ spec:
             x-kubernetes-preserve-unknown-fields: true
         required:
         - metadata
+        - spec
         type: object
     served: true
     storage: true

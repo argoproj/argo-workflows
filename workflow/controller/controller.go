@@ -88,8 +88,8 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
-	workflowAgentInformer cache.SharedIndexInformer
-	workflowNodeInformer  cache.SharedIndexInformer
+	worksheetInformer     cache.SharedIndexInformer
+	taskInformer          cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
@@ -192,9 +192,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
-	wfc.workflowAgentInformer = wfextvv1alpha1.NewWorkflowAgentInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
+	wfc.worksheetInformer = wfextvv1alpha1.NewWorkflowTaskSetInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
 	wfc.addWorkflowAgentInformerHandlers()
-	wfc.workflowNodeInformer = wfextvv1alpha1.NewWorkflowNodeInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
+	wfc.taskInformer = wfextvv1alpha1.NewWorkflowTaskInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
 	wfc.addWorkflowNodeInformerHandlers()
 	wfc.updateEstimatorFactory()
 
@@ -203,8 +203,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.workflowAgentInformer.Run(ctx.Done())
-	go wfc.workflowNodeInformer.Run(ctx.Done())
+	go wfc.worksheetInformer.Run(ctx.Done())
+	go wfc.taskInformer.Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
@@ -212,8 +212,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
-		wfc.workflowAgentInformer.HasSynced,
-		wfc.workflowNodeInformer.HasSynced,
+		wfc.worksheetInformer.HasSynced,
+		wfc.taskInformer.HasSynced,
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
@@ -806,10 +806,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 }
 
 func (wfc *WorkflowController) addWorkflowAgentInformerHandlers() {
-	wfc.workflowAgentInformer.AddEventHandler(
+	wfc.worksheetInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(_, new interface{}) {
-				if x, ok := new.(*wfv1.WorkflowAgent); ok {
+				if x, ok := new.(*wfv1.WorkflowTaskSet); ok {
 					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Name)
 				}
 			},
@@ -818,10 +818,10 @@ func (wfc *WorkflowController) addWorkflowAgentInformerHandlers() {
 }
 
 func (wfc *WorkflowController) addWorkflowNodeInformerHandlers() {
-	wfc.workflowNodeInformer.AddEventHandler(
+	wfc.taskInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(_, new interface{}) {
-				if x, ok := new.(*wfv1.WorkflowNode); ok {
+				if x, ok := new.(*wfv1.WorkflowTask); ok {
 					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Labels[common.LabelKeyWorkflow])
 				}
 			},

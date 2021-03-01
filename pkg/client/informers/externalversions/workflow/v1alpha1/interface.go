@@ -14,12 +14,12 @@ type Interface interface {
 	CronWorkflows() CronWorkflowInformer
 	// Workflows returns a WorkflowInformer.
 	Workflows() WorkflowInformer
-	// WorkflowAgents returns a WorkflowAgentInformer.
-	WorkflowAgents() WorkflowAgentInformer
 	// WorkflowEventBindings returns a WorkflowEventBindingInformer.
 	WorkflowEventBindings() WorkflowEventBindingInformer
-	// WorkflowNodes returns a WorkflowNodeInformer.
-	WorkflowNodes() WorkflowNodeInformer
+	// WorkflowTasks returns a WorkflowTaskInformer.
+	WorkflowTasks() WorkflowTaskInformer
+	// WorkflowTaskSets returns a WorkflowTaskSetInformer.
+	WorkflowTaskSets() WorkflowTaskSetInformer
 	// WorkflowTemplates returns a WorkflowTemplateInformer.
 	WorkflowTemplates() WorkflowTemplateInformer
 }
@@ -50,19 +50,19 @@ func (v *version) Workflows() WorkflowInformer {
 	return &workflowInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// WorkflowAgents returns a WorkflowAgentInformer.
-func (v *version) WorkflowAgents() WorkflowAgentInformer {
-	return &workflowAgentInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // WorkflowEventBindings returns a WorkflowEventBindingInformer.
 func (v *version) WorkflowEventBindings() WorkflowEventBindingInformer {
 	return &workflowEventBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// WorkflowNodes returns a WorkflowNodeInformer.
-func (v *version) WorkflowNodes() WorkflowNodeInformer {
-	return &workflowNodeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// WorkflowTasks returns a WorkflowTaskInformer.
+func (v *version) WorkflowTasks() WorkflowTaskInformer {
+	return &workflowTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// WorkflowTaskSets returns a WorkflowTaskSetInformer.
+func (v *version) WorkflowTaskSets() WorkflowTaskSetInformer {
+	return &workflowTaskSetInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // WorkflowTemplates returns a WorkflowTemplateInformer.

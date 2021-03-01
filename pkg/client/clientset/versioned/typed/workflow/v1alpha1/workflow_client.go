@@ -13,9 +13,9 @@ type ArgoprojV1alpha1Interface interface {
 	ClusterWorkflowTemplatesGetter
 	CronWorkflowsGetter
 	WorkflowsGetter
-	WorkflowAgentsGetter
 	WorkflowEventBindingsGetter
-	WorkflowNodesGetter
+	WorkflowTasksGetter
+	WorkflowTaskSetsGetter
 	WorkflowTemplatesGetter
 }
 
@@ -36,16 +36,16 @@ func (c *ArgoprojV1alpha1Client) Workflows(namespace string) WorkflowInterface {
 	return newWorkflows(c, namespace)
 }
 
-func (c *ArgoprojV1alpha1Client) WorkflowAgents(namespace string) WorkflowAgentInterface {
-	return newWorkflowAgents(c, namespace)
-}
-
 func (c *ArgoprojV1alpha1Client) WorkflowEventBindings(namespace string) WorkflowEventBindingInterface {
 	return newWorkflowEventBindings(c, namespace)
 }
 
-func (c *ArgoprojV1alpha1Client) WorkflowNodes(namespace string) WorkflowNodeInterface {
-	return newWorkflowNodes(c, namespace)
+func (c *ArgoprojV1alpha1Client) WorkflowTasks(namespace string) WorkflowTaskInterface {
+	return newWorkflowTasks(c, namespace)
+}
+
+func (c *ArgoprojV1alpha1Client) WorkflowTaskSets(namespace string) WorkflowTaskSetInterface {
+	return newWorkflowTaskSets(c, namespace)
 }
 
 func (c *ArgoprojV1alpha1Client) WorkflowTemplates(namespace string) WorkflowTemplateInterface {
