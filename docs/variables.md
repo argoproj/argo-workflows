@@ -123,6 +123,7 @@ For `Template`-level metrics:
 | `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character |
 | `workflow.priority` | Workflow priority |
 | `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
+| `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for CronWorkflows) |
 
 ## Exit Handler
 | Variable | Description|

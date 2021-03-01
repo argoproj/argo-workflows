@@ -1,6 +1,8 @@
 package common
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -11,16 +13,20 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	meta := metav1.ObjectMeta{
 		GenerateName: cronWf.Name + "-",
 		Labels:       make(map[string]string),
-		Annotations:  make(map[string]string),
+		Annotations: map[string]string{
+			AnnotationKeyCronWfScheduledTime: time.Now().Format(time.RFC3339),
+		},
 	}
 	return toWorkflow(*cronWf, meta)
 }
 
-func ConvertCronWorkflowToWorkflowWithName(cronWf *wfv1.CronWorkflow, name string) *wfv1.Workflow {
+func ConvertCronWorkflowToWorkflowWithProperties(cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
 	meta := metav1.ObjectMeta{
-		Name:        name,
-		Labels:      make(map[string]string),
-		Annotations: make(map[string]string),
+		Name:   name,
+		Labels: make(map[string]string),
+		Annotations: map[string]string{
+			AnnotationKeyCronWfScheduledTime: scheduledTime.Format(time.RFC3339),
+		},
 	}
 	return toWorkflow(*cronWf, meta)
 }
@@ -78,7 +84,6 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 		}
 
 		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
-			wf.Annotations = make(map[string]string)
 			for key, annotation := range cronWf.Spec.WorkflowMetadata.Annotations {
 				wf.Annotations[key] = annotation
 			}

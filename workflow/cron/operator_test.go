@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -242,4 +244,30 @@ func TestSpecError(t *testing.T) {
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
 	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
 	assert.Contains(t, submissionErrorCond.Message, "cron schedule is malformed: end of range (12737123) above maximum (12): 12737123")
+}
+
+func TestScheduleTimeParam(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	err := yaml.Unmarshal([]byte(scheduledWf), &cronWf)
+	assert.NoError(t, err)
+
+	cs := fake.NewSimpleClientset()
+	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	woc := &cronWfOperationCtx{
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logrus.WithFields(logrus.Fields{}),
+		metrics:           testMetrics,
+		scheduledTimeFunc: inferScheduledTime,
+	}
+	woc.Run()
+	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, wsl.Items.Len(), 1)
+	wf := wsl.Items[0]
+	assert.NotNil(t, wf)
+	assert.Len(t, wf.GetAnnotations(), 1)
+	assert.NotEmpty(t, wf.GetAnnotations()[common.AnnotationKeyCronWfScheduledTime])
 }

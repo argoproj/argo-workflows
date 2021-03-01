@@ -537,6 +537,8 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			} else if strings.HasPrefix(tag, "outputs.") {
 				// We are self referencing for metric emission, allow it.
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
+			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCronScheduleTime) {
+				// Allow runtime resolution for "scheduledTime" which will pass from CronWorkflow
 			} else {
 				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
