@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint/mocks"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wftemplatemocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate/mocks"
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -63,16 +64,6 @@ spec:
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
 `)
-
-type mockWriter struct {
-	mock.Mock
-}
-
-func (mw *mockWriter) Write(buf []byte) (int, error) {
-	fmt.Println(string(buf))
-	ret := mw.Called(buf)
-	return ret.Int(0), ret.Error(1)
-}
 
 func TestLintFile(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
@@ -159,7 +150,7 @@ func TestLintWithOutput(t *testing.T) {
 	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
 
-	mw := &mockWriter{}
+	mw := &mocks.MockWriter{}
 	mw.On("Write", mock.Anything).Return(0, nil)
 
 	res, err := Lint(context.Background(), &LintOptions{
@@ -169,7 +160,7 @@ func TestLintWithOutput(t *testing.T) {
 			WorkflowTemplatesClient: wftServiceSclientMock,
 		},
 		Formatter: fmtr,
-		Output:    mw,
+		Printer:   mw,
 	})
 
 	expected := []string{

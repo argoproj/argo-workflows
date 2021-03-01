@@ -747,7 +747,7 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 	s.Run("Lint Only CronWorkflows", func() {
 		s.Given().
-			RunCli([]string{"lint", "--kinds", "cwf", "cron/cron-and-malformed-template.yaml"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"lint", "--kinds", "cronwf", "cron/cron-and-malformed-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "no linting errors found")
 				}

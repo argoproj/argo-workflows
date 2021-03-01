@@ -13,21 +13,21 @@ argo lint FILE... [flags]
 ### Examples
 
 ```
+
 # Lint all manifests in a specified directory:
 
   argo lint ./manifests
 
 # Lint only manifests of kinds Workflow and CronWorkflow from stdin:
 
-  cat manifests.yaml | argo lint --kinds=wf,cwf -
-
+  cat manifests.yaml | argo lint --kinds=workflow,cronworkflow -
 ```
 
 ### Options
 
 ```
   -h, --help            help for lint
-      --kinds strings   Which kinds will be linted. Can be: workflow|workflow-template|cron-workflow|cluster-workflow-template (default [all])
+      --kinds strings   Which kinds will be linted. Can be: workflow|workflowtemplate|cronworkflow|clusterworkflowtemplate (default [all])
   -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
       --strict          Perform strict workflow validation (default true)
 ```
