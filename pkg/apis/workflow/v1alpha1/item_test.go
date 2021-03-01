@@ -72,7 +72,10 @@ var testItemStringTable = []struct {
 	str    string
 }{
 	{"json-string", []string{`{"foo": "bar"}`}, `["{\"foo\": \"bar\"}"]`},
+	{"flaw-string", "<&>", `<&>`},
 	{"array", []int{1, 2, 3}, "[1,2,3]"},
+	{"flaw-array", []string{"<&>"}, `["<&>"]`},
+	{"flaw-map", map[string]string{"foo": "<&>"}, `{"foo":"<&>"}`},
 	{"number", 1.1, "1.1"},
 }
 
