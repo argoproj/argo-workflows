@@ -51,6 +51,7 @@ argo submit [FILE... | --from `kind/name] [flags]
   -p, --parameter stringArray        pass an input parameter
   -f, --parameter-file string        pass a file containing all input parameters
       --priority int32               workflow priority
+      --scheduled-time string        Override the workflow's scheduledTime parameter (useful for backfilling). The time must be RFC3339
       --server-dry-run               send request to server with dry-run flag which will modify the workflow without creating it
       --serviceaccount string        run all pods in the workflow using specified serviceaccount
       --status string                Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.
