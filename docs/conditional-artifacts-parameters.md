@@ -11,6 +11,7 @@ Few custom function added to support more use cases.
 3. `string`   - convert the  int/float to string (e.g: string(1))
 4. `jsonpath` - Extract the element from Json using jsonpath (e.g: jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" ) )
 5. [sprig](http://masterminds.github.io/sprig/) - Support all `sprig` functions
+
 ##Conditional Artifacts
 ```yaml
 
@@ -172,3 +173,5 @@ spec:
         args: ["echo {{inputs.parameters.message}}"]
 ```
 Advanced example: [Fibonacci Sequence](../examples/fibonacci-seq-conditional-param.yaml)
+
+Note: Expr will decode the `-` as operator if template name has `-`, it will fail the expression. So here workaround for template name which has `-` in its name. `step['one-two-three'].outputs.artifacts`

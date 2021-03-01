@@ -42,18 +42,3 @@ func Test_flatten(t *testing.T) {
 		})
 	}
 }
-
-func TestExpand(t *testing.T) {
-	envMap := map[string]interface{}{
-		"inputs.parameters.one":              "1",
-		"steps.t1.outputs.parameters.result": "3",
-		"workflows.arguments.param":          "head",
-		"test.one.two.three":                 "four",
-	}
-	expendMap := Expand(envMap)
-	assert.Len(t, expendMap, 4)
-	assert.NotNil(t, expendMap["inputs"])
-	assert.NotNil(t, expendMap["inputs"].(map[string]interface{})["parameters"])
-	assert.NotNil(t, expendMap["inputs"].(map[string]interface{})["parameters"].(map[string]interface{})["one"])
-	assert.Equal(t, "1", expendMap["inputs"].(map[string]interface{})["parameters"].(map[string]interface{})["one"])
-}

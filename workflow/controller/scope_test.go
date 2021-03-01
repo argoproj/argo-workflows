@@ -263,6 +263,7 @@ func TestResolveParameters(t *testing.T) {
 	scope := CreateScope(&tmpl)
 	scope.addParamToScope("steps.t1.outputs.parameters.result", "4")
 	scope.addParamToScope("workflows.arguments.param", "head")
+	scope.addParamToScope("steps.coin-flip.outputs.parameters.result", "5")
 
 	valFrom := &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == '1' ? inputs.parameters.two: steps.t1.outputs.parameters.result",
@@ -284,4 +285,18 @@ func TestResolveParameters(t *testing.T) {
 	result, err = scope.resolveParameter(valFrom)
 	assert.NoError(err)
 	assert.Equal("head", result)
+
+	valFrom = &wfv1.ValueFrom{
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result :workflows.arguments.param",
+	}
+	result, err = scope.resolveParameter(valFrom)
+	assert.NoError(err)
+	assert.Equal("5", result)
+
+	valFrom = &wfv1.ValueFrom{
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result :workflows.arguments.param",
+	}
+	result, err = scope.resolveParameter(valFrom)
+	assert.NoError(err)
+	assert.Equal("5", result)
 }
