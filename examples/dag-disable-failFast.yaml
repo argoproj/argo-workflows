@@ -31,7 +31,7 @@ spec:
       args: ["hello world"]
   - name: statis
     dag:
-      failFast: false
+      failFast: true
       tasks:
       - name: A
         template: a

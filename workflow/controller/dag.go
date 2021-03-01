@@ -137,6 +137,8 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		targetTaskPhases[d.taskNodeID(task)] = ""
 	}
 
+	// Result of the overall DAG
+	result := wfv1.NodeSucceeded
 	// BFS over the children of the DAG
 	uniqueQueue := newUniquePhaseNodeQueue(generatePhaseNodes(nodes[d.boundaryID].Children, wfv1.NodeSucceeded)...)
 	for !uniqueQueue.empty() {
@@ -145,7 +147,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		node, branchPhase := nodes[curr.nodeId], curr.phase
 
 		if !node.Fulfilled() {
-			continue
+			// A child node if the DAG is still running, so the DAG as a whole will still be running. Break here to
+			// consider failFast
+			result = wfv1.NodeRunning
+			break
 		}
 
 		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
@@ -177,7 +182,6 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 
 	// We only succeed if all the target tasks have been considered (i.e. its nodes created) and there are no failures
 	failFast := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
-	result := wfv1.NodeSucceeded
 	for _, depName := range targetTasks {
 		branchPhase := targetTaskPhases[d.taskNodeID(depName)]
 		if branchPhase == "" {
