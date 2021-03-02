@@ -616,6 +616,10 @@ data:
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: k8sapi
+    - name: emissary
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: emissary
   executor: |
     resources:
       requests:
