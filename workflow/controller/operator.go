@@ -1186,28 +1186,18 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
-	if ok && node.Outputs == nil {
-		updated = true
+	if exitCode := getExitCode(pod); ok && node.Outputs == nil && exitCode != nil {
 		woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-		var outputs wfv1.Outputs
-		err := json.Unmarshal([]byte(outputStr), &outputs)
-		if err != nil {
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
+		updated = true
+		node.Outputs = &wfv1.Outputs{}
+		if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil {
 			node.Phase = wfv1.NodeError
+			node.Message = err.Error()
 		} else {
-			node.Outputs = &outputs
+			node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(exitCode))
 		}
 	}
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.MainContainerName && c.State.Terminated != nil {
-			if node.Outputs == nil {
-				node.Outputs = &wfv1.Outputs{}
-			}
-			node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(c.State.Terminated.ExitCode))
-			updated = true
-		}
-	}
+
 	if node.Phase != newPhase {
 		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
@@ -1237,6 +1227,15 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 	if updated {
 		return node
+	}
+	return nil
+}
+
+func getExitCode(pod *apiv1.Pod) *int32 {
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == common.MainContainerName && c.State.Terminated != nil {
+			return pointer.Int32Ptr(c.State.Terminated.ExitCode)
+		}
 	}
 	return nil
 }
