@@ -1197,13 +1197,10 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			node.Phase = wfv1.NodeError
 		} else {
 			node.Outputs = &outputs
-		}
-	}
-	if node.Outputs != nil && node.Outputs.ExitCode == nil {
-		for _, c := range pod.Status.ContainerStatuses {
-			if c.Name == common.MainContainerName && c.State.Terminated != nil {
-				node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(c.State.Terminated.ExitCode))
-				updated = true
+			for _, c := range pod.Status.ContainerStatuses {
+				if c.Name == common.MainContainerName { // main container MUST bo terminated when outputs are set
+					node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(c.State.Terminated.ExitCode))
+				}
 			}
 		}
 	}
