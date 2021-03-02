@@ -1199,6 +1199,14 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			node.Outputs = &outputs
 		}
 	}
+	if node.Outputs != nil && node.Outputs.ExitCode == nil {
+		for _, c := range pod.Status.ContainerStatuses {
+			if c.Name == common.MainContainerName && c.State.Terminated != nil {
+				node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(c.State.Terminated.ExitCode))
+				updated = true
+			}
+		}
+	}
 	if node.Phase != newPhase {
 		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
