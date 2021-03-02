@@ -46,7 +46,6 @@ jobs:
           - test-executor
         containerRuntimeExecutor:
           - docker
-          - emissary
           - k8sapi
           - kubelet
           - pns
