@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -145,41 +144,6 @@ func (d *DockerExecutor) GetOutputStream(ctx context.Context, containerName stri
 	}()
 
 	return &cmdCloser{Reader: reader, cmd: cmd}, nil
-}
-
-func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
-	containerID, err := d.getContainerID(containerName)
-	if err != nil {
-		return "", err
-	}
-	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
-	reader, err := cmd.StdoutPipe()
-	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not pipe STDOUT")
-	}
-	err = cmd.Start()
-	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not start command")
-	}
-	defer func() { _ = reader.Close() }()
-	bytes, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not read from STDOUT")
-	}
-	out := string(bytes)
-
-	// Trims off a single newline for user convenience
-	outputLen := len(out)
-	if outputLen > 0 && out[outputLen-1] == '\n' {
-		out = out[:outputLen-1]
-	}
-	exitCode := strings.Trim(out, `'`)
-	// Ensure exit code is an int
-	if _, err := strconv.Atoi(exitCode); err != nil {
-		log.Warningf("Was not able to parse exit code output '%s' as int: %s", exitCode, err)
-		return "", nil
-	}
-	return exitCode, nil
 }
 
 func (d *DockerExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
