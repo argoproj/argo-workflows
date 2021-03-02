@@ -58,14 +58,6 @@ jobs:
             containerRuntimeExecutor: docker
           - test: test-e2e-cron
             containerRuntimeExecutor: docker
-          - test: test-cli
-            containerRuntimeExecutor: pns
-          - test: test-examples
-            containerRuntimeExecutor: pns
-          - test: test-functional
-            containerRuntimeExecutor: pns
-          - test: test-e2e-cron
-            containerRuntimeExecutor: pns
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
