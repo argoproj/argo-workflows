@@ -13,13 +13,14 @@ func SignificantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
 		from.Status.Message != to.Status.Message ||
 		from.Status.PodIP != to.Status.PodIP ||
 		from.GetDeletionTimestamp() != to.GetDeletionTimestamp() ||
-		significantAnnotationChange(from.Annotations, to.Annotations) ||
+		significantMetadataChange(from.Annotations, to.Annotations) ||
+		significantMetadataChange(from.Labels, to.Labels) ||
 		significantContainerStatusesChange(from.Status.ContainerStatuses, to.Status.ContainerStatuses) ||
 		significantContainerStatusesChange(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses) ||
 		significantConditionsChange(from.Status.Conditions, to.Status.Conditions)
 }
 
-func significantAnnotationChange(from map[string]string, to map[string]string) bool {
+func significantMetadataChange(from map[string]string, to map[string]string) bool {
 	if len(from) != len(to) {
 		return true
 	}
