@@ -170,7 +170,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				"ps",
 				"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
 				"--no-trunc", // display long container IDs
-				"--format={{.Label \"io.kubernetes.container.name\"}}={{.ID}}",
+				"--format={{.Status}}|{{.Label \"io.kubernetes.container.name\"}}|{{.ID}}", // similar to `Up 3 hours,main,035a98c4e72e`
 				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
 				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
 				"--filter=label=io.kubernetes.pod.name="+d.podName,
@@ -179,13 +179,23 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				return err
 			}
 			for _, l := range strings.Split(string(output), "\n") {
-				parts := strings.Split(strings.TrimSpace(l), "=")
-				if len(parts) != 2 {
+				parts := strings.Split(strings.TrimSpace(l), "|")
+				if len(parts) != 3 {
 					continue
 				}
-				containerName := parts[0]
-				containerID := parts[1]
+				status := strings.SplitN(parts[0], " ", 2)[0] // Created,Exited,Up,
+				containerName := parts[1]
+				containerID := parts[2]
 				if d.containers[containerName] == "" && containerID != "" {
+					if status == "Created" { // for "Created" we must check to see if it was an early (non-zero) exit
+						output, err := common.RunCommand("docker", "inspect", containerID, "--format={{.State.ExitCode}}")
+						if err != nil {
+							return err
+						}
+						if strings.TrimSpace(string(output)) == "0" { // this remain "0" until it is not "Created" anymore
+							continue
+						}
+					}
 					d.containers[containerName] = containerID
 					log.Infof("mapped container name %q to container ID %q", containerName, containerID)
 				}
