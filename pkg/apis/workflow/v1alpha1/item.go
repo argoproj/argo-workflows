@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 )
 
 // Type represents the stored type of Item.
@@ -58,15 +60,15 @@ func (i *Item) UnmarshalJSON(value []byte) error {
 }
 
 func (i *Item) String() string {
-	jsonBytes, err := json.Marshal(i)
+	x, err := json.Marshal(i) // this produces a normalised string, e.g. white-space
 	if err != nil {
 		panic(err)
 	}
 	// this convenience to remove quotes from strings will cause many problems
-	if jsonBytes[0] == '"' {
-		return string(jsonBytes[1 : len(jsonBytes)-1])
+	if x[0] == '"' {
+		return jsonutil.Fix(string(x[1 : len(x)-1]))
 	}
-	return string(jsonBytes)
+	return jsonutil.Fix(string(x))
 }
 
 func (i Item) Format(s fmt.State, _ rune) {
