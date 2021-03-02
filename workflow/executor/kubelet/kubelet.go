@@ -45,7 +45,7 @@ func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string)
 	log.Infof("Getting exit code of %q", containerName)
 	_, status, err := k.cli.GetContainerStatus(ctx, containerName)
 	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not get container status")
+		return "", err
 	}
 	if status != nil && status.State.Terminated != nil {
 		return fmt.Sprint(status.State.Terminated.ExitCode), nil

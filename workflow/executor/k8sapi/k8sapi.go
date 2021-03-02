@@ -47,7 +47,7 @@ func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) 
 	log.Infof("Getting exit code of %s", containerName)
 	_, status, err := k.client.GetContainerStatus(ctx, containerName)
 	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not get container status")
+		return "", err
 	}
 	if status != nil && status.State.Terminated != nil {
 		return fmt.Sprint(status.State.Terminated.ExitCode), nil
