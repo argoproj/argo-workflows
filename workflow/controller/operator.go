@@ -1201,7 +1201,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 	if node.Outputs != nil && node.Outputs.ExitCode == nil {
 		for _, c := range pod.Status.ContainerStatuses {
-			if c.Name == common.MainContainerName && c.State.Terminated != nil{
+			if c.Name == common.MainContainerName && c.State.Terminated != nil {
 				node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(c.State.Terminated.ExitCode))
 				updated = true
 			}
