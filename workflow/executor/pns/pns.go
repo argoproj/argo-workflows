@@ -32,6 +32,7 @@ type PNSExecutor struct {
 	podName   string
 	namespace string
 
+	// mu for `containers`, `ctrIDToPid`, and `pidFileHandles`
 	mu sync.RWMutex
 
 	containers map[string]string // container name -> container ID
@@ -172,7 +173,8 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 	for _, containerName := range containerNames {
 		pid, err := p.getContainerPID(containerName)
 		if err != nil {
-			return err
+			log.WithError(err).Warn("cannot wait for %q to complete - assuming already complete", containerName)
+			continue
 		}
 		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
 		for {
@@ -223,7 +225,7 @@ func (p *PNSExecutor) haveContainers(containerNames []string) bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	for _, n := range containerNames {
-		if p.ctrIDToPid[p.containers[n]] == 0 {
+		if p.containers[n] != "" {
 			return false
 		}
 	}

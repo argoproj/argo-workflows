@@ -430,6 +430,7 @@ else
 start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy minio
 ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
@@ -439,6 +440,9 @@ ifeq ($(PROFILE),prometheus)
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
+endif
+ifeq ($(PROFILE),mysql)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy mysql
 endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)

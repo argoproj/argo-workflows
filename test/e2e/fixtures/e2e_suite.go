@@ -78,9 +78,9 @@ func (s *E2ESuite) BeforeTest(string, string) {
 
 func (s *E2ESuite) AfterTest(suiteName, testName string) {
 	if s.T().Failed() { // by default, we don't get good logging at test end
-		println("=== FAIL  " + suiteName + "/" + testName)
+		println("=== FAIL: " + suiteName + "/" + testName)
 	} else {
-		println("=== PASS  " + suiteName + "/" + testName)
+		println("=== PASS: " + suiteName + "/" + testName)
 	}
 }
 
@@ -114,7 +114,6 @@ func (s *E2ESuite) DeleteResources() {
 		for {
 			err := resourceInterface.DeleteCollection(ctx, deleteOptions, hasTestLabel)
 			s.CheckError(err)
-			// TODO - remove and see if works OK after
 			list, err := resourceInterface.List(ctx, hasTestLabel)
 			s.CheckError(err)
 			if len(list.Items) == 0 {
