@@ -103,7 +103,7 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			if err != nil {
 				return false, err
 			}
-			results, err := bucket.ListObjects(oss.Prefix(artifact.OSS.Bucket))
+			results, err := bucket.ListObjects(oss.Prefix(artifact.OSS.Key))
 			if err != nil {
 				return false, err
 			}
