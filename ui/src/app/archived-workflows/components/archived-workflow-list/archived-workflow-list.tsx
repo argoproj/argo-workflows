@@ -172,7 +172,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (this.state.workflows.length === 0) {
             return (
                 <ZeroState title='No archived workflows'>
-                    <p>To add entries to the archive you must enabled archiving in configuration. Records are created in the archive on workflow completion.</p>
+                    <p>To add entries to the archive you must enable archiving in configuration. Records are created in the archive on workflow completion.</p>
                     <p>{learnMore}.</p>
                 </ZeroState>
             );
