@@ -5860,6 +5860,35 @@ func TestNoPodsWhenShutdown(t *testing.T) {
 	}
 }
 
+var wfscheVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+  annotations:
+    workflows.argoproj.io/scheduled-time: 2006-01-02T15:04:05-07:00
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflows.scheduledTime}}"]
+`
+
+func TestWorkflowScheduledTimeVariable(t *testing.T) {
+	wf := unmarshalWF(wfscheVariable)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
+}
+
 const resultVarRefWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -5908,3 +5937,4 @@ func TestHasOutputResultRef(t *testing.T) {
 	assert.True(t, hasOutputResultRef("generate-random", &wf.Spec.Templates[0]))
 	assert.True(t, hasOutputResultRef("generate-random-1", &wf.Spec.Templates[0]))
 }
+

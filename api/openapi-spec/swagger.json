@@ -7962,6 +7962,10 @@
       "description": "SubmitOpts are workflow submission options",
       "type": "object",
       "properties": {
+        "annotations": {
+          "description": "Annotations adds to metadata.labels",
+          "type": "string"
+        },
         "dryRun": {
           "description": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API",
           "type": "boolean"
