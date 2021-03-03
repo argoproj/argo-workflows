@@ -600,7 +600,7 @@ func (s *CLISuite) TestWorkflowDeleteResubmitted() {
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Given().
-		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"resubmit", "--memoized", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -979,7 +979,7 @@ func (s *CLISuite) TestWorkflowResubmit() {
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Given().
-		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"resubmit", "--memoized", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
