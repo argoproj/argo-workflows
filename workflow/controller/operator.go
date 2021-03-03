@@ -2287,11 +2287,11 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
-	var variableRefName string
+	var varRefNamePattern string
 	if parentTmpl.DAG != nil {
-		variableRefName = "tasks." + name + ".outputs.result"
+		varRefNamePattern = "tasks([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
 	} else if parentTmpl.Steps != nil {
-		variableRefName = "steps." + name + ".outputs.result"
+		varRefNamePattern = "steps([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
 	}
 
 	jsonValue, err := json.Marshal(parentTmpl)
@@ -2299,7 +2299,11 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
 	}
 
-	return strings.Contains(string(jsonValue), variableRefName)
+	contain, err := regexp.MatchString(varRefNamePattern, string(jsonValue))
+	if err != nil {
+		log.Warnf("Error in Regex compilation. %s, %v", varRefNamePattern, err)
+	}
+	return contain
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name

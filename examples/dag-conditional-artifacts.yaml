@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: conditional-artifacts-
+  generateName: dag-conditional-artifacts-
   labels:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       conditional-artifacts provide a way to choose the output artifacts based on expression.
       In this example
-      the 'coinflip' step template  has two steps which will run based `when` condition.
+      the 'coinflip' DAG template  has two steps which will run based `when` condition.
       Based on condition one of step may not execute. So Step template output artifact should assign
       executed step output artifacts.
       `fromExpression` in output parameter can have expression to select the artifacts.
@@ -24,19 +24,22 @@ spec:
       emptyDir: {}
   templates:
     - name: coinflip
-      steps:
-        - - name: flip-coin
+      dag:
+        tasks:
+          - name: flip-coin
             template: flipcoin1
-        - - name: heads
+          - name: heads
+            depends: flip-coin
             template: heads
-            when: "{{steps.flip-coin.outputs.result}} == heads"
+            when: "{{tasks.flip-coin.outputs.result}} == heads"
           - name: tails
+            depends: flip-coin
             template: tails
-            when: "{{steps.flip-coin.outputs.result}} == tails"
+            when: "{{tasks.flip-coin.outputs.result}} == tails"
       outputs:
         artifacts:
           - name: stepresult
-            fromExpression: "steps['flip-coin'].outputs.result == 'heads'?steps.heads.outputs.artifacts.headsresult:steps.tails.outputs.artifacts.tailsresult"
+            fromExpression: "tasks['flip-coin'].outputs.result == 'heads'?tasks.heads.outputs.artifacts.headsresult:tasks.tails.outputs.artifacts.tailsresult"
     
     - name: flipcoin1
       script:

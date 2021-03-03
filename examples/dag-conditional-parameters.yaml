@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: conditional-parameter-
+  generateName: dag-conditional-parameter-
   labels:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       conditional-parameter provide a way to choose the output parameters based on expression.
       In this example
-      the 'coinflip' step template has two steps which will run based `when` condition.
+      the 'coinflip' DAG template has two steps which will run based `when` condition.
       Based on condition one of step may not execute. So Step template output parameter should assign
       executed step output result.
       `expression` in output parameter can have expression to select the artifacts.
@@ -24,20 +24,23 @@ spec:
       emptyDir: {}
   templates:
     - name: coinflip
-      steps:
-        - - name: flipcoin
+      dag:
+        tasks:
+          - name: flipcoin
             template: flipcoin1
-        - - name: heads
+          - name: heads
+            depends: flipcoin
             template: heads
-            when: "{{steps.flipcoin.outputs.result}} == heads"
+            when: "{{tasks.flipcoin.outputs.result}} == heads"
           - name: tails
+            depends: flipcoin
             template: tails
-            when: "{{steps.flipcoin.outputs.result}} == tails"
+            when: "{{tasks.flipcoin.outputs.result}} == tails"
       outputs:
         parameters:
           - name: stepresult
             valueFrom:
-              expression: "steps.flipcoin.outputs.result == 'heads'? steps.heads.outputs.result : steps.tails.outputs.result"
+              expression: "tasks.flipcoin.outputs.result == 'heads'? tasks.heads.outputs.result : tasks.tails.outputs.result"
     
     - name: flipcoin1
       script:

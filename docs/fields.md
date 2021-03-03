@@ -64,6 +64,10 @@ Workflow is the definition of a workflow resource
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
@@ -422,6 +426,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
@@ -800,6 +808,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
@@ -1135,6 +1147,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
@@ -1453,10 +1469,6 @@ Arguments to a template
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
-
-- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
-
-- [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
 
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
@@ -1807,6 +1819,10 @@ Template is a reusable and composable unit of execution in a workflow
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
@@ -2226,6 +2242,10 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
@@ -2334,6 +2354,8 @@ Artifact indicates an artifact to place at a specified path
 
 - [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
@@ -2431,6 +2453,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`daemon-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
@@ -2696,6 +2720,10 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
@@ -2846,10 +2874,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
-
-- [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
 
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
@@ -3067,6 +3091,10 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
@@ -3633,6 +3661,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
@@ -3748,6 +3778,10 @@ MetricLabel is a single label for a prometheus metric
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -3796,6 +3830,10 @@ DAGTask represents a node in the graph during DAG execution
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
@@ -3879,6 +3917,10 @@ DataSource sources external data into a data template
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
@@ -4235,6 +4277,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
@@ -4657,6 +4703,10 @@ Volume represents a named volume in a pod that may be accessed by any container 
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
@@ -4797,10 +4847,6 @@ A single application container that you want to run within a pod.
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip.yaml)
-
-- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
-
-- [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
 
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
@@ -5236,6 +5282,8 @@ VolumeMount describes a mounting of a Volume within a container.
 
 - [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
@@ -5458,6 +5506,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
@@ -5842,6 +5894,10 @@ Represents an empty directory for a pod. Empty directory volumes support ownersh
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
 
+- [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-emptydir.yaml)
@@ -6129,6 +6185,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
