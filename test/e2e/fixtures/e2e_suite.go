@@ -16,12 +16,14 @@ import (
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
@@ -74,9 +76,27 @@ func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
 }
 
+func (s *E2ESuite) AfterTest(suiteName, testName string) {
+	if s.T().Failed() { // by default, we don't get good logging at test end
+		println("=== FAIL: " + suiteName + "/" + testName)
+	} else {
+		println("=== PASS: " + suiteName + "/" + testName)
+	}
+}
+
 var foreground = metav1.DeletePropagationForeground
 
 func (s *E2ESuite) DeleteResources() {
+	ctx := context.Background()
+	// aggressive deletion options
+	deleteOptions := metav1.DeleteOptions{
+		GracePeriodSeconds: pointer.Int64Ptr(0),
+		PropagationPolicy:  &foreground,
+	}
+	// delete pods first, this means workflows can finish faster
+	err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(ctx, deleteOptions, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow})
+	s.CheckError(err)
+
 	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
 	resources := []schema.GroupVersionResource{
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
@@ -89,11 +109,18 @@ func (s *E2ESuite) DeleteResources() {
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
-
-	ctx := context.Background()
 	for _, r := range resources {
-		err := s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{PropagationPolicy: &foreground}, hasTestLabel)
-		s.CheckError(err)
+		resourceInterface := s.dynamicFor(r)
+		for {
+			err := resourceInterface.DeleteCollection(ctx, deleteOptions, hasTestLabel)
+			s.CheckError(err)
+			list, err := resourceInterface.List(ctx, hasTestLabel)
+			s.CheckError(err)
+			if len(list.Items) == 0 {
+				break
+			}
+			time.Sleep(time.Second)
+		}
 	}
 
 	// delete archived workflows from the archive
@@ -106,17 +133,6 @@ func (s *E2ESuite) DeleteResources() {
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
-		}
-	}
-
-	for _, r := range resources {
-		for {
-			list, err := s.dynamicFor(r).List(ctx, hasTestLabel)
-			s.CheckError(err)
-			if len(list.Items) == 0 {
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
