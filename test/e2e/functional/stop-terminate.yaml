@@ -16,7 +16,8 @@ spec:
     - name: echo
       container:
         image: argoproj/argosay:v1
-        args: [ sleep, "999"]
+        command: [ sleep ]
+        args: [ "999" ]
 
     - name: exit
       container:
