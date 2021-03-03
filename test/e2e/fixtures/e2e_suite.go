@@ -76,6 +76,14 @@ func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
 }
 
+func (s *E2ESuite) AfterTest(suiteName, testName string) {
+	if s.T().Failed() { // by default, we don't get good logging at test end
+		println("=== FAIL  " + suiteName + "/" + testName)
+	} else {
+		println("=== PASS  " + suiteName + "/" + testName)
+	}
+}
+
 var foreground = metav1.DeletePropagationForeground
 
 func (s *E2ESuite) DeleteResources() {
@@ -104,7 +112,6 @@ func (s *E2ESuite) DeleteResources() {
 	for _, r := range resources {
 		resourceInterface := s.dynamicFor(r)
 		for {
-			println("deleting ", r.Resource)
 			err := resourceInterface.DeleteCollection(ctx, deleteOptions, hasTestLabel)
 			s.CheckError(err)
 			// TODO - remove and see if works OK after
@@ -129,7 +136,6 @@ func (s *E2ESuite) DeleteResources() {
 			s.CheckError(err)
 		}
 	}
-	println("resources deleted")
 }
 
 func (s *E2ESuite) Need(needs ...Need) {
