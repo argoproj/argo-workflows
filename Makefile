@@ -524,10 +524,11 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	[ -e ./vendor ] || go mod vendor
 	[ -e ./v3 ] || ln -s . v3
-	go run ./vendor/k8s.io/code-generator/cmd/deepcopy-gen --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 -O zz_generated.deepcopy --bounding-dirs github.com/argoproj/argo-workflows/v3/pkg/apis --go-header-file ./hack/custom-boilerplate.go.txt
-	go run ./vendor/k8s.io/code-generator/cmd/client-gen --clientset-name versioned --input-base  --input github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 --output-package github.com/argoproj/argo-workflows/v3/pkg/client/clientset --go-header-file ./hack/custom-boilerplate.go.txt
-	go run ./vendor/k8s.io/code-generator/cmd/lister-gen --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 --output-package github.com/argoproj/argo-workflows/v3/pkg/client/listers --go-header-file ./hack/custom-boilerplate.go.txt
-	go run ./vendor/k8s.io/code-generator/cmd/informer-gen --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 --versioned-clientset-package github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned --listers-package github.com/argoproj/argo-workflows/v3/pkg/client/listers --output-package github.com/argoproj/argo-workflows/v3/pkg/client/informers --go-header-file ./hack/custom-boilerplate.go.txt
+	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
+	    "deepcopy,client,informer,lister" \
+	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
+	    workflow:v1alpha1 \
+	    --go-header-file ./hack/custom-boilerplate.go.txt
 	[ -e ./v3 ] && rm -rf v3
 
 dist/kubernetes.swagger.json:
