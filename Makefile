@@ -478,9 +478,9 @@ mysql-cli:
 
 .PHONY: test-cli
 test-cli:
-	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=GRPC  $(GOTEST) -timeout 10m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=HTTP1 $(GOTEST) -timeout 10m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=KUBE  $(GOTEST) -timeout 10m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
