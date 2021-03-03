@@ -44,7 +44,7 @@ jobs:
       matrix:
         test:
           - test-executor
-        containerRuntimeExecutor:
+        cre:
           - docker
           - emissary
           - k8sapi
@@ -52,13 +52,13 @@ jobs:
           - pns
         include:
           - test: test-cli
-            containerRuntimeExecutor: docker
+            cre: docker
           - test: test-examples
-            containerRuntimeExecutor: docker
+            cre: docker
           - test: test-functional
-            containerRuntimeExecutor: docker
+            cre: docker
           - test: test-e2e-cron
-            containerRuntimeExecutor: docker
+            cre: docker
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -108,8 +108,8 @@ jobs:
             PROFILE=minimal
             ALWAYS_OFFLOAD_NODE_STATUS=false
           fi
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE CRE=${{matrix.cre}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE CRE=${{matrix.cre}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go
@@ -122,7 +122,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-pod.log
+          name: ${{ matrix.test }}-${{matrix.cre}}-${{ github.run_id }}-pod.log
           path: /tmp/log/argo-e2e
 
   codegen:

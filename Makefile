@@ -77,7 +77,7 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
-E2E_EXECUTOR ?= pns
+CRE ?= pns
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
@@ -123,10 +123,6 @@ define docker_build
 	docker run --rm -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
-endef
-define docker_pull
-	docker pull $(1)
-	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
 ifndef $(GOPATH)
@@ -365,11 +361,11 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
-	rm -Rf vendor
+	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
+	$(GOPATH)/bin/golangci-lint run --fix --verbose
 	# Lint UI files
 ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui lint
@@ -384,8 +380,8 @@ test: server/static/files.go dist/argosay
 install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), CRE=$(CRE)"
+	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(CRE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
@@ -414,36 +410,25 @@ test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
 dist/argosay: test/e2e/images/argosay/v2/main/argosay.go
 	go build -ldflags '-w -s' -o dist/argosay ./test/e2e/images/argosay/v2/main
 
-.PHONY: test-images
-test-images:
-	$(call docker_pull,argoproj/argosay:v1)
-	$(call docker_pull,argoproj/argosay:v2)
-	$(call docker_pull,python:alpine3.6)
+.PHONY: pull-images
+pull-images:
+	docker pull mysql:8
+	docker pull golang:1.15.7
+	docker pull debian:10.7-slim
+	docker pull argoproj/argosay:v2
+	docker pull argoproj/argosay:v1
+	docker pull python:alpine3.6
 
 $(GOPATH)/bin/goreman:
 	$(call go_install,github.com/mattn/goreman)
 
 .PHONY: start
-ifeq ($(RUN_MODE),kubernetes)
-start: controller-image cli-image install executor-image
+ifeq ($(RUN_MODE),local)
+start: install executor-image controller cli $(GOPATH)/bin/goreman
 else
-start: install controller cli executor-image $(GOPATH)/bin/goreman
+start: install executor-image controller-image cli-image
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy minio
-ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
-endif
-ifeq ($(PROFILE),prometheus)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
-endif
-ifeq ($(PROFILE),stress)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
-endif
-ifeq ($(PROFILE),mysql)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy mysql
-endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -451,10 +436,9 @@ endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
-	# allow time for pods to terminate
-	sleep 5s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
+	killall goreman || true
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
 
@@ -481,25 +465,25 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-cli
-test-cli:
-	E2E_MODE=GRPC  $(GOTEST) -timeout 10m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=HTTP1 $(GOTEST) -timeout 10m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=KUBE  $(GOTEST) -timeout 10m -count 1 --tags cli -p 1 ./test/e2e
+test-cli: ./dist/argo pull-images
+	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
+	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
-test-e2e-cron:
+test-e2e-cron: pull-images
 	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: test-executor
-test-executor:
+test-executor: pull-images
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
 .PHONY: test-examples
-test-examples: ./dist/argo
+test-examples: ./dist/argo pull-images
 	./hack/test-examples.sh
 
 .PHONY: test-functional
-test-functional:
+test-functional: pull-images
 	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
 
 # clean
