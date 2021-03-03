@@ -3,10 +3,10 @@ kind: Workflow
 metadata:
   generateName: stop-terminate-
 spec:
-  entrypoint: diamond
+  entrypoint: main
   onExit: exit
   templates:
-    - name: diamond
+    - name: main
       dag:
         tasks:
           - name: A
