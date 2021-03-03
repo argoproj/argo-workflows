@@ -39,6 +39,7 @@ import (
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
+	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
@@ -47,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v3/workflow/cron"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -890,6 +892,11 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 				}
 				oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
 				if oldPod.ResourceVersion == newPod.ResourceVersion {
+					return
+				}
+				if !pod.SignificantPodChange(oldPod, newPod) {
+					log.WithField("key", key).Info("insignificant pod change")
+					diff.LogChanges(oldPod, newPod)
 					return
 				}
 				wfc.podQueue.Add(key)
