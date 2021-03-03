@@ -99,12 +99,16 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			if err != nil {
 				return false, err
 			}
-			results, err := osscli.ListBuckets(oss.Prefix(artifact.OSS.Bucket))
+			bucket, err := osscli.Bucket(artifact.OSS.Bucket)
 			if err != nil {
 				return false, err
 			}
-			for _, result := range results.Buckets {
-				files = append(files, result.Name)
+			results, err := bucket.ListObjects(oss.Prefix(artifact.OSS.Bucket))
+			if err != nil {
+				return false, err
+			}
+			for _, object := range results.Objects {
+				files = append(files, object.Key)
 			}
 			return true, nil
 		})
