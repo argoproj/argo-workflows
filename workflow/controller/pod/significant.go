@@ -7,7 +7,7 @@ import (
 )
 
 func SignificantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
-	return os.Getenv("ALL_POD_CHANGES_SIGNIFICANT") != "false" ||
+	return os.Getenv("ALL_POD_CHANGES_SIGNIFICANT") == "true" ||
 		from.Spec.NodeName != to.Spec.NodeName ||
 		from.Status.Phase != to.Status.Phase ||
 		from.Status.Message != to.Status.Message ||

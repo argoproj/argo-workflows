@@ -10,8 +10,6 @@ import (
 )
 
 func Test_SgnificantPodChange(t *testing.T) {
-	_ = os.Setenv("ALL_POD_CHANGES_SIGNIFICANT", "false")
-	defer func() { _ = os.Unsetenv("ALL_POD_CHANGES_SIGNIFICANT") }()
 	t.Run("NoChange", func(t *testing.T) {
 		assert.False(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{}))
 	})
