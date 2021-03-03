@@ -124,6 +124,10 @@ define docker_build
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 endef
+define docker_pull
+	docker pull $(1)
+	if [ $(K3D) = true ]; then k3d image import $(1); fi
+endef
 
 ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
@@ -361,7 +365,7 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
-	rm -Rf v3 vendor
+	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -423,12 +427,26 @@ $(GOPATH)/bin/goreman:
 	$(call go_install,github.com/mattn/goreman)
 
 .PHONY: start
-ifeq ($(RUN_MODE),local)
-start: install executor-image controller cli $(GOPATH)/bin/goreman
+ifeq ($(RUN_MODE),kubernetes)
+start: controller-image cli-image install executor-image
 else
-start: install executor-image controller-image cli-image
+start: install controller cli executor-image $(GOPATH)/bin/goreman
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy minio
+ifeq ($(RUN_MODE),kubernetes)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
+endif
+ifeq ($(PROFILE),prometheus)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
+endif
+ifeq ($(PROFILE),stress)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
+endif
+ifeq ($(PROFILE),mysql)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy mysql
+endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -436,9 +454,10 @@ endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
+	# allow time for pods to terminate
+	sleep 5s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	killall goreman || true
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
 
@@ -465,7 +484,7 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-cli
-test-cli: ./dist/argo
+test-cli:
 	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
