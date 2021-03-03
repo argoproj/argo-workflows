@@ -83,9 +83,12 @@ func (p *PNSExecutor) GetFileContents(containerName string, sourcePath string) (
 
 // enterChroot enters chroot of the main container
 func (p *PNSExecutor) enterChroot(containerName string) error {
-	pid, err := p.getContainerPID(containerName)
+	pid, ok, err := p.getContainerPID(containerName)
 	if err != nil {
-		return fmt.Errorf("failed to get container PID: %w", err)
+		return fmt.Errorf("cannot enter chroot for container named %q: %w", containerName, err)
+	}
+	if !ok {
+		return fmt.Errorf("cannot enter chroot for container named %q: no PID known - may have quickly exited", containerName)
 	}
 	if err := p.pidFileHandles[pid].Chdir(); err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chdir to main filesystem: %v", err)
@@ -171,9 +174,12 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 	}
 
 	for _, containerName := range containerNames {
-		pid, err := p.getContainerPID(containerName)
+		pid, ok, err := p.getContainerPID(containerName)
 		if err != nil {
-			log.WithError(err).Warn("cannot wait for %q to complete - assuming already complete", containerName)
+			return err
+		}
+		if !ok {
+			log.Infof("no container PID found for %q - assuming it quickly completed", containerName)
 			continue
 		}
 		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
@@ -251,9 +257,13 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, termina
 }
 
 func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriodDuration time.Duration) error {
-	pid, err := p.getContainerPID(containerName)
+	pid, ok, err := p.getContainerPID(containerName)
 	if err != nil {
 		log.Warnf("Ignoring kill container failure of %q: %v. Process assumed to have completed", containerName, err)
+		return nil
+	}
+	if !ok {
+		log.Warnf("No PID for container named %q. Process assumed to have completed", containerName)
 		return nil
 	}
 	// On Unix systems, FindProcess always succeeds and returns a Process
@@ -283,18 +293,15 @@ func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriod
 
 // getContainerPID returns the pid associated with the container id. Returns error if it was unable
 // to be determined because no running root processes exist with that container ID
-func (p *PNSExecutor) getContainerPID(containerName string) (int, error) {
+func (p *PNSExecutor) getContainerPID(containerName string) (int, bool, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	containerID, ok := p.containers[containerName]
 	if !ok {
-		return 0, fmt.Errorf("container ID not found for container name %q", containerName)
+		return 0, false, fmt.Errorf("container ID not found for container name %q", containerName)
 	}
 	pid := p.ctrIDToPid[containerID]
-	if pid == 0 {
-		return 0, fmt.Errorf("pid not found for container ID %q", containerID)
-	}
-	return pid, nil
+	return pid, pid != 0, nil
 }
 
 func containerNameForPID(pid int) (string, error) {
