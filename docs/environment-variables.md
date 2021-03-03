@@ -1,3 +1,4 @@
+
 # Environment Variables
 
 This document outlines the set of environment variables that can be used to customize the behaviours at different levels.
@@ -8,7 +9,6 @@ Note that these environment variables may be removed at any time.
 
 | Name | Type | Description|
 |----------|------|------------|
-| `ALL_POD_CHANGES_SIGNIFICANT` | `bool` |  Whether to consider all pod changes as significant during pod reconciliation. |
 | `ALWAYS_OFFLOAD_NODE_STATUS` | `bool` | Whether to always offload the node status. |
 | `ARCHIVED_WORKFLOW_GC_PERIOD` | `time.Duration` | The periodicity for GC of archived workflows. |
 | `ARGO_TRACE` | `bool` | Whether to enable tracing statements in Argo components. |
