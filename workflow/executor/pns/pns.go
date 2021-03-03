@@ -198,6 +198,7 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 		}
 	}
 }
+
 func (p *PNSExecutor) haveContainers(containerNames []string) bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
