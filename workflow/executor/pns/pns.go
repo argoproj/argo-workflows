@@ -154,11 +154,13 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 		log.Info("container PID still unknown (maybe due to short running main container)")
 		err := p.K8sAPIExecutor.Until(ctx, func(pod *corev1.Pod) bool {
 			for _, c := range pod.Status.ContainerStatuses {
-				p.mu.Lock()
 				containerID := execcommon.GetContainerID(c.ContainerID)
-				p.containers[c.Name] = containerID
-				p.mu.Unlock()
-				log.Infof("mapped container name %q to container ID %q", c.Name, containerID)
+				if containerID != "" {
+					p.mu.Lock()
+					p.containers[c.Name] = containerID
+					p.mu.Unlock()
+					log.Infof("mapped container name %q to container ID %q", c.Name, containerID)
+				}
 			}
 			return p.haveContainers(allContainerNames)
 		})
