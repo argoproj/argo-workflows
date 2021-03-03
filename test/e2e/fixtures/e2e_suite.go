@@ -107,6 +107,7 @@ func (s *E2ESuite) DeleteResources() {
 			println("deleting ", r.Resource)
 			err := resourceInterface.DeleteCollection(ctx, deleteOptions, hasTestLabel)
 			s.CheckError(err)
+			// TODO - remove and see if works OK after
 			list, err := resourceInterface.List(ctx, hasTestLabel)
 			s.CheckError(err)
 			if len(list.Items) == 0 {
