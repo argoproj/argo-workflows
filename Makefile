@@ -365,7 +365,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose
+	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
 ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui lint
@@ -465,25 +465,25 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-cli
-test-cli: ./dist/argo pull-images
+test-cli: ./dist/argo
 	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
-test-e2e-cron: pull-images
+test-e2e-cron:
 	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: test-executor
-test-executor: pull-images
+test-executor:
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
 .PHONY: test-examples
-test-examples: ./dist/argo pull-images
+test-examples: ./dist/argo
 	./hack/test-examples.sh
 
 .PHONY: test-functional
-test-functional: pull-images
+test-functional:
 	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
 
 # clean
