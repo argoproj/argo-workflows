@@ -87,7 +87,7 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 	key := ref.GetKeyOr(cm.Annotations["workflows.argoproj.io/default-artifact-repository"])
 	value, ok := cm.Data[key]
 	if !ok {
-		return nil, nil, fmt.Errorf(`config map missing key %s for artifact repository ref "%v"`, ref, key)
+		return nil, nil, fmt.Errorf(`config map missing key "%s" for artifact repository ref "%v"`, key, ref)
 	}
 	repo := &config.ArtifactRepository{}
 	// we need the fully filled out ref so we can store it in the workflow status and it will never change
