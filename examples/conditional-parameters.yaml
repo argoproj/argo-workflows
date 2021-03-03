@@ -15,8 +15,6 @@ metadata:
     workflows.argoproj.io/version: '>= 3.1.0'
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
-      assert nodes["coinflip"]["phase"] == "Succeeded"
-      assert nodes["coinflip"]["outputs"]["exitCode"] == "0"
 spec:
   entrypoint: coinflip
   templates:
