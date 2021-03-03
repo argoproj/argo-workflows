@@ -15,13 +15,10 @@ metadata:
     workflows.argoproj.io/version: '>= 3.1.0'
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
-      assert nodes["printmessage"]["phase"] == "Succeeded"
-      assert nodes["printmessage"]["outputs"]["exitCode"] == "0"
+      assert nodes["coinflip"]["phase"] == "Succeeded"
+      assert nodes["coinflip"]["outputs"]["exitCode"] == "0"
 spec:
   entrypoint: coinflip
-  volumes:
-    - name: workdir
-      emptyDir: {}
   templates:
     - name: coinflip
       dag:

@@ -5937,4 +5937,3 @@ func TestHasOutputResultRef(t *testing.T) {
 	assert.True(t, hasOutputResultRef("generate-random", &wf.Spec.Templates[0]))
 	assert.True(t, hasOutputResultRef("generate-random-1", &wf.Spec.Templates[0]))
 }
-

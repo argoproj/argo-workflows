@@ -7,10 +7,10 @@ Both fields will support [expr](https://github.com/antonmedv/expr/blob/master/do
 
 ###Additional Custom functions
 Few custom function added to support more use cases.
-1. `asInt`    - convert the string to integer (e.g: asInt('1'))
-2. `asFloat`  - convert the string to Float (e.g: asFloat('1.23'))
-3. `string`   - convert the  int/float to string (e.g: string(1))
-4. `jsonpath` - Extract the element from Json using jsonpath (e.g: jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" ) )
+1. `asInt`    - convert the string to integer (e.g: `asInt('1')`)
+2. `asFloat`  - convert the string to Float (e.g: `asFloat('1.23')`)
+3. `string`   - convert the  int/float to string (e.g: `string(1)`)
+4. `jsonpath` - Extract the element from Json using jsonpath (e.g: `jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" )` )
 5. [sprig](http://masterminds.github.io/sprig/) - Support all `sprig` functions
 
 ##Conditional Artifacts
