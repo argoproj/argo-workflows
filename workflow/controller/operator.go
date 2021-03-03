@@ -1185,21 +1185,24 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-	if node.Outputs == nil {
-		node.Outputs = &wfv1.Outputs{}
-	}
 	// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
 
 	if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
 		woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-		updated = true
+		if node.Outputs == nil {
+			node.Outputs = &wfv1.Outputs{}
+		}
 		if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
 			node.Phase = wfv1.NodeError
 			node.Message = err.Error()
 		}
+		updated = true
 	}
 
-	if exitCode := getExitCode(pod); exitCode != nil && node.Outputs.ExitCode == nil {
+	if exitCode := getExitCode(pod); exitCode != nil {
+		if node.Outputs == nil {
+			node.Outputs = &wfv1.Outputs{}
+		}
 		node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(exitCode))
 		updated = true
 	}
