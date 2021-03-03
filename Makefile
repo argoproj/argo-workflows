@@ -95,14 +95,14 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	go mod vendor
+	[ -e ./vendor ] || go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
 
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    go mod vendor
+    [ -e ./vendor ] || go mod vendor
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -298,15 +298,15 @@ $(GOPATH)/bin/goimports:
 	$(call go_install,golang.org/x/tools/cmd/goimports)
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	go mod vendor
-	[ -e v3 ] || ln -s . v3
+	[ -e ./vendor ] || go mod vendor
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import $(CURDIR)/vendor
 	touch pkg/apis/workflow/v1alpha1/generated.proto
-	rm -rf v3
+	[ -e ./v3 ] && rm -rf v3
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
@@ -364,20 +364,19 @@ $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.36.0
 
 .PHONY: lint
-lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+lint: $(GOPATH)/bin/golangci-lint
 	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
-	# Lint UI files
-ifeq ($(STATIC_FILES),true)
-	yarn --cwd ui lint
-endif
+	# Lint swagger files
+	swagger validate api/openapi-spec/swagger.json
+	go test ./api/openapi-spec
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go dist/argosay
+test: dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
@@ -512,30 +511,30 @@ clean:
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
-	[ -e v3 ] || ln -s . v3
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	rm -rf v3
+	[ -e ./v3 ] && rm -rf v3
 
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
-	[ -e v3 ] || ln -s . v3
-	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
-		"deepcopy,client,informer,lister" \
-		github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
-		workflow:v1alpha1 \
-		--go-header-file ./hack/custom-boilerplate.go.txt
-	rm -rf v3
+	[ -e ./vendor ] || go mod vendor
+	[ -e ./v3 ] || ln -s . v3
+	go run ./vendor/k8s.io/code-generator/cmd/deepcopy-gen --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 -O zz_generated.deepcopy --bounding-dirs github.com/argoproj/argo-workflows/v3/pkg/apis --go-header-file ./hack/custom-boilerplate.go.txt
+	go run ./vendor/k8s.io/code-generator/cmd/client-gen --clientset-name versioned --input-base  --input github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 --output-package github.com/argoproj/argo-workflows/v3/pkg/client/clientset --go-header-file ./hack/custom-boilerplate.go.txt
+	go run ./vendor/k8s.io/code-generator/cmd/lister-gen --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 --output-package github.com/argoproj/argo-workflows/v3/pkg/client/listers --go-header-file ./hack/custom-boilerplate.go.txt
+	go run ./vendor/k8s.io/code-generator/cmd/informer-gen --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 --versioned-clientset-package github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned --listers-package github.com/argoproj/argo-workflows/v3/pkg/client/listers --output-package github.com/argoproj/argo-workflows/v3/pkg/client/informers --go-header-file ./hack/custom-boilerplate.go.txt
+	[ -e ./v3 ] && rm -rf v3
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
 
-pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	# We have `hack/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
 	go run ./hack/swagger secondaryswaggergen
 
@@ -554,8 +553,6 @@ dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger
 
 api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
-	swagger validate api/openapi-spec/swagger.json
-	go test ./api/openapi-spec
 
 api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
 	go run ./hack/jsonschema
@@ -571,7 +568,7 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
-docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
+docs/cli/argo.md: $(CLI_PKGS) hack/cli/main.go
 	go run ./hack/cli
 
 .PHONY: validate-examples
