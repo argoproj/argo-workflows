@@ -685,6 +685,9 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 		if art.From == "" && !art.HasLocationOrKey() {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
 		}
+		if art.From != "" && art.FromExpression != "" {
+			return errors.Errorf(errors.CodeBadRequest, "%s%s shouldn't have both `from` and `fromExpression` in Artifact", prefix, art.Name)
+		}
 	}
 	return nil
 }
@@ -900,8 +903,11 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 					return errors.Errorf(errors.CodeBadRequest, "%s .jqFilter or jsonPath must be specified for %s templates", paramRef, tmplType)
 				}
 			case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
-				if param.ValueFrom.Parameter == "" {
-					return errors.Errorf(errors.CodeBadRequest, "%s.parameter must be specified for %s templates", paramRef, tmplType)
+				if param.ValueFrom.Parameter == "" && param.ValueFrom.Expression == "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s.parameter or expression must be specified for %s templates", paramRef, tmplType)
+				}
+				if param.ValueFrom.Expression != "" && param.ValueFrom.Parameter != "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s shouldn't have both `from` and `expression` specified in `ValueFrom` for %s templates", paramRef, tmplType)
 				}
 			}
 		}
@@ -969,7 +975,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 		return errors.Errorf(errors.CodeBadRequest, "%s does not have valueFrom or value specified", paramRef)
 	}
 	paramTypes := 0
-	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter} {
+	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter, param.ValueFrom.Expression} {
 		if value != "" {
 			paramTypes++
 		}
@@ -979,7 +985,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 	}
 	switch paramTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "valueFrom type unspecified. choose one of: path, jqFilter, jsonPath, parameter, raw")
+		return errors.New(errors.CodeBadRequest, "valueFrom type unspecified. choose one of: path, jqFilter, jsonPath, parameter, raw, expression")
 	case 1:
 	default:
 		return errors.New(errors.CodeBadRequest, "multiple valueFrom types specified. choose one of: path, jqFilter, jsonPath, parameter, raw")
