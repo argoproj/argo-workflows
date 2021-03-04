@@ -51,9 +51,11 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 			if origErr == nil {
 				return true, nil
 			}
-			if origErr.(oss.ServiceError).Code != "NoSuchKey" {
-				log.Warnf("Failed to get file: %v", origErr)
-				return false, nil
+			if ossErr, ok := origErr.(oss.ServiceError); ok {
+				if ossErr.Code != "NoSuchKey" {
+					log.Warnf("Failed to get file: %v", origErr)
+					return false, nil
+				}
 			}
 			// If we get here, the error was a NoSuchKey. The key might be a directory.
 			// There is only one method in OSS for downloading objects that does not differentiate between a file
