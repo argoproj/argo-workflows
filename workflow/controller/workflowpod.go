@@ -295,7 +295,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
 
-	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && tmpl.GetType() != wfv1.TemplateTypeResource {
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
 		for i, c := range pod.Spec.InitContainers {
 			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 			pod.Spec.InitContainers[i] = c
