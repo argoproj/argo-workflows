@@ -26,17 +26,16 @@ spec:
         volumeMounts:
           - mountPath: /workspace
             name: workspace
-        graph:
-          containers:
-            - name: a
-              image: argoproj/argosay:v2
-            - name: b
-              image: argoproj/argosay:v2
-            - name: main
-              image: argoproj/argosay:v2
-              dependencies:
-                - a
-                - b
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+          - name: main
+            image: argoproj/argosay:v2
+            dependencies:
+              - a
+              - b
       outputs:
         parameters:
           - name: message
