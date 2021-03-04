@@ -5889,3 +5889,52 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
 }
+
+const resultVarRefWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: bash-script-example
+  templates:
+  - name: bash-script-example
+    steps:
+    - - name: generate-random
+        template: gen-random-int
+    - - name: generate-random-1
+        template: gen-random-int
+    - - name: from
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.generate-random.outputs.result}}"
+    outputs:
+      parameters:
+        - name: stepresult
+          valueFrom:
+            expression: "steps['generate-random-1'].outputs.result"
+
+  - name: gen-random-int
+    script:
+      image: debian:9.4
+      command: [bash]
+      source: |
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+`
+
+func TestHasOutputResultRef(t *testing.T) {
+	wf := unmarshalWF(resultVarRefWf)
+	assert.True(t, hasOutputResultRef("generate-random", &wf.Spec.Templates[0]))
+	assert.True(t, hasOutputResultRef("generate-random-1", &wf.Spec.Templates[0]))
+}
