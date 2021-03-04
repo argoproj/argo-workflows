@@ -2,9 +2,11 @@ package oss
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -45,7 +47,20 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 				return false, err
 			}
 			objectName := inputArtifact.OSS.Key
-			err = bucket.GetObjectToFile(objectName, path)
+			origErr := bucket.GetObjectToFile(objectName, path)
+			if origErr == nil {
+				return true, nil
+			}
+			if ossErr, ok := origErr.(oss.ServiceError); ok {
+				if ossErr.Code != "NoSuchKey" {
+					log.Warnf("Failed to get file: %v", origErr)
+					return false, nil
+				}
+			}
+			// If we get here, the error was a NoSuchKey. The key might be a directory.
+			// There is only one method in OSS for downloading objects that does not differentiate between a file
+			// and a directory so we append the a trailing slash here to differentiate that prior to downloading.
+			err = bucket.GetObjectToFile(objectName+"/", path)
 			if err != nil {
 				return false, err
 			}
@@ -82,6 +97,16 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 				return false, err
 			}
 			objectName := outputArtifact.OSS.Key
+			isDir, err := file.IsDirectory(path)
+			if err != nil {
+				log.Warnf("Failed to test if %s is a directory: %v", path, err)
+				return false, nil
+			}
+			// There is only one method in OSS for uploading objects that does not differentiate between a file and a directory
+			// so we append the a trailing slash here to differentiate that prior to uploading.
+			if isDir && !strings.HasSuffix(objectName, "/") {
+				objectName += "/"
+			}
 			err = bucket.PutObjectFromFile(objectName, path)
 			if err != nil {
 				return false, err
