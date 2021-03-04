@@ -14,6 +14,7 @@ import (
 	executil "github.com/argoproj/pkg/exec"
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -30,7 +31,7 @@ type PNSExecutor struct {
 	podName   string
 	namespace string
 
-	// mu for `containerNameToPID`, and `pidFileHandles`
+	// mu for `containerNameToPID``
 	mu sync.RWMutex
 
 	containerNameToPID map[string]int
@@ -142,7 +143,7 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 	p.rootFS = rootFS
 
 	/*
-		What is a "short running container"?:
+		What is a "short running container" and "late starting container"?:
 
 		Short answer: any container that exits in <5s
 
@@ -151,18 +152,32 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 		Some containers are short running and we cannot determine their PIDs because they exit too quickly.
 		This loop allows 5s for `pollRootProcesses` find PIDs, so we define any container that exits <5s as short running
 
-		We assume any container that does not appeared within 5s has completed.
+		Unfortunately, we cannot assume that a container that did not appeared within the 5s has completed.
+		They may still be in `ContainerCreating` state - i.e. late starting.
 	*/
-	for i := 0; !p.haveContainerPIDs(allContainerNames) && i < 5; i++ {
+	for i := 0; !p.haveContainerPIDs(containerNames) && i < 5; i++ {
 		time.Sleep(1 * time.Second)
 	}
 
+	if !p.haveContainerPIDs(containerNames) {
+		log.Info("container PIDs still unknown (maybe short running container, or late starting)")
+		terminated := make(map[string]bool)
+		return p.K8sAPIExecutor.Until(ctx, func(pod *corev1.Pod) bool {
+			for _, c := range pod.Status.ContainerStatuses {
+				terminated[c.Name] = c.State.Terminated != nil
+			}
+			for _, n := range containerNames {
+				if !terminated[n] {
+					return false
+				}
+			}
+			return true
+		})
+	}
+
+OUTER:
 	for _, containerName := range containerNames {
 		pid := p.getContainerPID(containerName)
-		if pid == 0 {
-			log.Infof("no container PID found for %q - assuming it was short running", containerName)
-			continue
-		}
 		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
 		for {
 			select {
@@ -175,12 +190,13 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 				}
 				if p == nil {
 					log.Infof("%q pid %d completed", containerName, pid)
-					return nil
+					continue OUTER
 				}
 				time.Sleep(3 * time.Second)
 			}
 		}
 	}
+
 	return nil
 }
 
