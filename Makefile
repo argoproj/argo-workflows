@@ -131,7 +131,7 @@ define docker_pull
 endef
 
 define gen-static-stub
-	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
+	[ -e ./server/static/files.go ] || cp ./server/static/files.go.stub ./server/static/files.go
 endef
 
 define delete-static-stub
