@@ -6,26 +6,23 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
-      conditional-artifacts provide a way to choose the output artifacts based on expression.
-      In this example
-      the 'coinflip' DAG template  has two steps which will run based `when` condition.
-      Based on condition one of step may not execute. So Step template output artifact should assign
-      executed step output artifacts.
-      `fromExpression` in output parameter can have expression to select the artifacts.
+      Conditional artifacts provides a way to choose the output artifacts based on an expression.
+
+      In this example the DAG template has two tasks which will run conditionall using `when`.
+
+      Based on the condition one of steps may not execute. The step template output's artifact will be set to the
+      executed step's output artifacts.
     workflows.argoproj.io/version: '>= 3.1.0'
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
 spec:
-  entrypoint: coinflip
-  volumes:
-    - name: workdir
-      emptyDir: {}
+  entrypoint: main
   templates:
-    - name: coinflip
+    - name: main
       dag:
         tasks:
           - name: flip-coin
-            template: flipcoin1
+            template: flip-coin
           - name: heads
             depends: flip-coin
             template: heads
@@ -36,45 +33,37 @@ spec:
             when: "{{tasks.flip-coin.outputs.result}} == tails"
       outputs:
         artifacts:
-          - name: stepresult
-            fromExpression: "tasks['flip-coin'].outputs.result == 'heads'?tasks.heads.outputs.artifacts.headsresult:tasks.tails.outputs.artifacts.tailsresult"
-    
-    - name: flipcoin1
+          - name: result
+            fromExpression: "tasks['flip-coin'].outputs.result == 'heads' ? tasks.heads.outputs.artifacts.result : tasks.tails.outputs.artifacts.result"
+
+    - name: flip-coin
       script:
         image: python:alpine3.6
-        command: [python]
+        command: [ python ]
         source: |
           import random
-          result = "heads" if random.randint(0,1) == 0 else "tails"
-          print(result)
-    
+          print("heads" if random.randint(0,1) == 0 else "tails")
+
     - name: heads
       script:
         image: python:alpine3.6
-        command: [python]
+        command: [ python ]
         source: |
-          file = open("result.txt", "w")
-          file.write("it was heads")
-          file.close()
-        volumeMounts:
-          - name: workdir
-            mountPath: /mnt/vol
+          with open("result.txt", "w") as f:
+            f.write("it was heads")
       outputs:
         artifacts:
-          - name: headsresult
+          - name: result
             path: /result.txt
+
     - name: tails
       script:
         image: python:alpine3.6
-        command: [python]
+        command: [ python ]
         source: |
-          file = open("result.txt", "w")
-          file.write("it was tails")
-          file.close()
-        volumeMounts:
-          - name: workdir
-            mountPath: /mnt/vol
+          with open("result.txt", "w") as f:
+            f.write("it was heads")
       outputs:
         artifacts:
-          - name: tailsresult
+          - name: result
             path: /result.txt
