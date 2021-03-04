@@ -124,4 +124,5 @@ In addition, the following projects are **officially** using Argo Workflows:
 
 1. [Couler](https://github.com/couler-proj/couler)
 1. [Kubeflow](https://www.kubeflow.org/)
-1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+2. [Onepanel](https://github.com/onepanelio/onepanel)
+3. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
