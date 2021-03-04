@@ -124,10 +124,20 @@ define docker_build
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 endef
+
 define docker_pull
 	docker pull $(1)
 	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
+
+define gen-static-stub
+	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
+endef
+
+define delete-static-stub
+	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
+endef
+
 
 ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
@@ -236,13 +246,13 @@ dist/argoexec.image: $(ARGOEXEC_PKGS)
 # generation
 
 .PHONY: codegen
-codegen: codegen-types codegen-swagger codegen-docs
+codegen: types swagger docs
 
-.PHONY: codegen-types
-codegen-types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
+.PHONY: types
+types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 
-.PHONY: codegen-swagger
-codegen-swagger: \
+.PHONY: swagger
+swagger: \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
@@ -257,8 +267,8 @@ codegen-swagger: \
 	api/openapi-spec/swagger.json \
 	api/jsonschema/schema.json
 
-.PHONY: codegen-docs
-codegen-docs: \
+.PHONY: docs
+docs: \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
@@ -375,14 +385,12 @@ lint: $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 
-    # If the static file does not exist, generate a mock file with required function signatures
-	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
-	# Lint Go files
+	$(call gen-static-stub)
 
+	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 
-    # If we generated a mock file, delete it
-	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
+	$(call delete-static-stub)
 
 	# Lint swagger files
 	swagger validate api/openapi-spec/swagger.json
@@ -391,13 +399,11 @@ lint: $(GOPATH)/bin/golangci-lint
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: dist/argosay
-    # If the static file does not exist, generate a mock file with required function signatures
-	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
+	$(call gen-static-stub)
 
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
-    # If we generated a mock file, delete it
-	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
+	$(call delete-static-stub)
 
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
@@ -590,13 +596,9 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 
 # generates several other files
 docs/cli/argo.md: $(CLI_PKGS) hack/cli/main.go
-    # If the static file does not exist, generate a mock file with required function signatures
-	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
-
+	$(call gen-static-stub)
 	go run ./hack/cli
-	
-    # If we generated a mock file, delete it
-	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
+	$(call delete-static-stub)
 
 .PHONY: validate-examples
 validate-examples: api/jsonschema/schema.json
