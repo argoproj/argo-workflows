@@ -19,7 +19,7 @@ func NewLintCommand() *cobra.Command {
 		output    string
 	)
 
-	allKinds := []string{wf.WorkflowSingular, wf.WorkflowTemplateSingular, wf.CronWorkflowSingular, wf.ClusterWorkflowTemplateSingular}
+	allKinds := []string{wf.WorkflowPlural, wf.WorkflowTemplatePlural, wf.CronWorkflowPlural, wf.ClusterWorkflowTemplatePlural}
 
 	command := &cobra.Command{
 		Use:   "lint FILE...",
@@ -29,9 +29,9 @@ func NewLintCommand() *cobra.Command {
 
   argo lint ./manifests
 
-# Lint only manifests of kinds Workflow and CronWorkflow from stdin:
+# Lint only manifests of Workflows and CronWorkflows from stdin:
 
-  cat manifests.yaml | argo lint --kinds=workflow,cronworkflow -`,
+  cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			if len(args) == 0 {

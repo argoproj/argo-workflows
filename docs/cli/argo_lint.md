@@ -18,16 +18,16 @@ argo lint FILE... [flags]
 
   argo lint ./manifests
 
-# Lint only manifests of kinds Workflow and CronWorkflow from stdin:
+# Lint only manifests of Workflows and CronWorkflows from stdin:
 
-  cat manifests.yaml | argo lint --kinds=workflow,cronworkflow -
+  cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -
 ```
 
 ### Options
 
 ```
   -h, --help            help for lint
-      --kinds strings   Which kinds will be linted. Can be: workflow|workflowtemplate|cronworkflow|clusterworkflowtemplate (default [all])
+      --kinds strings   Which kinds will be linted. Can be: workflows|workflowtemplates|cronworkflows|clusterworkflowtemplates (default [all])
   -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
       --strict          Perform strict workflow validation (default true)
 ```

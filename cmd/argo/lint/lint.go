@@ -316,13 +316,13 @@ func getLintClients(client apiclient.Client, kinds []string) (ServiceClients, er
 	res := ServiceClients{}
 	for _, kind := range kinds {
 		switch kind {
-		case wf.WorkflowSingular, wf.WorkflowShortName:
+		case wf.WorkflowPlural, wf.WorkflowShortName:
 			res.WorkflowsClient = client.NewWorkflowServiceClient()
-		case wf.WorkflowTemplateSingular, wf.WorkflowTemplateShortName:
+		case wf.WorkflowTemplatePlural, wf.WorkflowTemplateShortName:
 			res.WorkflowTemplatesClient = client.NewWorkflowTemplateServiceClient()
-		case wf.CronWorkflowSingular, wf.CronWorkflowShortName:
+		case wf.CronWorkflowPlural, wf.CronWorkflowShortName:
 			res.CronWorkflowsClient = client.NewCronWorkflowServiceClient()
-		case wf.ClusterWorkflowTemplateSingular, wf.ClusterWorkflowTemplateShortName:
+		case wf.ClusterWorkflowTemplatePlural, wf.ClusterWorkflowTemplateShortName:
 			res.ClusterWorkflowTemplateClient = client.NewClusterWorkflowTemplateServiceClient()
 		default:
 			return res, fmt.Errorf("unknown kind: %s", kind)
