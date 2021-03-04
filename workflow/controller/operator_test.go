@@ -5907,7 +5907,7 @@ spec:
 
 	cancel, controller := newController()
 	defer cancel()
-
+	wf1 := wf.DeepCopy()
 	t.Run("StopStrategy", func(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -5932,7 +5932,7 @@ spec:
 
 	t.Run("TerminateStrategy", func(t *testing.T) {
 		ctx := context.Background()
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(wf1, controller)
 		woc.operate(ctx)
 
 		for _, node := range woc.wf.Status.Nodes {
@@ -5941,9 +5941,9 @@ spec:
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 		// Simulate the Terminate command
-		wf1 := woc.wf
-		wf1.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
-		woc1 := newWorkflowOperationCtx(wf1, controller)
+		wfOut := woc.wf
+		wfOut.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		woc1 := newWorkflowOperationCtx(wfOut, controller)
 		woc1.operate(ctx)
 
 		node := woc1.wf.Status.Nodes.FindByDisplayName("whalesay")
