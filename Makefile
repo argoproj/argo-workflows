@@ -28,7 +28,12 @@ VERSION               := $(GIT_TAG)
 endif
 
 # should we build the static files?
+ifneq (,$(filter $@,codegen|lint|test))
+STATIC_FILES          := false
+else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
+endif
+
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
@@ -130,15 +135,6 @@ define docker_pull
 	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
-define gen-static-stub
-	[ -e ./server/static/files.go ] || cp ./server/static/files.go.stub ./server/static/files.go
-endef
-
-define delete-static-stub
-	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
-endef
-
-
 ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
 	export GOPATH
@@ -155,24 +151,24 @@ images: cli-image executor-image controller-image
 .PHONY: cli
 cli: dist/argo
 
-ifeq ($(STATIC_FILES),true)
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
-else
-ui/dist/app/index.html:
-	@mkdir -p ui/dist/app
-	echo "Built without static files" > ui/dist/app/index.html
-endif
 
 $(GOPATH)/bin/staticfiles:
 	$(call go_install,bou.ke/staticfiles)
 
+ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
+else
+server/static/files.go:
+	# Pack UI into a Go file.
+	cp ./server/static/files.go.stub ./server/static/files.go
+endif
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -380,17 +376,13 @@ $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.36.0
 
 .PHONY: lint
-lint: $(GOPATH)/bin/golangci-lint
+lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
 
-	$(call gen-static-stub)
-
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
-
-	$(call delete-static-stub)
 
 	# Lint swagger files
 	swagger validate api/openapi-spec/swagger.json
@@ -398,12 +390,8 @@ lint: $(GOPATH)/bin/golangci-lint
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: dist/argosay
-	$(call gen-static-stub)
-
+test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
-
-	$(call delete-static-stub)
 
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
@@ -595,10 +583,8 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
-docs/cli/argo.md: $(CLI_PKGS) hack/cli/main.go
-	$(call gen-static-stub)
+docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
-	$(call delete-static-stub)
 
 .PHONY: validate-examples
 validate-examples: api/jsonschema/schema.json
