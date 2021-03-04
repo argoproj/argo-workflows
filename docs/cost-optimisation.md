@@ -107,16 +107,17 @@ This above limit is suitable for the Argo Server, as this is stateless. The Work
 
 > Suitable for all - unless you have large artifacts.
 
-Configure [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) to set the `executorResources`
+Configure [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) to set the `executor.resources`:
 
 ```yaml
-executorResources:
-  requests:
-    cpu: 100m
-    memory: 64Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
+executor: |
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 ```
 
 The correct values depend on the size of artifacts your workflows download. For artifacts > 10GB, memory usage may be large - [#1322](https://github.com/argoproj/argo-workflows/issues/1322).
