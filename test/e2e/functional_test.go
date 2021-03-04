@@ -44,24 +44,19 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
-		Wait(3*time.Second). // allow 3s for reconcilliation, we'll create a new pod
+		Wait(3*time.Second). // allow 3s for reconciliation, we'll create a new pod
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
 }
 
-// where you delete a running pod, and you have retry on error,
-// then the node is retried
-func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
+func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 	s.Given().
-		Workflow("@testdata/sleepy-retry-on-error-workflow.yaml").
+		Workflow("@testdata/retry-on-error-workflow.yaml").
 		When().
-		SubmitWorkflow(). // TODO
-		WaitForWorkflow(fixtures.ToHaveRunningPod).
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
+		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			assert.Len(t, status.Nodes, 2)
+			assert.Equal(t, wfv1.NodeTypeRetry, status.Nodes[metadata.Name].Type)
 		})
 }
 
