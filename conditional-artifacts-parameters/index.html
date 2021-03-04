@@ -36,7 +36,7 @@
     
     
       
-        <title>Running Locally - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Conditional Artifacts and Parameters - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#running-locally" tabindex="1" class="md-skip">
+      <a href="#conditional-artifacts-and-parameters" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              Running Locally
+              Conditional Artifacts and Parameters
             </span>
           
         </div>
@@ -296,10 +296,12 @@
       
       
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
     
     <label class="md-nav__link" for="nav-4">
       User Guide
@@ -375,10 +377,12 @@
           
           
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-2" type="checkbox" id="nav-4-2">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-2" type="checkbox" id="nav-4-2" checked>
     
     <label class="md-nav__link" for="nav-4-2">
       Intermediate
@@ -562,11 +566,63 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../conditional-artifacts-parameters/" title="Conditional Artifacts and Parameters" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Conditional Artifacts and Parameters
+      </label>
+    
+    <a href="./" title="Conditional Artifacts and Parameters" class="md-nav__link md-nav__link--active">
       Conditional Artifacts and Parameters
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#conditional-artifacts" title="Conditional Artifacts" class="md-nav__link">
+    Conditional Artifacts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditional-parameters" title="Conditional Parameters" class="md-nav__link">
+    Conditional Parameters
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-in-functions" title="Build-In Functions" class="md-nav__link">
+    Build-In Functions
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
         
@@ -1808,12 +1864,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6">
     
     <label class="md-nav__link" for="nav-6">
       Developer Guide
@@ -1853,56 +1907,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Running Locally
-      </label>
-    
-    <a href="./" title="Running Locally" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../running-locally/" title="Running Locally" class="md-nav__link">
       Running Locally
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#pre-requisites" title="Pre-requisites" class="md-nav__link">
-    Pre-requisites
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#clean" title="Clean" class="md-nav__link">
-    Clean
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -2052,15 +2061,22 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pre-requisites" title="Pre-requisites" class="md-nav__link">
-    Pre-requisites
+  <a href="#conditional-artifacts" title="Conditional Artifacts" class="md-nav__link">
+    Conditional Artifacts
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#clean" title="Clean" class="md-nav__link">
-    Clean
+  <a href="#conditional-parameters" title="Conditional Parameters" class="md-nav__link">
+    Conditional Parameters
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-in-functions" title="Build-In Functions" class="md-nav__link">
+    Build-In Functions
   </a>
   
 </li>
@@ -2081,58 +2097,78 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/running-locally.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/conditional-artifacts-parameters.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h1>
-<h2 id="pre-requisites">Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permanent link">&para;</a></h2>
+                <h1 id="conditional-artifacts-and-parameters">Conditional Artifacts and Parameters<a class="headerlink" href="#conditional-artifacts-and-parameters" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>The Conditional Artifacts and Parameters feature enables to assign the Step/DAG level artifacts or parameters based on
+expression. This introduces a new field <code>fromExpression: ...</code> under Step/DAG level output artifact and <code>expression: ...</code>
+under step/DAG level output parameter. Both use the
+<a href="https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md">expr</a> syntax.</p>
+<h2 id="conditional-artifacts">Conditional Artifacts<a class="headerlink" href="#conditional-artifacts" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">coinflip</span>
+  <span class="nt">steps</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+        <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">heads</span>
+        <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">heads</span>
+        <span class="nt">when</span><span class="p">:</span> <span class="s">&quot;{{steps.flip-coin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">heads&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tails</span>
+        <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tails</span>
+        <span class="nt">when</span><span class="p">:</span> <span class="s">&quot;{{steps.flip-coin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">tails&quot;</span>
+  <span class="nt">outputs</span><span class="p">:</span>
+    <span class="nt">artifacts</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">result</span>
+        <span class="nt">fromExpression</span><span class="p">:</span> <span class="s">&quot;steps[&#39;flip-coin&#39;].outputs.result</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;heads&#39;</span><span class="nv"> </span><span class="s">?</span><span class="nv"> </span><span class="s">steps.heads.outputs.artifacts.headsresult</span><span class="nv"> </span><span class="s">:</span><span class="nv"> </span><span class="s">steps.tails.outputs.artifacts.tailsresult&quot;</span>
+</code></pre></div>
 <ul>
-<li><a href="https://golang.org/dl/">Go</a> (The project currently uses version 1.13)</li>
-<li><a href="https://classic.yarnpkg.com/en/docs/install/#mac-stable">Yarn</a></li>
-<li><a href="https://docs.docker.com/get-docker/">Docker</a></li>
-<li><a href="https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md">Kustomize</a></li>
-<li><a href="http://google.github.io/proto-lens/installing-protoc.html">protoc</a> <code>brew install protobuf</code></li>
-<li><a href="https://stedolan.github.io/jq/download/"><code>jq</code></a></li>
-<li>A local Kubernetes cluster</li>
+<li><a href="../examples/conditional-artifacts.yaml">Steps artifacts example</a></li>
+<li><a href="../examples/dag-conditional-artifacts.yaml">DAG artifacts example</a></li>
 </ul>
-<p>We recommend using <a href="https://k3d.io/">K3D</a> to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:</p>
-<div class="codehilite"><pre><span></span><code><span class="nv">k3d</span> <span class="nv">cluster</span> <span class="nv">start</span> <span class="o">--</span><span class="k">wait</span>
+<h2 id="conditional-parameters">Conditional Parameters<a class="headerlink" href="#conditional-parameters" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">coinflip</span>
+      <span class="nt">steps</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+            <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+        <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">heads</span>
+            <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">heads</span>
+            <span class="nt">when</span><span class="p">:</span> <span class="s">&quot;{{steps.flipcoin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">heads&quot;</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tails</span>
+            <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tails</span>
+            <span class="nt">when</span><span class="p">:</span> <span class="s">&quot;{{steps.flipcoin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">tails&quot;</span>
+      <span class="nt">outputs</span><span class="p">:</span>
+        <span class="nt">parameters</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">stepresult</span>
+            <span class="nt">valueFrom</span><span class="p">:</span>
+              <span class="nt">expression</span><span class="p">:</span> <span class="s">&quot;steps.flipcoin.outputs.result</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;heads&#39;</span><span class="nv"> </span><span class="s">?</span><span class="nv"> </span><span class="s">steps.heads.outputs.result</span><span class="nv"> </span><span class="s">:</span><span class="nv"> </span><span class="s">steps.tails.outputs.result&quot;</span>
 </code></pre></div>
-
-<p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context automatically.</p>
-<p>Add to /etc/hosts:</p>
-<div class="codehilite"><pre><span></span><code><span class="mf">127.0.0.1</span> <span class="n">dex</span>
-<span class="mf">127.0.0.1</span> <span class="n">minio</span>
-<span class="mf">127.0.0.1</span> <span class="nb">pos</span><span class="n">tgres</span>
-<span class="mf">127.0.0.1</span> <span class="n">mysql</span>
-</code></pre></div>
-
-<p>To install into the “argo” namespace of your cluster: Argo and MinIO (for saving artifacts and logs):</p>
-<div class="codehilite"><pre><span></span><code>make start
-</code></pre></div>
-
-<p>If you want MySQL for the workflow archive:</p>
-<div class="codehilite"><pre><span></span><code>make start PROFILE=mysql
-</code></pre></div>
-
-<p>You’ll now have</p>
 <ul>
-<li>Argo Server API on https://localhost:2746</li>
-<li>UI on http://localhost:8080</li>
-<li>MinIO  http://localhost:9000 (use admin/password)</li>
+<li><a href="../examples/conditional-parameters.yaml">Steps parameter example</a></li>
+<li><a href="../examples/dag-conditional-parameters.yaml">DAG parameter example</a></li>
 </ul>
-<p>Either:</p>
-<ul>
-<li>Postgres on  http://localhost:5432, run <code>make postgres-cli</code> to access.</li>
-<li>MySQL on  http://localhost:3306, run <code>make mysql-cli</code> to access.</li>
-</ul>
-<p>At this point you’ll have everything you need to use the CLI and UI.</p>
-<h2 id="clean">Clean<a class="headerlink" href="#clean" title="Permanent link">&para;</a></h2>
-<p>To clean-up everything:</p>
-<div class="codehilite"><pre><span></span><code>make clean
-kubectl delete ns argo
-docker system prune -af
-</code></pre></div>
+<h2 id="build-in-functions">Build-In Functions<a class="headerlink" href="#build-in-functions" title="Permanent link">&para;</a></h2>
+<p>Convenient functions added to support more use cases:</p>
+<ol>
+<li><code>asInt</code>    - convert the string to integer (e.g: <code>asInt('1')</code>)</li>
+<li><code>asFloat</code>  - convert the string to Float (e.g: <code>asFloat('1.23')</code>)</li>
+<li><code>string</code>   - convert the int/float to string (e.g: <code>string(1)</code>)</li>
+<li><code>jsonpath</code> - Extract the element from Json using jsonpath (
+   e.g: <code>jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" )</code> )</li>
+<li>
+<p><a href="http://masterminds.github.io/sprig/">Sprig</a> - Support all <code>sprig</code> functions</p>
+</li>
+<li>
+<p><a href="../examples/fibonacci-seq-conditional-param.yaml">Advanced example: fibonacci Sequence</a></p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Expressions will decode the <code>-</code> as operator if template name has <code>-</code>, it will fail the expression. So here solution
+for template name which has <code>-</code> in its name. <code>step['one-two-three'].outputs.artifacts</code></p>
+</div>
                 
                   
                 
@@ -2153,7 +2189,7 @@ docker system prune -af
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../architecture/" title="Architecture" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../key-only-artifacts/" title="Key-Only Artifacts" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -2162,19 +2198,19 @@ docker system prune -af
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Architecture
+                Key-Only Artifacts
               </span>
             </div>
           </a>
         
         
-          <a href="../versioning/" title="Versioning" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../resource-duration/" title="Resource Duration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Versioning
+                Resource Duration
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
