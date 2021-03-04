@@ -56,21 +56,6 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 	s.scope[key] = artifact
 }
 
-// includeTmplParamsArts include template input parameters and artifacts in scope
-func (s *wfScope) includeTmplParamsArts() {
-	if s.tmpl == nil {
-		return
-	}
-	for _, param := range s.tmpl.Inputs.Parameters {
-		key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-		s.scope[key] = s.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
-	}
-	for _, param := range s.tmpl.Inputs.Artifacts {
-		key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
-		s.scope[key] = s.tmpl.Inputs.GetArtifactByName(param.Name)
-	}
-}
-
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	m := make(map[string]interface{})
