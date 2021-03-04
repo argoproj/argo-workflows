@@ -17,6 +17,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {ListWatch, sortByYouth} from '../../../shared/list-watch';
 import {Pagination, parseLimit} from '../../../shared/pagination';
+import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import * as Actions from '../../../shared/workflow-operations-map';
@@ -54,9 +55,9 @@ const allBatchActionsEnabled: Actions.OperationDisabled = {
     DELETE: false
 };
 
-const LOCAL_STORAGE_KEY = 'ListOptions';
-
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
+    private storage: ScopedLocalStorage;
+
     private get sidePanel() {
         return this.queryParam('sidePanel');
     }
@@ -87,25 +88,15 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         return options;
     }
 
-    private static saveOptions(newChanges: WorkflowListRenderOptions) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
-    }
-
-    private static getOptions(): WorkflowListRenderOptions {
-        if (localStorage.getItem(LOCAL_STORAGE_KEY) !== null) {
-            return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) as WorkflowListRenderOptions;
-        }
-        return {
-            paginationLimit: 0,
-            selectedPhases: []
-        } as WorkflowListRenderOptions;
-    }
-
     private listWatch: ListWatch<Workflow>;
 
     constructor(props: RouteComponentProps<State>, context: any) {
         super(props, context);
-        const savedOptions = WorkflowsList.getOptions();
+        this.storage = new ScopedLocalStorage('ListOptions');
+        const savedOptions = this.storage.getItem('options', {
+            paginationLimit: 0,
+            selectedPhases: []
+        } as WorkflowListRenderOptions);
         this.state = {
             pagination: {
                 offset: this.queryParam('offset'),
@@ -226,7 +217,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private saveHistory() {
-        WorkflowsList.saveOptions(this.options);
+        this.storage.setItem('options', this.options, {} as WorkflowListRenderOptions);
         this.url = uiUrl('workflows/' + this.state.namespace || '' + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
     }
