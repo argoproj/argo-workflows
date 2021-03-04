@@ -20,10 +20,9 @@ type WorkflowTemplateSuite struct {
 func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplate() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
-		WorkflowName("my-wf").
 		When().
 		CreateWorkflowTemplates().
-		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "--name", "my-wf", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
 		WaitForWorkflow().
@@ -36,7 +35,6 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplate() {
 func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-nested-template.yaml").
-		When().Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		When().
 		CreateWorkflowTemplates().
@@ -70,10 +68,9 @@ spec:
 func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-with-enum-values.yaml").
-		WorkflowName("my-wf-with-enum").
 		When().
 		CreateWorkflowTemplates().
-		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-with-enum-values", "--name", "my-wf-with-enum", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-with-enum-values", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
 		WaitForWorkflow().

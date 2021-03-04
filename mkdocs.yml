@@ -39,6 +39,7 @@ nav:
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
+          - container-set-template.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - artifact-repository-ref.md

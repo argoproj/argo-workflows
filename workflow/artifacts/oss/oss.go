@@ -92,5 +92,25 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 }
 
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
-	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
+	var files []string
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+		func() (bool, error) {
+			osscli, err := ossDriver.newOSSClient()
+			if err != nil {
+				return false, err
+			}
+			bucket, err := osscli.Bucket(artifact.OSS.Bucket)
+			if err != nil {
+				return false, err
+			}
+			results, err := bucket.ListObjects(oss.Prefix(artifact.OSS.Key))
+			if err != nil {
+				return false, err
+			}
+			for _, object := range results.Objects {
+				files = append(files, object.Key)
+			}
+			return true, nil
+		})
+	return files, err
 }
