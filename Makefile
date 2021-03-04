@@ -28,7 +28,7 @@ VERSION               := $(GIT_TAG)
 endif
 
 # should we build the static files?
-ifneq (,$(filter $@,codegen|lint|test))
+ifneq (,$(filter $@,codegen|lint|test|docs))
 STATIC_FILES          := false
 else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
@@ -166,7 +166,6 @@ server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 else
 server/static/files.go:
-	# Pack UI into a Go file.
 	cp ./server/static/files.go.stub ./server/static/files.go
 endif
 
