@@ -14,6 +14,7 @@ import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
+import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
@@ -31,26 +32,16 @@ interface State {
 
 const defaultPaginationLimit = 10;
 
-const LOCAL_STORAGE_KEY = 'ArchiveListOptions';
-
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
-    private static saveOptions(newChanges: State) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
-    }
-
-    private static getOptions(): State {
-        if (localStorage.getItem(LOCAL_STORAGE_KEY) !== null) {
-            return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) as State;
-        }
-        return {
-            pagination: {limit: defaultPaginationLimit},
-            selectedPhases: []
-        } as State;
-    }
+    private storage: ScopedLocalStorage;
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        const savedOptions = ArchivedWorkflowList.getOptions();
+        this.storage = new ScopedLocalStorage('ArchiveListOptions');
+        const savedOptions = this.storage.getItem('options', {
+            pagination: {limit: defaultPaginationLimit},
+            selectedPhases: []
+        } as State);
         const phaseQueryParam = this.queryParams('phase');
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || savedOptions.pagination.limit},
@@ -150,7 +141,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private saveHistory() {
-        ArchivedWorkflowList.saveOptions(this.state);
+        this.storage.setItem('options', this.state, {} as State);
         this.url = uiUrl('archived-workflows/' + (this.state.namespace || '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
     }
