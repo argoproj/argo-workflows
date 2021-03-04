@@ -236,8 +236,13 @@ dist/argoexec.image: $(ARGOEXEC_PKGS)
 # generation
 
 .PHONY: codegen
-codegen: \
-	pkg/apis/workflow/v1alpha1/generated.proto \
+codegen: codegen-types codegen-swagger codegen-docs
+
+.PHONY: codegen-types
+codegen-types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
+
+.PHONY: codegen-swagger
+codegen-swagger: \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
@@ -247,12 +252,13 @@ codegen: \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
-	pkg/apis/workflow/v1alpha1/openapi_generated.go \
-	pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests/install.yaml \
 	api/openapi-spec/swagger.json \
-	api/jsonschema/schema.json \
+	api/jsonschema/schema.json
+
+.PHONY: codegen-docs
+codegen-docs: \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
@@ -377,7 +383,11 @@ lint: $(GOPATH)/bin/golangci-lint
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: dist/argosay
+    # If the static file does not exist, generate a mock file with required function signatures
+	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
+    # If we generated a mock file, delete it
+	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
 
 .PHONY: install
 install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
