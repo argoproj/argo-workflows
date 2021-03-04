@@ -13,7 +13,6 @@ import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {RetryWatch} from '../../../shared/retry-watch';
-import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
 import * as Operations from '../../../shared/workflow-operations-map';
@@ -41,13 +40,12 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     // boiler-plate
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
-    const storage = new ScopedLocalStorage('workflow-details');
 
     const [namespace] = useState(match.params.namespace);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
-    const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView') || storage.getItem('nodePanelView', ''));
+    const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
     useEffect(
@@ -260,22 +258,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     )}
                             </div>
                             <div className='workflow-details__step-info'>
-                                <button
-                                    className='workflow-details__step-info-close'
-                                    onClick={() => {
-                                        setNodeId(null);
-                                        setNodePanelView(null);
-                                    }}>
+                                <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
                                     <i className='argo-icon-close' />
                                 </button>
                                 {selectedNode && (
                                     <WorkflowNodeInfo
                                         node={selectedNode}
-                                        onTabSelected={selected => {
-                                            setNodePanelView(selected);
-                                            storage.setItem('nodePanelView', selected, '');
-                                        }}
-                                        selectedTabKey={nodePanelView || storage.getItem('nodePanelView', '')}
+                                        onTabSelected={setNodePanelView}
+                                        selectedTabKey={nodePanelView}
                                         workflow={workflow}
                                         links={links}
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
