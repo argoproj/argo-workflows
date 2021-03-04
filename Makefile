@@ -570,7 +570,11 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 
 # generates several other files
 docs/cli/argo.md: $(CLI_PKGS) hack/cli/main.go
+    # If the static file does not exist, generate a mock file with required function signatures
+	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
 	go run ./hack/cli
+    # If we generated a mock file, delete it
+	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
 
 .PHONY: validate-examples
 validate-examples: api/jsonschema/schema.json
