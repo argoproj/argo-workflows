@@ -54,8 +54,8 @@ func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
 	s.Given().
 		Workflow("@testdata/sleepy-retry-on-error-workflow.yaml").
 		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		SubmitWorkflow(). // TODO
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
 		WaitForWorkflow().
 		Then().
