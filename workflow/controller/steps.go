@@ -48,11 +48,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	stepTemplateScope := tmplCtx.GetTemplateScope()
 
 	stepsCtx := stepsContext{
-		boundaryID: node.ID,
-		scope: &wfScope{
-			tmpl:  tmpl,
-			scope: make(map[string]interface{}),
-		},
+		boundaryID:     node.ID,
+		scope:          createScope(tmpl),
 		tmplCtx:        tmplCtx,
 		onExitTemplate: opts.onExitTemplate,
 	}
@@ -384,10 +381,11 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 
 		// Step 2: replace all artifact references
 		for j, art := range newStep.Arguments.Artifacts {
-			if art.From == "" {
+			if art.From == "" && art.FromExpression == "" {
 				continue
 			}
-			resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
+
+			resolvedArt, err := scope.resolveArtifact(&art)
 			if err != nil {
 				if art.Optional {
 					continue

@@ -2305,7 +2305,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			if param.ValueFrom == nil {
 				return nil, fmt.Errorf("output parameters must have a valueFrom specified")
 			}
-			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
+			val, err := scope.resolveParameter(param.ValueFrom)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
@@ -2322,7 +2322,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	if len(tmpl.Outputs.Artifacts) > 0 {
 		outputs.Artifacts = make([]wfv1.Artifact, 0)
 		for _, art := range tmpl.Outputs.Artifacts {
-			resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
+			resolvedArt, err := scope.resolveArtifact(&art)
 			if err != nil {
 				// If the artifact was not found and is optional, don't mark an error
 				if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
@@ -2340,11 +2340,11 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
-	var variableRefName string
+	var varRefNamePattern string
 	if parentTmpl.DAG != nil {
-		variableRefName = "{{tasks." + name + ".outputs.result}}"
+		varRefNamePattern = "tasks([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
 	} else if parentTmpl.Steps != nil {
-		variableRefName = "{{steps." + name + ".outputs.result}}"
+		varRefNamePattern = "steps([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
 	}
 
 	jsonValue, err := json.Marshal(parentTmpl)
@@ -2352,7 +2352,11 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
 	}
 
-	return strings.Contains(string(jsonValue), variableRefName)
+	contain, err := regexp.MatchString(varRefNamePattern, string(jsonValue))
+	if err != nil {
+		log.Warnf("Error in Regex compilation. %s, %v", varRefNamePattern, err)
+	}
+	return contain
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
