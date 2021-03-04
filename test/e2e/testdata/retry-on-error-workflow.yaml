@@ -1,7 +1,7 @@
 kind: Workflow
 apiVersion: argoproj.io/v1alpha1
 metadata:
-  generateName: sleepy-retry-on-error-
+  generateName: retry-on-error-
 spec:
   retryStrategy:
     retryPolicy: OnError
@@ -12,5 +12,5 @@ spec:
       container:
         image: argoproj/argosay:v2
         args:
-          - sleep
-          - 10s
+          - exit
+          - "1"
