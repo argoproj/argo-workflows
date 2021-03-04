@@ -14,7 +14,6 @@ import (
 	executil "github.com/argoproj/pkg/exec"
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -161,18 +160,7 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 
 	if !p.haveContainerPIDs(containerNames) {
 		log.Info("container PIDs still unknown (maybe short running container, or late starting)")
-		terminated := make(map[string]bool)
-		return p.K8sAPIExecutor.Until(ctx, func(pod *corev1.Pod) bool {
-			for _, c := range pod.Status.ContainerStatuses {
-				terminated[c.Name] = c.State.Terminated != nil
-			}
-			for _, n := range containerNames {
-				if !terminated[n] {
-					return false
-				}
-			}
-			return true
-		})
+		return p.K8sAPIExecutor.Wait(ctx, containerNames, sidecarNames)
 	}
 
 OUTER:
