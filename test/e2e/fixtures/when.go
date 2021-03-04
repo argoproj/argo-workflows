@@ -169,7 +169,7 @@ var (
 	ToBeCompleted Condition = func(wf *wfv1.Workflow) (bool, string) {
 		return wf.Labels[common.LabelKeyCompleted] == "true", "to be completed"
 	}
-	ToStart Condition = func(wf *wfv1.Workflow) (bool, string) { return !wf.Status.StartedAt.IsZero(), "to start" }
+	ToStart          Condition = func(wf *wfv1.Workflow) (bool, string) { return !wf.Status.StartedAt.IsZero(), "to start" }
 	ToHaveRunningPod Condition = func(wf *wfv1.Workflow) (bool, string) {
 		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
