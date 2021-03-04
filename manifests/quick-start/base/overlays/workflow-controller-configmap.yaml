@@ -33,7 +33,6 @@ data:
         name: my-minio-cred
         key: secretkey
   metricsConfig: |
-    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090

@@ -2260,14 +2260,15 @@ argo delete --older 7d
 <blockquote>
 <p>Suitable for all - unless you have large artifacts.</p>
 </blockquote>
-<p>Configure <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> to set the <code>executorResources</code></p>
-<div class="highlight"><pre><span></span><code><span class="nt">executorResources</span><span class="p">:</span>
-  <span class="nt">requests</span><span class="p">:</span>
-    <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100m</span>
-    <span class="nt">memory</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">64Mi</span>
-  <span class="nt">limits</span><span class="p">:</span>
-    <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500m</span>
-    <span class="nt">memory</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">512Mi</span>
+<p>Configure <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> to set the <code>executor.resources</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">executor</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+  <span class="no">resources:</span>
+    <span class="no">requests:</span>
+      <span class="no">cpu: 100m</span>
+      <span class="no">memory: 64Mi</span>
+    <span class="no">limits:</span>
+      <span class="no">cpu: 500m</span>
+      <span class="no">memory: 512Mi</span>
 </code></pre></div>
 <p>The correct values depend on the size of artifacts your workflows download. For artifacts &gt; 10GB, memory usage may be large - <a href="https://github.com/argoproj/argo-workflows/issues/1322">#1322</a>.</p>
                 
