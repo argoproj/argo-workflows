@@ -24,6 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/apiserver"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 )
 
@@ -42,6 +43,7 @@ func NewServerCommand() *cobra.Command {
 		eventWorkerCount         int
 		frameOptions             string
 		accessControlAllowOrigin string
+		logFormat                string // --log-format
 	)
 
 	command := cobra.Command{
@@ -50,6 +52,7 @@ func NewServerCommand() *cobra.Command {
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoSever),
 		Run: func(c *cobra.Command, args []string) {
+			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
@@ -157,5 +160,6 @@ See %s`, help.ArgoSever),
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
+	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	return &command
 }
