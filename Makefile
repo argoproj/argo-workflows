@@ -374,8 +374,16 @@ lint: $(GOPATH)/bin/golangci-lint
 	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
+
+    # If the static file does not exist, generate a mock file with required function signatures
+	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
 	# Lint Go files
+
 	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
+
+    # If we generated a mock file, delete it
+	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
+
 	# Lint swagger files
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
@@ -385,7 +393,9 @@ lint: $(GOPATH)/bin/golangci-lint
 test: dist/argosay
     # If the static file does not exist, generate a mock file with required function signatures
 	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
+
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
+
     # If we generated a mock file, delete it
 	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
 
@@ -582,7 +592,9 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 docs/cli/argo.md: $(CLI_PKGS) hack/cli/main.go
     # If the static file does not exist, generate a mock file with required function signatures
 	[ -e ./server/static/files.go ] || echo -e "//DELETEME\npackage static\nimport \"net/http\"\nfunc ServeHTTP(w http.ResponseWriter, r *http.Request) {}\nfunc Hash(file string) string { return \"\" }" > ./server/static/files.go
+
 	go run ./hack/cli
+	
     # If we generated a mock file, delete it
 	[ $$(head -n 1 ./server/static/files.go) != "//DELETEME" ] || rm ./server/static/files.go
 
