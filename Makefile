@@ -383,10 +383,6 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 
-	# Lint swagger files
-	swagger validate api/openapi-spec/swagger.json
-	go test ./api/openapi-spec
-
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go dist/argosay
