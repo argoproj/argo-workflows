@@ -28,7 +28,12 @@ VERSION               := $(GIT_TAG)
 endif
 
 # should we build the static files?
+ifneq (,$(filter $@,codegen|lint|test|docs))
+STATIC_FILES          := false
+else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
+endif
+
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
@@ -95,14 +100,14 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	go mod vendor
+	[ -e ./vendor ] || go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
 
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    go mod vendor
+    [ -e ./vendor ] || go mod vendor
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -124,6 +129,7 @@ define docker_build
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 endef
+
 define docker_pull
 	docker pull $(1)
 	if [ $(K3D) = true ]; then k3d image import $(1); fi
@@ -145,24 +151,23 @@ images: cli-image executor-image controller-image
 .PHONY: cli
 cli: dist/argo
 
-ifeq ($(STATIC_FILES),true)
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
-else
-ui/dist/app/index.html:
-	@mkdir -p ui/dist/app
-	echo "Built without static files" > ui/dist/app/index.html
-endif
 
 $(GOPATH)/bin/staticfiles:
 	$(call go_install,bou.ke/staticfiles)
 
+ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
+else
+server/static/files.go:
+	cp ./server/static/files.go.stub ./server/static/files.go
+endif
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -236,8 +241,13 @@ dist/argoexec.image: $(ARGOEXEC_PKGS)
 # generation
 
 .PHONY: codegen
-codegen: \
-	pkg/apis/workflow/v1alpha1/generated.proto \
+codegen: types swagger docs
+
+.PHONY: types
+types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
+
+.PHONY: swagger
+swagger: \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
@@ -247,12 +257,13 @@ codegen: \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
-	pkg/apis/workflow/v1alpha1/openapi_generated.go \
-	pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests/install.yaml \
 	api/openapi-spec/swagger.json \
-	api/jsonschema/schema.json \
+	api/jsonschema/schema.json
+
+.PHONY: docs
+docs: \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
@@ -298,15 +309,15 @@ $(GOPATH)/bin/goimports:
 	$(call go_install,golang.org/x/tools/cmd/goimports)
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	go mod vendor
-	[ -e v3 ] || ln -s . v3
+	[ -e ./vendor ] || go mod vendor
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import $(CURDIR)/vendor
 	touch pkg/apis/workflow/v1alpha1/generated.proto
-	rm -rf v3
+	[ -e ./v3 ] && rm -rf v3
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
@@ -368,12 +379,9 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
+
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
-	# Lint UI files
-ifeq ($(STATIC_FILES),true)
-	yarn --cwd ui lint
-endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
@@ -509,30 +517,31 @@ clean:
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
-	[ -e v3 ] || ln -s . v3
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	rm -rf v3
+	[ -e ./v3 ] && rm -rf v3
 
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
-	[ -e v3 ] || ln -s . v3
+	[ -e ./vendor ] || go mod vendor
+	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
-		"deepcopy,client,informer,lister" \
-		github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
-		workflow:v1alpha1 \
-		--go-header-file ./hack/custom-boilerplate.go.txt
-	rm -rf v3
+	    "deepcopy,client,informer,lister" \
+	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
+	    workflow:v1alpha1 \
+	    --go-header-file ./hack/custom-boilerplate.go.txt
+	[ -e ./v3 ] && rm -rf v3
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
 
-pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	# We have `hack/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
 	go run ./hack/swagger secondaryswaggergen
 
@@ -551,8 +560,6 @@ dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger
 
 api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
-	swagger validate api/openapi-spec/swagger.json
-	go test ./api/openapi-spec
 
 api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
 	go run ./hack/jsonschema
