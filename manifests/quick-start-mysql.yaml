@@ -616,6 +616,10 @@ data:
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: k8sapi
+    - name: emissary
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: emissary
   executor: |
     resources:
       requests:
@@ -647,7 +651,6 @@ data:
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
   metricsConfig: |
-    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090

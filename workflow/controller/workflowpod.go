@@ -137,7 +137,7 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
@@ -164,14 +164,19 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
-	mainCtr.Name = common.MainContainerName
-	// Allow customization of main container resources.
-	if isResourcesSpecified(woc.controller.Config.MainContainer) {
-		mainCtr.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
-	}
-	// Container resources in workflow spec takes precedence over the main container's configuration in controller.
-	if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
-		mainCtr.Resources = *tmpl.Container.Resources.DeepCopy()
+	for i, c := range mainCtrs {
+		if c.Name == "" {
+			c.Name = common.MainContainerName
+		}
+		// Allow customization of main container resources.
+		if isResourcesSpecified(woc.controller.Config.MainContainer) {
+			c.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
+		}
+		// Container resources in workflow spec takes precedence over the main container's configuration in controller.
+		if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
+			c.Resources = *tmpl.Container.Resources.DeepCopy()
+		}
+		mainCtrs[i] = c
 	}
 
 	var activeDeadlineSeconds *int64
@@ -258,7 +263,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// each container sequentially in the order that they appear in this list. For PNS we want the
 	// wait container to start before the main, so that it always has the chance to see the main
 	// container's PID and root filesystem.
-	pod.Spec.Containers = append(pod.Spec.Containers, mainCtr)
+	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
@@ -747,7 +752,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
 	default:
 		return nil
 	}
@@ -798,17 +803,9 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 		return nil
 	}
 
-	if tmpl.Container != nil {
-		err := addVolumeRef(tmpl.Container.VolumeMounts)
-		if err != nil {
-			return err
-		}
-	}
-	if tmpl.Script != nil {
-		err := addVolumeRef(tmpl.Script.VolumeMounts)
-		if err != nil {
-			return err
-		}
+	err := addVolumeRef(tmpl.GetVolumeMounts())
+	if err != nil {
+		return err
 	}
 
 	for _, container := range tmpl.InitContainers {
@@ -890,13 +887,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// We also add the user supplied mount paths to the init container,
 			// in case the executor needs to load artifacts to this volume
 			// instead of the artifacts volume
-			tmplVolumeMounts := []apiv1.VolumeMount{}
-			if tmpl.Container != nil {
-				tmplVolumeMounts = tmpl.Container.VolumeMounts
-			} else if tmpl.Script != nil {
-				tmplVolumeMounts = tmpl.Script.Container.VolumeMounts
-			}
-			for _, mnt := range tmplVolumeMounts {
+			for _, mnt := range tmpl.GetVolumeMounts() {
 				mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
 				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
 			}
@@ -906,47 +897,37 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		}
 	}
 
-	mainCtrIndex := -1
-	for i, ctr := range pod.Spec.Containers {
-		switch ctr.Name {
-		case common.MainContainerName:
-			mainCtrIndex = i
-		}
-	}
-	if mainCtrIndex == -1 {
-		panic("Could not find main container in pod spec")
-	}
-	mainCtr := &pod.Spec.Containers[mainCtrIndex]
-
-	for _, art := range tmpl.Inputs.Artifacts {
-		if art.Path == "" {
-			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
-		}
-		if !art.HasLocationOrKey() && art.Optional {
-			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
-				art.Name, art.Path)
+	for i, c := range pod.Spec.Containers {
+		if c.Name != common.MainContainerName {
 			continue
 		}
-		overlap := common.FindOverlappingVolume(tmpl, art.Path)
-		if overlap != nil {
-			// artifact path overlaps with a mounted volume. do not mount the
-			// artifacts emptydir to the main container. init would have copied
-			// the artifact to the user's volume instead
-			woc.log.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
-				art.Name, art.Path, overlap.Name, overlap.MountPath)
-			continue
+		for _, art := range tmpl.Inputs.Artifacts {
+			if art.Path == "" {
+				return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
+			}
+			if !art.HasLocationOrKey() && art.Optional {
+				woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
+					art.Name, art.Path)
+				continue
+			}
+			overlap := common.FindOverlappingVolume(tmpl, art.Path)
+			if overlap != nil {
+				// artifact path overlaps with a mounted volume. do not mount the
+				// artifacts emptydir to the main container. init would have copied
+				// the artifact to the user's volume instead
+				woc.log.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
+					art.Name, art.Path, overlap.Name, overlap.MountPath)
+				continue
+			}
+			volMount := apiv1.VolumeMount{
+				Name:      artVol.Name,
+				MountPath: art.Path,
+				SubPath:   art.Name,
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volMount)
 		}
-		volMount := apiv1.VolumeMount{
-			Name:      artVol.Name,
-			MountPath: art.Path,
-			SubPath:   art.Name,
-		}
-		if mainCtr.VolumeMounts == nil {
-			mainCtr.VolumeMounts = make([]apiv1.VolumeMount, 0)
-		}
-		mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volMount)
+		pod.Spec.Containers[i] = c
 	}
-	pod.Spec.Containers[mainCtrIndex] = *mainCtr
 	return nil
 }
 
@@ -959,28 +940,30 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if tmpl.GetType() == wfv1.TemplateTypeResource || tmpl.GetType() == wfv1.TemplateTypeData {
 		return
 	}
-	mainCtrIndex := -1
+
 	waitCtrIndex := -1
-	var mainCtr *apiv1.Container
 	for i, ctr := range pod.Spec.Containers {
 		switch ctr.Name {
-		case common.MainContainerName:
-			mainCtrIndex = i
 		case common.WaitContainerName:
 			waitCtrIndex = i
 		}
 	}
-	if mainCtrIndex == -1 || waitCtrIndex == -1 {
-		panic("Could not find main or wait container in pod spec")
+	if waitCtrIndex == -1 {
+		log.Info("Could not find wait container in pod spec")
+		return
 	}
-	mainCtr = &pod.Spec.Containers[mainCtrIndex]
 	waitCtr := &pod.Spec.Containers[waitCtrIndex]
 
-	for _, mnt := range mainCtr.VolumeMounts {
-		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-		// ReadOnly is needed to be false for overlapping volume mounts
-		mnt.ReadOnly = false
-		waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, mnt)
+	for _, c := range pod.Spec.Containers {
+		if c.Name != common.MainContainerName {
+			continue
+		}
+		for _, mnt := range c.VolumeMounts {
+			mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
+			// ReadOnly is needed to be false for overlapping volume mounts
+			mnt.ReadOnly = false
+			waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, mnt)
+		}
 	}
 	pod.Spec.Containers[waitCtrIndex] = *waitCtr
 }
@@ -1094,16 +1077,10 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 // addInitContainers adds all init containers to the pod spec of the step
 // Optionally volume mounts from the main container to the init containers
 func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if len(tmpl.InitContainers) == 0 {
-		return
-	}
 	mainCtr := findMainContainer(pod)
-	if mainCtr == nil {
-		panic("Unable to locate main container")
-	}
 	for _, ctr := range tmpl.InitContainers {
 		log.Debugf("Adding init container %s", ctr.Name)
-		if ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
+		if mainCtr != nil && ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
 			mirrorVolumeMounts(mainCtr, &ctr.Container)
 		}
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
@@ -1113,16 +1090,10 @@ func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
 func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if len(tmpl.Sidecars) == 0 {
-		return
-	}
 	mainCtr := findMainContainer(pod)
-	if mainCtr == nil {
-		panic("Unable to locate main container")
-	}
 	for _, sidecar := range tmpl.Sidecars {
 		log.Debugf("Adding sidecar container %s", sidecar.Name)
-		if sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
+		if mainCtr != nil && sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
 			mirrorVolumeMounts(mainCtr, &sidecar.Container)
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
@@ -1256,15 +1227,12 @@ func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySele
 
 // findMainContainer finds main container
 func findMainContainer(pod *apiv1.Pod) *apiv1.Container {
-	var mainCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
-		if ctr.Name != common.MainContainerName {
-			continue
+		if common.MainContainerName == ctr.Name {
+			return &ctr
 		}
-		mainCtr = &ctr
-		break
 	}
-	return mainCtr
+	return nil
 }
 
 // mirrorVolumeMounts mirrors volumeMounts of source container to target container
