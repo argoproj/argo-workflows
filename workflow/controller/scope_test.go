@@ -9,7 +9,7 @@ import (
 )
 
 func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
-	scope := CreateScope(nil)
+	scope := createScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
 
@@ -31,7 +31,7 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 }
 
 func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtifactString string) {
-	scope := CreateScope(nil)
+	scope := createScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
 	originalArtifact := artifact.DeepCopy()
@@ -260,7 +260,7 @@ func TestResolveParameters(t *testing.T) {
 		},
 	}
 
-	scope := CreateScope(&tmpl)
+	scope := createScope(&tmpl)
 	scope.addParamToScope("steps.t1.outputs.parameters.result", "4")
 	scope.addParamToScope("workflows.arguments.param", "head")
 	scope.addParamToScope("steps.coin-flip.outputs.parameters.result", "5")

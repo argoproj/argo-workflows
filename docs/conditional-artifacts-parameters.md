@@ -15,6 +15,8 @@ Few custom function added to support more use cases.
 
 ##Conditional Artifacts
 [conditional-artifacts.yaml](../examples/conditional-artifacts.yaml)
+
+[dag-conditional-artifacts.yaml](../examples/dag-conditional-artifacts.yaml)
 ```yaml
  
     - name: coinflip
@@ -35,6 +37,8 @@ Few custom function added to support more use cases.
 ```
 ##Conditional Parameters
 [conditional-parameters.yaml](../examples/conditional-parameters.yaml)
+
+[dag-conditional-parameters.yaml](../examples/dag-conditional-parameters.yaml)
 ```yaml   
     - name: coinflip
       steps:

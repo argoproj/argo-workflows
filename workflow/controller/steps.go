@@ -49,7 +49,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 
 	stepsCtx := stepsContext{
 		boundaryID:     node.ID,
-		scope:          CreateScope(tmpl),
+		scope:          createScope(tmpl),
 		tmplCtx:        tmplCtx,
 		onExitTemplate: opts.onExitTemplate,
 	}

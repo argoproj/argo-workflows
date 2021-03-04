@@ -18,12 +18,21 @@ type wfScope struct {
 	scope map[string]interface{}
 }
 
-func CreateScope(tmpl *wfv1.Template) *wfScope {
+func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
 		tmpl:  tmpl,
 		scope: make(map[string]interface{}),
 	}
-	scope.includeTmplParamsArts()
+	if tmpl != nil {
+		for _, param := range scope.tmpl.Inputs.Parameters {
+			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+			scope.scope[key] = scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+		}
+		for _, param := range scope.tmpl.Inputs.Artifacts {
+			key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
+			scope.scope[key] = scope.tmpl.Inputs.GetArtifactByName(param.Name)
+		}
+	}
 	return scope
 }
 

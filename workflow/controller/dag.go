@@ -273,7 +273,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	// set outputs from tasks in order for DAG templates to support outputs
-	scope := CreateScope(tmpl)
+	scope := createScope(tmpl)
 	for _, task := range tmpl.DAG.Tasks {
 		taskNode := dagCtx.getTaskNode(task.Name)
 		if taskNode == nil {
@@ -491,7 +491,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
-	scope := CreateScope(dagCtx.tmpl)
+	scope := createScope(dagCtx.tmpl)
 	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, scope)
 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name)

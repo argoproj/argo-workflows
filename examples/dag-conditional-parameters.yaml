@@ -45,14 +45,14 @@ spec:
           import random
           result = "heads" if random.randint(0,1) == 0 else "tails"
           print(result)
-          
+    
     - name: heads
       script:
         image: python:alpine3.6
         command: [python]
         source: |
           print("heads")
-
+    
     - name: tails
       script:
         image: python:alpine3.6

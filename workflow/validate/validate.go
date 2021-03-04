@@ -686,7 +686,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
 		}
 		if art.From != "" && art.FromExpression != "" {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s should have either `from` or `fromExpression`", prefix, art.Name)
+			return errors.Errorf(errors.CodeBadRequest, "%s%s shouldn't have both `from` and `fromExpression` in Artifact", prefix, art.Name)
 		}
 	}
 	return nil
@@ -907,7 +907,7 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 					return errors.Errorf(errors.CodeBadRequest, "%s.parameter or expression must be specified for %s templates", paramRef, tmplType)
 				}
 				if param.ValueFrom.Expression != "" && param.ValueFrom.Parameter != "" {
-					return errors.Errorf(errors.CodeBadRequest, "%s should have either `from` or `expression` specified for %s templates", paramRef, tmplType)
+					return errors.Errorf(errors.CodeBadRequest, "%s shouldn't have both `from` and `expression` specified in `ValueFrom` for %s templates", paramRef, tmplType)
 				}
 			}
 		}
