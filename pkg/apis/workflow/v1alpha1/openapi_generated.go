@@ -339,6 +339,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"fromExpression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FromExpression, if defined, is evaluated to specify the value for the artifact",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -540,6 +547,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "If mode is set, apply the permission recursively into the artifact if it is a folder",
 							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"fromExpression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FromExpression, if defined, is evaluated to specify the value for the artifact",
+							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
@@ -4875,6 +4889,13 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"expression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Expression, if defined, is evaluated to specify the value for the parameter",
 							Type:        []string{"string"},
 							Format:      "",
 						},

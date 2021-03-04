@@ -76,6 +76,9 @@ message Artifact {
 
   // If mode is set, apply the permission recursively into the artifact if it is a folder
   optional bool recurseMode = 10;
+
+  // FromExpression, if defined, is evaluated to specify the value for the artifact
+  optional string fromExpression = 11;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -1273,6 +1276,9 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
+
+  // Expression, if defined, is evaluated to specify the value for the parameter
+  optional string expression = 8;
 }
 
 message Version {
