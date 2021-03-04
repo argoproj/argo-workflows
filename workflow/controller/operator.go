@@ -1131,7 +1131,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		if node.IsDaemoned() {
 			newPhase = wfv1.NodeSucceeded
 		} else {
-			newPhase, message = inferFailedReason(pod)
+			newPhase, message = woc.inferFailedReason(pod)
 			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
 				WithField("pod", pod.Name).Infof("Pod failed: %s", message)
 		}
@@ -1166,6 +1166,32 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 		woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
 			WithField("pod", pod.Name).Error(message)
+	}
+
+	for _, c := range pod.Status.ContainerStatuses {
+		ctrNodeName := fmt.Sprintf("%s.%s", node.Name, c.Name)
+		if woc.wf.GetNodeByName(ctrNodeName) == nil {
+			continue
+		}
+		switch {
+		case c.State.Waiting != nil:
+			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
+		case c.State.Running != nil:
+			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
+		case c.State.Terminated != nil:
+			exitCode := int(c.State.Terminated.ExitCode)
+			message := fmt.Sprintf("%s (exit code %d): %s", c.State.Terminated.Reason, exitCode, c.State.Terminated.Message)
+			switch exitCode {
+			case 0:
+				woc.markNodePhase(ctrNodeName, wfv1.NodeSucceeded)
+			case 64:
+				// special emissary exit code indicating the emissary errors, rather than the sub-process failure,
+				// (unless the sub-process coincidentally exits with code 64 of course)
+				woc.markNodePhase(ctrNodeName, wfv1.NodeError, message)
+			default:
+				woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, message)
+			}
+		}
 	}
 
 	if newDaemonStatus != nil {
@@ -1278,25 +1304,28 @@ func getPendingReason(pod *apiv1.Pod) string {
 
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
 // Returns a tuple of the new phase and message
-func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
+func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	if pod.Status.Message != "" {
 		// Pod has a nice error message. Use that.
 		return wfv1.NodeFailed, pod.Status.Message
 	}
 
+	tmpl := woc.findTemplate(pod)
+
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
 	order := func(n string) int {
-		order, ok := map[string]int{
-			common.InitContainerName: 0,
-			common.MainContainerName: 1,
-			common.WaitContainerName: 2,
-		}[n]
-		if ok {
-			return order
+		switch {
+		case n == common.InitContainerName:
+			return 0
+		case tmpl.IsMainContainerName(n):
+			return 1
+		case n == common.WaitContainerName:
+			return 2
+		default:
+			return 3
 		}
-		return 3
 	}
 
 	ctrs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
@@ -1326,12 +1355,12 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			msg = fmt.Sprintf("%s: %s", msg, t.Message)
 		}
 
-		switch ctr.Name {
-		case common.InitContainerName:
+		switch {
+		case ctr.Name == common.InitContainerName:
 			return wfv1.NodeError, msg
-		case common.MainContainerName:
+		case tmpl.IsMainContainerName(ctr.Name):
 			return wfv1.NodeFailed, msg
-		case common.WaitContainerName:
+		case ctr.Name == common.WaitContainerName:
 			return wfv1.NodeError, msg
 		default:
 			if t.ExitCode == 137 || t.ExitCode == 143 {
@@ -1721,6 +1750,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
 		node, err = woc.executeContainer(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeContainerSet:
+		node, err = woc.executeContainerSet(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSteps:
 		node, err = woc.executeSteps(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeScript:
@@ -1922,6 +1953,15 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 		}
 	}
 	return false
+}
+
+func (woc *wfOperationCtx) findTemplate(pod *apiv1.Pod) *wfv1.Template {
+	nodeName := pod.Annotations[common.AnnotationKeyNodeName]
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		return nil // I don't expect this to happen in production, just in tests
+	}
+	return woc.wf.GetTemplateByName(node.TemplateName)
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) {
@@ -2201,7 +2241,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	}
 
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
-	_, err = woc.createWorkflowPod(ctx, nodeName, *tmpl.Container, tmpl, &createWorkflowPodOpts{
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
@@ -2217,9 +2257,9 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
-	case wfv1.NodeTypeTaskGroup:
+	case wfv1.NodeTypeContainer, wfv1.NodeTypePod, wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {
 			return []string{node.ID}
 		}
@@ -2236,13 +2276,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	}
 	outbound := make([]string, 0)
 	for _, outboundNodeID := range node.OutboundNodes {
-		outNode := woc.wf.Status.Nodes[outboundNodeID]
-		if outNode.Type == wfv1.NodeTypePod {
-			outbound = append(outbound, outboundNodeID)
-		} else {
-			subOutIDs := woc.getOutboundNodes(outboundNodeID)
-			outbound = append(outbound, subOutIDs...)
-		}
+		outbound = append(outbound, woc.getOutboundNodes(outboundNodeID)...)
 	}
 	return outbound
 }
@@ -2259,7 +2293,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			if param.ValueFrom == nil {
 				return nil, fmt.Errorf("output parameters must have a valueFrom specified")
 			}
-			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
+			val, err := scope.resolveParameter(param.ValueFrom)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
@@ -2276,7 +2310,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	if len(tmpl.Outputs.Artifacts) > 0 {
 		outputs.Artifacts = make([]wfv1.Artifact, 0)
 		for _, art := range tmpl.Outputs.Artifacts {
-			resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
+			resolvedArt, err := scope.resolveArtifact(&art)
 			if err != nil {
 				// If the artifact was not found and is optional, don't mark an error
 				if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
@@ -2294,11 +2328,11 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
-	var variableRefName string
+	var varRefNamePattern string
 	if parentTmpl.DAG != nil {
-		variableRefName = "{{tasks." + name + ".outputs.result}}"
+		varRefNamePattern = "tasks([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
 	} else if parentTmpl.Steps != nil {
-		variableRefName = "{{steps." + name + ".outputs.result}}"
+		varRefNamePattern = "steps([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
 	}
 
 	jsonValue, err := json.Marshal(parentTmpl)
@@ -2306,7 +2340,11 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
 	}
 
-	return strings.Contains(string(jsonValue), variableRefName)
+	contain, err := regexp.MatchString(varRefNamePattern, string(jsonValue))
+	if err != nil {
+		log.Warnf("Error in Regex compilation. %s, %v", varRefNamePattern, err)
+	}
+	return contain
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
@@ -2339,7 +2377,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	_, err = woc.createWorkflowPod(ctx, nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
@@ -2488,7 +2526,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 			resultsList = append(resultsList, item)
 		}
 	}
-	if tmpl.GetType() == wfv1.TemplateTypeScript || tmpl.GetType() == wfv1.TemplateTypeContainer {
+	if tmpl.HasOutput() {
 		resultsJSON, err := json.Marshal(resultsList)
 		if err != nil {
 			return err
@@ -2631,7 +2669,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	_, err := woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
+	_, err := woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
@@ -2654,7 +2692,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "data", string(dataTemplate)}
-	_, err = woc.createWorkflowPod(ctx, nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
