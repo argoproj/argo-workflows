@@ -13,6 +13,7 @@ import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {RetryWatch} from '../../../shared/retry-watch';
+import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
 import * as Operations from '../../../shared/workflow-operations-map';
@@ -40,25 +41,28 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     // boiler-plate
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
+    const storage = new ScopedLocalStorage('workflow-details');
 
     const [namespace] = useState(match.params.namespace);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
+    const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView') || storage.getItem('nodePanelView', ''));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
     useEffect(
         useQueryParams(history, p => {
             setTab(p.get('tab') || 'workflow');
             setNodeId(p.get('nodeId'));
+            setNodePanelView(p.get('nodePanelView'));
             setSidePanel(p.get('sidePanel'));
         }),
         [history]
     );
 
     useEffect(() => {
-        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, sidePanel}));
-    }, [namespace, name, tab, nodeId, sidePanel]);
+        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
+    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
 
     const [workflow, setWorkflow] = useState<Workflow>();
     const [links, setLinks] = useState<Link[]>();
@@ -256,12 +260,22 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     )}
                             </div>
                             <div className='workflow-details__step-info'>
-                                <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
+                                <button
+                                    className='workflow-details__step-info-close'
+                                    onClick={() => {
+                                        setNodeId(null);
+                                        setNodePanelView(null);
+                                    }}>
                                     <i className='argo-icon-close' />
                                 </button>
                                 {selectedNode && (
                                     <WorkflowNodeInfo
                                         node={selectedNode}
+                                        onTabSelected={selected => {
+                                            setNodePanelView(selected);
+                                            storage.setItem('nodePanelView', selected, '');
+                                        }}
+                                        selectedTabKey={nodePanelView || storage.getItem('nodePanelView', '')}
                                         workflow={workflow}
                                         links={links}
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
