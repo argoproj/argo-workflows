@@ -41,6 +41,8 @@ interface Props {
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowEvents?: () => void;
     onShowYaml?: (nodeId: string) => any;
+    onTabSelected?: (tabSelected: string) => void;
+    selectedTabKey?: string;
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
@@ -415,6 +417,8 @@ export const WorkflowNodeInfo = (props: Props) => (
         <Tabs
             navCenter={true}
             navTransparent={true}
+            onTabSelected={props.onTabSelected}
+            selectedTabKey={props.selectedTabKey}
             tabs={[
                 {
                     title: 'SUMMARY',
