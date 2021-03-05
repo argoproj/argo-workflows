@@ -27,12 +27,12 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		return nil
 	case apiv1.PodPending:
 		// Check if we are currently shutting down
-		if woc.wf.Spec.Shutdown != "" {
+		if woc.execWf.Spec.Shutdown != "" {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 
-			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
-				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
+			if !woc.execWf.Spec.Shutdown.ShouldExecute(onExitPod) {
+				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.execWf.Spec.Shutdown)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
@@ -75,8 +75,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	}
 
 	for _, c := range woc.findTemplate(pod).GetMainContainerNames() {
-		if woc.wf.Spec.Shutdown != "" {
-			if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
+		if woc.execWf.Spec.Shutdown != "" {
+			if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.execWf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				podExecCtl.Deadline = &time.Time{}
 				woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
 				return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, c)
