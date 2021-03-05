@@ -3187,7 +3187,10 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
 	}
-	if woc.wf.Status.StoredWorkflowSpec == nil {
+	// woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" check is mainly to support  backward compatible with 2.11.x workflow to 2.12.x
+	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
+	// This check can be removed once all user migrated from 2.11.x to 2.12.x
+	if woc.wf.Status.StoredWorkflowSpec == nil || woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" {
 		wftHolder, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
