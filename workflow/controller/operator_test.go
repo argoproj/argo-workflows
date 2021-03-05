@@ -5948,7 +5948,8 @@ spec:
 		woc1.operate(ctx)
 		for _, node := range woc1.wf.Status.Nodes {
 			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy:  Terminate")
+				assert.Contains(t, node.Message, "workflow shutdown with strategy")
+				assert.Contains(t, node.Message, "Terminate")
 			}
 		}
 	})
