@@ -100,14 +100,14 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	[ -e ./vendor ] || go mod vendor
+	[ -e ./vendor ] || go mod vendor 2>&1 | grep -v "ignoring symlink" || true
 	go install -mod=vendor ./vendor/$(1)
 endef
 
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    [ -e ./vendor ] || go mod vendor
+    [ -e ./vendor ] || go mod vendor 2>&1 | grep -v "ignoring symlink" || true
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -270,7 +270,7 @@ docs: \
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	rm -Rf vendor
-	go mod tidy
+	go mod tidy 2>&1 | grep -v "ignoring symlink" || true
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
@@ -309,7 +309,7 @@ $(GOPATH)/bin/goimports:
 	$(call go_install,golang.org/x/tools/cmd/goimports)
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	[ -e ./vendor ] || go mod vendor
+	[ -e ./vendor ] || go mod vendor 2>&1 | grep -v "ignoring symlink" || true
 	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
@@ -378,7 +378,7 @@ $(GOPATH)/bin/golangci-lint:
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf vendor
 	# Tidy Go modules
-	go mod tidy
+	go mod tidy 2>&1 | grep -v "ignoring symlink" || true
 
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
@@ -531,7 +531,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
-	[ -e ./vendor ] || go mod vendor
+	[ -e ./vendor ] || go mod vendor 2>&1 | grep -v "ignoring symlink" || true
 	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
 	    "deepcopy,client,informer,lister" \
