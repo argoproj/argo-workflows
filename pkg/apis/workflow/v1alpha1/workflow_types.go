@@ -414,7 +414,7 @@ const (
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
 
-func (s ShutdownStrategy) Enabled()  bool {
+func (s ShutdownStrategy) Enabled() bool {
 	return s != ""
 }
 
