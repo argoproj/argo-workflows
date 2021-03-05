@@ -27,7 +27,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		return nil
 	case apiv1.PodPending:
 		// Check if we are currently shutting down
-		if woc.GetShutdownStrategy() != "" {
+		if woc.GetShutdownStrategy().Enabled(){
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 
@@ -75,7 +75,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	}
 
 	for _, c := range woc.findTemplate(pod).GetMainContainerNames() {
-		if woc.GetShutdownStrategy() != "" {
+		if woc.GetShutdownStrategy().Enabled() {
 			if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				podExecCtl.Deadline = &time.Time{}
 				woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)

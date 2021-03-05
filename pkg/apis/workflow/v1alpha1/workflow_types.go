@@ -414,6 +414,10 @@ const (
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
 
+func (s ShutdownStrategy) Enabled()  bool {
+	return s != ""
+}
+
 func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	switch s {
 	case ShutdownStrategyTerminate:

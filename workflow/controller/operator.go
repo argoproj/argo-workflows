@@ -410,7 +410,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	var workflowMessage string
-	if node.FailedOrError() && woc.GetShutdownStrategy() != "" {
+	if node.FailedOrError() && woc.GetShutdownStrategy().Enabled() {
 		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 	} else {
 		workflowMessage = node.Message
@@ -751,9 +751,9 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
-	if woc.GetShutdownStrategy() != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+	if woc.GetShutdownStrategy().Enabled() || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
 		var message string
-		if woc.GetShutdownStrategy() != "" {
+		if woc.GetShutdownStrategy().Enabled() {
 			message = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 		} else {
 			message = fmt.Sprintf("retry exceeded workflow deadline %s", *woc.workflowDeadline)
@@ -1016,11 +1016,11 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 // fails any suspended and pending nodes if the workflow deadline has passed
 func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
 	deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-	if woc.GetShutdownStrategy() != "" || deadlineExceeded {
+	if woc.GetShutdownStrategy().Enabled() || deadlineExceeded {
 		for _, node := range woc.wf.Status.Nodes {
 			if node.IsActiveSuspendNode() || (node.Phase == wfv1.NodePending && deadlineExceeded) {
 				var message string
-				if woc.GetShutdownStrategy() != "" {
+				if woc.GetShutdownStrategy().Enabled() {
 					message = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 				} else {
 					message = "Step exceeded its deadline"
