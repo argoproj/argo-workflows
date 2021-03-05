@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: exit-1
+  generateName: exit-1-
 spec:
   entrypoint: exit
   templates:

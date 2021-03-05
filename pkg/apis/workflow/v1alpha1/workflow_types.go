@@ -26,15 +26,16 @@ type TemplateType string
 
 // Possible template types
 const (
-	TemplateTypeContainer TemplateType = "Container"
-	TemplateTypeSteps     TemplateType = "Steps"
-	TemplateTypeScript    TemplateType = "Script"
-	TemplateTypeResource  TemplateType = "Resource"
-	TemplateTypeHTTP      TemplateType = "HTTP"
-	TemplateTypeDAG       TemplateType = "DAG"
-	TemplateTypeSuspend   TemplateType = "Suspend"
-	TemplateTypeData      TemplateType = "Data"
-	TemplateTypeUnknown   TemplateType = "Unknown"
+	TemplateTypeContainer    TemplateType = "Container"
+	TemplateTypeContainerSet TemplateType = "ContainerSet"
+	TemplateTypeSteps        TemplateType = "Steps"
+	TemplateTypeScript       TemplateType = "Script"
+	TemplateTypeResource     TemplateType = "Resource"
+	TemplateTypeHTTP         TemplateType = "HTTP"
+	TemplateTypeDAG          TemplateType = "DAG"
+	TemplateTypeSuspend      TemplateType = "Suspend"
+	TemplateTypeData         TemplateType = "Data"
+	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -64,6 +65,7 @@ type NodeType string
 // Node types
 const (
 	NodeTypePod       NodeType = "Pod"
+	NodeTypeContainer NodeType = "Container"
 	NodeTypeHTTP      NodeType = "HTTP"
 	NodeTypeSteps     NodeType = "Steps"
 	NodeTypeStepGroup NodeType = "StepGroup"
@@ -512,6 +514,9 @@ type Template struct {
 	// Container is the main container image to run in the pod
 	Container *apiv1.Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
 
+	// ContainerSet groups multiple containers within a single pod.
+	ContainerSet *ContainerSetTemplate `json:"containerSet,omitempty" protobuf:"bytes,40,opt,name=containerSet"`
+
 	// Script runs a portion of code against an interpreter
 	Script *ScriptTemplate `json:"script,omitempty" protobuf:"bytes,13,opt,name=script"`
 
@@ -522,7 +527,7 @@ type Template struct {
 	DAG *DAGTemplate `json:"dag,omitempty" protobuf:"bytes,15,opt,name=dag"`
 
 	// HTTP template subtype which makes a HTTP request
-	HTTP *HTTPTemplate `json:"http,omitempty" protobuf:"bytes,40,opt,name=http"`
+	HTTP *HTTPTemplate `json:"http,omitempty" protobuf:"bytes,41,opt,name=http"`
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
@@ -719,6 +724,9 @@ type ValueFrom struct {
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+
+	// Expression, if defined, is evaluated to specify the value for the parameter
+	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -757,6 +765,9 @@ type Artifact struct {
 
 	// If mode is set, apply the permission recursively into the artifact if it is a folder
 	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
+
+	// FromExpression, if defined, is evaluated to specify the value for the artifact
+	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -2150,6 +2161,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
 		return TemplateTypeContainer
 	}
+	if tmpl.ContainerSet != nil {
+		return TemplateTypeContainerSet
+	}
 	if tmpl.Steps != nil {
 		return TemplateTypeSteps
 	}
@@ -2177,7 +2191,7 @@ func (tmpl *Template) GetType() TemplateType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
@@ -2186,14 +2200,54 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
 		return true
 	}
 	return false
 }
 
-func (m *Template) HasOutputs() bool {
-	return m != nil && m.Outputs.HasOutputs()
+func (tmpl *Template) IsMainContainerName(containerName string) bool {
+	for _, c := range tmpl.GetMainContainerNames() {
+		if c == containerName {
+			return true
+		}
+	}
+	return false
+}
+
+func (tmpl *Template) GetMainContainerNames() []string {
+	if tmpl != nil && tmpl.ContainerSet != nil {
+		out := make([]string, 0)
+		for _, c := range tmpl.ContainerSet.GetContainers() {
+			out = append(out, c.Name)
+		}
+		return out
+	} else {
+		return []string{"main"}
+	}
+}
+
+func (tmpl *Template) HasSequencedContainers() bool {
+	return tmpl != nil && tmpl.ContainerSet.HasSequencedContainers()
+}
+
+func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
+	if tmpl.Container != nil {
+		return tmpl.Container.VolumeMounts
+	} else if tmpl.Script != nil {
+		return tmpl.Script.VolumeMounts
+	} else if tmpl.ContainerSet != nil {
+		return tmpl.ContainerSet.VolumeMounts
+	}
+	return nil
+}
+
+func (tmpl *Template) HasOutput() bool {
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil
+}
+
+func (tmpl *Template) HasLogs() bool {
+	return tmpl.HasOutput() || tmpl.Resource != nil
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

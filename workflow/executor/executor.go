@@ -142,7 +142,6 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 // LoadArtifacts loads artifacts from location to a container path
 func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	log.Infof("Start loading input artifacts...")
-
 	for _, art := range we.Template.Inputs.Artifacts {
 
 		log.Infof("Downloading artifact: %s", art.Name)
@@ -528,7 +527,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 // SaveLogs saves logs
 func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error) {
-	if !we.Template.ArchiveLocation.IsArchiveLogs() {
+	if !we.Template.ArchiveLocation.IsArchiveLogs() || !we.Template.HasLogs() {
 		return nil, nil
 	}
 	log.Infof("Saving logs")
@@ -682,8 +681,8 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
-	if we.Template.Script == nil && we.Template.Container == nil {
-		log.Infof("Template type is neither of Script or Container. Capturing script output ignored")
+	if !we.Template.HasOutput() {
+		log.Infof("Template type is neither of Script, Container, or Pod. Capturing script output ignored")
 		return nil
 	}
 	log.Infof("Capturing script output")
@@ -716,8 +715,8 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
 // CaptureScriptExitCode will add the exit code of a script template as output exit code
 func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
-	if we.Template.Script == nil && we.Template.Container == nil {
-		log.Infof("Template type is neither of Script or Container. Capturing exit code ignored")
+	if !we.Template.HasOutput() {
+		log.Infof("Template type is neither of Script, Container, or Pod. Capturing exit code ignored")
 		return nil
 	}
 	log.Infof("Capturing script exit code")
@@ -976,7 +975,7 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
-	containerNames := []string{common.MainContainerName}
+	containerNames := we.Template.GetMainContainerNames()
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
@@ -1107,6 +1106,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
 				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
 					var message string
+
 					// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
 					// timeouts as a failure and the pod should be annotated with that error
 					if we.ExecutionControl.Deadline.IsZero() {

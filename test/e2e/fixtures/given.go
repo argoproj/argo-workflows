@@ -80,8 +80,8 @@ func (g *Given) readResource(text string, v metav1.Object) {
 func (g *Given) checkImages(templates []wfv1.Template) {
 	g.t.Helper()
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
-	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
-	imageWhitelist := func(image string) bool {
+	// downloaded or evicted. To keep tests fast and reliable you must use allowed images.
+	allowed := func(image string) bool {
 		return strings.Contains(image, "argoexec:") ||
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
@@ -91,8 +91,8 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 		container := t.Container
 		if container != nil {
 			image := container.Image
-			if !imageWhitelist(image) {
-				g.t.Fatalf("non-whitelisted image used in test: %s", image)
+			if !allowed(image) {
+				g.t.Fatalf("image not allowed in tests: %s", image)
 			}
 		}
 	}

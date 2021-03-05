@@ -32,7 +32,7 @@ func printWorkflow(wf *wfv1.Workflow) {
 	println(fmt.Sprintf("%-20s %s", "Name:", wf.Name))
 	println(fmt.Sprintf("%-18s %v %s", "Phase:", workflowPhaseIcon[wf.Status.Phase], wf.Status.Phase))
 	println(fmt.Sprintf("%-20s %s", "Message:", wf.Status.Message))
-	println(fmt.Sprintf("%-20s %s", "Duration:", time.Since(wf.Status.StartedAt.Time).Truncate(time.Second)))
+	println(fmt.Sprintf("%-20s %s", "Duration:", wf.Status.GetDuration()))
 	println()
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 1, '\t', 0)

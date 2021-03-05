@@ -27,6 +27,11 @@ func Test_SgnificantPodChange(t *testing.T) {
 		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "bar"}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "baz"}}}), "changed annotation")
 		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "bar"}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{}}}), "deleted annotation")
 	})
+	t.Run("Labels", func(t *testing.T) {
+		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"foo": "bar"}}}), "new label")
+		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"foo": "bar"}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"foo": "baz"}}}), "changed label")
+		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"foo": "bar"}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}}}), "deleted label")
+	})
 	t.Run("Spec", func(t *testing.T) {
 		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{Spec: corev1.PodSpec{NodeName: "from"}}), "Node name change")
 	})

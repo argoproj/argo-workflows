@@ -39,10 +39,12 @@ nav:
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
+          - container-set-template.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - artifact-repository-ref.md
           - key-only-artifacts.md
+          - conditional-artifacts-parameters.md
           - resource-duration.md
           - estimated-duration.md
           - workflow-pod-security-context.md
