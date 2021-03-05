@@ -75,6 +75,7 @@ func isTerminated(ctx context.Context, c KubernetesClientInterface, containerNam
 
 func AllTerminated(containerStatuses []v1.ContainerStatus, containerNames []string) bool {
 	terminated := make(map[string]bool)
+	// I've seen a few cases where containers are missing from container status just after a pod started.
 	for _, c := range containerStatuses {
 		terminated[c.Name] = c.State.Terminated != nil
 	}
