@@ -73,26 +73,22 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			woc.log.Warnf("Failed to unmarshal execution control from pod %s", pod.Name)
 		}
 	}
-	containerName := common.WaitContainerName
-	// A resource template does not have a wait container,
-	// instead the only container is the main container (which is running argoexec)
-	if len(pod.Spec.Containers) == 1 {
-		containerName = common.MainContainerName
-	}
 
-	if woc.wf.Spec.Shutdown != "" {
-		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
-			podExecCtl.Deadline = &time.Time{}
-			woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
-			return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, containerName)
+	for _, c := range woc.findTemplate(pod).GetMainContainerNames() {
+		if woc.wf.Spec.Shutdown != "" {
+			if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
+				podExecCtl.Deadline = &time.Time{}
+				woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
+				return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, c)
+			}
 		}
-	}
 
-	if woc.workflowDeadline != nil {
-		if podExecCtl.Deadline == nil || woc.workflowDeadline.Before(*podExecCtl.Deadline) {
-			podExecCtl.Deadline = woc.workflowDeadline
-			woc.log.Infof("Applying sooner Workflow Deadline for pod %s at: %v", pod.Name, woc.workflowDeadline)
-			return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, containerName)
+		if woc.workflowDeadline != nil {
+			if podExecCtl.Deadline == nil || woc.workflowDeadline.Before(*podExecCtl.Deadline) {
+				podExecCtl.Deadline = woc.workflowDeadline
+				woc.log.Infof("Applying sooner Workflow Deadline for pod %s at: %v", pod.Name, woc.workflowDeadline)
+				return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, c)
+			}
 		}
 	}
 
