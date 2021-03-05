@@ -1,3 +1,4 @@
+// File built without static files
 package static
 
 import "net/http"
