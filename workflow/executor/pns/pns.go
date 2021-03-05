@@ -141,6 +141,49 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 	}
 	p.rootFS = rootFS
 
+	/*
+		What is a "short running container" and "late starting container"?:
+
+		Short answer: any container that exits in <5s
+
+		Long answer:
+
+		Some containers are short running and we cannot determine their PIDs because they exit too quickly.
+		This loop allows 5s for `pollRootProcesses` find PIDs, so we define any container that exits <5s as short running
+
+		Unfortunately, we cannot assume that a container that did not appeared within the 5s has completed.
+		They may still be in `ContainerCreating` state - i.e. late starting.
+	*/
+	for i := 0; !p.haveContainerPIDs(containerNames) && i < 5; i++ {
+		time.Sleep(1 * time.Second)
+	}
+
+OUTER:
+	for _, containerName := range containerNames {
+		pid := p.getContainerPID(containerName)
+		if pid == 0 {
+			log.Infof("container %q pid unknown - maybe short running, or late starting container", containerName)
+			continue
+		}
+		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				p, err := gops.FindProcess(pid)
+				if err != nil {
+					return fmt.Errorf("failed to find %q process: %w", containerName, err)
+				}
+				if p == nil {
+					log.Infof("%q pid %d completed", containerName, pid)
+					continue OUTER
+				}
+				time.Sleep(3 * time.Second)
+			}
+		}
+	}
+
 	return p.K8sAPIExecutor.Wait(ctx, containerNames, sidecarNames)
 }
 
