@@ -2526,7 +2526,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 			resultsList = append(resultsList, item)
 		}
 	}
-	if tmpl.HasOutput() {
+	if tmpl.GetType() == wfv1.TemplateTypeScript {
 		resultsJSON, err := json.Marshal(resultsList)
 		if err != nil {
 			return err
