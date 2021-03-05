@@ -38,5 +38,9 @@ Note that these environment variables may be removed at any time.
 | `ARGO_CONTAINER_RUNTIME_EXECUTOR` | `string` | The name of the container runtime executor. |
 | `ARGO_KUBELET_PORT` | `int` | The port to the Kubelet API. |
 | `ARGO_KUBELET_INSECURE` | `bool` | Whether to disable the TLS verification. |
+| `EXECUTOR_RETRY_BACKOFF_DURATION` | `time.Duration` | The retry backoff duration when the workflow executor performs retries. |
+| `EXECUTOR_RETRY_BACKOFF_FACTOR` | `float` | The retry backoff factor when the workflow executor performs retries. |
+| `EXECUTOR_RETRY_BACKOFF_JITTER` | `float` | The retry backoff jitter when the workflow executor performs retries. |
+| `EXECUTOR_RETRY_BACKOFF_STEPS` | `int` | The retry backoff steps when the workflow executor performs retries. |
 | `PNS_PRIVILEGED` | `bool` | Whether to always set privileged on for PNS when PNS executor is used. |
 | `REMOVE_LOCAL_ART_PATH` | `bool` | Whether to remove local artifacts. |
