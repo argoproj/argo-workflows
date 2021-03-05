@@ -2236,6 +2236,26 @@ Note that these environment variables may be removed at any time.</p>
 <td>Whether to disable the TLS verification.</td>
 </tr>
 <tr>
+<td><code>EXECUTOR_RETRY_BACKOFF_DURATION</code></td>
+<td><code>time.Duration</code></td>
+<td>The retry backoff duration when the workflow executor performs retries.</td>
+</tr>
+<tr>
+<td><code>EXECUTOR_RETRY_BACKOFF_FACTOR</code></td>
+<td><code>float</code></td>
+<td>The retry backoff factor when the workflow executor performs retries.</td>
+</tr>
+<tr>
+<td><code>EXECUTOR_RETRY_BACKOFF_JITTER</code></td>
+<td><code>float</code></td>
+<td>The retry backoff jitter when the workflow executor performs retries.</td>
+</tr>
+<tr>
+<td><code>EXECUTOR_RETRY_BACKOFF_STEPS</code></td>
+<td><code>int</code></td>
+<td>The retry backoff steps when the workflow executor performs retries.</td>
+</tr>
+<tr>
 <td><code>PNS_PRIVILEGED</code></td>
 <td><code>bool</code></td>
 <td>Whether to always set privileged on for PNS when PNS executor is used.</td>
