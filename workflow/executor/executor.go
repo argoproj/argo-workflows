@@ -523,7 +523,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 // SaveLogs saves logs
 func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error) {
-	if !we.Template.ArchiveLocation.IsArchiveLogs() || !we.Template.HasLogs() {
+	if !we.Template.SaveLogsAsArtifact() {
 		return nil, nil
 	}
 	log.Infof("Saving logs")

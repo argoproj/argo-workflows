@@ -42,7 +42,7 @@ func (s *ArtifactsSuite) TestOutputOnMount() {
 }
 
 func (s *ArtifactsSuite) TestOutputOnInput() {
-	s.Need(fixtures.BaseLayerArtifacts) // I believe this would work on both K8S and Kubelet, not validation does not allow it
+	s.Need(fixtures.BaseLayerArtifacts) // I believe this would work on both K8S and Kubelet, but validation does not allow it
 	s.Given().
 		Workflow("@testdata/output-on-input-workflow.yaml").
 		When().
@@ -145,6 +145,23 @@ func (s *ArtifactsSuite) TestOutputArtifactS3BucketCreationEnabled() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
+func (s *ArtifactsSuite) TestOutputResult() {
+	s.Given().
+		Workflow("@testdata/output-result-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			n := status.Nodes.FindByDisplayName("a")
+			if assert.NotNil(t, n) {
+				assert.NotNil(t, n.Outputs.ExitCode)
+				assert.NotNil(t, n.Outputs.Result)
+			}
 		})
 }
 
