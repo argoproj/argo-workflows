@@ -297,7 +297,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}
 
-	if woc.IsSuspend() {
+	if woc.ShouldSuspend() {
 		woc.log.Infof("workflow suspended")
 		return
 	}
@@ -3184,7 +3184,7 @@ func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
 	return woc.execWf.Spec.Shutdown
 }
 
-func (woc *wfOperationCtx) IsSuspend() bool {
+func (woc *wfOperationCtx) ShouldSuspend() bool {
 	return woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend
 }
 
