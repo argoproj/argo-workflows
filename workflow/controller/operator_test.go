@@ -5890,6 +5890,71 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
 }
 
+func TestWorkflowShutdownStrategy(t *testing.T) {
+	wf := unmarshalWF(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+  namespace: default
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hellow"]`)
+
+	cancel, controller := newController()
+	defer cancel()
+	wf1 := wf.DeepCopy()
+	t.Run("StopStrategy", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		// Simulate the Stop command
+		wf1 := woc.wf
+		wf1.Spec.Shutdown = wfv1.ShutdownStrategyStop
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate(ctx)
+
+		node := woc1.wf.Status.Nodes.FindByDisplayName("whalesay")
+		if assert.NotNil(t, node) {
+			assert.Contains(t, node.Message, "workflow shutdown with strategy:  Stop")
+		}
+	})
+
+	t.Run("TerminateStrategy", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf1, controller)
+		woc.operate(ctx)
+
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		// Simulate the Terminate command
+		wfOut := woc.wf
+		wfOut.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		woc1 := newWorkflowOperationCtx(wfOut, controller)
+		woc1.operate(ctx)
+		for _, node := range woc1.wf.Status.Nodes {
+			if assert.NotNil(t, node) {
+				assert.Contains(t, node.Message, "workflow shutdown with strategy")
+				assert.Contains(t, node.Message, "Terminate")
+			}
+		}
+	})
+}
+
 const resultVarRefWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
