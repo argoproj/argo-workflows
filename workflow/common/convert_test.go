@@ -70,7 +70,7 @@ status:
   finishedAt: null
 	parallelism: 0
 	selector: ""
-  startedAt: null
+	startedAt: null
 `
 
 	var cronWf v1alpha1.CronWorkflow
