@@ -68,9 +68,9 @@ spec:
     outputs: {}
 status:
   finishedAt: null
-	parallelism: 0
-	selector: ""
-	startedAt: null
+  parallelism: 0
+  selector: ""
+  startedAt: null
 `
 
 	var cronWf v1alpha1.CronWorkflow
