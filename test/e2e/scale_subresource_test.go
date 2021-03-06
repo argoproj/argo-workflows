@@ -1,8 +1,9 @@
-// +build functional
+// +build executor
 
 package e2e
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ type ScaleSubresourceSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *ScaleSubresourceSuite) TestWorkflowCompletesIfContainsDaemonPod() {
+func (s *ScaleSubresourceSuite) TestWorkflowStatusSelector() {
 	s.Given().
 		Workflow("@smoke/basic-generate-name.yaml").
 		When().
@@ -26,7 +27,8 @@ func (s *ScaleSubresourceSuite) TestWorkflowCompletesIfContainsDaemonPod() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			name := metadata.GetName()
-			assert.Equal(t, name, status.Selector)
+			expected := fmt.Sprintf("workflows.argoproj.io/workflow=%s", name)
+			assert.Equal(t, expected, status.Selector)
 		})
 }
 
