@@ -412,7 +412,12 @@ type ShutdownStrategy string
 const (
 	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
+	ShutdownStrategyNone      ShutdownStrategy = ""
 )
+
+func (s ShutdownStrategy) Enabled() bool {
+	return s != ShutdownStrategyNone
+}
 
 func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	switch s {
