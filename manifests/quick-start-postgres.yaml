@@ -156,7 +156,11 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      scale:
+        labelSelectorPath: .status.selector
+        specReplicasPath: .spec.parallelism
+        statusReplicasPath: .status.parallelism
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition

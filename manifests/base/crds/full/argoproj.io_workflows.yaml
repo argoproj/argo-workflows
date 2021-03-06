@@ -8636,6 +8636,9 @@ spec:
                   result:
                     type: string
                 type: object
+              parallelism:
+                format: int64
+                type: integer
               persistentVolumeClaims:
                 items:
                   properties:
@@ -9317,6 +9320,8 @@ spec:
                   format: int64
                   type: integer
                 type: object
+              selector:
+                type: string
               startedAt:
                 format: date-time
                 type: string
@@ -22510,6 +22515,9 @@ spec:
                         type: array
                     type: object
                 type: object
+            required:
+            - parallelism
+            - selector
             type: object
         required:
         - metadata
@@ -22517,4 +22525,8 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      scale:
+        labelSelectorPath: .status.selector
+        specReplicasPath: .spec.parallelism
+        statusReplicasPath: .status.parallelism
