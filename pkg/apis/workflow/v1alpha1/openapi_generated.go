@@ -5720,7 +5720,24 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus"),
 						},
 					},
+					"parallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Parallelism is the current status of parallel pods that can execute at the same time in a workflow",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"selector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Selector is the label selector for pods controlled by a given workflow",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
+				Required: []string{"parallelism", "selector"},
 			},
 		},
 		Dependencies: []string{

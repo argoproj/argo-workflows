@@ -9101,6 +9101,10 @@
     "io.argoproj.workflow.v1alpha1.WorkflowStatus": {
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
+      "required": [
+        "parallelism",
+        "selector"
+      ],
       "properties": {
         "artifactRepositoryRef": {
           "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
@@ -9144,6 +9148,10 @@
           "description": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
         },
+        "parallelism": {
+          "description": "Parallelism is the current status of parallel pods that can execute at the same time in a workflow",
+          "type": "integer"
+        },
         "persistentVolumeClaims": {
           "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.",
           "type": "array",
@@ -9166,6 +9174,10 @@
             "type": "integer",
             "format": "int64"
           }
+        },
+        "selector": {
+          "description": "Selector is the label selector for pods controlled by a given workflow",
+          "type": "string"
         },
         "startedAt": {
           "description": "Time at which this workflow started",

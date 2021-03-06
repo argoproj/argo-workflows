@@ -5733,6 +5733,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs",
           "description": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
         },
+        "parallelism": {
+          "description": "Parallelism is the current status of parallel pods that can execute at the same time in a workflow",
+          "type": "integer"
+        },
         "persistentVolumeClaims": {
           "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.",
           "items": {
@@ -5756,6 +5760,10 @@
           "description": "ResourcesDuration is the total for the workflow",
           "type": "object"
         },
+        "selector": {
+          "description": "Selector is the label selector for pods controlled by a given workflow",
+          "type": "string"
+        },
         "startedAt": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "Time at which this workflow started"
@@ -5776,6 +5784,10 @@
           "description": "Synchronization stores the status of synchronization locks"
         }
       },
+      "required": [
+        "parallelism",
+        "selector"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowStep": {
