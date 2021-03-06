@@ -285,6 +285,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+
+		err = woc.setWorkflowStatusSelector()
+		if err != nil {
+			woc.log.WithError(err).Errorf("Unable to set workflow status selector")
+		}
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation(ctx)
@@ -1546,6 +1551,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if templateStored {
 		woc.updated = true
 	}
+
+	// update status with current parallelism or active pods
+	woc.setWorkflowStatusParallelism()
 
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
@@ -3221,4 +3229,32 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		}
 	}
 	return nil
+}
+
+// setWorkflowStatusSelector creates a labelselector for pods associated with a
+// given workflow and stores in the workflow status
+func (woc *wfOperationCtx) setWorkflowStatusSelector() error {
+	ls := &metav1.LabelSelector{
+		MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+	}
+
+	selector, err := metav1.LabelSelectorAsSelector(ls)
+	if err != nil {
+		return err
+	}
+
+	woc.wf.Status.Selector = selector.String()
+	return nil
+}
+
+// setWorkflowStatusParallelism sets the parallelism in the workflow status to
+// the current parallelism value in the spec. It uses activePods as a fallback
+// value
+func (woc *wfOperationCtx) setWorkflowStatusParallelism() {
+	parallelism := woc.activePods
+	if woc.execWf.Spec.Parallelism != nil {
+		parallelism = *woc.execWf.Spec.Parallelism
+	}
+
+	woc.wf.Status.Parallelism = parallelism
 }

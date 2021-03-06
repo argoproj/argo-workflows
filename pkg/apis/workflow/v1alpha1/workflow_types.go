@@ -99,6 +99,7 @@ const (
 // +kubebuilder:resource:shortName=wf
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
 // +kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
+// +kubebuilder:subresource:scale:specpath=.spec.parallelism,statuspath=.status.parallelism,selectorpath=.status.selector
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -1341,6 +1342,12 @@ type WorkflowStatus struct {
 
 	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
+
+	// Parallelism is the current status of parallel pods that can execute at the same time in a workflow
+	Parallelism int64 `json:"parallelism" protobuf:"bytes,19,opt,name=parallelism"`
+
+	// Selector is the label selector for pods controlled by a given workflow
+	Selector string `json:"selector" protobuf:"bytes,20,opt,name=selector"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

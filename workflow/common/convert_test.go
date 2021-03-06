@@ -68,6 +68,8 @@ spec:
     outputs: {}
 status:
   finishedAt: null
+	parallelism: 0
+	selector: ""
   startedAt: null
 `
 
