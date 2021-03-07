@@ -158,14 +158,13 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []s
 		time.Sleep(1 * time.Second)
 	}
 
-	if !p.haveContainerPIDs(containerNames) {
-		log.Info("container PIDs still unknown (maybe short running container, or late starting)")
-		return p.K8sAPIExecutor.Wait(ctx, containerNames, sidecarNames)
-	}
-
 OUTER:
 	for _, containerName := range containerNames {
 		pid := p.getContainerPID(containerName)
+		if pid == 0 {
+			log.Infof("container %q pid unknown - maybe short running, or late starting container", containerName)
+			continue
+		}
 		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
 		for {
 			select {
@@ -184,7 +183,8 @@ OUTER:
 			}
 		}
 	}
-	return nil
+
+	return p.K8sAPIExecutor.Wait(ctx, containerNames, sidecarNames)
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the

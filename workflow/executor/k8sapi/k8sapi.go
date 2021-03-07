@@ -11,7 +11,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
 type K8sAPIExecutor struct {
@@ -45,12 +45,7 @@ func (k *K8sAPIExecutor) GetOutputStream(ctx context.Context, containerName stri
 // Wait for the container to complete
 func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
-		for _, s := range pod.Status.ContainerStatuses {
-			if s.State.Terminated == nil && slice.ContainsString(containerNames, s.Name) {
-				return false
-			}
-		}
-		return true
+		return common.AllTerminated(pod.Status.ContainerStatuses, containerNames)
 	})
 }
 

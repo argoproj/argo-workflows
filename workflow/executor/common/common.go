@@ -69,13 +69,21 @@ func isTerminated(ctx context.Context, c KubernetesClientInterface, containerNam
 	if err != nil {
 		return false, err
 	}
-	for _, s := range containerStatus {
-		log.Debugf("%q %v", s.Name, s.State.Terminated)
-		if s.State.Terminated == nil && slice.ContainsString(containerNames, s.Name) {
-			return false, nil
+	return AllTerminated(containerStatus, containerNames), nil
+}
+
+func AllTerminated(containerStatuses []v1.ContainerStatus, containerNames []string) bool {
+	terminated := make(map[string]bool)
+	// I've seen a few cases where containers are missing from container status just after a pod started.
+	for _, c := range containerStatuses {
+		terminated[c.Name] = c.State.Terminated != nil
+	}
+	for _, n := range containerNames {
+		if !terminated[n] {
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 // TerminatePodWithContainerID invoke the given SIG against the PID1 of the container.

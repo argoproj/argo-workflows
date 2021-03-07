@@ -28,7 +28,7 @@ VERSION               := $(GIT_TAG)
 endif
 
 # should we build the static files?
-ifneq (,$(filter $@,codegen|lint|test|docs))
+ifneq (,$(filter $(MAKECMDGOALS),codegen lint test docs start))
 STATIC_FILES          := false
 else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
