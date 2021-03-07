@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Parameter, Workflow} from '../../../models';
+import {Parameter, Template, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
@@ -12,13 +12,15 @@ interface Props {
     namespace: string;
     name: string;
     entrypoint: string;
-    entrypoints: string[];
-    parameters: Parameter[];
+    templates: Template[];
 }
 
 interface State {
     entrypoint: string;
+    entrypoints: string[];
     parameters: Parameter[];
+    selectedTemplate: Template;
+    templates: Template[];
     labels: string[];
     error?: Error;
 }
@@ -26,11 +28,15 @@ interface State {
 export class SubmitWorkflowPanel extends React.Component<Props, State> {
     constructor(props: any) {
         super(props);
-        this.state = {
-            entrypoint: this.props.entrypoint || (this.props.entrypoints.length > 0 && this.props.entrypoints[0]),
-            parameters: this.props.parameters || [],
+        const state = {
+            entrypoint: this.props.entrypoint || (this.props.templates.length > 0 && this.props.templates[0].name),
+            entrypoints: this.props.templates.map(t => t.name),
+            selectedTemplate: this.props.templates.length > 0 && this.props.templates[0],
+            parameters: (this.props.templates.length > 0 && this.props.templates[0].inputs.parameters) || [],
+            templates: this.props.templates,
             labels: ['submit-from-ui=true']
         };
+        this.state = state;
     }
 
     public render() {
@@ -46,11 +52,18 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                         <label>Entrypoint</label>
                         <Select
                             value={this.state.entrypoint}
-                            options={this.props.entrypoints.map((value, index) => ({
-                                value,
-                                title: value
+                            options={this.state.templates.map(t => ({
+                                value: t.name,
+                                title: t.name
                             }))}
-                            onChange={selected => this.setState({entrypoint: selected.value})}
+                            onChange={selected => {
+                                const selectedTemplate = this.getSelectedTemplate(selected.value);
+                                this.setState({
+                                    entrypoint: selected.value,
+                                    selectedTemplate,
+                                    parameters: (selectedTemplate && selectedTemplate.inputs.parameters) || []
+                                });
+                            }}
                         />
                     </div>
                     <div key='parameters' style={{marginBottom: 25}}>
@@ -83,6 +96,15 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                 </div>
             </>
         );
+    }
+
+    private getSelectedTemplate(entrypoint: string): Template {
+        for (const t of this.state.templates) {
+            if (t.name === entrypoint) {
+                return t;
+            }
+        }
+        return null;
     }
 
     private displaySelectFieldForEnumValues(parameter: Parameter) {

@@ -127,8 +127,7 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                             namespace={namespace}
                             name={name}
                             entrypoint={template.spec.entrypoint}
-                            entrypoints={(template.spec.templates || []).map(t => t.name)}
-                            parameters={template.spec.arguments.parameters || []}
+                            templates={template.spec.templates || []}
                         />
                     )}
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}
