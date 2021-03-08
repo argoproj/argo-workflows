@@ -5928,7 +5928,10 @@ spec:
 
 		node := woc1.wf.Status.Nodes.FindByDisplayName("whalesay")
 		if assert.NotNil(t, node) {
-			assert.Contains(t, node.Message, "workflow shutdown with strategy:  Stop")
+			if assert.NotNil(t, node) {
+				assert.Contains(t, node.Message, "workflow shutdown with strategy")
+				assert.Contains(t, node.Message, "Stop")
+			}
 		}
 	})
 
