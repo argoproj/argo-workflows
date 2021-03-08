@@ -91,3 +91,19 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 	}
 	return labels, nil
 }
+
+// SetLogFormatter sets a log formatter for logrus
+func SetLogFormatter(logFormat string) {
+	timestampFormat := "2006-01-02T15:04:05.000Z"
+	switch strings.ToLower(logFormat) {
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{TimestampFormat: timestampFormat})
+	case "text":
+		log.SetFormatter(&log.TextFormatter{
+			TimestampFormat: timestampFormat,
+			FullTimestamp:   true,
+		})
+	default:
+		log.Fatalf("Unknown log format '%s'", logFormat)
+	}
+}
