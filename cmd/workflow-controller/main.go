@@ -42,6 +42,7 @@ func NewRootCommand() *cobra.Command {
 		containerRuntimeExecutor string
 		logLevel                 string // --loglevel
 		glogLevel                int    // --gloglevel
+		logFormat                string // --log-format
 		workflowWorkers          int    // --workflow-workers
 		workflowTTLWorkers       int    // --workflow-ttl-workers
 		podWorkers               int    // --pod-workers
@@ -50,6 +51,7 @@ func NewRootCommand() *cobra.Command {
 		qps                      float32
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
+
 	)
 
 	command := cobra.Command{
@@ -58,6 +60,7 @@ func NewRootCommand() *cobra.Command {
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
+			cmdutil.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
@@ -113,6 +116,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&containerRuntimeExecutor, "container-runtime-executor", "", "Container runtime executor to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
+	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
 	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", 4, "Number of workflow TTL workers")
 	command.Flags().IntVar(&podWorkers, "pod-workers", 32, "Number of pod workers")

@@ -35,6 +35,7 @@ var (
 	clientConfig       clientcmd.ClientConfig
 	logLevel           string // --loglevel
 	glogLevel          int    // --gloglevel
+	logFormat          string // --log-format
 	podAnnotationsPath string // --pod-annotations
 )
 
@@ -43,10 +44,7 @@ func init() {
 }
 
 func initConfig() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "2006-01-02T15:04:05.000Z",
-		FullTimestamp:   true,
-	})
+	cmd.SetLogFormatter(logFormat)
 	cli.SetLogLevel(logLevel)
 	cmd.SetGLogLevel(glogLevel)
 }
@@ -71,6 +69,7 @@ func NewRootCommand() *cobra.Command {
 	command.PersistentFlags().StringVar(&podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, "Pod annotations file from k8s downward API")
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
+	command.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 
 	return &command
 }
