@@ -1047,6 +1047,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
+		s.Need(fixtures.None(fixtures.Emissary)) // emissary prints "capturing logs" instead of "Hello Argo"
 		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-logs").
 			Expect().
 			Status(200).
@@ -1054,6 +1055,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Contains(":) Hello Argo!")
 	})
 	s.Run("GetArtifactByUID", func() {
+		s.Need(fixtures.None(fixtures.Emissary)) // emissary prints "capturing logs" instead of "Hello Argo"
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200)
@@ -1154,6 +1156,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main&logOptions.tailLines=3"},
 	} {
 		s.Run(tt.name, func() {
+			s.Need(fixtures.None(fixtures.Emissary)) // emissary prints "capturing logs" instead of "Hello Argo"
 			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
 				if strings.Contains(line, "data: ") {
 					assert.Contains(t, line, `"content":":) Hello Argo!"`)

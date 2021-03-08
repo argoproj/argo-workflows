@@ -10,197 +10,74 @@ on:
       - "master"
 
 jobs:
+
   tests:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Restore go build cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
-      - name: Setup Golang
-        uses: actions/setup-go@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
         with:
           go-version: "1.15.7"
-      - name: Add bins to PATH
-        run: |
-          echo /home/runner/go/bin >> $GITHUB_PATH
-          echo /usr/local/bin >> $GITHUB_PATH
-      - name: Run tests
-        env:
-          GOPATH: /home/runner/go
-        run: make test STATIC_FILES=false
-
-  e2e-tests:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-          - test-executor
-        containerRuntimeExecutor:
-          - docker
-          - emissary
-          - k8sapi
-          - kubelet
-          - pns
-        include:
-          - test: test-cli
-            containerRuntimeExecutor: docker
-          - test: test-examples
-            containerRuntimeExecutor: docker
-          - test: test-functional
-            containerRuntimeExecutor: docker
-          - test: test-e2e-cron
-            containerRuntimeExecutor: docker
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Restore go build cache
-        uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
-      - name: Setup Golang
-        uses: actions/setup-go@v1
+          path: /home/runner/.cache/go-build
+          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
         with:
-          go-version: "1.15.7"
-      - name: Add bins to PATH
-        run: |
-          echo /home/runner/go/bin >> $GITHUB_PATH
-          echo /usr/local/bin >> $GITHUB_PATH
-      - name: Install and start K3S v1.18.8+k3s1
-        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
-      - name: Pre-pull images
-        env:
-          GOPATH: /home/runner/go
-        run: make test-images &
-      - name: Create Kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
-          cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-          echo "- name: fake_token_user" >> ~/.kube/config
-          echo "  user:" >> ~/.kube/config
-          echo "    token: xxxxxx" >> ~/.kube/config
-      - name: Start logging
-        run: |
-          mkdir -p /tmp/log/argo-e2e
-          make logs > /tmp/log/argo-e2e/pod.log &
-      - name: Start Argo
-        env:
-          GOPATH: /home/runner/go
-        run: |
-          echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
-          echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
-          echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
-          echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          git fetch --tags
-          PROFILE=mysql
-          ALWAYS_OFFLOAD_NODE_STATUS=true
-          if [ "${{matrix.test}}" = test-examples ]; then
-            PROFILE=minimal
-            ALWAYS_OFFLOAD_NODE_STATUS=false
-          fi
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
-      - name: Wait for Argo Server to be ready
-        env:
-          GOPATH: /home/runner/go
-        run: make wait
-      - name: Run tests
-        env:
-          GOPATH: /home/runner/go
-        run: make ${{ matrix.test }}
-      - name: Upload logs
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}-${{ github.run_id }}-pod.log
-          path: /tmp/log/argo-e2e
+          path: /home/runner/go/pkg/mod
+          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - run: go mod download -x
+      - run: make server/static/files.go STATIC_FILES=false
+      - run: go build -v ./...
+      - run: make test STATIC_FILES=false
 
   codegen:
     name: Codegen
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-20.04
+    needs: [ tests ]
+    timeout-minutes: 10
+    env:
+      GOPATH: /home/runner/go
+      PROTOC_ZIP: protoc-3.11.1-linux-x86_64.zip
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Restore go build cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
-      - name: Setup Golang
-        uses: actions/setup-go@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
         with:
           go-version: "1.15.7"
-      - name: Add bins to PATH
-        run: |
-          echo /home/runner/go/bin >> $GITHUB_PATH
-          echo /usr/local/bin >> $GITHUB_PATH
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/pkg/mod
+          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/bin
+          key: go-bin-v1-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: protoc-3.11.1-linux-x86_64.zip
+          key: protoc-3.11.1-linux-x86_64.zip
       - name: Install protoc
         run: |
           set -eux -o pipefail
-          PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
           curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
           sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
           sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
           sudo chmod +x /usr/local/bin/protoc
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
-          rm -f $PROTOC_ZIP
           ls /usr/local/include/google/protobuf/
-      - name: Make codegen
-        env:
-          GOPATH: /home/runner/go
+      - run: git fetch --tags
+      - name: Create links
         run: |
-          git fetch --tags
-
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
-
-          # we use -B to force make to always make targets
-          make -B codegen STATIC_FILES=false
-      - name: Make lint
-        env:
-          GOPATH: /home/runner/go
-        run: make lint STATIC_FILES=false
-      - name: Make validate-examples
-        env:
-          GOPATH: /home/runner/go
-        run: make validate-examples STATIC_FILES=false
-      - name: Ensure nothing changed
-        run: git diff --exit-code
-
-  ui:
-    name: UI
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: "14"
-      - name: Restore node dependency cache
-        uses: actions/cache@v1
-        with:
-          path: ui/node_modules
-          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - name: Install, build and Lint
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-        run: |
-          yarn --cwd ui install
-          yarn --cwd ui build
-          yarn --cwd ui test
-          yarn --cwd ui lint
-      - name: Ensure nothing changed
-        run: git diff --exit-code
+      - run: make codegen -B STATIC_FILES=false
+      - run: make lint STATIC_FILES=false
+      - run: make validate-examples STATIC_FILES=false
+      - run: git diff --exit-code

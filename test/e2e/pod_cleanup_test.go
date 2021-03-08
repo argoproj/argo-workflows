@@ -21,7 +21,7 @@ type PodCleanupSuite struct {
 	fixtures.E2ESuite
 }
 
-const enoughTimeForPodCleanup = 5 * time.Second
+const enoughTimeForPodCleanup = 3 * time.Second
 
 func (s *PodCleanupSuite) TestNone() {
 	s.Given().

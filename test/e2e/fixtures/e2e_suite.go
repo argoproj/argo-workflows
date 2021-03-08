@@ -3,9 +3,12 @@ package fixtures
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/TwinProduction/go-color"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -45,6 +48,8 @@ type E2ESuite struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
 	hydrator          hydrator.Interface
+	testStartedAt     time.Time
+	slowTests         []string
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -70,17 +75,28 @@ func (s *E2ESuite) SetupSuite() {
 
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
+	for _, x := range s.slowTests {
+		_, _ = fmt.Println(color.Ize(color.Yellow, fmt.Sprintf("=== SLOW TEST:  %s", x)))
+	}
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
+	s.testStartedAt = time.Now()
 }
 
 func (s *E2ESuite) AfterTest(suiteName, testName string) {
-	if s.T().Failed() { // by default, we don't get good logging at test end
-		println("=== FAIL: " + suiteName + "/" + testName)
+	if s.T().Skipped() { // by default, we don't get good logging at test end
+		_, _ = fmt.Println(color.Ize(color.Gray, "=== SKIP: "+suiteName+"/"+testName))
+	} else if s.T().Failed() { // by default, we don't get good logging at test end
+		_, _ = fmt.Println(color.Ize(color.Red, "=== FAIL: "+suiteName+"/"+testName))
+		os.Exit(1)
 	} else {
-		println("=== PASS: " + suiteName + "/" + testName)
+		_, _ = fmt.Println(color.Ize(color.Green, "=== PASS: "+suiteName+"/"+testName))
+		took := time.Since(s.testStartedAt)
+		if took > 20*time.Second {
+			s.slowTests = append(s.slowTests, fmt.Sprintf("%s/%s took %v", suiteName, testName, took.Truncate(time.Second)))
+		}
 	}
 }
 
