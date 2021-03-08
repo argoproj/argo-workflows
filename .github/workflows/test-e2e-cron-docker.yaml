@@ -57,7 +57,7 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           PROFILE=mysql
           ALWAYS_OFFLOAD_NODE_STATUS=true
-          if [ "test-cron" = test-executor ] || [ "${{matrix.test}}" = test-examples ]; then
+          if [ "test-e2e-cron" = test-executor ] || [ "test-e2e-cron" = test-examples ]; then
             PROFILE=minimal
             ALWAYS_OFFLOAD_NODE_STATUS=false
           fi
@@ -67,10 +67,10 @@ jobs:
       - run: make wait
       - name: Start logging
         run: make logs 2>&1 > /tmp/log/argo-e2e/pod.log &
-      - run: make test-cron
+      - run: make test-e2e-cron
       - name: Upload logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: test-cron-docker
+          name: test-e2e-cron-docker
           path: /tmp/log/argo-e2e

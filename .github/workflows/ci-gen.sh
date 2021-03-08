@@ -12,8 +12,8 @@ cd $(dirname $0)
 
 gen() {
    sed "s/name: E2E/name: $1/" < e2e.yaml.0 |
-   sed "s/\${{matrix.test}}/$2/" |
-   sed "s/\${{matrix.containerRuntimeExecutor}}/$3/" |
+   sed "s/\${{matrix.test}}/$2/g" |
+   sed "s/\${{matrix.containerRuntimeExecutor}}/$3/g" |
    ../../hack/auto-gen-msg.sh > $2-$3.yaml
 }
 
@@ -24,6 +24,6 @@ gen "Test Kubelet Executor" test-executor kubelet
 gen "Test PNS Executor" test-executor pns
 
 gen "Test CLI" test-cli docker
-gen "Test Cron Workflows" test-cron docker
+gen "Test Cron Workflows" test-e2e-cron docker
 gen "Test Examples" test-examples docker
 gen "Test Functionality " test-functional docker

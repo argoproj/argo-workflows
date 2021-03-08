@@ -57,7 +57,7 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           PROFILE=mysql
           ALWAYS_OFFLOAD_NODE_STATUS=true
-          if [ "test-functional" = test-executor ] || [ "${{matrix.test}}" = test-examples ]; then
+          if [ "test-functional" = test-executor ] || [ "test-functional" = test-examples ]; then
             PROFILE=minimal
             ALWAYS_OFFLOAD_NODE_STATUS=false
           fi
