@@ -8,4 +8,4 @@ spec:
     - name: exit
       container:
         image: argoproj/argosay:v2
-        command: [exit, "1"]
+        args: [exit, "1"]

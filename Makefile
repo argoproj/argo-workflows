@@ -15,6 +15,8 @@ DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRA
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
+DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
+
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
@@ -130,11 +132,6 @@ define docker_build
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 endef
 
-define docker_pull
-	docker pull $(1)
-	if [ $(K3D) = true ]; then k3d image import $(1); fi
-endef
-
 ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
 	export GOPATH
@@ -158,7 +155,7 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 	JOBS=max yarn --cwd ui build
 
 $(GOPATH)/bin/staticfiles:
-	$(call go_install,bou.ke/staticfiles)
+	cd `mktemp -d` && go get bou.ke/staticfiles
 
 ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
@@ -227,15 +224,21 @@ dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
 
 # argoexec
 
-dist/argoexec: $(ARGOEXEC_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+argoexec-linux-amd64: $(ARGOEXEC_PKGS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 
 .PHONY: executor-image
 executor-image: dist/argoexec.image
 
-dist/argoexec.image: $(ARGOEXEC_PKGS)
+ifeq ($(DEV_IMAGE),true)
+dist/argoexec.image: argoexec-linux-amd64
 	# Create executor image
+	$(call docker_build,argoexec-dev)
+	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
+else
+dist/argoexec.image: $(ARGOEXEC_PKGS)
 	$(call docker_build,argoexec)
+endif
 	touch dist/argoexec.image
 
 # generation
@@ -267,10 +270,10 @@ docs: \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
+	rm -Rf vendor v3
+	go mod tidy
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
-	rm -Rf vendor
-	go mod tidy
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
@@ -376,7 +379,7 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
-	rm -Rf vendor
+	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
 
@@ -389,7 +392,7 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
+install: dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -422,36 +425,25 @@ test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
 dist/argosay: test/e2e/images/argosay/v2/main/argosay.go
 	go build -ldflags '-w -s' -o dist/argosay ./test/e2e/images/argosay/v2/main
 
-.PHONY: test-images
-test-images:
-	$(call docker_pull,argoproj/argosay:v1)
-	$(call docker_pull,argoproj/argosay:v2)
-	$(call docker_pull,python:alpine3.6)
+.PHONY: pull-images
+pull-images:
+	docker pull mysql:8
+	docker pull golang:1.15.7
+	docker pull debian:10.7-slim
+	docker pull argoproj/argosay:v2
+	docker pull argoproj/argosay:v1
+	docker pull python:alpine3.6
 
 $(GOPATH)/bin/goreman:
-	$(call go_install,github.com/mattn/goreman)
+	cd `mktemp -d` && go get github.com/mattn/goreman
 
 .PHONY: start
-ifeq ($(RUN_MODE),kubernetes)
-start: controller-image cli-image install executor-image
+ifeq ($(RUN_MODE),local)
+start: install executor-image controller cli $(GOPATH)/bin/goreman
 else
-start: install controller cli executor-image $(GOPATH)/bin/goreman
+start: install executor-image controller-image cli-image
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy minio
-ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
-endif
-ifeq ($(PROFILE),prometheus)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
-endif
-ifeq ($(PROFILE),stress)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
-endif
-ifeq ($(PROFILE),mysql)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy mysql
-endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -459,10 +451,9 @@ endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
-	# allow time for pods to terminate
-	sleep 5s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
+	killall goreman || true
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
 endif
 
@@ -471,7 +462,7 @@ $(GOPATH)/bin/stern:
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
-	stern . --tail 3
+	stern -l workflows.argoproj.io/workflow 2>&1
 
 .PHONY: wait
 wait:
@@ -489,25 +480,25 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-cli
-test-cli:
+test-cli: ./dist/argo pull-images
 	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
 
 .PHONY: test-e2e-cron
-test-e2e-cron:
+test-e2e-cron: pull-images
 	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
 
 .PHONY: test-executor
-test-executor:
+test-executor: pull-images
 	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
 
 .PHONY: test-examples
-test-examples: ./dist/argo
+test-examples: ./dist/argo pull-images
 	./hack/test-examples.sh
 
 .PHONY: test-functional
-test-functional:
+test-functional: pull-images
 	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
 
 # clean
@@ -515,7 +506,7 @@ test-functional:
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor dist/* ui/dist
+	rm -Rf test-results node_modules vendor v2 argoexec-linux-amd64 dist/* ui/dist
 
 # swagger
 
