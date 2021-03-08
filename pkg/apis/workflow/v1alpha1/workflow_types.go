@@ -2225,14 +2225,12 @@ func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
 	return nil
 }
 
-// whether or not the template can and will have outputs (i.e. exit code and result)
 func (tmpl *Template) HasOutput() bool {
 	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil
 }
 
-// if logs should be saved as an artifact
-func (tmpl *Template) SaveLogsAsArtifact() bool {
-	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
+func (tmpl *Template) HasLogs() bool {
+	return tmpl.HasOutput() || tmpl.Resource != nil
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
