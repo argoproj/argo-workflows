@@ -1,4 +1,5 @@
-name: Test Docker Executor Docker Executor
+# This is an auto-generated file. DO NOT EDIT
+name: E2E
 on:
   push:
     branches:
