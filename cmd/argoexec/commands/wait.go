@@ -51,12 +51,6 @@ func waitContainer(ctx context.Context) error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	// Capture output script exit code
-	err = wfExecutor.CaptureScriptExitCode(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
 	// Saving logs
 	logArt, err := wfExecutor.SaveLogs(ctx)
 	if err != nil {

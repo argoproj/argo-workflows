@@ -2,7 +2,6 @@ package kubelet
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -39,18 +38,6 @@ func (k *KubeletExecutor) GetOutputStream(ctx context.Context, containerName str
 		log.Warn("non combined output unsupported")
 	}
 	return k.cli.GetLogStream(containerName)
-}
-
-func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
-	log.Infof("Getting exit code of %q", containerName)
-	_, status, err := k.cli.GetContainerStatus(ctx, containerName)
-	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not get container status")
-	}
-	if status != nil && status.State.Terminated != nil {
-		return fmt.Sprint(status.State.Terminated.ExitCode), nil
-	}
-	return "", nil
 }
 
 // Wait for the container to complete
