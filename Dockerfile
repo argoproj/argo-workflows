@@ -88,7 +88,7 @@ RUN JOBS=max yarn --cwd ui build
 
 FROM builder as argoexec-build
 
-RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
+RUN --mount=type=cache,target=/root/.cache/go-build make argoexec-linux-amd64
 
 ####################################################################################################
 
@@ -111,7 +111,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 FROM argoexec-base as argoexec
 
-COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
+COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/argoexec-linux-amd64 /usr/local/bin/argoexec
 
 ENTRYPOINT [ "argoexec" ]
 
