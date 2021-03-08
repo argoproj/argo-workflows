@@ -214,6 +214,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 			if err != nil {
 				return err
 			}
+			containerStatus := make(map[string]string)
 			for _, l := range strings.Split(string(output), "\n") {
 				parts := strings.Split(strings.TrimSpace(l), "|")
 				if len(parts) != 3 {
@@ -222,19 +223,21 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				status := strings.SplitN(parts[0], " ", 2)[0] // Created,Exited,Up,
 				containerName := parts[1]
 				containerID := parts[2]
-				if d.containers[containerName] == "" && containerID != "" {
-					if status == "Created" { // for "Created" we must check to see if it was an early (non-zero) exit
-						output, err := common.RunCommand("docker", "inspect", containerID, "--format={{.State.ExitCode}}")
-						if err != nil {
-							return err
-						}
-						if strings.TrimSpace(string(output)) == "0" { // this remain "0" until it is not "Created" anymore
-							continue
-						}
-					}
-					d.containers[containerName] = containerID
-					log.Infof("mapped container name %q to container ID %q", containerName, containerID)
+				if d.containers[containerName] == containerID || containerID == "" || containerStatus[containerName] == "Up" {
+					continue
 				}
+				if status == "Created" { // for "Created" we must check to see if it was an early (non-zero) exit
+					output, err := common.RunCommand("docker", "inspect", containerID, "--format={{.State.ExitCode}}")
+					if err != nil {
+						return err
+					}
+					if strings.TrimSpace(string(output)) == "0" { // this remain "0" until it is not "Created" anymore
+						continue
+					}
+				}
+				d.containers[containerName] = containerID
+				containerStatus[containerName] = status
+				log.Infof("mapped container name %q to container ID %q", containerName, containerID)
 			}
 			if d.haveContainers(containerNames) {
 				return nil
