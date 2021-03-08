@@ -40,7 +40,7 @@ func (w *When) SubmitWorkflow() *When {
 	if w.wf == nil {
 		w.t.Fatal("No workflow to submit")
 	}
-	println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
+	_, _ = fmt.Println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
 	ctx := context.Background()
 	wf, err := w.client.Create(ctx, w.wf, metav1.CreateOptions{})
 	if err != nil {
@@ -55,7 +55,7 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	w.t.Helper()
 	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
-		println("Submitting workflow from workflow template", tmpl.Name)
+		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -70,7 +70,7 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	w.t.Helper()
 	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
-		println("Submitting workflow from cluster workflow template", tmpl.Name)
+		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -83,7 +83,7 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 
 func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
 	w.t.Helper()
-	println("Submitting workflow from cron workflow", w.cronWf.Name)
+	_, _ = fmt.Println("Submitting workflow from cron workflow", w.cronWf.Name)
 	ctx := context.Background()
 	wf, err := w.client.Create(ctx, common.ConvertCronWorkflowToWorkflow(w.cronWf), metav1.CreateOptions{})
 	if err != nil {
@@ -99,7 +99,7 @@ func (w *When) CreateWorkflowEventBinding() *When {
 	if w.wfeb == nil {
 		w.t.Fatal("No workflow event to create")
 	}
-	println("Creating workflow event binding")
+	_, _ = fmt.Println("Creating workflow event binding")
 	ctx := context.Background()
 	_, err := w.wfebClient.Create(ctx, w.wfeb, metav1.CreateOptions{})
 	if err != nil {
@@ -117,7 +117,7 @@ func (w *When) CreateWorkflowTemplates() *When {
 
 	ctx := context.Background()
 	for _, wfTmpl := range w.wfTemplates {
-		println("Creating workflow template", wfTmpl.Name)
+		_, _ = fmt.Println("Creating workflow template", wfTmpl.Name)
 		_, err := w.wfTemplateClient.Create(ctx, wfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -135,7 +135,7 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 
 	ctx := context.Background()
 	for _, cwfTmpl := range w.cwfTemplates {
-		println("Creating cluster workflow template", cwfTmpl.Name)
+		_, _ = fmt.Println("Creating cluster workflow template", cwfTmpl.Name)
 		_, err := w.cwfTemplateClient.Create(ctx, cwfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -150,7 +150,7 @@ func (w *When) CreateCronWorkflow() *When {
 	if w.cronWf == nil {
 		w.t.Fatal("No cron workflow to create")
 	}
-	println("Creating cron workflow", w.cronWf.Name)
+	_, _ = fmt.Println("Creating cron workflow", w.cronWf.Name)
 
 	ctx := context.Background()
 	cronWf, err := w.cronClient.Create(ctx, w.cronWf, metav1.CreateOptions{})
@@ -194,7 +194,7 @@ var ToBeArchived Condition = func(wf *wfv1.Workflow) (bool, string) {
 }
 
 var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
-	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil, "to be waiting on a mutub"
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil, "to be waiting on a mutex"
 }
 
 // Wait for a workflow to meet a condition:
@@ -232,7 +232,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		fieldSelector = "metadata.name=" + workflowName
 	}
 
-	println("Waiting", timeout.String(), "for workflow", fieldSelector)
+	_, _ = fmt.Println("Waiting", timeout.String(), "for workflow", fieldSelector)
 
 	ctx := context.Background()
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
@@ -254,7 +254,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 				w.hydrateWorkflow(wf)
 				printWorkflow(wf)
 				if ok, message := condition(wf); ok {
-					println(fmt.Sprintf("Condition %q met after %s", message, time.Since(start).Truncate(time.Second)))
+					_, _ = fmt.Printf("Condition %q met after %s\n", message, time.Since(start).Truncate(time.Second))
 					w.wf = wf
 					return w
 				}
@@ -282,15 +282,15 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
-	println("Waiting for", timeout.String())
+	_, _ = fmt.Println("Waiting for", timeout.String())
 	time.Sleep(timeout)
-	println("Done waiting")
+	_, _ = fmt.Println("Done waiting")
 	return w
 }
 
 func (w *When) DeleteWorkflow() *When {
 	w.t.Helper()
-	println("Deleting", w.wf.Name)
+	_, _ = fmt.Println("Deleting", w.wf.Name)
 	ctx := context.Background()
 	err := w.client.Delete(ctx, w.wf.Name, metav1.DeleteOptions{})
 	if err != nil {
@@ -355,7 +355,7 @@ func (w *When) PodsQuota(podLimit int) *When {
 		w.t.Fatal(err)
 	}
 	podLimit += len(list.Items)
-	println("setting pods quota to", podLimit)
+	_, _ = fmt.Println("setting pods quota to", podLimit)
 	return w.createResourceQuota("pods-quota", corev1.ResourceList{"pods": resource.MustParse(strconv.Itoa(podLimit))})
 }
 
