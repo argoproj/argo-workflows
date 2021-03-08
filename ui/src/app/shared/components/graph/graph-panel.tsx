@@ -151,7 +151,7 @@ export const GraphPanel = (props: Props) => {
                     </div>
                 </div>
             )}
-            <div className={'graph ' + props.classNames}>
+            <div className={'graph ' + props.classNames} style={{paddingTop: 35}}>
                 {props.graph.nodes.size === 0 ? (
                     <p>Nothing to show</p>
                 ) : (
