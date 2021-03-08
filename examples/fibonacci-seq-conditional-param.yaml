@@ -1,16 +1,11 @@
-# This example demonstrates fibonacci sequence problem using conditional parameter feature.
-
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: fibonacci-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
-      assert nodes["printresult"]["phase"] == "Succeeded"
-      assert nodes["printresult"]["outputs"]["exitCode"] == "0"
+    workflows.argoproj.io/description: |
+      This example demonstrates fibonacci sequence problem using conditional parameter feature.
+    workflows.argoproj.io/veriiony: ">= 3.1.0"
 spec:
   entrypoint: main
   arguments:
@@ -66,17 +61,17 @@ spec:
             template: do-math
             arguments:
               parameters:
-                - {name: a, value: "{{inputs.parameters.num-1}}"}
-                - {name: op, value: "-"}
-                - {name: b, value: "1"}
+                - { name: a, value: "{{inputs.parameters.num-1}}" }
+                - { name: op, value: "-" }
+                - { name: b, value: "1" }
         - - name: sub-2
             template: do-math
             when: "{{inputs.parameters.num-1}} != 1 && {{inputs.parameters.num-1}} != 2"
             arguments:
               parameters:
-                - {name: a, value: "{{inputs.parameters.num-1}}"}
-                - {name: op, value: "-"}
-                - {name: b, value: "2"}
+                - { name: a, value: "{{inputs.parameters.num-1}}" }
+                - { name: op, value: "-" }
+                - { name: b, value: "2" }
         - - name: fib-sub-1
             template: fibonacci
             arguments:
@@ -93,9 +88,9 @@ spec:
             template: do-math
             arguments:
               parameters:
-                - {name: a, value: "{{steps.fib-sub-1.outputs.parameters.fib}}"}
-                - {name: op, value: "+"}
-                - {name: b, value: "{{steps.fib-sub-2.outputs.parameters.fib}}"}
+                - { name: a, value: "{{steps.fib-sub-1.outputs.parameters.fib}}" }
+                - { name: op, value: "+" }
+                - { name: b, value: "{{steps.fib-sub-2.outputs.parameters.fib}}" }
       outputs:
         parameters:
           - name: result
@@ -104,9 +99,9 @@ spec:
     - name: return-1
       script:
         image: python:alpine3.6
-        command: [python]
+        command: [ python ]
         source: print(1)
-    
+
     - name: do-math
       inputs:
         parameters:
@@ -115,15 +110,15 @@ spec:
           - name: b
       script:
         image: python:alpine3.6
-        command: [python]
+        command: [ python ]
         source: |
           print({{inputs.parameters.a}} {{inputs.parameters.op}} {{inputs.parameters.b}})
-          
+
     - name: printresult
       inputs:
         parameters:
           - name: result
       container:
         image: alpine:latest
-        command: [sh, -c]
-        args: ["echo {{inputs.parameters.result}}"]
+        command: [ sh, -c ]
+        args: [ "echo {{inputs.parameters.result}}" ]

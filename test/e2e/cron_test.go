@@ -32,8 +32,8 @@ func (s *CronSuite) SetupSuite() {
 	s.E2ESuite.DeleteResources()
 }
 
-func (s *CronSuite) BeforeTest(string, string) {
-	// noop
+func (s *CronSuite) BeforeTest(suiteName, testName string) {
+	s.E2ESuite.BeforeTest(suiteName, testName)
 }
 
 func (s *CronSuite) TearDownSuite() {

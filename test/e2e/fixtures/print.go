@@ -3,8 +3,8 @@ package fixtures
 import (
 	"fmt"
 	"os"
+	"sort"
 	"text/tabwriter"
-	"time"
 
 	"github.com/TwinProduction/go-color"
 
@@ -12,6 +12,7 @@ import (
 )
 
 var workflowPhaseIcon = map[wfv1.WorkflowPhase]string{
+	"":                     color.Ize(color.Gray, "?"),
 	wfv1.WorkflowPending:   color.Ize(color.Yellow, "◷"),
 	wfv1.WorkflowRunning:   color.Ize(color.Blue, "●"),
 	wfv1.WorkflowSucceeded: color.Ize(color.Green, "✔"),
@@ -20,6 +21,7 @@ var workflowPhaseIcon = map[wfv1.WorkflowPhase]string{
 }
 
 var nodePhaseIcon = map[wfv1.NodePhase]string{
+	"":                 color.Ize(color.Gray, "?"),
 	wfv1.NodePending:   color.Ize(color.Yellow, "◷"),
 	wfv1.NodeRunning:   color.Ize(color.Blue, "●"),
 	wfv1.NodeSucceeded: color.Ize(color.Green, "✔"),
@@ -29,16 +31,19 @@ var nodePhaseIcon = map[wfv1.NodePhase]string{
 }
 
 func printWorkflow(wf *wfv1.Workflow) {
-	println(fmt.Sprintf("%-20s %s", "Name:", wf.Name))
-	println(fmt.Sprintf("%-18s %v %s", "Phase:", workflowPhaseIcon[wf.Status.Phase], wf.Status.Phase))
-	println(fmt.Sprintf("%-20s %s", "Message:", wf.Status.Message))
-	println(fmt.Sprintf("%-20s %s", "Duration:", wf.Status.GetDuration()))
-	println()
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 8, 1, '\t', 0)
+	w := tabwriter.NewWriter(os.Stdout, 8, 8, 1, ' ', 0)
+	_, _ = fmt.Fprintf(w, " %s %s\t%s\t%v\t%s\n", workflowPhaseIcon[wf.Status.Phase], wf.Name, "Workflow", wf.Status.GetDuration(), wf.Status.Message)
+	var nodes []wfv1.NodeStatus
 	for _, n := range wf.Status.Nodes {
-		_, _ = fmt.Fprintf(w, " %s %s\t%s\t%s\t%s\n", nodePhaseIcon[n.Phase], n.Name, n.TemplateName, time.Since(n.StartedAt.Time).Truncate(time.Second), n.Message)
+		nodes = append(nodes, n)
 	}
+	// a somewhat stable ordering, not perfect, but probably good enough
+	sort.Slice(nodes, func(i, j int) bool {
+		return !nodes[i].StartedAt.IsZero() && nodes[i].StartedAt.Time.Before(nodes[j].StartedAt.Time)
+	})
+	for _, n := range nodes {
+		_, _ = fmt.Fprintf(w, " └ %s %s\t%s\t%v\t%s\n", nodePhaseIcon[n.Phase], n.DisplayName, n.Type, n.GetDuration(), n.Message)
+	}
+	_, _ = fmt.Fprintln(w)
 	_ = w.Flush()
-	println()
 }

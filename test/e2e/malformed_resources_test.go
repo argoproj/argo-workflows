@@ -27,7 +27,7 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
 		WorkflowName("malformed").
 		When().
 		// it is not possible to wait for this to finish, because it is malformed
-		Wait(30 * time.Second).
+		Wait(3 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "malformed", metadata.Name)
