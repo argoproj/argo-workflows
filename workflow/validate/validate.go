@@ -81,6 +81,7 @@ const (
 	anyItemMagicValue                    = "item.*"
 	anyWorkflowOutputParameterMagicValue = "workflow.outputs.parameters.*"
 	anyWorkflowOutputArtifactMagicValue  = "workflow.outputs.artifacts.*"
+	maxCharsInObjectName                 = 63
 )
 
 var placeholderGenerator = common.NewPlaceholderGenerator()
@@ -107,6 +108,10 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	var wfSpecHolder wfv1.WorkflowSpecHolder
 	var wfTmplRef *wfv1.TemplateRef
 	var err error
+
+	if len(wf.Name) > maxCharsInObjectName {
+		return nil, fmt.Errorf("workflow name %q must not be more than 63 characters long (currently %d)", wf.Name, len(wf.Name))
+	}
 
 	entrypoint := wf.Spec.Entrypoint
 
@@ -232,6 +237,10 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
+	if len(wftmpl.Name) > maxCharsInObjectName {
+		return nil, fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
+	}
+
 	wf := &wfv1.Workflow{
 		ObjectMeta: v1.ObjectMeta{
 			Labels:      wftmpl.ObjectMeta.Labels,
@@ -244,6 +253,10 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
 func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
+	if len(cwftmpl.Name) > maxCharsInObjectName {
+		return nil, fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
+	}
+
 	wf := &wfv1.Workflow{
 		ObjectMeta: v1.ObjectMeta{
 			Labels:      cwftmpl.ObjectMeta.Labels,
@@ -256,6 +269,10 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 
 // ValidateCronWorkflow validates a CronWorkflow
 func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow) error {
+	if len(cronWf.Name) > maxCharsInObjectName {
+		return fmt.Errorf("cron workflow name %q must not be more than 63 characters long (currently %d)", cronWf.Name, len(cronWf.Name))
+	}
+
 	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
 	}
