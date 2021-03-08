@@ -1,4 +1,4 @@
-name: E2E
+name: Test Docker Executor Docker Executor
 on:
   push:
     branches:
@@ -12,29 +12,9 @@ on:
 jobs:
 
   e2e-tests:
-    name: Test
+    name: Test Docker Executor
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-          - test-executor
-        containerRuntimeExecutor:
-          - docker
-          - emissary
-          - k8sapi
-          - kubelet
-          - pns
-        include:
-          - test: test-cli
-            containerRuntimeExecutor: docker
-          - test: test-functional
-            containerRuntimeExecutor: docker
-          - test: test-examples
-            containerRuntimeExecutor: docker
-          - test: test-e2e-cron
-            containerRuntimeExecutor: docker
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -76,20 +56,20 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           PROFILE=mysql
           ALWAYS_OFFLOAD_NODE_STATUS=true
-          if [ "${{matrix.test}}" = test-executor ] || [ "${{matrix.test}}" = test-examples ]; then
+          if [ "test-executor" = test-executor ] || [ "${{matrix.test}}" = test-examples ]; then
             PROFILE=minimal
             ALWAYS_OFFLOAD_NODE_STATUS=false
           fi
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=docker ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=docker ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
       - name: Start logging
         run: make logs 2>&1 > /tmp/log/argo-e2e/pod.log &
-      - run: make ${{ matrix.test }}
+      - run: make test-executor
       - name: Upload logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-${{matrix.containerRuntimeExecutor}}
+          name: test-executor-docker
           path: /tmp/log/argo-e2e
