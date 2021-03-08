@@ -5418,9 +5418,10 @@ spec:
       command: [sh, -c]
       args: ["cowsay hellow"]`)
 
-	cancel, controller := newController()
-	defer cancel()
 	wf1 := wf.DeepCopy()
+	wf1.Name = "whalesay-1"
+	cancel, controller := newController(wf, wf1)
+	defer cancel()
 	t.Run("StopStrategy", func(t *testing.T) {
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
@@ -5438,7 +5439,8 @@ spec:
 
 		node := woc1.wf.Status.Nodes.FindByDisplayName("whalesay")
 		if assert.NotNil(t, node) {
-			assert.Contains(t, node.Message, "workflow shutdown with strategy:  Stop")
+			assert.Contains(t, node.Message, "workflow shutdown with strategy")
+			assert.Contains(t, node.Message, "Stop")
 		}
 	})
 
