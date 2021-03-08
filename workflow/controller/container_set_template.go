@@ -18,9 +18,13 @@ func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName str
 		woc.markNodePhase(nodeName, wfv1.NodeFailed, fmt.Sprintf("template has sequenced containers, so you must use the emissary executor rather than %q, learn more: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", woc.getContainerRuntimeExecutor()))
 		return woc.wf.GetNodeByName(nodeName), nil
 	}
+	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
+	if err != nil {
+		return node, err
+	}
 
-	_, err := woc.createWorkflowPod(ctx, nodeName, tmpl.ContainerSet.GetContainers(), tmpl, &createWorkflowPodOpts{
-		includeScriptOutput: tmpl.HasOutput(),
+	_, err = woc.createWorkflowPod(ctx, nodeName, tmpl.ContainerSet.GetContainers(), tmpl, &createWorkflowPodOpts{
+		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
 	})
