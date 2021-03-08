@@ -101,9 +101,7 @@ type wfOperationCtx struct {
 	// execWf holds the Workflow for use in execution.
 	// In Normal workflow scenario: It holds copy of workflow object
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
-	// 'execWf.Spec' should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
-	// 1. `wf.Spec.Suspend`
-	// 2. `wf.Spec.Shutdown`
+	// 'execWf.Spec' should usually be used instead `wf.Spec`
 	execWf *wfv1.Workflow
 }
 
@@ -299,7 +297,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}
 
-	if woc.wf.Spec.Suspend != nil && *woc.wf.Spec.Suspend {
+	if woc.ShouldSuspend() {
 		woc.log.Infof("workflow suspended")
 		return
 	}
@@ -373,7 +371,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}[node.Phase]
 
 	var onExitNode *wfv1.NodeStatus
-	if woc.execWf.Spec.OnExit != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
+	if woc.execWf.Spec.OnExit != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
 		var failures []failedNodeStatus
@@ -412,8 +410,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	var workflowMessage string
-	if node.FailedOrError() && woc.execWf.Spec.Shutdown != "" {
-		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.execWf.Spec.Shutdown)
+	if node.FailedOrError() && woc.GetShutdownStrategy().Enabled() {
+		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 	} else {
 		workflowMessage = node.Message
 	}
@@ -753,10 +751,10 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
-	if woc.execWf.Spec.Shutdown != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+	if woc.GetShutdownStrategy().Enabled() || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
 		var message string
-		if woc.execWf.Spec.Shutdown != "" {
-			message = fmt.Sprintf("Stopped with strategy '%s'", woc.execWf.Spec.Shutdown)
+		if woc.GetShutdownStrategy().Enabled() {
+			message = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 		} else {
 			message = fmt.Sprintf("retry exceeded workflow deadline %s", *woc.workflowDeadline)
 		}
@@ -1018,12 +1016,12 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 // fails any suspended and pending nodes if the workflow deadline has passed
 func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
 	deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-	if woc.execWf.Spec.Shutdown != "" || deadlineExceeded {
+	if woc.GetShutdownStrategy().Enabled() || deadlineExceeded {
 		for _, node := range woc.wf.Status.Nodes {
 			if node.IsActiveSuspendNode() || (node.Phase == wfv1.NodePending && deadlineExceeded) {
 				var message string
-				if woc.execWf.Spec.Shutdown != "" {
-					message = fmt.Sprintf("Stopped with strategy '%s'", woc.execWf.Spec.Shutdown)
+				if woc.GetShutdownStrategy().Enabled() {
+					message = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 				} else {
 					message = "Step exceeded its deadline"
 				}
@@ -2927,7 +2925,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 }
 
 func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
-	if templateRef != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
+	if templateRef != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
 		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
@@ -3182,15 +3180,31 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 	return nil
 }
 
+func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
+	return woc.execWf.Spec.Shutdown
+}
+
+func (woc *wfOperationCtx) ShouldSuspend() bool {
+	return woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend
+}
+
+func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
+	// woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" check is mainly to support  backward compatible with 2.11.x workflow to 2.12.x
+	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
+	// This check can be removed once all user migrated from 2.11.x to 2.12.x
+	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") ||
+		(woc.wf.Spec.Suspend != nil && woc.wf.Status.StoredWorkflowSpec.Suspend == nil) ||
+		(woc.wf.Spec.Shutdown != "" && woc.wf.Status.StoredWorkflowSpec.Shutdown == "") ||
+		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown)
+}
+
 func (woc *wfOperationCtx) setStoredWfSpec() error {
 	wfDefault := woc.controller.Config.WorkflowDefaults
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
 	}
-	// woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" check is mainly to support  backward compatible with 2.11.x workflow to 2.12.x
-	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
-	// This check can be removed once all user migrated from 2.11.x to 2.12.x
-	if woc.wf.Status.StoredWorkflowSpec == nil || woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" {
+
+	if woc.needsStoredWfSpecUpdate() {
 		wftHolder, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
