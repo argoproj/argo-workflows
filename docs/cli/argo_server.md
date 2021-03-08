@@ -29,6 +29,7 @@ See https://argoproj.github.io/argo-workflows/argo-server.md
       --event-worker-count int               how many event workers to run (default 4)
   -h, --help                                 help for server
       --hsts                                 Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled. (default true)
+      --log-format string                    The formatter to use for logs. One of: text|json (default "text")
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
