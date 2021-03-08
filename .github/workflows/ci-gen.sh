@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -eux pipefail
 
+# Github Actions does not provide either:
+#
+# 1. Any way to re-use YAML.
+# 2. Re-run a single job in a workflow.
+#
+# So this script auto-generates E2E workflows so they can be re-run.
+
 cd $(dirname $0)
 
 gen() {
