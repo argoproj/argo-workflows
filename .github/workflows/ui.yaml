@@ -12,7 +12,7 @@ jobs:
 
   ui:
     name: UI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 6
     env:
       NODE_OPTIONS: --max-old-space-size=4096

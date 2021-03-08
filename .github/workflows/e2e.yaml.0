@@ -13,7 +13,7 @@ jobs:
 
   e2e-tests:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v2

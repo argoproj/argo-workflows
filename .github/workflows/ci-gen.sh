@@ -18,5 +18,5 @@ gen "Test PNS Executor" test-executor pns
 
 gen "Test CLI" test-cli docker
 gen "Test Cron Workflows" test-cron docker
-gen "Test Examples" test-example docker
+gen "Test Examples" test-examples docker
 gen "Test Functionality " test-functional docker
