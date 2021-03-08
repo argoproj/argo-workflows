@@ -12,7 +12,7 @@ on:
 jobs:
 
   tests:
-    name: Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
