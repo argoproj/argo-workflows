@@ -9,9 +9,9 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
+GIT_TAG                = $(shell git describe --exact-match --abbrev=0  2> /dev/null || echo untagged)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
-DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] && echo false || echo true)
+DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]] && echo false || echo true)
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
@@ -23,7 +23,7 @@ KUBE_NAMESPACE        ?= argo
 VERSION               := latest
 DOCKER_PUSH           := false
 
-# VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
+# VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
