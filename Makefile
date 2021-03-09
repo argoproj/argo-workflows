@@ -159,10 +159,11 @@ $(GOPATH)/bin/staticfiles:
 
 ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
-	# Pack UI into a Go file.
+	# Pack UI into a Go file
 	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 else
 server/static/files.go:
+	# Building without static files
 	cp ./server/static/files.go.stub ./server/static/files.go
 endif
 
