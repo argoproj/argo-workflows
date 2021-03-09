@@ -9,9 +9,9 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
+GIT_TAG                = $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
-DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] && echo false || echo true)
+DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]] && echo false || echo true)
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
@@ -23,7 +23,7 @@ KUBE_NAMESPACE        ?= argo
 VERSION               := latest
 DOCKER_PUSH           := false
 
-# VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
+# VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(GIT_TAG)
@@ -159,10 +159,11 @@ $(GOPATH)/bin/staticfiles:
 
 ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
-	# Pack UI into a Go file.
+	# Pack UI into a Go file
 	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 else
 server/static/files.go:
+	# Building without static files
 	cp ./server/static/files.go.stub ./server/static/files.go
 endif
 
@@ -224,16 +225,21 @@ dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
 
 # argoexec
 
-argoexec-linux-amd64: $(ARGOEXEC_PKGS)
+dist/argoexec: $(ARGOEXEC_PKGS)
+ifeq ($(shell uname -s),Darwin)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+else
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+endif
 
 .PHONY: executor-image
 executor-image: dist/argoexec.image
 
 ifeq ($(DEV_IMAGE),true)
-dist/argoexec.image: argoexec-linux-amd64
-	# Create executor image
+dist/argoexec.image: dist/argoexec
+	[ -e argoexec ] || mv dist/argoexec .
 	$(call docker_build,argoexec-dev)
+	mv argoexec dist/
 	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
 else
 dist/argoexec.image: $(ARGOEXEC_PKGS)
