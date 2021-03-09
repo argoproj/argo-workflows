@@ -159,7 +159,7 @@ func (s *SignalsSuite) TestSidecarInjection() {
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
