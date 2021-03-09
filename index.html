@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#argo-documentation" tabindex="1" class="md-skip">
+      <a href="#what-is-argo-workflows" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -270,52 +270,9 @@
       
     
     
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Overview
-      </label>
-    
     <a href="." title="Overview" class="md-nav__link md-nav__link--active">
       Overview
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#getting-started" title="Getting Started" class="md-nav__link">
-    Getting Started
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" title="Examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fields" title="Fields" class="md-nav__link">
-    Fields
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
     
   </li>
 
@@ -2053,36 +2010,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#getting-started" title="Getting Started" class="md-nav__link">
-    Getting Started
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" title="Examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fields" title="Fields" class="md-nav__link">
-    Fields
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2096,7 +2023,29 @@
                   <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/README.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="argo-documentation">Argo Documentation<a class="headerlink" href="#argo-documentation" title="Permanent link">&para;</a></h1>
+                <p align="center"><img src="./assets/argo.png" alt="Argo Logo"></p>
+
+<p><a href="https://github.com/argoproj/argo-workflows/actions?query=event%3Apush+branch%3Amaster"><img alt="CI" src="https://github.com/argoproj/argo-workflows/workflows/CI/badge.svg" /></a>
+<a href="https://bestpractices.coreinfrastructure.org/projects/3830"><img alt="CII Best Practices" src="https://bestpractices.coreinfrastructure.org/projects/3830/badge" /></a>
+<a href="https://argoproj.github.io/community/join-slack"><img alt="slack" src="https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack" /></a></p>
+<h2 id="what-is-argo-workflows">What is Argo Workflows?<a class="headerlink" href="#what-is-argo-workflows" title="Permanent link">&para;</a></h2>
+<p>Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).</p>
+<ul>
+<li>Define workflows where each step in the workflow is a container.</li>
+<li>Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a directed acyclic graph (DAG).</li>
+<li>Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo Workflows on Kubernetes.</li>
+<li>Run CI/CD pipelines natively on Kubernetes without configuring complex software development products.</li>
+</ul>
+<p>Argo is a <a href="https://cncf.io/">Cloud Native Computing Foundation (CNCF)</a> hosted project.</p>
+<p><a href="https://www.youtube.com/watch?v=TZgLkCFQ2tk"><img alt="Argo Workflows in 5 minutes" src="https://img.youtube.com/vi/TZgLkCFQ2tk/0.jpg" /></a></p>
+<h2 id="why-argo-workflows">Why Argo Workflows?<a class="headerlink" href="#why-argo-workflows" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.</li>
+<li>Cloud agnostic and can run on any Kubernetes cluster.</li>
+<li>Easily orchestrate highly parallel jobs on Kubernetes.</li>
+<li>Argo Workflows puts a cloud-scale supercomputer at your fingertips!</li>
+</ul>
+<h1 id="argo-documentation">Argo Documentation<a class="headerlink" href="#argo-documentation" title="Permanent link">&para;</a></h1>
 <h3 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
 <p>For set-up information and running your first Workflows, please see our <a href="quick-start/">Getting Started</a> guide.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
