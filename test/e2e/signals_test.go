@@ -163,7 +163,7 @@ func (s *SignalsSuite) TestInvalidCommand() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowError, status.Phase)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			assert.Contains(t, status.Message, "executable file not found")
 		})
 }
