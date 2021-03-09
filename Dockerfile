@@ -135,7 +135,7 @@ ENTRYPOINT [ "argoexec" ]
 
 FROM argoexec-base as argoexec-dev
 
-ADD argoexec-linux-amd64 /usr/local/bin/argoexec
+ADD argoexec /usr/local/bin/
 
 ENTRYPOINT [ "argoexec" ]
 

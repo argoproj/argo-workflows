@@ -224,16 +224,21 @@ dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
 
 # argoexec
 
-argoexec-linux-amd64: $(ARGOEXEC_PKGS)
+dist/argoexec: $(ARGOEXEC_PKGS)
+ifeq ($(shell uname -s),Darwin)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+else
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+endif
 
 .PHONY: executor-image
 executor-image: dist/argoexec.image
 
 ifeq ($(DEV_IMAGE),true)
-dist/argoexec.image: argoexec-linux-amd64
-	# Create executor image
+dist/argoexec.image: dist/argoexec
+	[ -e argoexec ] || mv dist/argoexec .
 	$(call docker_build,argoexec-dev)
+	mv argoexec dist/
 	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
 else
 dist/argoexec.image: $(ARGOEXEC_PKGS)
