@@ -60,36 +60,6 @@ func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 		})
 }
 
-func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
-	s.Given().
-		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
-		When().
-		SubmitWorkflow().
-		Given().
-		Workflow("@functional/synchronization-mutex-wf-level.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
-}
-
-func (s *FunctionalSuite) TestTemplateLevelMutex() {
-	s.Given().
-		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
-}
-
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
 		Workflow(`

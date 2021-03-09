@@ -495,9 +495,7 @@ func (s *ArgoServerSuite) TestPermission() {
           "name": "run-workflow",
           "container": {
             "image": "argoproj/argosay:v2",
-            "imagePullPolicy": "IfNotPresent",
-            "command": ["sh"],
-            "args": ["-c", "sleep 1"]
+            "args": [ "sleep", "1" ]
           }
         }
       ],
