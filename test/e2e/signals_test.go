@@ -148,24 +148,7 @@ func (s *SignalsSuite) TestSidecars() {
 		Workflow("@testdata/sidecar-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
-}
-
-func (s *SignalsSuite) TestInvalidCommand() {
-	s.Given().
-		Workflow("@testdata/cannot-start-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Contains(t, status.Message, "executable file not found")
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded, 1*time.Minute)
 }
 
 func TestSignalsSuite(t *testing.T) {

@@ -7,9 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
@@ -26,11 +24,7 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 		RunCli([]string{"submit", "--from", "clusterworkflowtemplate/cluster-workflow-template-whalesay-template", "--name", "my-wf", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
@@ -63,11 +57,7 @@ spec:
             value: hello from nested
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func TestClusterWorkflowTemplateSuite(t *testing.T) {
