@@ -1109,6 +1109,10 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	log.WithField("workflow", wfName).WithField("nodename", pod.Name).WithField("namespace", pod.Namespace).Infof("Pod Spec: %s", string(podSpecByte))
 }
 
+func (woc *wfOperationCtx) findInjectedSidecars(pod *apiv1.Pod) {
+
+}
+
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {

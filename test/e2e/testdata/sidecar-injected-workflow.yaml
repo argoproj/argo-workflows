@@ -11,9 +11,10 @@ spec:
       - name: wait
       - name: main
       - name: injected-sidecar
-        image: argoproj/argosay:v2
+        image: argoproj/argosay:v1
+        command:
+         - sleep
         args:
-          - sleep
           - 999s
   templates:
     - name: main
