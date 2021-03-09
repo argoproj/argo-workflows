@@ -4,14 +4,18 @@ metadata:
   generateName: sidecar-injected-
 spec:
   entrypoint: main
+  # this is a wonderful hack, we append a sidecar to the pod that the template never knows about
+  # and it is as if it was injected
+  podSpecPatch: |
+    containers:
+      - name: wait
+      - name: main
+      - name: injected-sidecar
+        image: argoproj/argosay:v2
+        args:
+          - sleep
+          - 999s
   templates:
     - name: main
-      podSpecPatch: |
-        containers:
-          - name: injected-sidecar
-            image: argoproj/argosay:v2
-            args:
-              - sleep
-              - 999s
       container:
         image: argoproj/argosay:v1
