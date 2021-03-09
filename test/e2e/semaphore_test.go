@@ -59,6 +59,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 		Workflow("@testdata/semaphore-tmpl-level.yaml").
 		When().
 		CreateConfigMap("my-config", map[string]string{"template": "1"}).
+		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
