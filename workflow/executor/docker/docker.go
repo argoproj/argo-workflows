@@ -206,8 +206,8 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 			output, err := common.RunCommand(
 				"docker",
 				"ps",
-				"--all",                                                                                   // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
-				"--no-trunc",                                                                              // display long container IDs
+				"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
+				"--no-trunc", // display long container IDs
 				"--format={{.Status}}|{{.Label \"io.kubernetes.container.name\"}}|{{.ID}}|{{.CreatedAt}}", // similar to `Up 3 hours,main,035a98c4e72e,2021-03-08 17:25:15 -0800 PST`
 				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
 				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
@@ -232,12 +232,12 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				if containerID == "" || d.containers[containerName] == containerID {
 					continue
 				}
-				if createdAt.Before(started.Add(- 15 * time.Second)) {
-					log.Info("ignoring container %q created at %s, too long before process started", containerName, createdAt)
+				if createdAt.Before(started.Add(-15 * time.Second)) {
+					log.Infof("ignoring container %q created at %s, too long before process started", containerName, createdAt)
 					continue
 				}
 				if status == "Created" && containerStatus[containerName] != "" {
-					log.Info("ignoring created container %q that would %s -> %s", containerName, containerStatus[containerName], status)
+					log.Infof("ignoring created container %q that would %s -> %s", containerName, containerStatus[containerName], status)
 					continue
 				}
 				d.containers[containerName] = containerID
