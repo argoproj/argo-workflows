@@ -155,6 +155,18 @@ func (s *SignalsSuite) TestSidecars() {
 		})
 }
 
+func (s *SignalsSuite) TestSidecarInjection() {
+	s.Given().
+		Workflow("@testdata/sidecar-injected-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(1 * time.Minute).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestSignalsSuite(t *testing.T) {
 	suite.Run(t, new(SignalsSuite))
 }
