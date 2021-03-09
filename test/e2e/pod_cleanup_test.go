@@ -70,10 +70,9 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			assert.True(t, strings.Contains(status.Message, "failed to parse label selector"))
 		})
 }
