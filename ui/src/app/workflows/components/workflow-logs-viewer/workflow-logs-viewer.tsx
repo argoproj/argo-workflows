@@ -53,7 +53,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
 
     const containers = ['init', 'wait'].concat(
         templates
-            .map(t => (t.containerSet.graph || t.containerSet.sequence || [{name: 'main'}]).concat(t.sidecars || []))
+            .map(t => (t.containerSet && t.containerSet.containers || [{name: 'main'}]).concat(t.sidecars || []))
             .reduce((a, v) => a.concat(v), [])
             .map(c => c.name)
     );
