@@ -20,7 +20,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -317,14 +316,12 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	return nil
 }
 
-func (d *DockerExecutor) KillSidecars(ctx context.Context, excludedContainerNames []string, terminationGracePeriodDuration time.Duration) error {
+func (d *DockerExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
 	var containerNames []string
 	for n := range d.containers {
-		if !slice.ContainsString(excludedContainerNames, n) {
-			containerNames = append(containerNames, n)
-		}
+		containerNames = append(containerNames, n)
 	}
-	return d.Kill(ctx, containerNames, terminationGracePeriodDuration)
+	return containerNames, nil
 }
 
 func (d *DockerExecutor) getContainerIDs(containerNames []string) ([]string, error) {
