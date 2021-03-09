@@ -110,6 +110,20 @@ func (_m *ContainerRuntimeExecutor) Kill(ctx context.Context, containerNames []s
 	return r0
 }
 
+// KillSidecars provides a mock function with given fields: ctx, excludedContainerNames, terminationGracePeriodDuration
+func (_m *ContainerRuntimeExecutor) KillSidecars(ctx context.Context, excludedContainerNames []string, terminationGracePeriodDuration time.Duration) error {
+	ret := _m.Called(ctx, excludedContainerNames, terminationGracePeriodDuration)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, []string, time.Duration) error); ok {
+		r0 = rf(ctx, excludedContainerNames, terminationGracePeriodDuration)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Wait provides a mock function with given fields: ctx, containerNames, sidecarNames
 func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context, containerNames []string, sidecarNames []string) error {
 	ret := _m.Called(ctx, containerNames, sidecarNames)

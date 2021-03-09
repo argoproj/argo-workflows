@@ -18,6 +18,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/k8sapi"
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
@@ -238,6 +239,16 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, termina
 	}
 	wg.Wait()
 	return asyncErr
+}
+
+func (p *PNSExecutor) KillSidecars(ctx context.Context, excludedContainerNames []string, terminationGracePeriodDuration time.Duration) error {
+	var containerNames []string
+	for n := range p.containerNameToPID {
+		if !slice.ContainsString(excludedContainerNames, n) {
+			containerNames = append(containerNames, n)
+		}
+	}
+	return p.Kill(ctx, containerNames, terminationGracePeriodDuration)
 }
 
 func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriodDuration time.Duration) error {

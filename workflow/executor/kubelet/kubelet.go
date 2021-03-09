@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 type KubeletExecutor struct {
@@ -61,4 +62,18 @@ func (k *KubeletExecutor) Wait(ctx context.Context, containerNames, sidecars []s
 // Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 func (k *KubeletExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	return k.cli.KillGracefully(ctx, containerNames, terminationGracePeriodDuration)
+}
+
+func (k *KubeletExecutor) KillSidecars(ctx context.Context, excludedContainerNames []string, terminationGracePeriodDuration time.Duration) error {
+	pod, err := k.cli.getPod()
+	if err != nil {
+		return err
+	}
+	var containerNames []string
+	for _, c := range pod.Status.ContainerStatuses {
+		if !slice.ContainsString(excludedContainerNames, c.Name) {
+			containerNames = append(containerNames, c.Name)
+		}
+	}
+	return k.Kill(ctx, containerNames, terminationGracePeriodDuration)
 }

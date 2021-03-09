@@ -20,6 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/file"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -222,6 +223,9 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				status := strings.SplitN(parts[0], " ", 2)[0] // Created,Exited,Up,
 				containerName := parts[1]
 				containerID := parts[2]
+				if containerName == "POD" {
+					continue
+				}
 				if d.containers[containerName] == "" && containerID != "" {
 					if status == "Created" { // for "Created" we must check to see if it was an early (non-zero) exit
 						output, err := common.RunCommand("docker", "inspect", containerID, "--format={{.State.ExitCode}}")
@@ -311,6 +315,16 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	}
 	log.Infof("Containers %s killed successfully", containerIDs)
 	return nil
+}
+
+func (d *DockerExecutor) KillSidecars(ctx context.Context, excludedContainerNames []string, terminationGracePeriodDuration time.Duration) error {
+	var containerNames []string
+	for n := range d.containers {
+		if !slice.ContainsString(excludedContainerNames, n) {
+			containerNames = append(containerNames, n)
+		}
+	}
+	return d.Kill(ctx, containerNames, terminationGracePeriodDuration)
 }
 
 func (d *DockerExecutor) getContainerIDs(containerNames []string) ([]string, error) {

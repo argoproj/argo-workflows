@@ -12,6 +12,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
@@ -70,4 +71,18 @@ func (k *K8sAPIExecutor) Until(ctx context.Context, f func(pod *corev1.Pod) bool
 func (k *K8sAPIExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	log.Infof("Killing containers %v", containerNames)
 	return k.client.killGracefully(ctx, containerNames, terminationGracePeriodDuration)
+}
+
+func (k *K8sAPIExecutor) KillSidecars(ctx context.Context, excludedContainerNames []string, terminationGracePeriodDuration time.Duration) error {
+	pod, err := k.client.getPod(ctx)
+	if err != nil {
+		return err
+	}
+	var containerNames []string
+	for _, c := range pod.Status.ContainerStatuses {
+		if !slice.ContainsString(excludedContainerNames, c.Name) {
+			containerNames = append(containerNames, c.Name)
+		}
+	}
+	return k.Kill(ctx, containerNames, terminationGracePeriodDuration)
 }

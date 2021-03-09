@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 )
 
@@ -162,4 +163,18 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 		}
 	}
 	return e.Wait(ctx, containerNames, nil)
+}
+
+func (e emissary) KillSidecars(ctx context.Context, excludedContainerNames []string, terminationGracePeriodDuration time.Duration) error {
+	var containerNames []string
+	dir, err := ioutil.ReadDir("/var/run/argo/ctr")
+	if err != nil {
+		return err
+	}
+	for _, n := range dir {
+		if !slice.ContainsString(excludedContainerNames, n.Name()) {
+			containerNames = append(containerNames, n.Name())
+		}
+	}
+	return e.Kill(ctx, containerNames, terminationGracePeriodDuration)
 }
