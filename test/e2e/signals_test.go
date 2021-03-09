@@ -155,6 +155,19 @@ func (s *SignalsSuite) TestSidecars() {
 		})
 }
 
+func (s *SignalsSuite) TestInvalidCommand() {
+	s.Given().
+		Workflow("@testdata/cannot-start-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
+			assert.Contains(t, status.Message, "executable file not found")
+		})
+}
+
 func TestSignalsSuite(t *testing.T) {
 	suite.Run(t, new(SignalsSuite))
 }

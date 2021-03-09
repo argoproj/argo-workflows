@@ -227,7 +227,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				if err != nil {
 					return err
 				}
-				if d.containers[containerName] == containerID || containerID == "" || status == "Created" {
+				if d.containers[containerName] == containerID || containerID == "" || status == "Created" && time.Since(createdAt) < 10*time.Second {
 					continue
 				}
 				d.containers[containerName] = containerID
