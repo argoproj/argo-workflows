@@ -2210,6 +2210,10 @@ func (tmpl *Template) GetMainContainerNames() []string {
 	}
 }
 
+func (in *Template) GetContainerNames() []string {
+	return append(in.GetMainContainerNames(), in.GetSidecarNames()...)
+}
+
 func (tmpl *Template) HasSequencedContainers() bool {
 	return tmpl != nil && tmpl.ContainerSet.HasSequencedContainers()
 }
