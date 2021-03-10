@@ -300,7 +300,7 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	case err = <-waitCh:
 		// waitCmd completed
 	case <-time.After(terminationGracePeriodDuration):
-		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
+		log.Infof("Timed out (%v) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)
