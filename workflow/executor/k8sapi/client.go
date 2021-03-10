@@ -17,6 +17,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/reaper"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
@@ -97,8 +98,7 @@ func (c *k8sAPIClient) GetContainerStatuses(ctx context.Context) (*corev1.Pod, [
 }
 
 func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
-	command := []string{"/bin/sh", "-c", fmt.Sprintf("kill -%d 1", sig)}
-	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, false, true, command...)
+	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, false, true, reaper.GetKillCommand(sig)...)
 	if err != nil {
 		return err
 	}

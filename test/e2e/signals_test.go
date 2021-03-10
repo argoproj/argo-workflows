@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -22,8 +23,6 @@ type SignalsSuite struct {
 
 func (s *SignalsSuite) SetupSuite() {
 	s.E2ESuite.SetupSuite()
-	// Because k8ssapi and kubelet execute `sh -c 'kill 15 1'` to they do not work.
-	s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
 }
 
 func (s *SignalsSuite) TestStopBehavior() {
@@ -36,7 +35,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
-		WaitForWorkflow().
+		WaitForWorkflow(1 * time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -114,7 +113,7 @@ func (s *SignalsSuite) TestSidecars() {
 
 // make sure Istio/Anthos and other sidecar injectors will work
 func (s *SignalsSuite) TestInjectedSidecar() {
-	s.Need(fixtures.None(fixtures.Emissary))
+	s.Need(fixtures.None(fixtures.Emissary, fixtures.K8SAPI, fixtures.Kubelet))
 	s.Given().
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().
