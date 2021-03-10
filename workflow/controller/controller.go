@@ -434,6 +434,16 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case terminateContainers:
+			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+				return err
+			} else if terminationGracePeriod > 0 {
+				wfc.podCleanupQueue.AddAfter(newPodCleanupKey(namespace, podName, killContainers), terminationGracePeriod)
+			}
+		case killContainers:
+			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
+				return err
+			}
 		case labelPodCompleted:
 			_, err := pods.Patch(
 				ctx,
@@ -482,7 +492,7 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 		if c.State.Terminated != nil {
 			continue
 		}
-		if err:= common.SignalContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, signal); err != nil {
+		if err := common.SignalContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, signal); err != nil {
 			return 0, err
 		}
 	}

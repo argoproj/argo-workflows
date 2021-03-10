@@ -188,6 +188,7 @@ OUTER:
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
+	start := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	for {
@@ -198,7 +199,7 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			if err := p.secureRootFiles(); err != nil {
 				log.WithError(err).Warn("failed to secure root files")
 			}
-			if p.haveContainerPIDs(containerNames) {
+			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
 				return
 			}
 			time.Sleep(50 * time.Millisecond)
