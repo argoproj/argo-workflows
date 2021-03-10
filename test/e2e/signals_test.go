@@ -154,7 +154,6 @@ func (s *SignalsSuite) TestSidecars() {
 }
 
 func (s *SignalsSuite) TestSidecarInjection() {
-	s.Need(fixtures.None(fixtures.Emissary))
 	s.Given().
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().

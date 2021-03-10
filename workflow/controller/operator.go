@@ -1109,10 +1109,6 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	log.WithField("workflow", wfName).WithField("nodename", pod.Name).WithField("namespace", pod.Namespace).Infof("Pod Spec: %s", string(podSpecByte))
 }
 
-func (woc *wfOperationCtx) findInjectedSidecars(pod *apiv1.Pod) {
-
-}
-
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
@@ -1120,12 +1116,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	var newDaemonStatus *bool
 	var message string
 	updated := false
-	var tmpl wfv1.Template
-	if data, ok := pod.Annotations[common.AnnotationKeyTemplate]; ok {
-		if err := json.Unmarshal([]byte(data), &tmpl); err != nil {
-			return woc.markNodeError(node.Name, err)
-		}
-	}
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		newPhase = wfv1.NodePending
@@ -1146,6 +1136,17 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
+			return nil
+		}
+		var tmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &tmpl)
+		if err != nil {
+			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
+			return nil
+		}
 		if tmpl.Daemon != nil && *tmpl.Daemon {
 			// pod is running and template is marked daemon. check if everything is ready
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
@@ -1163,32 +1164,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 		woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
 			WithField("pod", pod.Name).Error(message)
-	}
-
-	waitContainerComplete := false
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated != nil {
-			waitContainerComplete = true
-		}
-	}
-
-	if waitContainerComplete {
-		known := map[string]bool{
-			common.WaitContainerName: true,
-		}
-		for _, n := range tmpl.GetContainerNames() {
-			known[n] = true
-		}
-		for _, c := range pod.Status.ContainerStatuses {
-			if known[c.Name] {
-				continue
-			}
-			woc.log.WithField("containerName", c.Name).Info("non-template container still running after wait container has exited - maybe an injected sidecar that needs killing")
-			_, err := common.ExecPodContainer(woc.controller.restConfig, pod.Namespace, pod.Name, c.Name, true, true, "/sbin/killall5", "SIGTERM")
-			if err != nil {
-				return woc.markNodeError(node.Name, err)
-			}
-		}
 	}
 
 	for _, c := range pod.Status.ContainerStatuses {
