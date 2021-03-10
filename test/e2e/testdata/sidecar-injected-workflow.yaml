@@ -4,9 +4,10 @@ metadata:
   generateName: sidecar-injected-
 spec:
   entrypoint: main
-  # this is a wonderful hack, we append a sidecar to the pod that the template never knows about
-  # and it is as if it was injected
+  # this is a wonderful hack, we append a sidecar to the pod that the controller never knows about, which is
+  # the same as if and it is as if it was injected, (e.g. By Istio or Anthos)
   podSpecPatch: |
+    terminationGracePeriodSeconds: 3
     containers:
       - name: wait
       - name: main

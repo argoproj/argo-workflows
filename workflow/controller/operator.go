@@ -1152,15 +1152,14 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
+		if err := woc.killInjectedSidecarsIfNeeded(pod); err != nil {
+			return woc.markNodeError(node.Name, err)
+		}
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 		woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
 			WithField("pod", pod.Name).Error(message)
-	}
-
-	if err := woc.dealWithInjectedSidecars(pod); err != nil {
-		return woc.markNodeError(node.Name, err)
 	}
 
 	for _, c := range pod.Status.ContainerStatuses {
@@ -1262,28 +1261,19 @@ func getTemplateForPod(pod *apiv1.Pod) (wfv1.Template, error) {
 	}
 }
 
-func (woc *wfOperationCtx) dealWithInjectedSidecars(pod *apiv1.Pod) error {
+func (woc *wfOperationCtx) killInjectedSidecarsIfNeeded(pod *apiv1.Pod) error {
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated != nil {
-			woc.log.Debug("wait container not terminated")
-			return nil
+		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
+			return nil // we must not do anything if the wait or main containers are still running
 		}
 	}
-	tmpl, err := getTemplateForPod(pod)
-	if err != nil {
-		return err
-	}
-	templateContainerNames := map[string]bool{common.WaitContainerName: true}
-	for _, n := range tmpl.GetContainerNames() {
-		templateContainerNames[n] = true
-	}
+	// the wait container has terminated, so all other containers should be killed
 	for _, c := range pod.Status.ContainerStatuses {
-		if templateContainerNames[c.Name] || c.State.Terminated != nil {
-			woc.log.WithField("containerName", c.Name).Debug("container not a template container, or already terminated")
+		if c.State.Terminated != nil {
 			continue
 		}
-		woc.log.WithField("containerName", c.Name).Info("non-template container not terminated after wait container has exited - maybe an injected sidecar - let's kill it")
-		if x, err := common.ExecPodContainer(woc.controller.restConfig, pod.Namespace, pod.Name, c.Name, true, true,  "killall5", "SIGTERM"); err != nil {
+		woc.log.WithField("containerName", c.Name).Info("wait container has terminated, but this container has not (maybe an injected sidecar), sending SIGTERM")
+		if x, err := common.ExecPodContainer(woc.controller.restConfig, pod.Namespace, pod.Name, c.Name, true, true, "kill", "-s15", "--", "-1"); err != nil {
 			return err
 		} else {
 			stdout, stderr, err := common.GetExecutorOutput(x)
