@@ -182,8 +182,8 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 	return exitCode, nil
 }
 
-func (d *DockerExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
-	err := d.syncContainerIDs(ctx, append(containerNames, sidecarNames...))
+func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
+	err := d.syncContainerIDs(ctx, containerNames)
 	if err != nil {
 		return err
 	}
@@ -261,67 +261,6 @@ func (d *DockerExecutor) getContainerID(containerName string) (string, error) {
 		return containerID, nil
 	}
 	return "", errContainerNotExist
-}
-
-// killContainers kills a list of containerNames first with a SIGTERM then with a SIGKILL after a grace period
-func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
-	containerIDs, err := d.getContainerIDs(containerNames)
-	if err != nil {
-		return err
-	}
-
-	if len(containerIDs) == 0 { // they may have already terminated
-		log.Info("zero container IDs, assuming all containers have exited successfully")
-		return nil
-	}
-
-	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
-	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
-	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
-	_, err = common.RunCommand("docker", killArgs...)
-	if err != nil {
-		log.Warningf("Ignored error from 'docker kill --signal TERM': %s", err)
-	}
-	waitArgs := append([]string{"wait"}, containerIDs...)
-	waitCmd := exec.Command("docker", waitArgs...)
-	log.Info(waitCmd.Args)
-	if err := waitCmd.Start(); err != nil {
-		return errors.InternalWrapError(err)
-	}
-	// waitCh needs buffer of 1 so it can always send the result of waitCmd.Wait() without blocking.
-	// Otherwise, if the terminationGracePeriodSeconds elapses and the forced kill branch is run, there would
-	// be no receiver for waitCh and the goroutine would block forever
-	waitCh := make(chan error, 1)
-	go func() {
-		defer close(waitCh)
-		waitCh <- waitCmd.Wait()
-	}()
-	select {
-	case err = <-waitCh:
-		// waitCmd completed
-	case <-time.After(terminationGracePeriodDuration):
-		log.Infof("Timed out (%v) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
-		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
-		forceKillCmd := exec.Command("docker", forceKillArgs...)
-		log.Info(forceKillCmd.Args)
-		// same as kill case above, we ignore any error
-		if err := forceKillCmd.Run(); err != nil {
-			log.Warningf("Ignored error from 'docker kill --signal KILL': %s", err)
-		}
-	}
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	log.Infof("Containers %s killed successfully", containerIDs)
-	return nil
-}
-
-func (d *DockerExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
-	var containerNames []string
-	for n := range d.containers {
-		containerNames = append(containerNames, n)
-	}
-	return containerNames, nil
 }
 
 func (d *DockerExecutor) getContainerIDs(containerNames []string) ([]string, error) {

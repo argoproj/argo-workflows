@@ -172,7 +172,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 func (woc *wfOperationCtx) operate(ctx context.Context) {
 	defer func() {
 		if woc.wf.Status.Fulfilled() {
-			_ = woc.killDaemonedChildren(ctx, "")
+			woc.killDaemonedChildren("")
 		}
 		woc.persistUpdates(ctx)
 	}()
@@ -944,10 +944,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		go func(pod *apiv1.Pod) {
 			defer wg.Done()
 			performAssessment(pod)
-			err = woc.applyExecutionControl(ctx, pod, wfNodesLock)
-			if err != nil {
-				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
-			}
+			woc.applyExecutionControl(ctx, pod, wfNodesLock)
 			<-parallelPodNum
 		}(pod)
 	}
@@ -3254,4 +3251,12 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		}
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) queuePodForCleanup(podName string, podCleanupAction podCleanupAction) {
+	woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, podCleanupAction)
+}
+
+func (woc *wfOperationCtx) queuePodForCleanupAfter(podName string, podCleanupAction podCleanupAction, duration time.Duration) {
+	woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, podCleanupAction, duration)
 }

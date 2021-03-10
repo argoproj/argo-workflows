@@ -215,7 +215,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
-			_ = woc.killDaemonedChildren(ctx, node.ID)
+			woc.killDaemonedChildren(node.ID)
 		}
 	}()
 

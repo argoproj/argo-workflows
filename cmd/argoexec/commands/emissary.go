@@ -130,18 +130,6 @@ func NewEmissaryCommand() *cobra.Command {
 				return err
 			}
 
-			go func() {
-				for {
-					data, _ := ioutil.ReadFile(varRunArgo + "/ctr/" + containerName + "/signal")
-					_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
-					s, _ := strconv.Atoi(string(data))
-					if s > 0 {
-						_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
-					}
-					time.Sleep(2 * time.Second)
-				}
-			}()
-
 			cmdErr := command.Wait()
 
 			if cmdErr == nil {

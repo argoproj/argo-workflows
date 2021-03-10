@@ -412,6 +412,10 @@ func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName stri
 	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
+func (wfc *WorkflowController) queuePodForCleanupAfter(namespace string, podName string, action podCleanupAction, duration time.Duration) {
+	wfc.podCleanupQueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)
+}
+
 func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
 	for wfc.processNextPodCleanupItem(ctx) {
 	}
@@ -489,7 +493,6 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 		if c.State.Terminated != nil {
 			continue
 		}
-		log.WithField("containerName", c.Name).Infof("container has not terminated (maybe an injected sidecar), sending %v", signal)
 		if x, err := common.ExecPodContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, true, true, reaper.GetKillCommand(signal)...); err != nil {
 			return 0, err
 		} else {

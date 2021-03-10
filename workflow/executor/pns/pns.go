@@ -8,10 +8,8 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
-	executil "github.com/argoproj/pkg/exec"
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -127,9 +125,8 @@ func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath
 	return err
 }
 
-func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
-	allContainerNames := append(containerNames, sidecarNames...)
-	go p.pollRootProcesses(ctx, allContainerNames)
+func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
+	go p.pollRootProcesses(ctx, containerNames)
 
 	// Secure a filehandle on our own root. This is because we will chroot back and forth from
 	// the main container's filesystem, to our own.
@@ -182,7 +179,7 @@ OUTER:
 		}
 	}
 
-	return p.K8sAPIExecutor.Wait(ctx, containerNames, sidecarNames)
+	return p.K8sAPIExecutor.Wait(ctx, containerNames)
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the
@@ -218,63 +215,6 @@ func (p *PNSExecutor) haveContainerPIDs(containerNames []string) bool {
 		}
 	}
 	return true
-}
-
-// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
-func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
-	var asyncErr error
-	wg := sync.WaitGroup{}
-	for _, containerName := range containerNames {
-		wg.Add(1)
-		go func(containerName string) {
-			err := p.killContainer(containerName, terminationGracePeriodDuration)
-			if err != nil && asyncErr != nil {
-				asyncErr = err
-			}
-			wg.Done()
-		}(containerName)
-	}
-	wg.Wait()
-	return asyncErr
-}
-
-func (p *PNSExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
-	var containerNames []string
-	for n := range p.containerNameToPID {
-		containerNames = append(containerNames, n)
-	}
-	return containerNames, nil
-}
-
-func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriodDuration time.Duration) error {
-	pid := p.getContainerPID(containerName)
-	if pid == 0 {
-		log.Warnf("No PID for container named %q. Process assumed to have completed", containerName)
-		return nil
-	}
-	// On Unix systems, FindProcess always succeeds and returns a Process
-	// for the given pid, regardless of whether the process exists.
-	proc, _ := os.FindProcess(pid)
-	log.Infof("Sending SIGTERM to pid %d", pid)
-	err := proc.Signal(syscall.SIGTERM)
-	if err != nil {
-		log.Warnf("Failed to SIGTERM pid %d: %v", pid, err)
-	}
-	waitPIDOpts := executil.WaitPIDOpts{Timeout: terminationGracePeriodDuration}
-	err = executil.WaitPID(pid, waitPIDOpts)
-	if err == nil {
-		log.Infof("PID %d completed", pid)
-		return nil
-	}
-	if err != executil.ErrWaitPIDTimeout {
-		return err
-	}
-	log.Warnf("Timed out (%v) waiting for pid %d to complete after SIGTERM. Issuing SIGKILL", waitPIDOpts.Timeout, pid)
-	err = proc.Signal(syscall.SIGKILL)
-	if err != nil {
-		log.Warnf("Failed to SIGKILL pid %d: %v", pid, err)
-	}
-	return err
 }
 
 // returns the entries associated with the container id. Returns zero if it was unable

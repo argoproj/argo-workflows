@@ -273,7 +273,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl, opts)
+	woc.addMetadata(pod, tmpl)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -323,7 +323,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	for i, c := range pod.Spec.Containers {
 		c.Env = append(c.Env,
 			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
-			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(c.Name == common.MainContainerName && opts.includeScriptOutput)},
+			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool((c.Name == common.WaitContainerName || c.Name == common.MainContainerName) && opts.includeScriptOutput)},
 		)
 		pod.Spec.Containers[i] = c
 	}
@@ -652,7 +652,7 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 }
 
 // addMetadata applies metadata specified in the template
-func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if woc.wf.Spec.PodMetadata != nil {
 		// add workflow-level pod annotations and labels
 		for k, v := range woc.wf.Spec.PodMetadata.Annotations {
@@ -668,29 +668,6 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts
 	}
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
-	}
-
-	execCtl := common.ExecutionControl{
-		IncludeScriptOutput: opts.includeScriptOutput,
-	}
-
-	if woc.workflowDeadline != nil {
-		execCtl.Deadline = woc.workflowDeadline
-	}
-
-	// If we're passed down an executionDeadline, only set it if there isn't one set already, or if it's before than
-	// the one already set.
-	if !opts.executionDeadline.IsZero() && (execCtl.Deadline == nil || opts.executionDeadline.Before(*execCtl.Deadline)) {
-		execCtl.Deadline = &opts.executionDeadline
-	}
-
-	if execCtl.Deadline != nil || opts.includeScriptOutput {
-		execCtlBytes, err := json.Marshal(execCtl)
-		if err != nil {
-			panic(err)
-		}
-
-		pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
 	}
 }
 

@@ -13,8 +13,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
-	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -22,7 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/reaper"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
@@ -282,19 +279,6 @@ func (k *kubeletClient) getCommandOutput(containerName, command string) (*bytes.
 // WaitForTermination of the given container, set the timeout to 0 to discard it
 func (k *kubeletClient) WaitForTermination(ctx context.Context, containerNames []string, timeout time.Duration) error {
 	return execcommon.WaitForTermination(ctx, k, containerNames, timeout)
-}
-
-func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
-	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, "command="+strings.Join(reaper.GetKillCommand(sig), "&command=")))
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	_, err = k.exec(u)
-	return err
-}
-
-func (k *kubeletClient) KillGracefully(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
-	return execcommon.KillGracefully(ctx, k, containerNames, terminationGracePeriodDuration)
 }
 
 func (k *kubeletClient) CopyArchive(ctx context.Context, containerName, sourcePath, destPath string) error {

@@ -43,7 +43,6 @@ func TestSaveParameters(t *testing.T) {
 		ClientSet:          fakeClientset,
 		Namespace:          fakeNamespace,
 		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("has a newline\n", nil)
@@ -132,7 +131,6 @@ func TestDefaultParameters(t *testing.T) {
 		ClientSet:          fakeClientset,
 		Namespace:          fakeNamespace,
 		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
@@ -165,7 +163,6 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		ClientSet:          fakeClientset,
 		Namespace:          fakeNamespace,
 		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
@@ -322,7 +319,6 @@ func TestSaveArtifacts(t *testing.T) {
 		ClientSet:          fakeClientset,
 		Namespace:          fakeNamespace,
 		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
 		RuntimeExecutor:    &mockRuntimeExecutor,
 	}
 

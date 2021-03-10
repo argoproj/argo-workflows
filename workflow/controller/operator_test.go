@@ -5574,10 +5574,10 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		pods, err := listPods(woc)
 		assert.NoError(t, err)
 		assert.True(t, len(pods.Items) > 0)
-		for _, pod := range pods.Items {
-			podbyte, err := json.Marshal(pod)
-			assert.NoError(t, err)
-			assert.Contains(t, string(podbyte), "includeScriptOutput")
+		waitCtr := pods.Items[0].Spec.Containers
+		includeScriptOutputEnv := waitCtr[0].Env[3]
+		if assert.Equal(t, common.EnvVarIncludeScriptOutput, includeScriptOutputEnv.Name) {
+			assert.Equal(t, "true", includeScriptOutputEnv.Value)
 		}
 	})
 }

@@ -12,7 +12,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
@@ -37,7 +36,6 @@ import (
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -59,6 +57,8 @@ const (
 	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
+var includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
+
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName            string
@@ -66,7 +66,6 @@ type WorkflowExecutor struct {
 	ClientSet          kubernetes.Interface
 	Namespace          string
 	PodAnnotationsPath string
-	ExecutionControl   *common.ExecutionControl
 	RuntimeExecutor    ContainerRuntimeExecutor
 
 	// memoized configmaps
@@ -102,13 +101,7 @@ type ContainerRuntimeExecutor interface {
 
 	// Wait waits for the container to complete.
 	// The implementation should not wait for the sidecars. These are included in case you need to capture data on them.
-	Wait(ctx context.Context, containerNames, sidecarNames []string) error
-
-	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
-	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
-
-	// List all known containers.
-	ListContainerNames(ctx context.Context) ([]string, error)
+	Wait(ctx context.Context, containerNames []string) error
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -676,7 +669,7 @@ func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Contex
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
-	if we.ExecutionControl == nil || !we.ExecutionControl.IncludeScriptOutput {
+	if !includeScriptOutput {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
@@ -927,10 +920,8 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	containerNames := we.Template.GetMainContainerNames()
-	annotationUpdatesCh := we.monitorAnnotations(ctx)
-	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx, containerNames, we.Template.GetSidecarNames())
+		err := we.RuntimeExecutor.Wait(ctx, containerNames)
 		return err == nil, err
 	})
 	if err != nil {
@@ -940,182 +931,9 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	return nil
 }
 
-func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath string) <-chan struct{} {
-	res := make(chan struct{})
-	go func() {
-		defer close(res)
-
-		var modTime *time.Time
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-
-			file, err := os.Stat(filePath)
-			if err != nil {
-				log.Fatal(err)
-			}
-			newModTime := file.ModTime()
-			if modTime != nil && !modTime.Equal(file.ModTime()) {
-				res <- struct{}{}
-			}
-			modTime = &newModTime
-			time.Sleep(pollInterval)
-		}
-	}()
-	return res
-}
-
-// monitorAnnotations starts a goroutine which monitors for any changes to the pod annotations.
-// Emits an event on the returned channel upon any updates
-func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struct{} {
-	log.Infof("Starting annotations monitor")
-
-	// Create a channel to listen for a SIGUSR2. Upon receiving of the signal, we force reload our annotations
-	// directly from kubernetes API. The controller uses this to fast-track notification of annotations
-	// instead of waiting for the volume file to get updated (which can take minutes)
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os_specific.GetOsSignal())
-
-	err := we.LoadExecutionControl() // this is much cheaper than doing `get pod`
-	if err != nil {
-		log.Errorf("Failed to reload execution control from annotations: %v", err)
-	}
-
-	// Create a channel which will notify a listener on new updates to the annotations
-	annotationUpdateCh := make(chan struct{})
-
-	annotationChanges := watchFileChanges(ctx, 10*time.Second, we.PodAnnotationsPath)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				log.Infof("Annotations monitor stopped")
-				signal.Stop(sigs)
-				close(sigs)
-				close(annotationUpdateCh)
-				return
-			case <-sigs:
-				log.Infof("Received update signal. Reloading annotations from API")
-				annotationUpdateCh <- struct{}{}
-				we.setExecutionControl(ctx)
-			case <-annotationChanges:
-				log.Infof("%s updated", we.PodAnnotationsPath)
-				err := we.LoadExecutionControl()
-				if err != nil {
-					log.Warnf("Failed to reload execution control from annotations: %v", err)
-					continue
-				}
-				if we.ExecutionControl != nil {
-					log.Infof("Execution control reloaded from annotations: %v", *we.ExecutionControl)
-				}
-				annotationUpdateCh <- struct{}{}
-			}
-		}
-	}()
-	return annotationUpdateCh
-}
-
-// setExecutionControl sets the execution control information from the pod annotation
-func (we *WorkflowExecutor) setExecutionControl(ctx context.Context) {
-	pod, err := we.getPod(ctx)
-	if err != nil {
-		log.Warnf("Failed to set execution control from API server: %v", err)
-		return
-	}
-	execCtlString, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl]
-	if !ok {
-		we.ExecutionControl = nil
-	} else {
-		var execCtl common.ExecutionControl
-		err = json.Unmarshal([]byte(execCtlString), &execCtl)
-		if err != nil {
-			log.Errorf("Error unmarshalling '%s': %v", execCtlString, err)
-			return
-		}
-		we.ExecutionControl = &execCtl
-		log.Infof("Execution control set from API: %v", *we.ExecutionControl)
-	}
-}
-
-// monitorDeadline checks to see if we exceeded the deadline for the step and
-// terminates the main container if we did
-func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string, annotationsUpdate <-chan struct{}) {
-	log.Infof("Starting deadline monitor")
-	for {
-		select {
-		case <-ctx.Done():
-			log.Info("Deadline monitor stopped")
-			return
-		case <-annotationsUpdate:
-		default:
-			// TODO(jessesuen): we do not effectively use the annotations update channel yet. Ideally, we
-			// should optimize this logic so that we use some type of mutable timer against the deadline
-			// value instead of polling.
-			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
-				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
-					var message string
-
-					// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
-					// timeouts as a failure and the pod should be annotated with that error
-					if we.ExecutionControl.Deadline.IsZero() {
-						message = "terminated"
-					} else {
-						message = "Step exceeded its deadline"
-					}
-					log.Info(message)
-					util.WriteTeriminateMessage(message)
-					log.Infof("Killing main container")
-					terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
-					err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration)
-					if err != nil {
-						log.Warnf("Failed to kill main container: %v", err)
-					}
-					return
-				}
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}
-}
-
-// KillSidecars kills any sidecars to the main container
-func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
-	containerNames, err := we.RuntimeExecutor.ListContainerNames(ctx)
-	if err != nil {
-		return err
-	}
-	var sidecarNames []string
-	for _, n := range containerNames {
-		if n != common.WaitContainerName && !we.Template.IsMainContainerName(n) {
-			sidecarNames = append(sidecarNames, n)
-		}
-	}
-	if len(sidecarNames) == 0 {
-		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
-	}
-	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
-	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
-	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
-}
-
 func (we *WorkflowExecutor) Init() error {
 	if i, ok := we.RuntimeExecutor.(Initializer); ok {
 		return i.Init(we.Template)
-	}
-	return nil
-}
-
-// LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file
-func (we *WorkflowExecutor) LoadExecutionControl() error {
-	err := unmarshalAnnotationField(we.PodAnnotationsPath, common.AnnotationKeyExecutionControl, &we.ExecutionControl)
-	if err != nil {
-		if errors.IsCode(errors.CodeNotFound, err) {
-			return nil
-		}
-		return err
 	}
 	return nil
 }

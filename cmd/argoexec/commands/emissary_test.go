@@ -5,11 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"sync"
-	"syscall"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -56,23 +52,6 @@ func TestEmissary(t *testing.T) {
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/stderr")
 		assert.NoError(t, err)
 		assert.Equal(t, "hello", string(data))
-	})
-	t.Run("Signal", func(t *testing.T) {
-		for signal, message := range map[syscall.Signal]string{
-			syscall.SIGTERM: "terminated",
-			syscall.SIGKILL: "killed",
-		} {
-			err := ioutil.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0600)
-			assert.NoError(t, err)
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				err := run(x, []string{"sleep", "5s"})
-				assert.EqualError(t, err, "signal: "+message)
-			}()
-			time.Sleep(time.Second)
-		}
 	})
 	t.Run("Artifact", func(t *testing.T) {
 		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`

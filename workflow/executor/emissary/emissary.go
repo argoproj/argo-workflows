@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -35,10 +34,6 @@ If the container is named `main` it also copies base-layer artifacts to the shar
 
 * `/var/run/argo/outputs/parameters/${path}` All output parameters are copied here, e.g. `/tmp/message` is moved to `/var/run/argo/outputs/parameters/tmp/message`.
 * `/var/run/argo/outputs/artifacts/${path}.tgz` All output artifacts are copied here, e.g. `/tmp/message` is moved to /var/run/argo/outputs/artifacts/tmp/message.tgz`.
-
-The wait container can create one file itself, used for terminating the sub-process:
-
-* `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the value found in this file.
 
 */
 type emissary struct{}
@@ -120,7 +115,7 @@ func (e emissary) GetExitCode(_ context.Context, containerName string) (string, 
 	return strconv.Itoa(exitCode), err
 }
 
-func (e emissary) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
+func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -142,36 +137,4 @@ func (e emissary) isComplete(containerNames []string) bool {
 		}
 	}
 	return true
-}
-
-func (e emissary) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
-	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0600); err != nil {
-			return err
-		}
-	}
-	ctx, cancel := context.WithTimeout(ctx, terminationGracePeriodDuration)
-	defer cancel()
-	err := e.Wait(ctx, containerNames, nil)
-	if err != context.Canceled {
-		return err
-	}
-	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0600); err != nil {
-			return err
-		}
-	}
-	return e.Wait(ctx, containerNames, nil)
-}
-
-func (e emissary) ListContainerNames(ctx context.Context) ([]string, error) {
-	var containerNames []string
-	dir, err := ioutil.ReadDir("/var/run/argo/ctr")
-	if err != nil {
-		return nil, err
-	}
-	for _, n := range dir {
-		containerNames = append(containerNames, n.Name())
-	}
-	return containerNames, nil
 }
