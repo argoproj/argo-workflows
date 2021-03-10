@@ -429,12 +429,6 @@ rules:
   verbs:
   - create
 - apiGroups:
-  - ""
-  resources:
-  - nodes/proxy
-  verbs:
-  - get
-- apiGroups:
   - argoproj.io
   resources:
   - workflows
@@ -474,6 +468,18 @@ rules:
   - get
   - list
   - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubelet-executor
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes/proxy
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -548,6 +554,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-server
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubelet-executor-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubelet-executor
+subjects:
+- kind: ServiceAccount
+  name: default
   namespace: argo
 ---
 apiVersion: v1
