@@ -112,9 +112,19 @@ func (s *SignalsSuite) TestSidecars() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *SignalsSuite) TestSidecarInjection() {
+// make sure Istio/Anthos and other sidecar injectors will work
+func (s *SignalsSuite) TestInjectedSidecar() {
+	s.Need(fixtures.None(fixtures.Emissary))
 	s.Given().
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *SignalsSuite) TestInjectedSidecarShell() {
+	s.Given().
+		Workflow("@testdata/sidecar-injected-shell-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)

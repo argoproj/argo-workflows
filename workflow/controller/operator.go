@@ -1272,15 +1272,9 @@ func (woc *wfOperationCtx) killInjectedSidecarsIfNeeded(pod *apiv1.Pod) error {
 		if c.State.Terminated != nil {
 			continue
 		}
-		woc.log.WithField("containerName", c.Name).Info("wait container has terminated, but this container has not (maybe an injected sidecar), sending SIGTERM")
-		if x, err := common.ExecPodContainer(woc.controller.restConfig, pod.Namespace, pod.Name, c.Name, true, true, "kill", "-s15", "--", "-1"); err != nil {
+		woc.log.WithField("containerName", c.Name).Info("wait container has terminated, but this container has not (maybe an injected sidecar), sending SIGKILL")
+		if _, err := common.ExecPodContainer(woc.controller.restConfig, pod.Namespace, pod.Name, c.Name, true, true, "kill", "-15", "--", "-1"); err != nil {
 			return err
-		} else {
-			stdout, stderr, err := common.GetExecutorOutput(x)
-			if err != nil {
-				return err
-			}
-			woc.log.WithField("stdout", stdout.String()).WithField("stderr", stderr.String()).Info("kill sent")
 		}
 	}
 	return nil

@@ -1,11 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: sidecar-injected-
+  generateName: sidecar-injected-shell-
 spec:
   entrypoint: main
-  # this is a wonderful hack, we append a sidecar to the pod that the controller never knows about, which is
-  # the same as if and it is as if it was injected, (e.g. By Istio or Anthos)
   podSpecPatch: |
     terminationGracePeriodSeconds: 3
     containers:
@@ -14,9 +12,10 @@ spec:
       - name: sidecar
         image: argoproj/argosay:v1
         command:
-         - sleep
+         - sh
+         - -c
         args:
-          - "999"
+          - "sleep 999"
   templates:
     - name: main
       container:

@@ -23,8 +23,6 @@ import (
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
-var errContainerNameNotFound = fmt.Errorf("container name not found")
-
 type PNSExecutor struct {
 	*k8sapi.K8sAPIExecutor
 	podName   string
@@ -298,7 +296,7 @@ func containerNameForPID(pid int) (string, error) {
 			return strings.TrimPrefix(l, prefix), nil
 		}
 	}
-	return "", errContainerNameNotFound
+	return fmt.Sprintf("pid/%d", pid), nil // we give all a "container name", including a fake name for injected sidecars
 }
 
 func (p *PNSExecutor) secureRootFiles() error {
@@ -325,14 +323,16 @@ func (p *PNSExecutor) secureRootFiles() error {
 			}
 			p.pidFileHandles[pid] = fs
 			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
-			p.mu.Lock()
-			defer p.mu.Unlock()
 			containerName, err := containerNameForPID(pid)
 			if err != nil {
 				return err
 			}
-			p.containerNameToPID[containerName] = pid
-			log.Infof("mapped container name %q to pid %d", containerName, pid)
+			if p.getContainerPID(containerName) != pid {
+				p.mu.Lock()
+				defer p.mu.Unlock()
+				p.containerNameToPID[containerName] = pid
+				log.Infof("mapped container name %q to pid %d", containerName, pid)
+			}
 			return nil
 		}()
 		if err != nil {
