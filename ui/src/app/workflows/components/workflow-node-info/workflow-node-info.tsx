@@ -332,7 +332,7 @@ class WorkflowNodeContainers extends React.Component<Props, {selectedSidecar: st
                 </div>
             );
         }
-        const containers = (template.containerSet ? template.containerSet.containers || template.containerSet.sequence : []).concat(template.sidecars || []);
+        const containers = (template.containerSet ? template.containerSet.containers : []).concat(template.sidecars || []);
 
         const container = (this.state.selectedSidecar && containers.find(item => item.name === this.state.selectedSidecar)) || template.container || template.script;
 
