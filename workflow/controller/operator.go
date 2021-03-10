@@ -1133,9 +1133,16 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
-		tmpl, err := getTemplateForPod(pod)
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
+			return nil
+		}
+		var tmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &tmpl)
 		if err != nil {
-			return woc.markNodeError(node.Name, err)
+			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
+			return nil
 		}
 		if tmpl.Daemon != nil && *tmpl.Daemon {
 			// pod is running and template is marked daemon. check if everything is ready
@@ -1149,7 +1156,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		woc.killInjectedSidecarsIfNeeded(pod)
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -1245,31 +1251,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		return node
 	}
 	return nil
-}
-
-func getTemplateForPod(pod *apiv1.Pod) (wfv1.Template, error) {
-	var tmpl wfv1.Template
-	if data, ok := pod.Annotations[common.AnnotationKeyTemplate]; ok {
-		return tmpl, json.Unmarshal([]byte(data), &tmpl)
-	} else {
-		return tmpl, fmt.Errorf("missing template annotation")
-	}
-}
-
-func (woc *wfOperationCtx) killInjectedSidecarsIfNeeded(pod *apiv1.Pod) {
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-			return // we must not do anything if the wait or main containers are still running
-		}
-	}
-	// the wait container has terminated, so all other containers should be killed
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Terminated != nil {
-			continue
-		}
-		woc.controller.queuePodForCleanup(pod.Namespace, pod.Name, terminateContainers)
-		return
-	}
 }
 
 // getLatestFinishedAt returns the latest finishAt timestamp from all the

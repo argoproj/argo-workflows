@@ -14,6 +14,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
+const kill2xDuration = time.Minute
+
 // Tests the use of signals to kill containers.
 // argoproj/argosay:v2 does not contain sh, so you must use argoproj/argosay:v1.
 // Killing often requires SIGKILL, which is issued 30s after SIGTERM. So tests need longer (>30s) timeout.
@@ -35,7 +37,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -64,7 +66,7 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
 		}).
-		WaitForWorkflow().
+		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -90,7 +92,7 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
-		WaitForWorkflow().
+		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
@@ -113,17 +115,8 @@ func (s *SignalsSuite) TestSidecars() {
 
 // make sure Istio/Anthos and other sidecar injectors will work
 func (s *SignalsSuite) TestInjectedSidecar() {
-	s.Need(fixtures.None(fixtures.Emissary, fixtures.K8SAPI, fixtures.Kubelet))
 	s.Given().
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
-}
-
-func (s *SignalsSuite) TestInjectedSidecarShell() {
-	s.Given().
-		Workflow("@testdata/sidecar-injected-shell-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)

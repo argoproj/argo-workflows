@@ -43,7 +43,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/reaper"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -435,16 +434,6 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
-		case terminateContainers:
-			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
-				return err
-			} else if terminationGracePeriod > 0 {
-				wfc.podCleanupQueue.AddAfter(newPodCleanupKey(namespace, podName, killContainers), terminationGracePeriod)
-			}
-		case killContainers:
-			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
-				return err
-			}
 		case labelPodCompleted:
 			_, err := pods.Patch(
 				ctx,
@@ -493,13 +482,8 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 		if c.State.Terminated != nil {
 			continue
 		}
-		if x, err := common.ExecPodContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, true, true, reaper.GetKillCommand(signal)...); err != nil {
+		if err:= common.SignalContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, signal); err != nil {
 			return 0, err
-		} else {
-			// important: we must consume the output for the command to run successfully
-			if _, _, err := common.GetExecutorOutput(x); err != nil {
-				return 0, err
-			}
 		}
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
