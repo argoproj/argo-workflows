@@ -93,3 +93,8 @@ spec:
         image: argoproj/argosay:v1
         command: [sh, -c]
         args: ["cat /file && echo \"{{inputs.parameters.file-name}}.processed\" | tee /tmp/f.txt"]
+      outputs:
+        parameters:
+          - name: processed
+            valueFrom:
+              path: /tmp/f.txt
