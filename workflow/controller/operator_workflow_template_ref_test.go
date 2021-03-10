@@ -333,7 +333,7 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		for _, node := range woc1.wf.Status.Nodes {
 			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy:  Terminate")
+				assert.Contains(t, node.Message, "workflow shutdown with strategy: Terminate")
 			}
 		}
 	})
@@ -352,7 +352,7 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		assert.Equal(t, wfv1.ShutdownStrategyStop, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		for _, node := range woc1.wf.Status.Nodes {
 			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy:  Stop")
+				assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
 			}
 		}
 	})
