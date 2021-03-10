@@ -204,8 +204,8 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 			output, err := common.RunCommand(
 				"docker",
 				"ps",
-				"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
-				"--no-trunc", // display long container IDs
+				"--all",                                                                    // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
+				"--no-trunc",                                                               // display long container IDs
 				"--format={{.Status}}|{{.Label \"io.kubernetes.container.name\"}}|{{.ID}}", // similar to `Up 3 hours,main,035a98c4e72e`
 				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
 				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
@@ -280,6 +280,9 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
 	_, err = common.RunCommand("docker", killArgs...)
 	if err != nil {
+		if strings.Contains(err.Error(), "is not running") {
+			return nil
+		}
 		log.Warningf("Ignored error from 'docker kill --signal TERM': %s", err)
 	}
 	waitArgs := append([]string{"wait"}, containerIDs...)
