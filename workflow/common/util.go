@@ -106,7 +106,6 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 	}
 	return &stdOut, &stdErr, nil
 }
-
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It substitutes:
 // * parameters in the template from the arguments

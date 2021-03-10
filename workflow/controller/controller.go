@@ -43,7 +43,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/reaper"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -490,13 +489,8 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 			continue
 		}
 		log.WithField("containerName", c.Name).Infof("container has not terminated (maybe an injected sidecar), sending %v", signal)
-		if x, err := common.ExecPodContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, true, true, reaper.GetKillCommand(signal)...); err != nil {
+		if err := common.SignalContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, signal); err != nil {
 			return 0, err
-		} else {
-			// important: we must consume the output for the command to run successfully
-			if _, _, err := common.GetExecutorOutput(x); err != nil {
-				return 0, err
-			}
 		}
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {

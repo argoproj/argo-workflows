@@ -22,7 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/reaper"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
@@ -284,10 +283,10 @@ func (k *kubeletClient) WaitForTermination(ctx context.Context, containerNames [
 	return execcommon.WaitForTermination(ctx, k, containerNames, timeout)
 }
 
-func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
-	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, "command="+strings.Join(reaper.GetKillCommand(sig), "&command=")))
+func (k *kubeletClient) KillContainer(container *corev1.ContainerStatus, sig syscall.Signal) error {
+	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s&output=1&error=1", k.kubeletEndpoint, k.namespace, k.podName, container.Name, "command="+strings.Join(common.GetKillCommand(sig), "&command=")))
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return err
 	}
 	_, err = k.exec(u)
 	return err
