@@ -382,10 +382,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			return nil, errors.Wrap(err, "", "Fail to substitute the PodSpecPatch variables")
 		}
 
-		var spec apiv1.PodSpec
-
-		if !util.ValidateJsonStr(tmpl.PodSpecPatch, spec) {
-			return nil, errors.New("", "Invalid PodSpecPatch String")
+		if err := json.Unmarshal([]byte(tmpl.PodSpecPatch), &apiv1.PodSpec{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", tmpl.PodSpecPatch, err)
 		}
 
 		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
