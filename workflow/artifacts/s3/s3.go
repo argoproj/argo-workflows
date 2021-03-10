@@ -146,7 +146,7 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 			if err != nil {
 				return false, err
 			}
-			files, err = s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
+			files, err = s3cli.ListDirectory(artifact.S3.Bucket, "")
 			if err != nil {
 				return false, err
 			}
