@@ -1004,7 +1004,8 @@ func ConvertYAMLToJSON(str string) (string, error) {
 
 // PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
 func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
-	var wfPatch, tmplPatch, mergedPatch string
+	wfPatch := "{}"
+	tmplPatch := "{}"
 	var err error
 
 	if wf.Spec.HasPodSpecPatch() {
@@ -1018,25 +1019,12 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 		if err != nil {
 			return "", err
 		}
-
-		if wfPatch != "" {
-			mergedByte, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
-			if err != nil {
-				return "", err
-			}
-			mergedPatch = string(mergedByte)
-		} else {
-			mergedPatch = tmplPatch
-		}
-	} else {
-		mergedPatch = wfPatch
 	}
-	return mergedPatch, nil
-}
-
-func ValidateJsonStr(jsonStr string, schema interface{}) bool {
-	err := json.Unmarshal([]byte(jsonStr), &schema)
-	return err == nil
+	mergedByte, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
+	if err != nil {
+		return "", err
+	}
+	return string(mergedByte), nil
 }
 
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {

@@ -1152,9 +1152,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		if err := woc.killInjectedSidecarsIfNeeded(pod); err != nil {
-			return woc.markNodeError(node.Name, err)
-		}
+		woc.killInjectedSidecarsIfNeeded(pod)
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -1261,10 +1259,10 @@ func getTemplateForPod(pod *apiv1.Pod) (wfv1.Template, error) {
 	}
 }
 
-func (woc *wfOperationCtx) killInjectedSidecarsIfNeeded(pod *apiv1.Pod) error {
+func (woc *wfOperationCtx) killInjectedSidecarsIfNeeded(pod *apiv1.Pod) {
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-			return nil // we must not do anything if the wait or main containers are still running
+			return // we must not do anything if the wait or main containers are still running
 		}
 	}
 	// the wait container has terminated, so all other containers should be killed
@@ -1272,12 +1270,9 @@ func (woc *wfOperationCtx) killInjectedSidecarsIfNeeded(pod *apiv1.Pod) error {
 		if c.State.Terminated != nil {
 			continue
 		}
-		woc.log.WithField("containerName", c.Name).Info("wait container has terminated, but this container has not (maybe an injected sidecar), sending SIGKILL")
-		if _, err := common.ExecPodContainer(woc.controller.restConfig, pod.Namespace, pod.Name, c.Name, true, true, "kill", "-15", "--", "-1"); err != nil {
-			return err
-		}
+		woc.controller.queuePodForCleanup(pod.Namespace, pod.Name, terminateContainers)
+		return
 	}
-	return nil
 }
 
 // getLatestFinishedAt returns the latest finishAt timestamp from all the

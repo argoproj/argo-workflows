@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
@@ -429,6 +430,16 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case terminateContainers:
+			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+				return err
+			} else if terminationGracePeriod > 0 {
+				wfc.podCleanupQueue.AddAfter(newPodCleanupKey(namespace, podName, killContainers), terminationGracePeriod)
+			}
+		case killContainers:
+			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
+				return err
+			}
 		case labelPodCompleted:
 			_, err := pods.Patch(
 				ctx,
@@ -459,6 +470,38 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 	}
 	return true
+}
+
+func (wfc *WorkflowController) signalContainers(namespace string, podName string, signal syscall.Signal) (time.Duration, error) {
+	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		return 0, nil
+	}
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		return 0, fmt.Errorf("object is not a pod")
+	}
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.State.Terminated != nil {
+			continue
+		}
+		log.WithField("containerName", c.Name).Infof("container has not terminated (maybe an injected sidecar), sending %v", signal)
+		if x, err := common.ExecPodContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, true, true, "kill", fmt.Sprintf("-%d", signal), "--", "-1"); err != nil {
+			return 0, err
+		} else {
+			// important: we must consume the output for the command to run successfully
+			if _, _, err := common.GetExecutorOutput(x); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if pod.Spec.TerminationGracePeriodSeconds == nil {
+		return 30 * time.Second, nil
+	}
+	return time.Second * time.Duration(*pod.Spec.TerminationGracePeriodSeconds), nil
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
