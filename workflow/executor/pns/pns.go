@@ -127,9 +127,8 @@ func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath
 	return err
 }
 
-func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
-	allContainerNames := append(containerNames, sidecarNames...)
-	go p.pollRootProcesses(ctx, allContainerNames)
+func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
+	go p.pollRootProcesses(ctx, containerNames)
 
 	// Secure a filehandle on our own root. This is because we will chroot back and forth from
 	// the main container's filesystem, to our own.
@@ -182,7 +181,7 @@ OUTER:
 		}
 	}
 
-	return p.K8sAPIExecutor.Wait(ctx, containerNames, sidecarNames)
+	return p.K8sAPIExecutor.Wait(ctx, containerNames)
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the
@@ -191,6 +190,7 @@ OUTER:
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
+	start := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	for {
@@ -201,7 +201,7 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			if err := p.secureRootFiles(); err != nil {
 				log.WithError(err).Warn("failed to secure root files")
 			}
-			if p.haveContainerPIDs(containerNames) {
+			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
 				return
 			}
 			time.Sleep(50 * time.Millisecond)

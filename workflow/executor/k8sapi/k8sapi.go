@@ -56,7 +56,7 @@ func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) 
 }
 
 // Wait for the container to complete
-func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
+func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames []string) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
 		return common.AllTerminated(pod.Status.ContainerStatuses, containerNames)
 	})

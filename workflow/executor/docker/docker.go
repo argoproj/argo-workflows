@@ -182,8 +182,8 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 	return exitCode, nil
 }
 
-func (d *DockerExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
-	err := d.syncContainerIDs(ctx, append(containerNames, sidecarNames...))
+func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
+	err := d.syncContainerIDs(ctx, containerNames)
 	if err != nil {
 		return err
 	}

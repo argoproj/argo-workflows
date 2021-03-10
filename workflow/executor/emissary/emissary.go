@@ -120,7 +120,7 @@ func (e emissary) GetExitCode(_ context.Context, containerName string) (string, 
 	return strconv.Itoa(exitCode), err
 }
 
-func (e emissary) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
+func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -152,7 +152,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	}
 	ctx, cancel := context.WithTimeout(ctx, terminationGracePeriodDuration)
 	defer cancel()
-	err := e.Wait(ctx, containerNames, nil)
+	err := e.Wait(ctx, containerNames)
 	if err != context.Canceled {
 		return err
 	}
@@ -161,7 +161,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 			return err
 		}
 	}
-	return e.Wait(ctx, containerNames, nil)
+	return e.Wait(ctx, containerNames)
 }
 
 func (e emissary) ListContainerNames(ctx context.Context) ([]string, error) {

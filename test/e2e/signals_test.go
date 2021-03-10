@@ -14,7 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const kill2xDuration = time.Minute
+const kill2xDuration = 30*time.Second
 
 // Tests the use of signals to kill containers.
 // argoproj/argosay:v2 does not contain sh, so you must use argoproj/argosay:v1.
@@ -25,6 +25,8 @@ type SignalsSuite struct {
 
 func (s *SignalsSuite) SetupSuite() {
 	s.E2ESuite.SetupSuite()
+	// Because k8ssapi and kubelet execute `sh -c 'kill 15 1'` to they do not work.
+	s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
 }
 
 func (s *SignalsSuite) TestStopBehavior() {
@@ -110,7 +112,7 @@ func (s *SignalsSuite) TestSidecars() {
 		Workflow("@testdata/sidecar-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
 // make sure Istio/Anthos and other sidecar injectors will work
@@ -120,7 +122,7 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
 func TestSignalsSuite(t *testing.T) {

@@ -133,13 +133,13 @@ func (_m *ContainerRuntimeExecutor) ListContainerNames(ctx context.Context) ([]s
 	return r0, r1
 }
 
-// Wait provides a mock function with given fields: ctx, containerNames, sidecarNames
-func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context, containerNames []string, sidecarNames []string) error {
-	ret := _m.Called(ctx, containerNames, sidecarNames)
+// Wait provides a mock function with given fields: ctx, containerNames
+func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context, containerNames []string) error {
+	ret := _m.Called(ctx, containerNames)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string, []string) error); ok {
-		r0 = rf(ctx, containerNames, sidecarNames)
+	if rf, ok := ret.Get(0).(func(context.Context, []string) error); ok {
+		r0 = rf(ctx, containerNames)
 	} else {
 		r0 = ret.Error(0)
 	}
