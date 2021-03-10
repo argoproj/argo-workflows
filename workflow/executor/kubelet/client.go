@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -283,10 +282,10 @@ func (k *kubeletClient) WaitForTermination(ctx context.Context, containerNames [
 	return execcommon.WaitForTermination(ctx, k, containerNames, timeout)
 }
 
-func (k *kubeletClient) KillContainer(container *corev1.ContainerStatus, sig syscall.Signal) error {
-	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s&output=1&error=1", k.kubeletEndpoint, k.namespace, k.podName, container.Name, "command="+strings.Join(common.GetKillCommand(sig), "&command=")))
+func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
+	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?command=/bin/sh&&command=-c&command=kill+-%d+1&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, sig))
 	if err != nil {
-		return err
+		return errors.InternalWrapError(err)
 	}
 	_, err = k.exec(u)
 	return err

@@ -33,7 +33,7 @@ func GetContainerID(container string) string {
 type KubernetesClientInterface interface {
 	GetContainerStatus(ctx context.Context, containerName string) (*v1.Pod, *v1.ContainerStatus, error)
 	GetContainerStatuses(ctx context.Context) (*v1.Pod, []v1.ContainerStatus, error)
-	KillContainer(container *v1.ContainerStatus, sig syscall.Signal) error
+	KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error
 	CreateArchive(ctx context.Context, containerName, sourcePath string) (*bytes.Buffer, error)
 }
 
@@ -111,7 +111,7 @@ func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInter
 		if pod.Spec.RestartPolicy != "Never" {
 			return fmt.Errorf("cannot terminate pod with a %q restart policy", pod.Spec.RestartPolicy)
 		}
-		err := c.KillContainer(&s, sig)
+		err := c.KillContainer(pod, &s, sig)
 		if err != nil {
 			return err
 		}

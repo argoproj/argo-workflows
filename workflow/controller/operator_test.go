@@ -1141,11 +1141,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}{{
 		name: "pod pending",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodPending,
 			},
@@ -1155,11 +1150,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}, {
 		name: "pod succeeded",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodSucceeded,
 			},
@@ -1169,11 +1159,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}, {
 		name: "pod failed - daemoned",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodFailed,
 			},
@@ -1183,11 +1168,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}, {
 		name: "pod failed - not daemoned",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Message: "failed for some reason",
 				Phase:   apiv1.PodFailed,
@@ -1212,11 +1192,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}, {
 		name: "default",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodUnknown,
 			},
