@@ -795,10 +795,10 @@ func (s *FunctionalSuite) TestDataTransformation() {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			paths := status.Nodes.FindByDisplayName("get-artifact-path")
 			if assert.NotNil(t, paths) {
-				assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
+				assert.Equal(t, `["foo/scriptpy","scriptpy"]`, *paths.Outputs.Result)
 			}
-			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
-			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/scriptpy)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:scriptpy)"))
 		})
 }
 
