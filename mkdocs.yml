@@ -42,6 +42,7 @@ nav:
           - container-set-template.md
           - work-avoidance.md
           - enhanced-depends-logic.md
+          - data-sourcing-and-transformation.md
           - artifact-repository-ref.md
           - key-only-artifacts.md
           - conditional-artifacts-parameters.md
