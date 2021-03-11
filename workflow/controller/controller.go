@@ -489,7 +489,7 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 		return 0, fmt.Errorf("object is not a pod")
 	}
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Terminated != nil {
+		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
 		}
 		if err := common.SignalContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, signal); err != nil {

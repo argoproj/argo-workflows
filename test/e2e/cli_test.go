@@ -439,14 +439,14 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
-		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"suspend", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow sleep-3s suspended")
+				assert.Contains(t, output, "workflow @latest suspended")
 			}
 		}).
-		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"resume", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow sleep-3s resumed")
+				assert.Contains(t, output, "workflow @latest resumed")
 			}
 		}).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
