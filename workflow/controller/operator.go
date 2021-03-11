@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -1523,6 +1524,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+	}
+
+	// Set Template default
+	fmt.Println(resolvedTmpl)
+	err = woc.setTemplateDefault(resolvedTmpl)
+	if err != nil {
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
@@ -3180,4 +3188,51 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		}
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) setTemplateDefault(tmpl *wfv1.Template) error {
+	if woc.execWf.Spec.TemplateDefault != nil {
+		tmplDef := woc.execWf.Spec.TemplateDefault.DeepCopy()
+		woc.ExcludeOtherTemplateTypes(tmpl.GetType(), tmplDef)
+
+		tmplDefault, err := json.Marshal(tmplDef)
+		if err != nil {
+			return err
+		}
+		targetTmpl, err := json.Marshal(tmpl)
+		if err != nil {
+			return err
+		}
+
+		// Merge the TemplateBase fields
+		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefault, targetTmpl, wfv1.Template{})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(resultTmpl, tmpl)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ExcludeOtherTemplateTypes will set nil to all template fields except passed type in template struct
+func (woc *wfOperationCtx) ExcludeOtherTemplateTypes(tmplType wfv1.TemplateType, tmpl *wfv1.Template) {
+	switch tmplType {
+	case wfv1.TemplateTypeSteps:
+		tmpl.SetTemplateTypes(tmpl.Steps, nil, nil, nil, nil, nil, nil)
+	case wfv1.TemplateTypeDAG:
+		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, tmpl.DAG, nil, nil, nil, nil, nil)
+	case wfv1.TemplateTypeContainer:
+		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, tmpl.Container, nil, nil, nil, nil)
+	case wfv1.TemplateTypeScript:
+		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, tmpl.Script, nil, nil, nil)
+	case wfv1.TemplateTypeResource:
+		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, nil, tmpl.Resource, nil, nil)
+	case wfv1.TemplateTypeData:
+		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, nil, nil, tmpl.Data, nil)
+	case wfv1.TemplateTypeSuspend:
+		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, nil, nil, nil, tmpl.Suspend)
+	}
 }

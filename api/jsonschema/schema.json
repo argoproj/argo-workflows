@@ -5465,6 +5465,9 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization",
           "description": "Synchronization holds synchronization lock configuration for this Workflow"
         },
+        "templateDefault": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
           "items": {
@@ -5932,6 +5935,9 @@
         "synchronization": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization",
           "description": "Synchronization holds synchronization lock configuration for this Workflow"
+        },
+        "templateDefault": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
         },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",

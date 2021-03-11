@@ -1207,6 +1207,117 @@ message Template {
   optional string timeout = 38;
 }
 
+message TemplateBase {
+  // Inputs describe what inputs parameters and artifacts are supplied to this template
+  optional Inputs inputs = 1;
+
+  // Outputs describe the parameters and artifacts that this template produces
+  optional Outputs outputs = 2;
+
+  // NodeSelector is a selector to schedule this step of the workflow to be
+  // run on the selected node(s). Overrides the selector set at the workflow level.
+  map<string, string> nodeSelector = 3;
+
+  // Affinity sets the pod's scheduling constraints
+  // Overrides the affinity set at the workflow level (if any)
+  optional k8s.io.api.core.v1.Affinity affinity = 4;
+
+  // Metdata sets the pods's metadata, i.e. annotations and labels
+  optional Metadata metadata = 5;
+
+  // Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
+  optional bool daemon = 6;
+
+  // Volumes is a list of volumes that can be mounted by containers in a template.
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated k8s.io.api.core.v1.Volume volumes = 7;
+
+  // InitContainers is a list of containers which run before the main container.
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated UserContainer initContainers = 8;
+
+  // Sidecars is a list of containers which run alongside the main container
+  // Sidecars are automatically killed when the main container completes
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated UserContainer sidecars = 9;
+
+  // Location in which all files related to the step will be stored (logs, artifacts, etc...).
+  // Can be overridden by individual items in Outputs. If omitted, will use the default
+  // artifact repository location configured in the controller, appended with the
+  // <workflowname>/<nodename> in the key.
+  optional ArtifactLocation archiveLocation = 10;
+
+  // Optional duration in seconds relative to the StartTime that the pod may be active on a node
+  // before the system actively tries to terminate the pod; value must be positive integer
+  // This field is only applicable to container and script templates.
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString activeDeadlineSeconds = 11;
+
+  // RetryStrategy describes how to retry a template when it fails
+  optional RetryStrategy retryStrategy = 12;
+
+  // Parallelism limits the max total parallel pods that can execute at the same time within the
+  // boundaries of this template invocation. If additional steps/dag templates are invoked, the
+  // pods created by those templates will not be counted towards this total.
+  optional int64 parallelism = 13;
+
+  // Tolerations to apply to workflow pods.
+  // +patchStrategy=merge
+  // +patchMergeKey=key
+  repeated k8s.io.api.core.v1.Toleration tolerations = 14;
+
+  // If specified, the pod will be dispatched by specified scheduler.
+  // Or it will be dispatched by workflow scope scheduler if specified.
+  // If neither specified, the pod will be dispatched by default scheduler.
+  // +optional
+  optional string schedulerName = 15;
+
+  // PriorityClassName to apply to workflow pods.
+  optional string priorityClassName = 16;
+
+  // Priority to apply to workflow pods.
+  optional int32 priority = 17;
+
+  // ServiceAccountName to apply to workflow pods
+  optional string serviceAccountName = 18;
+
+  // AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
+  // ServiceAccountName of ExecutorConfig must be specified if this value is false.
+  optional bool automountServiceAccountToken = 19;
+
+  // Executor holds configurations of the executor container.
+  optional ExecutorConfig executor = 20;
+
+  // HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
+  // +patchStrategy=merge
+  // +patchMergeKey=ip
+  repeated k8s.io.api.core.v1.HostAlias hostAliases = 21;
+
+  // SecurityContext holds pod-level security attributes and common container settings.
+  // Optional: Defaults to empty.  See type description for default values of each field.
+  // +optional
+  optional k8s.io.api.core.v1.PodSecurityContext securityContext = 22;
+
+  // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
+  // container fields which are not strings (e.g. resource limits).
+  optional string podSpecPatch = 23;
+
+  // Metrics are a list of metrics emitted from this template
+  optional Metrics metrics = 24;
+
+  // Synchronization holds synchronization lock configuration for this template
+  optional Synchronization synchronization = 25;
+
+  // Memoize allows templates to use outputs generated from already executed templates
+  optional Memoize memoize = 26;
+
+  // Timout allows to set the total node execution timeout duration counting from the node's start time.
+  // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
+  optional string timeout = 27;
+}
+
 // TemplateRef is a reference of template resource.
 message TemplateRef {
   // Name is the resource name of the template.
@@ -1491,6 +1602,8 @@ message WorkflowSpec {
 
   // PodMetadata defines additional metadata that should be applied to workflow pods
   optional Metadata podMetadata = 38;
+
+  optional Template templateDefault = 39;
 }
 
 // WorkflowStatus contains overall status information about a workflow

@@ -8,6 +8,7 @@ spec:
   entrypoint: whalesay
   templates:
   - name: whalesay
+    activeDeadlineSeconds: 150
     container:
       image: docker/whalesay:latest
       command: [cowsay]
