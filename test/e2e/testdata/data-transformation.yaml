@@ -70,6 +70,7 @@ spec:
         source:
           artifactPaths:
             s3:
+              key: ""
               bucket: my-bucket
               endpoint: minio:9000
               insecure: true
