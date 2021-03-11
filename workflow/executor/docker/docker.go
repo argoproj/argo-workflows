@@ -233,7 +233,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 					continue
 				}
 				if createdAt.Before(started.Add(-15 * time.Second)) {
-					log.Infof("ignoring container %q created at %s, too long before process started", containerName, createdAt)
+					log.Infof("ignoring container %q created at %v, too long before process started", containerName, createdAt)
 					continue
 				}
 				if status == "Created" && containerStatus[containerName] != "" {
