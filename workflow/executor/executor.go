@@ -932,6 +932,9 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) Init() error {
+	if err := copyBinary(); err != nil {
+		return err
+	}
 	if i, ok := we.RuntimeExecutor.(Initializer); ok {
 		return i.Init(we.Template)
 	}

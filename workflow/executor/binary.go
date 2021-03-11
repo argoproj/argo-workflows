@@ -1,4 +1,4 @@
-package emissary
+package executor
 
 import (
 	"io"

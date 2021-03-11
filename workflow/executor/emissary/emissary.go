@@ -43,9 +43,6 @@ func New() (executor.ContainerRuntimeExecutor, error) {
 }
 
 func (e *emissary) Init(t wfv1.Template) error {
-	if err := copyBinary(); err != nil {
-		return err
-	}
 	if err := e.writeTemplate(t); err != nil {
 		return err
 	}

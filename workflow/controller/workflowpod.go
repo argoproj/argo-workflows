@@ -267,10 +267,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
-	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
-		initCtr := woc.newInitContainer(tmpl)
-		pod.Spec.InitContainers = []apiv1.Container{initCtr}
-	}
+	pod.Spec.InitContainers = []apiv1.Container{woc.newInitContainer(tmpl)}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
@@ -295,11 +292,15 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
 
+	for i, c := range pod.Spec.InitContainers {
+		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		pod.Spec.InitContainers[i] = c
+	}
+	for i, c := range pod.Spec.Containers {
+		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		pod.Spec.Containers[i] = c
+	}
 	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
-		for i, c := range pod.Spec.InitContainers {
-			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
-			pod.Spec.InitContainers[i] = c
-		}
 		for i, c := range pod.Spec.Containers {
 			if c.Name != common.WaitContainerName {
 				// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
@@ -315,7 +316,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				}
 				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 			}
-			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 			pod.Spec.Containers[i] = c
 		}
 	}
@@ -581,11 +581,9 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 			},
 		})
 	}
+	volumes = append(volumes, volumeVarArgo)
 	switch woc.getContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
-	case common.ContainerRuntimeExecutorEmissary:
-		volumes = append(volumes, volumeVarArgo)
-	default:
+	case common.ContainerRuntimeExecutorDocker:
 		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
 	}
 	volumes = append(volumes, tmpl.Volumes...)

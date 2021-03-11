@@ -628,12 +628,14 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 3, len(pod.Spec.Volumes))
+		assert.Equal(t, 4, len(pod.Spec.Volumes))
 		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "docker-sock", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
-		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "docker-sock", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
+		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
+		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
 	})
 
 	// For Kubelet executor
@@ -652,10 +654,10 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, 3, len(pod.Spec.Volumes))
 		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 	})
 
@@ -675,10 +677,10 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, 3, len(pod.Spec.Volumes))
 		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 	})
 
@@ -767,11 +769,12 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 3, len(pod.Spec.Volumes))
-	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
-	assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+	assert.Equal(t, 4, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[3].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
+	assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
 }
 
 func TestOutOfCluster(t *testing.T) {
@@ -932,7 +935,7 @@ func TestInitContainers(t *testing.T) {
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 2, len(pod.Spec.InitContainers[0].VolumeMounts))
+	assert.Equal(t, 3, len(pod.Spec.InitContainers[0].VolumeMounts))
 	assert.Equal(t, "init-volume-name", pod.Spec.InitContainers[0].VolumeMounts[0].Name)
 	assert.Equal(t, "volume-name", pod.Spec.InitContainers[0].VolumeMounts[1].Name)
 }
@@ -996,7 +999,7 @@ func TestSidecars(t *testing.T) {
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 2, len(pod.Spec.Containers[2].VolumeMounts))
+	assert.Equal(t, 3, len(pod.Spec.Containers[2].VolumeMounts))
 	assert.Equal(t, "sidecar-volume-name", pod.Spec.Containers[2].VolumeMounts[0].Name)
 	assert.Equal(t, "volume-name", pod.Spec.Containers[2].VolumeMounts[1].Name)
 }
@@ -1333,7 +1336,6 @@ func TestHybridWfVolumesWindows(t *testing.T) {
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
 	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
-	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
 }
 
 func TestHybridWfVolumesLinux(t *testing.T) {
@@ -1345,7 +1347,6 @@ func TestHybridWfVolumesLinux(t *testing.T) {
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
 	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
-	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
 }
 
 var wfWithPodMetadata = `
