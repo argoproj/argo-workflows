@@ -59,6 +59,14 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
+	buff, err := ioutil.ReadFile(manifestPath)
+	if err != nil {
+		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+	}
+	if len(buff) == 0 && len(flags) == 0 {
+		return []string{}, errors.New(errors.CodeBadRequest, "Must provide at least one of flags or manifest.")
+	}
+
 	args := []string{
 		action,
 	}
@@ -67,11 +75,6 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 	if action == "delete" {
 		args = append(args, "--ignore-not-found")
 		output = "name"
-	}
-
-	buff, err := ioutil.ReadFile(manifestPath)
-	if err != nil {
-		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
 	}
 
 	if action == "patch" {
@@ -97,8 +100,6 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 	if len(buff) != 0 && action != "patch" {
 		args = append(args, "-f")
 		args = append(args, manifestPath)
-	} else if len(flags) <= 0 {
-		return []string{}, errors.New(errors.CodeBadRequest, "Must provide at least one of flags or manifest.")
 	}
 	args = append(args, "-o")
 	args = append(args, output)
