@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"strings"
 	"time"
 
@@ -174,7 +175,7 @@ func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1
 }
 
 func (o *Operation) evaluateStringExpression(statement string, errorInfo string) (string, error) {
-	result, err := expr.Eval(statement, o.env)
+	result, err := expr.Eval(statement, exprenv.GetFuncMap(o.env))
 	if err != nil {
 		return "", fmt.Errorf("failed to evaluate workflow %s expression: %w", errorInfo, err)
 	}
