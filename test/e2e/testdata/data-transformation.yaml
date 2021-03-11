@@ -11,7 +11,7 @@ spec:
       steps:
         - - name: generate-artifact
             template: generate-artifacts
-            withItems: ['scriptpy', 'docpdf', 'foo/scriptpy', 'foo/docpdf']
+            withItems: ['script.py', 'doc.pdf', 'foo/script.py', 'foo/doc.pdf']
             arguments:
               parameters:
                 - name: file-name
@@ -81,7 +81,7 @@ spec:
                 name: my-minio-cred
                 key: secretkey
         transformation:
-          - expression: "filter(data, {# endsWith \"py\"})"
+          - expression: "filter(data, {# endsWith \".py\"})"
 
     - name: process-message
       inputs:
