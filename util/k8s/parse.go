@@ -31,7 +31,12 @@ func ParseRequest(r *http.Request) (verb string, kind string) {
 	kind = "Unknown"
 	switch verb {
 	case "List", "Watch", "Create", "DeleteCollection":
-		kind = path[n-1]
+		if n > 2 && n%4 == 2 {
+			// sub-resource, e.g. pods/exec
+			kind = path[n-3] + "/" + path[n-1]
+		} else {
+			kind = path[n-1]
+		}
 	case "Get", "Delete", "Patch", "Update":
 		if x {
 			// sub-resource
