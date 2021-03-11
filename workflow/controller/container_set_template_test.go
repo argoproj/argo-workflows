@@ -56,7 +56,7 @@ spec:
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
-	assert.Empty(t, pod.Spec.InitContainers)
+	assert.Len(t, pod.Spec.InitContainers, 1)
 
 	assert.Len(t, pod.Spec.Containers, 2)
 	for _, c := range pod.Spec.Containers {
@@ -222,7 +222,7 @@ spec:
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
-	assert.Len(t, pod.Spec.InitContainers, 0)
+	assert.Len(t, pod.Spec.InitContainers,1)
 
 	assert.Len(t, pod.Spec.Containers, 2)
 	for _, c := range pod.Spec.Containers {

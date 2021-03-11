@@ -930,14 +930,15 @@ func TestInitContainers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 1, len(pod.Spec.InitContainers))
-	assert.Equal(t, "init-foo", pod.Spec.InitContainers[0].Name)
+	assert.Equal(t, 2, len(pod.Spec.InitContainers))
+	initCtr := pod.Spec.InitContainers[1]
+	assert.Equal(t, "init-foo", initCtr.Name)
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 3, len(pod.Spec.InitContainers[0].VolumeMounts))
-	assert.Equal(t, "init-volume-name", pod.Spec.InitContainers[0].VolumeMounts[0].Name)
-	assert.Equal(t, "volume-name", pod.Spec.InitContainers[0].VolumeMounts[1].Name)
+	assert.Equal(t, 3, len(initCtr.VolumeMounts))
+	assert.Equal(t, "init-volume-name", initCtr.VolumeMounts[0].Name)
+	assert.Equal(t, "volume-name", initCtr.VolumeMounts[1].Name)
 }
 
 // TestSidecars verifies the ability to set up sidecars
