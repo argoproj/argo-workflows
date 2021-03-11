@@ -26,12 +26,22 @@ data:
 
 See [#1282](https://github.com/argoproj/argo-workflows/issues/1282).
 
+### Support Matrix
+
+| Executor | Sidecar | Injected Sidecar | 
+|---|---|---| 
+| docker | Any | Any | 
+| emissary | Any | None | 
+| k8sapi | Debian | Debian | 
+| kubelet | Debian | Debian | 
+| pns | Any | Any | 
+
 ## How We Kill Sidecars
 
 Kubernetes does provide anyway to kill a single container, aside from deleting a pod, and thereby loosing all
 information and logs of that pod.
 
-Instead, we mimic the standard termination behaviour as follows:
+Instead, we want mimic the standard termination behaviour as follows:
 
 1. SIGTERM all the processing in the container `kubectl exec -ti ${POD_NAME} -c ${SIDECAR_NAME} -- kill -15 1`.
 1. Wait for the pod's `terminateGracePeriodSeconds` (30s by default).
