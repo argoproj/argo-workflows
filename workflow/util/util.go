@@ -1005,13 +1005,13 @@ func ConvertYAMLToJSON(str string) (string, error) {
 // PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
 func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 	wfPatch, err := ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
-		if err != nil {
-			return "", err
-		}
+	if err != nil {
+		return "", err
+	}
 	tmplPatch, err := ConvertYAMLToJSON(tmpl.PodSpecPatch)
-			if err != nil {
-				return "", err
-			}
+	if err != nil {
+		return "", err
+	}
 	data, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
 	return string(data), err
 }
