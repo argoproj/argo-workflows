@@ -8,6 +8,8 @@ data:
       activeDeadlineSeconds: 300
       ttlStrategy:
         secondsAfterCompletion: 600
+      podSpecPatch: |
+        terminationGracePeriodSeconds: 3
   executor: |
     imagePullPolicy: IfNotPresent
     resources:
