@@ -2,7 +2,7 @@ module github.com/argoproj/argo-workflows/v3
 
 go 1.15
 
-replace github.com/argoproj/pkg v0.8.0 => github.com/simster7/pkg v0.2.1-0.20210311164953-f8835d1e4697
+replace github.com/argoproj/pkg v0.8.0 => github.com/simster7/pkg v0.2.1-0.20210311174852-dee4311a0e36
 
 require (
 	cloud.google.com/go v0.55.0 // indirect
