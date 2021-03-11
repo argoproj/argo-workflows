@@ -695,3 +695,127 @@ func TestSynchronizationWithStep(t *testing.T) {
 		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
+
+const maxFailed = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: seq-loop-r4sj5
+spec:
+  arguments:
+    parameters:
+    - name: items
+      value: |
+        ["a", "b", "c"]
+  entrypoint: seq-loop
+  templates:
+  - inputs:
+      parameters:
+      - name: items
+    failFast: true
+    name: seq-loop
+    parallelism: 1
+    steps:
+    - - name: iteration
+        template: iteration
+        withParam: '{{inputs.parameters.items}}'
+  - name: iteration
+    steps:
+    - - name: step1
+        template: succeed-step
+    - - name: step2
+        template: failed-step
+  - container:
+      args:
+      - exit 0
+      command:
+      - /bin/sh
+      - -c
+      image: alpine
+    name: succeed-step
+  - container:
+      args:
+      - exit 1
+      command:
+      - /bin/sh
+      - -c
+      image: alpine
+    name: failed-step
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    seq-loop-r4sj5:
+      children:
+      - seq-loop-r4sj5-2361445244
+      displayName: seq-loop-r4sj5
+      id: seq-loop-r4sj5
+      inputs:
+        parameters:
+        - name: items
+          value: |
+            ["a", "b", "c"]
+      name: seq-loop-r4sj5
+      outboundNodes:
+      - seq-loop-r4sj5-4263222124
+      phase: Running
+      startedAt: "2021-03-05T17:53:42Z"
+      templateName: seq-loop
+      templateScope: local/seq-loop-r4sj5
+      type: Steps
+    seq-loop-r4sj5-2361445244:
+      boundaryID: seq-loop-r4sj5
+      children:
+      - seq-loop-r4sj5-4259202007
+      displayName: '[0]'
+      id: seq-loop-r4sj5-2361445244
+      name: seq-loop-r4sj5[0]
+      phase: Running
+      startedAt: "2021-03-05T17:53:42Z"
+      templateScope: local/seq-loop-r4sj5
+      type: StepGroup
+    seq-loop-r4sj5-4259202007:
+      boundaryID: seq-loop-r4sj5
+      children:
+      - seq-loop-r4sj5-637092275
+      displayName: iteration(0:a)
+      id: seq-loop-r4sj5-4259202007
+      message: child 'seq-loop-r4sj5-2371744680' failed
+      name: seq-loop-r4sj5[0].iteration(0:a)
+      phase: Failed
+      startedAt: "2021-03-05T17:53:42Z"
+      templateName: iteration
+      templateScope: local/seq-loop-r4sj5
+      type: Steps
+  phase: Running
+  startedAt: "2021-03-05T17:53:42Z"
+`
+
+func TestFailFast(t *testing.T) {
+	wf := unmarshalWF(maxFailed)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	node := woc.wf.Status.Nodes["seq-loop-r4sj5-2361445244"]
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Equal(t, "", node.Message)
+	}
+
+	//runningNode := woc.wf.Status.Nodes["seq-loop-r4sj5-18587685"]
+	//if assert.NotNil(t, runningNode) {
+	//	runningNode.Phase = wfv1.NodeSucceeded
+	//	woc.wf.Status.Nodes["seq-loop-r4sj5-18587685"] = runningNode
+	//}
+	//
+	//woc.operate(ctx)
+	//assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	//node = woc.wf.Status.Nodes["seq-loop-r4sj5-2361445244"]
+	//assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	//assert.Equal(t, "", node.Message)
+}

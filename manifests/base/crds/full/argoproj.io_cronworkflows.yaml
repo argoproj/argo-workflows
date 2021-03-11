@@ -4276,6 +4276,9 @@ spec:
                                 type: object
                               type: array
                           type: object
+                        maxFailed:
+                          format: int64
+                          type: integer
                         memoize:
                           properties:
                             cache:

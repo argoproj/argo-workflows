@@ -570,6 +570,10 @@ type Template struct {
 	// pods created by those templates will not be counted towards this total.
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,23,opt,name=parallelism"`
 
+	// FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
+	// template is expanded with `withItems`, etc.
+	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,41,opt,name=failFast"`
+
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
 	// +patchMergeKey=key
