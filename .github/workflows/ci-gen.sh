@@ -23,6 +23,11 @@ gen "Test K8SAPI Executor" test-executor k8sapi
 gen "Test Kubelet Executor" test-executor kubelet
 gen "Test PNS Executor" test-executor pns
 
+gen "Test CLI" test-cli emissary
+gen "Test Cron Workflows" test-e2e-cron emissary
+gen "Test Examples" test-examples emissary
+gen "Test Functionality " test-functional emissary
+
 gen "Test CLI" test-cli pns
 gen "Test Cron Workflows" test-e2e-cron pns
 gen "Test Examples" test-examples pns
