@@ -249,7 +249,7 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 			}
 			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
 			// we need a bit more time
-			if d.haveContainers(containerNames) && time.Since(started) > 5*time.Second {
+			if d.haveContainers(containerNames) && time.Since(started) > 3*time.Second {
 				return nil
 			}
 		}
