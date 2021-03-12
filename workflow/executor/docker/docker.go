@@ -184,8 +184,8 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 	return exitCode, nil
 }
 
-func (d *DockerExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
-	err := d.syncContainerIDs(ctx, append(containerNames, sidecarNames...))
+func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
+	err := d.syncContainerIDs(ctx, containerNames)
 	if err != nil {
 		return err
 	}
@@ -206,8 +206,8 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 			output, err := common.RunCommand(
 				"docker",
 				"ps",
-				"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
-				"--no-trunc", // display long container IDs
+				"--all",                                                                                   // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
+				"--no-trunc",                                                                              // display long container IDs
 				"--format={{.Status}}|{{.Label \"io.kubernetes.container.name\"}}|{{.ID}}|{{.CreatedAt}}", // similar to `Up 3 hours,main,035a98c4e72e,2021-03-08 17:25:15 -0800 PST`
 				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
 				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
@@ -224,6 +224,9 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				}
 				status := strings.SplitN(parts[0], " ", 2)[0] // Created,Exited,Up,
 				containerName := parts[1]
+				if containerName == "POD" {
+					continue
+				}
 				containerID := parts[2]
 				createdAt, err := time.Parse("2006-01-02 15:04:05 -0700 MST", parts[3])
 				if err != nil {
@@ -244,7 +247,9 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				containerStatus[containerName] = status
 				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, containerID, createdAt, status)
 			}
-			if d.haveContainers(containerNames) {
+			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
+			// we need a bit more time
+			if d.haveContainers(containerNames) && time.Since(started) > 5*time.Second {
 				return nil
 			}
 		}
@@ -285,6 +290,9 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
 	_, err = common.RunCommand("docker", killArgs...)
 	if err != nil {
+		if strings.Contains(err.Error(), "is not running") {
+			return nil
+		}
 		log.Warningf("Ignored error from 'docker kill --signal TERM': %s", err)
 	}
 	waitArgs := append([]string{"wait"}, containerIDs...)
@@ -305,7 +313,7 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	case err = <-waitCh:
 		// waitCmd completed
 	case <-time.After(terminationGracePeriodDuration):
-		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
+		log.Infof("Timed out (%v) for containers to terminate gracefully. Killing forcefully", terminationGracePeriodDuration)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)
@@ -319,6 +327,14 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	}
 	log.Infof("Containers %s killed successfully", containerIDs)
 	return nil
+}
+
+func (d *DockerExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	var containerNames []string
+	for n := range d.containers {
+		containerNames = append(containerNames, n)
+	}
+	return containerNames, nil
 }
 
 func (d *DockerExecutor) getContainerIDs(containerNames []string) ([]string, error) {
