@@ -423,6 +423,12 @@ rules:
   - get
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
   - argoproj.io
   resources:
   - workflows
