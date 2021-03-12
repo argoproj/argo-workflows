@@ -125,6 +125,7 @@ nav:
           - configure-artifact-repository.md
           - workflow-controller-configmap.md
           - workflow-executors.md
+          - sidecar-injection.md
           - default-workflow-specs.md
           - offloading-large-workflows.md
           - workflow-archive.md

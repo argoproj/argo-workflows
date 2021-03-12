@@ -8,11 +8,8 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v1
-        args: [ sleep, "5s" ]
       sidecars:
-        - name: sidecar-0
+        - name: sidecar
           image: argoproj/argosay:v1
-          args: [ sleep, "999s" ]
-        - name: sidecar-1
-          image: argoproj/argosay:v1
-          args: [ sleep, "999s" ]
+          command: [ sh, -c ]
+          args: [ "sleep 999" ]
