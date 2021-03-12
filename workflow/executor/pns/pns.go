@@ -199,6 +199,8 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			if err := p.secureRootFiles(); err != nil {
 				log.WithError(err).Warn("failed to secure root files")
 			}
+			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
+			// we need a bit more time
 			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
 				return
 			}

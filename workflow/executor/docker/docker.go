@@ -206,8 +206,8 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 			output, err := common.RunCommand(
 				"docker",
 				"ps",
-				"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
-				"--no-trunc", // display long container IDs
+				"--all",                                                                                   // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
+				"--no-trunc",                                                                              // display long container IDs
 				"--format={{.Status}}|{{.Label \"io.kubernetes.container.name\"}}|{{.ID}}|{{.CreatedAt}}", // similar to `Up 3 hours,main,035a98c4e72e,2021-03-08 17:25:15 -0800 PST`
 				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
 				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
@@ -247,7 +247,9 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				containerStatus[containerName] = status
 				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, containerID, createdAt, status)
 			}
-			if d.haveContainers(containerNames) {
+			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
+			// we need a bit more time
+			if d.haveContainers(containerNames) && time.Since(started) > 5*time.Second {
 				return nil
 			}
 		}

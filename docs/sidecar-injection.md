@@ -13,7 +13,7 @@ See [#1282](https://github.com/argoproj/argo-workflows/issues/1282).
 
 ## How We Kill Sidecars
 
-Kubernetes does provide anyway to kill a single container, aside from deleting a pod, and thereby losing all information
+Kubernetes does not provide a way to kill a single container. You can delete a pod, but this kills all containers, and loses all information
 and logs of that pod.
 
 Instead, try to mimic the Kubernetes termination behaviour, which is:
