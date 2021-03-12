@@ -8284,6 +8284,10 @@
           "description": "Executor holds configurations of the executor container.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
+        "failFast": {
+          "description": "FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.",
+          "type": "boolean"
+        },
         "hostAliases": {
           "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
           "type": "array",

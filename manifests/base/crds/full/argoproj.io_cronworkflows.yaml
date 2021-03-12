@@ -3376,6 +3376,8 @@ spec:
                             serviceAccountName:
                               type: string
                           type: object
+                        failFast:
+                          type: boolean
                         hostAliases:
                           items:
                             properties:
@@ -4276,9 +4278,6 @@ spec:
                                 type: object
                               type: array
                           type: object
-                        maxFailed:
-                          format: int64
-                          type: integer
                         memoize:
                           properties:
                             cache:
