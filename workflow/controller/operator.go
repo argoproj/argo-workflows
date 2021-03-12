@@ -2130,7 +2130,6 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	// TODO: repeated calls to countActivePods is not optimal
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
-
 		if node != nil {
 			// if we are about to execute a DAG/Steps template, make sure we havent already reached our limit
 			counts := woc.countNodes(getActivePodsCounter(node.ID), getFailedOrErroredChildrenCounter(node.ID))
@@ -2138,11 +2137,6 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			templateFailedOrErroredChildren := int64(counts.getCountType(counterTypeFailedOrErroredChildren))
 
 			if tmpl.FailFast != nil && *tmpl.FailFast && templateFailedOrErroredChildren > 0 {
-				// If we still have active pods, let them finish
-				if templateActivePods > 0 {
-					return node, ErrParallelismReached
-				}
-
 				woc.markNodePhase(node.Name, wfv1.NodeFailed,"template has failed or errored children and failFast enabled")
 				return node, ErrParallelismReached
 			}
@@ -2175,7 +2169,14 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			}
 
 			if boundaryTemplate != nil && boundaryTemplate.Parallelism != nil {
-				activeSiblings := int64(woc.countNodes(getActiveChildrenCounter(boundaryID)).getCount())
+				counts := woc.countNodes(getActiveChildrenCounter(boundaryID), getFailedOrErroredChildrenCounter(boundaryID))
+				activeSiblings := int64(counts.getCountType(counterTypeActiveChildren))
+				templateFailedOrErroredChildren := int64(counts.getCountType(counterTypeFailedOrErroredChildren))
+
+				if boundaryTemplate.FailFast != nil && *boundaryTemplate.FailFast && templateFailedOrErroredChildren > 0 {
+					woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed,"template has failed or errored children and failFast enabled")
+					return node, ErrParallelismReached
+				}
 				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
 				if activeSiblings >= *boundaryTemplate.Parallelism {
 					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *boundaryTemplate.Parallelism)
