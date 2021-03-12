@@ -570,6 +570,10 @@ type Template struct {
 	// pods created by those templates will not be counted towards this total.
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,23,opt,name=parallelism"`
 
+	// FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
+	// template is expanded with `withItems`, etc.
+	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,41,opt,name=failFast"`
+
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
 	// +patchMergeKey=key
@@ -634,6 +638,22 @@ func (tmpl *Template) GetBaseTemplate() *Template {
 
 func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
+}
+
+func (tmpl *Template) GetSidecarNames() []string {
+	var containerNames []string
+	for _, s := range tmpl.Sidecars {
+		containerNames = append(containerNames, s.Name)
+	}
+	return containerNames
+}
+
+func (tmpl *Template) IsFailFast() bool {
+	return tmpl.FailFast != nil && *tmpl.FailFast
+}
+
+func (tmpl *Template) HasParallelism() bool {
+	return tmpl.Parallelism != nil && *tmpl.Parallelism > 0
 }
 
 type Artifacts []Artifact
