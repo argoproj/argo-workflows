@@ -23,6 +23,13 @@ rules:
     verbs:
       - get
       - watch
+  # Only needed if you are running the `k8sapi` executor.
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
   # This allows one workflow to create another.
   # This is only needed for resource templates.
   - apiGroups:

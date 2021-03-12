@@ -54,11 +54,23 @@ func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string)
 }
 
 // Wait for the container to complete
-func (k *KubeletExecutor) Wait(ctx context.Context, containerNames, sidecars []string) error {
+func (k *KubeletExecutor) Wait(ctx context.Context, containerNames []string) error {
 	return k.cli.WaitForTermination(ctx, containerNames, 0)
 }
 
 // Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 func (k *KubeletExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	return k.cli.KillGracefully(ctx, containerNames, terminationGracePeriodDuration)
+}
+
+func (k *KubeletExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	pod, err := k.cli.getPod()
+	if err != nil {
+		return nil, err
+	}
+	var containerNames []string
+	for _, c := range pod.Status.ContainerStatuses {
+		containerNames = append(containerNames, c.Name)
+	}
+	return containerNames, nil
 }
