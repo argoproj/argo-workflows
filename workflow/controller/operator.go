@@ -2141,14 +2141,14 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
 		if node != nil {
 			// Check failFast
-			if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
+			if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
 				woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 				return ErrParallelismReached
 			}
 
 			// Check parallelism
-			if tmpl.HasParallelism() && woc.getActivePods(boundaryID) >= *tmpl.Parallelism {
-				woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *tmpl.Parallelism)
+			if tmpl.HasParallelism() && woc.getActivePods(node.ID) >= *tmpl.Parallelism {
+				woc.log.Infof("template (node %s) active children parallelism exceeded %d", node.ID, *tmpl.Parallelism)
 				return ErrParallelismReached
 			}
 		}
