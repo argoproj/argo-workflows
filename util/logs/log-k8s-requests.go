@@ -1,7 +1,6 @@
 package logs
 
 import (
-	"io/ioutil"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -17,16 +16,8 @@ type k8sLogRoundTripper struct {
 func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	x, err := m.roundTripper.RoundTrip(r)
 	if x != nil {
-		statusCode := x.StatusCode
-		var response string
-		if responseBody := x.Body; (200 > statusCode || statusCode >= 300) && responseBody != nil {
-			bytes, err := ioutil.ReadAll(responseBody)
-			if err == nil {
-				response = string(bytes)
-			}
-		}
 		verb, kind := k8s.ParseRequest(r)
-		log.Infof("%s %s %d %s", verb, kind, statusCode, response)
+		log.Infof("%s %s %d", verb, kind, x.StatusCode)
 	}
 	return x, err
 }
