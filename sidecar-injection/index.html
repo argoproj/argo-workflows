@@ -36,7 +36,7 @@
     
     
       
-        <title>Configuring Your Artifact Repository - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Sidecar Injection - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#configuring-your-artifact-repository" tabindex="1" class="md-skip">
+      <a href="#sidecar-injection" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              Configuring Your Artifact Repository
+              Sidecar Injection
             </span>
           
         </div>
@@ -1574,90 +1574,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Configuring Your Artifact Repository
-      </label>
-    
-    <a href="./" title="Configuring Your Artifact Repository" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../configure-artifact-repository/" title="Configuring Your Artifact Repository" class="md-nav__link">
       Configuring Your Artifact Repository
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-minio" title="Configuring Minio" class="md-nav__link">
-    Configuring Minio
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-aws-s3" title="Configuring AWS S3" class="md-nav__link">
-    Configuring AWS S3
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-gcs-google-cloud-storage" title="Configuring GCS (Google Cloud Storage)" class="md-nav__link">
-    Configuring GCS (Google Cloud Storage)
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#through-native-gcs-apis" title="Through Native GCS APIs" class="md-nav__link">
-    Through Native GCS APIs
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-s3-apis" title="Use S3 APIs" class="md-nav__link">
-    Use S3 APIs
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-alibaba-cloud-oss-object-storage-service" title="Configuring Alibaba Cloud OSS (Object Storage Service)" class="md-nav__link">
-    Configuring Alibaba Cloud OSS (Object Storage Service)
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -1689,11 +1610,62 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../sidecar-injection/" title="Sidecar Injection" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Sidecar Injection
+      </label>
+    
+    <a href="./" title="Sidecar Injection" class="md-nav__link md-nav__link--active">
       Sidecar Injection
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-we-kill-sidecars" title="How We Kill Sidecars" class="md-nav__link">
+    How We Kill Sidecars
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#support-matrix" title="Support Matrix" class="md-nav__link">
+    Support Matrix
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
         
@@ -2112,50 +2084,22 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuring-minio" title="Configuring Minio" class="md-nav__link">
-    Configuring Minio
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-aws-s3" title="Configuring AWS S3" class="md-nav__link">
-    Configuring AWS S3
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-gcs-google-cloud-storage" title="Configuring GCS (Google Cloud Storage)" class="md-nav__link">
-    Configuring GCS (Google Cloud Storage)
+  <a href="#how-we-kill-sidecars" title="How We Kill Sidecars" class="md-nav__link">
+    How We Kill Sidecars
   </a>
   
     <nav class="md-nav">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#through-native-gcs-apis" title="Through Native GCS APIs" class="md-nav__link">
-    Through Native GCS APIs
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-s3-apis" title="Use S3 APIs" class="md-nav__link">
-    Use S3 APIs
+  <a href="#support-matrix" title="Support Matrix" class="md-nav__link">
+    Support Matrix
   </a>
   
 </li>
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-alibaba-cloud-oss-object-storage-service" title="Configuring Alibaba Cloud OSS (Object Storage Service)" class="md-nav__link">
-    Configuring Alibaba Cloud OSS (Object Storage Service)
-  </a>
   
 </li>
       
@@ -2175,346 +2119,74 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/configure-artifact-repository.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/sidecar-injection.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="configuring-your-artifact-repository">Configuring Your Artifact Repository<a class="headerlink" href="#configuring-your-artifact-repository" title="Permanent link">&para;</a></h1>
-<p>To run Argo workflows that use artifacts, you must configure and use an artifact
-repository. Argo supports any S3 compatible artifact repository such as AWS, GCS
-and Minio. This section shows how to configure the artifact repository.
-Subsequent sections will show how to use it.</p>
+                <h1 id="sidecar-injection">Sidecar Injection<a class="headerlink" href="#sidecar-injection" title="Permanent link">&para;</a></h1>
+<p>Automatic (i.e. mutating webhook based) sidecar injection systems, including service meshes such as Anthos and Istio
+Proxy, create a unique problem for Kubernetes workloads that run to completion.</p>
+<p>Because sidecars are injected outside of the view of the workflow controller, the controller has no awareness of them.
+It has no opportunity to rewrite the containers command (when using the Emissary Executor) and as the sidecar's process
+will run as PID 1, which is protected. It can be impossible for the wait container to terminate the sidecar.</p>
+<p>You will minimize problems by not using Istio with Argo Workflows.</p>
+<p>See <a href="https://github.com/argoproj/argo-workflows/issues/1282">#1282</a>.</p>
+<h2 id="how-we-kill-sidecars">How We Kill Sidecars<a class="headerlink" href="#how-we-kill-sidecars" title="Permanent link">&para;</a></h2>
+<p>Kubernetes does not provide a way to kill a single container. You can delete a pod, but this kills all containers, and loses all information
+and logs of that pod.</p>
+<p>Instead, try to mimic the Kubernetes termination behaviour, which is:</p>
+<ol>
+<li>SIGTERM PID 1</li>
+<li>Wait for the pod's <code>terminateGracePeriodSeconds</code> (30s by default).</li>
+<li>SIGKILL PID 1</li>
+</ol>
+<p>The following are not supported:</p>
+<ul>
+<li><code>preStop</code></li>
+<li><code>STOPSIGNAL</code></li>
+</ul>
+<h3 id="support-matrix">Support Matrix<a class="headerlink" href="#support-matrix" title="Permanent link">&para;</a></h3>
+<p>Key:</p>
+<ul>
+<li>Any - we can kill any image</li>
+<li>Shell - we can only kill images with <code>/bin/sh</code> installed on them (e.g. Debian)</li>
+<li>None - we cannot kill these images</li>
+</ul>
 <table>
 <thead>
 <tr>
-<th>Name</th>
-<th>Inputs</th>
-<th>Outputs</th>
-<th>Usage (Feb 2020)</th>
+<th>Executor</th>
+<th>Sidecar</th>
+<th>Injected Sidecar</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Artifactory</td>
-<td>Yes</td>
-<td>Yes</td>
-<td>11%</td>
+<td><code>docker</code></td>
+<td>Any</td>
+<td>Any</td>
 </tr>
 <tr>
-<td>GCS</td>
-<td>Yes</td>
-<td>Yes</td>
-<td>-</td>
+<td><code>emissary</code></td>
+<td>Any</td>
+<td>None</td>
 </tr>
 <tr>
-<td>Git</td>
-<td>Yes</td>
-<td>No</td>
-<td>-</td>
+<td><code>k8sapi</code></td>
+<td>Shell</td>
+<td>Shell</td>
 </tr>
 <tr>
-<td>HDFS</td>
-<td>Yes</td>
-<td>Yes</td>
-<td>3%</td>
+<td><code>kubelet</code></td>
+<td>Shell</td>
+<td>Shell</td>
 </tr>
 <tr>
-<td>HTTP</td>
-<td>Yes</td>
-<td>No</td>
-<td>2%</td>
-</tr>
-<tr>
-<td>OSS</td>
-<td>Yes</td>
-<td>Yes</td>
-<td>-</td>
-</tr>
-<tr>
-<td>Raw</td>
-<td>Yes</td>
-<td>No</td>
-<td>5%</td>
-</tr>
-<tr>
-<td>S3</td>
-<td>Yes</td>
-<td>Yes</td>
-<td>86%</td>
+<td><code>pns</code></td>
+<td>Any</td>
+<td>Any</td>
 </tr>
 </tbody>
 </table>
-<p>The actual repository used by a workflow is choose by the following rules:</p>
-<ol>
-<li>Anything explicitly configured using <a href="../artifact-repository-ref/">Artifact Repository Ref</a>. This is the most flexible, safe, and secure option.</li>
-<li>From a config map named <code>artifact-repositories</code> if it has the <code>workflows.argoproj.io/default-artifact-repository</code> annotation in the workflow's namespace.                                        </li>
-<li>From a workflow controller configmap.</li>
-</ol>
-<h2 id="configuring-minio">Configuring Minio<a class="headerlink" href="#configuring-minio" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>$ brew install helm # mac, helm 3.x
-$ helm repo add minio https://helm.min.io/ # official minio Helm charts
-$ helm repo update
-$ helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
-</code></pre></div>
-<p>Login to the Minio UI using a web browser (port 9000) after obtaining the
-external IP using <code>kubectl</code>.</p>
-<div class="highlight"><pre><span></span><code>$ kubectl get service argo-artifacts
-</code></pre></div>
-<p>On Minikube:</p>
-<div class="highlight"><pre><span></span><code>$ minikube service --url argo-artifacts
-</code></pre></div>
-<p>NOTE: When minio is installed via Helm, it generates
-credentials, which you will use to login to the UI:
-Use the commands shown below to see the credentials</p>
-<ul>
-<li>AccessKey: kubectl get secret argo-artifacts -o jsonpath='{.data.accesskey}' | base64 --decode</li>
-<li>SecretKey: kubectl get secret argo-artifacts -o jsonpath='{.data.secretkey}' | base64 --decode</li>
-</ul>
-<p>Create a bucket named <code>my-bucket</code> from the Minio UI.</p>
-<h2 id="configuring-aws-s3">Configuring AWS S3<a class="headerlink" href="#configuring-aws-s3" title="Permanent link">&para;</a></h2>
-<p>Create your bucket and access keys for the bucket. AWS access keys have the same
-permissions as the user they are associated with. In particular, you cannot
-create access keys with reduced scope. If you want to limit the permissions for
-an access key, you will need to create a user with just the permissions you want
-to associate with the access key. Otherwise, you can just create an access key
-using your existing user account.</p>
-<div class="highlight"><pre><span></span><code>$ export mybucket=bucket249
-$ cat &gt; policy.json &lt;&lt;EOF
-{
-   &quot;Version&quot;:&quot;2012-10-17&quot;,
-   &quot;Statement&quot;:[
-      {
-         &quot;Effect&quot;:&quot;Allow&quot;,
-         &quot;Action&quot;:[
-            &quot;s3:PutObject&quot;,
-            &quot;s3:GetObject&quot;
-         ],
-         &quot;Resource&quot;:&quot;arn:aws:s3:::$mybucket/*&quot;
-      }
-   ]
-}
-EOF
-$ aws s3 mb s3://$mybucket [--region xxx]
-$ aws iam create-user --user-name $mybucket-user
-$ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
-$ aws iam create-access-key --user-name $mybucket-user &gt; access-key.json
-</code></pre></div>
-<p>NOTE: if you want argo to figure out which region your buckets belong in, you
-must additionally set the following statement policy. Otherwise, you must
-specify a bucket region in your workflow configuration.</p>
-<div class="highlight"><pre><span></span><code>    ...
-      {
-         &quot;Effect&quot;:&quot;Allow&quot;,
-         &quot;Action&quot;:[
-            &quot;s3:GetBucketLocation&quot;
-         ],
-         &quot;Resource&quot;:&quot;arn:aws:s3:::*&quot;
-      }
-    ...
-</code></pre></div>
-<h2 id="configuring-gcs-google-cloud-storage">Configuring GCS (Google Cloud Storage)<a class="headerlink" href="#configuring-gcs-google-cloud-storage" title="Permanent link">&para;</a></h2>
-<p>Create a bucket from the GCP Console
-(https://console.cloud.google.com/storage/browser).</p>
-<p>There are 2 ways to configure a Google Cloud Storage.</p>
-<h3 id="through-native-gcs-apis">Through Native GCS APIs<a class="headerlink" href="#through-native-gcs-apis" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Create and download a Google Cloud service account key.</li>
-<li>Create a kubernetes secret to store the key.</li>
-<li>Configure <code>gcs</code> artifact as following in the yaml.</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
-    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/message</span>
-    <span class="nt">gcs</span><span class="p">:</span>
-      <span class="nt">bucket</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bucket-name</span>
-      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path/in/bucket</span>
-      <span class="c1"># serviceAccountKeySecret is a secret selector.</span>
-      <span class="c1"># It references the k8s secret named &#39;my-gcs-credentials&#39;.</span>
-      <span class="c1"># This secret is expected to have have the key &#39;serviceAccountKey&#39;,</span>
-      <span class="c1"># containing the base64 encoded credentials</span>
-      <span class="c1"># to the bucket.</span>
-      <span class="c1">#</span>
-      <span class="c1"># If it&#39;s running on GKE and Workload Identity is used,</span>
-      <span class="c1"># serviceAccountKeySecret is not needed.</span>
-      <span class="nt">serviceAccountKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">serviceAccountKey</span>
-</code></pre></div>
-<p>If it's a GKE cluster, and Workload Identity is configured, there's no need to
-create the Service Account key and store it as a K8s secret,
-<code>serviceAccountKeySecret</code> is also not needed in this case. Please follow the
-link to configure Workload Identity
-(https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).</p>
-<h3 id="use-s3-apis">Use S3 APIs<a class="headerlink" href="#use-s3-apis" title="Permanent link">&para;</a></h3>
-<p>Enable S3 compatible access and create an access key. Note that S3 compatible
-access is on a per project rather than per bucket basis.</p>
-<ul>
-<li>Navigate to Storage &gt; Settings
-  (https://console.cloud.google.com/storage/settings).</li>
-<li>Enable interoperability access if needed.</li>
-<li>Create a new key if needed.</li>
-<li>Configure <code>s3</code> artifact as following example.</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span>
-    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/my-output-artifact</span>
-    <span class="nt">s3</span><span class="p">:</span>
-      <span class="nt">endpoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">storage.googleapis.com</span>
-      <span class="nt">bucket</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-bucket-name</span>
-      <span class="c1"># NOTE that, by default, all output artifacts are automatically tarred and</span>
-      <span class="c1"># gzipped before saving. So as a best practice, .tgz or .tar.gz</span>
-      <span class="c1"># should be incorporated into the key name so the resulting file</span>
-      <span class="c1"># has an accurate file extension.</span>
-      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-output-artifact.tgz</span>
-      <span class="nt">accessKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">accessKey</span>
-      <span class="nt">secretKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
-</code></pre></div>
-<h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
-<p>To configure artifact storage for Alibaba Cloud OSS, please first follow
-the <a href="https://www.alibabacloud.com/product/oss">official documentation</a> to set up
-an OSS account and bucket.</p>
-<p>Once it's set up, you can find endpoint and bucket
-information on your OSS dashboard and then use them like the following to
-configure the artifact storage for your workflow:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-art</span>
-    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/my-artifact</span>
-    <span class="nt">oss</span><span class="p">:</span>
-      <span class="nt">endpoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://oss-cn-hangzhou-zmf.aliyuncs.com</span>
-      <span class="nt">bucket</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test-bucket-name</span>
-      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test/mydirectory/</span> <span class="c1"># this is path in the bucket</span>
-      <span class="c1"># accessKeySecret and secretKeySecret are secret selectors.</span>
-      <span class="c1"># It references the k8s secret named &#39;my-oss-credentials&#39;.</span>
-      <span class="c1"># This secret is expected to have have the keys &#39;accessKey&#39;</span>
-      <span class="c1"># and &#39;secretKey&#39;, containing the base64 encoded credentials</span>
-      <span class="c1"># to the bucket.</span>
-      <span class="nt">accessKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">accessKey</span>
-      <span class="nt">secretKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
-</code></pre></div>
-<h1 id="configure-the-default-artifact-repository">Configure the Default Artifact Repository<a class="headerlink" href="#configure-the-default-artifact-repository" title="Permanent link">&para;</a></h1>
-<p>In order for Argo to use your artifact repository, you can configure it as the
-default repository. Edit the workflow-controller config map with the correct
-endpoint and access/secret keys for your repository.</p>
-<h2 id="s3-compatible-artifact-repository-bucket-such-as-aws-gcs-minio-and-alibaba-cloud-oss">S3 compatible artifact repository bucket (such as AWS, GCS, Minio, and Alibaba Cloud OSS)<a class="headerlink" href="#s3-compatible-artifact-repository-bucket-such-as-aws-gcs-minio-and-alibaba-cloud-oss" title="Permanent link">&para;</a></h2>
-<p>Use the <code>endpoint</code> corresponding to your provider:</p>
-<ul>
-<li>AWS: s3.amazonaws.com</li>
-<li>GCS: storage.googleapis.com</li>
-<li>Minio: my-minio-endpoint.default:9000</li>
-<li>Alibaba Cloud OSS: oss-cn-hangzhou-zmf.aliyuncs.com</li>
-</ul>
-<p>The <code>key</code> is name of the object in the <code>bucket</code> The <code>accessKeySecret</code> and
-<code>secretKeySecret</code> are secret selectors that reference the specified kubernetes
-secret. The secret is expected to have the keys 'accessKey' and 'secretKey',
-containing the base64 encoded credentials to the bucket.</p>
-<p>For AWS, the <code>accessKeySecret</code> and <code>secretKeySecret</code> correspond to
-<code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code> respectively.</p>
-<p>EC2 provides a metadata API via which applications using the AWS SDK may assume
-IAM roles associated with the instance. If you are running argo on EC2 and the
-instance role allows access to your S3 bucket, you can configure the workflow
-step pods to assume the role. To do so, simply omit the <code>accessKeySecret</code> and
-<code>secretKeySecret</code> fields.</p>
-<p>For GCS, the <code>accessKeySecret</code> and <code>secretKeySecret</code> for S3 compatible access
-can be obtained from the GCP Console. Note that S3 compatible access is on a per
-project rather than per bucket basis.</p>
-<ul>
-<li>Navigate to Storage &gt; Settings
-  (https://console.cloud.google.com/storage/settings).</li>
-<li>Enable interoperability access if needed.</li>
-<li>Create a new key if needed.</li>
-</ul>
-<p>For Minio, the <code>accessKeySecret</code> and <code>secretKeySecret</code> naturally correspond the
-AccessKey and SecretKey.</p>
-<p>For Alibaba Cloud OSS, the <code>accessKeySecret</code> and <code>secretKeySecret</code> corresponds to
-<code>accessKeyID</code> <code>and accessKeySecret</code> respectively.</p>
-<p>Example:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo      # assumes argo was installed in the argo namespace
-...
-data:
-  artifactRepository: |
-    s3:
-      bucket: my-bucket
-      keyFormat: prefix/in/bucket     #optional
-      endpoint: my-minio-endpoint.default:9000        #AWS =&gt; s3.amazonaws.com; GCS =&gt; storage.googleapis.com
-      insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
-      accessKeySecret:                #omit if accessing via AWS IAM
-        name: my-minio-cred
-        key: accessKey
-      secretKeySecret:                #omit if accessing via AWS IAM
-        name: my-minio-cred
-        key: secretKey
-      useSDKCreds: true               #tells argo to use AWS SDK&#39;s default provider chain, enable for things like IRSA support
-</code></pre></div>
-<p>The secrets are retrieved from the namespace you use to run your workflows. Note
-that you can specify a <code>keyFormat</code>.</p>
-<h2 id="google-cloud-storage-gcs">Google Cloud Storage (GCS)<a class="headerlink" href="#google-cloud-storage-gcs" title="Permanent link">&para;</a></h2>
-<p>Argo also can use native GCS APIs to access a Google Cloud Storage bucket.</p>
-<p><code>serviceAccountKeySecret</code> references to a k8 secret which stores a Google Cloud
-service account key to access the bucket.</p>
-<p>Example:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
-...
-data:
-  artifactRepository: |
-    gcs:
-      bucket: my-bucket
-      keyFormat: prefix/in/bucket     #optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;
-      serviceAccountKeySecret:
-        name: my-gcs-credentials
-        key: serviceAccountKey
-</code></pre></div>
-<h1 id="accessing-non-default-artifact-repositories">Accessing Non-Default Artifact Repositories<a class="headerlink" href="#accessing-non-default-artifact-repositories" title="Permanent link">&para;</a></h1>
-<p>This section shows how to access artifacts from non-default artifact
-repositories.</p>
-<p>The <code>endpoint</code>, <code>accessKeySecret</code> and <code>secretKeySecret</code> are the same as for
-configuring the default artifact repository described previously.</p>
-<div class="highlight"><pre><span></span><code>  templates:
-  - name: artifact-example
-    inputs:
-      artifacts:
-      - name: my-input-artifact
-        path: /my-input-artifact
-        s3:
-          endpoint: s3.amazonaws.com
-          bucket: my-aws-bucket-name
-          key: path/in/bucket/my-input-artifact.tgz
-          accessKeySecret:
-            name: my-aws-s3-credentials
-            key: accessKey
-          secretKeySecret:
-            name: my-aws-s3-credentials
-            key: secretKey
-    outputs:
-      artifacts:
-      - name: my-output-artifact
-        path: /my-output-artifact
-        s3:
-          endpoint: storage.googleapis.com
-          bucket: my-gcs-bucket-name
-          # NOTE that, by default, all output artifacts are automatically tarred and
-          # gzipped before saving. So as a best practice, .tgz or .tar.gz
-          # should be incorporated into the key name so the resulting file
-          # has an accurate file extension.
-          key: path/in/bucket/my-output-artifact.tgz
-          accessKeySecret:
-            name: my-gcs-s3-credentials
-            key: accessKey
-          secretKeySecret:
-            name: my-gcs-s3-credentials
-            key: secretKey
-          region: my-GCS-storage-bucket-region
-    container:
-      image: debian:latest
-      command: [sh, -c]
-      args: [&quot;cp -r /my-input-artifact /my-output-artifact&quot;]
-</code></pre></div>
                 
                   
                 
@@ -2535,7 +2207,7 @@ configuring the default artifact repository described previously.</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../managed-namespace/" title="Managed Namespace" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../workflow-executors/" title="Workflow Executors" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -2544,19 +2216,19 @@ configuring the default artifact repository described previously.</p>
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Managed Namespace
+                Workflow Executors
               </span>
             </div>
           </a>
         
         
-          <a href="../workflow-controller-configmap/" title="Workflow Controller Configmap" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../default-workflow-specs/" title="Default Workflow Spec" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Workflow Controller Configmap
+                Default Workflow Spec
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
