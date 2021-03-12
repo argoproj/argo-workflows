@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"strings"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/labels"
