@@ -19,6 +19,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/labels"
@@ -174,7 +175,7 @@ func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1
 }
 
 func (o *Operation) evaluateStringExpression(statement string, errorInfo string) (string, error) {
-	result, err := expr.Eval(statement, o.env)
+	result, err := expr.Eval(statement, exprenv.GetFuncMap(o.env))
 	if err != nil {
 		return "", fmt.Errorf("failed to evaluate workflow %s expression: %w", errorInfo, err)
 	}
