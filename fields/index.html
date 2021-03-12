@@ -7991,6 +7991,11 @@
 <td>Executor holds configurations of the executor container.</td>
 </tr>
 <tr>
+<td align="center"><code>failFast</code></td>
+<td align="center"><code>boolean</code></td>
+<td>FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with <code>withItems</code>, etc.</td>
+</tr>
+<tr>
 <td align="center"><code>hostAliases</code></td>
 <td align="center"><code>Array&lt;</code><a href="#hostalias"><code>HostAlias</code></a><code>&gt;</code></td>
 <td>HostAliases is an optional list of hosts and IPs that will be injected into the pod spec</td>
