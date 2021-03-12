@@ -27,6 +27,20 @@ func MetaWorkflowPhaseIndexFunc() cache.IndexFunc {
 	}
 }
 
+func MetaLabelIndexFunc(label string) cache.IndexFunc {
+	return func(obj interface{}) ([]string, error) {
+		v, err := meta.Accessor(obj)
+		if err != nil {
+			return nil, nil
+		}
+		if value, exists := v.GetLabels()[label]; exists {
+			return []string{value}, nil
+		} else {
+			return nil, nil
+		}
+	}
+}
+
 func MetaNamespaceLabelIndexFunc(label string) cache.IndexFunc {
 	return func(obj interface{}) ([]string, error) {
 		v, err := meta.Accessor(obj)

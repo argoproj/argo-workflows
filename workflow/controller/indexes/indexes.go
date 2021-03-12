@@ -11,6 +11,7 @@ const (
 	CronWorkflowIndex            = "cronworkflow"
 	WorkflowIndex                = "workflow"
 	WorkflowTemplateIndex        = "workflowtemplate"
+	WorkflowCompletedIndex       = "workflow.completed"
 	WorkflowPhaseIndex           = "workflow.phase"
 	PodPhaseIndex                = "pod.phase"
 	ConditionsIndex              = "status.conditions"

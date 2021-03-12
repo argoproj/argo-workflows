@@ -36,6 +36,10 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3
   metricsConfig: |
     enabled: true
     path: /metrics
