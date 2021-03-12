@@ -23,10 +23,7 @@ func (s *ArtifactsSuite) TestInputOnMount() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func (s *ArtifactsSuite) TestOutputOnMount() {
@@ -34,24 +31,16 @@ func (s *ArtifactsSuite) TestOutputOnMount() {
 		Workflow("@testdata/output-on-mount-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func (s *ArtifactsSuite) TestOutputOnInput() {
-	s.Need(fixtures.BaseLayerArtifacts) // I believe this would work on both K8S and Kubelet, not validation does not allow it
+	s.Need(fixtures.BaseLayerArtifacts) // I believe this would work on both K8S and Kubelet, but validation does not allow it
 	s.Given().
 		Workflow("@testdata/output-on-input-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func (s *ArtifactsSuite) TestArtifactPassing() {
@@ -60,11 +49,7 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
@@ -105,10 +90,9 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				if node.Outputs != nil {
 					for _, param := range node.Outputs.Parameters {
@@ -128,11 +112,7 @@ func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 		Workflow("@testdata/same-input-output-path-optional.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func (s *ArtifactsSuite) TestOutputArtifactS3BucketCreationEnabled() {
@@ -141,10 +121,22 @@ func (s *ArtifactsSuite) TestOutputArtifactS3BucketCreationEnabled() {
 		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *ArtifactsSuite) TestOutputResult() {
+	s.Given().
+		Workflow("@testdata/output-result-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			n := status.Nodes.FindByDisplayName("a")
+			if assert.NotNil(t, n) {
+				assert.NotNil(t, n.Outputs.ExitCode)
+				assert.NotNil(t, n.Outputs.Result)
+			}
 		})
 }
 

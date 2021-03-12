@@ -73,6 +73,29 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
+			for _, x := range template.ContainerSet.GetGraph() {
+				if x.Name == containerName {
+					for _, y := range x.Dependencies {
+						logger.Infof("waiting for dependency %q", y)
+						for {
+							data, err := ioutil.ReadFile(varRunArgo + "/ctr/" + y + "/exitcode")
+							if os.IsNotExist(err) {
+								time.Sleep(3 * time.Second)
+								continue
+							}
+							exitCode, err := strconv.Atoi(string(data))
+							if err != nil {
+								return fmt.Errorf("failed to read exit-code of dependency %q: %w", y, err)
+							}
+							if exitCode != 0 {
+								return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
+							}
+							break
+						}
+					}
+				}
+			}
+
 			name, err = exec.LookPath(name)
 			if err != nil {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
@@ -87,7 +110,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			// this may not be that important an optimisation, except for very long logs we don't want to capture
 			if includeScriptOutput {
-				logger.Info("capturing script output")
+				logger.Info("capturing logs")
 				stdout, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
 				if err != nil {
 					return fmt.Errorf("failed to open stdout: %w", err)

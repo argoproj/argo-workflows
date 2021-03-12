@@ -1,5 +1,6 @@
 export const genres = {
     Pod: true,
+    Container: true,
     Steps: true,
     DAG: true,
     Retry: true,

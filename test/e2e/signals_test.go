@@ -14,6 +14,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
+const kill2xDuration = 70 * time.Second
+
 // Tests the use of signals to kill containers.
 // argoproj/argosay:v2 does not contain sh, so you must use argoproj/argosay:v1.
 // Killing often requires SIGKILL, which is issued 30s after SIGTERM. So tests need longer (>30s) timeout.
@@ -32,12 +34,12 @@ func (s *SignalsSuite) TestStopBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
 		}).
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -61,12 +63,12 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
 		}).
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -87,7 +89,7 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
@@ -131,7 +133,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -148,11 +150,7 @@ func (s *SignalsSuite) TestSidecars() {
 		Workflow("@testdata/sidecar-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
 func TestSignalsSuite(t *testing.T) {

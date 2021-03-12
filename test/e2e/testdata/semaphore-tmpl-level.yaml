@@ -29,4 +29,3 @@ spec:
           key: template
     container:
       image: argoproj/argosay:v2
-      args: ["sleep", "1s"]

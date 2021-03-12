@@ -30,6 +30,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -47,10 +48,10 @@ import (
 // 3	5.160
 // 4	9.256
 var ExecutorRetry = wait.Backoff{
-	Steps:    5,
-	Duration: 1 * time.Second,
-	Factor:   1.6,
-	Jitter:   0.5,
+	Steps:    envutil.LookupEnvIntOr("EXECUTOR_RETRY_BACKOFF_STEPS", 5),
+	Duration: envutil.LookupEnvDurationOr("EXECUTOR_RETRY_BACKOFF_DURATION", 1*time.Second),
+	Factor:   envutil.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_FACTOR", 1.6),
+	Jitter:   envutil.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_JITTER", 0.5),
 }
 
 const (
@@ -137,7 +138,6 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 // LoadArtifacts loads artifacts from location to a container path
 func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	log.Infof("Start loading input artifacts...")
-
 	for _, art := range we.Template.Inputs.Artifacts {
 
 		log.Infof("Downloading artifact: %s", art.Name)
@@ -523,7 +523,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 // SaveLogs saves logs
 func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error) {
-	if !we.Template.ArchiveLocation.IsArchiveLogs() {
+	if !we.Template.SaveLogsAsArtifact() {
 		return nil, nil
 	}
 	log.Infof("Saving logs")
@@ -677,8 +677,8 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
-	if we.Template.Script == nil && we.Template.Container == nil {
-		log.Infof("Template type is neither of Script or Container. Capturing script output ignored")
+	if !we.Template.HasOutput() {
+		log.Infof("Template type is neither of Script, Container, or Pod. Capturing script output ignored")
 		return nil
 	}
 	log.Infof("Capturing script output")
@@ -711,8 +711,8 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
 // CaptureScriptExitCode will add the exit code of a script template as output exit code
 func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
-	if we.Template.Script == nil && we.Template.Container == nil {
-		log.Infof("Template type is neither of Script or Container. Capturing exit code ignored")
+	if !we.Template.HasOutput() {
+		log.Infof("Template type is neither of Script, Container, or Pod. Capturing exit code ignored")
 		return nil
 	}
 	log.Infof("Capturing script exit code")
@@ -923,7 +923,7 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
-	containerNames := []string{common.MainContainerName}
+	containerNames := we.Template.GetMainContainerNames()
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
@@ -1054,6 +1054,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
 				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
 					var message string
+
 					// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
 					// timeouts as a failure and the pod should be annotated with that error
 					if we.ExecutionControl.Deadline.IsZero() {

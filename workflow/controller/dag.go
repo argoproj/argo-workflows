@@ -273,20 +273,17 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	// set outputs from tasks in order for DAG templates to support outputs
-	scope := wfScope{
-		tmpl:  tmpl,
-		scope: make(map[string]interface{}),
-	}
+	scope := createScope(tmpl)
 	for _, task := range tmpl.DAG.Tasks {
 		taskNode := dagCtx.getTaskNode(task.Name)
 		if taskNode == nil {
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.buildLocalScope(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.buildLocalScope(scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
 		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
-	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
+	outputs, err := getTemplateOutputsFromScope(tmpl, scope)
 	if err != nil {
 		return node, err
 	}
@@ -494,11 +491,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
-	scope := wfScope{
-		tmpl:  dagCtx.tmpl,
-		scope: make(map[string]interface{}),
-	}
-	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, &scope)
+	scope := createScope(dagCtx.tmpl)
+	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, scope)
 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name)
 	for _, ancestor := range ancestors {
@@ -523,15 +517,15 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 				woc.updated = true
 			}
 
-			err = woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
+			err = woc.processAggregateNodeOutputs(tmpl, scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
 		} else {
-			woc.buildLocalScope(&scope, prefix, ancestorNode)
+			woc.buildLocalScope(scope, prefix, ancestorNode)
 		}
 	}
-	return &scope, nil
+	return scope, nil
 }
 
 // resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
@@ -587,7 +581,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		if art.From == "" {
 			continue
 		}
-		resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
+		resolvedArt, err := scope.resolveArtifact(&art)
 		if err != nil {
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
 				woc.log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)

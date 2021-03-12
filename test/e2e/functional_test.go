@@ -44,54 +44,19 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
-		Wait(3*time.Second). // allow 3s for reconcilliation, we'll create a new pod
+		Wait(3*time.Second). // allow 3s for reconciliation, we'll create a new pod
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
 }
 
-// where you delete a running pod, and you have retry on error,
-// then the node is retried
-func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
+func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 	s.Given().
-		Workflow("@testdata/sleepy-retry-on-error-workflow.yaml").
+		Workflow("@testdata/retry-on-error-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			assert.Len(t, status.Nodes, 2)
-		})
-}
-
-func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
-	s.Given().
-		Workflow("@functional/synchronization-mutex-wf-level-1.yaml").
-		When().
-		SubmitWorkflow().
-		Given().
-		Workflow("@functional/synchronization-mutex-wf-level.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-		})
-}
-
-func (s *FunctionalSuite) TestTemplateLevelMutex() {
-	s.Given().
-		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex).
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, wfv1.NodeTypeRetry, status.Nodes[metadata.Name].Type)
 		})
 }
 
@@ -163,13 +128,11 @@ spec:
   - name: whalesay
     container:
       image: argoproj/argosay:v2
-      imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
       image: argoproj/argosay:v2
-      imagePullPolicy: IfNotPresent
-      command: ["sh", "-c", "sleep 5 ; exit 1"]
+      args: [ exit, "1" ]
 `).
 		When().
 		SubmitWorkflow().
@@ -228,14 +191,12 @@ spec:
 
     - name: whalesay
       container:
-        imagePullPolicy: IfNotPresent
         image: argoproj/argosay:v2
 
     - name: whalesplosion
       container:
-        imagePullPolicy: IfNotPresent
         image: argoproj/argosay:v2
-        command: ["sh", "-c", "sleep 10; exit 1"]
+        args: [ exit, "1" ]
 `).
 		When().
 		SubmitWorkflow().

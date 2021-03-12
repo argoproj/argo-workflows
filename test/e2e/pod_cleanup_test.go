@@ -21,7 +21,7 @@ type PodCleanupSuite struct {
 	fixtures.E2ESuite
 }
 
-const enoughTimeForPodCleanup = 5 * time.Second
+const enoughTimeForPodCleanup = 3 * time.Second
 
 func (s *PodCleanupSuite) TestNone() {
 	s.Given().
@@ -70,10 +70,9 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			assert.True(t, strings.Contains(status.Message, "failed to parse label selector"))
 		})
 }
