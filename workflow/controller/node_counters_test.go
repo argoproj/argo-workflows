@@ -40,10 +40,7 @@ func TestCounters(t *testing.T) {
 	assert.Equal(t, int64(4), woc.getActivePods(""))
 	assert.Equal(t, int64(5), woc.getActiveChildren("1"))
 	assert.Equal(t, int64(3), woc.getUnsuccessfulChildren("1"))
-
-	// Results are cached and shouldn't change across calls
-	assert.Equal(t, int64(2), woc.getActivePods("1"))
-	assert.Equal(t, int64(4), woc.getActivePods(""))
-	assert.Equal(t, int64(5), woc.getActiveChildren("1"))
-	assert.Equal(t, int64(3), woc.getUnsuccessfulChildren("1"))
+	assert.Equal(t, int64(2), woc.getActivePods("2"))
+	assert.Equal(t, int64(2), woc.getActiveChildren("2"))
+	assert.Equal(t, int64(2), woc.getUnsuccessfulChildren("2"))
 }

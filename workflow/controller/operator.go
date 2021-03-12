@@ -103,10 +103,6 @@ type wfOperationCtx struct {
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
 	// 'execWf.Spec' should usually be used instead `wf.Spec`
 	execWf *wfv1.Workflow
-
-	// During operation, we have to count the number of nodes that match certain criteria. Because the node state doesn't
-	// change within a single operation, we can cache the results here.
-	countedNodes count
 }
 
 var (
@@ -2132,11 +2128,6 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		return ErrParallelismReached
 	}
 
-	// We only need to proceed for templates with parallelism or failFast
-	if !tmpl.HasParallelism() && !tmpl.IsFailFast() {
-		return nil
-	}
-
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
 		if node != nil {
@@ -2181,7 +2172,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			}
 
 			// Check parallelism
-			if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *tmpl.Parallelism {
+			if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
 				woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
 				return ErrParallelismReached
 			}
