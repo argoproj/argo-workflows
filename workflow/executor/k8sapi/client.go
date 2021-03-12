@@ -129,15 +129,7 @@ func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) 
 					}
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {
-						// If it's not a pod, try convert to status first
-						// and exit the loop if its status is failure.
-						status, ok := event.Object.(*metav1.Status)
-						if ok {
-							if status.Status == "Failure" {
-								return true, fmt.Errorf(status.Message)
-							}
-						}
-						return false, apierrors.FromObject(event.Object)
+						return true, apierrors.FromObject(event.Object)
 					}
 					done := f(pod)
 					if done {
