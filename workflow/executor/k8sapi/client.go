@@ -116,7 +116,7 @@ func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) 
 		done, err := func() (bool, error) {
 			w, err := podInterface.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + c.podName})
 			if err != nil {
-				return false, err
+				return true, fmt.Errorf("failed to establish pod watch: %w", err)
 			}
 			defer w.Stop()
 			for {
@@ -129,6 +129,14 @@ func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) 
 					}
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {
+						// If it's not a pod, try convert to status first
+						// and exit the loop if its status is failure.
+						status, ok := event.Object.(*metav1.Status)
+						if ok {
+							if status.Status == "Failure" {
+								return true, fmt.Errorf(status.Message)
+							}
+						}
 						return false, apierrors.FromObject(event.Object)
 					}
 					done := f(pod)
