@@ -1,5 +1,5 @@
 # This is an auto-generated file. DO NOT EDIT
-name: Test Examples
+name: Test CLI
 on:
   push:
     branches:
@@ -57,20 +57,20 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           PROFILE=mysql
           ALWAYS_OFFLOAD_NODE_STATUS=true
-          if [ "test-examples" = test-executor ] || [ "test-examples" = test-examples ]; then
+          if [ "test-cli" = test-executor ] || [ "test-cli" = test-examples ]; then
             PROFILE=minimal
             ALWAYS_OFFLOAD_NODE_STATUS=false
           fi
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=docker ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=docker ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=emissary ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=emissary ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
       - name: Start logging
         run: make logs 2>&1 > /tmp/log/argo-e2e/pod.log &
-      - run: make test-examples
+      - run: make test-cli
       - name: Upload logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: test-examples-docker
+          name: test-cli-emissary
           path: /tmp/log/argo-e2e

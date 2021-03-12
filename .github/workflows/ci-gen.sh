@@ -23,7 +23,7 @@ gen "Test K8SAPI Executor" test-executor k8sapi
 gen "Test Kubelet Executor" test-executor kubelet
 gen "Test PNS Executor" test-executor pns
 
-gen "Test CLI" test-cli docker
-gen "Test Cron Workflows" test-e2e-cron docker
-gen "Test Examples" test-examples docker
-gen "Test Functionality " test-functional docker
+gen "Test CLI" test-cli emissary
+gen "Test Cron Workflows" test-e2e-cron emissary
+gen "Test Examples" test-examples emissary
+gen "Test Functionality " test-functional emissary
