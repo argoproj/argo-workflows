@@ -23,8 +23,6 @@ import (
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
-var errContainerNameNotFound = fmt.Errorf("container name not found")
-
 type PNSExecutor struct {
 	*k8sapi.K8sAPIExecutor
 	podName   string
@@ -129,9 +127,8 @@ func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath
 	return err
 }
 
-func (p *PNSExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
-	allContainerNames := append(containerNames, sidecarNames...)
-	go p.pollRootProcesses(ctx, allContainerNames)
+func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
+	go p.pollRootProcesses(ctx, containerNames)
 
 	// Secure a filehandle on our own root. This is because we will chroot back and forth from
 	// the main container's filesystem, to our own.
@@ -184,7 +181,7 @@ OUTER:
 		}
 	}
 
-	return p.K8sAPIExecutor.Wait(ctx, containerNames, sidecarNames)
+	return p.K8sAPIExecutor.Wait(ctx, containerNames)
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the
@@ -193,6 +190,7 @@ OUTER:
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
+	start := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	for {
@@ -203,7 +201,9 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			if err := p.secureRootFiles(); err != nil {
 				log.WithError(err).Warn("failed to secure root files")
 			}
-			if p.haveContainerPIDs(containerNames) {
+			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
+			// we need a bit more time
+			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
 				return
 			}
 			time.Sleep(50 * time.Millisecond)
@@ -238,6 +238,14 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, termina
 	}
 	wg.Wait()
 	return asyncErr
+}
+
+func (p *PNSExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	var containerNames []string
+	for n := range p.containerNameToPID {
+		containerNames = append(containerNames, n)
+	}
+	return containerNames, nil
 }
 
 func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriodDuration time.Duration) error {
@@ -290,7 +298,7 @@ func containerNameForPID(pid int) (string, error) {
 			return strings.TrimPrefix(l, prefix), nil
 		}
 	}
-	return "", errContainerNameNotFound
+	return fmt.Sprintf("pid/%d", pid), nil // we give all a "container name", including a fake name for injected sidecars
 }
 
 func (p *PNSExecutor) secureRootFiles() error {
@@ -317,14 +325,16 @@ func (p *PNSExecutor) secureRootFiles() error {
 			}
 			p.pidFileHandles[pid] = fs
 			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
-			p.mu.Lock()
-			defer p.mu.Unlock()
 			containerName, err := containerNameForPID(pid)
 			if err != nil {
 				return err
 			}
-			p.containerNameToPID[containerName] = pid
-			log.Infof("mapped container name %q to pid %d", containerName, pid)
+			if p.getContainerPID(containerName) != pid {
+				p.mu.Lock()
+				defer p.mu.Unlock()
+				p.containerNameToPID[containerName] = pid
+				log.Infof("mapped container name %q to pid %d", containerName, pid)
+			}
 			return nil
 		}()
 		if err != nil {
