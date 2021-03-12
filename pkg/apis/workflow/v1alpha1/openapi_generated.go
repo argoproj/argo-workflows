@@ -4402,6 +4402,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "int64",
 						},
 					},
+					"failFast": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"tolerations": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
