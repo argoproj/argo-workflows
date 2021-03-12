@@ -103,6 +103,10 @@ type wfOperationCtx struct {
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
 	// 'execWf.Spec' should usually be used instead `wf.Spec`
 	execWf *wfv1.Workflow
+
+	// During operation, we have to count the number of nodes that match certain criteria. Because the node state doesn't
+	// change within a single operation, we can cache the results here.
+	countedNodes count
 }
 
 var (
@@ -302,7 +306,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 	if woc.execWf.Spec.Parallelism != nil {
-		woc.activePods = int64(woc.countNodes(getActivePodsCounter("")).getCount())
+		woc.activePods = woc.getActivePods("")
 	}
 
 	// Create a starting template context.
@@ -1594,7 +1598,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
-	if _, err := woc.checkParallelism(processedTmpl, node, opts.boundaryID); err != nil {
+	if err := woc.checkParallelism(processedTmpl, node, opts.boundaryID); err != nil {
 		return node, err
 	}
 
@@ -2122,28 +2126,30 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
-func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
 		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.execWf.Spec.Parallelism)
-		return node, ErrParallelismReached
+		return ErrParallelismReached
 	}
-	// TODO: repeated calls to countActivePods is not optimal
+
+	// We only need to proceed for templates with parallelism or failFast
+	if !tmpl.HasParallelism() && !tmpl.IsFailFast() {
+		return nil
+	}
+
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
 		if node != nil {
-			// if we are about to execute a DAG/Steps template, make sure we havent already reached our limit
-			counts := woc.countNodes(getActivePodsCounter(node.ID), getFailedOrErroredChildrenCounter(node.ID))
-			templateActivePods := int64(counts.getCountType(counterTypeActivePods))
-			templateFailedOrErroredChildren := int64(counts.getCountType(counterTypeFailedOrErroredChildren))
-
-			if tmpl.FailFast != nil && *tmpl.FailFast && templateFailedOrErroredChildren > 0 {
+			// Check failFast
+			if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 				woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-				return node, ErrParallelismReached
+				return ErrParallelismReached
 			}
 
-			if tmpl.Parallelism != nil && templateActivePods >= *tmpl.Parallelism {
-				woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", node.ID, templateActivePods, *tmpl.Parallelism)
-				return node, ErrParallelismReached
+			// Check parallelism
+			if tmpl.HasParallelism() && woc.getActivePods(boundaryID) >= *tmpl.Parallelism {
+				woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *tmpl.Parallelism)
+				return ErrParallelismReached
 			}
 		}
 
@@ -2153,39 +2159,35 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 			boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]
 			if !ok {
-				return node, errors.InternalError("boundaryNode not found")
+				return errors.InternalError("boundaryNode not found")
 			}
 			tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
 			if err != nil {
-				return node, err
+				return err
 			}
 			_, boundaryTemplate, templateStored, err := tmplCtx.ResolveTemplate(&boundaryNode)
 			if err != nil {
-				return node, err
+				return err
 			}
 			// A new template was stored during resolution, persist it
 			if templateStored {
 				woc.updated = true
 			}
 
-			if boundaryTemplate != nil && boundaryTemplate.Parallelism != nil {
-				counts := woc.countNodes(getActiveChildrenCounter(boundaryID), getFailedOrErroredChildrenCounter(boundaryID))
-				activeSiblings := int64(counts.getCountType(counterTypeActiveChildren))
-				templateFailedOrErroredChildren := int64(counts.getCountType(counterTypeFailedOrErroredChildren))
+			// Check failFast
+			if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
+				woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+				return ErrParallelismReached
+			}
 
-				if boundaryTemplate.FailFast != nil && *boundaryTemplate.FailFast && templateFailedOrErroredChildren > 0 {
-					woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-					return node, ErrParallelismReached
-				}
-				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
-				if activeSiblings >= *boundaryTemplate.Parallelism {
-					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *boundaryTemplate.Parallelism)
-					return node, ErrParallelismReached
-				}
+			// Check parallelism
+			if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *tmpl.Parallelism {
+				woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
+				return ErrParallelismReached
 			}
 		}
 	}
-	return node, nil
+	return nil
 }
 
 func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {

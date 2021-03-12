@@ -35,27 +35,15 @@ func getWfOperationCtx() *wfOperationCtx {
 
 func TestCounters(t *testing.T) {
 	woc := getWfOperationCtx()
-
-	activePod := woc.countNodes(getActivePodsCounter("1")).getCount()
-	assert.Equal(t, 2, activePod)
-
+	assert.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
-	activePod = woc.countNodes(getActivePodsCounter("")).getCount()
-	assert.Equal(t, 4, activePod)
+	assert.Equal(t, int64(4), woc.getActivePods(""))
+	assert.Equal(t, int64(5), woc.getActiveChildren("1"))
+	assert.Equal(t, int64(3), woc.getUnsuccessfulChildren("1"))
 
-	activeChild := woc.countNodes(getActiveChildrenCounter("1")).getCount()
-	assert.Equal(t, 5, activeChild)
-
-	failedOrErroredChildren := woc.countNodes(getFailedOrErroredChildrenCounter("1")).getCount()
-	assert.Equal(t, 3, failedOrErroredChildren)
-
-	counts := woc.countNodes(getActivePodsCounter("1"), getActiveChildrenCounter("1"), getFailedOrErroredChildrenCounter("1"))
-	assert.Len(t, counts, 3)
-	assert.Panics(t, func() {
-		// counts has more than one element, the getCount shortcut shouldn't work
-		counts.getCount()
-	})
-	assert.Equal(t, 2, counts.getCountType(counterTypeActivePods))
-	assert.Equal(t, 5, counts.getCountType(counterTypeActiveChildren))
-	assert.Equal(t, 3, counts.getCountType(counterTypeFailedOrErroredChildren))
+	// Results are cached and shouldn't change across calls
+	assert.Equal(t, int64(2), woc.getActivePods("1"))
+	assert.Equal(t, int64(4), woc.getActivePods(""))
+	assert.Equal(t, int64(5), woc.getActiveChildren("1"))
+	assert.Equal(t, int64(3), woc.getUnsuccessfulChildren("1"))
 }

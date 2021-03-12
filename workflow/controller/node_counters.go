@@ -1,25 +1,32 @@
 package controller
 
 import (
+	"fmt"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type counter struct {
-	key    counterType
+	// key of the counter
+	key string
+	// increment count ifNode return true
 	ifNode func(wfv1.NodeStatus) bool
 }
 
 type counterType string
 
 const (
-	counterTypeActivePods              = "activePods"
-	counterTypeActiveChildren          = "activeChildren"
-	counterTypeFailedOrErroredChildren = "failedOrErroredChildren"
+	counterTypeActivePods           counterType = "activePods"
+	counterTypeActiveChildren       counterType = "activeChildren"
+	counterTypeUnsuccessfulChildren counterType = "unsuccessfulChildren"
 )
+
+func getKey(counterType counterType, boundaryID string) string {
+	return fmt.Sprintf("%s/%s", counterType, boundaryID)
+}
 
 func getActivePodsCounter(boundaryID string) counter {
 	return counter{
-		key: counterTypeActivePods,
+		key: getKey(counterTypeActivePods, boundaryID),
 		ifNode: func(node wfv1.NodeStatus) bool {
 			return node.Type == wfv1.NodeTypePod &&
 				// Only count pods that match the provided boundaryID, or all if no boundaryID was provided
@@ -34,7 +41,7 @@ func getActivePodsCounter(boundaryID string) counter {
 
 func getActiveChildrenCounter(boundaryID string) counter {
 	return counter{
-		key: counterTypeActiveChildren,
+		key: getKey(counterTypeActiveChildren, boundaryID),
 		ifNode: func(node wfv1.NodeStatus) bool {
 			return node.BoundaryID == boundaryID &&
 				// Only count Pods, Steps, or DAGs
@@ -45,9 +52,9 @@ func getActiveChildrenCounter(boundaryID string) counter {
 	}
 }
 
-func getFailedOrErroredChildrenCounter(boundaryID string) counter {
+func getUnsuccessfulChildrenCounter(boundaryID string) counter {
 	return counter{
-		key: counterTypeFailedOrErroredChildren,
+		key: getKey(counterTypeUnsuccessfulChildren, boundaryID),
 		ifNode: func(node wfv1.NodeStatus) bool {
 			return node.BoundaryID == boundaryID &&
 				// Only count Pods, Steps, or DAGs
@@ -58,41 +65,42 @@ func getFailedOrErroredChildrenCounter(boundaryID string) counter {
 	}
 }
 
-type count map[counterType]int
+type count map[string]int64
 
-func (c count) addKeyIfNotPresent(key counterType) {
-	if _, ok := c[key]; !ok {
-		c[key] = 0
+func (woc *wfOperationCtx) getActivePods(boundaryID string) int64 {
+	key := getKey(counterTypeActivePods, boundaryID)
+	if _, ok := woc.countedNodes[key]; !ok {
+		woc.countNodes(getActivePodsCounter(boundaryID))
 	}
+	return woc.countedNodes[key]
 }
 
-func (c count) count(key counterType) {
-	c[key]++
-}
-
-func (c count) getCount() int {
-	if len(c) != 1 {
-		panic("getCount applied to a count with multiple types")
+func (woc *wfOperationCtx) getActiveChildren(boundaryID string) int64 {
+	key := getKey(counterTypeActiveChildren, boundaryID)
+	if _, ok := woc.countedNodes[key]; !ok {
+		woc.countNodes(getActiveChildrenCounter(boundaryID))
 	}
-	for _, val := range c {
-		return val
+	return woc.countedNodes[key]
+}
+
+func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
+	key := getKey(counterTypeUnsuccessfulChildren, boundaryID)
+	if _, ok := woc.countedNodes[key]; !ok {
+		woc.countNodes(getUnsuccessfulChildrenCounter(boundaryID))
 	}
-	panic("unreachable: we know count has exactly one element and it wasn't returned")
+	return woc.countedNodes[key]
 }
 
-func (c count) getCountType(key counterType) int {
-	return c[key]
-}
 
-func (woc *wfOperationCtx) countNodes(counters ...counter) count {
-	count := make(count)
+func (woc *wfOperationCtx) countNodes(counter counter) {
+	if woc.countedNodes == nil {
+		woc.countedNodes = make(count)
+	}
+
+	woc.countedNodes[counter.key] = 0
 	for _, node := range woc.wf.Status.Nodes {
-		for _, counter := range counters {
-			count.addKeyIfNotPresent(counter.key)
-			if counter.ifNode(node) {
-				count.count(counter.key)
-			}
+		if counter.ifNode(node) {
+			woc.countedNodes[counter.key]++
 		}
 	}
-	return count
 }

@@ -648,6 +648,14 @@ func (tmpl *Template) GetSidecarNames() []string {
 	return containerNames
 }
 
+func (tmpl *Template) IsFailFast() bool {
+	return tmpl.FailFast != nil && *tmpl.FailFast
+}
+
+func (tmpl *Template) HasParallelism() bool {
+	return tmpl.Parallelism != nil && *tmpl.Parallelism > 0
+}
+
 type Artifacts []Artifact
 
 func (a Artifacts) GetArtifactByName(name string) *Artifact {
