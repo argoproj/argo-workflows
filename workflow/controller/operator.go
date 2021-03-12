@@ -2128,54 +2128,50 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		return ErrParallelismReached
 	}
 
-	switch tmpl.GetType() {
-	case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
-		if node != nil {
-			// Check failFast
-			if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-				return ErrParallelismReached
-			}
-
-			// Check parallelism
-			if tmpl.HasParallelism() && woc.getActivePods(node.ID) >= *tmpl.Parallelism {
-				woc.log.Infof("template (node %s) active children parallelism exceeded %d", node.ID, *tmpl.Parallelism)
-				return ErrParallelismReached
-			}
+	// If we are a DAG or Steps template, check if we have active pods or unsuccessful children
+	if node != nil && tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps {
+		// Check failFast
+		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
+			woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+			return ErrParallelismReached
 		}
 
-		fallthrough
-	default:
-		// if we are about to execute a pod, make sure our parent hasn't reached it's limit
-		if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
-			boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]
-			if !ok {
-				return errors.InternalError("boundaryNode not found")
-			}
-			tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
-			if err != nil {
-				return err
-			}
-			_, boundaryTemplate, templateStored, err := tmplCtx.ResolveTemplate(&boundaryNode)
-			if err != nil {
-				return err
-			}
-			// A new template was stored during resolution, persist it
-			if templateStored {
-				woc.updated = true
-			}
+		// Check parallelism
+		if tmpl.HasParallelism() && woc.getActivePods(node.ID) >= *tmpl.Parallelism {
+			woc.log.Infof("template (node %s) active children parallelism exceeded %d", node.ID, *tmpl.Parallelism)
+			return ErrParallelismReached
+		}
+	}
 
-			// Check failFast
-			if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
-				woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-				return ErrParallelismReached
-			}
+	// if we are about to execute a pod, make sure our parent hasn't reached it's limit
+	if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
+		boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]
+		if !ok {
+			return errors.InternalError("boundaryNode not found")
+		}
+		tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
+		if err != nil {
+			return err
+		}
+		_, boundaryTemplate, templateStored, err := tmplCtx.ResolveTemplate(&boundaryNode)
+		if err != nil {
+			return err
+		}
+		// A new template was stored during resolution, persist it
+		if templateStored {
+			woc.updated = true
+		}
 
-			// Check parallelism
-			if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
-				woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
-				return ErrParallelismReached
-			}
+		// Check failFast
+		if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
+			woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+			return ErrParallelismReached
+		}
+
+		// Check parallelism
+		if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
+			woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
+			return ErrParallelismReached
 		}
 	}
 	return nil
