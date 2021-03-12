@@ -2137,7 +2137,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			templateFailedOrErroredChildren := int64(counts.getCountType(counterTypeFailedOrErroredChildren))
 
 			if tmpl.FailFast != nil && *tmpl.FailFast && templateFailedOrErroredChildren > 0 {
-				woc.markNodePhase(node.Name, wfv1.NodeFailed,"template has failed or errored children and failFast enabled")
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 				return node, ErrParallelismReached
 			}
 
@@ -2174,7 +2174,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 				templateFailedOrErroredChildren := int64(counts.getCountType(counterTypeFailedOrErroredChildren))
 
 				if boundaryTemplate.FailFast != nil && *boundaryTemplate.FailFast && templateFailedOrErroredChildren > 0 {
-					woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed,"template has failed or errored children and failFast enabled")
+					woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 					return node, ErrParallelismReached
 				}
 				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
