@@ -251,7 +251,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
             <ErrorNotice error={error} />
             {emptyGraph ? (
                 <ZeroState>
-                    <p>Argo Events allow you to trigger workflows, lambadas, and other actions when an event such as a webhooks, message, or a cron schedule occurs.</p>
+                    <p>Argo Events allow you to trigger workflows, lambdas, and other actions when an event such as a webhooks, message, or a cron schedule occurs.</p>
                     <p>
                         <a href='https://argoproj.github.io/argo-events/'>Learn more</a>
                     </p>
