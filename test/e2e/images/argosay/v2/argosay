@@ -24,7 +24,7 @@ case ${1:-} in
     esac
     ;;
   exit)
-    exit "$2"
+    exit "${2:-0}"
     ;;
   sleep)
     sleep "$2"
