@@ -863,9 +863,23 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 
 // TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
 func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string) error {
+	return patchShutdownStrategy(ctx, wfClient, name, wfv1.ShutdownStrategyTerminate)
+}
+
+// StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
+// Or terminates a single resume step referenced by nodeFieldSelector
+func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
+	if len(nodeFieldSelector) > 0 {
+		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
+	}
+	return patchShutdownStrategy(ctx, wfClient, name, wfv1.ShutdownStrategyStop)
+}
+
+// patchShutdownStrategy patches the shutdown strategy to a workflow.
+func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string, strategy wfv1.ShutdownStrategy) error {
 	patchObj := map[string]interface{}{
 		"spec": map[string]interface{}{
-			"shutdown": wfv1.ShutdownStrategyTerminate,
+			"shutdown": strategy,
 		},
 	}
 	var err error
@@ -881,37 +895,6 @@ func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface,
 		return !errorsutil.IsTransientErr(err), err
 	})
 	return err
-}
-
-// StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
-// Or terminates a single resume step referenced by nodeFieldSelector
-func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
-	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
-	} else {
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
-				"shutdown": wfv1.ShutdownStrategyStop,
-			},
-		}
-		var err error
-		patch, err := json.Marshal(patchObj)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		for attempt := 0; attempt < 10; attempt++ {
-			_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
-			if err != nil {
-				if !apierr.IsConflict(err) {
-					return err
-				}
-			} else {
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-		return err
-	}
 }
 
 func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, values SetOperationValues) error {
@@ -1004,39 +987,16 @@ func ConvertYAMLToJSON(str string) (string, error) {
 
 // PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
 func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
-	var wfPatch, tmplPatch, mergedPatch string
-	var err error
-
-	if wf.Spec.HasPodSpecPatch() {
-		wfPatch, err = ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
-		if err != nil {
-			return "", err
-		}
+	wfPatch, err := ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
+	if err != nil {
+		return "", err
 	}
-	if tmpl.HasPodSpecPatch() {
-		tmplPatch, err = ConvertYAMLToJSON(tmpl.PodSpecPatch)
-		if err != nil {
-			return "", err
-		}
-
-		if wfPatch != "" {
-			mergedByte, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
-			if err != nil {
-				return "", err
-			}
-			mergedPatch = string(mergedByte)
-		} else {
-			mergedPatch = tmplPatch
-		}
-	} else {
-		mergedPatch = wfPatch
+	tmplPatch, err := ConvertYAMLToJSON(tmpl.PodSpecPatch)
+	if err != nil {
+		return "", err
 	}
-	return mergedPatch, nil
-}
-
-func ValidateJsonStr(jsonStr string, schema interface{}) bool {
-	err := json.Unmarshal([]byte(jsonStr), &schema)
-	return err == nil
+	data, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
+	return string(data), err
 }
 
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {

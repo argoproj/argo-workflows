@@ -316,8 +316,7 @@ export interface Template {
     container?: kubernetes.Container;
 
     containerSet?: {
-        sequence: kubernetes.Container[];
-        graph: ContainerNode[];
+        containers: ContainerNode[];
     };
     /**
      * Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness

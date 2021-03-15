@@ -363,13 +363,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if woc.hasPodSpecPatch(tmpl) {
 		jsonstr, err := json.Marshal(pod.Spec)
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+			return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
 		}
 
 		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+			return nil, errors.Wrap(err, "", "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
 		}
 
 		// Final substitution for workflow level PodSpecPatch
@@ -379,13 +379,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Fail to substitute the PodSpecPatch variables")
+			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
 
-		var spec apiv1.PodSpec
-
-		if !util.ValidateJsonStr(tmpl.PodSpecPatch, spec) {
-			return nil, errors.New("", "Invalid PodSpecPatch String")
+		if err := json.Unmarshal([]byte(tmpl.PodSpecPatch), &apiv1.PodSpec{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", tmpl.PodSpecPatch, err)
 		}
 
 		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})

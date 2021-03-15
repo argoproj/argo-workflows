@@ -97,11 +97,13 @@ type ContainerRuntimeExecutor interface {
 	GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error)
 
 	// Wait waits for the container to complete.
-	// The implementation should not wait for the sidecars. These are included in case you need to capture data on them.
-	Wait(ctx context.Context, containerNames, sidecarNames []string) error
+	Wait(ctx context.Context, containerNames []string) error
 
 	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
+
+	// List all the containers the executor is aware of, including any injected sidecars.
+	ListContainerNames(ctx context.Context) ([]string, error)
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -905,7 +907,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx, containerNames, we.Template.GetSidecarNames())
+		err := we.RuntimeExecutor.Wait(ctx, containerNames)
 		return err == nil, err
 	})
 	if err != nil {
@@ -1058,7 +1060,16 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
-	sidecarNames := we.Template.GetSidecarNames()
+	containerNames, err := we.RuntimeExecutor.ListContainerNames(ctx)
+	if err != nil {
+		return err
+	}
+	var sidecarNames []string
+	for _, n := range containerNames {
+		if n != common.WaitContainerName && !we.Template.IsMainContainerName(n) {
+			sidecarNames = append(sidecarNames, n)
+		}
+	}
 	if len(sidecarNames) == 0 {
 		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
 	}

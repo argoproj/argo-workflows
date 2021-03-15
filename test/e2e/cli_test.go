@@ -759,7 +759,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		WaitForWorkflow(fixtures.ToStart).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.AnyActiveSuspendNode(), "suspended node"
-		})).
+		}), time.Minute).
 		RunCli([]string{"terminate", "retry-test"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow retry-test terminated")
@@ -768,7 +768,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			retryTime = wf.Status.FinishedAt
 			return wf.Status.Phase == wfv1.WorkflowFailed, "is terminated"
-		}), 20*time.Second).
+		})).
 		Wait(3*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err, output) {
