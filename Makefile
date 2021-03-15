@@ -430,7 +430,8 @@ ifeq ($(DOCKER_PUSH),true)
 endif
 
 dist/argosay:
-	cp test/e2e/images/argosay/v2/argosay dist/argosay
+	mkdir -p dist
+	cp test/e2e/images/argosay/v2/argosay dist/
 
 .PHONY: pull-images
 pull-images:

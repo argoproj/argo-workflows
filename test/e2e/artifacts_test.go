@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -16,6 +17,12 @@ import (
 type ArtifactsSuite struct {
 	fixtures.E2ESuite
 }
+
+func (s *ArgoServerSuite) BeforeTest(suiteName ,testName string) {
+	s.E2ESuite.BeforeTest(suiteName, testName)
+	s.Need(fixtures.None(fixtures.PNS)) //  cannot enter chroot for container named "main": no PID known - maybe short running container
+}
+
 
 func (s *ArtifactsSuite) TestInputOnMount() {
 	s.Given().
