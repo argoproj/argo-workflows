@@ -3259,7 +3259,6 @@ func (woc *wfOperationCtx) setTemplateDefault(tmpl *wfv1.Template) error {
 			return err
 		}
 
-		// Merge the TemplateBase fields
 		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefault, targetTmpl, wfv1.Template{})
 		if err != nil {
 			return err

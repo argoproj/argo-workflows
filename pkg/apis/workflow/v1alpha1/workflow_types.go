@@ -351,7 +351,7 @@ type WorkflowSpec struct {
 	// PodMetadata defines additional metadata that should be applied to workflow pods
 	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
 
-
+	// TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
 	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
 }
 
@@ -487,116 +487,6 @@ func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
-}
-
-type TemplateBase struct {
-	// Inputs describe what inputs parameters and artifacts are supplied to this template
-	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,1,opt,name=inputs"`
-
-	// Outputs describe the parameters and artifacts that this template produces
-	Outputs Outputs `json:"outputs,omitempty" protobuf:"bytes,2,opt,name=outputs"`
-
-	// NodeSelector is a selector to schedule this step of the workflow to be
-	// run on the selected node(s). Overrides the selector set at the workflow level.
-	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,3,opt,name=nodeSelector"`
-
-	// Affinity sets the pod's scheduling constraints
-	// Overrides the affinity set at the workflow level (if any)
-	Affinity *apiv1.Affinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
-
-	// Metdata sets the pods's metadata, i.e. annotations and labels
-	Metadata Metadata `json:"metadata,omitempty" protobuf:"bytes,5,opt,name=metadata"`
-
-	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
-	Daemon *bool `json:"daemon,omitempty" protobuf:"bytes,6,opt,name=daemon"`
-	// Volumes is a list of volumes that can be mounted by containers in a template.
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Volumes []apiv1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,opt,name=volumes"`
-
-	// InitContainers is a list of containers which run before the main container.
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	InitContainers []UserContainer `json:"initContainers,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,8,opt,name=initContainers"`
-
-	// Sidecars is a list of containers which run alongside the main container
-	// Sidecars are automatically killed when the main container completes
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Sidecars []UserContainer `json:"sidecars,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,9,opt,name=sidecars"`
-
-	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
-	// Can be overridden by individual items in Outputs. If omitted, will use the default
-	// artifact repository location configured in the controller, appended with the
-	// <workflowname>/<nodename> in the key.
-	ArchiveLocation *ArtifactLocation `json:"archiveLocation,omitempty" protobuf:"bytes,10,opt,name=archiveLocation"`
-
-	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
-	// before the system actively tries to terminate the pod; value must be positive integer
-	// This field is only applicable to container and script templates.
-	ActiveDeadlineSeconds *intstr.IntOrString `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,11,opt,name=activeDeadlineSeconds"`
-
-	// RetryStrategy describes how to retry a template when it fails
-	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,12,opt,name=retryStrategy"`
-
-	// Parallelism limits the max total parallel pods that can execute at the same time within the
-	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
-	// pods created by those templates will not be counted towards this total.
-	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,13,opt,name=parallelism"`
-
-	// Tolerations to apply to workflow pods.
-	// +patchStrategy=merge
-	// +patchMergeKey=key
-	Tolerations []apiv1.Toleration `json:"tolerations,omitempty" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,14,opt,name=tolerations"`
-
-	// If specified, the pod will be dispatched by specified scheduler.
-	// Or it will be dispatched by workflow scope scheduler if specified.
-	// If neither specified, the pod will be dispatched by default scheduler.
-	// +optional
-	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,15,opt,name=schedulerName"`
-
-	// PriorityClassName to apply to workflow pods.
-	PriorityClassName string `json:"priorityClassName,omitempty" protobuf:"bytes,16,opt,name=priorityClassName"`
-
-	// Priority to apply to workflow pods.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,17,opt,name=priority"`
-
-	// ServiceAccountName to apply to workflow pods
-	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,18,opt,name=serviceAccountName"`
-
-	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
-	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,19,opt,name=automountServiceAccountToken"`
-
-	// Executor holds configurations of the executor container.
-	Executor *ExecutorConfig `json:"executor,omitempty" protobuf:"bytes,20,opt,name=executor"`
-
-	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
-	// +patchStrategy=merge
-	// +patchMergeKey=ip
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,21,opt,name=hostAliases"`
-
-	// SecurityContext holds pod-level security attributes and common container settings.
-	// Optional: Defaults to empty.  See type description for default values of each field.
-	// +optional
-	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,22,opt,name=securityContext"`
-
-	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
-	// container fields which are not strings (e.g. resource limits).
-	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,23,opt,name=podSpecPatch"`
-
-	// Metrics are a list of metrics emitted from this template
-	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,24,opt,name=metrics"`
-
-	// Synchronization holds synchronization lock configuration for this template
-	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,25,opt,name=synchronization,casttype=Synchronization"`
-
-	// Memoize allows templates to use outputs generated from already executed templates
-	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,26,opt,name=memoize"`
-
-	// Timout allows to set the total node execution timeout duration counting from the node's start time.
-	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
-	Timeout string `json:"timeout,omitempty" protobuf:"bytes,27,opt,name=timeout"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
