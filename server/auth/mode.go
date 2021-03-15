@@ -34,7 +34,7 @@ func (m Modes) GetMode(authorisation string) (Mode, bool) {
 	if m[SSO] && strings.HasPrefix(authorisation, sso.Prefix) {
 		return SSO, true
 	}
-	if m[Client] && strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ") {
+	if m[Client] && (strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ")) {
 		return Client, true
 	}
 	if m[Server] {
