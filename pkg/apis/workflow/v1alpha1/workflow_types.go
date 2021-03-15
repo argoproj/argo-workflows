@@ -351,7 +351,8 @@ type WorkflowSpec struct {
 	// PodMetadata defines additional metadata that should be applied to workflow pods
 	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
 
-	TemplateDefault *Template `json:"templateDefault,omitempty" protobuf:"bytes,39,opt,name=templateDefault"`
+
+	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.

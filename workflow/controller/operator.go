@@ -3246,8 +3246,8 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 }
 
 func (woc *wfOperationCtx) setTemplateDefault(tmpl *wfv1.Template) error {
-	if woc.execWf.Spec.TemplateDefault != nil {
-		tmplDef := woc.execWf.Spec.TemplateDefault.DeepCopy()
+	if woc.execWf.Spec.TemplateDefaults != nil {
+		tmplDef := woc.execWf.Spec.TemplateDefaults.DeepCopy()
 		woc.ExcludeOtherTemplateTypes(tmpl.GetType(), tmplDef)
 
 		tmplDefault, err := json.Marshal(tmplDef)

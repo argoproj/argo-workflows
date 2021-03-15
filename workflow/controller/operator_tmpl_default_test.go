@@ -115,7 +115,7 @@ func TestSetTemplateDefault(t *testing.T) {
 	defer cancel()
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		Spec: wfv1.WorkflowSpec{
-			TemplateDefault: &wfv1.Template{
+			TemplateDefaults: &wfv1.Template{
 				ActiveDeadlineSeconds: intstrutil.ParsePtr("110"),
 				Container: &apiv1.Container{
 					ImagePullPolicy: "Never",
@@ -142,7 +142,7 @@ func TestSetTemplateDefault(t *testing.T) {
 				Name: "test",
 			},
 		}
-		wf.Spec.TemplateDefault = &wfv1.Template{
+		wf.Spec.TemplateDefaults = &wfv1.Template{
 			ActiveDeadlineSeconds: intstrutil.ParsePtr("150"),
 			Script: &wfv1.ScriptTemplate{
 				Source: "Test",
@@ -172,7 +172,7 @@ func TestSetTemplateDefault(t *testing.T) {
 				Name: "test",
 			},
 		}
-		wf.Spec.TemplateDefault = &wfv1.Template{
+		wf.Spec.TemplateDefaults = &wfv1.Template{
 			ActiveDeadlineSeconds: intstrutil.ParsePtr("150"),
 			Script: &wfv1.ScriptTemplate{
 				Source: "Test",
@@ -211,7 +211,7 @@ func TestSetTemplateDefault(t *testing.T) {
 				Name: "test",
 			},
 		}
-		wf.Spec.TemplateDefault = &wfv1.Template{
+		wf.Spec.TemplateDefaults = &wfv1.Template{
 			ActiveDeadlineSeconds: intstrutil.ParsePtr("150"),
 			Script: &wfv1.ScriptTemplate{
 				Container: apiv1.Container{
