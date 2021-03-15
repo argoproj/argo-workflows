@@ -1,4 +1,4 @@
-FROM scratch
+FROM argoproj/argosay:v1
 
 ADD argosay /
 

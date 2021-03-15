@@ -80,7 +80,7 @@ func NewEmissaryCommand() *cobra.Command {
 						for {
 							data, err := ioutil.ReadFile(varRunArgo + "/ctr/" + y + "/exitcode")
 							if os.IsNotExist(err) {
-								time.Sleep(3 * time.Second)
+								time.Sleep(time.Second)
 								continue
 							}
 							exitCode, err := strconv.Atoi(string(data))

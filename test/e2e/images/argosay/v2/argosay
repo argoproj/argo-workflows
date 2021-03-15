@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+
+case ${1:-} in
+  '')
+    echo "hello argo"
+    ;;
+  assert_contains)
+    grep -F "$3" "$2"
+  ;;
+  cat)
+    cat "$2"
+  ;;
+  echo)
+    case $# in
+    1) echo "hello argo" ;;
+    2) echo "$2" ;;
+    3)
+      mkdir -p "$(dirname $3)"
+      echo "$2" > "$3"
+      ;;
+    default)
+      exit 1
+    esac
+    ;;
+  exit)
+    exit "$2"
+    ;;
+  sleep)
+    sleep "$2"
+    ;;
+  *)
+    exit 1
+esac
