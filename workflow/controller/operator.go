@@ -1554,7 +1554,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Set Template default
-	fmt.Println(resolvedTmpl)
 	err = woc.setTemplateDefault(resolvedTmpl)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err

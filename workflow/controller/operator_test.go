@@ -5883,6 +5883,7 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	wf := unmarshalWF(wfscheVariable)
 	cancel, controller := newController(wf)
 	defer cancel()
+
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
