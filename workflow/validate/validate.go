@@ -82,6 +82,10 @@ const (
 	anyWorkflowOutputParameterMagicValue = "workflow.outputs.parameters.*"
 	anyWorkflowOutputArtifactMagicValue  = "workflow.outputs.artifacts.*"
 	maxCharsInObjectName                 = 63
+	// CronWorkflows have fewer max chars allowed in their name because when workflows are created from them, they
+	// are appended with the unix timestamp (`-1615836720`). This lower character allowance allows for that timestamp
+	// to still fit within the 63 character maximum.
+	maxCharsInCronWorkflowName           = 52
 )
 
 var placeholderGenerator = common.NewPlaceholderGenerator()
@@ -269,8 +273,12 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 
 // ValidateCronWorkflow validates a CronWorkflow
 func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow) error {
-	if len(cronWf.Name) > maxCharsInObjectName {
-		return fmt.Errorf("cron workflow name %q must not be more than 63 characters long (currently %d)", cronWf.Name, len(cronWf.Name))
+
+	// CronWorkflows have fewer max chars allowed in their name because when workflows are created from them, they
+	// are appended with the unix timestamp (`-1615836720`). This lower character allowance allows for that timestamp
+	// to still fit within the 63 character maximum.
+	if len(cronWf.Name) > maxCharsInCronWorkflowName {
+		return fmt.Errorf("cron workflow name %q must not be more than 52 characters long (currently %d)", cronWf.Name, len(cronWf.Name))
 	}
 
 	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
