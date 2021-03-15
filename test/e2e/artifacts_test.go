@@ -17,11 +17,6 @@ type ArtifactsSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *ArtifactsSuite) BeforeTest(suiteName, testName string) {
-	s.E2ESuite.BeforeTest(suiteName, testName)
-	s.Need(fixtures.None(fixtures.PNS)) //  cannot enter chroot for container named "main": no PID known - maybe short running container
-}
-
 func (s *ArtifactsSuite) TestInputOnMount() {
 	s.Given().
 		Workflow("@testdata/input-on-mount-workflow.yaml").
@@ -50,6 +45,7 @@ func (s *ArtifactsSuite) TestOutputOnInput() {
 
 func (s *ArtifactsSuite) TestArtifactPassing() {
 	s.Need(fixtures.BaseLayerArtifacts)
+	s.Need(fixtures.None(fixtures.PNS))
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
@@ -113,6 +109,7 @@ spec:
 
 func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 	s.Need(fixtures.BaseLayerArtifacts)
+	s.Need(fixtures.None(fixtures.PNS))
 	s.Given().
 		Workflow("@testdata/same-input-output-path-optional.yaml").
 		When().
@@ -122,6 +119,7 @@ func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 
 func (s *ArtifactsSuite) TestOutputArtifactS3BucketCreationEnabled() {
 	s.Need(fixtures.BaseLayerArtifacts)
+	s.Need(fixtures.None(fixtures.PNS))
 	s.Given().
 		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
 		When().
