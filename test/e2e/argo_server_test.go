@@ -339,6 +339,7 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
+	s.Need(fixtures.RBAC)
 	nsName := fixtures.Namespace
 	// Create good serviceaccount
 	goodSaName := "argotestgood"
@@ -446,8 +447,7 @@ func (s *ArgoServerSuite) TestPermission() {
           "name": "run-workflow",
           "container": {
             "image": "argoproj/argosay:v2",
-            "command": ["sh"],
-            "args": ["-c", "sleep 1"]
+            "args": [ "exit", "1" ]
           }
         }
       ],
@@ -479,7 +479,6 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test creating workflow with bad token
 	s.bearerToken = badToken
 	s.Run("CreateWFBadToken", func() {
-		s.Need(fixtures.RBAC)
 		s.e().POST("/api/v1/workflows/" + nsName).
 			WithBytes([]byte(`{
   "workflow": {
@@ -494,8 +493,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "args": [ "sleep", "1" ]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
@@ -510,7 +508,6 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test list workflows with bad token
 	s.bearerToken = badToken
 	s.Run("ListWFsBadToken", func() {
-		s.Need(fixtures.RBAC)
 		s.e().GET("/api/v1/workflows/" + nsName).
 			Expect().
 			Status(403)
@@ -527,7 +524,6 @@ func (s *ArgoServerSuite) TestPermission() {
 		// Test delete workflow with bad token
 		s.bearerToken = badToken
 		s.Run("DeleteWFWithBadToken", func() {
-			s.Need(fixtures.RBAC)
 			s.e().DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 				Expect().
 				Status(403)
@@ -536,7 +532,6 @@ func (s *ArgoServerSuite) TestPermission() {
 		// Test delete workflow with good token
 		s.bearerToken = goodToken
 		s.Run("DeleteWFWithGoodToken", func() {
-			s.Need(fixtures.RBAC)
 			s.e().DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 				Expect().
 				Status(200)
@@ -733,7 +728,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
     "metadata": {
       "generateName": "test-",
       "labels": {
-         "workflows.argoproj.io/test": "subject"
+         "workflows.argoproj.io/test": "subject-1"
       }
     },
     "spec": {
@@ -761,11 +756,11 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Given().
 		When().
-		WaitForWorkflow(fixtures.ToStart)
+		WaitForWorkflow(fixtures.ToBeRunning)
 
 	s.Run("List", func() {
 		j := s.e().GET("/api/v1/workflows/argo").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
 			Expect().
 			Status(200).
 			JSON()
@@ -780,7 +775,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Run("ListWithFields", func() {
 		j := s.e().GET("/api/v1/workflows/argo").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
 			WithQuery("fields", "-items.status.nodes,items.status.finishedAt,items.status.startedAt").
 			Expect().
 			Status(200).
@@ -891,7 +886,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
     "metadata": {
       "name": "test",
       "labels": {
-        "workflows.argoproj.io/test": "subject"
+        "workflows.argoproj.io/test": "subject-2"
       }
     },
     "spec": {
@@ -961,7 +956,7 @@ spec:
 `)
 
 		s.e().GET("/api/v1/cron-workflows/argo").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-2").
 			Expect().
 			Status(200).
 			JSON().
@@ -1173,7 +1168,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	s.Given().
 		Workflow(`
 metadata:
-  name: archie
+  generateName: archie-
   labels:
     foo: 1
 spec:
@@ -1192,7 +1187,7 @@ spec:
 	s.Given().
 		Workflow(`
 metadata:
-  name: betty
+  generateName: betty-
   labels:
     foo: 2
 spec:
@@ -1295,7 +1290,7 @@ spec:
 			Status(200).
 			JSON().
 			Path("$.metadata.name").
-			Equal("archie")
+			NotNull()
 	})
 
 	s.Run("Delete", func() {
@@ -1345,7 +1340,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
     "metadata": {
       "name": "test",
       "labels": {
-         "workflows.argoproj.io/test": "subject"
+         "workflows.argoproj.io/test": "subject-3"
       }
     },
     "spec": {
@@ -1375,7 +1370,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			CreateWorkflowTemplates()
 
 		s.e().GET("/api/v1/workflow-templates/argo").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-3").
 			Expect().
 			Status(200).
 			JSON().
@@ -1447,7 +1442,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
     "metadata": {
       "name": "test",
       "labels": {
-         "workflows.argoproj.io/test": "subject"
+         "workflows.argoproj.io/test": "subject-4"
       }
     },
     "spec": {
@@ -1487,7 +1482,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
     "metadata": {
       "name": "test",
       "labels": {
-        "workflows.argoproj.io/test": "subject"
+        "workflows.argoproj.io/test": "subject-5"
       }
     },
     "spec": {
@@ -1530,7 +1525,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
     "metadata": {
       "name": "test",
       "labels": {
-         "workflows.argoproj.io/test": "subject"
+         "workflows.argoproj.io/test": "subject-6"
       }
     },
     "spec": {

@@ -176,7 +176,7 @@ OUTER:
 					log.Infof("%q pid %d completed", containerName, pid)
 					continue OUTER
 				}
-				time.Sleep(3 * time.Second)
+				time.Sleep(time.Second)
 			}
 		}
 	}
