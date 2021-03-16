@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -64,6 +65,7 @@ type WorkflowExecutor struct {
 	PodName            string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
+	RESTClient         rest.Interface
 	Namespace          string
 	PodAnnotationsPath string
 	ExecutionControl   *common.ExecutionControl
@@ -111,10 +113,11 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
 		ClientSet:          clientset,
+		RESTClient:         restClient,
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
