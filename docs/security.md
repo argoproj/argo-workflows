@@ -66,3 +66,21 @@ Finally, you should configure the `argo-server` role and role binding with the c
 ### Read-Only
 
 You can achieve this by configuring the `argo-server` role ([example](https://github.com/argoproj/argo-workflows/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml) with only read access (i.e. only `get`/`list`/`watch` verbs).
+
+## Network Security
+
+Argo Workflows requires various levels of network access depending on configuration and the features enabled. The following describes the different workflow components and their network access needs, to help provide guidance on how to configure the argo namespace in a secure manner (e.g. NetworkPolicies).
+
+### Argo Server
+
+The argo server is commonly exposed to end-users to provide users with a user interface for visualizing and managing their workflows. It must also be exposed if leveraging [webhooks](webhooks.md) to trigger workflows. Both of these use cases require that the argo-server Service to be exposed for ingress traffic (e.g. with an Ingress object or load balancer). Note that the Argo UI is also available to be accessed by running the server locally (i.e. `argo server`) using local kubeconfig credentials, and visiting the UI over http://localhost:2746.
+
+The argo server additionally has a feature to allow downloading of artifacts through the user interface. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Arfactory) in order to download and stream the artifact.
+
+### Workflow Controller
+
+The workflow-controller Deployment exposes a Prometheus metrics endpoint (workflow-controller-metrics:9090) so that a Prometheus server can periodically scrape for controller level metrics. Since prometheus is typically running in a separate namespace, the argo namespace should be configured to allow cross-namespace ingress access to the workflow-controller-metrics Service.
+
+### Database access
+
+A persistent store can be configured for either [archiving](workflow-archive.md) or [offloading](offloading-large-workflows.md) workflows. If either of these features are enabled, both the workflow-controller and argo-server Deployments will need egress network access to the external database used for archiving/offloading.
