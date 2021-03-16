@@ -1160,7 +1160,7 @@ message Template {
   optional DAGTemplate dag = 15;
 
   // HTTP template subtype which makes a HTTP request
-  optional HTTPTemplate http = 41;
+  optional HTTPTemplate http = 42;
 
   // Suspend template subtype which can suspend a workflow when reaching the step
   optional SuspendTemplate suspend = 16;

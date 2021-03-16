@@ -532,7 +532,7 @@ type Template struct {
 	DAG *DAGTemplate `json:"dag,omitempty" protobuf:"bytes,15,opt,name=dag"`
 
 	// HTTP template subtype which makes a HTTP request
-	HTTP *HTTPTemplate `json:"http,omitempty" protobuf:"bytes,41,opt,name=http"`
+	HTTP *HTTPTemplate `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
