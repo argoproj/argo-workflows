@@ -48,14 +48,14 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/stdout")
 		assert.NoError(t, err)
-		assert.Equal(t, "hello", string(data))
+		assert.Contains(t, string(data), "hello")
 	})
 	t.Run("Stderr", func(t *testing.T) {
 		err := run(x, []string{"echo", "hello", "/dev/stderr"})
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/stderr")
 		assert.NoError(t, err)
-		assert.Equal(t, "hello", string(data))
+		assert.Contains(t, string(data), "hello")
 	})
 	t.Run("Signal", func(t *testing.T) {
 		for signal, message := range map[syscall.Signal]string{
@@ -108,7 +108,7 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/parameters/tmp/parameter")
 		assert.NoError(t, err)
-		assert.Equal(t, "hello", string(data))
+		assert.Contains(t, string(data), "hello")
 	})
 }
 

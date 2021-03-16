@@ -406,7 +406,7 @@ func (w *When) DeleteMemoryQuota() *When {
 func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
 	ctx := context.Background()
-	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: &foreground})
+	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
