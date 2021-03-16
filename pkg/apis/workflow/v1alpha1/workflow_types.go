@@ -2161,6 +2161,19 @@ func (tmpl *Template) IsLeaf() bool {
 	return false
 }
 
+func (tmpl *Template) IsMainContainerName(containerName string) bool {
+	for _, c := range tmpl.GetMainContainerNames() {
+		if c == containerName {
+			return true
+		}
+	}
+	return false
+}
+
+func (tmpl *Template) GetMainContainerNames() []string {
+	return []string{"main"}
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG

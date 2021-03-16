@@ -23,10 +23,11 @@ var (
 	WorkflowArchive Need = func(s *E2ESuite) (bool, string) {
 		return s.Persistence.IsEnabled(), "workflow archive enabled"
 	}
-	Docker  = Executor("docker")
-	K8SAPI  = Executor("k8sapi")
-	Kubelet = Executor("kubelet")
-	PNS     = Executor("pns")
+	Docker   = Executor("docker")
+	Emissary = Executor("emissary")
+	K8SAPI   = Executor("k8sapi")
+	Kubelet  = Executor("kubelet")
+	PNS      = Executor("pns")
 )
 
 func Executor(e string) Need {
