@@ -84,27 +84,26 @@ type WorkflowController struct {
 	wfclientset      wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer            cache.SharedIndexInformer
-	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
-	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	podInformer           cache.SharedIndexInformer
-	worksheetInformer     cache.SharedIndexInformer
-	taskInformer          cache.SharedIndexInformer
-	wfQueue               workqueue.RateLimitingInterface
-	podQueue              workqueue.RateLimitingInterface
-	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
-	throttler             sync.Throttler
-	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               sqlbuilder.Database
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	hydrator              hydrator.Interface
-	wfArchive             sqldb.WorkflowArchive
-	estimatorFactory      estimation.EstimatorFactory
-	syncManager           *sync.Manager
-	metrics               *metrics.Metrics
-	eventRecorderManager  events.EventRecorderManager
-	archiveLabelSelector  labels.Selector
-	cacheFactory          controllercache.Factory
+	wfInformer              cache.SharedIndexInformer
+	wftmplInformer          wfextvv1alpha1.WorkflowTemplateInformer
+	cwftmplInformer         wfextvv1alpha1.ClusterWorkflowTemplateInformer
+	podInformer             cache.SharedIndexInformer
+	workflowTaskSetInformer cache.SharedIndexInformer
+	wfQueue                 workqueue.RateLimitingInterface
+	podQueue                workqueue.RateLimitingInterface
+	podCleanupQueue         workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
+	throttler               sync.Throttler
+	workflowKeyLock         syncpkg.KeyLock // used to lock workflows for exclusive modification or access
+	session                 sqlbuilder.Database
+	offloadNodeStatusRepo   sqldb.OffloadNodeStatusRepo
+	hydrator                hydrator.Interface
+	wfArchive               sqldb.WorkflowArchive
+	estimatorFactory        estimation.EstimatorFactory
+	syncManager             *sync.Manager
+	metrics                 *metrics.Metrics
+	eventRecorderManager    events.EventRecorderManager
+	archiveLabelSelector    labels.Selector
+	cacheFactory            controllercache.Factory
 }
 
 const (
@@ -192,10 +191,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
-	wfc.worksheetInformer = wfextvv1alpha1.NewWorkflowTaskSetInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
-	wfc.addWorkflowAgentInformerHandlers()
-	wfc.taskInformer = wfextvv1alpha1.NewWorkflowTaskInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
-	wfc.addWorkflowNodeInformerHandlers()
+	wfc.workflowTaskSetInformer = wfextvv1alpha1.NewWorkflowTaskSetInformer(wfc.wfclientset, wfc.managedNamespace, podResyncPeriod, cache.Indexers{})
+	wfc.addWorkflowTaskSetInformerHandlers()
 	wfc.updateEstimatorFactory()
 
 	go wfc.runConfigMapWatcher(ctx.Done())
@@ -203,8 +200,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.worksheetInformer.Run(ctx.Done())
-	go wfc.taskInformer.Run(ctx.Done())
+	go wfc.workflowTaskSetInformer.Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
@@ -212,8 +208,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
-		wfc.worksheetInformer.HasSynced,
-		wfc.taskInformer.HasSynced,
+		wfc.workflowTaskSetInformer.HasSynced,
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
@@ -805,24 +800,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	})
 }
 
-func (wfc *WorkflowController) addWorkflowAgentInformerHandlers() {
-	wfc.worksheetInformer.AddEventHandler(
+func (wfc *WorkflowController) addWorkflowTaskSetInformerHandlers() {
+	wfc.workflowTaskSetInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(_, new interface{}) {
 				if x, ok := new.(*wfv1.WorkflowTaskSet); ok {
 					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Name)
-				}
-			},
-		},
-	)
-}
-
-func (wfc *WorkflowController) addWorkflowNodeInformerHandlers() {
-	wfc.taskInformer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(_, new interface{}) {
-				if x, ok := new.(*wfv1.WorkflowTask); ok {
-					wfc.wfQueue.AddRateLimited(x.Namespace + "/" + x.Labels[common.LabelKeyWorkflow])
 				}
 			},
 		},

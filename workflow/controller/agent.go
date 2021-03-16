@@ -2,13 +2,11 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -20,84 +18,7 @@ func (woc *wfOperationCtx) scheduleNodeOnAgent(ctx context.Context, tmpl wfv1.Te
 	if err := woc.createAgent(ctx); err != nil {
 		return err
 	}
-	if err := woc.scheduleNodeOnAgentUsingTaskSet(ctx, tmpl, node); err != nil {
-		return err
-	}
-	return woc.scheduleNodeOnAgentUsingTask(ctx, tmpl, node)
-}
-
-func (woc *wfOperationCtx) scheduleNodeOnAgentUsingTaskSet(ctx context.Context, tmpl wfv1.Template, node wfv1.NodeStatus) error {
-	obj, _, err := woc.controller.worksheetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
-	if err != nil {
-		return err
-	}
-	a, ok := obj.(*wfv1.WorkflowTaskSet)
-	// con: scheduling complex
-	// con: potentially resource too large for all data, would result is delay in work being done
-	if ok {
-		_, ok = a.Spec.Nodes[node.ID] // must (a) agent must exist and (b) agent must know about node
-	}
-	if ok {
-		woc.log.Info("node already scheduled an agent using taskset")
-		return nil
-	}
-	woc.log.Info("scheduling node on agent using workflow agent")
-	i := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace)
-	x := &wfv1.WorkflowTaskSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: woc.wf.Name,
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)), // make sure it is deleted when the workflow is deleted
-			},
-		},
-		Spec: wfv1.WorkflowTaskSetSpec{
-			Templates: []wfv1.Template{tmpl},
-			Nodes:     wfv1.Nodes{node.ID: node},
-		},
-	}
-	data, err := json.Marshal(x)
-	if err != nil {
-		return err
-	}
-	// con: consistency check
-	if _, err := i.Patch(ctx, woc.wf.Name, types.MergePatchType, data, metav1.PatchOptions{}); err != nil {
-		if apierr.IsNotFound(err) {
-			if _, err := i.Create(ctx, x, metav1.CreateOptions{}); err != nil { // already exist cannot happen here - patch would have been successful
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-	return nil
-}
-
-func (woc *wfOperationCtx) scheduleNodeOnAgentUsingTask(ctx context.Context, tmpl wfv1.Template, node wfv1.NodeStatus) error {
-	_, exists, err := woc.controller.taskInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
-	if err != nil {
-		return err
-	}
-	if exists {
-		woc.log.Info("node already scheduled an agent using task")
-		return nil
-	}
-	woc.log.Info("scheduling node on agent using workflow node")
-	i := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTasks(woc.wf.Namespace)
-	x := &wfv1.WorkflowTask{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   node.ID,
-			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)), // make sure it is deleted when the workflow is deleted
-			},
-		},
-		Spec: &tmpl,
-	}
-	// con: N nodes per workflow
-	if _, err := i.Create(ctx, x, metav1.CreateOptions{}); err != nil && !apierr.IsAlreadyExists(err) { // already exist can happen very rarely - if informer is behind
-		return err
-	}
-	return nil
+	return woc.addNodeToTaskSet(ctx, tmpl, node)
 }
 
 func (woc *wfOperationCtx) createAgent(ctx context.Context) error {

@@ -613,17 +613,13 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 
-	if err := woc.cleanUpWorkflowAgent(ctx); err != nil {
-		woc.log.WithError(err).Error("failed to clean-up workflow agent")
-	}
-	if err := woc.cleanUpWorkflowNodes(ctx); err != nil {
-		woc.log.WithError(err).Error("failed to clean-up workflow nodes")
+	if err := woc.cleanUpWorkflowTaskSet(ctx); err != nil {
+		woc.log.WithError(err).Error("failed to clean-up workflow taskset")
 	}
 }
 
-// nolint:unused
-func (woc *wfOperationCtx) cleanUpWorkflowAgent(ctx context.Context) error {
-	obj, exists, err := woc.controller.worksheetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+func (woc *wfOperationCtx) cleanUpWorkflowTaskSet(ctx context.Context) error {
+	obj, exists, err := woc.controller.workflowTaskSetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
 	if err != nil {
 		return err
 	}
@@ -632,11 +628,8 @@ func (woc *wfOperationCtx) cleanUpWorkflowAgent(ctx context.Context) error {
 	}
 	x, ok := obj.(*wfv1.WorkflowTaskSet)
 	if !ok {
-		return fmt.Errorf("not agent")
+		return fmt.Errorf("not taskset")
 	}
-	// con: clean-up complex
-	// con: clean-up important to ensure work can be done
-	// con: manual intervention difficult
 	y := make(map[string]wfv1.Template)
 	for nodeID, n := range x.Spec.Nodes {
 		if x.Status != nil && x.Status.Nodes != nil && x.Status.Nodes[nodeID].Fulfilled() {
@@ -652,28 +645,11 @@ func (woc *wfOperationCtx) cleanUpWorkflowAgent(ctx context.Context) error {
 	// https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources
 	// PUT/POST/PATCH requests to the custom resource ignore changes to the status stanza.
 	i := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace)
-	// pro: 2 updates only
-	// con: ordering important (no atomicity)
 	if _, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	if _, err := i.Update(ctx, x, metav1.UpdateOptions{}); err != nil {
 		return err
-	}
-	return nil
-}
-
-func (woc *wfOperationCtx) cleanUpWorkflowNodes(ctx context.Context) error {
-	for _, n := range woc.wf.Status.Nodes.Filter(func(n wfv1.NodeStatus) bool {
-		return n.Fulfilled() && (n.Type == wfv1.NodeTypeHTTP || n.HasOutputs())
-	}) {
-		// pro: manual intervention easy
-		// pro: clean-up simple
-		// con: N deletes
-		// con: bug would mean N resources hang around until workflow deletion
-		if err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTasks(woc.wf.Namespace).Delete(ctx, n.ID, metav1.DeleteOptions{}); err != nil && !apierr.IsNotFound(err) {
-			return err
-		}
 	}
 	return nil
 }
@@ -1031,8 +1007,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		}
 		switch node.Type {
 		case wfv1.NodeTypeHTTP:
-			// woc.reconcileNodeWithWorkflowAgent(node)
-			woc.reconcileNodeWithWorkflowNode(node)
+			woc.reconcileNodeWithWorkflowTaskSet(node)
 		case wfv1.NodeTypePod:
 			if seenPod, ok := seenPods[nodeID]; !ok {
 
@@ -1073,22 +1048,10 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	return nil
 }
 
-// nolint:unused
-func (woc *wfOperationCtx) reconcileNodeWithWorkflowAgent(node wfv1.NodeStatus) {
-	obj, _, _ := woc.controller.worksheetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
-	x, ok := obj.(*wfv1.WorkflowTaskSet)
-	if ok {
-		if x := x.Status.Nodes[node.ID]; x.Fulfilled() {
-			woc.markNodePhase(node.Name, x.Phase, x.Message, x.Outputs)
-		}
-	}
-}
-
-func (woc *wfOperationCtx) reconcileNodeWithWorkflowNode(node wfv1.NodeStatus) {
-	obj, _, _ := woc.controller.taskInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
-	x, ok := obj.(*wfv1.WorkflowTask)
-	if ok {
-		if x := x.Status; x.Fulfilled() {
+func (woc *wfOperationCtx) reconcileNodeWithWorkflowTaskSet(node wfv1.NodeStatus) {
+	obj, _, _ := woc.controller.workflowTaskSetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+	if x, ok := obj.(*wfv1.WorkflowTaskSet); ok && x.Status != nil && x.Status.Nodes != nil {
+		if x, ok := x.Status.Nodes[node.ID]; ok && x.Fulfilled() {
 			woc.markNodePhase(node.Name, x.Phase, x.Message, x.Outputs)
 		}
 	}
@@ -1248,19 +1211,21 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 	if node.Outputs == nil {
-		obj, _, _ := woc.controller.worksheetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
-		if x, ok := obj.(*wfv1.WorkflowTaskSet); ok && x.Status != nil {
+		obj, _, _ := woc.controller.workflowTaskSetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+		if x, ok := obj.(*wfv1.WorkflowTaskSet); ok {
 			woc.log.Infof("Setting node %v outputs from workflow agent", node.ID)
 			node.Outputs = x.Status.Nodes[node.ID].Outputs
 			updated = true
 		}
 	}
 	if node.Outputs == nil {
-		obj, _, _ := woc.controller.taskInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
-		if x, ok := obj.(*wfv1.WorkflowTask); ok && x.Status != nil {
-			woc.log.Infof("Setting node %v outputs from workflow node", node.ID)
-			node.Outputs = x.Status.Outputs
-			updated = true
+		obj, _, _ := woc.controller.workflowTaskSetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
+		if x, ok := obj.(*wfv1.WorkflowTaskSet); ok {
+			if y, ok := x.Status.Nodes[node.ID]; ok {
+				woc.log.Infof("Setting node %v outputs from workflow node", node.ID)
+				node.Outputs = y.Outputs
+				updated = true
+			}
 		}
 	}
 	if node.Outputs == nil {

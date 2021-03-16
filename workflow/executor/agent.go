@@ -17,16 +17,9 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func (we *WorkflowExecutor) Agent(ctx context.Context) error {
-	// return we.agentUsingTaskSet(ctx)
-	return we.agentUsingTasks(ctx)
-}
-
-// nolint:unused
-func (we *WorkflowExecutor) agentUsingTaskSet(ctx context.Context) error {
 	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace)
 	for {
 		w, err := i.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + we.workflowName})
@@ -41,8 +34,8 @@ func (we *WorkflowExecutor) agentUsingTaskSet(ctx context.Context) error {
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
-			for nodeID, n := range x.Spec.Nodes {
-				if x.Status.Nodes[nodeID].Fulfilled() {
+			for _, n := range x.Spec.Nodes {
+				if x.Status != nil && x.Status.Nodes != nil && x.Status.Nodes[n.ID].Fulfilled() {
 					continue
 				}
 				tmpl := x.GetTemplateByName(n.TemplateName)
@@ -59,7 +52,13 @@ func (we *WorkflowExecutor) agentUsingTaskSet(ctx context.Context) error {
 						result.Phase = wfv1.NodeSucceeded
 						result.Outputs = outputs
 					}
-					x.Status.Nodes[nodeID] = result
+					if x.Status == nil {
+						x.Status = &wfv1.WorkflowTaskSetStatus{}
+					}
+					if x.Status.Nodes == nil {
+						x.Status.Nodes = map[string]wfv1.NodeResult{}
+					}
+					x.Status.Nodes[n.ID] = result
 					// con: we cannot patch status sub-resource, we must update the whole thing
 					// could result in race-condition errors
 					if _, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{}); err != nil {
@@ -68,45 +67,6 @@ func (we *WorkflowExecutor) agentUsingTaskSet(ctx context.Context) error {
 				default:
 					return fmt.Errorf("agent cannot execute %s", n.Type)
 				}
-			}
-		}
-	}
-}
-
-func (we *WorkflowExecutor) agentUsingTasks(ctx context.Context) error {
-	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowTasks(we.Namespace)
-	for {
-		w, err := i.Watch(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + we.workflowName})
-		if err != nil {
-			return err
-		}
-		for event := range w.ResultChan() {
-			x, ok := event.Object.(*wfv1.WorkflowTask)
-			if !ok {
-				return apierr.FromObject(event.Object)
-			}
-			if event.Type != watch.Added { // we only process add events because all updates we do ourselves
-				continue
-			}
-			if x.Status != nil && x.Status.Fulfilled() {
-				continue
-			}
-			tmpl := x.Spec
-			x.Status = &wfv1.NodeResult{}
-			switch tmpl.GetType() {
-			case wfv1.TemplateTypeHTTP:
-				if outputs, err := we.executeHTTPTemplate(ctx, *tmpl); err != nil {
-					x.Status.Phase = wfv1.NodeFailed
-					x.Status.Message = err.Error()
-				} else {
-					x.Status.Phase = wfv1.NodeSucceeded
-					x.Status.Outputs = outputs
-				}
-				if _, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{}); err != nil {
-					return err
-				}
-			default:
-				return fmt.Errorf("agent cannot execute %s", tmpl.GetType())
 			}
 		}
 	}

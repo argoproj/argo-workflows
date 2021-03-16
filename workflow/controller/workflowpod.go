@@ -414,29 +414,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
-	// con: you can't avoid this with status update, but for pod, only ever one status update can happen
-	workflowNodeResourceVersion := ""
-
-	if opts.includeScriptOutput || tmpl.Outputs.HasOutputs() || (tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.IsArchiveLogs()) {
-		// con: we need to create a task for any pod that has outputs
-		woc.log.WithField("nodeID", nodeID).Info("creating task for outputs")
-		x, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTasks(woc.wf.Namespace).Create(ctx, &wfv1.WorkflowTask{
-			ObjectMeta: metav1.ObjectMeta{Name: pod.Name},
-		}, metav1.CreateOptions{})
-		if x != nil {
-			workflowNodeResourceVersion = x.ResourceVersion
-		}
-		if err != nil && !apierr.IsAlreadyExists(err) {
+	if (opts.includeScriptOutput || tmpl.HasOutput() || tmpl.SaveLogsAsArtifact()) && node != nil && tmpl != nil {
+		if err := woc.addNodeToTaskSet(ctx, *tmpl, *node); err != nil {
 			return nil, err
 		}
-	}
-
-	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env, apiv1.EnvVar{
-			Name:  common.EnvVarWorkflowTaskResourceVersion,
-			Value: workflowNodeResourceVersion,
-		})
-		pod.Spec.Containers[i] = c
 	}
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})

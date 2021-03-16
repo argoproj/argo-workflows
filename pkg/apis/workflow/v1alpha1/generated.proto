@@ -1646,26 +1646,6 @@ message WorkflowStep {
 
 // +genclient
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Template",type="string",JSONPath=".spec.name",description="Template"
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status"
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowTask {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional Template spec = 2;
-
-  optional NodeResult status = 3;
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowTaskList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  repeated WorkflowTask items = 2;
-}
-
-// +genclient
-// +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskSet {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;

@@ -749,10 +749,9 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 		return err
 	}
 
-	return we.updateTaskStatusWithOutputs(ctx, outputs)
+	return we.updateTaskSetStatusWithOutputs(ctx, outputs)
 }
 
-// nolint:unused
 func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
 	log.Info("Patching taskset status with outputs")
 	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace)
@@ -763,26 +762,14 @@ func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, 
 		if err != nil && !errorsutil.IsTransientErr(err) {
 			return false, err
 		}
+		if x.Status == nil {
+			x.Status = &wfv1.WorkflowTaskSetStatus{}
+		}
+		if x.Status.Nodes == nil {
+			x.Status.Nodes = map[string]wfv1.NodeResult{}
+		}
 		x.Status.Nodes[we.nodeID()] = wfv1.NodeResult{Outputs: outputs}
 		_, err = i.UpdateStatus(ctx, x, metav1.UpdateOptions{})
-		return !errorsutil.IsTransientErr(err), err
-	})
-}
-
-func (we *WorkflowExecutor) updateTaskStatusWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
-	log.Info("Patching task status with outputs")
-	x := &wfv1.WorkflowTask{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            we.nodeID(),
-			ResourceVersion: os.Getenv(common.EnvVarWorkflowTaskResourceVersion),
-		},
-		Status: &wfv1.NodeResult{Outputs: outputs},
-	}
-	i := we.workflowInterface.ArgoprojV1alpha1().WorkflowTasks(we.Namespace)
-	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		// pro: 1 request
-		// pro: no race condition
-		_, err := i.UpdateStatus(ctx, x, metav1.UpdateOptions{})
 		return !errorsutil.IsTransientErr(err), err
 	})
 }

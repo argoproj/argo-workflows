@@ -7196,6 +7196,9 @@
     },
     "io.argoproj.workflow.v1alpha1.HTTPHeader": {
       "type": "object",
+      "required": [
+        "name"
+      ],
       "properties": {
         "name": {
           "type": "string"
@@ -7213,6 +7216,30 @@
       "properties": {
         "secretKeyRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPTemplate": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "body": {
+          "type": "string",
+          "format": "byte"
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
+          }
+        },
+        "method": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
         }
       }
     },
@@ -7482,6 +7509,20 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
           },
           "x-kubernetes-list-type": "atomic"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.NodeResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
         }
       }
     },
@@ -8318,6 +8359,10 @@
           },
           "x-kubernetes-patch-merge-key": "ip",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "http": {
+          "description": "HTTP template subtype which makes a HTTP request",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPTemplate"
         },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
@@ -9305,6 +9350,62 @@
         },
         "namespace": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSet": {
+      "type": "object",
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
+          }
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
+          }
         }
       }
     },
