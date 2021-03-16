@@ -197,7 +197,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 // checkResourceState performs resource status checking and then waiting on json reading.
 // The returning boolean indicates whether we should retry.
 func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
-	request := we.ApiExtensionsClientSet.ApiextensionsV1beta1().RESTClient().Get().RequestURI(selfLink)
+	request := we.RESTClient.Get().RequestURI(selfLink)
 	stream, err := request.Stream(ctx)
 
 	if argoerr.IsTransientErr(err) {
