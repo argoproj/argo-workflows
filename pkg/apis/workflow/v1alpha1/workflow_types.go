@@ -628,6 +628,26 @@ type Template struct {
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
 
+// ExcludeOtherTemplateTypes will set nil to all templateType fields except passed templatetype
+func (tmpl *Template) ExcludeOtherTemplateTypes(tmplType TemplateType) {
+	switch tmplType {
+	case TemplateTypeSteps:
+		tmpl.SetTemplateTypes(tmpl.Steps, nil, nil, nil, nil, nil, nil)
+	case TemplateTypeDAG:
+		tmpl.SetTemplateTypes([]ParallelSteps{}, tmpl.DAG, nil, nil, nil, nil, nil)
+	case TemplateTypeContainer:
+		tmpl.SetTemplateTypes([]ParallelSteps{}, nil, tmpl.Container, nil, nil, nil, nil)
+	case TemplateTypeScript:
+		tmpl.SetTemplateTypes([]ParallelSteps{}, nil, nil, tmpl.Script, nil, nil, nil)
+	case TemplateTypeResource:
+		tmpl.SetTemplateTypes([]ParallelSteps{}, nil, nil, nil, tmpl.Resource, nil, nil)
+	case TemplateTypeData:
+		tmpl.SetTemplateTypes([]ParallelSteps{}, nil, nil, nil, nil, tmpl.Data, nil)
+	case TemplateTypeSuspend:
+		tmpl.SetTemplateTypes([]ParallelSteps{}, nil, nil, nil, nil, nil, tmpl.Suspend)
+	}
+}
+
 func (tmpl *Template) SetTemplateTypes(steps []ParallelSteps, dag *DAGTemplate, container *apiv1.Container, script *ScriptTemplate, resource *ResourceTemplate, data *Data, suspend *SuspendTemplate) {
 	tmpl.Steps = steps
 	tmpl.DAG = dag

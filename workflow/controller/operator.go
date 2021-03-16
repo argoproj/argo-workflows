@@ -1553,8 +1553,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 
-	// Set Template default
-	err = woc.setTemplateDefault(resolvedTmpl)
+	// Set Template defaults
+	err = woc.setTemplateDefaults(resolvedTmpl)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
@@ -3244,25 +3244,25 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) setTemplateDefault(tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) setTemplateDefaults(originalTmpl *wfv1.Template) error {
 	if woc.execWf.Spec.TemplateDefaults != nil {
-		tmplDef := woc.execWf.Spec.TemplateDefaults.DeepCopy()
-		woc.ExcludeOtherTemplateTypes(tmpl.GetType(), tmplDef)
+		tmplDefaults := woc.execWf.Spec.TemplateDefaults.DeepCopy()
+		tmplDefaults.ExcludeOtherTemplateTypes(originalTmpl.GetType())
 
-		tmplDefault, err := json.Marshal(tmplDef)
+		tmplDefaultsJson, err := json.Marshal(tmplDefaults)
 		if err != nil {
 			return err
 		}
-		targetTmpl, err := json.Marshal(tmpl)
+		targetTmplJson, err := json.Marshal(originalTmpl)
 		if err != nil {
 			return err
 		}
 
-		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefault, targetTmpl, wfv1.Template{})
+		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJson, targetTmplJson, wfv1.Template{})
 		if err != nil {
 			return err
 		}
-		err = json.Unmarshal(resultTmpl, tmpl)
+		err = json.Unmarshal(resultTmpl, originalTmpl)
 		if err != nil {
 			return err
 		}
