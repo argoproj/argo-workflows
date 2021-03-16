@@ -106,7 +106,6 @@ jobs:
           KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
           KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
-      - run: make logs > /tmp/log/argo-e2e/pod.log &
       - run: make ${{matrix.test}}
       - name: Upload logs
         if: ${{ failure() }}
