@@ -1,10 +1,12 @@
 package fixtures
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/TwinProduction/go-color"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -39,6 +41,9 @@ func (g *Given) Workflow(text string) *Given {
 	g.t.Helper()
 	g.wf = &wfv1.Workflow{}
 	g.readResource(text, g.wf)
+	if g.wf.Name != "" {
+		g.t.Fatalf("workflow %q, but should use generate name", text)
+	}
 	g.checkImages(g.wf.Spec.Templates)
 	return g
 }
@@ -79,13 +84,15 @@ func (g *Given) readResource(text string, v metav1.Object) {
 
 func (g *Given) checkImages(templates []wfv1.Template) {
 	g.t.Helper()
+
+	// discouraged
+	discouraged := func(image string) bool {
+		return image == "python:alpine3.6"
+	}
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 	// downloaded or evicted. To keep tests fast and reliable you must use allowed images.
 	allowed := func(image string) bool {
-		return strings.Contains(image, "argoexec:") ||
-			image == "argoproj/argosay:v1" ||
-			image == "argoproj/argosay:v2" ||
-			image == "python:alpine3.6"
+		return strings.Contains(image, "argoexec:") || image == "argoproj/argosay:v1" || image == "argoproj/argosay:v2" || discouraged(image)
 	}
 	for _, t := range templates {
 		container := t.Container
@@ -93,6 +100,12 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 			image := container.Image
 			if !allowed(image) {
 				g.t.Fatalf("image not allowed in tests: %s", image)
+			}
+			// (⎈ |docker-desktop:argo)➜  ~ time docker run --rm argoproj/argosay:v2
+			// docker run --rm argoproj/argosay˜:v2  0.21s user 0.10s system 16% cpu 1.912 total
+			// docker run --rm argoproj/argosay:v1  0.17s user 0.08s system 31% cpu 0.784 total
+			if discouraged(image) {
+				_, _ = fmt.Println(color.Ize(color.Yellow, "DISCOURAGED IMAGE: "+g.t.Name()+" is using "+image))
 			}
 		}
 	}

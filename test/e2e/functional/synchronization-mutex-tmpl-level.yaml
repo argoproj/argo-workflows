@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: synchronization-tmpl-level-mutex
+  generateName: synchronization-tmpl-level-mutex-
 spec:
   entrypoint: synchronization-tmpl-level-example-mutex
   templates:
