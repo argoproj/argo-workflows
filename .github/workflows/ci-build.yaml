@@ -31,6 +31,7 @@ jobs:
       - run: make server/static/files.go STATIC_FILES=false
       - run: go build -v ./...
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
+      - run: make validate-examples STATIC_FILES=false
       - run: bash <(curl -s https://codecov.io/bash)
 
   e2e-tests:
@@ -159,14 +160,16 @@ jobs:
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
       - run: make codegen -B STATIC_FILES=false
-      - uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.36.0
-          skip-go-installation: true
-          skip-pkg-cache: true
-          skip-build-cache: true
-      - run: make validate-examples STATIC_FILES=false
       - run: git diff --exit-code
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04
+    needs: [ codegen ]
+    timeout-minutes: 10
+    steps:
+      - run: make server/static/files.go STATIC_FILES=false
+      - uses: golangci/golangci-lint-action@v2
 
   ui:
     name: UI
