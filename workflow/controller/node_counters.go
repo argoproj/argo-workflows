@@ -22,17 +22,21 @@ func getActiveChildrenCounter(boundaryID string) counter {
 	return func(node wfv1.NodeStatus) bool {
 		return node.BoundaryID == boundaryID &&
 			// Only count Pods, Steps, or DAGs
-			(node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSteps || node.Type == wfv1.NodeTypeDAG) &&
+			isActiveNodeType(node.Type) &&
 			// Only count Running or Pending nodes
 			(node.Phase == wfv1.NodePending || node.Phase == wfv1.NodeRunning)
 	}
+}
+
+func isActiveNodeType(nodeType wfv1.NodeType) bool {
+	return nodeType == wfv1.NodeTypePod || nodeType == wfv1.NodeTypeSteps || nodeType == wfv1.NodeTypeDAG || nodeType == wfv1.NodeTypeHTTP
 }
 
 func getUnsuccessfulChildrenCounter(boundaryID string) counter {
 	return func(node wfv1.NodeStatus) bool {
 		return node.BoundaryID == boundaryID &&
 			// Only count Pods, Steps, or DAGs
-			(node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSteps || node.Type == wfv1.NodeTypeDAG) &&
+			isActiveNodeType(node.Type) &&
 			// Only count Failed or Errored nodes
 			(node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError)
 	}
