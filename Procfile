@@ -2,3 +2,4 @@ controller: PNS_PRIVILEGED=true DEFAULT_REQUEUE_TIME=${DEFAULT_REQUEUE_TIME} LEA
 argo-server: UPPERIO_DB_DEBUG=${UPPERIO_DB_DEBUG} ./dist/argo --loglevel ${LOG_LEVEL} server --namespaced=${NAMESPACED} --namespace ${NAMESPACE} --auth-mode ${AUTH_MODE} --secure=$SECURE --x-frame-options=SAMEORIGIN
 ui: yarn --cwd ui install && yarn --cwd ui start
 logs: make logs
+watch-pods: make watch-pods

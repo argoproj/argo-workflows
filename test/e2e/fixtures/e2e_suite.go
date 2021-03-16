@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -102,7 +103,7 @@ func (s *E2ESuite) AfterTest(suiteName, testName string) {
 func (s *E2ESuite) DeleteResources() {
 	ctx := context.Background()
 	// delete pods first, this means workflows can finish faster
-	err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow})
+	err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(0)}, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow})
 	s.CheckError(err)
 
 	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
@@ -155,7 +156,7 @@ func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInt
 func (s *E2ESuite) CheckError(err error) {
 	s.T().Helper()
 	if err != nil {
-		s.T().Fatal(err)
+		s.T().Error(err)
 	}
 }
 

@@ -56,9 +56,6 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	}
 	_, _ = fmt.Println(wf.Name, ":", wf.Status.Phase, wf.Status.Message)
 	block(t.t, &wf.ObjectMeta, &wf.Status)
-	if t.t.Failed() {
-		t.t.FailNow()
-	}
 	return t
 }
 
@@ -66,7 +63,7 @@ func (t *Then) ExpectWorkflowDeleted() *Then {
 	ctx := context.Background()
 	_, err := t.client.Get(ctx, t.wf.Name, metav1.GetOptions{})
 	if err == nil || !apierr.IsNotFound(err) {
-		t.t.Fatalf("expected workflow to be deleted: %v", err)
+		t.t.Errorf("expected workflow to be deleted: %v", err)
 	}
 	return t
 }
@@ -86,7 +83,7 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, n.ID, metav1.GetOptions{})
 				if err != nil {
 					if !apierr.IsNotFound(err) {
-						t.t.Fatal(err)
+						t.t.Error(err)
 					}
 					p = nil // i did not expect to need to nil the pod, but here we are
 				}
@@ -111,9 +108,6 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 		t.t.Fatal(err)
 	}
 	block(t.t, cronWf)
-	if t.t.Failed() {
-		t.t.FailNow()
-	}
 	return t
 }
 
@@ -128,9 +122,6 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	}
 	_, _ = fmt.Println("Checking expectation")
 	block(t.t, wfList)
-	if t.t.Failed() {
-		t.t.FailNow()
-	}
 	return t
 }
 
@@ -173,9 +164,6 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 		}
 	}
 	block(t.t, events)
-	if t.t.Failed() {
-		t.t.FailNow()
-	}
 	return t
 }
 
@@ -183,9 +171,6 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 	t.t.Helper()
 	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
-	if t.t.Failed() {
-		t.t.FailNow()
-	}
 	return t
 }
 

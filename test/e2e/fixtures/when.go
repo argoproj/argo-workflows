@@ -103,7 +103,7 @@ func (w *When) CreateWorkflowEventBinding() *When {
 	ctx := context.Background()
 	_, err := w.wfebClient.Create(ctx, w.wfeb, metav1.CreateOptions{})
 	if err != nil {
-		w.t.Fatal(err)
+		w.t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 	return w
@@ -244,7 +244,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
 	watch, err := w.client.Watch(ctx, opts)
 	if err != nil {
-		w.t.Fatal(err)
+		w.t.Error(err)
 	}
 	defer watch.Stop()
 	timeoutCh := make(chan bool, 1)
@@ -267,13 +267,16 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 				// once done the workflow is done, the condition can never be met
 				// rather than wait maybe 30s for something that can never happen
 				if ok, _ = ToBeDone(wf); ok {
-					w.t.Fatalf("condition never and cannot be met because the workflow is done")
+					w.t.Errorf("condition never and cannot be met because the workflow is done")
+					return w
 				}
 			} else {
-				w.t.Fatal("not ok")
+				w.t.Errorf("not ok")
+				return w
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for condition", timeout)
+			w.t.Errorf("timeout after %v waiting for condition", timeout)
+			return w
 		}
 	}
 }
@@ -308,9 +311,6 @@ func (w *When) DeleteWorkflow() *When {
 func (w *When) And(block func()) *When {
 	w.t.Helper()
 	block()
-	if w.t.Failed() {
-		w.t.FailNow()
-	}
 	return w
 }
 
