@@ -123,6 +123,7 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
+      - releases.md
       - Configuration:
           - managed-namespace.md
           - configure-artifact-repository.md
