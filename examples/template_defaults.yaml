@@ -16,9 +16,7 @@ spec:
   templateDefaults:
     timeout: 30s   # timeout value will be applied to all templates
     retryStrategy: # retryStrategy value will be applied to all templates
-      limit: 2
-    container:
-      imagePullPolicy: "Never" # imagePullPolicy will only be applied to container type templates
+      limit: "2"
       
   templates:
     - name: main

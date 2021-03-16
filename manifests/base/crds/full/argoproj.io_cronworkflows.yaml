@@ -6666,8 +6666,6 @@ spec:
                           - name
                           type: object
                         type: array
-                    required:
-                    - name
                     type: object
                   templates:
                     items:
@@ -12351,8 +12349,6 @@ spec:
                             - name
                             type: object
                           type: array
-                      required:
-                      - name
                       type: object
                     type: array
                   tolerations:
