@@ -136,6 +136,7 @@ func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 }
 
 func (s *ArtifactsSuite) TestOutputArtifactS3BucketCreationEnabled() {
+	s.T().Skip("not available in v3.0")
 	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
