@@ -72,6 +72,8 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 ## Community Meetings
 We host monthly community meetings where we and the community showcase demos and discuss the current and future state of the project. Feel free to join us! For Community Meeting information, minutes and recordings please [see here](https://bit.ly/argo-wf-cmty-mtng).
 
+Participation in the Argo Workfows project is governed by the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
+
 ## Community Blogs and Presentations
 * [Automation of Everything - How To Combine Argo Events, Workflows & Pipelines, CD, and Rollouts](https://youtu.be/XNXJtxkUKeY)
 * [Argo Workflows and Pipelines - CI/CD, Machine Learning, and Other Kubernetes Workflows](https://youtu.be/UMaivwrAyTA)

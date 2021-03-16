@@ -2194,6 +2194,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(int64)
 		**out = **in
 	}
+	if in.FailFast != nil {
+		in, out := &in.FailFast, &out.FailFast
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Tolerations != nil {
 		in, out := &in.Tolerations, &out.Tolerations
 		*out = make([]v1.Toleration, len(*in))
