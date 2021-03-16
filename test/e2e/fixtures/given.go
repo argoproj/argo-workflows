@@ -102,8 +102,8 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 				g.t.Fatalf("image not allowed in tests: %s", image)
 			}
 			// (⎈ |docker-desktop:argo)➜  ~ time docker run --rm argoproj/argosay:v2
-			//docker run --rm argoproj/argosay˜:v2  0.21s user 0.10s system 16% cpu 1.912 total
-			//docker run --rm argoproj/argosay:v1  0.17s user 0.08s system 31% cpu 0.784 total
+			// docker run --rm argoproj/argosay˜:v2  0.21s user 0.10s system 16% cpu 1.912 total
+			// docker run --rm argoproj/argosay:v1  0.17s user 0.08s system 31% cpu 0.784 total
 			if discouraged(image) {
 				_, _ = fmt.Println(color.Ize(color.Yellow, "DISCOURAGED IMAGE: "+g.t.Name()+" is using "+image))
 			}
