@@ -45,7 +45,7 @@ func execResource(ctx context.Context, action string) error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	resourceNamespace, resourceFullName, resourceName, gvr, err := wfExecutor.ExecResource(
+	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(
 		action, common.ExecutorResourceManifestPath, wfExecutor.Template.Resource.Flags,
 	)
 	if err != nil {
@@ -53,12 +53,12 @@ func execResource(ctx context.Context, action string) error {
 		return err
 	}
 	if !isDelete {
-		err = wfExecutor.WaitResource(ctx, resourceNamespace, resourceName, gvr)
+		err = wfExecutor.WaitResource(ctx, resourceNamespace, resourceName, selfLink)
 		if err != nil {
 			wfExecutor.AddError(err)
 			return err
 		}
-		err = wfExecutor.SaveResourceParameters(ctx, resourceNamespace, resourceFullName)
+		err = wfExecutor.SaveResourceParameters(ctx, resourceNamespace, resourceName)
 		if err != nil {
 			wfExecutor.AddError(err)
 			return err
