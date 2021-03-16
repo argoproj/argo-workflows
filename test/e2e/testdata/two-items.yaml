@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: two-items
+  generateName: two-items-
 spec:
   entrypoint: main
   templates:
