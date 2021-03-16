@@ -3242,23 +3242,3 @@ func (woc *wfOperationCtx) setTemplateDefaults(originalTmpl *wfv1.Template) erro
 	}
 	return nil
 }
-
-// ExcludeOtherTemplateTypes will set nil to all template fields except passed type in template struct
-func (woc *wfOperationCtx) ExcludeOtherTemplateTypes(tmplType wfv1.TemplateType, tmpl *wfv1.Template) {
-	switch tmplType {
-	case wfv1.TemplateTypeSteps:
-		tmpl.SetTemplateTypes(tmpl.Steps, nil, nil, nil, nil, nil, nil)
-	case wfv1.TemplateTypeDAG:
-		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, tmpl.DAG, nil, nil, nil, nil, nil)
-	case wfv1.TemplateTypeContainer:
-		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, tmpl.Container, nil, nil, nil, nil)
-	case wfv1.TemplateTypeScript:
-		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, tmpl.Script, nil, nil, nil)
-	case wfv1.TemplateTypeResource:
-		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, nil, tmpl.Resource, nil, nil)
-	case wfv1.TemplateTypeData:
-		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, nil, nil, tmpl.Data, nil)
-	case wfv1.TemplateTypeSuspend:
-		tmpl.SetTemplateTypes([]wfv1.ParallelSteps{}, nil, nil, nil, nil, nil, tmpl.Suspend)
-	}
-}
