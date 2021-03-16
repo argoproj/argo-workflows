@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
@@ -53,6 +54,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/signal"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/ttlcontroller"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -410,6 +412,10 @@ func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName stri
 	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
+func (wfc *WorkflowController) queuePodForCleanupAfter(namespace string, podName string, action podCleanupAction, duration time.Duration) {
+	wfc.podCleanupQueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)
+}
+
 func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
 	for wfc.processNextPodCleanupItem(ctx) {
 	}
@@ -429,6 +435,16 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case terminateContainers:
+			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+				return err
+			} else if terminationGracePeriod > 0 {
+				wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
+			}
+		case killContainers:
+			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
+				return err
+			}
 		case labelPodCompleted:
 			_, err := pods.Patch(
 				ctx,
@@ -459,6 +475,32 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 	}
 	return true
+}
+
+func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		return 0, nil
+	}
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		return 0, fmt.Errorf("object is not a pod")
+	}
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
+			continue
+		}
+		if err := signal.SignalContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, sig); err != nil {
+			return 0, err
+		}
+	}
+	if pod.Spec.TerminationGracePeriodSeconds == nil {
+		return 30 * time.Second, nil
+	}
+	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second, nil
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
