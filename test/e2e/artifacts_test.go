@@ -56,6 +56,7 @@ func (s *ArtifactsSuite) TestOutputOnInput() {
 
 func (s *ArtifactsSuite) TestArtifactPassing() {
 	s.Need(fixtures.BaseLayerArtifacts)
+	s.Need(fixtures.None(fixtures.PNS))
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
@@ -124,6 +125,7 @@ spec:
 
 func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 	s.Need(fixtures.BaseLayerArtifacts)
+	s.Need(fixtures.None(fixtures.PNS))
 	s.Given().
 		Workflow("@testdata/same-input-output-path-optional.yaml").
 		When().
