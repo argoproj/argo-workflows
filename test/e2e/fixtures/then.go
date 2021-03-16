@@ -151,11 +151,13 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	for num > len(events) {
 		select {
 		case <-ticker.C:
-			t.t.Fatal("timeout waiting for events")
+			t.t.Error("timeout waiting for events")
+			return t
 		case event := <-eventList.ResultChan():
 			e, ok := event.Object.(*apiv1.Event)
 			if !ok {
-				t.t.Fatalf("event is not an event: %v", reflect.TypeOf(e).String())
+				t.t.Errorf("event is not an event: %v", reflect.TypeOf(e).String())
+				return t
 			}
 			if filter(*e) {
 				_, _ = fmt.Println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)

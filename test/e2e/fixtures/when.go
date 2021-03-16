@@ -318,9 +318,6 @@ func (w *When) Exec(name string, args []string, block func(t *testing.T, output 
 	w.t.Helper()
 	output, err := Exec(name, args...)
 	block(w.t, output, err)
-	if w.t.Failed() {
-		w.t.FailNow()
-	}
 	return w
 }
 
