@@ -617,15 +617,6 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 	assert.Contains(keys, "test/template1")
 }
 
-func TestTemplate_GetSidecarNames(t *testing.T) {
-	m := &Template{
-		Sidecars: []UserContainer{
-			{Container: corev1.Container{Name: "sidecar-0"}},
-		},
-	}
-	assert.ElementsMatch(t, []string{"sidecar-0"}, m.GetSidecarNames())
-}
-
 func TestTemplate_IsMainContainerNamed(t *testing.T) {
 	t.Run("Default", func(t *testing.T) {
 		x := &Template{}
@@ -683,23 +674,19 @@ func TestTemplate_HasOutputs(t *testing.T) {
 	t.Run("Default", func(t *testing.T) {
 		x := &Template{}
 		assert.False(t, x.HasOutput())
-		assert.False(t, x.HasLogs())
 	})
 	t.Run("Container", func(t *testing.T) {
 		x := &Template{Container: &corev1.Container{}}
 		assert.True(t, x.HasOutput())
-		assert.True(t, x.HasLogs())
 	})
 	t.Run("ContainerSet", func(t *testing.T) {
 		t.Run("NoMain", func(t *testing.T) {
 			x := &Template{ContainerSet: &ContainerSetTemplate{}}
 			assert.False(t, x.HasOutput())
-			assert.False(t, x.HasLogs())
 		})
 		t.Run("Main", func(t *testing.T) {
 			x := &Template{ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "main"}}}}}
 			assert.True(t, x.HasOutput())
-			assert.True(t, x.HasLogs())
 		})
 	})
 	t.Run("Script", func(t *testing.T) {
@@ -713,6 +700,26 @@ func TestTemplate_HasOutputs(t *testing.T) {
 	t.Run("Resource", func(t *testing.T) {
 		x := &Template{Resource: &ResourceTemplate{}}
 		assert.False(t, x.HasOutput())
-		assert.True(t, x.HasLogs())
+	})
+}
+
+func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		x := &Template{}
+		assert.False(t, x.SaveLogsAsArtifact())
+	})
+	t.Run("IsArchiveLogs", func(t *testing.T) {
+		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}}
+		assert.True(t, x.SaveLogsAsArtifact())
+	})
+	t.Run("ContainerSet", func(t *testing.T) {
+		t.Run("NoMain", func(t *testing.T) {
+			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{}}
+			assert.False(t, x.SaveLogsAsArtifact())
+		})
+		t.Run("Main", func(t *testing.T) {
+			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "main"}}}}}
+			assert.True(t, x.SaveLogsAsArtifact())
+		})
 	})
 }

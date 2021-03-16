@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: retry-omit-
 spec:
-  entrypoint: diamond
+  entrypoint: main
   templates:
     - dag:
         tasks:
@@ -18,11 +18,8 @@ spec:
           - depends: A
             name: should-execute-3
             template: fail
-      name: diamond
+      name: main
     - container:
-        args:
-          - exit
-          - "0"
         image: argoproj/argosay:v2
       name: pass
     - container:

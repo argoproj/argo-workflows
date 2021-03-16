@@ -12,7 +12,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
 type K8sAPIExecutor struct {
@@ -56,14 +56,9 @@ func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) 
 }
 
 // Wait for the container to complete
-func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames, sidecarNames []string) error {
+func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames []string) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
-		for _, s := range pod.Status.ContainerStatuses {
-			if s.State.Terminated == nil && slice.ContainsString(containerNames, s.Name) {
-				return false
-			}
-		}
-		return true
+		return common.AllTerminated(pod.Status.ContainerStatuses, containerNames)
 	})
 }
 
@@ -75,4 +70,16 @@ func (k *K8sAPIExecutor) Until(ctx context.Context, f func(pod *corev1.Pod) bool
 func (k *K8sAPIExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	log.Infof("Killing containers %v", containerNames)
 	return k.client.killGracefully(ctx, containerNames, terminationGracePeriodDuration)
+}
+
+func (k *K8sAPIExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	pod, err := k.client.getPod(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var containerNames []string
+	for _, c := range pod.Status.ContainerStatuses {
+		containerNames = append(containerNames, c.Name)
+	}
+	return containerNames, nil
 }

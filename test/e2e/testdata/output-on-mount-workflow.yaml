@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: input-on-mount-
+  generateName: output-on-mount-
 spec:
   entrypoint: main
   templates:

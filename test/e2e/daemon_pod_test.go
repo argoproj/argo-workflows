@@ -19,8 +19,7 @@ type DaemonPodSuite struct {
 
 func (s *DaemonPodSuite) TestWorkflowCompletesIfContainsDaemonPod() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+		Workflow(`
 metadata:
   generateName: whalesay-
 spec:
@@ -42,7 +41,6 @@ spec:
   - name: whale-tmpl
     container:
       image: argoproj/argosay:v2
-      args: ["echo", "hello world"]
 `).
 		When().
 		SubmitWorkflow().

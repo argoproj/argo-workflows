@@ -42,6 +42,7 @@ nav:
           - container-set-template.md
           - work-avoidance.md
           - enhanced-depends-logic.md
+          - data-sourcing-and-transformation.md
           - artifact-repository-ref.md
           - key-only-artifacts.md
           - conditional-artifacts-parameters.md
@@ -122,11 +123,13 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
+      - releases.md
       - Configuration:
           - managed-namespace.md
           - configure-artifact-repository.md
           - workflow-controller-configmap.md
           - workflow-executors.md
+          - sidecar-injection.md
           - default-workflow-specs.md
           - offloading-large-workflows.md
           - workflow-archive.md

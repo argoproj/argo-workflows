@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
@@ -281,5 +283,79 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 		assert.Equal(t, "own-file", woc.execWf.Spec.Arguments.Artifacts[0].Name)
 		assert.Equal(t, "binary-file", woc.execWf.Spec.Arguments.Artifacts[1].Name)
 		assert.Equal(t, "data-file", woc.execWf.Spec.Arguments.Artifacts[2].Name)
+	})
+}
+
+func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
+	cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
+	defer cancel()
+	t.Run("EntrypointMissingInStoredWfSpec", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+		wf1 := woc.wf.DeepCopy()
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		wf1.Status.StoredWorkflowSpec.Entrypoint = ""
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate(ctx)
+		assert.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Entrypoint)
+		assert.Equal(t, woc.wf.Spec.Entrypoint, woc1.wf.Status.StoredWorkflowSpec.Entrypoint)
+	})
+
+	t.Run("WorkflowTemplateRefWithSuspend", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+		wf1 := woc.wf.DeepCopy()
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		wf1.Spec.Suspend = pointer.BoolPtr(true)
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate(ctx)
+		assert.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Suspend)
+		assert.True(t, *woc1.wf.Status.StoredWorkflowSpec.Suspend)
+	})
+	t.Run("WorkflowTemplateRefWithShutdownTerminate", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
+		woc.operate(ctx)
+		assert.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
+		wf1 := woc.wf.DeepCopy()
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		wf1.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate(ctx)
+		assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		for _, node := range woc1.wf.Status.Nodes {
+			if assert.NotNil(t, node) {
+				assert.Contains(t, node.Message, "workflow shutdown with strategy")
+				assert.Contains(t, node.Message, "Terminate")
+			}
+		}
+	})
+	t.Run("WorkflowTemplateRefWithShutdownStop", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
+		woc.operate(ctx)
+		assert.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
+		wf1 := woc.wf.DeepCopy()
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		wf1.Spec.Shutdown = wfv1.ShutdownStrategyStop
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate(ctx)
+		assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		assert.Equal(t, wfv1.ShutdownStrategyStop, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		for _, node := range woc1.wf.Status.Nodes {
+			if assert.NotNil(t, node) {
+				assert.Contains(t, node.Message, "workflow shutdown with strategy")
+				assert.Contains(t, node.Message, "Stop")
+			}
+		}
 	})
 }

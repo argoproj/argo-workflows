@@ -88,11 +88,21 @@ RUN JOBS=max yarn --cwd ui build
 
 FROM builder as argoexec-build
 
+# Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
+# the git state is "clean" even though said .dockerignore files are not present
+RUN cat .dockerignore >> .gitignore
+RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
+
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
 
 ####################################################################################################
 
 FROM builder as workflow-controller-build
+
+# Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
+# the git state is "clean" even though said .dockerignore files are not present
+RUN cat .dockerignore >> .gitignore
+RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller
 
@@ -105,6 +115,12 @@ COPY --from=argo-ui ui/dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
+
+# Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
+# the git state is "clean" even though said .dockerignore files are not present
+RUN cat .dockerignore >> .gitignore
+RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
+
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
@@ -112,6 +128,14 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 FROM argoexec-base as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
+
+ENTRYPOINT [ "argoexec" ]
+
+####################################################################################################
+
+FROM argoexec-base as argoexec-dev
+
+ADD argoexec /usr/local/bin/
 
 ENTRYPOINT [ "argoexec" ]
 

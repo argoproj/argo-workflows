@@ -3364,6 +3364,8 @@ spec:
                         serviceAccountName:
                           type: string
                       type: object
+                    failFast:
+                      type: boolean
                     hostAliases:
                       items:
                         properties:
@@ -11748,6 +11750,8 @@ spec:
                         serviceAccountName:
                           type: string
                       type: object
+                    failFast:
+                      type: boolean
                     hostAliases:
                       items:
                         properties:
@@ -18408,6 +18412,8 @@ spec:
                             serviceAccountName:
                               type: string
                           type: object
+                        failFast:
+                          type: boolean
                         hostAliases:
                           items:
                             properties:

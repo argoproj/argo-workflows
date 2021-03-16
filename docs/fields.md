@@ -196,8 +196,6 @@ Workflow is the definition of a workflow resource
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
-
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -570,8 +568,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
@@ -964,8 +960,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
-
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -1315,8 +1309,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
-
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -1589,8 +1581,6 @@ Arguments to a template
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -2010,8 +2000,6 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
-
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
@@ -2140,6 +2128,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
 |`data`|[`Data`](#data)|Data is a data template|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
+|`failFast`|`boolean`|FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
@@ -2601,8 +2590,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
 
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
-
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-workflow.yaml)
@@ -2864,8 +2851,6 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
 
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
-
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
@@ -3068,8 +3053,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -3912,8 +3895,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
-- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
-
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
 - [`http-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-template.yaml)
@@ -3921,8 +3902,6 @@ MetricLabel is a single label for a prometheus metric
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -4052,8 +4031,6 @@ DAGTask represents a node in the graph during DAG execution
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -4599,8 +4576,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
@@ -5167,8 +5142,6 @@ A single application container that you want to run within a pod.
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 
@@ -5832,8 +5805,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
-
-- [`output-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-result-workflow.yaml)
 
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
 

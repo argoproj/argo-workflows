@@ -5,40 +5,47 @@ export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-GIT_COMMIT             = $(shell git rev-parse HEAD)
-GIT_REMOTE             = origin
-GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
-GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
-DEV_BRANCH             = $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] && echo false || echo true)
+BUILD_DATE            := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT            := $(shell git rev-parse HEAD)
+GIT_REMOTE            := origin
+GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
+GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
+GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
+DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+
+GREP_LOGS             := ""
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
+DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
+
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
 VERSION               := latest
 DOCKER_PUSH           := false
 
-# VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
+# VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
-ifeq ($(findstring release,$(GIT_BRANCH)),release)
+ifeq ($(RELEASE_TAG),true)
 VERSION               := $(GIT_TAG)
 endif
 
 # should we build the static files?
-ifneq (,$(filter $@,codegen|lint|test|docs))
+ifneq (,$(filter $(MAKECMDGOALS),codegen lint test docs start))
 STATIC_FILES          := false
 else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
+$(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION) STATIC_FILES=$(STATIC_FILES))
+
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 2s
+DEFAULT_REQUEUE_TIME  ?= 10ms
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid
@@ -57,7 +64,6 @@ K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubect
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
-
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
 endif
@@ -130,11 +136,6 @@ define docker_build
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
 endef
 
-define docker_pull
-	docker pull $(1)
-	if [ $(K3D) = true ]; then k3d image import $(1); fi
-endef
-
 ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
 	export GOPATH
@@ -158,14 +159,15 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 	JOBS=max yarn --cwd ui build
 
 $(GOPATH)/bin/staticfiles:
-	$(call go_install,bou.ke/staticfiles)
+	cd `mktemp -d` && go get bou.ke/staticfiles
 
 ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
-	# Pack UI into a Go file.
+	# Pack UI into a Go file
 	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 else
 server/static/files.go:
+	# Building without static files
 	cp ./server/static/files.go.stub ./server/static/files.go
 endif
 
@@ -228,14 +230,25 @@ dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
 # argoexec
 
 dist/argoexec: $(ARGOEXEC_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+ifeq ($(shell uname -s),Darwin)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+else
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+endif
 
 .PHONY: executor-image
 executor-image: dist/argoexec.image
 
+ifeq ($(DEV_IMAGE),true)
+dist/argoexec.image: dist/argoexec
+	[ -e argoexec ] || mv dist/argoexec .
+	$(call docker_build,argoexec-dev)
+	mv argoexec dist/
+	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
+else
 dist/argoexec.image: $(ARGOEXEC_PKGS)
-	# Create executor image
 	$(call docker_build,argoexec)
+endif
 	touch dist/argoexec.image
 
 # generation
@@ -267,10 +280,10 @@ docs: \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
+	rm -Rf vendor v3
+	go mod tidy
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
-	rm -Rf vendor
-	go mod tidy
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
@@ -376,12 +389,12 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
-	rm -Rf vendor
+	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
 
 	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
+	$(GOPATH)/bin/golangci-lint run --fix --verbose
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
@@ -389,7 +402,7 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-install: $(MANIFESTS) $(E2E_MANIFESTS) dist/kustomize
+install: dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -407,7 +420,7 @@ ifeq ($(RUN_MODE),kubernetes)
 endif
 
 .PHONY: argosay
-argosay: test/e2e/images/argosay/v2/argosay
+argosay:
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
 	k3d image import argoproj/argosay:v2
@@ -416,42 +429,29 @@ ifeq ($(DOCKER_PUSH),true)
 	docker push argoproj/argosay:v2
 endif
 
-test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
-	cd test/e2e/images/argosay/v2 && GOOS=linux CGO_ENABLED=0 go build -ldflags '-w -s' -o argosay ./main
+dist/argosay:
+	mkdir -p dist
+	cp test/e2e/images/argosay/v2/argosay dist/
 
-dist/argosay: test/e2e/images/argosay/v2/main/argosay.go
-	go build -ldflags '-w -s' -o dist/argosay ./test/e2e/images/argosay/v2/main
-
-.PHONY: test-images
-test-images:
-	$(call docker_pull,argoproj/argosay:v1)
-	$(call docker_pull,argoproj/argosay:v2)
-	$(call docker_pull,python:alpine3.6)
+.PHONY: pull-images
+pull-images:
+	docker pull golang:1.15.7
+	docker pull debian:10.7-slim
+	docker pull mysql:8
+	docker pull argoproj/argosay:v1
+	docker pull argoproj/argosay:v2
+	docker pull python:alpine3.6
 
 $(GOPATH)/bin/goreman:
-	$(call go_install,github.com/mattn/goreman)
+	cd `mktemp -d` && go get github.com/mattn/goreman
 
 .PHONY: start
-ifeq ($(RUN_MODE),kubernetes)
-start: controller-image cli-image install executor-image
+ifeq ($(RUN_MODE),local)
+start: install executor-image controller cli $(GOPATH)/bin/goreman
 else
-start: install controller cli executor-image $(GOPATH)/bin/goreman
+start: install executor-image controller-image cli-image
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy minio
-ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy argo-server
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy workflow-controller
-endif
-ifeq ($(PROFILE),prometheus)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
-endif
-ifeq ($(PROFILE),stress)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy prometheus
-endif
-ifeq ($(PROFILE),mysql)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Available deploy mysql
-endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -459,11 +459,10 @@ endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
-	# allow time for pods to terminate
-	sleep 5s
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo)
+	killall goreman node || true
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo) $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -471,7 +470,7 @@ $(GOPATH)/bin/stern:
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
-	stern . --tail 3
+	stern -l workflows.argoproj.io/workflow 2>&1
 
 .PHONY: wait
 wait:
@@ -488,34 +487,21 @@ postgres-cli:
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
-.PHONY: test-cli
-test-cli:
-	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
+test-cli: ./dist/argo
 
-.PHONY: test-e2e-cron
-test-e2e-cron:
-	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
-
-.PHONY: test-executor
-test-executor:
-	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
+test-%:
+	$(GOTEST) -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
 
 .PHONY: test-examples
 test-examples: ./dist/argo
 	./hack/test-examples.sh
-
-.PHONY: test-functional
-test-functional:
-	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
 
 # clean
 
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor dist/* ui/dist
+	rm -Rf test-results node_modules vendor v2 argoexec-linux-amd64 dist/* ui/dist
 
 # swagger
 

@@ -80,7 +80,7 @@ func NewEmissaryCommand() *cobra.Command {
 						for {
 							data, err := ioutil.ReadFile(varRunArgo + "/ctr/" + y + "/exitcode")
 							if os.IsNotExist(err) {
-								time.Sleep(3 * time.Second)
+								time.Sleep(time.Second)
 								continue
 							}
 							exitCode, err := strconv.Atoi(string(data))
@@ -110,7 +110,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			// this may not be that important an optimisation, except for very long logs we don't want to capture
 			if includeScriptOutput {
-				logger.Info("capturing script output")
+				logger.Info("capturing logs")
 				stdout, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
 				if err != nil {
 					return fmt.Errorf("failed to open stdout: %w", err)

@@ -1203,6 +1203,10 @@ message Template {
   // pods created by those templates will not be counted towards this total.
   optional int64 parallelism = 23;
 
+  // FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
+  // template is expanded with `withItems`, etc.
+  optional bool failFast = 41;
+
   // Tolerations to apply to workflow pods.
   // +patchStrategy=merge
   // +patchMergeKey=key
