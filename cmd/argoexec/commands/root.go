@@ -9,7 +9,7 @@ import (
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	apiextensionclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -91,7 +91,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	clientset, err := kubernetes.NewForConfig(config)
 	checkErr(err)
 
-	apiextensionClientSet, err := apiextensionclientset.NewForConfig(config)
+	dynamicClientSet, err := dynamic.NewForConfig(config)
 	checkErr(err)
 
 	podName, ok := os.LookupEnv(common.EnvVarPodName)
@@ -117,7 +117,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, apiextensionClientSet, podName, namespace, podAnnotationsPath, cre, *tmpl)
+	wfExecutor := executor.NewExecutor(clientset, dynamicClientSet, podName, namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor

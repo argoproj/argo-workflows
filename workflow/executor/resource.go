@@ -13,8 +13,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -26,10 +28,10 @@ import (
 )
 
 // ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) (string, string, string, error) {
+func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) (string, string, string, schema.GroupVersionResource, error) {
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", schema.GroupVersionResource{}, err
 	}
 
 	cmd := exec.Command("kubectl", args...)
@@ -39,23 +41,25 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if err != nil {
 		exErr := err.(*exec.ExitError)
 		errMsg := strings.TrimSpace(string(exErr.Stderr))
-		return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+		return "", "", "", schema.GroupVersionResource{}, errors.New(errors.CodeBadRequest, errMsg)
 	}
 	if action == "delete" {
-		return "", "", "", nil
+		return "", "", "", schema.GroupVersionResource{}, nil
 	}
 	if action == "get" && len(out) == 0 {
-		return "", "", "", nil
+		return "", "", "", schema.GroupVersionResource{}, nil
 	}
 	obj := unstructured.Unstructured{}
 	err = json.Unmarshal(out, &obj)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", schema.GroupVersionResource{}, err
 	}
-	resourceName := fmt.Sprintf("%s.%s/%s", obj.GroupVersionKind().Kind, obj.GroupVersionKind().Group, obj.GetName())
-	selfLink := obj.GetSelfLink()
-	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceName, selfLink)
-	return obj.GetNamespace(), resourceName, selfLink, nil
+	resourceFullName := fmt.Sprintf("%s.%s/%s", obj.GroupVersionKind().Kind, obj.GroupVersionKind().Group, obj.GetName())
+	log.Infof("%s/%s", obj.GetNamespace(), resourceFullName)
+	selfLink := strings.Split(obj.GetSelfLink(), "/")
+	plural := selfLink[len(selfLink)-2]
+	gvr := schema.GroupVersionResource{Group: obj.GroupVersionKind().Group, Version: obj.GroupVersionKind().Version, Resource: plural}
+	return obj.GetNamespace(), resourceFullName, obj.GetName(), gvr, nil
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
@@ -142,7 +146,7 @@ func (we *WorkflowExecutor) signalMonitoring() {
 }
 
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
-func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
+func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName string, gvr schema.GroupVersionResource) error {
 	// Monitor the SIGTERM
 	we.signalMonitoring()
 
@@ -170,7 +174,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 	}
 	err := wait.PollImmediateInfinite(envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
 		func() (bool, error) {
-			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
+			isErrRetryable, err := we.checkResourceState(ctx, resourceNamespace, resourceName, gvr, successReqs, failReqs)
 			if err == nil {
 				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
 				return true, nil
@@ -196,30 +200,24 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 
 // checkResourceState performs resource status checking and then waiting on json reading.
 // The returning boolean indicates whether we should retry.
-func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
-	request := we.ApiExtensionsClientSet.ApiextensionsV1beta1().RESTClient().Get().RequestURI(selfLink)
-	stream, err := request.Stream(ctx)
-
+func (we *WorkflowExecutor) checkResourceState(ctx context.Context, resourceNamespace, resourceName string, gvr schema.GroupVersionResource, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+	resourceObj, err := we.DynamicClientSet.Resource(gvr).Namespace(resourceNamespace).Get(ctx, resourceName, metav1.GetOptions{})
 	if argoerr.IsTransientErr(err) {
-		return true, errors.Errorf(errors.CodeNotFound, "The error is detected to be transient: %v. Retrying...", err)
+		return true, errors.Errorf(errors.CodeNotFound, "Encountered transient error when getting the status for %s/%s: %v. Retrying...", resourceNamespace, resourceName, err)
 	}
+	jsonBytes, err := json.Marshal(resourceObj)
 	if err != nil {
 		return false, err
 	}
 
-	defer func() { _ = stream.Close() }()
-	jsonBytes, err := ioutil.ReadAll(stream)
-	if err != nil {
-		return false, err
-	}
 	jsonString := string(jsonBytes)
 	log.Info(jsonString)
 
 	if strings.Contains(jsonString, "NotFound") {
-		return false, errors.Errorf(errors.CodeNotFound, "The resource has been deleted. Will not be retried.")
+		return false, errors.Errorf(errors.CodeNotFound, "The resource %s/%s has been deleted. Will not be retried.", resourceNamespace, resourceName)
 	}
 	if !gjson.Valid(jsonString) {
-		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
+		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status for %s/%s. Will not be retried: %q", resourceNamespace, resourceName, jsonString)
 	}
 	return matchConditions(jsonBytes, successReqs, failReqs)
 }

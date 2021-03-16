@@ -22,9 +22,9 @@ import (
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	apiextensionclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -62,14 +62,14 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	PodName                string
-	Template               wfv1.Template
-	ClientSet              kubernetes.Interface
-	ApiExtensionsClientSet apiextensionclientset.Interface
-	Namespace              string
-	PodAnnotationsPath     string
-	ExecutionControl       *common.ExecutionControl
-	RuntimeExecutor        ContainerRuntimeExecutor
+	PodName            string
+	Template           wfv1.Template
+	ClientSet          kubernetes.Interface
+	DynamicClientSet   dynamic.Interface
+	Namespace          string
+	PodAnnotationsPath string
+	ExecutionControl   *common.ExecutionControl
+	RuntimeExecutor    ContainerRuntimeExecutor
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -111,18 +111,18 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, apiExtensionsClientSet apiextensionclientset.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, dynamicClientSet dynamic.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
-		PodName:                podName,
-		ClientSet:              clientset,
-		ApiExtensionsClientSet: apiExtensionsClientSet,
-		Namespace:              namespace,
-		PodAnnotationsPath:     podAnnotationsPath,
-		RuntimeExecutor:        cre,
-		Template:               template,
-		memoizedConfigMaps:     map[string]string{},
-		memoizedSecrets:        map[string][]byte{},
-		errors:                 []error{},
+		PodName:            podName,
+		ClientSet:          clientset,
+		DynamicClientSet:   dynamicClientSet,
+		Namespace:          namespace,
+		PodAnnotationsPath: podAnnotationsPath,
+		RuntimeExecutor:    cre,
+		Template:           template,
+		memoizedConfigMaps: map[string]string{},
+		memoizedSecrets:    map[string][]byte{},
+		errors:             []error{},
 	}
 }
 
