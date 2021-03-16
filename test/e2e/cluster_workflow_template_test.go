@@ -18,7 +18,6 @@ type ClusterWorkflowTemplateSuite struct {
 func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 	s.Given().
 		ClusterWorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
-		WorkflowName("my-wf").
 		When().
 		CreateClusterWorkflowTemplates().
 		RunCli([]string{"submit", "--from", "clusterworkflowtemplate/cluster-workflow-template-whalesay-template", "--name", "my-wf", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
@@ -34,13 +33,9 @@ func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
 		ClusterWorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
 		When().CreateClusterWorkflowTemplates().
 		Given().
-		WorkflowName("cwft-wf").
 		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
 metadata:
-  name: cwft-wf
-  namespace: argo
+  generateName: cwft-wf-
 spec:
   entrypoint: whalesay
   templates:
