@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: retry-test
+  generateName: retry-test-
 spec:
   entrypoint: main
   templates:
