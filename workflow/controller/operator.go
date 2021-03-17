@@ -1534,7 +1534,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Set Template defaults
-	err = woc.setTemplateDefaults(resolvedTmpl)
+	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
@@ -3229,15 +3229,15 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) setTemplateDefaults(originalTmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Template) error {
 	if woc.execWf.Spec.TemplateDefaults != nil {
-		tmplDefaults := woc.execWf.Spec.TemplateDefaults.DeepCopy()
-		tmplDefaults.ExcludeOtherTemplateTypes(originalTmpl.GetType())
+		originalTmplType := originalTmpl.GetType()
 
-		tmplDefaultsJson, err := json.Marshal(tmplDefaults)
+		tmplDefaultsJson, err := json.Marshal(woc.execWf.Spec.TemplateDefaults)
 		if err != nil {
 			return err
 		}
+
 		targetTmplJson, err := json.Marshal(originalTmpl)
 		if err != nil {
 			return err
@@ -3251,6 +3251,7 @@ func (woc *wfOperationCtx) setTemplateDefaults(originalTmpl *wfv1.Template) erro
 		if err != nil {
 			return err
 		}
+		originalTmpl.SetType(originalTmplType)
 	}
 	return nil
 }

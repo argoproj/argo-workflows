@@ -3,9 +3,7 @@
 
 ## Introduction
 
-`TemplateDefaults` feature enables user to configure the default template values in workflow spec level that will apply to all templates in the workflow.
-These values will be applied in runtime. If template has a value that also has a default value in `templateDefault`, the Template's value will take precedence. 
-
+`TemplateDefaults` feature enables user to configure the default template values in workflow spec level that will apply to all templates in the workflow. If template has a value that also has a default value in `templateDefault`, the Template's value will take precedence. These values will be applied during runtime.
 
 ## Configuring `templateDefaults` in WorkflowSpec
 
@@ -14,25 +12,19 @@ For example:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
-  labels:
-    workflows.argoproj.io/archive-strategy: "false"
+  name: hello-world-1
 spec:
-  entrypoint: whalesay
+  entrypoint: main
   templateDefaults:
     timeout: 30s   # timeout value will be applied to all templates
     retryStrategy: # retryStrategy value will be applied to all templates
       limit: 2
-    container:
-      imagePullPolicy: "Never" # imagePullPolicy will only be applied to container type templates
   templates:
-  - name: whalesay
-    activeDeadlineSeconds: 150
+  - name: main
     container:
       image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
 ```
+[template defaults example](examples/template_defaults.yaml)
 
 ## Configuring `templateDefaults` in Controller level
 Operator can configure the `templateDefaults` in [workflowDefaults](default-workflow-specs.md). This `templateDefault` will be applied all workflow which runs on these controller.
@@ -40,7 +32,6 @@ Operator can configure the `templateDefaults` in [workflowDefaults](default-work
 The following would be specified in the Config Map:
 
 ```yaml
-# This file describes the config settings available in the workflow controller configmap
 apiVersion: v1
 kind: ConfigMap
 metadata:

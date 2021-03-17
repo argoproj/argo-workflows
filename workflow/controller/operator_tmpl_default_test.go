@@ -129,7 +129,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		err := woc.setExecWorkflow()
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
-		err = woc.setTemplateDefaults(&tmpl)
+		err = woc.mergedTemplateDefaultsInto(&tmpl)
 		assert.NoError(t, err)
 		assert.NotNil(t, tmpl)
 		assert.Equal(t, intstrutil.ParsePtr("110"), tmpl.ActiveDeadlineSeconds)
@@ -156,7 +156,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		err := woc.setExecWorkflow()
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
-		err = woc.setTemplateDefaults(&tmpl)
+		err = woc.mergedTemplateDefaultsInto(&tmpl)
 		assert.NoError(t, err)
 		assert.NotNil(t, tmpl)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
@@ -186,7 +186,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		err := woc.setExecWorkflow()
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
-		err = woc.setTemplateDefaults(&tmpl)
+		err = woc.mergedTemplateDefaultsInto(&tmpl)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, tmpl)
@@ -195,7 +195,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		assert.Equal(t, wfv1.TemplateTypeSteps, tmpl.GetType())
 
 		tmpl1 := woc.execWf.Spec.Templates[1]
-		err = woc.setTemplateDefaults(&tmpl1)
+		err = woc.mergedTemplateDefaultsInto(&tmpl1)
 		assert.NoError(t, err)
 		assert.NotNil(t, tmpl1)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
@@ -227,7 +227,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		err := woc.setExecWorkflow()
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
-		err = woc.setTemplateDefaults(&tmpl)
+		err = woc.mergedTemplateDefaultsInto(&tmpl)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, tmpl)
@@ -236,7 +236,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		assert.Equal(t, wfv1.TemplateTypeDAG, tmpl.GetType())
 
 		tmpl1 := woc.execWf.Spec.Templates[2]
-		err = woc.setTemplateDefaults(&tmpl1)
+		err = woc.mergedTemplateDefaultsInto(&tmpl1)
 		assert.NoError(t, err)
 		assert.NotNil(t, tmpl1)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
@@ -245,7 +245,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		assert.Equal(t, "test", tmpl1.Script.Env[0].Name)
 
 		tmpl2 := woc.execWf.Spec.Templates[3]
-		err = woc.setTemplateDefaults(&tmpl2)
+		err = woc.mergedTemplateDefaultsInto(&tmpl2)
 		assert.NoError(t, err)
 		assert.NotNil(t, tmpl2)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl2.ActiveDeadlineSeconds)

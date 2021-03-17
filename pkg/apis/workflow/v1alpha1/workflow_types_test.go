@@ -741,12 +741,12 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		DAG:       &DAGTemplate{FailFast: pointer.BoolPtr(true)},
 		Resource:  &ResourceTemplate{Action: "Create"},
 		Data:      &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{}}},
-		Suspend:   &SuspendTemplate{Duration: "10s",},
+		Suspend:   &SuspendTemplate{Duration: "10s"},
 	}
 
 	t.Run("StepTemplateType", func(t *testing.T) {
 		stepTmpl := tmpl.DeepCopy()
-		stepTmpl.ExcludeOtherTemplateTypes(TemplateTypeSteps)
+		stepTmpl.SetType(TemplateTypeSteps)
 		assert.NotNil(t, stepTmpl.Steps)
 		assert.Nil(t, stepTmpl.Script)
 		assert.Nil(t, stepTmpl.Resource)
@@ -758,7 +758,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 
 	t.Run("DAGTemplateType", func(t *testing.T) {
 		dagTmpl := tmpl.DeepCopy()
-		dagTmpl.ExcludeOtherTemplateTypes(TemplateTypeDAG)
+		dagTmpl.SetType(TemplateTypeDAG)
 		assert.NotNil(t, dagTmpl.DAG)
 		assert.Nil(t, dagTmpl.Script)
 		assert.Nil(t, dagTmpl.Resource)
@@ -770,7 +770,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 
 	t.Run("ScriptTemplateType", func(t *testing.T) {
 		scriptTmpl := tmpl.DeepCopy()
-		scriptTmpl.ExcludeOtherTemplateTypes(TemplateTypeScript)
+		scriptTmpl.SetType(TemplateTypeScript)
 		assert.NotNil(t, scriptTmpl.Script)
 		assert.Nil(t, scriptTmpl.DAG)
 		assert.Nil(t, scriptTmpl.Resource)
@@ -782,7 +782,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 
 	t.Run("ResourceTemplateType", func(t *testing.T) {
 		resourceTmpl := tmpl.DeepCopy()
-		resourceTmpl.ExcludeOtherTemplateTypes(TemplateTypeResource)
+		resourceTmpl.SetType(TemplateTypeResource)
 		assert.NotNil(t, resourceTmpl.Resource)
 		assert.Nil(t, resourceTmpl.Script)
 		assert.Nil(t, resourceTmpl.DAG)
@@ -793,7 +793,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 	})
 	t.Run("ContainerTemplateType", func(t *testing.T) {
 		containerTmpl := tmpl.DeepCopy()
-		containerTmpl.ExcludeOtherTemplateTypes(TemplateTypeContainer)
+		containerTmpl.SetType(TemplateTypeContainer)
 		assert.NotNil(t, containerTmpl.Container)
 		assert.Nil(t, containerTmpl.Script)
 		assert.Nil(t, containerTmpl.DAG)
@@ -804,7 +804,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 	})
 	t.Run("DataTemplateType", func(t *testing.T) {
 		dataTmpl := tmpl.DeepCopy()
-		dataTmpl.ExcludeOtherTemplateTypes(TemplateTypeData)
+		dataTmpl.SetType(TemplateTypeData)
 		assert.NotNil(t, dataTmpl.Data)
 		assert.Nil(t, dataTmpl.Script)
 		assert.Nil(t, dataTmpl.DAG)
@@ -815,7 +815,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 	})
 	t.Run("SuspendTemplateType", func(t *testing.T) {
 		suspendTmpl := tmpl.DeepCopy()
-		suspendTmpl.ExcludeOtherTemplateTypes(TemplateTypeSuspend)
+		suspendTmpl.SetType(TemplateTypeSuspend)
 		assert.NotNil(t, suspendTmpl.Suspend)
 		assert.Nil(t, suspendTmpl.Script)
 		assert.Nil(t, suspendTmpl.DAG)
