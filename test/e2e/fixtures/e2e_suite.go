@@ -136,7 +136,6 @@ func (s *E2ESuite) DeleteResources() {
 			s.CheckError(err)
 		}
 	}
-
 }
 
 func (s *E2ESuite) Need(needs ...Need) {
