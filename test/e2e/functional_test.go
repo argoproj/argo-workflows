@@ -733,11 +733,10 @@ func (s *FunctionalSuite) TestMarkDaemonedPodSucceeded() {
 		Workflow("@testdata/daemoned-pod-completed.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			node := status.Nodes.FindByDisplayName("redis")
+			node := status.Nodes.FindByDisplayName("daemoned")
 			if assert.NotNil(t, node) {
 				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 			}
