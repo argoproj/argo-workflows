@@ -34,7 +34,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
 		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
