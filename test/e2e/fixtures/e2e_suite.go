@@ -25,7 +25,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
@@ -102,13 +101,6 @@ func (s *E2ESuite) AfterTest(suiteName, testName string) {
 func (s *E2ESuite) DeleteResources() {
 	ctx := context.Background()
 
-	l := func(r schema.GroupVersionResource) string {
-		if r.Resource == "pods" {
-			return common.LabelKeyWorkflow
-		}
-		return Label
-	}
-
 	resources := []schema.GroupVersionResource{
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
@@ -117,12 +109,19 @@ func (s *E2ESuite) DeleteResources() {
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "sensors"},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "eventsources"},
-		{Version: "v1", Resource: "pods"},
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
 	for _, r := range resources {
-		s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: l(r)}))
+		for {
+			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: Label}))
+			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: Label})
+			s.CheckError(err)
+			if len(ls.Items) == 0 {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 
 	// delete archived workflows from the archive
@@ -138,16 +137,6 @@ func (s *E2ESuite) DeleteResources() {
 		}
 	}
 
-	for _, r := range resources {
-		for {
-			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
-			s.CheckError(err)
-			if len(ls.Items) == 0 {
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-	}
 }
 
 func (s *E2ESuite) Need(needs ...Need) {
