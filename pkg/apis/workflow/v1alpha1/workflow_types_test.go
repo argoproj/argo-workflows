@@ -723,3 +723,87 @@ func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
 		})
 	})
 }
+
+func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
+	steps := ParallelSteps{
+		[]WorkflowStep{
+			{
+				Name:     "Test",
+				Template: "testtmpl",
+			},
+		},
+	}
+	tmpl := Template{
+		Name:      "step",
+		Steps:     []ParallelSteps{steps},
+		Script:    &ScriptTemplate{Source: "test"},
+		Container: &corev1.Container{Name: "container"},
+		DAG:       &DAGTemplate{FailFast: pointer.BoolPtr(true)},
+		Resource:  &ResourceTemplate{Action: "Create"},
+		Data:      &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{}}},
+	}
+
+	t.Run("StepTemplateType", func(t *testing.T) {
+		stepTmpl := tmpl.DeepCopy()
+		stepTmpl.ExcludeOtherTemplateTypes(TemplateTypeSteps)
+		assert.NotNil(t, stepTmpl.Steps)
+		assert.Nil(t, stepTmpl.Script)
+		assert.Nil(t, stepTmpl.Resource)
+		assert.Nil(t, stepTmpl.Data)
+		assert.Nil(t, stepTmpl.DAG)
+		assert.Nil(t, stepTmpl.Container)
+	})
+
+	t.Run("DAGTemplateType", func(t *testing.T) {
+		dagTmpl := tmpl.DeepCopy()
+		dagTmpl.ExcludeOtherTemplateTypes(TemplateTypeDAG)
+		assert.NotNil(t, dagTmpl.DAG)
+		assert.Nil(t, dagTmpl.Script)
+		assert.Nil(t, dagTmpl.Resource)
+		assert.Nil(t, dagTmpl.Data)
+		assert.Len(t, dagTmpl.Steps, 0)
+		assert.Nil(t, dagTmpl.Container)
+	})
+
+	t.Run("ScriptTemplateType", func(t *testing.T) {
+		scriptTmpl := tmpl.DeepCopy()
+		scriptTmpl.ExcludeOtherTemplateTypes(TemplateTypeScript)
+		assert.NotNil(t, scriptTmpl.Script)
+		assert.Nil(t, scriptTmpl.DAG)
+		assert.Nil(t, scriptTmpl.Resource)
+		assert.Nil(t, scriptTmpl.Data)
+		assert.Len(t, scriptTmpl.Steps, 0)
+		assert.Nil(t, scriptTmpl.Container)
+	})
+
+	t.Run("ResourceTemplateType", func(t *testing.T) {
+		resourceTmpl := tmpl.DeepCopy()
+		resourceTmpl.ExcludeOtherTemplateTypes(TemplateTypeResource)
+		assert.NotNil(t, resourceTmpl.Resource)
+		assert.Nil(t, resourceTmpl.Script)
+		assert.Nil(t, resourceTmpl.DAG)
+		assert.Nil(t, resourceTmpl.Data)
+		assert.Len(t, resourceTmpl.Steps, 0)
+		assert.Nil(t, resourceTmpl.Container)
+	})
+	t.Run("ContainerTemplateType", func(t *testing.T) {
+		containerTmpl := tmpl.DeepCopy()
+		containerTmpl.ExcludeOtherTemplateTypes(TemplateTypeContainer)
+		assert.NotNil(t, containerTmpl.Container)
+		assert.Nil(t, containerTmpl.Script)
+		assert.Nil(t, containerTmpl.DAG)
+		assert.Nil(t, containerTmpl.Data)
+		assert.Len(t, containerTmpl.Steps, 0)
+		assert.Nil(t, containerTmpl.Resource)
+	})
+	t.Run("DataTemplateType", func(t *testing.T) {
+		dataTmpl := tmpl.DeepCopy()
+		dataTmpl.ExcludeOtherTemplateTypes(TemplateTypeData)
+		assert.NotNil(t, dataTmpl.Data)
+		assert.Nil(t, dataTmpl.Script)
+		assert.Nil(t, dataTmpl.DAG)
+		assert.Nil(t, dataTmpl.Container)
+		assert.Len(t, dataTmpl.Steps, 0)
+		assert.Nil(t, dataTmpl.Resource)
+	})
+}
