@@ -53,9 +53,9 @@ jobs:
             containerRuntimeExecutor: emissary
           - test: test-cli
             containerRuntimeExecutor: emissary
-          - test: test-functional
-            containerRuntimeExecutor: emissary
           - test: test-cron
+            containerRuntimeExecutor: emissary
+          - test: test-functional
             containerRuntimeExecutor: emissary
     steps:
       - uses: actions/checkout@v2
