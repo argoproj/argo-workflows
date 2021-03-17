@@ -286,8 +286,7 @@ func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriod
 func (p *PNSExecutor) getContainerPID(containerName string) int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	pid, ok := p.containerNameToPID[containerName]
-	if ok {
+	if pid, ok := p.containerNameToPID[containerName]; ok {
 		return pid
 	}
 	for n, pid := range p.containerNameToPID {
