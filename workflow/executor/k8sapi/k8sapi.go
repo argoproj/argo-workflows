@@ -2,7 +2,6 @@ package k8sapi
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -41,18 +40,6 @@ func (k *K8sAPIExecutor) GetOutputStream(ctx context.Context, containerName stri
 		log.Warn("non combined output unsupported")
 	}
 	return k.client.getLogsAsStream(ctx, containerName)
-}
-
-func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
-	log.Infof("Getting exit code of %s", containerName)
-	_, status, err := k.client.GetContainerStatus(ctx, containerName)
-	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not get container status")
-	}
-	if status != nil && status.State.Terminated != nil {
-		return fmt.Sprint(status.State.Terminated.ExitCode), nil
-	}
-	return "", nil
 }
 
 // Wait for the container to complete
