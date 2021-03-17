@@ -715,10 +715,9 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		Workflow("@testdata/data-transformation.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			paths := status.Nodes.FindByDisplayName("get-artifact-path")
 			if assert.NotNil(t, paths) {
 				assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
