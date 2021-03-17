@@ -883,7 +883,7 @@ func (s *CLISuite) TestTemplate() {
 	})
 
 	s.Run("Lint", func() {
-		s.Given().RunCli([]string{"template", "lint", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"template", "lint", "testdata/basic-workflowtemplate.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "no linting errors found!")
 			}
@@ -899,7 +899,7 @@ func (s *CLISuite) TestTemplate() {
 	})
 
 	s.Run("Create", func() {
-		s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"template", "create", "testdata/basic-workflowtemplate.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -919,7 +919,7 @@ func (s *CLISuite) TestTemplate() {
 			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, `"not-found" not found`)
 			}
-		}).RunCli([]string{"template", "get", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+		}).RunCli([]string{"template", "get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -927,38 +927,20 @@ func (s *CLISuite) TestTemplate() {
 			}
 		})
 	})
-	s.Run("Submittable-Template", func() {
-		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
-				assert.Contains(t, output, "Created:")
-			}
-		})
-		var workflowName string
-		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				r := regexp.MustCompile(`\s+?(workflow-template-whalesay-template-[a-z0-9]+)`)
-				res := r.FindStringSubmatch(output)
-				if len(res) != 2 {
-					assert.Fail(t, "Internal test error, please report a bug")
-				}
-				workflowName = res[1]
-			}
-		})
+	s.Run("Submit", func() {
 		s.Given().
-			WorkflowName(workflowName).
-			When().
-			WaitForWorkflow().
-			RunCli([]string{"get", workflowName}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"submit", "--from", "workflowtemplate/basic", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, workflowName)
-					assert.Contains(t, output, "Succeeded")
+					assert.Contains(t, output, "Name:")
+					assert.Contains(t, output, "Namespace:")
+					assert.Contains(t, output, "Created:")
 				}
-			})
+			}).
+			When().
+			WaitForWorkflow(fixtures.ToBeSucceeded)
 	})
 	s.Run("Delete", func() {
-		s.Given().RunCli([]string{"template", "delete", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"template", "delete", "basic"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		})
 	})
