@@ -3,6 +3,7 @@ package fixtures
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -229,6 +230,10 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		default:
 			w.t.Fatal("unknown option type: " + reflect.TypeOf(opt).String())
 		}
+	}
+
+	if os.Getenv("CI") == "true" {
+		timeout = 2 * timeout
 	}
 
 	start := time.Now()
