@@ -165,11 +165,15 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-20.04
-    needs: [ codegen ]
+    # TODO needs: [ codegen ]
     timeout-minutes: 10
+    env:
+      GOPATH: /home/runner/go
     steps:
-      - run: make server/static/files.go STATIC_FILES=false
+      - run: cp server/static/files.go.stub server/static/files.go
       - uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.36.0
 
   ui:
     name: UI
