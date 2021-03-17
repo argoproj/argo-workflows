@@ -295,6 +295,9 @@ $(GOPATH)/bin/mockery:
 	mockery -version
 
 $(GOPATH)/bin/controller-gen:
+	# The vendored versions needed by controller-gen are different than the ones that
+	# are installed previously installed by the makefile. Remove the previous one to ensure the new one is fetched
+	rm -rf vendor
 	$(call go_install,sigs.k8s.io/controller-tools/cmd/controller-gen)
 
 $(GOPATH)/bin/go-to-protobuf:
