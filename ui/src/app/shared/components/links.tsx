@@ -41,7 +41,7 @@ export const Links = ({scope, object, button}: {scope: string; object: {metadata
                 links.map(({url, name}) => {
                     if (button) {
                         return (
-                            <Button onClick={() => openLink(url)} key={name} icon={'external-link-alt'}>
+                            <Button onClick={() => openLink(formatUrl(url))} key={name} icon='external-link-alt'>
                                 {name}
                             </Button>
                         );
