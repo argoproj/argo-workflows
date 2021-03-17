@@ -80,7 +80,9 @@ func (s *E2ESuite) TearDownSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {
+	start := time.Now()
 	s.DeleteResources()
+	_, _ = fmt.Printf("test set-up took %v", time.Since(start).Truncate(time.Second))
 	s.testStartedAt = time.Now()
 }
 
