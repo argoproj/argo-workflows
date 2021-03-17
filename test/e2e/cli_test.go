@@ -375,26 +375,18 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
-		s.Need(Offloading)
-		for i := 0; i < 3; i++ {
-			s.Given().
-				Workflow("@smoke/basic-generate-name.yaml").
-				When().
-				SubmitWorkflow().
-				WaitForWorkflow()
-		}
-		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "NAME")
-				assert.Contains(t, output, "STATUS")
-				assert.Contains(t, output, "AGE")
-				assert.Contains(t, output, "DURATION")
-				assert.Contains(t, output, "PRIORITY")
-			}
-		})
+		s.Given().
+			RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "NAME")
+					assert.Contains(t, output, "STATUS")
+					assert.Contains(t, output, "AGE")
+					assert.Contains(t, output, "DURATION")
+					assert.Contains(t, output, "PRIORITY")
+				}
+			})
 	})
 	s.Run("Get", func() {
-		s.Need(Offloading)
 		s.Given().RunCli([]string{"get", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
