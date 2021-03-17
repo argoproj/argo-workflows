@@ -358,12 +358,12 @@ func (w *WorkflowSpec) Normalize() {
 		switch v := tmpl.Get().(type) {
 		case *DAGTemplate:
 			for j, task := range v.Tasks {
-				if task.Spec != nil {
+				if task.Inline != nil {
 					templateName := tmpl.Name + "." + task.Name
-					task.Spec.Name = templateName
-					w.Templates = append(w.Templates, *task.Spec)
+					task.Inline.Name = templateName
+					w.Templates = append(w.Templates, *task.Inline)
 					task.Template = templateName
-					task.Spec = nil
+					task.Inline = nil
 				}
 				tmpl.DAG.Tasks[j] = task
 			}
@@ -1089,6 +1089,8 @@ type Outputs struct {
 
 // WorkflowStep is a reference to a template to execute in a series of step
 type WorkflowStep struct {
+	Inline *Template `json:",inline" protobuf:"bytes,12,opt,name=inline"`
+
 	// Name of the step
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
@@ -1136,6 +1138,10 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 
 func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
+}
+
+func (step *WorkflowStep) IsInlined() bool {
+	return step != nil && step.Template == ""
 }
 
 // Sequence expands a workflow step into numeric range
@@ -2313,13 +2319,13 @@ type DAGTemplate struct {
 
 // DAGTask represents a node in the graph during DAG execution
 type DAGTask struct {
+	Inline *Template `json:",inline" protobuf:"bytes,13,opt,name=inline"`
+
 	// Name is the name of the target
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-
-	Spec *Template `json:"spec,omitempty" protobuf:"bytes,13,opt,name=spec"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
@@ -2368,6 +2374,10 @@ func (t *DAGTask) GetTemplateRef() *TemplateRef {
 
 func (t *DAGTask) ShouldExpand() bool {
 	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithSequence != nil
+}
+
+func (t *DAGTask) IsInlined() bool {
+	return t != nil && t.Template == ""
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

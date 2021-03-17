@@ -3193,18 +3193,15 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 			return err
 		}
 
-			// Join WFT and WfDefault metadata to Workflow metadata.
-			wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
+		// Join WFT and WfDefault metadata to Workflow metadata.
+		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
 
-			// Join workflow, workflow template, and workflow default metadata to workflow spec.
-			mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
-			if err != nil {
-				return err
-			}
-			woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
-		} else {
-			woc.wf.Status.StoredWorkflowSpec = woc.wf.Spec.DeepCopy()
+		// Join workflow, workflow template, and workflow default metadata to workflow spec.
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		if err != nil {
+			return err
 		}
+		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 
 		woc.wf.Status.StoredWorkflowSpec.Normalize()
 

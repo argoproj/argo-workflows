@@ -2988,7 +2988,6 @@ spec:
                                 type: string
                               onExit:
                                 type: string
-                              spec: {}
                               template:
                                 type: string
                               templateRef:
@@ -3028,8 +3027,6 @@ spec:
                                     - type: string
                                     x-kubernetes-int-or-string: true
                                 type: object
-                            required:
-                            - name
                             type: object
                           type: array
                       required:

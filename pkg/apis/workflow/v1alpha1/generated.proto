@@ -306,13 +306,13 @@ message CronWorkflowStatus {
 
 // DAGTask represents a node in the graph during DAG execution
 message DAGTask {
+  optional Template inline = 13;
+
   // Name is the name of the target
   optional string name = 1;
 
   // Name of template to execute
   optional string template = 2;
-
-  optional Template spec = 13;
 
   // Arguments are the parameter and artifact arguments to the template
   optional Arguments arguments = 3;
@@ -1578,6 +1578,8 @@ message WorkflowStatus {
 
 // WorkflowStep is a reference to a template to execute in a series of step
 message WorkflowStep {
+  optional Template inline = 12;
+
   // Name of the step
   optional string name = 1;
 

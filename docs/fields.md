@@ -90,6 +90,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -265,6 +267,8 @@ Workflow is the definition of a workflow resource
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -461,6 +465,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -636,6 +642,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -850,6 +858,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -1025,6 +1035,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -1197,6 +1209,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -1372,6 +1386,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -1609,6 +1625,8 @@ Arguments to a template
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -1886,6 +1904,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -2061,6 +2081,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -2819,6 +2841,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -3361,6 +3385,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
 
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
@@ -3877,6 +3903,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
@@ -3894,6 +3922,8 @@ MetricLabel is a single label for a prometheus metric
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 </details>
 
 ### Fields
@@ -3995,6 +4025,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-disable-failFast.yaml)
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
+
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
 
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
@@ -4454,6 +4486,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -4629,6 +4663,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -5028,6 +5064,8 @@ A single application container that you want to run within a pod.
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -5183,6 +5221,8 @@ A single application container that you want to run within a pod.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -5681,6 +5721,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -5856,6 +5898,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
