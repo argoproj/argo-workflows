@@ -282,6 +282,21 @@ type with func(pod *apiv1.Pod)
 
 func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }
 
+func withExitCode(v int32) with {
+	return func(pod *apiv1.Pod) {
+		for _, c := range pod.Spec.Containers {
+			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+				Name: c.Name,
+				State: apiv1.ContainerState{
+					Terminated: &apiv1.ContainerStateTerminated{
+						ExitCode: v,
+					},
+				},
+			})
+		}
+	}
+}
+
 func withAnnotation(key, val string) with {
 	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }

@@ -1157,20 +1157,23 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
-	if ok && node.Outputs == nil {
-		updated = true
-		woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-		var outputs wfv1.Outputs
-		err := json.Unmarshal([]byte(outputStr), &outputs)
-		if err != nil {
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
-			node.Phase = wfv1.NodeError
-		} else {
-			node.Outputs = &outputs
+	// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
+	if exitCode := getExitCode(pod); exitCode != nil {
+		if node.Outputs == nil {
+			node.Outputs = &wfv1.Outputs{}
 		}
+		woc.log.Infof("Updating node %s exit code %v -> %v", node.ID, node.Outputs.ExitCode, exitCode)
+		if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+			woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
+			if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
+				node.Phase = wfv1.NodeError
+				node.Message = err.Error()
+			}
+		}
+		node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))
+		updated = true
 	}
+
 	if node.Phase != newPhase {
 		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
@@ -1200,6 +1203,15 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 	if updated {
 		return node
+	}
+	return nil
+}
+
+func getExitCode(pod *apiv1.Pod) *int32 {
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == common.MainContainerName && c.State.Terminated != nil {
+			return pointer.Int32Ptr(c.State.Terminated.ExitCode)
+		}
 	}
 	return nil
 }
