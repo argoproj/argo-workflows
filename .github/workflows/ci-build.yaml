@@ -165,7 +165,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-20.04
-    # TODO needs: [ codegen ]
+    needs: [ tests, codegen, e2e-tests ]
     timeout-minutes: 10
     env:
       GOPATH: /home/runner/go
