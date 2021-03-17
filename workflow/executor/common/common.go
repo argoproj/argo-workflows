@@ -31,7 +31,6 @@ func GetContainerID(container string) string {
 
 // KubernetesClientInterface is the interface to implement getContainerStatus method
 type KubernetesClientInterface interface {
-	GetContainerStatus(ctx context.Context, containerName string) (*v1.Pod, *v1.ContainerStatus, error)
 	GetContainerStatuses(ctx context.Context) (*v1.Pod, []v1.ContainerStatus, error)
 	KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error
 	CreateArchive(ctx context.Context, containerName, sourcePath string) (*bytes.Buffer, error)
