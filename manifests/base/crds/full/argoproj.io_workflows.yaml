@@ -2993,8 +2993,6 @@ spec:
                                 type: array
                               depends:
                                 type: string
-                              name:
-                                type: string
                               onExit:
                                 type: string
                               template:
@@ -11338,8 +11336,6 @@ spec:
                                 type: array
                               depends:
                                 type: string
-                              name:
-                                type: string
                               onExit:
                                 type: string
                               template:
@@ -17958,8 +17954,6 @@ spec:
                                       type: string
                                     type: array
                                   depends:
-                                    type: string
-                                  name:
                                     type: string
                                   onExit:
                                     type: string

@@ -308,9 +308,6 @@ message CronWorkflowStatus {
 message DAGTask {
   optional Template inline = 13;
 
-  // Name is the name of the target
-  optional string name = 1;
-
   // Name of template to execute
   optional string template = 2;
 
@@ -1579,9 +1576,6 @@ message WorkflowStatus {
 // WorkflowStep is a reference to a template to execute in a series of step
 message WorkflowStep {
   optional Template inline = 12;
-
-  // Name of the step
-  optional string name = 1;
 
   // Template is the name of the template to execute as the step
   optional string template = 2;
