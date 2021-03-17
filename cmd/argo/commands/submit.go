@@ -2,13 +2,14 @@ package commands
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,13 +23,15 @@ import (
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
 type cliSubmitOpts struct {
-	output   string // --output
-	wait     bool   // --wait
-	watch    bool   // --watch
-	log      bool   // --log
-	strict   bool   // --strict
-	priority *int32 // --priority
-	getArgs  getFlags
+	output        string // --output
+	wait          bool   // --wait
+	watch         bool   // --watch
+	verify        bool   // --verify
+	log           bool   // --log
+	strict        bool   // --strict
+	priority      *int32 // --priority
+	getArgs       getFlags
+	scheduledTime string // --scheduled-time
 }
 
 func NewSubmitCommand() *cobra.Command {
@@ -67,7 +70,7 @@ func NewSubmitCommand() *cobra.Command {
 			}
 
 			if !cliSubmitOpts.watch && len(cliSubmitOpts.getArgs.status) > 0 {
-				logrus.Warn("--status should only be used with --watch")
+				log.Warn("--status should only be used with --watch")
 			}
 
 			ctx, apiClient := client.NewAPIClient()
@@ -88,12 +91,16 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
+	command.Flags().BoolVar(&cliSubmitOpts.verify, "verify", false, "verify completed workflows by running the Python code in the workflows.argoproj.io/verify.py annotation")
+	errors.CheckError(command.Flags().MarkHidden("verify"))
 	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
 	command.Flags().StringVar(&cliSubmitOpts.getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
 	command.Flags().StringVar(&cliSubmitOpts.getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
+	command.Flags().StringVar(&cliSubmitOpts.scheduledTime, "scheduled-time", "", "Override the workflow's scheduledTime parameter (useful for backfilling). The time must be RFC3339")
+
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -167,6 +174,13 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 	tempwf := wfv1.Workflow{}
 
 	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
+	if cliOpts.scheduledTime != "" {
+		_, err := time.Parse(time.RFC3339, cliOpts.scheduledTime)
+		if err != nil {
+			log.Fatalf("scheduled-time contains invalid time.RFC3339 format. (e.g.: `2006-01-02T15:04:05-07:00`)")
+		}
+		submitOpts.Annotations = fmt.Sprintf("%s=%s", common.AnnotationKeyCronWfScheduledTime, cliOpts.scheduledTime)
+	}
 
 	created, err := serviceClient.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 		Namespace:     namespace,
@@ -245,7 +259,7 @@ func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 	if cliSubmitOpts.log {
 		for _, workflow := range workflowNames {
 			logWorkflow(ctx, serviceClient, namespace, workflow, "", &corev1.PodLogOptions{
-				Container: "main",
+				Container: common.MainContainerName,
 				Follow:    true,
 				Previous:  false,
 			})
@@ -257,5 +271,8 @@ func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		for _, workflow := range workflowNames {
 			watchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.getArgs)
 		}
+	}
+	if cliSubmitOpts.verify {
+		verifyWorkflows(ctx, serviceClient, namespace, workflowNames)
 	}
 }

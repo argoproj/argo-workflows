@@ -31,27 +31,6 @@ func (_m *ContainerRuntimeExecutor) CopyFile(containerName string, sourcePath st
 	return r0
 }
 
-// GetExitCode provides a mock function with given fields: ctx, containerName
-func (_m *ContainerRuntimeExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
-	ret := _m.Called(ctx, containerName)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
-		r0 = rf(ctx, containerName)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, containerName)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetFileContents provides a mock function with given fields: containerName, sourcePath
 func (_m *ContainerRuntimeExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {
 	ret := _m.Called(containerName, sourcePath)
@@ -110,13 +89,36 @@ func (_m *ContainerRuntimeExecutor) Kill(ctx context.Context, containerNames []s
 	return r0
 }
 
-// Wait provides a mock function with given fields: ctx, containerNames, sidecarNames
-func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context, containerNames []string, sidecarNames []string) error {
-	ret := _m.Called(ctx, containerNames, sidecarNames)
+// ListContainerNames provides a mock function with given fields: ctx
+func (_m *ContainerRuntimeExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	ret := _m.Called(ctx)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(context.Context) []string); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Wait provides a mock function with given fields: ctx, containerNames
+func (_m *ContainerRuntimeExecutor) Wait(ctx context.Context, containerNames []string) error {
+	ret := _m.Called(ctx, containerNames)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string, []string) error); ok {
-		r0 = rf(ctx, containerNames, sidecarNames)
+	if rf, ok := ret.Get(0).(func(context.Context, []string) error); ok {
+		r0 = rf(ctx, containerNames)
 	} else {
 		r0 = ret.Error(0)
 	}

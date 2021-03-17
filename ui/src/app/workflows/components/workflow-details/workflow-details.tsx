@@ -14,6 +14,7 @@ import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
@@ -44,11 +45,22 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
+    const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
+    useEffect(
+        useQueryParams(history, p => {
+            setTab(p.get('tab') || 'workflow');
+            setNodeId(p.get('nodeId'));
+            setNodePanelView(p.get('nodePanelView'));
+            setSidePanel(p.get('sidePanel'));
+        }),
+        [history]
+    );
+
     useEffect(() => {
-        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, sidePanel}));
-    }, [namespace, name, tab, nodeId, sidePanel]);
+        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
+    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
 
     const [workflow, setWorkflow] = useState<Workflow>();
     const [links, setLinks] = useState<Link[]>();
@@ -252,9 +264,11 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                 {selectedNode && (
                                     <WorkflowNodeInfo
                                         node={selectedNode}
+                                        onTabSelected={setNodePanelView}
+                                        selectedTabKey={nodePanelView}
                                         workflow={workflow}
                                         links={links}
-                                        onShowContainerLogs={(_, container) => setSidePanel(`logs:${nodeId}:${container}`)}
+                                        onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
                                         archived={false}

@@ -3,9 +3,12 @@ package fixtures
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/TwinProduction/go-color"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -22,12 +25,13 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 const (
 	Namespace      = "argo"
-	Label          = "argo-e2e"
+	Label          = workflow.WorkflowFullName + "/test" // mark this workflow as a test
 	defaultTimeout = 30 * time.Second
 )
 
@@ -43,6 +47,8 @@ type E2ESuite struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
 	hydrator          hydrator.Interface
+	testStartedAt     time.Time
+	slowTests         []string
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -68,20 +74,40 @@ func (s *E2ESuite) SetupSuite() {
 
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
+	for _, x := range s.slowTests {
+		_, _ = fmt.Println(color.Ize(color.Yellow, fmt.Sprintf("=== SLOW TEST:  %s", x)))
+	}
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {
 	s.DeleteResources()
+	s.testStartedAt = time.Now()
 }
 
-var (
-	foreground = metav1.DeletePropagationForeground
-	background = metav1.DeletePropagationBackground
-)
+func (s *E2ESuite) AfterTest(suiteName, testName string) {
+	if s.T().Skipped() { // by default, we don't get good logging at test end
+		_, _ = fmt.Println(color.Ize(color.Gray, "=== SKIP: "+suiteName+"/"+testName))
+	} else if s.T().Failed() { // by default, we don't get good logging at test end
+		_, _ = fmt.Println(color.Ize(color.Red, "=== FAIL: "+suiteName+"/"+testName))
+		os.Exit(1)
+	} else {
+		_, _ = fmt.Println(color.Ize(color.Green, "=== PASS: "+suiteName+"/"+testName))
+		took := time.Since(s.testStartedAt)
+		if took > 15*time.Second {
+			s.slowTests = append(s.slowTests, fmt.Sprintf("%s/%s took %v", suiteName, testName, took.Truncate(time.Second)))
+		}
+	}
+}
 
 func (s *E2ESuite) DeleteResources() {
+	ctx := context.Background()
+	// delete pods first, this means workflows can finish faster
+	err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow})
+	s.CheckError(err)
+
 	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
 	resources := []schema.GroupVersionResource{
+		{Version: "v1", Resource: "resourcequotas"},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
@@ -89,14 +115,10 @@ func (s *E2ESuite) DeleteResources() {
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "sensors"},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "eventsources"},
-		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
-
-	ctx := context.Background()
 	for _, r := range resources {
-		err := s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{PropagationPolicy: &background}, hasTestLabel)
-		s.CheckError(err)
+		s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{}, hasTestLabel))
 	}
 
 	// delete archived workflows from the archive
@@ -109,17 +131,6 @@ func (s *E2ESuite) DeleteResources() {
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
-		}
-	}
-
-	for _, r := range resources {
-		for {
-			list, err := s.dynamicFor(r).List(ctx, hasTestLabel)
-			s.CheckError(err)
-			if len(list.Items) == 0 {
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }

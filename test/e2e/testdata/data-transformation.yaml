@@ -1,0 +1,93 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: data-transformation-
+spec:
+  entrypoint: artifact-example
+  templates:
+    - name: artifact-example
+      steps:
+        - - name: generate-artifact
+            template: generate-artifacts
+            withItems: ['script.py', 'doc.pdf', 'foo/script.py', 'foo/doc.pdf']
+            arguments:
+              parameters:
+                - name: file-name
+                  value: "{{item}}"
+        - - name: get-artifact-path
+            template: get-artifact-paths
+        - - name: process-artifact
+            template: process-message
+            withParam: "{{steps.get-artifact-path.outputs.result}}"
+            arguments:
+              artifacts:
+                - name: file
+                  s3:
+                    bucket: my-bucket
+                    key: "{{item}}"
+                    endpoint: minio:9000
+                    insecure: true
+                    accessKeySecret:
+                      name: my-minio-cred
+                      key: accesskey
+                    secretKeySecret:
+                      name: my-minio-cred
+                      key: secretkey
+              parameters:
+                - name: file-name
+                  value: "{{item}}"
+
+    - name: generate-artifacts
+      inputs:
+        parameters:
+          - name: file-name
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - hello
+          - "/mnt/{{inputs.parameters.file-name}}"
+      outputs:
+        artifacts:
+          - name: file
+            path: "/mnt/{{inputs.parameters.file-name}}"
+            s3:
+              bucket: my-bucket
+              key: "{{inputs.parameters.file-name}}"
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+
+    - name: get-artifact-paths
+      data:
+        source:
+          artifactPaths:
+            s3:
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+        transformation:
+          - expression: "filter(data, {# endsWith \".py\"})"
+
+    - name: process-message
+      inputs:
+        parameters:
+          - name: file-name
+        artifacts:
+          - name: file
+            path: /file
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["cat /file && echo \"{{inputs.parameters.file-name}}.processed\" | tee /tmp/f.txt"]

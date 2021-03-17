@@ -643,11 +643,109 @@ func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
 	assert.Contains(keys, "test/template1")
 }
 
-func TestTemplate_GetSidecarNames(t *testing.T) {
-	m := &Template{
-		Sidecars: []UserContainer{
-			{Container: corev1.Container{Name: "sidecar-0"}},
-		},
-	}
-	assert.ElementsMatch(t, []string{"sidecar-0"}, m.GetSidecarNames())
+func TestTemplate_IsMainContainerNamed(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		x := &Template{}
+		assert.True(t, x.IsMainContainerName("main"))
+	})
+	t.Run("ContainerSet", func(t *testing.T) {
+		x := &Template{ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "foo"}}}}}
+		assert.False(t, x.IsMainContainerName("main"))
+		assert.True(t, x.IsMainContainerName("foo"))
+	})
+}
+
+func TestTemplate_GetMainContainer(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		x := &Template{}
+		assert.Equal(t, []string{"main"}, x.GetMainContainerNames())
+	})
+	t.Run("ContainerSet", func(t *testing.T) {
+		x := &Template{ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "foo"}}}}}
+		assert.Equal(t, []string{"foo"}, x.GetMainContainerNames())
+	})
+}
+
+func TestTemplate_HasSequencedContainers(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		x := &Template{}
+		assert.False(t, x.HasSequencedContainers())
+	})
+	t.Run("ContainerSet", func(t *testing.T) {
+		x := &Template{ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Dependencies: []string{""}}}}}
+		assert.True(t, x.HasSequencedContainers())
+	})
+}
+
+func TestTemplate_GetVolumeMounts(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		x := &Template{}
+		assert.Empty(t, x.GetVolumeMounts())
+	})
+	t.Run("Container", func(t *testing.T) {
+		x := &Template{Container: &corev1.Container{VolumeMounts: []corev1.VolumeMount{{}}}}
+		assert.NotEmpty(t, x.GetVolumeMounts())
+	})
+	t.Run("ContainerSet", func(t *testing.T) {
+		x := &Template{ContainerSet: &ContainerSetTemplate{VolumeMounts: []corev1.VolumeMount{{}}}}
+		assert.NotEmpty(t, x.GetVolumeMounts())
+	})
+	t.Run("Script", func(t *testing.T) {
+		x := &Template{Script: &ScriptTemplate{Container: corev1.Container{VolumeMounts: []corev1.VolumeMount{{}}}}}
+		assert.NotEmpty(t, x.GetVolumeMounts())
+	})
+}
+
+func TestTemplate_HasOutputs(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		x := &Template{}
+		assert.False(t, x.HasOutput())
+	})
+	t.Run("Container", func(t *testing.T) {
+		x := &Template{Container: &corev1.Container{}}
+		assert.True(t, x.HasOutput())
+	})
+	t.Run("ContainerSet", func(t *testing.T) {
+		t.Run("NoMain", func(t *testing.T) {
+			x := &Template{ContainerSet: &ContainerSetTemplate{}}
+			assert.False(t, x.HasOutput())
+		})
+		t.Run("Main", func(t *testing.T) {
+			x := &Template{ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "main"}}}}}
+			assert.True(t, x.HasOutput())
+		})
+	})
+	t.Run("Script", func(t *testing.T) {
+		x := &Template{Script: &ScriptTemplate{}}
+		assert.True(t, x.HasOutput())
+	})
+	t.Run("Data", func(t *testing.T) {
+		x := &Template{Data: &Data{}}
+		assert.True(t, x.HasOutput())
+	})
+	t.Run("Resource", func(t *testing.T) {
+		x := &Template{Resource: &ResourceTemplate{}}
+		assert.False(t, x.HasOutput())
+	})
+}
+
+func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		x := &Template{}
+		assert.False(t, x.SaveLogsAsArtifact())
+	})
+	t.Run("IsArchiveLogs", func(t *testing.T) {
+		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}}
+		assert.True(t, x.SaveLogsAsArtifact())
+	})
+	t.Run("ContainerSet", func(t *testing.T) {
+		t.Run("NoMain", func(t *testing.T) {
+			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{}}
+			assert.False(t, x.SaveLogsAsArtifact())
+		})
+		t.Run("Main", func(t *testing.T) {
+			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "main"}}}}}
+			assert.True(t, x.SaveLogsAsArtifact())
+		})
+	})
 }

@@ -423,6 +423,12 @@ rules:
   - get
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
   - argoproj.io
   resources:
   - workflows
@@ -610,11 +616,30 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  containerRuntimeExecutor: docker
+  containerRuntimeExecutors: |
+    - name: k8sapi
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: k8sapi
+    - name: emissary
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: emissary
   executor: |
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
+  images: |
+    argoproj/argosay:v1:
+      command: [cowsay]
+    argoproj/argosay:v2:
+      command: [/argosay]
+    docker/whalesay:latest:
+       command: [cowsay]
+    python:alpine3.6:
+       command: [python3]
   links: |
     - name: Workflow Link
       scope: workflow
@@ -632,7 +657,6 @@ data:
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
   metricsConfig: |
-    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090
@@ -790,7 +814,7 @@ spec:
           httpGet:
             path: /
             port: 2746
-            scheme: HTTP
+            scheme: HTTPS
           initialDelaySeconds: 10
           periodSeconds: 20
         securityContext:

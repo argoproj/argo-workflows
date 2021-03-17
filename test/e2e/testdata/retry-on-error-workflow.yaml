@@ -1,0 +1,16 @@
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  generateName: retry-on-error-
+spec:
+  retryStrategy:
+    retryPolicy: OnError
+    limit: 1
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - exit
+          - "1"

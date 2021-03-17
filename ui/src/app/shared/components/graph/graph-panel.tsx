@@ -72,13 +72,23 @@ export const GraphPanel = (props: Props) => {
 
     const visible = (id: Node) => {
         const label = props.graph.nodes.get(id);
-        return (
-            (nodeGenres[label.genre] &&
-                (!nodeClassNames || Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) &&
-                (!nodeTags || Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) &&
-                !nodeSearchKeyword) ||
-            label.label.includes(nodeSearchKeyword)
-        );
+        // If the node matches the search string, return without considering filters
+        if (nodeSearchKeyword && label.label.includes(nodeSearchKeyword)) {
+            return true;
+        }
+        // If the node doesn't match enabled genres, don't display
+        if (!nodeGenres[label.genre]) {
+            return false;
+        }
+        // If the node doesn't match enabled node class names, don't display
+        if (nodeClassNames && !Object.entries(nodeClassNames).find(([className, checked]) => checked && (label.classNames || '').split(' ').includes(className))) {
+            return false;
+        }
+        // If the node doesn't match enabled node tags, don't display
+        if (nodeTags && !Object.entries(nodeTags).find(([tag, checked]) => !label.tags || (checked && label.tags.has(tag)))) {
+            return false;
+        }
+        return true;
     };
 
     layout(props.graph, nodeSize, horizontal, id => !visible(id), fast);
@@ -141,7 +151,7 @@ export const GraphPanel = (props: Props) => {
                     </div>
                 </div>
             )}
-            <div className={'graph ' + props.classNames}>
+            <div className={'graph ' + props.classNames} style={{paddingTop: 35}}>
                 {props.graph.nodes.size === 0 ? (
                     <p>Nothing to show</p>
                 ) : (

@@ -25,15 +25,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
@@ -46,10 +49,10 @@ import (
 // 3	5.160
 // 4	9.256
 var ExecutorRetry = wait.Backoff{
-	Steps:    5,
-	Duration: 1 * time.Second,
-	Factor:   1.6,
-	Jitter:   0.5,
+	Steps:    envutil.LookupEnvIntOr("EXECUTOR_RETRY_BACKOFF_STEPS", 5),
+	Duration: envutil.LookupEnvDurationOr("EXECUTOR_RETRY_BACKOFF_DURATION", 1*time.Second),
+	Factor:   envutil.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_FACTOR", 1.6),
+	Jitter:   envutil.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_JITTER", 0.5),
 }
 
 const (
@@ -62,6 +65,7 @@ type WorkflowExecutor struct {
 	PodName            string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
+	RESTClient         rest.Interface
 	Namespace          string
 	PodAnnotationsPath string
 	ExecutionControl   *common.ExecutionControl
@@ -74,6 +78,10 @@ type WorkflowExecutor struct {
 	// list of errors that occurred during execution.
 	// the first of these is used as the overall message of the node
 	errors []error
+}
+
+type Initializer interface {
+	Init(tmpl wfv1.Template) error
 }
 
 //go:generate mockery -name ContainerRuntimeExecutor
@@ -90,23 +98,22 @@ type ContainerRuntimeExecutor interface {
 	// Used to capture script results as an output parameter, and to archive container logs
 	GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error)
 
-	// GetExitCode returns the exit code of the container
-	// Used to capture script exit code as an output parameter
-	GetExitCode(ctx context.Context, containerName string) (string, error)
-
 	// Wait waits for the container to complete.
-	// The implementation should not wait for the sidecars. These are included in case you need to capture data on them.
-	Wait(ctx context.Context, containerNames, sidecarNames []string) error
+	Wait(ctx context.Context, containerNames []string) error
 
 	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
+
+	// List all the containers the executor is aware of, including any injected sidecars.
+	ListContainerNames(ctx context.Context) ([]string, error)
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
 		ClientSet:          clientset,
+		RESTClient:         restClient,
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
@@ -120,13 +127,11 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 // HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error
 func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 	if r := recover(); r != nil {
-		_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, fmt.Sprintf("%v", r))
 		util.WriteTeriminateMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
 		if len(we.errors) > 0 {
 			util.WriteTeriminateMessage(we.errors[0].Error())
-			_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, we.errors[0].Error())
 		}
 	}
 }
@@ -134,7 +139,6 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 // LoadArtifacts loads artifacts from location to a container path
 func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	log.Infof("Start loading input artifacts...")
-
 	for _, art := range we.Template.Inputs.Artifacts {
 
 		log.Infof("Downloading artifact: %s", art.Name)
@@ -520,7 +524,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 // SaveLogs saves logs
 func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error) {
-	if !we.Template.ArchiveLocation.IsArchiveLogs() {
+	if !we.Template.SaveLogsAsArtifact() {
 		return nil, nil
 	}
 	log.Infof("Saving logs")
@@ -578,7 +582,7 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 }
 
 // InitDriver initializes an instance of an artifact driver
-func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifact.ArtifactDriver, error) {
+func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
 	driver, err := artifact.NewDriver(ctx, art, we)
 	if err == artifact.ErrUnsupportedDriver {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
@@ -674,8 +678,8 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
-	if we.Template.Script == nil && we.Template.Container == nil {
-		log.Infof("Template type is neither of Script or Container. Capturing script output ignored")
+	if !we.Template.HasOutput() {
+		log.Infof("Template type is neither of Script, Container, or Pod. Capturing script output ignored")
 		return nil
 	}
 	log.Infof("Capturing script output")
@@ -703,24 +707,6 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	}
 
 	we.Template.Outputs.Result = &out
-	return nil
-}
-
-// CaptureScriptExitCode will add the exit code of a script template as output exit code
-func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
-	if we.Template.Script == nil && we.Template.Container == nil {
-		log.Infof("Template type is neither of Script or Container. Capturing exit code ignored")
-		return nil
-	}
-	log.Infof("Capturing script exit code")
-	exitCode, err := we.RuntimeExecutor.GetExitCode(ctx, common.MainContainerName)
-	if err != nil {
-		return err
-	}
-
-	if exitCode != "" {
-		we.Template.Outputs.ExitCode = &exitCode
-	}
 	return nil
 }
 
@@ -920,11 +906,11 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
-	containerNames := []string{common.MainContainerName}
+	containerNames := we.Template.GetMainContainerNames()
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx, containerNames, we.Template.GetSidecarNames())
+		err := we.RuntimeExecutor.Wait(ctx, containerNames)
 		return err == nil, err
 	})
 	if err != nil {
@@ -1051,6 +1037,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
 				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
 					var message string
+
 					// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
 					// timeouts as a failure and the pod should be annotated with that error
 					if we.ExecutionControl.Deadline.IsZero() {
@@ -1059,7 +1046,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 						message = "Step exceeded its deadline"
 					}
 					log.Info(message)
-					_ = we.AddAnnotation(ctx, common.AnnotationKeyNodeMessage, message)
+					util.WriteTeriminateMessage(message)
 					log.Infof("Killing main container")
 					terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 					err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration)
@@ -1076,10 +1063,29 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
-	sidecarNames := we.Template.GetSidecarNames()
+	containerNames, err := we.RuntimeExecutor.ListContainerNames(ctx)
+	if err != nil {
+		return err
+	}
+	var sidecarNames []string
+	for _, n := range containerNames {
+		if n != common.WaitContainerName && !we.Template.IsMainContainerName(n) {
+			sidecarNames = append(sidecarNames, n)
+		}
+	}
+	if len(sidecarNames) == 0 {
+		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
+	}
 	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
+}
+
+func (we *WorkflowExecutor) Init() error {
+	if i, ok := we.RuntimeExecutor.(Initializer); ok {
+		return i.Init(we.Template)
+	}
+	return nil
 }
 
 // LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file

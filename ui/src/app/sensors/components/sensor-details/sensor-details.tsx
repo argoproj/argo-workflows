@@ -11,6 +11,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {SensorEditor} from '../sensor-editor';
 import {SensorSidePanel} from '../sensor-side-panel';
 
@@ -29,6 +30,14 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
     const [edited, setEdited] = useState(false);
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
+
+    useEffect(
+        useQueryParams(history, p => {
+            setTab(p.get('tab'));
+            setSelectedLogNode(p.get('selectedLogNode'));
+        }),
+        [history]
+    );
 
     useEffect(
         () =>

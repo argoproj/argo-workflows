@@ -4,14 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,16 +17,17 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-// Reusable k8s pod spec portions used in workflow pods
 var (
 	// volumePodMetadata makes available the pod metadata available as a file
 	// to the executor's init and sidecar containers. Specifically, the template
@@ -53,7 +52,16 @@ var (
 		Name:      volumePodMetadata.Name,
 		MountPath: common.PodMetadataMountPath,
 	}
-
+	volumeVarArgo = apiv1.Volume{
+		Name: "var-run-argo",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	volumeMountVarArgo = apiv1.VolumeMount{
+		Name:      volumeVarArgo.Name,
+		MountPath: "/var/run/argo",
+	}
 	hostPathSocket = apiv1.HostPathSocket
 )
 
@@ -129,7 +137,7 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
@@ -147,23 +155,28 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	if !woc.execWf.Spec.Shutdown.ShouldExecute(opts.onExitPod) {
+	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
 		// Do not create pods if we are shutting down
-		woc.markNodePhase(nodeName, wfv1.NodeSkipped, fmt.Sprintf("workflow shutdown with strategy: %s", woc.execWf.Spec.Shutdown))
+		woc.markNodePhase(nodeName, wfv1.NodeSkipped, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
 		return nil, nil
 	}
 
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
-	mainCtr.Name = common.MainContainerName
-	// Allow customization of main container resources.
-	if isResourcesSpecified(woc.controller.Config.MainContainer) {
-		mainCtr.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
-	}
-	// Container resources in workflow spec takes precedence over the main container's configuration in controller.
-	if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
-		mainCtr.Resources = *tmpl.Container.Resources.DeepCopy()
+	for i, c := range mainCtrs {
+		if c.Name == "" {
+			c.Name = common.MainContainerName
+		}
+		// Allow customization of main container resources.
+		if isResourcesSpecified(woc.controller.Config.MainContainer) {
+			c.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
+		}
+		// Container resources in workflow spec takes precedence over the main container's configuration in controller.
+		if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
+			c.Resources = *tmpl.Container.Resources.DeepCopy()
+		}
+		mainCtrs[i] = c
 	}
 
 	var activeDeadlineSeconds *int64
@@ -228,7 +241,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	if woc.controller.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
@@ -239,7 +252,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if tmpl.GetType() != wfv1.TemplateTypeResource {
+	if tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData {
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
@@ -250,11 +263,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// each container sequentially in the order that they appear in this list. For PNS we want the
 	// wait container to start before the main, so that it always has the chance to see the main
 	// container's PID and root filesystem.
-	pod.Spec.Containers = append(pod.Spec.Containers, mainCtr)
+	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
-	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
@@ -282,8 +295,36 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
 
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
+		for i, c := range pod.Spec.InitContainers {
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+			pod.Spec.InitContainers[i] = c
+		}
+		for i, c := range pod.Spec.Containers {
+			if c.Name != common.WaitContainerName {
+				// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
+				if len(c.Command) == 0 {
+					x := woc.getImage(c.Image)
+					c.Command = x.Command
+					if c.Args == nil { // check nil rather than length, as zero-length is valid args
+						c.Args = x.Args
+					}
+				}
+				if len(c.Command) == 0 {
+					return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
+				}
+				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+			pod.Spec.Containers[i] = c
+		}
+	}
+
 	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name}) // used to identify the container name of the process
+		c.Env = append(c.Env,
+			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
+			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(c.Name == common.MainContainerName && opts.includeScriptOutput)},
+		)
 		pod.Spec.Containers[i] = c
 	}
 
@@ -322,13 +363,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if woc.hasPodSpecPatch(tmpl) {
 		jsonstr, err := json.Marshal(pod.Spec)
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+			return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
 		}
 
 		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+			return nil, errors.Wrap(err, "", "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
 		}
 
 		// Final substitution for workflow level PodSpecPatch
@@ -338,13 +379,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Fail to substitute the PodSpecPatch variables")
+			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
 
-		var spec apiv1.PodSpec
-
-		if !util.ValidateJsonStr(tmpl.PodSpecPatch, spec) {
-			return nil, errors.New("", "Invalid PodSpecPatch String")
+		if err := json.Unmarshal([]byte(tmpl.PodSpecPatch), &apiv1.PodSpec{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", tmpl.PodSpecPatch, err)
 		}
 
 		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
@@ -394,6 +433,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	return created, nil
 }
 
+func (woc *wfOperationCtx) getImage(image string) config.Image {
+	if woc.controller.Config.Images == nil {
+		return config.Image{}
+	}
+	return woc.controller.Config.Images[image]
+}
+
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
 func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
@@ -405,11 +451,7 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	if err != nil {
 		return nil, err
 	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(specBytes), "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	newSpecBytes, err := common.Replace(fstTmpl, podParams, true)
+	newSpecBytes, err := template.Replace(string(specBytes), podParams, true)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +472,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
-	switch woc.controller.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
 			Capabilities: &apiv1.Capabilities{
@@ -479,33 +521,27 @@ func containerIsPrivileged(ctr *apiv1.Container) bool {
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
-	var execEnvVars []apiv1.EnvVar
-	execEnvVars = append(execEnvVars, apiv1.EnvVar{
-		Name: common.EnvVarPodName,
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.name",
+	execEnvVars := []apiv1.EnvVar{
+		{
+			Name: common.EnvVarPodName,
+			ValueFrom: &apiv1.EnvVarSource{
+				FieldRef: &apiv1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.name",
+				},
 			},
 		},
-	})
+		{
+			Name:  common.EnvVarContainerRuntimeExecutor,
+			Value: woc.getContainerRuntimeExecutor(),
+		},
+	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
-	switch woc.controller.GetContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorK8sAPI:
-		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.GetContainerRuntimeExecutor(),
-			},
-		)
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.GetContainerRuntimeExecutor(),
-			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
 				ValueFrom: &apiv1.EnvVarSource{
@@ -521,13 +557,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			apiv1.EnvVar{
 				Name:  common.EnvVarKubeletInsecure,
 				Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
-			},
-		)
-	case common.ContainerRuntimeExecutorPNS:
-		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.GetContainerRuntimeExecutor(),
 			},
 		)
 	}
@@ -552,12 +581,15 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 			},
 		})
 	}
-	switch woc.controller.GetContainerRuntimeExecutor() {
+	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
-		return volumes
+	case common.ContainerRuntimeExecutorEmissary:
+		volumes = append(volumes, volumeVarArgo)
 	default:
-		return append(volumes, woc.getVolumeDockerSock(tmpl))
+		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
 	}
+	volumes = append(volumes, tmpl.Volumes...)
+	return volumes
 }
 
 func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
@@ -598,6 +630,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
+
 	executorServiceAccountName := ""
 	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
 		executorServiceAccountName = tmpl.Executor.ServiceAccountName
@@ -717,7 +750,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
 	default:
 		return nil
 	}
@@ -768,17 +801,9 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 		return nil
 	}
 
-	if tmpl.Container != nil {
-		err := addVolumeRef(tmpl.Container.VolumeMounts)
-		if err != nil {
-			return err
-		}
-	}
-	if tmpl.Script != nil {
-		err := addVolumeRef(tmpl.Script.VolumeMounts)
-		if err != nil {
-			return err
-		}
+	err := addVolumeRef(tmpl.GetVolumeMounts())
+	if err != nil {
+		return err
 	}
 
 	for _, container := range tmpl.InitContainers {
@@ -808,6 +833,14 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 		if container.Name == common.InitContainerName {
 			pod.Spec.InitContainers[idx].VolumeMounts = append(pod.Spec.InitContainers[idx].VolumeMounts, volumeMounts...)
 			break
+		}
+	}
+	if tmpl.Data != nil {
+		for idx, container := range pod.Spec.Containers {
+			if container.Name == common.MainContainerName {
+				pod.Spec.Containers[idx].VolumeMounts = append(pod.Spec.Containers[idx].VolumeMounts, volumeMounts...)
+				break
+			}
 		}
 	}
 
@@ -852,13 +885,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// We also add the user supplied mount paths to the init container,
 			// in case the executor needs to load artifacts to this volume
 			// instead of the artifacts volume
-			tmplVolumeMounts := []apiv1.VolumeMount{}
-			if tmpl.Container != nil {
-				tmplVolumeMounts = tmpl.Container.VolumeMounts
-			} else if tmpl.Script != nil {
-				tmplVolumeMounts = tmpl.Script.Container.VolumeMounts
-			}
-			for _, mnt := range tmplVolumeMounts {
+			for _, mnt := range tmpl.GetVolumeMounts() {
 				mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
 				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
 			}
@@ -868,47 +895,37 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		}
 	}
 
-	mainCtrIndex := -1
-	for i, ctr := range pod.Spec.Containers {
-		switch ctr.Name {
-		case common.MainContainerName:
-			mainCtrIndex = i
-		}
-	}
-	if mainCtrIndex == -1 {
-		panic("Could not find main or wait container in pod spec")
-	}
-	mainCtr := &pod.Spec.Containers[mainCtrIndex]
-
-	for _, art := range tmpl.Inputs.Artifacts {
-		if art.Path == "" {
-			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
-		}
-		if !art.HasLocationOrKey() && art.Optional {
-			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
-				art.Name, art.Path)
+	for i, c := range pod.Spec.Containers {
+		if c.Name != common.MainContainerName {
 			continue
 		}
-		overlap := common.FindOverlappingVolume(tmpl, art.Path)
-		if overlap != nil {
-			// artifact path overlaps with a mounted volume. do not mount the
-			// artifacts emptydir to the main container. init would have copied
-			// the artifact to the user's volume instead
-			woc.log.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
-				art.Name, art.Path, overlap.Name, overlap.MountPath)
-			continue
+		for _, art := range tmpl.Inputs.Artifacts {
+			if art.Path == "" {
+				return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
+			}
+			if !art.HasLocationOrKey() && art.Optional {
+				woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
+					art.Name, art.Path)
+				continue
+			}
+			overlap := common.FindOverlappingVolume(tmpl, art.Path)
+			if overlap != nil {
+				// artifact path overlaps with a mounted volume. do not mount the
+				// artifacts emptydir to the main container. init would have copied
+				// the artifact to the user's volume instead
+				woc.log.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
+					art.Name, art.Path, overlap.Name, overlap.MountPath)
+				continue
+			}
+			volMount := apiv1.VolumeMount{
+				Name:      artVol.Name,
+				MountPath: art.Path,
+				SubPath:   art.Name,
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volMount)
 		}
-		volMount := apiv1.VolumeMount{
-			Name:      artVol.Name,
-			MountPath: art.Path,
-			SubPath:   art.Name,
-		}
-		if mainCtr.VolumeMounts == nil {
-			mainCtr.VolumeMounts = make([]apiv1.VolumeMount, 0)
-		}
-		mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volMount)
+		pod.Spec.Containers[i] = c
 	}
-	pod.Spec.Containers[mainCtrIndex] = *mainCtr
 	return nil
 }
 
@@ -918,31 +935,33 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 // them to the wait sidecar. In order for this to work, we mirror all volume mounts in the main
 // container under a well-known path.
 func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if tmpl.GetType() == wfv1.TemplateTypeResource {
+	if tmpl.GetType() == wfv1.TemplateTypeResource || tmpl.GetType() == wfv1.TemplateTypeData {
 		return
 	}
-	mainCtrIndex := -1
+
 	waitCtrIndex := -1
-	var mainCtr *apiv1.Container
 	for i, ctr := range pod.Spec.Containers {
 		switch ctr.Name {
-		case common.MainContainerName:
-			mainCtrIndex = i
 		case common.WaitContainerName:
 			waitCtrIndex = i
 		}
 	}
-	if mainCtrIndex == -1 || waitCtrIndex == -1 {
-		panic("Could not find main or wait container in pod spec")
+	if waitCtrIndex == -1 {
+		log.Info("Could not find wait container in pod spec")
+		return
 	}
-	mainCtr = &pod.Spec.Containers[mainCtrIndex]
 	waitCtr := &pod.Spec.Containers[waitCtrIndex]
 
-	for _, mnt := range mainCtr.VolumeMounts {
-		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-		// ReadOnly is needed to be false for overlapping volume mounts
-		mnt.ReadOnly = false
-		waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, mnt)
+	for _, c := range pod.Spec.Containers {
+		if c.Name != common.MainContainerName {
+			continue
+		}
+		for _, mnt := range c.VolumeMounts {
+			mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
+			// ReadOnly is needed to be false for overlapping volume mounts
+			mnt.ReadOnly = false
+			waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, mnt)
+		}
 	}
 	pod.Spec.Containers[waitCtrIndex] = *waitCtr
 }
@@ -1056,16 +1075,10 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 // addInitContainers adds all init containers to the pod spec of the step
 // Optionally volume mounts from the main container to the init containers
 func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if len(tmpl.InitContainers) == 0 {
-		return
-	}
 	mainCtr := findMainContainer(pod)
-	if mainCtr == nil {
-		panic("Unable to locate main container")
-	}
 	for _, ctr := range tmpl.InitContainers {
 		log.Debugf("Adding init container %s", ctr.Name)
-		if ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
+		if mainCtr != nil && ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
 			mirrorVolumeMounts(mainCtr, &ctr.Container)
 		}
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
@@ -1075,16 +1088,10 @@ func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
 func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if len(tmpl.Sidecars) == 0 {
-		return
-	}
 	mainCtr := findMainContainer(pod)
-	if mainCtr == nil {
-		panic("Unable to locate main container")
-	}
 	for _, sidecar := range tmpl.Sidecars {
 		log.Debugf("Adding sidecar container %s", sidecar.Name)
-		if sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
+		if mainCtr != nil && sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
 			mirrorVolumeMounts(mainCtr, &sidecar.Container)
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
@@ -1097,16 +1104,9 @@ func verifyResolvedVariables(obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	var unresolvedErr error
-	fstTmpl, err := fasttemplate.NewTemplate(string(str), "{{", "}}")
-	if err != nil {
-		return fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-		return 0, nil
+	return template.Validate(string(str), func(tag string) error {
+		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 	})
-	return unresolvedErr
 }
 
 // createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod
@@ -1123,6 +1123,12 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	}
 	for _, art := range tmpl.Inputs.Artifacts {
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+	}
+
+	if tmpl.Data != nil {
+		if art, needed := tmpl.Data.Source.GetArtifactIfNeeded(); needed {
+			createSecretVolume(allVolumesMap, *art, uniqueKeyMap)
+		}
 	}
 
 	for volMountName, val := range allVolumesMap {
@@ -1219,15 +1225,12 @@ func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySele
 
 // findMainContainer finds main container
 func findMainContainer(pod *apiv1.Pod) *apiv1.Container {
-	var mainCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
-		if ctr.Name != common.MainContainerName {
-			continue
+		if common.MainContainerName == ctr.Name {
+			return &ctr
 		}
-		mainCtr = &ctr
-		break
 	}
-	return mainCtr
+	return nil
 }
 
 // mirrorVolumeMounts mirrors volumeMounts of source container to target container

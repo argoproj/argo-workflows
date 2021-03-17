@@ -22,7 +22,7 @@ func captureOutput(f func()) string {
 }
 
 func TestHTTPArtifactDriver_Load(t *testing.T) {
-	driver := &HTTPArtifactDriver{}
+	driver := &ArtifactDriver{}
 	a := &wfv1.HTTPArtifact{
 		URL: "https://github.com/argoproj/argo-workflows",
 	}
@@ -67,6 +67,6 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 }
 
 func TestHTTPArtifactDriver_Save(t *testing.T) {
-	driver := &HTTPArtifactDriver{}
+	driver := &ArtifactDriver{}
 	assert.Error(t, driver.Save("", nil))
 }

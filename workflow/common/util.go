@@ -5,18 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os/exec"
-	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,13 +21,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
@@ -39,17 +34,9 @@ import (
 // user specified volumeMounts in the template, and returns the deepest volumeMount
 // (if any). A return value of nil indicates the path is not under any volumeMount.
 func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
-	var volMounts []apiv1.VolumeMount
-	if tmpl.Container != nil {
-		volMounts = tmpl.Container.VolumeMounts
-	} else if tmpl.Script != nil {
-		volMounts = tmpl.Script.VolumeMounts
-	} else {
-		return nil
-	}
 	var volMnt *apiv1.VolumeMount
 	deepestLen := 0
-	for _, mnt := range volMounts {
+	for _, mnt := range tmpl.GetVolumeMounts() {
 		if path != mnt.MountPath && !strings.HasPrefix(path, mnt.MountPath+"/") {
 			continue
 		}
@@ -59,75 +46,6 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 		}
 	}
 	return volMnt
-}
-
-// KillPodContainer is a convenience function to issue a kill signal to a container in a pod
-// It gives a 15 second grace period before issuing SIGKILL
-// NOTE: this only works with containers that have sh
-func KillPodContainer(restConfig *rest.Config, namespace string, pod string, container string) error {
-	exec, err := ExecPodContainer(restConfig, namespace, pod, container, true, true, "sh", "-c", "kill 1; sleep 15; kill -9 1")
-	if err != nil {
-		return err
-	}
-	// Stream will initiate the command. We do want to wait for the result so we launch as a goroutine
-	go func() {
-		_, _, err := GetExecutorOutput(exec)
-		if err != nil {
-			log.Warnf("Kill command failed (expected to fail with 137): %v", err)
-			return
-		}
-		log.Infof("Kill of %s (%s) successfully issued", pod, container)
-	}()
-	return nil
-}
-
-// ContainerLogStream returns an io.ReadCloser for a container's log stream using the websocket
-// interface. This was implemented in the hopes that we could selectively choose stdout from stderr,
-// but due to https://github.com/kubernetes/kubernetes/issues/28167, it is not possible to discern
-// stdout from stderr using the K8s API server, so this function is unused, instead preferring the
-// pod logs interface from client-go. It's left as a reference for when issue #28167 is eventually
-// resolved.
-func ContainerLogStream(config *rest.Config, namespace string, pod string, container string) (io.ReadCloser, error) {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	logRequest := clientset.CoreV1().RESTClient().Get().
-		Resource("pods").
-		Name(pod).
-		Namespace(namespace).
-		SubResource("log").
-		Param("container", container)
-	u := logRequest.URL()
-	switch u.Scheme {
-	case "https":
-		u.Scheme = "wss"
-	case "http":
-		u.Scheme = "ws"
-	default:
-		return nil, errors.Errorf("", "Malformed URL %s", u.String())
-	}
-
-	log.Info(u.String())
-	wsrc := websocketReadCloser{
-		&bytes.Buffer{},
-	}
-
-	wrappedRoundTripper, err := roundTripperFromConfig(config, wsrc.WebsocketCallback)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-
-	// Send the request and let the callback do its work
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    u,
-	}
-	_, err = wrappedRoundTripper.RoundTrip(req)
-	if err != nil && !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &wsrc, nil
 }
 
 type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
@@ -143,62 +61,6 @@ func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, erro
 		defer util.Close(conn)
 	}
 	return resp, d.Do(conn, resp, err)
-}
-
-func (w *websocketReadCloser) WebsocketCallback(ws *websocket.Conn, resp *http.Response, err error) error {
-	if err != nil {
-		if resp != nil && resp.StatusCode != http.StatusOK {
-			buf := new(bytes.Buffer)
-			_, _ = buf.ReadFrom(resp.Body)
-			return errors.InternalErrorf("Can't connect to log endpoint (%d): %s", resp.StatusCode, buf.String())
-		}
-		return errors.InternalErrorf("Can't connect to log endpoint: %s", err.Error())
-	}
-
-	for {
-		_, body, err := ws.ReadMessage()
-		if len(body) > 0 {
-			// log.Debugf("%d: %s", msgType, string(body))
-			_, writeErr := w.Write(body)
-			if writeErr != nil {
-				return writeErr
-			}
-		}
-		if err != nil {
-			if err == io.EOF {
-				log.Infof("websocket closed: %v", err)
-				return nil
-			}
-			log.Warnf("websocket error: %v", err)
-			return err
-		}
-	}
-}
-
-func roundTripperFromConfig(config *rest.Config, callback RoundTripCallback) (http.RoundTripper, error) {
-	tlsConfig, err := rest.TLSConfigFor(config)
-	if err != nil {
-		return nil, err
-	}
-	// Create a roundtripper which will pass in the final underlying websocket connection to a callback
-	wsrt := &WebsocketRoundTripper{
-		Do: callback,
-		Dialer: &websocket.Dialer{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: tlsConfig,
-		},
-	}
-	// Make sure we inherit all relevant security headers
-	return rest.HTTPWrappersForConfig(config, wsrt)
-}
-
-type websocketReadCloser struct {
-	*bytes.Buffer
-}
-
-func (w *websocketReadCloser) Close() error {
-	// return w.conn.Close()
-	return nil
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
@@ -285,7 +147,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			if argArt == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
 			}
-			if !argArt.HasLocationOrKey() && !validateOnly {
+			if (argArt.From == "" || argArt.FromExpression == "") && !argArt.HasLocationOrKey() && !validateOnly {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
 			}
 		}
@@ -308,11 +170,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := globalParams.Merge(localParams)
-	fstTmpl, err := fasttemplate.NewTemplate(string(tmplBytes), "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap, true)
+	globalReplacedTmplStr, err := template.Replace(string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -351,11 +209,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		}
 	}
 
-	fstTmpl, err = fasttemplate.NewTemplate(globalReplacedTmplStr, "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-	s, err := Replace(fstTmpl, replaceMap, true)
+	s, err := template.Replace(globalReplacedTmplStr, replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -365,43 +219,6 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		return nil, errors.InternalWrapError(err)
 	}
 	return &newTmpl, nil
-}
-
-// Replace executes basic string substitution of a template with replacement values.
-// allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template.
-func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	var unresolvedErr error
-	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		replacement, ok := replaceMap[strings.TrimSpace(tag)]
-		if !ok {
-			// Attempt to resolve nested tags, if possible
-			if index := strings.LastIndex(tag, "{{"); index > 0 {
-				nestedTagPrefix := tag[:index]
-				nestedTag := tag[index+2:]
-				if replacement, ok := replaceMap[nestedTag]; ok {
-					replacement = strconv.Quote(replacement)
-					replacement = replacement[1 : len(replacement)-1]
-					return w.Write([]byte("{{" + nestedTagPrefix + replacement))
-				}
-			}
-			if allowUnresolved {
-				// just write the same string back
-				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
-			}
-			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-			return 0, nil
-		}
-		// The following escapes any special characters (e.g. newlines, tabs, etc...)
-		// in preparation for substitution
-		replacement = strconv.Quote(replacement)
-		replacement = replacement[1 : len(replacement)-1]
-		return w.Write([]byte(replacement))
-	})
-	if unresolvedErr != nil {
-		return "", unresolvedErr
-	}
-	return replacedTmpl, nil
 }
 
 // RunCommand is a convenience function to run/log a command and log the stderr upon failure
@@ -460,11 +277,6 @@ func AddPodAnnotation(ctx context.Context, c kubernetes.Interface, podName, name
 	return addPodMetadata(ctx, c, "annotations", podName, namespace, key, value, backoff)
 }
 
-// AddPodLabel adds an label to pod
-func AddPodLabel(ctx context.Context, c kubernetes.Interface, podName, namespace, key, value string) error {
-	return addPodMetadata(ctx, c, "labels", podName, namespace, key, value, defaultPatchBackoff)
-}
-
 // addPodMetadata is helper to either add a pod label or annotation to the pod
 func addPodMetadata(ctx context.Context, c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
 	metadata := map[string]interface{}{
@@ -499,198 +311,6 @@ func DeletePod(ctx context.Context, c kubernetes.Interface, podName, namespace s
 	return err
 }
 
-var yamlSeparator = regexp.MustCompile(`\n---`)
-
-// SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects
-func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.Workflow, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var wf wfv1.Workflow
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
-		if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
-			name := wf.Kind
-			if wf.Name != "" {
-				name = fmt.Sprintf("%s '%s'", name, wf.Name)
-			}
-			log.Warnf("%s is not of kind Workflow. Ignoring...", name)
-			// If we get here, it was a k8s manifest which was not of type 'Workflow'
-			// We ignore these since we only care about Workflow manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, wf)
-	}
-	return manifests, nil
-}
-
-// SplitWorkflowTemplateYAMLFile is a helper to split a body into multiple workflow template objects
-func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.WorkflowTemplate, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var wftmpl wfv1.WorkflowTemplate
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &wftmpl, opts...)
-		if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
-			name := wftmpl.Kind
-			if wftmpl.Name != "" {
-				name = fmt.Sprintf("%s '%s'", name, wftmpl.Name)
-			}
-			log.Warnf("%s is not of kind WorkflowTemplate. Ignoring...", name)
-			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
-			// We ignore these since we only care about WorkflowTemplate manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, wftmpl)
-	}
-	return manifests, nil
-}
-
-// SplitCronWorkflowYAMLFile is a helper to split a body into multiple workflow template objects
-func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.CronWorkflow, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var cronWf wfv1.CronWorkflow
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &cronWf, opts...)
-		if cronWf.Kind != "" && cronWf.Kind != workflow.CronWorkflowKind {
-			name := cronWf.Kind
-			if cronWf.Name != "" {
-				name = fmt.Sprintf("%s '%s'", name, cronWf.Name)
-			}
-			log.Warnf("%s is not of kind CronWorkflow. Ignoring...", name)
-			// If we get here, it was a k8s manifest which was not of type 'CronWorkflow'
-			// We ignore these since we only care about CronWorkflow manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, cronWf)
-	}
-	return manifests, nil
-}
-
-// MergeReferredTemplate merges a referred template to the receiver template.
-func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
-	// Copy the referred template to deep copy template types.
-	newTmpl := referred.DeepCopy()
-
-	newTmpl.Name = tmpl.Name
-
-	if len(tmpl.Inputs.Parameters) > 0 {
-		parameters := make([]wfv1.Parameter, len(tmpl.Inputs.Parameters))
-		copy(parameters, tmpl.Inputs.Parameters)
-		newTmpl.Inputs.Parameters = parameters
-	}
-	if len(tmpl.Inputs.Artifacts) > 0 {
-		artifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
-		copy(artifacts, tmpl.Inputs.Artifacts)
-		newTmpl.Inputs.Artifacts = artifacts
-	}
-
-	if len(tmpl.Outputs.Parameters) > 0 {
-		parameters := make([]wfv1.Parameter, len(tmpl.Outputs.Parameters))
-		copy(parameters, tmpl.Outputs.Parameters)
-		newTmpl.Outputs.Parameters = parameters
-	}
-	if len(tmpl.Outputs.Artifacts) > 0 {
-		artifacts := make([]wfv1.Artifact, len(tmpl.Outputs.Artifacts))
-		copy(artifacts, tmpl.Outputs.Artifacts)
-		newTmpl.Outputs.Artifacts = artifacts
-	}
-
-	if len(tmpl.NodeSelector) > 0 {
-		m := make(map[string]string, len(tmpl.NodeSelector))
-		for k, v := range tmpl.NodeSelector {
-			m[k] = v
-		}
-		newTmpl.NodeSelector = m
-	}
-	if tmpl.Affinity != nil {
-		newTmpl.Affinity = tmpl.Affinity.DeepCopy()
-	}
-	if len(newTmpl.Metadata.Annotations) > 0 || len(tmpl.Metadata.Labels) > 0 {
-		newTmpl.Metadata = *tmpl.Metadata.DeepCopy()
-	}
-	if tmpl.Daemon != nil {
-		v := *tmpl.Daemon
-		newTmpl.Daemon = &v
-	}
-	if len(tmpl.Volumes) > 0 {
-		volumes := make([]apiv1.Volume, len(tmpl.Volumes))
-		copy(volumes, tmpl.Volumes)
-		newTmpl.Volumes = volumes
-	}
-	if len(tmpl.InitContainers) > 0 {
-		containers := make([]wfv1.UserContainer, len(tmpl.InitContainers))
-		copy(containers, tmpl.InitContainers)
-		newTmpl.InitContainers = containers
-	}
-	if len(tmpl.Sidecars) > 0 {
-		containers := make([]wfv1.UserContainer, len(tmpl.Sidecars))
-		copy(containers, tmpl.Sidecars)
-		newTmpl.Sidecars = containers
-	}
-	if tmpl.ArchiveLocation != nil {
-		newTmpl.ArchiveLocation = tmpl.ArchiveLocation.DeepCopy()
-	}
-	if tmpl.ActiveDeadlineSeconds != nil {
-		v := *tmpl.ActiveDeadlineSeconds
-		newTmpl.ActiveDeadlineSeconds = &v
-	}
-	if tmpl.RetryStrategy != nil {
-		newTmpl.RetryStrategy = tmpl.RetryStrategy.DeepCopy()
-	}
-	if tmpl.Parallelism != nil {
-		v := *tmpl.Parallelism
-		newTmpl.Parallelism = &v
-	}
-	if len(tmpl.Tolerations) != 0 {
-		tolerations := make([]apiv1.Toleration, len(tmpl.Tolerations))
-		copy(tolerations, tmpl.Tolerations)
-		newTmpl.Tolerations = tolerations
-	}
-	if tmpl.SchedulerName != "" {
-		newTmpl.SchedulerName = tmpl.SchedulerName
-	}
-	if tmpl.PriorityClassName != "" {
-		newTmpl.PriorityClassName = tmpl.PriorityClassName
-	}
-	if tmpl.Priority != nil {
-		v := *tmpl.Priority
-		newTmpl.Priority = &v
-	}
-
-	return newTmpl, nil
-}
-
 // GetTemplateGetterString returns string of TemplateHolder.
 func GetTemplateGetterString(getter wfv1.TemplateHolder) string {
 	return fmt.Sprintf("%T (namespace=%s,name=%s)", getter, getter.GetNamespace(), getter.GetName())
@@ -705,34 +325,6 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	} else {
 		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
 	}
-}
-
-// SplitClusterWorkflowTemplateYAMLFile is a helper to split a body into multiple cluster workflow template objects
-func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var cwftmpl wfv1.ClusterWorkflowTemplate
-		var opts []yaml.JSONOpt
-		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields) // nolint
-		}
-		err := yaml.Unmarshal([]byte(manifestStr), &cwftmpl, opts...)
-		if cwftmpl.Kind != "" && cwftmpl.Kind != workflow.ClusterWorkflowTemplateKind {
-			log.Warnf("%s is not a cluster workflow template", cwftmpl.Kind)
-			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
-			// We ignore these since we only care about WorkflowTemplate manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, cwftmpl)
-	}
-	return manifests, nil
 }
 
 func GenerateOnExitNodeName(parentDisplayName string) string {

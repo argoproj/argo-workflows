@@ -19,12 +19,9 @@ type DaemonPodSuite struct {
 
 func (s *DaemonPodSuite) TestWorkflowCompletesIfContainsDaemonPod() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+		Workflow(`
 metadata:
   generateName: whalesay-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:
@@ -44,11 +41,10 @@ spec:
   - name: whale-tmpl
     container:
       image: argoproj/argosay:v2
-      args: ["echo", "hello world"]
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, "to be succeeded").
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.False(t, status.FinishedAt.IsZero())

@@ -5,7 +5,6 @@ metadata:
   name: workflow-role
 rules:
   # pod get/watch is used to identify the container IDs of the current pod
-  # pod patch is used to annotate the step's outputs back to controller (e.g. artifact location)
   - apiGroups:
       - ""
     resources:
@@ -13,6 +12,8 @@ rules:
     verbs:
       - get
       - watch
+      # pod patch is used to annotate the step's outputs back to controller (e.g. artifact location)
+      # This is ONLY needed if the step/task has outputs that are used by another step or task.
       - patch
   # logs get/watch are used to get the pods logs for script outputs, and for log archival
   - apiGroups:
@@ -22,8 +23,15 @@ rules:
     verbs:
       - get
       - watch
+  # Only needed if you are running the `k8sapi` executor.
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
   # This allows one workflow to create another.
-  # Not needed for the majority of use cases.
+  # This is only needed for resource templates.
   - apiGroups:
       - argoproj.io
     resources:

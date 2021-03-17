@@ -86,6 +86,8 @@ spec:
                               type: object
                             from:
                               type: string
+                            fromExpression:
+                              type: string
                             gcs:
                               properties:
                                 bucket:
@@ -254,6 +256,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 key:
@@ -326,8 +330,6 @@ spec:
                                   type: object
                                 useSDKCreds:
                                   type: boolean
-                              required:
-                              - key
                               type: object
                             subPath:
                               type: string
@@ -355,6 +357,8 @@ spec:
                                 default:
                                   type: string
                                 event:
+                                  type: string
+                                expression:
                                   type: string
                                 jqFilter:
                                   type: string

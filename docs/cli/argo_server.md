@@ -1,10 +1,10 @@
 ## argo server
 
-Start the Argo Server
+start the Argo Server
 
 ### Synopsis
 
-Start the Argo Server
+start the Argo Server
 
 ```
 argo server [flags]
@@ -21,7 +21,7 @@ See https://argoproj.github.io/argo-workflows/argo-server.md
 
 ```
       --access-control-allow-origin string   Set Access-Control-Allow-Origin header in HTTP responses.
-      --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [server])
+      --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [client])
       --basehref string                      Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF. (default "/")
   -b, --browser                              enable automatic launching of the browser [local mode]
       --configmap string                     Name of K8s configmap to retrieve workflow controller configuration (default "workflow-controller-configmap")
@@ -29,6 +29,7 @@ See https://argoproj.github.io/argo-workflows/argo-server.md
       --event-worker-count int               how many event workers to run (default 4)
   -h, --help                                 help for server
       --hsts                                 Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled. (default true)
+      --log-format string                    The formatter to use for logs. One of: text|json (default "text")
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)

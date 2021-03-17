@@ -44,6 +44,8 @@ type Config struct {
 	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
 	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
 
+	ContainerRuntimeExecutors ContainerRuntimeExecutors `json:"containerRuntimeExecutors,omitempty"`
+
 	// KubeletPort is needed when using the kubelet containerRuntimeExecutor, default to 10250
 	KubeletPort int `json:"kubeletPort,omitempty"`
 
@@ -103,6 +105,21 @@ type Config struct {
 
 	// Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+
+	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
+	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
+	Images map[string]Image `json:"images,omitempty"`
+}
+
+func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
+	name, err := c.ContainerRuntimeExecutors.Select(labels)
+	if err != nil {
+		return "", err
+	}
+	if name != "" {
+		return name, nil
+	}
+	return c.ContainerRuntimeExecutor, nil
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
@@ -348,7 +365,7 @@ type MetricsConfig struct {
 }
 
 type WorkflowRestrictions struct {
-	TemplateReferencing TemplateReferencing `json:"templateReferencing"`
+	TemplateReferencing TemplateReferencing `json:"templateReferencing,omitempty"`
 }
 
 type TemplateReferencing string

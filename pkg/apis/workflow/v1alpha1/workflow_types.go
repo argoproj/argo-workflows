@@ -15,6 +15,7 @@ import (
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/argoproj/argo-workflows/v3/util/slice"
@@ -25,13 +26,15 @@ type TemplateType string
 
 // Possible template types
 const (
-	TemplateTypeContainer TemplateType = "Container"
-	TemplateTypeSteps     TemplateType = "Steps"
-	TemplateTypeScript    TemplateType = "Script"
-	TemplateTypeResource  TemplateType = "Resource"
-	TemplateTypeDAG       TemplateType = "DAG"
-	TemplateTypeSuspend   TemplateType = "Suspend"
-	TemplateTypeUnknown   TemplateType = "Unknown"
+	TemplateTypeContainer    TemplateType = "Container"
+	TemplateTypeContainerSet TemplateType = "ContainerSet"
+	TemplateTypeSteps        TemplateType = "Steps"
+	TemplateTypeScript       TemplateType = "Script"
+	TemplateTypeResource     TemplateType = "Resource"
+	TemplateTypeDAG          TemplateType = "DAG"
+	TemplateTypeSuspend      TemplateType = "Suspend"
+	TemplateTypeData         TemplateType = "Data"
+	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -61,6 +64,7 @@ type NodeType string
 // Node types
 const (
 	NodeTypePod       NodeType = "Pod"
+	NodeTypeContainer NodeType = "Container"
 	NodeTypeSteps     NodeType = "Steps"
 	NodeTypeStepGroup NodeType = "StepGroup"
 	NodeTypeDAG       NodeType = "DAG"
@@ -428,7 +432,12 @@ type ShutdownStrategy string
 const (
 	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
+	ShutdownStrategyNone      ShutdownStrategy = ""
 )
+
+func (s ShutdownStrategy) Enabled() bool {
+	return s != ShutdownStrategyNone
+}
 
 func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	switch s {
@@ -528,6 +537,9 @@ type Template struct {
 	// Container is the main container image to run in the pod
 	Container *apiv1.Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
 
+	// ContainerSet groups multiple containers within a single pod.
+	ContainerSet *ContainerSetTemplate `json:"containerSet,omitempty" protobuf:"bytes,40,opt,name=containerSet"`
+
 	// Script runs a portion of code against an interpreter
 	Script *ScriptTemplate `json:"script,omitempty" protobuf:"bytes,13,opt,name=script"`
 
@@ -539,6 +551,9 @@ type Template struct {
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
+
+	// Data is a data template
+	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -574,6 +589,10 @@ type Template struct {
 	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
 	// pods created by those templates will not be counted towards this total.
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,23,opt,name=parallelism"`
+
+	// FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
+	// template is expanded with `withItems`, etc.
+	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,41,opt,name=failFast"`
 
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
@@ -647,6 +666,14 @@ func (tmpl *Template) GetSidecarNames() []string {
 		containerNames = append(containerNames, s.Name)
 	}
 	return containerNames
+}
+
+func (tmpl *Template) IsFailFast() bool {
+	return tmpl.FailFast != nil && *tmpl.FailFast
+}
+
+func (tmpl *Template) HasParallelism() bool {
+	return tmpl.Parallelism != nil && *tmpl.Parallelism > 0
 }
 
 type Artifacts []Artifact
@@ -729,6 +756,9 @@ type ValueFrom struct {
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+
+	// Expression, if defined, is evaluated to specify the value for the parameter
+	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -767,12 +797,37 @@ type Artifact struct {
 
 	// If mode is set, apply the permission recursively into the artifact if it is a folder
 	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
+
+	// FromExpression, if defined, is evaluated to specify the value for the artifact
+	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 }
 
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
+}
+
+// Matches returns whether the pod labels match with the label selector specified in podGC.
+func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+	if podGC == nil {
+		return true, nil
+	}
+	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
+	if err != nil {
+		return false, err
+	}
+	return selector.Matches(labels), nil
+}
+
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
+	if podGC != nil && podGC.LabelSelector != nil {
+		return podGC.LabelSelector
+	}
+	return nil
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
@@ -1779,7 +1834,7 @@ type S3Artifact struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
 
 	// Key is the key in the bucket where the artifact resides
-	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
 func (s *S3Artifact) GetKey() (string, error) {
@@ -2006,7 +2061,6 @@ func (h *HTTPArtifact) HasLocation() bool {
 
 // GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
-
 	// Bucket is the name of the bucket
 	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
@@ -2048,6 +2102,9 @@ type OSSBucket struct {
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
+	CreateBucketIfNotPresent bool `json:"createBucketIfNotPresent,omitempty" protobuf:"varint,5,opt,name=createBucketIfNotPresent"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -2122,6 +2179,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
 		return TemplateTypeContainer
 	}
+	if tmpl.ContainerSet != nil {
+		return TemplateTypeContainerSet
+	}
 	if tmpl.Steps != nil {
 		return TemplateTypeSteps
 	}
@@ -2133,6 +2193,9 @@ func (tmpl *Template) GetType() TemplateType {
 	}
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
+	}
+	if tmpl.Data != nil {
+		return TemplateTypeData
 	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
@@ -2168,7 +2231,7 @@ func (m *Template) Get() interface{} {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
@@ -2177,10 +2240,56 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
+}
+
+func (tmpl *Template) IsMainContainerName(containerName string) bool {
+	for _, c := range tmpl.GetMainContainerNames() {
+		if c == containerName {
+			return true
+		}
+	}
+	return false
+}
+
+func (tmpl *Template) GetMainContainerNames() []string {
+	if tmpl != nil && tmpl.ContainerSet != nil {
+		out := make([]string, 0)
+		for _, c := range tmpl.ContainerSet.GetContainers() {
+			out = append(out, c.Name)
+		}
+		return out
+	} else {
+		return []string{"main"}
+	}
+}
+
+func (tmpl *Template) HasSequencedContainers() bool {
+	return tmpl != nil && tmpl.ContainerSet.HasSequencedContainers()
+}
+
+func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
+	if tmpl.Container != nil {
+		return tmpl.Container.VolumeMounts
+	} else if tmpl.Script != nil {
+		return tmpl.Script.VolumeMounts
+	} else if tmpl.ContainerSet != nil {
+		return tmpl.ContainerSet.VolumeMounts
+	}
+	return nil
+}
+
+// whether or not the template can and will have outputs (i.e. exit code and result)
+func (tmpl *Template) HasOutput() bool {
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil
+}
+
+// if logs should be saved as an artifact
+func (tmpl *Template) SaveLogsAsArtifact() bool {
+	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

@@ -1,12 +1,14 @@
 package controller
 
 import (
-	"strings"
+	"fmt"
 
-	"github.com/valyala/fasttemplate"
+	"github.com/antonmedv/expr"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -14,6 +16,24 @@ import (
 type wfScope struct {
 	tmpl  *wfv1.Template
 	scope map[string]interface{}
+}
+
+func createScope(tmpl *wfv1.Template) *wfScope {
+	scope := &wfScope{
+		tmpl:  tmpl,
+		scope: make(map[string]interface{}),
+	}
+	if tmpl != nil {
+		for _, param := range scope.tmpl.Inputs.Parameters {
+			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+			scope.scope[key] = scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+		}
+		for _, param := range scope.tmpl.Inputs.Artifacts {
+			key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
+			scope.scope[key] = scope.tmpl.Inputs.GetArtifactByName(param.Name)
+		}
+	}
+	return scope
 }
 
 // getParameters returns a map of strings intended to be used simple string substitution
@@ -38,50 +58,55 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
-	v = strings.TrimPrefix(v, "{{")
-	v = strings.TrimSuffix(v, "}}")
-	parts := strings.Split(v, ".")
-	prefix := parts[0]
-	switch prefix {
-	case "steps", "tasks", "workflow":
-		val, ok := s.scope[v]
-		if ok {
-			return val, nil
-		}
-	case "inputs":
-		art := s.tmpl.Inputs.GetArtifactByName(parts[2])
-		if art != nil {
-			return *art, nil
+	m := make(map[string]interface{})
+	for k, v := range s.scope {
+		m[k] = v
+	}
+	if s.tmpl != nil {
+		for _, a := range s.tmpl.Inputs.Artifacts {
+			m["inputs.artifacts."+a.Name] = a // special case for artifacts
 		}
 	}
-	return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve: {{%s}}", v)
+	return template.ResolveVar(v, m)
 }
 
-func (s *wfScope) resolveParameter(v string) (string, error) {
-	val, err := s.resolveVar(v)
-	if err != nil {
-		return "", err
+func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
+	if p == nil || (p.Parameter == "" && p.Expression == "") {
+		return "", nil
 	}
-	valStr, ok := val.(string)
-	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not a string", v)
+	if p.Expression != "" {
+		env := env.GetFuncMap(s.scope)
+		return expr.Eval(p.Expression, env)
+	} else {
+		return s.resolveVar(p.Parameter)
 	}
-	return valStr, nil
 }
 
-func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, error) {
-	val, err := s.resolveVar(v)
+func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
+	if art == nil || (art.From == "" && art.FromExpression == "") {
+		return nil, nil
+	}
+
+	var err error
+	var val interface{}
+
+	if art.FromExpression != "" {
+		env := env.GetFuncMap(s.scope)
+		val, err = expr.Eval(art.FromExpression, env)
+	} else {
+		val, err = s.resolveVar(art.From)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {
-		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%v}} is not an artifact", art)
 	}
 
-	if subPath != "" {
-		fstTmpl := fasttemplate.New(subPath, "{{", "}}")
-		resolvedSubPath, err := common.Replace(fstTmpl, s.getParameters(), true)
+	if art.SubPath != "" {
+		resolvedSubPath, err := template.Replace(art.SubPath, s.getParameters(), true)
 		if err != nil {
 			return nil, err
 		}

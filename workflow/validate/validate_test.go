@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -897,7 +898,7 @@ func TestInvalidOutputParam(t *testing.T) {
 	}
 	_, err = validate(invalidOutputIncompatibleValueFromParam)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), ".parameter must be specified for Steps templates")
+		assert.Contains(t, err.Error(), ".parameter or expression must be specified for Steps templates")
 	}
 }
 
@@ -1729,8 +1730,8 @@ spec:
       args: ["hello world"]
 `
 
-// TestUnknownPodGCStrategy verifies pod gc strategy is correct.
-func TestUnknownPodGCStrategy(t *testing.T) {
+// TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
+func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
@@ -1738,6 +1739,10 @@ func TestUnknownPodGCStrategy(t *testing.T) {
 
 	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
 		wf.Spec.PodGC.Strategy = start
+		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+		assert.NoError(t, err)
+
+		wf.Spec.PodGC.LabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{"evicted": "true"}}
 		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
@@ -2677,4 +2682,22 @@ spec:
 func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
 	err := validateWorkflowTemplate(validActiveDeadlineSecondsArgoVariable)
 	assert.NoError(t, err)
+}
+
+func TestMaxLengthName(t *testing.T) {
+	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	assert.EqualError(t, err, "workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+
+	wftmpl := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
+	_, err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	assert.EqualError(t, err, "workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+
+	cwftmpl := &wfv1.ClusterWorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
+	_, err = ValidateClusterWorkflowTemplate(wftmplGetter, cwftmplGetter, cwftmpl)
+	assert.EqualError(t, err, "cluster workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+
+	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
+	err = ValidateCronWorkflow(wftmplGetter, cwftmplGetter, cwf)
+	assert.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }

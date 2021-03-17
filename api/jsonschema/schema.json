@@ -2707,6 +2707,10 @@
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
         },
+        "fromExpression": {
+          "description": "FromExpression, if defined, is evaluated to specify the value for the artifact",
+          "type": "string"
+        },
         "gcs": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact",
           "description": "GCS contains GCS artifact location details"
@@ -2809,6 +2813,91 @@
           "description": "S3 contains S3 artifact location details"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactPaths": {
+      "description": "ArtifactPaths expands a step from a collection of artifacts",
+      "properties": {
+        "archive": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchiveStrategy",
+          "description": "Archive controls how the artifact will be saved to the artifact repository."
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
+        "artifactory": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
+          "description": "Artifactory contains artifactory artifact location details"
+        },
+        "from": {
+          "description": "From allows an artifact to reference an artifact from a previous step",
+          "type": "string"
+        },
+        "fromExpression": {
+          "description": "FromExpression, if defined, is evaluated to specify the value for the artifact",
+          "type": "string"
+        },
+        "gcs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact",
+          "description": "GCS contains GCS artifact location details"
+        },
+        "git": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact",
+          "description": "Git contains git artifact location details"
+        },
+        "globalName": {
+          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "type": "string"
+        },
+        "hdfs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSArtifact",
+          "description": "HDFS contains HDFS artifact location details"
+        },
+        "http": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact",
+          "description": "HTTP contains HTTP artifact location details"
+        },
+        "mode": {
+          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "type": "integer"
+        },
+        "name": {
+          "description": "name of the artifact. must be unique within a template's inputs/outputs.",
+          "type": "string"
+        },
+        "optional": {
+          "description": "Make Artifacts optional, if Artifacts doesn't generate or exist",
+          "type": "boolean"
+        },
+        "oss": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact",
+          "description": "OSS contains OSS artifact location details"
+        },
+        "path": {
+          "description": "Path is the container path to the artifact",
+          "type": "string"
+        },
+        "raw": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact",
+          "description": "Raw contains raw artifact location details"
+        },
+        "recurseMode": {
+          "description": "If mode is set, apply the permission recursively into the artifact if it is a folder",
+          "type": "boolean"
+        },
+        "s3": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact",
+          "description": "S3 contains S3 artifact location details"
+        },
+        "subPath": {
+          "description": "SubPath allows an artifact to be sourced from a subpath within the specified source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
@@ -3002,6 +3091,162 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ContainerNode": {
+      "properties": {
+        "args": {
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "command": {
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "description": "List of environment variables to set in the container. Cannot be updated.",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "type": "array",
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "envFrom": {
+          "description": "List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvFromSource"
+          },
+          "type": "array"
+        },
+        "image": {
+          "description": "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+          "type": "string"
+        },
+        "imagePullPolicy": {
+          "description": "Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images",
+          "type": "string"
+        },
+        "lifecycle": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Lifecycle",
+          "description": "Actions that the management system should take in response to container lifecycle events. Cannot be updated."
+        },
+        "livenessProbe": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
+          "description": "Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+        },
+        "name": {
+          "description": "Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.",
+          "type": "string"
+        },
+        "ports": {
+          "description": "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
+          },
+          "type": "array",
+          "x-kubernetes-list-map-keys": [
+            "containerPort",
+            "protocol"
+          ],
+          "x-kubernetes-list-type": "map",
+          "x-kubernetes-patch-merge-key": "containerPort",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "readinessProbe": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
+          "description": "Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"
+        },
+        "securityContext": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
+          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+        },
+        "startupProbe": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+        },
+        "stdin": {
+          "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
+          "type": "boolean"
+        },
+        "stdinOnce": {
+          "description": "Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false",
+          "type": "boolean"
+        },
+        "terminationMessagePath": {
+          "description": "Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.",
+          "type": "string"
+        },
+        "terminationMessagePolicy": {
+          "description": "Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.",
+          "type": "string"
+        },
+        "tty": {
+          "description": "Whether this container should allocate a TTY for itself, also requires 'stdin' to be true. Default is false.",
+          "type": "boolean"
+        },
+        "volumeDevices": {
+          "description": "volumeDevices is the list of block devices to be used by the container.",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeDevice"
+          },
+          "type": "array",
+          "x-kubernetes-patch-merge-key": "devicePath",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "volumeMounts": {
+          "description": "Pod volumes to mount into the container's filesystem. Cannot be updated.",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          },
+          "type": "array",
+          "x-kubernetes-patch-merge-key": "mountPath",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "workingDir": {
+          "description": "Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ContainerSetTemplate": {
+      "properties": {
+        "containers": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerNode"
+          },
+          "type": "array"
+        },
+        "volumeMounts": {
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "containers"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ContinueOn": {
@@ -3299,6 +3544,37 @@
       "required": [
         "tasks"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.Data": {
+      "description": "Data is a data template",
+      "properties": {
+        "source": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DataSource",
+          "description": "Source sources external data into a data template"
+        },
+        "transformation": {
+          "description": "Transformation applies a set of transformations",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TransformationStep"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "source",
+        "transformation"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.DataSource": {
+      "description": "DataSource sources external data into a data template",
+      "properties": {
+        "artifactPaths": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactPaths",
+          "description": "ArtifactPaths is a data transformation that collects a list of artifact paths"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Event": {
@@ -3918,6 +4194,10 @@
           "description": "Bucket is the name of the bucket",
           "type": "string"
         },
+        "createBucketIfNotPresent": {
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
+          "type": "boolean"
+        },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
           "type": "string"
@@ -4013,6 +4293,10 @@
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
       "properties": {
+        "labelSelector": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue."
+        },
         "strategy": {
           "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
           "type": "string"
@@ -4193,9 +4477,6 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "key"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ScriptTemplate": {
@@ -4425,6 +4706,10 @@
     "io.argoproj.workflow.v1alpha1.SubmitOpts": {
       "description": "SubmitOpts are workflow submission options",
       "properties": {
+        "annotations": {
+          "description": "Annotations adds to metadata.labels",
+          "type": "string"
+        },
         "dryRun": {
           "description": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API",
           "type": "boolean"
@@ -4564,6 +4849,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Container",
           "description": "Container is the main container image to run in the pod"
         },
+        "containerSet": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetTemplate",
+          "description": "ContainerSet groups multiple containers within a single pod."
+        },
         "daemon": {
           "description": "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
           "type": "boolean"
@@ -4572,9 +4861,17 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate",
           "description": "DAG template subtype which runs a DAG"
         },
+        "data": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Data",
+          "description": "Data is a data template"
+        },
         "executor": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig",
           "description": "Executor holds configurations of the executor container."
+        },
+        "failFast": {
+          "description": "FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.",
+          "type": "boolean"
         },
         "hostAliases": {
           "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
@@ -4730,6 +5027,18 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.TransformationStep": {
+      "properties": {
+        "expression": {
+          "description": "Expression defines an expr expression to apply",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.UpdateCronWorkflowRequest": {
@@ -4891,6 +5200,10 @@
         },
         "event": {
           "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+          "type": "string"
+        },
+        "expression": {
+          "description": "Expression, if defined, is evaluated to specify the value for the parameter",
           "type": "string"
         },
         "jqFilter": {

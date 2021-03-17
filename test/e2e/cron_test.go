@@ -12,11 +12,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -32,8 +34,8 @@ func (s *CronSuite) SetupSuite() {
 	s.E2ESuite.DeleteResources()
 }
 
-func (s *CronSuite) BeforeTest(string, string) {
-	// noop
+func (s *CronSuite) BeforeTest(suiteName, testName string) {
+	s.E2ESuite.BeforeTest(suiteName, testName)
 }
 
 func (s *CronSuite) TearDownSuite() {
@@ -49,8 +51,6 @@ func (s *CronSuite) TestBasic() {
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -97,8 +97,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-timezone
-  labels:
-    argo-e2e: true
 spec:
   schedule: "%s"
   timezone: "%s"
@@ -126,8 +124,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-suspend
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -162,8 +158,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-resume
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -198,8 +192,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-forbid
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -234,7 +226,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-allow
   labels:
-    argo-e2e: true
+    
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -267,8 +259,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-replace
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Replace"
@@ -306,8 +296,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-succeed-1
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -343,8 +331,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-fail-1
-  labels:
-    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -364,7 +350,7 @@ spec:
           args: ["import random; import sys; exit_code = random.choice([1]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"] `).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute).
+			Wait(2*time.Minute+10*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Equal(t, 1, len(wfList.Items))
@@ -383,11 +369,29 @@ func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
 	options.LabelSelector = labelSelector.String()
 }
 
+func (s *CronSuite) TestMalformedCronWorkflow() {
+	s.Given().
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
+		When().
+		WaitForWorkflow(1*time.Minute+15*time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectAuditEvents(
+			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
+			1,
+			func(t *testing.T, e []corev1.Event) {
+				assert.Equal(t, corev1.EventTypeWarning, e[0].Type)
+				assert.Equal(t, "Malformed", e[0].Reason)
+				assert.Equal(t, "cannot restore slice from map", e[0].Message)
+			},
+		)
+}
+
 func TestCronSuite(t *testing.T) {
-	if testing.Short() {
-		log.Infof("Skipping CronSuite because --short flag is enabled")
-		t.SkipNow()
-	}
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
 	var toWait time.Duration

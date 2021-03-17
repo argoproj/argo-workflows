@@ -147,7 +147,15 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
 	wfc := &WorkflowController{
-		Config: config.Config{ExecutorImage: "executor:latest"},
+		Config: config.Config{
+			ExecutorImage: "executor:latest",
+			Images: map[string]config.Image{
+				"my-image": {
+					Command: []string{"my-cmd"},
+					Args:    []string{"my-args"},
+				},
+			},
+		},
 		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
 			S3: &config.S3ArtifactRepository{
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
@@ -273,6 +281,21 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 type with func(pod *apiv1.Pod)
 
 func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }
+
+func withExitCode(v int32) with {
+	return func(pod *apiv1.Pod) {
+		for _, c := range pod.Spec.Containers {
+			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+				Name: c.Name,
+				State: apiv1.ContainerState{
+					Terminated: &apiv1.ContainerStateTerminated{
+						ExitCode: v,
+					},
+				},
+			})
+		}
+	}
+}
 
 func withAnnotation(key, val string) with {
 	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
@@ -465,7 +488,7 @@ const wfWithTmplRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  name: workflow-template-hello-world
   namespace: default
 spec:
   entrypoint: whalesay-template

@@ -76,6 +76,9 @@ message Artifact {
 
   // If mode is set, apply the permission recursively into the artifact if it is a folder
   optional bool recurseMode = 10;
+
+  // FromExpression, if defined, is evaluated to specify the value for the artifact
+  optional string fromExpression = 11;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -109,6 +112,12 @@ message ArtifactLocation {
 
   // GCS contains GCS artifact location details
   optional GCSArtifact gcs = 9;
+}
+
+// ArtifactPaths expands a step from a collection of artifacts
+message ArtifactPaths {
+  // Artifact is the artifact location from which to source the artifacts, it can be a directory
+  optional Artifact artifact = 1;
 }
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -195,6 +204,18 @@ message Condition {
 
   // Message is the condition message
   optional string message = 3;
+}
+
+message ContainerNode {
+  optional k8s.io.api.core.v1.Container container = 1;
+
+  repeated string dependencies = 2;
+}
+
+message ContainerSetTemplate {
+  repeated ContainerNode containers = 4;
+
+  repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
@@ -345,6 +366,21 @@ message DAGTemplate {
   // completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
   // More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442
   optional bool failFast = 3;
+}
+
+// Data is a data template
+message Data {
+  // Source sources external data into a data template
+  optional DataSource source = 1;
+
+  // Transformation applies a set of transformations
+  repeated TransformationStep transformation = 2;
+}
+
+// DataSource sources external data into a data template
+message DataSource {
+  // ArtifactPaths is a data transformation that collects a list of artifact paths
+  optional ArtifactPaths artifactPaths = 1;
 }
 
 message Event {
@@ -726,6 +762,9 @@ message OSSBucket {
 
   // SecretKeySecret is the secret selector to the bucket's secret key
   optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 4;
+
+  // CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
+  optional bool createBucketIfNotPresent = 5;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -779,6 +818,9 @@ message Parameter {
 message PodGC {
   // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
+
+  // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 }
 
 // Prometheus is a prometheus metric to be emitted
@@ -994,6 +1036,9 @@ message SubmitOpts {
 
   // OwnerReference creates a metadata.ownerReference
   optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+
+  // Annotations adds to metadata.labels
+  optional string annotations = 12;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1074,6 +1119,9 @@ message Template {
   // Container is the main container image to run in the pod
   optional k8s.io.api.core.v1.Container container = 12;
 
+  // ContainerSet groups multiple containers within a single pod.
+  optional ContainerSetTemplate containerSet = 40;
+
   // Script runs a portion of code against an interpreter
   optional ScriptTemplate script = 13;
 
@@ -1085,6 +1133,9 @@ message Template {
 
   // Suspend template subtype which can suspend a workflow when reaching the step
   optional SuspendTemplate suspend = 16;
+
+  // Data is a data template
+  optional Data data = 39;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
@@ -1120,6 +1171,10 @@ message Template {
   // boundaries of this template invocation. If additional steps/dag templates are invoked, the
   // pods created by those templates will not be counted towards this total.
   optional int64 parallelism = 23;
+
+  // FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
+  // template is expanded with `withItems`, etc.
+  optional bool failFast = 41;
 
   // Tolerations to apply to workflow pods.
   // +patchStrategy=merge
@@ -1188,6 +1243,11 @@ message TemplateRef {
   optional bool clusterScope = 4;
 }
 
+message TransformationStep {
+  // Expression defines an expr expression to apply
+  optional string expression = 1;
+}
+
 // UserContainer is a container specified by a user.
 message UserContainer {
   optional k8s.io.api.core.v1.Container container = 1;
@@ -1222,6 +1282,9 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
+
+  // Expression, if defined, is evaluated to specify the value for the parameter
+  optional string expression = 8;
 }
 
 message Version {

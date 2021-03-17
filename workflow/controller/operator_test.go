@@ -17,7 +17,6 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -34,6 +34,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test"
 	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
@@ -298,16 +299,11 @@ func TestGlobalParams(t *testing.T) {
 
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
 func TestSidecarWithVolume(t *testing.T) {
-	cancel, controller := newController()
+	wf := unmarshalWF(sidecarWithVol)
+	cancel, controller := newController(wf)
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(sidecarWithVol)
-	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
-	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -4591,11 +4587,12 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
+		ExitCode: pointer.StringPtr("0"),
 	}
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(testutil.MustMarshallJSON(sampleOutputs)))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0), withOutputs(testutil.MustMarshallJSON(sampleOutputs)))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
@@ -5092,15 +5089,13 @@ func Test_processItem(t *testing.T) {
 	}
 	taskBytes, err := json.Marshal(task)
 	assert.NoError(t, err)
-	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
-	assert.NoError(t, err)
-
 	var items []wfv1.Item
 	err = json.Unmarshal([]byte(task.WithParam), &items)
 	assert.NoError(t, err)
 
 	var newTask wfv1.DAGTask
-	newTaskName, err := processItem(fstTmpl, "task-name", 0, items[0], &newTask)
+	tmpl, _ := template.NewTemplate(string(taskBytes))
+	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask)
 	if assert.NoError(t, err) {
 		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
@@ -5321,7 +5316,7 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	var pod apiv1.Pod
 	testutil.MustUnmarshallYAML(podWithFailed, &pod)
 	assert.NotNil(t, pod)
-	nodeStatus, msg := inferFailedReason(&pod)
+	nodeStatus, msg := newWoc().inferFailedReason(&pod)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Contains(t, msg, "Pod failed before")
 }
@@ -5373,6 +5368,12 @@ status:
 var podWithMainContainerOOM = `
 apiVersion: v1
 kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
 status:
   containerStatuses:
   - containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
@@ -5429,7 +5430,7 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	for _, tt := range tests {
 		testutil.MustUnmarshallYAML(tt.podDetail, &pod)
 		assert.NotNil(t, pod)
-		nodeStatus, msg := inferFailedReason(&pod)
+		nodeStatus, msg := newWoc().inferFailedReason(&pod)
 		assert.Equal(t, tt.phase, nodeStatus)
 		assert.Contains(t, msg, "OOMKilled")
 	}
@@ -5859,5 +5860,347 @@ func TestNoPodsWhenShutdown(t *testing.T) {
 	if assert.NotNil(t, node) {
 		assert.Equal(t, wfv1.NodeSkipped, node.Phase)
 		assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
+	}
+}
+
+var wfscheVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+  annotations:
+    workflows.argoproj.io/scheduled-time: 2006-01-02T15:04:05-07:00
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflows.scheduledTime}}"]
+`
+
+func TestWorkflowScheduledTimeVariable(t *testing.T) {
+	wf := unmarshalWF(wfscheVariable)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
+}
+
+func TestWorkflowShutdownStrategy(t *testing.T) {
+	wf := unmarshalWF(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+  namespace: default
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hellow"]`)
+
+	wf1 := wf.DeepCopy()
+	wf1.Name = "whalesay-1"
+	cancel, controller := newController(wf, wf1)
+	defer cancel()
+	t.Run("StopStrategy", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		// Simulate the Stop command
+		wf1 := woc.wf
+		wf1.Spec.Shutdown = wfv1.ShutdownStrategyStop
+		woc1 := newWorkflowOperationCtx(wf1, controller)
+		woc1.operate(ctx)
+
+		node := woc1.wf.Status.Nodes.FindByDisplayName("whalesay")
+		if assert.NotNil(t, node) {
+			assert.Contains(t, node.Message, "workflow shutdown with strategy")
+			assert.Contains(t, node.Message, "Stop")
+		}
+	})
+
+	t.Run("TerminateStrategy", func(t *testing.T) {
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf1, controller)
+		woc.operate(ctx)
+
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+		// Updating Pod state
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		// Simulate the Terminate command
+		wfOut := woc.wf
+		wfOut.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		woc1 := newWorkflowOperationCtx(wfOut, controller)
+		woc1.operate(ctx)
+		for _, node := range woc1.wf.Status.Nodes {
+			if assert.NotNil(t, node) {
+				assert.Contains(t, node.Message, "workflow shutdown with strategy")
+				assert.Contains(t, node.Message, "Terminate")
+			}
+		}
+	})
+}
+
+const resultVarRefWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: bash-script-example
+  templates:
+  - name: bash-script-example
+    steps:
+    - - name: generate-random
+        template: gen-random-int
+    - - name: generate-random-1
+        template: gen-random-int
+    - - name: from
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.generate-random.outputs.result}}"
+    outputs:
+      parameters:
+        - name: stepresult
+          valueFrom:
+            expression: "steps['generate-random-1'].outputs.result"
+
+  - name: gen-random-int
+    script:
+      image: debian:9.4
+      command: [bash]
+      source: |
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+`
+
+func TestHasOutputResultRef(t *testing.T) {
+	wf := unmarshalWF(resultVarRefWf)
+	assert.True(t, hasOutputResultRef("generate-random", &wf.Spec.Templates[0]))
+	assert.True(t, hasOutputResultRef("generate-random-1", &wf.Spec.Templates[0]))
+}
+
+const stepsFailFast = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2021-03-12T15:28:29Z"
+  name: seq-loop-pz4hh
+spec:
+  activeDeadlineSeconds: 300
+  arguments:
+    parameters:
+    - name: items
+      value: |
+        ["a", "b", "c"]
+  entrypoint: seq-loop
+  templates:
+  - failFast: true
+    inputs:
+      parameters:
+      - name: items
+    name: seq-loop
+    parallelism: 1
+    steps:
+    - - name: iteration
+        template: iteration
+        withParam: '{{inputs.parameters.items}}'
+  - name: iteration
+    steps:
+    - - name: step1
+        template: succeed-step
+    - - name: step2
+        template: failed-step
+  - container:
+      args:
+      - exit 0
+      command:
+      - /bin/sh
+      - -c
+      image: alpine
+    name: succeed-step
+  - container:
+      args:
+      - exit 1
+      command:
+      - /bin/sh
+      - -c
+      image: alpine
+    name: failed-step
+    retryStrategy:
+      limit: 1
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    seq-loop-pz4hh:
+      children:
+      - seq-loop-pz4hh-3652003332
+      displayName: seq-loop-pz4hh
+      id: seq-loop-pz4hh
+      inputs:
+        parameters:
+        - name: items
+          value: |
+            ["a", "b", "c"]
+      name: seq-loop-pz4hh
+      outboundNodes:
+      - seq-loop-pz4hh-4172612902
+      phase: Running
+      startedAt: "2021-03-12T15:28:29Z"
+      templateName: seq-loop
+      templateScope: local/seq-loop-pz4hh
+      type: Steps
+    seq-loop-pz4hh-347271843:
+      boundaryID: seq-loop-pz4hh-1269516111
+      displayName: step2(0)
+      finishedAt: "2021-03-12T15:28:39Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: seq-loop-pz4hh-347271843
+      message: Error (exit code 1)
+      name: seq-loop-pz4hh[0].iteration(0:a)[1].step2(0)
+      phase: Failed
+      startedAt: "2021-03-12T15:28:33Z"
+      templateName: failed-step
+      templateScope: local/seq-loop-pz4hh
+      type: Pod
+    seq-loop-pz4hh-1269516111:
+      boundaryID: seq-loop-pz4hh
+      children:
+      - seq-loop-pz4hh-3596771579
+      displayName: iteration(0:a)
+      id: seq-loop-pz4hh-1269516111
+      name: seq-loop-pz4hh[0].iteration(0:a)
+      outboundNodes:
+      - seq-loop-pz4hh-4172612902
+      phase: Running
+      startedAt: "2021-03-12T15:28:29Z"
+      templateName: iteration
+      templateScope: local/seq-loop-pz4hh
+      type: Steps
+    seq-loop-pz4hh-1287186880:
+      boundaryID: seq-loop-pz4hh-1269516111
+      children:
+      - seq-loop-pz4hh-347271843
+      - seq-loop-pz4hh-4172612902
+      displayName: step2
+      id: seq-loop-pz4hh-1287186880
+      name: seq-loop-pz4hh[0].iteration(0:a)[1].step2
+      phase: Failed
+      startedAt: "2021-03-12T15:28:33Z"
+      templateName: failed-step
+      templateScope: local/seq-loop-pz4hh
+      type: Retry
+    seq-loop-pz4hh-3596771579:
+      boundaryID: seq-loop-pz4hh-1269516111
+      children:
+      - seq-loop-pz4hh-4031713604
+      displayName: '[0]'
+      finishedAt: "2021-03-12T15:28:33Z"
+      id: seq-loop-pz4hh-3596771579
+      name: seq-loop-pz4hh[0].iteration(0:a)[0]
+      phase: Succeeded
+      startedAt: "2021-03-12T15:28:29Z"
+      templateScope: local/seq-loop-pz4hh
+      type: StepGroup
+    seq-loop-pz4hh-3652003332:
+      boundaryID: seq-loop-pz4hh
+      children:
+      - seq-loop-pz4hh-1269516111
+      displayName: '[0]'
+      id: seq-loop-pz4hh-3652003332
+      name: seq-loop-pz4hh[0]
+      phase: Running
+      startedAt: "2021-03-12T15:28:29Z"
+      templateScope: local/seq-loop-pz4hh
+      type: StepGroup
+    seq-loop-pz4hh-3664029150:
+      boundaryID: seq-loop-pz4hh-1269516111
+      children:
+      - seq-loop-pz4hh-1287186880
+      displayName: '[1]'
+      id: seq-loop-pz4hh-3664029150
+      name: seq-loop-pz4hh[0].iteration(0:a)[1]
+      phase: Running
+      startedAt: "2021-03-12T15:28:33Z"
+      templateScope: local/seq-loop-pz4hh
+      type: StepGroup
+    seq-loop-pz4hh-4031713604:
+      boundaryID: seq-loop-pz4hh-1269516111
+      children:
+      - seq-loop-pz4hh-3664029150
+      displayName: step1
+      finishedAt: "2021-03-12T15:28:32Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: seq-loop-pz4hh-4031713604
+      name: seq-loop-pz4hh[0].iteration(0:a)[0].step1
+      phase: Succeeded
+      startedAt: "2021-03-12T15:28:29Z"
+      templateName: succeed-step
+      templateScope: local/seq-loop-pz4hh
+      type: Pod
+    seq-loop-pz4hh-4172612902:
+      boundaryID: seq-loop-pz4hh-1269516111
+      displayName: step2(1)
+      finishedAt: "2021-03-12T15:28:47Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: seq-loop-pz4hh-4172612902
+      message: Error (exit code 1)
+      name: seq-loop-pz4hh[0].iteration(0:a)[1].step2(1)
+      phase: Failed
+      startedAt: "2021-03-12T15:28:41Z"
+      templateName: failed-step
+      templateScope: local/seq-loop-pz4hh
+      type: Pod
+  phase: Running
+  startedAt: "2021-03-12T15:28:29Z"
+
+`
+
+func TestStepsFailFast(t *testing.T) {
+	wf := unmarshalWF(stepsFailFast)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	node := woc.wf.Status.Nodes.FindByDisplayName("iteration(0:a)")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	}
+	node = woc.wf.Status.Nodes.FindByDisplayName("seq-loop-pz4hh")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
 	}
 }

@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: stop-terminate-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: main
   templates:
@@ -17,7 +15,8 @@ spec:
     - name: sleep
       container:
         image: argoproj/argosay:v1
-        args: [ sleep, "999"]
+        command: [ sleep ]
+        args: [ "999" ]
 
     - name: pass
       container:

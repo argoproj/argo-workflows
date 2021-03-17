@@ -1,13 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: retry-test
-  labels:
-    argo-e2e: "true"
+  generateName: retry-test-
 spec:
-  entrypoint: steps-outer
+  entrypoint: main
   templates:
-    - name: steps-outer
+    - name: main
       steps:
         - - name: steps-outer-step1
             template: whalesay
@@ -27,4 +25,3 @@ spec:
     - name: whalesay
       container:
         image: argoproj/argosay:v2
-        args: [echo, "hello world"]

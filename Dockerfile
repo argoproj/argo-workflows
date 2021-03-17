@@ -88,11 +88,21 @@ RUN JOBS=max yarn --cwd ui build
 
 FROM builder as argoexec-build
 
+# Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
+# the git state is "clean" even though said .dockerignore files are not present
+RUN cat .dockerignore >> .gitignore
+RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
+
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
 
 ####################################################################################################
 
 FROM builder as workflow-controller-build
+
+# Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
+# the git state is "clean" even though said .dockerignore files are not present
+RUN cat .dockerignore >> .gitignore
+RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller
 
@@ -105,6 +115,12 @@ COPY --from=argo-ui ui/dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
+
+# Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
+# the git state is "clean" even though said .dockerignore files are not present
+RUN cat .dockerignore >> .gitignore
+RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
+
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
@@ -117,11 +133,20 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
+FROM argoexec-base as argoexec-dev
+
+ADD argoexec /usr/local/bin/
+
+ENTRYPOINT [ "argoexec" ]
+
+####################################################################################################
+
 FROM scratch as workflow-controller
 
 USER 8737
 
-COPY --from=workflow-controller-build /usr/share/zoneinfo /usr/share/
+ADD --chown=8737 https://github.com/golang/go/raw/master/lib/time/zoneinfo.zip /zoneinfo.zip
+ENV ZONEINFO /zoneinfo.zip
 COPY --chown=8737 --from=workflow-controller-build /go/src/github.com/argoproj/argo-workflows/dist/workflow-controller /bin/
 
 ENTRYPOINT [ "workflow-controller" ]

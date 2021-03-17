@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
@@ -53,6 +54,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/signal"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/ttlcontroller"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -163,7 +165,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTL
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.wfInformer, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -217,16 +219,21 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	logCtx := log.WithField("id", nodeID)
 
+	leaderName := "workflow-controller"
+	if wfc.Config.InstanceID != "" {
+		leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
+	}
+
 	var cancel context.CancelFunc
 	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: "workflow-controller", Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+			LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
 			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
 		},
 		ReleaseOnCancel: true,
-		LeaseDuration:   15 * time.Second,
-		RenewDeadline:   10 * time.Second,
-		RetryPeriod:     5 * time.Second,
+		LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+		RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+		RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
 				logCtx.Info("started leading")
@@ -405,6 +412,10 @@ func (wfc *WorkflowController) queuePodForCleanup(namespace string, podName stri
 	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
+func (wfc *WorkflowController) queuePodForCleanupAfter(namespace string, podName string, action podCleanupAction, duration time.Duration) {
+	wfc.podCleanupQueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)
+}
+
 func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
 	for wfc.processNextPodCleanupItem(ctx) {
 	}
@@ -424,6 +435,16 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case terminateContainers:
+			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+				return err
+			} else if terminationGracePeriod > 0 {
+				wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
+			}
+		case killContainers:
+			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
+				return err
+			}
 		case labelPodCompleted:
 			_, err := pods.Patch(
 				ctx,
@@ -454,6 +475,32 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 	}
 	return true
+}
+
+func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		return 0, nil
+	}
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		return 0, fmt.Errorf("object is not a pod")
+	}
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
+			continue
+		}
+		if err := signal.SignalContainer(wfc.restConfig, pod.Namespace, pod.Name, c.Name, sig); err != nil {
+			return 0, err
+		}
+	}
+	if pod.Spec.TerminationGracePeriodSeconds == nil {
+		return 30 * time.Second, nil
+	}
+	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second, nil
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
@@ -933,11 +980,15 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 	return wfc.Config.Namespace
 }
 
-func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
+func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
 	if wfc.containerRuntimeExecutor != "" {
 		return wfc.containerRuntimeExecutor
 	}
-	return wfc.Config.ContainerRuntimeExecutor
+	executor, err := wfc.Config.GetContainerRuntimeExecutor(labels)
+	if err != nil {
+		log.WithError(err).Info("failed to determine container runtime executor")
+	}
+	return executor
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
