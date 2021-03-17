@@ -929,7 +929,7 @@ func (s *CLISuite) TestTemplate() {
 	})
 	s.Run("Submit", func() {
 		s.Given().
-			RunCli([]string{"submit", "--from", "workflowtemplate/basic", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"submit", "--from", "workflowtemplate/basic"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Name:")
 					assert.Contains(t, output, "Namespace:")
@@ -937,7 +937,7 @@ func (s *CLISuite) TestTemplate() {
 				}
 			}).
 			When().
-			WaitForWorkflow(fixtures.ToBeSucceeded)
+			WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
 	})
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"template", "delete", "basic"}, func(t *testing.T, output string, err error) {
