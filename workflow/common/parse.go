@@ -46,7 +46,10 @@ func ParseObjects(body []byte, strict bool) []ParseResult {
 			continue
 		}
 		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
-		res = append(res, ParseResult{v, err})
+		if v != nil {
+			// only append when this is a Kubernetes object
+			res = append(res, ParseResult{v, err})
+		}
 	}
 	return res
 }
