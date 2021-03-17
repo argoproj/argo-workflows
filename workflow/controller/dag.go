@@ -77,7 +77,7 @@ func (d *dagContext) GetTaskFinishedAtTime(taskName string) time.Time {
 
 func (d *dagContext) GetTask(taskName string) *wfv1.DAGTask {
 	for _, task := range d.tasks {
-		if task.Name == taskName {
+		if task.GetName() == taskName {
 			return &task
 		}
 	}
@@ -275,12 +275,12 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	// set outputs from tasks in order for DAG templates to support outputs
 	scope := createScope(tmpl)
 	for _, task := range tmpl.DAG.Tasks {
-		taskNode := dagCtx.getTaskNode(task.Name)
+		taskNode := dagCtx.getTaskNode(task.GetName())
 		if taskNode == nil {
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.buildLocalScope(scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.buildLocalScope(scope, fmt.Sprintf("tasks.%s", task.GetName()), taskNode)
 		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, scope)
@@ -342,7 +342,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 		if node.Completed() {
 			// Run the node's onExit node, if any.
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.OnExit, task.GetName(), node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				return
@@ -436,8 +436,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	}
 
 	for _, t := range expandedTasks {
-		taskNodeName := dagCtx.taskNodeName(t.Name)
-		node = dagCtx.getTaskNode(t.Name)
+		taskNodeName := dagCtx.taskNodeName(t.GetName())
+		node = dagCtx.getTaskNode(t.GetName())
 		if node == nil {
 			woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
 			// Add the child relationship from our dependency's outbound nodes to this node.
@@ -477,7 +477,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		groupPhase := wfv1.NodeSucceeded
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
-			node := dagCtx.getTaskNode(t.Name)
+			node := dagCtx.getTaskNode(t.GetName())
 			if node == nil || !node.Fulfilled() {
 				return
 			}
@@ -494,7 +494,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 	scope := createScope(dagCtx.tmpl)
 	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, scope)
 
-	ancestors := common.GetTaskAncestry(dagCtx, task.Name)
+	ancestors := common.GetTaskAncestry(dagCtx, task.GetName())
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ancestor)
 		if ancestorNode == nil {
@@ -600,10 +600,10 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 	taskIsLeaf := make(map[string]bool)
 	for _, task := range tasks {
-		if _, ok := taskIsLeaf[task.Name]; !ok {
-			taskIsLeaf[task.Name] = true
+		if _, ok := taskIsLeaf[task.GetName()]; !ok {
+			taskIsLeaf[task.GetName()] = true
 		}
-		for _, dependency := range d.GetTaskDependencies(task.Name) {
+		for _, dependency := range d.GetTaskDependencies(task.GetName()) {
 			taskIsLeaf[dependency] = false
 		}
 	}
@@ -655,11 +655,11 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask)
+		newTaskName, err := processItem(tmpl, task.GetName(), i, item, &newTask)
 		if err != nil {
 			return nil, err
 		}
-		newTask.Name = newTaskName
+		newTask.SetName(newTaskName)
 		newTask.Template = task.Template
 		expandedTasks = append(expandedTasks, newTask)
 	}

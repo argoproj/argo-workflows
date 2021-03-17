@@ -1333,9 +1333,9 @@ func sortDAGTasks(tmpl *wfv1.Template) error {
 	taskMap := make(map[string]*wfv1.DAGTask, len(tmpl.DAG.Tasks))
 	sortingGraph := make([]*sorting.TopologicalSortingNode, len(tmpl.DAG.Tasks))
 	for index := range tmpl.DAG.Tasks {
-		taskMap[tmpl.DAG.Tasks[index].Name] = &tmpl.DAG.Tasks[index]
+		taskMap[tmpl.DAG.Tasks[index].GetName()] = &tmpl.DAG.Tasks[index]
 		sortingGraph[index] = &sorting.TopologicalSortingNode{
-			NodeName:     tmpl.DAG.Tasks[index].Name,
+			NodeName:     tmpl.DAG.Tasks[index].GetName(),
 			Dependencies: tmpl.DAG.Tasks[index].Dependencies,
 		}
 	}

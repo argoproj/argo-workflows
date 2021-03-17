@@ -2587,8 +2587,12 @@ func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
 	return continues(t.ContinueOn, phase)
 }
 
-func (in *DAGTask) GetName() {
+func (in *DAGTask) GetName() string {
 	return in.Inline.Name
+}
+
+func (in *DAGTask) SetName(name string) {
+	in.Inline.Name = name
 }
 
 // ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
@@ -2598,6 +2602,10 @@ func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
 
 func (in *WorkflowStep) GetName() string {
 	return in.Inline.Name
+}
+
+func (in *WorkflowStep) SetName(name string) {
+	in.Inline.Name = name
 }
 
 type MetricType string

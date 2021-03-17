@@ -105,9 +105,9 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 
 		// Add all outputs of each step in the group to the scope
 		for _, step := range stepGroup.Steps {
-			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.GetName())
 			childNode := woc.wf.GetNodeByName(childNodeName)
-			prefix := fmt.Sprintf("steps.%s", step.Name)
+			prefix := fmt.Sprintf("steps.%s", step.GetName())
 			if childNode == nil {
 				// This happens when there was `withItem/withParam` expansion.
 				// We add the aggregate outputs of our children to the scope as a JSON list
@@ -212,7 +212,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
-		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.GetName())
 
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
@@ -260,7 +260,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.OnExit, step.GetName(), childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
@@ -415,7 +415,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 		}
 		if len(expandedStep) == 0 {
 			// Empty list
-			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.GetName())
 			if woc.wf.GetNodeByName(childNodeName) == nil {
 				stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 				skipReason := "Skipped, empty params"
@@ -468,11 +468,11 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(t, step.Name, i, item, &newStep)
+		newStepName, err := processItem(t, step.GetName(), i, item, &newStep)
 		if err != nil {
 			return nil, err
 		}
-		newStep.Name = newStepName
+		newStep.SetName( newStepName)
 		newStep.Template = step.Template
 		expandedStep = append(expandedStep, newStep)
 	}

@@ -202,30 +202,30 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 func TestEvaluateDependsLogic(t *testing.T) {
 	testTasks := []wfv1.DAGTask{
 		{
-			Name: "A",
+			Inline: wfv1.Template{Name: "A"},
 		},
 		{
-			Name:    "B",
+			Inline: wfv1.Template{Name:    "B",},
 			Depends: "A",
 		},
 		{
-			Name:    "C", // This task should fail
+			Inline: wfv1.Template{Name:    "C"}, // This task should fail
 			Depends: "A",
 		},
 		{
-			Name:    "should-execute-1",
+			Inline: wfv1.Template{Name:    "should-execute-1"},
 			Depends: "A && (C.Succeeded || C.Failed)",
 		},
 		{
-			Name:    "should-execute-2",
+			Inline: wfv1.Template{Name:    "should-execute-2"},
 			Depends: "B || C",
 		},
 		{
-			Name:    "should-not-execute",
+			Inline: wfv1.Template{Name:    "should-not-execute"},
 			Depends: "B && C",
 		},
 		{
-			Name:    "should-execute-3",
+			Inline: wfv1.Template{Name:    "should-execute-3"},
 			Depends: "should-execute-2 || should-not-execute",
 		},
 	}
@@ -306,26 +306,26 @@ func TestEvaluateDependsLogic(t *testing.T) {
 func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	testTasks := []wfv1.DAGTask{
 		{
-			Name: "A",
+			Inline: wfv1.Template{Name: "A"},
 		},
 		{
-			Name: "A-1",
+			Inline: wfv1.Template{Name: "A-1"},
 		},
 		{
-			Name: "A-2",
+			Inline: wfv1.Template{Name: "A-2"},
 		},
 		{
-			Name:    "B",
+			Inline: wfv1.Template{Name:    "B"},
 			Depends: "A.AnySucceeded",
 		},
 		{
-			Name: "B-1",
+			Inline: wfv1.Template{Name: "B-1"},
 		},
 		{
-			Name: "B-2",
+			Inline: wfv1.Template{Name: "B-2"},
 		},
 		{
-			Name:    "C",
+			Inline: wfv1.Template{Name:    "C"},
 			Depends: "B.AllFailed",
 		},
 	}
@@ -408,10 +408,10 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 	testTasks := []wfv1.DAGTask{
 		{
-			Name: "A",
+			Inline: wfv1.Template{Name: "A"},
 		},
 		{
-			Name:    "B",
+			Inline: wfv1.Template{	Name:    "B"},
 			Depends: "A",
 		},
 	}
@@ -463,14 +463,14 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 	for _, status := range []common.TaskResult{common.TaskResultSucceeded, common.TaskResultFailed, common.TaskResultSkipped} {
 		testTasks := []wfv1.DAGTask{
 			{
-				Name: "same",
+			Inline:	wfv1.Template{Name: "same"},
 			},
 			{
-				Name:    "Run",
+				Inline:wfv1.Template{Name:    "Run"},
 				Depends: fmt.Sprintf("same.%s", status),
 			},
 			{
-				Name:    "NotRun",
+				Inline:wfv1.Template{Name:    "NotRun"},
 				Depends: fmt.Sprintf("!same.%s", status),
 			},
 		}
