@@ -99,15 +99,13 @@ func (s *FunctionalSuite) TestResourceQuota() {
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
 metadata:
   generateName: continue-on-fail-
 spec:
-  entrypoint: workflow-ignore
+  entrypoint: main
   parallelism: 2
   templates:
-  - name: workflow-ignore
+  - name: main
     steps:
     - - name: A
         template: whalesay
@@ -135,10 +133,9 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 7)
 			nodeStatus := status.Nodes.FindByDisplayName("B")
 			if assert.NotNil(t, nodeStatus) {
