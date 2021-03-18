@@ -114,15 +114,6 @@ func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *ArtifactsSuite) TestOutputArtifactS3BucketCreationEnabled() {
-	s.Need(fixtures.BaseLayerArtifacts)
-	s.Given().
-		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
-}
-
 func (s *ArtifactsSuite) TestOutputResult() {
 	s.Given().
 		Workflow("@testdata/output-result-workflow.yaml").

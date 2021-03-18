@@ -29,7 +29,7 @@ spec:
         name: welcome
     container:
       image: argoproj/argosay:v2
-      args: ["sleep", "5s"]
+      args: ["sleep", "2s"]
 
   - name: acquire-lock-1
     synchronization:
@@ -37,4 +37,4 @@ spec:
         name: test
     container:
       image: argoproj/argosay:v2
-      args: ["sleep", "5s"]
+      args: ["sleep", "2s"]

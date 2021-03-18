@@ -13,7 +13,8 @@ jobs:
   tests:
     name: Unit Tests
     runs-on: ubuntu-20.04
-    timeout-minutes: 10
+    # 5m30
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -36,26 +37,33 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-20.04
+    # test-api: 7m (1m10s locally)
+    # test-cli: 12m (4m locally)
+    # test-cron: 8m
+    # test-executor 8m (2m locally)
+    # test-functional: 13m (7m locally)
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - test-executor
-        containerRuntimeExecutor:
-          - docker
-          - emissary
-          - k8sapi
-          - kubelet
-          - pns
         include:
           - test: test-api
             containerRuntimeExecutor: emissary
           - test: test-cli
             containerRuntimeExecutor: emissary
-          - test: test-functional
-            containerRuntimeExecutor: emissary
           - test: test-cron
+            containerRuntimeExecutor: emissary
+          - test: test-executor
+            containerRuntimeExecutor: docker
+          - test: test-executor
+            containerRuntimeExecutor: emissary
+          - test: test-executor
+            containerRuntimeExecutor: k8sapi
+          - test: test-executor
+            containerRuntimeExecutor: kubelet
+          - test: test-executor
+            containerRuntimeExecutor: pns
+          - test: test-functional
             containerRuntimeExecutor: emissary
     steps:
       - uses: actions/checkout@v2
@@ -97,16 +105,13 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           PROFILE=minimal
-          ALWAYS_OFFLOAD_NODE_STATUS=false
           if [ "${{matrix.test}}" = test-cli ] || [ "${{matrix.test}}" = test-api ]; then
             PROFILE=mysql
-            ALWAYS_OFFLOAD_NODE_STATUS=true
           fi
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
-      - run: make logs > /tmp/log/argo-e2e/pod.log &
       - run: make ${{matrix.test}}
       - name: Upload logs
         if: ${{ failure() }}
@@ -119,7 +124,7 @@ jobs:
     name: Codegen
     runs-on: ubuntu-20.04
     needs: [ tests ]
-    timeout-minutes: 10
+    timeout-minutes: 9
     env:
       GOPATH: /home/runner/go
       PROTOC_ZIP: protoc-3.11.1-linux-x86_64.zip
@@ -160,14 +165,22 @@ jobs:
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
       - run: make codegen -B STATIC_FILES=false
+      - run: make validate-examples STATIC_FILES=false
+      - run: git diff --exit-code
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04
+    needs: [ tests, codegen ]
+    timeout-minutes: 5
+    env:
+      GOPATH: /home/runner/go
+    steps:
+      - uses: actions/checkout@v2
+      - run: cp server/static/files.go.stub server/static/files.go
       - uses: golangci/golangci-lint-action@v2
         with:
           version: v1.36.0
-          skip-go-installation: true
-          skip-pkg-cache: true
-          skip-build-cache: true
-      - run: make validate-examples STATIC_FILES=false
-      - run: git diff --exit-code
 
   ui:
     name: UI
