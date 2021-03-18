@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -398,41 +397,16 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 
-	var createdWorkflowName string
 	s.Run("From", func() {
-		s.Given().CronWorkflow("@cron/basic.yaml").
-			When().
-			CreateCronWorkflow().
-			RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+		s.Given().
+			RunCli([]string{"submit", "--from", "cronworkflow/test-cron-wf-basic", "--scheduled-time", "2006-01-02T15:04:05-07:00", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 				assert.Contains(t, output, "Name:                test-cron-wf-basic-")
-				r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)
-				res := r.FindStringSubmatch(output)
-				if len(res) != 2 {
-					assert.Fail(t, "Internal test error, please report a bug")
-				}
-				createdWorkflowName = res[1]
 			}).
-			WaitForWorkflow(createdWorkflowName).
-			Then().
-			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			})
-		s.Given().RunCli([]string{"submit", "--from", "cronworkflow/test-cron-wf-basic", "--scheduled-time", "2006-01-02T15:04:05-07:00", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			fmt.Println(output)
-			assert.Contains(t, output, "Name:                test-cron-wf-basic-")
-			r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)
-			res := r.FindStringSubmatch(output)
-			if len(res) != 2 {
-				assert.Fail(t, "Internal test error, please report a bug")
-			}
-			createdWorkflowName = res[1]
-		}).
 			When().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
-			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Len(t, metadata.Annotations, 1)
+			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				assert.Equal(t, "2006-01-02T15:04:05-07:00", metadata.Annotations["workflows.argoproj.io/scheduled-time"])
 			})
 	})
