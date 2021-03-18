@@ -232,10 +232,6 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		}
 	}
 
-	if os.Getenv("CI") == "true" {
-		timeout = 2 * timeout
-	}
-
 	start := time.Now()
 
 	fieldSelector := ""
