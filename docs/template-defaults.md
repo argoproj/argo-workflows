@@ -3,7 +3,7 @@
 
 ## Introduction
 
-`TemplateDefaults` feature enables user to configure the default template values in workflow spec level that will apply to all templates in the workflow. If template has a value that also has a default value in `templateDefault`, the Template's value will take precedence. These values will be applied during runtime.
+`TemplateDefaults` feature enables the user to configure the default template values in workflow spec level that will apply to all the templates in the workflow. If the template has a value that also has a default value in `templateDefault`, the Template's value will take precedence. These values will be applied during the runtime.
 
 ## Configuring `templateDefaults` in WorkflowSpec
 
@@ -27,7 +27,7 @@ spec:
 [template defaults example](examples/template_defaults.yaml)
 
 ## Configuring `templateDefaults` in Controller level
-Operator can configure the `templateDefaults` in [workflowDefaults](default-workflow-specs.md). This `templateDefault` will be applied all workflow which runs on these controller.
+Operator can configure the `templateDefaults` in [workflowDefaults](default-workflow-specs.md). This `templateDefault` will be applied to all the workflow which runs on the controller.
 
 The following would be specified in the Config Map:
 
