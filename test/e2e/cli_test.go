@@ -893,9 +893,7 @@ func (s *CLISuite) TestTemplate() {
 					assert.Contains(t, output, "Namespace:")
 					assert.Contains(t, output, "Created:")
 				}
-			}).
-			When().
-			WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
+			})
 	})
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"template", "delete", "basic"}, func(t *testing.T, output string, err error) {
