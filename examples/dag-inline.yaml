@@ -16,11 +16,13 @@ spec:
     - name: main
       dag:
         tasks:
-          - name: task-0
-            container:
-              image: argoproj/argosay:v2
-          - dependencies:
-              - task-0
-            container:
-              image: argoproj/argosay:v2
-              args: [ echo, "{{inputs.parameters.x}}" ]
+          - name: a
+            inline:
+              container:
+                image: argoproj/argosay:v2
+          - name: b
+            dependencies:
+              - a
+            inline:
+              container:
+                image: argoproj/argosay:v2

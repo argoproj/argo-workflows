@@ -107,6 +107,10 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
+func (in *Workflow) GetWorkflowMetadata() *metav1.ObjectMeta {
+	return nil
+}
+
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
 type Workflows []Workflow
 
@@ -359,25 +363,23 @@ func (w *WorkflowSpec) Normalize() {
 		case *DAGTemplate:
 			for j, t := range v.Tasks {
 				if t.Inline != nil {
-					templateName := fmt.Sprintf("%s.%s", tmpl.Name, t.Name)
-					t.Inline.Name = templateName
+					t.Inline.Name = fmt.Sprintf("%s-%s", tmpl.Name, t.Name)
 					w.Templates = append(w.Templates, *t.Inline)
-					t.Template = templateName
+					t.Template = t.Inline.Name
 					t.Inline = nil
+					tmpl.DAG.Tasks[j] = t
 				}
-				tmpl.DAG.Tasks[j] = t
 			}
 		case []ParallelSteps:
 			for j, p := range v {
 				for k, s := range p.Steps {
 					if s.Inline != nil {
-						templateName := fmt.Sprintf("%s.%d.%d", tmpl.Name, j, k)
-						s.Inline.Name = templateName
+						s.Inline.Name = fmt.Sprintf("%s-%dx%d", tmpl.Name, j, k)
 						w.Templates = append(w.Templates, *s.Inline)
-						s.Template = templateName
+						s.Template = s.Inline.Name
 						s.Inline = nil
+						tmpl.Steps[j].Steps[k] = s
 					}
-					tmpl.Steps[j].Steps[k] = s
 				}
 			}
 		}
@@ -2499,8 +2501,8 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 }
 
 // GetWorkflowSpec returns the Spec of a workflow.
-func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
-	return wf.Spec
+func (wf *Workflow) GetWorkflowSpec() *WorkflowSpec {
+	return &wf.Spec
 }
 
 // NodeID creates a deterministic node ID based on a node name

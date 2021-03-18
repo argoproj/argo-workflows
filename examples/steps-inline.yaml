@@ -15,8 +15,11 @@ spec:
   templates:
     - name: main
       steps:
-        - - container:
-              image: argoproj/argosay:v2
-        - - arguments:
-            container:
-              image: argoproj/argosay:v2
+        - - name: step-0-0
+            inline:
+              container:
+                image: argoproj/argosay:v2
+        - - name: step-0-1
+            inline:
+              container:
+                image: argoproj/argosay:v2
