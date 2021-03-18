@@ -4213,6 +4213,17 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.OnExitTemplate": {
+      "properties": {
+        "arguments": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "template": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
       "properties": {
@@ -5581,6 +5592,9 @@
           "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.",
           "type": "string"
         },
+        "onExitTemplate": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OnExitTemplate"
+        },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
           "type": "integer"
@@ -6048,6 +6062,9 @@
         "onExit": {
           "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.",
           "type": "string"
+        },
+        "onExitTemplate": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OnExitTemplate"
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",

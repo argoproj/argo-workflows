@@ -765,6 +765,12 @@ message OSSBucket {
   optional bool createBucketIfNotPresent = 5;
 }
 
+message OnExitTemplate {
+  optional string template = 1;
+
+  optional Arguments arguments = 2;
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 message Outputs {
   // Parameters holds the list of output parameters produced by a step
@@ -1516,6 +1522,8 @@ message WorkflowSpec {
 
   // PodMetadata defines additional metadata that should be applied to workflow pods
   optional Metadata podMetadata = 38;
+
+  optional OnExitTemplate onExitTemplate = 39;
 }
 
 // WorkflowStatus contains overall status information about a workflow

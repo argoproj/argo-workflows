@@ -350,6 +350,8 @@ type WorkflowSpec struct {
 
 	// PodMetadata defines additional metadata that should be applied to workflow pods
 	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
+
+	OnExitTemplate *OnExitTemplate `json:"onExitTemplate,omitempty" protobuf:"bytes,39,opt,name=onExitTemplate"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -1102,6 +1104,11 @@ type WorkflowStep struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+}
+
+type OnExitTemplate struct {
+	Template  string    `json:"template,omitempty" protobuf:"bytes,1,opt,name=template"`
+	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}

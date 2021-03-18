@@ -706,6 +706,7 @@ WorkflowSpec is the specification of a Workflow.
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this Workflow|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.|
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.|
+|`onExitTemplate`|[`OnExitTemplate`](#onexittemplate)|_No description available_|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
@@ -1442,6 +1443,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this Workflow|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.|
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.|
+|`onExitTemplate`|[`OnExitTemplate`](#onexittemplate)|_No description available_|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
@@ -1699,6 +1701,16 @@ Metrics are a list of metrics emitted from a Workflow/Template
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`prometheus`|`Array<`[`Prometheus`](#prometheus)`>`|Prometheus is a list of prometheus metrics to be emitted|
+
+## OnExitTemplate
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`arguments`|[`Arguments`](#arguments)|_No description available_|
+|`template`|`string`|_No description available_|
 
 ## PodGC
 
