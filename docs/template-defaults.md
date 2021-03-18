@@ -12,7 +12,7 @@ For example:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: hello-world-1
+  name: template-defaults-example
 spec:
   entrypoint: main
   templateDefaults:
