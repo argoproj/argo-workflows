@@ -1533,7 +1533,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 
-	// Set Template defaults
+	// Merge Template defaults to template
 	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
