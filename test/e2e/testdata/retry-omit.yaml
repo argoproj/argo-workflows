@@ -7,24 +7,19 @@ spec:
   templates:
     - dag:
         tasks:
-          - name: A
-            template: pass
-          - depends: A
-            name: C
+          - name: F
             template: fail
-          - depends: C
-            name: should-not-execute
+          - name: O
+            depends: F
             template: pass
-          - depends: A
-            name: should-execute-3
-            template: fail
       name: main
-    - container:
+    - name: pass
+      container:
         image: argoproj/argosay:v2
-      name: pass
-    - container:
+    - name: fail
+      container:
         args:
           - exit
           - "1"
         image: argoproj/argosay:v2
-      name: fail
+
