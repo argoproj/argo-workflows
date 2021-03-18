@@ -260,7 +260,7 @@ spec:
           args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute + 20*time.Second).
+			Wait(2*time.Minute+15*time.Second).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, 1, len(cronWf.Status.Active))
@@ -294,7 +294,7 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute).
+			Wait(2*time.Minute+15*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Equal(t, 1, len(wfList.Items))
@@ -327,7 +327,7 @@ spec:
           args: ["exit", "1"]`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute+10*time.Second).
+			Wait(2*time.Minute+15*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Equal(t, 1, len(wfList.Items))
