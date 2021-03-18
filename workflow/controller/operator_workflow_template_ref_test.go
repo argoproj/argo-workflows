@@ -287,9 +287,9 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
-	cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
-	defer cancel()
 	t.Run("EntryPointMissingInStoredWfSpec", func(t *testing.T) {
+		cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
+		defer cancel()
 		ctx := context.Background()
 		wf := unmarshalWF(wfWithTmplRef)
 		wf.Name = "EntryPointMissingInStoredWfSpec"
@@ -307,6 +307,8 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 	})
 
 	t.Run("WorkflowTemplateRefWithSuspend", func(t *testing.T) {
+		cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
+		defer cancel()
 		ctx := context.Background()
 		wf := unmarshalWF(wfWithTmplRef)
 		wf.Name = "WorkflowTemplateRefWithSuspend"
@@ -323,6 +325,8 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		assert.True(t, *woc1.wf.Status.StoredWorkflowSpec.Suspend)
 	})
 	t.Run("WorkflowTemplateRefWithShutdownTerminate", func(t *testing.T) {
+		cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
+		defer cancel()
 		ctx := context.Background()
 		wf := unmarshalWF(wfWithTmplRef)
 		wf.Name = "WorkflowTemplateRefWithShutdownTerminate"
@@ -345,6 +349,8 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		}
 	})
 	t.Run("WorkflowTemplateRefWithShutdownStop", func(t *testing.T) {
+		cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
+		defer cancel()
 		ctx := context.Background()
 		wf := unmarshalWF(wfWithTmplRef)
 		wf.Name = "WorkflowTemplateRefWithShutdownStop"
