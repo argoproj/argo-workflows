@@ -37,11 +37,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             .map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n')
             .publishReplay()
             .refCount();
-        const subscription = source.subscribe(
-            () => setLoaded(true),
-            setError,
-            () => setLoaded(true)
-        );
+        const subscription = source.subscribe(() => setLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
     }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, archived]);
@@ -107,8 +103,6 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                         <a href={services.workflows.getArtifactLogsUrl(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
-            </p>
-            <p>
                 {execSpec(workflow).podGC && (
                     <>
                         <WarningIcon /> You pod GC settings will delete pods and their logs immediately on completion.
