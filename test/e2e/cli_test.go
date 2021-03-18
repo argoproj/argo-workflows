@@ -1123,25 +1123,12 @@ func (s *CLISuite) TestRetryOmit() {
 		Workflow("@testdata/retry-omit.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-				return node.Phase == wfv1.NodeOmitted
-			}), "any node omitted"
-		})).
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			node := status.Nodes.FindByDisplayName("should-not-execute")
-			if assert.NotNil(t, node) {
-				assert.Equal(t, wfv1.NodeOmitted, node.Phase)
-			}
+			assert.Equal(t, wfv1.NodeOmitted, status.Nodes.FindByDisplayName("O").Phase)
 		}).
-		RunCli([]string{"retry", "@latest"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Contains(t, output, "Status:              Running")
-		}).
-		When().
-		WaitForWorkflow()
+		RunCli([]string{"retry", "@latest"}, fixtures.NoError)
 }
 
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {

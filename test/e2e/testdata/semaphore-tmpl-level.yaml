@@ -16,7 +16,6 @@ spec:
         withItems:
         - hello
         - goodbye
-        - bye
 
   - name: sleep-n-sec
     inputs:
