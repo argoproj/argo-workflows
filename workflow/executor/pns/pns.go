@@ -23,6 +23,8 @@ import (
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
+const anonymousPIDPrefix = "pid/"
+
 type PNSExecutor struct {
 	*k8sapi.K8sAPIExecutor
 	podName   string
@@ -284,7 +286,17 @@ func (p *PNSExecutor) killContainer(containerName string, terminationGracePeriod
 func (p *PNSExecutor) getContainerPID(containerName string) int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	return p.containerNameToPID[containerName]
+	if pid, ok := p.containerNameToPID[containerName]; ok {
+		return pid
+	}
+	for n, pid := range p.containerNameToPID {
+		// the container can't be me, and it must be anonymous, otherwise we would have determined it
+		if pid != os.Getpid() && strings.HasPrefix(n, anonymousPIDPrefix) {
+			log.Infof("guessing container %q PID is %d", containerName, pid)
+			return pid
+		}
+	}
+	return 0
 }
 
 func containerNameForPID(pid int) (string, error) {
@@ -298,7 +310,7 @@ func containerNameForPID(pid int) (string, error) {
 			return strings.TrimPrefix(l, prefix), nil
 		}
 	}
-	return fmt.Sprintf("pid/%d", pid), nil // we give all a "container name", including a fake name for injected sidecars
+	return fmt.Sprintf("%s%d", anonymousPIDPrefix, pid), nil // we give all a "container name", including a fake name for injected sidecars
 }
 
 func (p *PNSExecutor) secureRootFiles() error {
