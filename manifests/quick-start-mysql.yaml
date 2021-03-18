@@ -605,7 +605,6 @@ metadata:
 apiVersion: v1
 data:
   artifactRepository: |
-    archiveLogs: true
     s3:
       bucket: my-bucket
       endpoint: minio:9000

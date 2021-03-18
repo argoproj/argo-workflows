@@ -1162,7 +1162,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		if node.Outputs == nil {
 			node.Outputs = &wfv1.Outputs{}
 		}
-		woc.log.Infof("Updating node %s exit code %v -> %v", node.ID, node.Outputs.ExitCode, exitCode)
+		woc.log.Infof("Updating node %s exit code %v -> %v", node.ID, node.Outputs.ExitCode, *exitCode)
 		if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
 			woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
 			if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
