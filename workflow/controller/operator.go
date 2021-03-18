@@ -2326,7 +2326,7 @@ func generateOutputResultRegex(name string, parentTmpl *wfv1.Template) (string, 
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 	jsonValue, err := json.Marshal(parentTmpl)
 	if err != nil {
-		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
+		log.Warnf("Unable to marshal template %q: %v", parentTmpl, err)
 	}
 
 	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
