@@ -14,7 +14,6 @@ import (
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Amount":                      schema_pkg_apis_workflow_v1alpha1_Amount(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AnonymousTemplate":           schema_pkg_apis_workflow_v1alpha1_AnonymousTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy":             schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments":                   schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact":                    schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
@@ -127,338 +126,6 @@ func schema_pkg_apis_workflow_v1alpha1_Amount(ref common.ReferenceCallback) comm
 				Format:      Amount{}.OpenAPISchemaFormat(),
 			},
 		},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_AnonymousTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Template is a reusable and composable unit of execution in a workflow",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"inputs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs"),
-						},
-					},
-					"outputs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Outputs describe the parameters and artifacts that this template produces",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
-						},
-					},
-					"nodeSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"affinity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",
-							Ref:         ref("k8s.io/api/core/v1.Affinity"),
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
-						},
-					},
-					"daemon": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"steps": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Steps define a series of sequential/parallel workflow steps",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps"),
-									},
-								},
-							},
-						},
-					},
-					"container": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Container is the main container image to run in the pod",
-							Ref:         ref("k8s.io/api/core/v1.Container"),
-						},
-					},
-					"containerSet": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ContainerSet groups multiple containers within a single pod.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate"),
-						},
-					},
-					"script": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Script runs a portion of code against an interpreter",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate"),
-						},
-					},
-					"resource": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Resource template subtype which can run k8s resources",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
-						},
-					},
-					"dag": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DAG template subtype which runs a DAG",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate"),
-						},
-					},
-					"suspend": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Suspend template subtype which can suspend a workflow when reaching the step",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate"),
-						},
-					},
-					"data": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Data is a data template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data"),
-						},
-					},
-					"volumes": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Volumes is a list of volumes that can be mounted by containers in a template.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Volume"),
-									},
-								},
-							},
-						},
-					},
-					"initContainers": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "InitContainers is a list of containers which run before the main container.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
-									},
-								},
-							},
-						},
-					},
-					"sidecars": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
-									},
-								},
-							},
-						},
-					},
-					"archiveLocation": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
-						},
-					},
-					"activeDeadlineSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
-						},
-					},
-					"retryStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RetryStrategy describes how to retry a template when it fails",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy"),
-						},
-					},
-					"parallelism": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"failFast": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"tolerations": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "key",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Tolerations to apply to workflow pods.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
-									},
-								},
-							},
-						},
-					},
-					"schedulerName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"priorityClassName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PriorityClassName to apply to workflow pods.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"serviceAccountName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ServiceAccountName to apply to workflow pods",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"automountServiceAccountToken": {
-						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"executor": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Executor holds configurations of the executor container.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
-						},
-					},
-					"hostAliases": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "ip",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.HostAlias"),
-									},
-								},
-							},
-						},
-					},
-					"securityContext": {
-						SchemaProps: spec.SchemaProps{
-							Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
-							Ref:         ref("k8s.io/api/core/v1.PodSecurityContext"),
-						},
-					},
-					"podSpecPatch": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metrics": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Metrics are a list of metrics emitted from this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics"),
-						},
-					},
-					"synchronization": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Synchronization holds synchronization lock configuration for this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization"),
-						},
-					},
-					"memoize": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Memoize allows templates to use outputs generated from already executed templates",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize"),
-						},
-					},
-					"timeout": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -1809,321 +1476,9 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 				Description: "DAGTask represents a node in the graph during DAG execution",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"inputs": {
+					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs"),
-						},
-					},
-					"outputs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Outputs describe the parameters and artifacts that this template produces",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
-						},
-					},
-					"nodeSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"affinity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",
-							Ref:         ref("k8s.io/api/core/v1.Affinity"),
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
-						},
-					},
-					"daemon": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"steps": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Steps define a series of sequential/parallel workflow steps",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps"),
-									},
-								},
-							},
-						},
-					},
-					"container": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Container is the main container image to run in the pod",
-							Ref:         ref("k8s.io/api/core/v1.Container"),
-						},
-					},
-					"containerSet": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ContainerSet groups multiple containers within a single pod.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate"),
-						},
-					},
-					"script": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Script runs a portion of code against an interpreter",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate"),
-						},
-					},
-					"resource": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Resource template subtype which can run k8s resources",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
-						},
-					},
-					"dag": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DAG template subtype which runs a DAG",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate"),
-						},
-					},
-					"suspend": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Suspend template subtype which can suspend a workflow when reaching the step",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate"),
-						},
-					},
-					"data": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Data is a data template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data"),
-						},
-					},
-					"volumes": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Volumes is a list of volumes that can be mounted by containers in a template.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Volume"),
-									},
-								},
-							},
-						},
-					},
-					"initContainers": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "InitContainers is a list of containers which run before the main container.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
-									},
-								},
-							},
-						},
-					},
-					"sidecars": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
-									},
-								},
-							},
-						},
-					},
-					"archiveLocation": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
-						},
-					},
-					"activeDeadlineSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
-						},
-					},
-					"retryStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RetryStrategy describes how to retry a template when it fails",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy"),
-						},
-					},
-					"parallelism": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"failFast": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"tolerations": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "key",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Tolerations to apply to workflow pods.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
-									},
-								},
-							},
-						},
-					},
-					"schedulerName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"priorityClassName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PriorityClassName to apply to workflow pods.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"serviceAccountName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ServiceAccountName to apply to workflow pods",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"automountServiceAccountToken": {
-						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"executor": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Executor holds configurations of the executor container.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
-						},
-					},
-					"hostAliases": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "ip",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.HostAlias"),
-									},
-								},
-							},
-						},
-					},
-					"securityContext": {
-						SchemaProps: spec.SchemaProps{
-							Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
-							Ref:         ref("k8s.io/api/core/v1.PodSecurityContext"),
-						},
-					},
-					"podSpecPatch": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metrics": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Metrics are a list of metrics emitted from this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics"),
-						},
-					},
-					"synchronization": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Synchronization holds synchronization lock configuration for this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization"),
-						},
-					},
-					"memoize": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Memoize allows templates to use outputs generated from already executed templates",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize"),
-						},
-					},
-					"timeout": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
 					"name": {
@@ -2228,7 +1583,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 
@@ -4850,7 +4205,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "Template is a reusable and composable unit of execution in a workflow",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
@@ -4859,18 +4215,328 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"AnonymousTemplate": {
+					"inputs": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AnonymousTemplate"),
+							Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs"),
+						},
+					},
+					"outputs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Outputs describe the parameters and artifacts that this template produces",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
+						},
+					},
+					"nodeSelector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"affinity": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",
+							Ref:         ref("k8s.io/api/core/v1.Affinity"),
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
+						},
+					},
+					"daemon": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"steps": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Steps define a series of sequential/parallel workflow steps",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps"),
+									},
+								},
+							},
+						},
+					},
+					"container": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container is the main container image to run in the pod",
+							Ref:         ref("k8s.io/api/core/v1.Container"),
+						},
+					},
+					"containerSet": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ContainerSet groups multiple containers within a single pod.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate"),
+						},
+					},
+					"script": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Script runs a portion of code against an interpreter",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate"),
+						},
+					},
+					"resource": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Resource template subtype which can run k8s resources",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
+						},
+					},
+					"dag": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DAG template subtype which runs a DAG",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate"),
+						},
+					},
+					"suspend": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Suspend template subtype which can suspend a workflow when reaching the step",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate"),
+						},
+					},
+					"data": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Data is a data template",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data"),
+						},
+					},
+					"volumes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Volumes is a list of volumes that can be mounted by containers in a template.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
+									},
+								},
+							},
+						},
+					},
+					"initContainers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "InitContainers is a list of containers which run before the main container.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
+									},
+								},
+							},
+						},
+					},
+					"sidecars": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
+									},
+								},
+							},
+						},
+					},
+					"archiveLocation": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
+						},
+					},
+					"activeDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+						},
+					},
+					"retryStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryStrategy describes how to retry a template when it fails",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy"),
+						},
+					},
+					"parallelism": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"failFast": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"tolerations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "key",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Tolerations to apply to workflow pods.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Toleration"),
+									},
+								},
+							},
+						},
+					},
+					"schedulerName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"priorityClassName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PriorityClassName to apply to workflow pods.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"priority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Priority to apply to workflow pods.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"serviceAccountName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServiceAccountName to apply to workflow pods",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"automountServiceAccountToken": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"executor": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Executor holds configurations of the executor container.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
+						},
+					},
+					"hostAliases": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "ip",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.HostAlias"),
+									},
+								},
+							},
+						},
+					},
+					"securityContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
+							Ref:         ref("k8s.io/api/core/v1.PodSecurityContext"),
+						},
+					},
+					"podSpecPatch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metrics": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Metrics are a list of metrics emitted from this template",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics"),
+						},
+					},
+					"synchronization": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Synchronization holds synchronization lock configuration for this template",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization"),
+						},
+					},
+					"memoize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Memoize allows templates to use outputs generated from already executed templates",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize"),
+						},
+					},
+					"timeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
-				Required: []string{"AnonymousTemplate"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AnonymousTemplate"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -6079,321 +5745,9 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 				Description: "WorkflowStep is a reference to a template to execute in a series of step",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"inputs": {
+					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs"),
-						},
-					},
-					"outputs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Outputs describe the parameters and artifacts that this template produces",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
-						},
-					},
-					"nodeSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"affinity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",
-							Ref:         ref("k8s.io/api/core/v1.Affinity"),
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
-						},
-					},
-					"daemon": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"steps": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Steps define a series of sequential/parallel workflow steps",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps"),
-									},
-								},
-							},
-						},
-					},
-					"container": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Container is the main container image to run in the pod",
-							Ref:         ref("k8s.io/api/core/v1.Container"),
-						},
-					},
-					"containerSet": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ContainerSet groups multiple containers within a single pod.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate"),
-						},
-					},
-					"script": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Script runs a portion of code against an interpreter",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate"),
-						},
-					},
-					"resource": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Resource template subtype which can run k8s resources",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
-						},
-					},
-					"dag": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DAG template subtype which runs a DAG",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate"),
-						},
-					},
-					"suspend": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Suspend template subtype which can suspend a workflow when reaching the step",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate"),
-						},
-					},
-					"data": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Data is a data template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data"),
-						},
-					},
-					"volumes": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Volumes is a list of volumes that can be mounted by containers in a template.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Volume"),
-									},
-								},
-							},
-						},
-					},
-					"initContainers": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "InitContainers is a list of containers which run before the main container.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
-									},
-								},
-							},
-						},
-					},
-					"sidecars": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
-									},
-								},
-							},
-						},
-					},
-					"archiveLocation": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
-						},
-					},
-					"activeDeadlineSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
-						},
-					},
-					"retryStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RetryStrategy describes how to retry a template when it fails",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy"),
-						},
-					},
-					"parallelism": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"failFast": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"tolerations": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "key",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Tolerations to apply to workflow pods.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
-									},
-								},
-							},
-						},
-					},
-					"schedulerName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"priorityClassName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PriorityClassName to apply to workflow pods.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"serviceAccountName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ServiceAccountName to apply to workflow pods",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"automountServiceAccountToken": {
-						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"executor": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Executor holds configurations of the executor container.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
-						},
-					},
-					"hostAliases": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "ip",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.HostAlias"),
-									},
-								},
-							},
-						},
-					},
-					"securityContext": {
-						SchemaProps: spec.SchemaProps{
-							Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
-							Ref:         ref("k8s.io/api/core/v1.PodSecurityContext"),
-						},
-					},
-					"podSpecPatch": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metrics": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Metrics are a list of metrics emitted from this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics"),
-						},
-					},
-					"synchronization": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Synchronization holds synchronization lock configuration for this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization"),
-						},
-					},
-					"memoize": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Memoize allows templates to use outputs generated from already executed templates",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize"),
-						},
-					},
-					"timeout": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
 					"name": {
@@ -6474,7 +5828,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 

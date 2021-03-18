@@ -108,7 +108,7 @@ type Workflow struct {
 }
 
 func (in *Workflow) GetWorkflowMetadata() *metav1.ObjectMeta {
-	return nil
+	return &metav1.ObjectMeta{}
 }
 
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
