@@ -64,10 +64,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
 			Wait(1 * time.Minute).
@@ -105,10 +102,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`, scheduleInTestTimezone, testTimezone)).
+          image: argoproj/argosay:v2`, scheduleInTestTimezone, testTimezone)).
 			When().
 			CreateCronWorkflow().
 			Wait(1 * time.Minute).
@@ -137,10 +131,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
 			Then().
@@ -171,10 +162,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
 			Then().
@@ -205,10 +193,8 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["sleep 300"]`).
+          image: argoproj/argosay:v2
+          args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
 			Wait(2 * time.Minute).
@@ -240,10 +226,8 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["sleep 300"]`).
+          image: argoproj/argosay:v2
+          args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
 			Wait(2 * time.Minute).
@@ -272,10 +256,8 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["sleep 300"]`).
+          image: argoproj/argosay:v2
+          args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
 			Wait(2*time.Minute + 20*time.Second).
@@ -309,10 +291,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["python", -c]
-          args: ["import random; import sys; exit_code = random.choice([0]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"] `).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
 			Wait(2*time.Minute).
@@ -344,10 +323,8 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["python", -c]
-          args: ["import random; import sys; exit_code = random.choice([1]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"] `).
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]`).
 			When().
 			CreateCronWorkflow().
 			Wait(2*time.Minute+10*time.Second).
