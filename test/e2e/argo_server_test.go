@@ -339,7 +339,6 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
-	s.Need(fixtures.RBAC)
 	nsName := fixtures.Namespace
 	// Create good serviceaccount
 	goodSaName := "argotestgood"
@@ -576,7 +575,6 @@ func (s *ArgoServerSuite) TestPermission() {
 			// Test get archived wf with bad token
 			s.bearerToken = badToken
 			s.Run("GetArchivedWFsBadToken", func() {
-				s.Need(fixtures.RBAC)
 				s.e().GET("/api/v1/archived-workflows/" + uid).
 					Expect().
 					Status(403)
@@ -585,7 +583,6 @@ func (s *ArgoServerSuite) TestPermission() {
 			// Test deleting archived wf with bad token
 			s.bearerToken = badToken
 			s.Run("DeleteArchivedWFsBadToken", func() {
-				s.Need(fixtures.RBAC)
 				s.e().DELETE("/api/v1/archived-workflows/" + uid).
 					Expect().
 					Status(403)
@@ -593,7 +590,6 @@ func (s *ArgoServerSuite) TestPermission() {
 			// Test deleting archived wf with good token
 			s.bearerToken = goodToken
 			s.Run("DeleteArchivedWFsGoodToken", func() {
-				s.Need(fixtures.RBAC)
 				s.e().DELETE("/api/v1/archived-workflows/" + uid).
 					Expect().
 					Status(200)
