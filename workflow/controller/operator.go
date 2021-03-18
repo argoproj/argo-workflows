@@ -2309,14 +2309,17 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
-func generateOutputResultRegex(name, pattern string, parentTmpl *wfv1.Template) string {
-	varRefNamePattern := fmt.Sprintf(pattern, name)
+func generateOutputResultRegex(name string, parentTmpl *wfv1.Template) (string, string) {
+	referenceRegex := fmt.Sprintf(`\.%s\.outputs\.result`, name)
+	expressionRegex := fmt.Sprintf(`\[['\"]%s['\"]\]\.outputs.result`, name)
 	if parentTmpl.DAG != nil {
-		varRefNamePattern = "tasks" + varRefNamePattern
+		referenceRegex = "tasks" + referenceRegex
+		expressionRegex = "tasks" + expressionRegex
 	} else if parentTmpl.Steps != nil {
-		varRefNamePattern = "steps" + varRefNamePattern
+		referenceRegex = "steps" + referenceRegex
+		expressionRegex = "steps" + expressionRegex
 	}
-	return varRefNamePattern
+	return referenceRegex, expressionRegex
 }
 
 // hasOutputResultRef will check given template output has any reference
@@ -2328,7 +2331,7 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
 	// This is most common, so should be done first.
-	referenceRegex := generateOutputResultRegex(name, `\.%s\.outputs\.result`, parentTmpl)
+	referenceRegex, expressionRegex := generateOutputResultRegex(name, parentTmpl)
 	contains, err := regexp.MatchString(referenceRegex, string(jsonValue))
 	if err != nil {
 		log.Warnf("Error in regex compilation %q: %v", referenceRegex, err)
@@ -2339,7 +2342,6 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 	}
 
 	// Next, consider expression case (e.g.: `expression: "steps['generate-random-1'].outputs.result"`)
-	expressionRegex := generateOutputResultRegex(name, `\[['\"]%s['\"]\]\.outputs.result`, parentTmpl)
 	contains, err = regexp.MatchString(expressionRegex, string(jsonValue))
 	if err != nil {
 		log.Warnf("Error in regex compilation %q: %v", expressionRegex, err)

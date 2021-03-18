@@ -6209,3 +6209,15 @@ func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script.py)"))
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script(.)py)"))
 }
+
+func TestGenerateOutputResultRegex(t *testing.T) {
+	dagTmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{}}
+	ref, expr := generateOutputResultRegex("template-name", dagTmpl)
+	assert.Equal(t, `tasks\.template-name\.outputs\.result`, ref)
+	assert.Equal(t, `tasks\[['\"]template-name['\"]\]\.outputs.result`, expr)
+
+	stepsTmpl := &wfv1.Template{Steps: []wfv1.ParallelSteps{}}
+	ref, expr = generateOutputResultRegex("template-name", stepsTmpl)
+	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
+	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
+}
