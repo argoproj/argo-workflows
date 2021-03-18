@@ -45,7 +45,7 @@ START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 50ms
+DEFAULT_REQUEUE_TIME  ?= 10ms
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid
