@@ -2307,13 +2307,15 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
 func getStepOrDAGTaskName(nodeName string) string {
-	if strings.Contains(nodeName, ".") {
-		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
-		// Retry, withItems and withParam scenario
-		if indx := strings.Index(name, "("); indx > 0 {
-			return name[0:indx]
-		}
-		return name
+	// If our name contains an open parenthesis, this node is a child of a Retry node or an expanded node
+	// (e.g. withItems, withParams, etc.). Ignore anything after the parenthesis.
+	if parenthesisIndex := strings.Index(nodeName, "("); parenthesisIndex >= 0 {
+		nodeName = nodeName[:parenthesisIndex]
+	}
+	// If our node contains a dot, we're a child node. We're only interested in the step that called us, so return the
+	// name of the node after the last dot.
+	if lastDotIndex := strings.LastIndex(nodeName, "."); lastDotIndex >= 0 {
+		nodeName = nodeName[lastDotIndex+1:]
 	}
 	return nodeName
 }
