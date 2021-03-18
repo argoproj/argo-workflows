@@ -25,7 +25,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
         return (
             <div className='wf-filters-container'>
                 <div className='row'>
-                    <div className='columns small-3 xlarge-12'>
+                    <div className='columns small-2 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
                         <NamespaceFilter
                             value={this.props.namespace}
@@ -34,7 +34,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             }}
                         />
                     </div>
-                    <div className='columns small-3 xlarge-12'>
+                    <div className='columns small-2 xlarge-12'>
                         <p className='wf-filters-container__title'>Labels</p>
                         <TagsInput
                             placeholder=''
@@ -45,7 +45,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             }}
                         />
                     </div>
-                    <div className='columns small-6 xlarge-12'>
+                    <div className='columns small-3 xlarge-12'>
                         <p className='wf-filters-container__title'>Phases</p>
                         <CheckboxFilter
                             selected={this.props.selectedPhases}
@@ -56,8 +56,8 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             type='phase'
                         />
                     </div>
-                    <div className='columns small-6 xlarge-12'>
-                        <p className='wf-filters-container__title'>Started At</p>
+                    <div className='columns small-5 xlarge-12'>
+                        <p className='wf-filters-container__title'>Started Time</p>
                         <DatePicker
                             selected={this.props.minStartedAt}
                             onChange={date => {
