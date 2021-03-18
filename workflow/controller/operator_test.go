@@ -2861,9 +2861,9 @@ func TestStepWFGetNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "generate") {
-			assert.Equal(t,  "generate", getStepOrDAGTaskName(node.Name))
+			assert.Equal(t, "generate", getStepOrDAGTaskName(node.Name))
 		} else if strings.Contains(node.Name, "print-message") {
-			assert.Equal(t,  "print-message", getStepOrDAGTaskName(node.Name))
+			assert.Equal(t, "print-message", getStepOrDAGTaskName(node.Name))
 		}
 	}
 }
@@ -2886,10 +2886,10 @@ func TestDAGWFGetNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, ".A") {
-			assert.Equal(t,  "A", getStepOrDAGTaskName(node.Name))
+			assert.Equal(t, "A", getStepOrDAGTaskName(node.Name))
 		}
 		if strings.Contains(node.Name, ".B") {
-			assert.Equal(t,  "B", getStepOrDAGTaskName(node.Name))
+			assert.Equal(t, "B", getStepOrDAGTaskName(node.Name))
 		}
 	}
 }
@@ -3572,9 +3572,9 @@ func TestContainerOutputsResult(t *testing.T) {
 
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "hello1") {
-			assert.Equal(t,  "hello1", getStepOrDAGTaskName(node.Name))
+			assert.Equal(t, "hello1", getStepOrDAGTaskName(node.Name))
 		} else if strings.Contains(node.Name, "hello2") {
-			assert.Equal(t,  "hello2", getStepOrDAGTaskName(node.Name))
+			assert.Equal(t, "hello2", getStepOrDAGTaskName(node.Name))
 		}
 	}
 }
