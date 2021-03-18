@@ -211,7 +211,6 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 
 func (s *CLISuite) TestTokenArg() {
 	s.setMode(KUBE)
-	s.Need(fixtures.RBAC)
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)

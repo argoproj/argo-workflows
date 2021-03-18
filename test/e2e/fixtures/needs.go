@@ -7,9 +7,6 @@ import (
 type Need func(s *E2ESuite) (met bool, message string)
 
 var (
-	RBAC Need = func(s *E2ESuite) (bool, string) {
-		return os.Getenv("CI") != "", "Kubernetes RBAC (and therefore CI)"
-	}
 	CI Need = func(s *E2ESuite) (bool, string) {
 		return os.Getenv("CI") != "", "CI"
 	}

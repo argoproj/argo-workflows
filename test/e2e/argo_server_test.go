@@ -319,7 +319,6 @@ func (s *ArgoServerSuite) TestOauth() {
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {
-	s.Need(fixtures.RBAC)
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = "test-token"
@@ -443,14 +442,13 @@ func (s *ArgoServerSuite) TestPermission() {
     "spec": {
       "templates": [
         {
-          "name": "run-workflow",
+          "name": "main",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "args": [ "exit", "1" ]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
-      "entrypoint": "run-workflow"
+      "entrypoint": "main"
     }
   }
 }`)).
@@ -462,7 +460,6 @@ func (s *ArgoServerSuite) TestPermission() {
 	})
 
 	// Test list workflows with good token
-	s.bearerToken = goodToken
 	s.Run("ListWFsGoodToken", func() {
 		s.e().GET("/api/v1/workflows/"+nsName).
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
@@ -474,6 +471,10 @@ func (s *ArgoServerSuite) TestPermission() {
 			Length().
 			Equal(1)
 	})
+
+	s.Given().
+		When().
+		WaitForWorkflow(fixtures.ToBeArchived)
 
 	// Test creating workflow with bad token
 	s.bearerToken = badToken
@@ -490,13 +491,13 @@ func (s *ArgoServerSuite) TestPermission() {
     "spec": {
       "templates": [
         {
-          "name": "run-workflow",
+          "name": "main",
           "container": {
             "image": "argoproj/argosay:v2"
           }
         }
       ],
-      "entrypoint": "run-workflow"
+      "entrypoint": "main"
     }
   }
 }`)).
@@ -505,26 +506,12 @@ func (s *ArgoServerSuite) TestPermission() {
 	})
 
 	// Test list workflows with bad token
-	s.bearerToken = badToken
 	s.Run("ListWFsBadToken", func() {
 		s.e().GET("/api/v1/workflows/" + nsName).
 			Expect().
 			Status(403)
 	})
-
-	// Simply wait 10 seconds for the wf to be completed
-	s.Given().
-		WorkflowName("test-wf-good").
-		When().
-		WaitForWorkflow()
-	// Simply wait 10 seconds for the wf to be completed
-	s.Given().
-		WorkflowName("test-wf-good").
-		When().
-		WaitForWorkflow()
-
 	// Test delete workflow with bad token
-	s.bearerToken = badToken
 	s.Run("DeleteWFWithBadToken", func() {
 		s.e().DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 			Expect().
@@ -543,7 +530,6 @@ func (s *ArgoServerSuite) TestPermission() {
 	// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
 
 	// Test list archived WFs with good token
-	s.bearerToken = goodToken
 	s.Run("ListArchivedWFsGoodToken", func() {
 		s.e().GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
@@ -557,7 +543,6 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	s.bearerToken = badToken
 	s.Run("ListArchivedWFsBadToken", func() {
-		s.Need(fixtures.RBAC)
 		s.e().GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
@@ -583,12 +568,12 @@ func (s *ArgoServerSuite) TestPermission() {
 	})
 
 	// Test deleting archived wf with bad token
-	s.bearerToken = badToken
 	s.Run("DeleteArchivedWFsBadToken", func() {
 		s.e().DELETE("/api/v1/archived-workflows/" + uid).
 			Expect().
 			Status(403)
 	})
+
 	// Test deleting archived wf with good token
 	s.bearerToken = goodToken
 	s.Run("DeleteArchivedWFsGoodToken", func() {
