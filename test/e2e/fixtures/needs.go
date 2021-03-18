@@ -17,12 +17,6 @@ var (
 		met, _ := None(K8SAPI, Kubelet)(s)
 		return met, "base layer artifact support"
 	}
-	Offloading Need = func(s *E2ESuite) (bool, string) {
-		return s.Persistence.IsEnabled(), "offloading enabled"
-	}
-	WorkflowArchive Need = func(s *E2ESuite) (bool, string) {
-		return s.Persistence.IsEnabled(), "workflow archive enabled"
-	}
 	Docker   = Executor("docker")
 	Emissary = Executor("emissary")
 	K8SAPI   = Executor("k8sapi")

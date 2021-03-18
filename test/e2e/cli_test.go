@@ -20,6 +20,13 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
+const (
+	GRPC    = "GRPC"
+	KUBE    = "KUBE"
+	HTTP1   = "HTTP1"
+	DEFAULT = HTTP1
+)
+
 type CLISuite struct {
 	fixtures.E2ESuite
 }
@@ -28,41 +35,33 @@ var kubeConfig = os.Getenv("KUBECONFIG")
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	s.setMode("HTTP1")
+	s.setMode(HTTP1)
 }
 
 func (s *CLISuite) setMode(mode string) {
 	token, err := s.GetServiceAccountToken()
 	s.CheckError(err)
+	_ = os.Unsetenv("ARGO_INSTANCEID")
+	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+	_ = os.Unsetenv("ARGO_BASE_HREF")
+	_ = os.Unsetenv("ARGO_SECURE")
+	_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
+	_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
+	_ = os.Setenv("ARGO_NAMESPACE", "argo")
+	_ = os.Setenv("KUBECONFIG", "/dev/null")
 	switch mode {
-	case "KUBE":
-		_ = os.Unsetenv("ARGO_INSTANCEID")
+	case GRPC:
+		_ = os.Unsetenv("ARGO_HTTP1")
+	case HTTP1:
+		_ = os.Setenv("ARGO_HTTP1", "true")
+	case KUBE:
 		_ = os.Unsetenv("ARGO_SERVER")
-		_ = os.Unsetenv("ARGO_BASE_HREF")
 		_ = os.Unsetenv("ARGO_HTTP1")
 		_ = os.Unsetenv("ARGO_TOKEN")
 		_ = os.Unsetenv("ARGO_NAMESPACE")
 		_ = os.Setenv("KUBECONFIG", kubeConfig)
 	default:
-		_ = os.Unsetenv("ARGO_INSTANCEID")
-		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
-		_ = os.Unsetenv("ARGO_BASE_HREF")
-		_ = os.Unsetenv("ARGO_SECURE")
-		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
-		_ = os.Unsetenv("ARGO_HTTP1")
-		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
-		_ = os.Setenv("ARGO_NAMESPACE", "argo")
-		_ = os.Setenv("KUBECONFIG", "/dev/null")
-	case "HTTP1":
-		_ = os.Unsetenv("ARGO_INSTANCEID")
-		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
-		_ = os.Unsetenv("ARGO_BASE_HREF")
-		_ = os.Unsetenv("ARGO_SECURE")
-		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
-		_ = os.Setenv("ARGO_HTTP1", "true")
-		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
-		_ = os.Setenv("ARGO_NAMESPACE", "argo")
-		_ = os.Setenv("KUBECONFIG", "/dev/null")
+		panic(mode)
 	}
 }
 
@@ -97,6 +96,7 @@ func (s *CLISuite) TestLogLevels() {
 }
 
 func (s *CLISuite) TestGLogLevels() {
+	s.setMode(KUBE)
 	expected := "Config loaded from file"
 	s.Run("Verbose", func() {
 		s.Given().
@@ -176,13 +176,13 @@ func (s *CLISuite) TestVersion() {
 }
 
 func (s *CLISuite) TestGRPC() {
-	s.setMode("GRPC")
+	s.setMode(GRPC)
 	s.Given().
 		RunCli([]string{"list"}, fixtures.NoError)
 }
 
 func (s *CLISuite) TestKUBE() {
-	s.setMode("KUBE")
+	s.setMode(KUBE)
 	s.Given().
 		RunCli([]string{"list"}, fixtures.NoError)
 }
@@ -210,6 +210,7 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
+	s.setMode(KUBE)
 	s.Need(fixtures.RBAC)
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
@@ -278,6 +279,8 @@ func (s *CLISuite) TestLogs() {
 			})
 	})
 	s.Run("SinceTime", func() {
+		s.setMode(KUBE)
+		defer s.setMode(DEFAULT)
 		s.Given().
 			RunCli([]string{"logs", name, "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -381,14 +384,18 @@ func (s *CLISuite) TestRoot() {
 			}
 		})
 	})
-
+	s.Run("Delete", func() {
+		s.Given().RunCli([]string{"delete", "@latest"}, fixtures.NoError)
+	})
 	s.Run("From", func() {
 		s.Given().
+			CronWorkflow("@cron/basic.yaml").
+			When().
+			CreateCronWorkflow().
 			RunCli([]string{"submit", "--from", "cronworkflow/test-cron-wf-basic", "--scheduled-time", "2006-01-02T15:04:05-07:00", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 				assert.Contains(t, output, "Name:                test-cron-wf-basic-")
 			}).
-			When().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
 			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -707,7 +714,6 @@ func (s *CLISuite) TestWorkflowLint() {
 }
 
 func (s *CLISuite) TestWorkflowRetry() {
-
 	var retryTime metav1.Time
 
 	s.Given().
@@ -1181,29 +1187,6 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 				assert.Contains(t, output, "Stopped with strategy 'Terminate'")
 			})
 	})
-}
-
-func (s *CLISuite) TestMetaDataNamespace() {
-	s.Need(fixtures.RBAC)
-	s.Given().
-		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
-				assert.Contains(t, output, "PermissionDenied")
-				assert.Contains(t, output, `in the namespace "default"`)
-			}
-		}).
-		Exec("../../dist/argo", []string{"cron", "get", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
-				assert.Contains(t, output, "PermissionDenied")
-				assert.Contains(t, output, `in the namespace \"default\"`)
-			}
-		}).
-		Exec("../../dist/argo", []string{"cron", "delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
-				assert.Contains(t, output, "PermissionDenied")
-				assert.Contains(t, output, `in the namespace \"default\"`)
-			}
-		})
 }
 
 func (s *CLISuite) TestAuthToken() {

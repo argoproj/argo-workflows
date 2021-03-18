@@ -14,7 +14,7 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-20.04
     # 5m30
-    timeout-minutes: 11
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -38,11 +38,11 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-20.04
     # test-api: 7m (1m10s locally)
-    # test-cli: 12m
+    # test-cli: 12m (4m locally)
     # test-cron: 8m
     # test-executor 8m (2m locally)
-    # test-functional: 13m
-    timeout-minutes: 24
+    # test-functional: 13m (7m locally)
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -103,14 +103,12 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           PROFILE=minimal
-          ALWAYS_OFFLOAD_NODE_STATUS=false
           if [ "${{matrix.test}}" = test-cli ] || [ "${{matrix.test}}" = test-api ]; then
             PROFILE=mysql
-            ALWAYS_OFFLOAD_NODE_STATUS=true
           fi
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} ALWAYS_OFFLOAD_NODE_STATUS=${ALWAYS_OFFLOAD_NODE_STATUS} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
       - run: make ${{matrix.test}}
       - name: Upload logs
@@ -172,7 +170,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-20.04
     needs: [ tests, codegen ]
-    timeout-minutes: 2
+    timeout-minutes: 3
     env:
       GOPATH: /home/runner/go
     steps:

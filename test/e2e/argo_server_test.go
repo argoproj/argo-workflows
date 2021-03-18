@@ -1025,7 +1025,6 @@ spec:
 
 // make sure we can download an artifact
 func (s *ArgoServerSuite) TestArtifactServer() {
-	s.Need(fixtures.WorkflowArchive)
 	var uid types.UID
 	var name string
 	s.Given().
@@ -1163,7 +1162,6 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
-	s.Need(fixtures.WorkflowArchive)
 	var uid types.UID
 	s.Given().
 		Workflow(`
