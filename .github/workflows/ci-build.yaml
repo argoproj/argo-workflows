@@ -42,7 +42,7 @@ jobs:
     # test-cron: 8m
     # test-executor 8m (2m locally)
     # test-functional: 13m (7m locally)
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
