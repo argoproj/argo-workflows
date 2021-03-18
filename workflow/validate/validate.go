@@ -105,8 +105,6 @@ var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.Conditions, error) {
-	wf = wf.DeepCopy()
-	wf.Spec.Normalize()
 	wfConditions := &wfv1.Conditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
@@ -727,32 +725,32 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 	resolvedTemplates := make(map[string]*wfv1.Template)
 	for i, stepGroup := range tmpl.Steps {
 		for _, step := range stepGroup.Steps {
-			if step.GetName() == "" {
+			if step.Name == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name is required", tmpl.Name, i)
 			}
-			_, ok := stepNames[step.GetName()]
+			_, ok := stepNames[step.Name]
 			if ok {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.GetName())
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
 			}
-			if errs := isValidWorkflowFieldName(step.GetName()); len(errs) != 0 {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.GetName(), strings.Join(errs, ";"))
+			if errs := isValidWorkflowFieldName(step.Name); len(errs) != 0 {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
-			stepNames[step.GetName()] = true
-			prefix := fmt.Sprintf("steps.%s", step.GetName())
+			stepNames[step.Name] = true
+			prefix := fmt.Sprintf("steps.%s", step.Name)
 			scope[fmt.Sprintf("%s.status", prefix)] = true
 			err := addItemsToScope(step.WithItems, step.WithParam, step.WithSequence, scope)
 			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.GetName(), err.Error())
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.GetName()), step.Arguments)
+			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
 			if err != nil {
 				return err
 			}
 			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{})
 			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.GetName(), err.Error())
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			resolvedTemplates[step.GetName()] = resolvedTmpl
+			resolvedTemplates[step.Name] = resolvedTmpl
 		}
 
 		stepBytes, err := json.Marshal(stepGroup)
@@ -766,13 +764,13 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 
 		for _, step := range stepGroup.Steps {
 			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
-			resolvedTmpl := resolvedTemplates[step.GetName()]
-			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.GetName()), scope, aggregate, false)
+			resolvedTmpl := resolvedTemplates[step.Name]
+			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
 
 			// Validate the template again with actual arguments.
 			_, err = ctx.validateTemplateHolder(&step, tmplCtx, &step.Arguments)
 			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.GetName(), err.Error())
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 		}
 	}
@@ -1132,7 +1130,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			usingDepends = true
 		}
 
-		nameToTask[task.GetName()] = task
+		nameToTask[task.Name] = task
 	}
 
 	dagValidationCtx := &dagValidationContext{
@@ -1145,8 +1143,8 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
 
-		if '0' <= task.GetName()[0] && task.GetName()[0] <= '9' {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.GetName())
+		if '0' <= task.Name[0] && task.Name[0] <= '9' {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.Name)
 		}
 
 		if usingDepends && len(task.Dependencies) > 0 {
@@ -1159,29 +1157,29 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{})
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.GetName(), err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 
-		resolvedTemplates[task.GetName()] = resolvedTmpl
+		resolvedTemplates[task.Name] = resolvedTmpl
 
-		prefix := fmt.Sprintf("tasks.%s", task.GetName())
+		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 
 		err = common.ValidateTaskResults(&task)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.GetName(), err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 
-		for depName, depType := range dagValidationCtx.GetTaskDependenciesWithDependencyTypes(task.GetName()) {
+		for depName, depType := range dagValidationCtx.GetTaskDependenciesWithDependencyTypes(task.Name) {
 			task, ok := dagValidationCtx.tasks[depName]
 			if !ok {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s dependency '%s' not defined",
-					tmpl.Name, task.GetName(), depName)
+					tmpl.Name, task.Name, depName)
 			} else if depType == common.DependencyTypeItems && len(task.WithItems) == 0 && task.WithParam == "" && task.WithSequence == nil {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s dependency '%s' uses an items-based condition such as .AnySucceeded or .AllFailed but does not contain any items",
-					tmpl.Name, task.GetName(), depName)
+					tmpl.Name, task.Name, depName)
 			}
 		}
 	}
@@ -1199,9 +1197,9 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	}
 
 	for _, task := range tmpl.DAG.Tasks {
-		resolvedTmpl := resolvedTemplates[task.GetName()]
+		resolvedTmpl := resolvedTemplates[task.Name]
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
-		prefix := fmt.Sprintf("tasks.%s", task.GetName())
+		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 		taskBytes, err := json.Marshal(task)
 		if err != nil {
@@ -1211,7 +1209,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		for k, v := range scope {
 			taskScope[k] = v
 		}
-		ancestry := common.GetTaskAncestry(dagValidationCtx, task.GetName())
+		ancestry := common.GetTaskAncestry(dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {
 			ancestorTask := dagValidationCtx.GetTask(ancestor)
 			resolvedTmpl := resolvedTemplates[ancestor]
@@ -1221,24 +1219,24 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		}
 		err = addItemsToScope(task.WithItems, task.WithParam, task.WithSequence, taskScope)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.GetName(), err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 		err = resolveAllVariables(taskScope, string(taskBytes))
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.GetName(), err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 		err = validateDAGTaskArgumentDependency(task.Arguments, ancestry)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.GetName(), err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.GetName()), task.Arguments)
+		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments)
 		if err != nil {
 			return err
 		}
 		// Validate the template again with actual arguments.
 		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.GetName(), err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 	}
 
@@ -1301,7 +1299,7 @@ func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 			return nil
 		}
 		task := ctx.GetTask(taskName)
-		for _, depName := range ctx.GetTaskDependencies(task.GetName()) {
+		for _, depName := range ctx.GetTaskDependencies(task.Name) {
 			for _, name := range cycle {
 				if name == depName {
 					return errors.Errorf(errors.CodeBadRequest,
@@ -1321,7 +1319,7 @@ func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	}
 
 	for _, task := range tmpl.DAG.Tasks {
-		err := noCyclesHelper(task.GetName(), []string{})
+		err := noCyclesHelper(task.Name, []string{})
 		if err != nil {
 			return err
 		}
@@ -1333,9 +1331,9 @@ func sortDAGTasks(tmpl *wfv1.Template) error {
 	taskMap := make(map[string]*wfv1.DAGTask, len(tmpl.DAG.Tasks))
 	sortingGraph := make([]*sorting.TopologicalSortingNode, len(tmpl.DAG.Tasks))
 	for index := range tmpl.DAG.Tasks {
-		taskMap[tmpl.DAG.Tasks[index].GetName()] = &tmpl.DAG.Tasks[index]
+		taskMap[tmpl.DAG.Tasks[index].Name] = &tmpl.DAG.Tasks[index]
 		sortingGraph[index] = &sorting.TopologicalSortingNode{
-			NodeName:     tmpl.DAG.Tasks[index].GetName(),
+			NodeName:     tmpl.DAG.Tasks[index].Name,
 			Dependencies: tmpl.DAG.Tasks[index].Dependencies,
 		}
 	}
@@ -1370,7 +1368,7 @@ func isValidParamOrArtifactName(p string) []string {
 }
 
 const (
-	workflowFieldNameFmt    string = "[a-zA-Z0-9][-.a-zA-Z0-9]*"
+	workflowFieldNameFmt    string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
 	workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
 	workflowFieldMaxLength  int    = 128
 )

@@ -358,22 +358,24 @@ func (w *WorkflowSpec) Normalize() {
 		switch v := tmpl.Get().(type) {
 		case *DAGTemplate:
 			for j, t := range v.Tasks {
-				if t.IsInlined() {
-					templateName := fmt.Sprintf("%s.%s", tmpl.Name, t.Inline.Name)
-					w.Templates = append(w.Templates, t.Inline)
+				if t.Inline != nil {
+					templateName := fmt.Sprintf("%s.%s", tmpl.Name, t.Name)
+					t.Inline.Name = templateName
+					w.Templates = append(w.Templates, *t.Inline)
 					t.Template = templateName
-					t.Inline = Template{Name: templateName,}
+					t.Inline = nil
 				}
 				tmpl.DAG.Tasks[j] = t
 			}
 		case []ParallelSteps:
 			for j, p := range v {
 				for k, s := range p.Steps {
-					if s.IsInlined() {
+					if s.Inline != nil {
 						templateName := fmt.Sprintf("%s.%d.%d", tmpl.Name, j, k)
-						w.Templates = append(w.Templates, s.Inline)
+						s.Inline.Name = templateName
+						w.Templates = append(w.Templates, *s.Inline)
 						s.Template = templateName
-						s.Inline = Template{Name: templateName,}
+						s.Inline = nil
 					}
 					tmpl.Steps[j].Steps[k] = s
 				}
@@ -1100,7 +1102,10 @@ type Outputs struct {
 
 // WorkflowStep is a reference to a template to execute in a series of step
 type WorkflowStep struct {
-	Inline Template `json:",inline" protobuf:"bytes,12,opt,name=inline"`
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,12,opt,name=inline"`
+
+	// Name of the step
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
 	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
@@ -1146,10 +1151,6 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 
 func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
-}
-
-func (step *WorkflowStep) IsInlined() bool {
-	return step != nil && step.Template == ""
 }
 
 // Sequence expands a workflow step into numeric range
@@ -2327,7 +2328,10 @@ type DAGTemplate struct {
 
 // DAGTask represents a node in the graph during DAG execution
 type DAGTask struct {
-	Inline Template `json:",inline" protobuf:"bytes,13,opt,name=inline"`
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,13,opt,name=inline"`
+
+	// Name is the name of the target
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
@@ -2382,7 +2386,7 @@ func (t *DAGTask) ShouldExpand() bool {
 }
 
 func (t *DAGTask) IsInlined() bool {
-	return t != nil && t.Template == ""
+	return t != nil && t.Inline != nil
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -2587,25 +2591,9 @@ func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
 	return continues(t.ContinueOn, phase)
 }
 
-func (in *DAGTask) GetName() string {
-	return in.Inline.Name
-}
-
-func (in *DAGTask) SetName(name string) {
-	in.Inline.Name = name
-}
-
 // ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
 func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
 	return continues(s.ContinueOn, phase)
-}
-
-func (in *WorkflowStep) GetName() string {
-	return in.Inline.Name
-}
-
-func (in *WorkflowStep) SetName(name string) {
-	in.Inline.Name = name
 }
 
 type MetricType string

@@ -3005,6 +3005,9 @@ spec:
                                     type: array
                                   depends:
                                     type: string
+                                  inline: {}
+                                  name:
+                                    type: string
                                   onExit:
                                     type: string
                                   template:
@@ -3046,6 +3049,8 @@ spec:
                                         - type: string
                                         x-kubernetes-int-or-string: true
                                     type: object
+                                required:
+                                - name
                                 type: object
                               type: array
                           required:
