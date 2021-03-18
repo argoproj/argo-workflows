@@ -13,7 +13,8 @@ jobs:
   tests:
     name: Unit Tests
     runs-on: ubuntu-20.04
-    timeout-minutes: 10
+    # 5m30
+    timeout-minutes: 11
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -36,7 +37,12 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-20.04
-    timeout-minutes: 20
+    # test-api: 7m (1m10s locally)
+    # test-cli: 12m
+    # test-cron: 8m
+    # test-executor 8m (2m locally)
+    # test-functional: 13m
+    timeout-minutes: 24
     strategy:
       fail-fast: false
       matrix:
@@ -118,7 +124,7 @@ jobs:
     name: Codegen
     runs-on: ubuntu-20.04
     needs: [ tests ]
-    timeout-minutes: 10
+    timeout-minutes: 9
     env:
       GOPATH: /home/runner/go
       PROTOC_ZIP: protoc-3.11.1-linux-x86_64.zip
@@ -166,7 +172,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-20.04
     needs: [ tests, codegen ]
-    timeout-minutes: 10
+    timeout-minutes: 2
     env:
       GOPATH: /home/runner/go
     steps:

@@ -70,16 +70,6 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 	_ = os.Setenv("KUBECONFIG", kubeConfig)
 }
 
-var (
-	Server fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
-		return os.Getenv("ARGO_SERVER") != "", "Argo Server"
-	}
-	Offloading               = fixtures.All(fixtures.Offloading, Server)
-	HTTP1      fixtures.Need = func(*fixtures.E2ESuite) (bool, string) {
-		return os.Getenv("ARGO_HTTP1") != "", "HTTP1 client"
-	}
-)
-
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
@@ -107,7 +97,6 @@ func (s *CLISuite) TestLogLevels() {
 }
 
 func (s *CLISuite) TestGLogLevels() {
-	s.Need(fixtures.None(Server))
 	expected := "Config loaded from file"
 	s.Run("Verbose", func() {
 		s.Given().
@@ -144,7 +133,6 @@ func (s *CLISuite) TestVersion() {
 			})
 	})
 	s.Run("Default", func() {
-		s.Need(Server)
 		s.Given().
 			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -174,7 +162,6 @@ func (s *CLISuite) TestVersion() {
 			})
 	})
 	s.Run("Short", func() {
-		s.Need(Server)
 		s.Given().
 			RunCli([]string{"version", "--short"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -223,7 +210,6 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
-	s.Need(fixtures.None(Server))
 	s.Need(fixtures.RBAC)
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
@@ -292,7 +278,6 @@ func (s *CLISuite) TestLogs() {
 			})
 	})
 	s.Run("SinceTime", func() {
-		s.Need(fixtures.None(HTTP1)) // this test errors with `field type *v1.Time is not supported in query parameters`
 		s.Given().
 			RunCli([]string{"logs", name, "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -413,7 +398,6 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
@@ -433,7 +417,6 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 }
 
 func (s *CLISuite) TestNodeSuspendResume() {
-	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -724,9 +707,7 @@ func (s *CLISuite) TestWorkflowLint() {
 }
 
 func (s *CLISuite) TestWorkflowRetry() {
-	// this test is a flake
 
-	s.Need(Offloading)
 	var retryTime metav1.Time
 
 	s.Given().
@@ -816,7 +797,6 @@ func (s *CLISuite) TestWorkflowTerminateByFieldSelector() {
 }
 
 func (s *CLISuite) TestWorkflowWait() {
-	s.Need(Offloading)
 	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -834,7 +814,6 @@ func (s *CLISuite) TestWorkflowWait() {
 }
 
 func (s *CLISuite) TestWorkflowWatch() {
-	s.Need(Offloading)
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -1135,7 +1114,6 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 }
 
 func (s *CLISuite) TestRetryOmit() {
-	s.Need(Offloading)
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
 		When().
@@ -1162,7 +1140,6 @@ func (s *CLISuite) TestRetryOmit() {
 }
 
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
-	s.Need(Offloading)
 	s.Run("ResourceTemplateStop", func() {
 		s.Given().
 			WorkflowName("resource-tmpl-wf").
@@ -1207,7 +1184,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 }
 
 func (s *CLISuite) TestMetaDataNamespace() {
-	s.Need(fixtures.RBAC, Offloading)
+	s.Need(fixtures.RBAC)
 	s.Given().
 		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.Error(t, err) {
@@ -1230,7 +1207,6 @@ func (s *CLISuite) TestMetaDataNamespace() {
 }
 
 func (s *CLISuite) TestAuthToken() {
-	s.Need(Offloading)
 	s.Given().RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, output)
@@ -1238,7 +1214,6 @@ func (s *CLISuite) TestAuthToken() {
 }
 
 func (s *CLISuite) TestArchive() {
-	s.Need(Offloading)
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -1290,7 +1265,6 @@ func (s *CLISuite) TestArchive() {
 }
 
 func (s *CLISuite) TestArgoSetOutputs() {
-	s.Need(Offloading)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
