@@ -30,6 +30,10 @@ type Then struct {
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
 	t.t.Helper()
+	if t.wf == nil {
+		t.t.Error("workflows is nil")
+		return t
+	}
 	return t.expectWorkflow(t.wf.Name, block)
 }
 
