@@ -14,7 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const kill2xDuration = 1 * time.Minute
+const kill2xDuration = 70 * time.Second
 
 // Tests the use of signals to kill containers.
 // argoproj/argosay:v2 does not contain sh, so you must use argoproj/argosay:v1.
@@ -34,7 +34,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
 		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
@@ -63,7 +63,7 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
 		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
