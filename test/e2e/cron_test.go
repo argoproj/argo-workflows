@@ -260,7 +260,7 @@ spec:
           args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute+25*time.Second).
+			Wait(2*time.Minute+20*time.Second).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, 1, len(cronWf.Status.Active))
@@ -294,11 +294,11 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute+25*time.Second).
+			Wait(2*time.Minute+35*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Equal(t, 1, len(wfList.Items))
-				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.LessOrEqual(t, 2, len(wfList.Items))
+				assert.True(t, wfList.Items[len(wfList.Items)-1].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
@@ -327,11 +327,11 @@ spec:
           args: ["exit", "1"]`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute+25*time.Second).
+			Wait(2*time.Minute+35*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Equal(t, 1, len(wfList.Items))
-				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				assert.LessOrEqual(t, 2, len(wfList.Items))
+				assert.True(t, wfList.Items[len(wfList.Items)-1].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }
