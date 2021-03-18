@@ -474,7 +474,6 @@ watch-pods:
 	# NODE_ID:.metadata.name
 	# EXECUTION_CONTROL:.metadata.annotations.workflows\.argoproj\.io/execution
 	kubectl get pod \
-	  -l workflows.argoproj.io/workflow \
 	  -o=custom-columns='WORKFLOW:.metadata.labels.workflows\.argoproj\.io/workflow,NODE_NAME:.metadata.annotations.workflows\.argoproj\.io/node-name,STATUS:.status.phase,MESSAGE:.metadata.annotations.workflows\.argoproj\.io/node-message,CTRS:.status.containerStatuses[*].name,CTR STATUS:.status.containerStatuses[*].state.terminated.reason,EXIT CODES:.status.containerStatuses[*].state.terminated.exitCode' \
 	  -w
 
