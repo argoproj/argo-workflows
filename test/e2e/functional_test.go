@@ -649,6 +649,15 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
+	s.Need(fixtures.BaseLayerArtifacts)
+	s.Given().
+		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *FunctionalSuite) TestDataTransformation() {
 	s.Given().
 		Workflow("@testdata/data-transformation.yaml").
