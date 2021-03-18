@@ -3,7 +3,6 @@ package fixtures
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"testing"
