@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -83,7 +84,7 @@ func (s *E2ESuite) BeforeTest(string, string) {
 	start := time.Now()
 	s.DeleteResources()
 	if time.Since(start) > time.Second {
-		_, _ = fmt.Printf("%s took %v (maybe previous test was slow)\n", color.Ize("LONG SET-UP", color.Yellow), time.Since(start).Truncate(time.Second))
+		_, _ = fmt.Printf("LONG SET-UP took %v (maybe previous test was slow)\n", time.Since(start).Truncate(time.Second))
 	}
 	s.testStartedAt = time.Now()
 }
@@ -127,7 +128,7 @@ func (s *E2ESuite) DeleteResources() {
 	}
 	for _, r := range resources {
 		for {
-			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: l(r)}))
+			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(2)}, metav1.ListOptions{LabelSelector: l(r)}))
 			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
 			s.CheckError(err)
 			if len(ls.Items) == 0 {

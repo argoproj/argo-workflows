@@ -45,7 +45,7 @@ START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 10ms
+DEFAULT_REQUEUE_TIME  ?= 100ms
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid
@@ -492,6 +492,9 @@ postgres-cli:
 .PHONY: mysql-cli
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
+
+start-e2e:
+	$(MAKE) start PROFILE=mysql E2E_EXECUTOR=emissary ALWAYS_OFFLOAD_NODE_STATUS=true AUTH_MODE=client
 
 test-e2e: test-api test-cli test-cron test-executor test-functional
 

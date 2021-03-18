@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -360,7 +359,6 @@ spec:
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
-	options.FieldSelector = fields.Everything().String()
 	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Equals, []string{cronWfName})
 	if err != nil {
 		panic(err)
