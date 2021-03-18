@@ -5,6 +5,7 @@ package e2e
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -27,8 +28,8 @@ func (s *SemaphoreSuite) TestSynchronizationWfLevelMutex() {
 		Workflow("@functional/synchronization-mutex-wf-level.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex).
-		WaitForWorkflow(fixtures.ToBeSucceeded)
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, time.Minute).
+		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
 }
 
 func (s *SemaphoreSuite) TestTemplateLevelMutex() {
@@ -36,8 +37,8 @@ func (s *SemaphoreSuite) TestTemplateLevelMutex() {
 		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex).
-		WaitForWorkflow(fixtures.ToBeSucceeded)
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, time.Minute).
+		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
 }
 
 func (s *SemaphoreSuite) TestWorkflowLevelSemaphore() {
@@ -46,12 +47,12 @@ func (s *SemaphoreSuite) TestWorkflowLevelSemaphore() {
 		When().
 		CreateConfigMap("my-config", map[string]string{"workflow": "1"}).
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHavePhase(wfv1.WorkflowUnknown)).
+		WaitForWorkflow(fixtures.ToHavePhase(wfv1.WorkflowUnknown), time.Minute).
 		WaitForWorkflow().
 		DeleteConfigMap("my-config").
 		Then().
 		When().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
+		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
 }
 
 func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
@@ -60,7 +61,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 		When().
 		CreateConfigMap("my-config", map[string]string{"template": "1"}).
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeRunning, time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.True(t, status.Nodes.Any(func(n wfv1.NodeStatus) bool {
@@ -68,7 +69,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 			}))
 		}).
 		When().
-		WaitForWorkflow()
+		WaitForWorkflow(time.Minute)
 }
 
 func TestSemaphoreSuite(t *testing.T) {
