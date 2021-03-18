@@ -728,21 +728,6 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		})
 }
 
-func (s *FunctionalSuite) TestMarkDaemonedPodSucceeded() {
-	s.Given().
-		Workflow("@testdata/daemoned-pod-completed.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			node := status.Nodes.FindByDisplayName("daemoned")
-			if assert.NotNil(t, node) {
-				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-			}
-		})
-}
-
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
