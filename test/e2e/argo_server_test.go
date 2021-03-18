@@ -1009,7 +1009,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 	var uid types.UID
 	var name string
 	s.Given().
-		Workflow("@smoke/basic.yaml").
+		Workflow(`@testdata/artifact-workflow.yaml`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1020,7 +1020,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-logs").
+		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
 			Status(200).
 			Body().
@@ -1031,7 +1031,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Expect().
 			Status(200)
 
-		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-file", uid, name).
 			Expect().
 			Status(200).
 			Body().
@@ -1043,7 +1043,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		token := s.bearerToken
 		defer func() { s.bearerToken = token }()
 		s.bearerToken = ""
-		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-file", uid, name).
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)

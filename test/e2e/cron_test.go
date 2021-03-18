@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -359,12 +357,7 @@ spec:
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
-	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Equals, []string{cronWfName})
-	if err != nil {
-		panic(err)
-	}
-	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
-	options.LabelSelector = labelSelector.String()
+	options.LabelSelector = common.LabelKeyCronWorkflow + "=" + cronWfName
 }
 
 func (s *CronSuite) TestMalformedCronWorkflow() {
