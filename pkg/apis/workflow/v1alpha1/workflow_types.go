@@ -1104,6 +1104,8 @@ type WorkflowStep struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	OnExitTemplate *OnExitTemplate `json:"onExitTemplate,omitempty" protobuf:"bytes,12,opt,name=onExitTemplate"`
 }
 
 type OnExitTemplate struct {
@@ -2314,6 +2316,8 @@ type DAGTask struct {
 
 	// Depends are name of other targets which this depends on
 	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
+
+	OnExitTemplate *OnExitTemplate `json:"onExitTemplate,omitempty" protobuf:"bytes,39,opt,name=onExitTemplate"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}

@@ -345,6 +345,8 @@ message DAGTask {
 
   // Depends are name of other targets which this depends on
   optional string depends = 12;
+
+  optional OnExitTemplate onExitTemplate = 39;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -1617,6 +1619,8 @@ message WorkflowStep {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+
+  optional OnExitTemplate onExitTemplate = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

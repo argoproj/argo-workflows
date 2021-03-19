@@ -1,0 +1,80 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-artifacts-
+spec:
+  entrypoint: main
+  onExitTemplate:
+    template: whalesay
+    arguments:
+      parameters:
+        - name: message
+          value: "{{workflow.name}}"
+  templates:
+    - name: main
+
+      steps:
+        - - name: flip-coin
+            template: flip-coin
+        - - name: heads
+            template: heads
+            onExitTemplate:
+              template: whalesay
+              arguments:
+                parameters:
+                  - name: message
+                    value: "{{steps.flip-coin.outputs.result}}"
+            when: "{{steps.flip-coin.outputs.result}} == heads"
+          - name: tails
+            template: tails
+            onExitTemplate:
+              template: whalesay
+              arguments:
+                parameters:
+                  - name: message
+                    value: "{{steps.flip-coin.outputs.result}}"
+            when: "{{steps.flip-coin.outputs.result}} == tails"
+      outputs:
+        artifacts:
+          - name: result
+            fromExpression: "steps['flip-coin'].outputs.result == 'heads' ? steps.heads.outputs.artifacts.result : steps.tails.outputs.artifacts.result"
+
+    - name: flip-coin
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          import random
+          print("heads" if random.randint(0,1) == 0 else "tails")
+
+    - name: heads
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          with open("result.txt", "w") as f:
+            f.write("it was heads")
+      outputs:
+        artifacts:
+          - name: result
+            path: /result.txt
+
+    - name: tails
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          with open("result.txt", "w") as f:
+            f.write("it was tails")
+      outputs:
+        artifacts:
+          - name: result
+            path: /result.txt
+    - name: whalesay
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["hello world {{inputs.parameters.message}}"]
