@@ -760,7 +760,8 @@ spec:
     - - name: flip-again
         template: flip-coin
     - - name: complex-condition
-        template: heads-tails-or-twice-tails  # call heads template if first flip was "heads" and second was "tail" OR both were "tail"
+        template: heads-tails-or-twice-tails
+        # call heads template if first flip was "heads" and second was "tail" OR both were "tails"
         when: >-
             ( {{steps.flip-coin.outputs.result}} == heads &&
               {{steps.flip-again.outputs.result}} == tails
