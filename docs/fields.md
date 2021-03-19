@@ -280,9 +280,9 @@ Workflow is the definition of a workflow resource
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-step.yaml)
 
@@ -653,9 +653,9 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
@@ -1045,9 +1045,9 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
@@ -1394,9 +1394,9 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
@@ -1770,7 +1770,7 @@ RetryStrategy provides controls on how to retry a workflow step
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-with-steps.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 </details>
@@ -1814,7 +1814,7 @@ Template is a reusable and composable unit of execution in a workflow
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 </details>
 
 ### Fields
@@ -3083,9 +3083,9 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-workflow.yaml)
 
@@ -3609,7 +3609,7 @@ MetricLabel is a single label for a prometheus metric
 
 - [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 </details>
 
 ### Fields
@@ -4359,9 +4359,9 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
@@ -4676,7 +4676,7 @@ _No description available_
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-with-steps.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 </details>
@@ -4917,9 +4917,9 @@ A single application container that you want to run within a pod.
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-step.yaml)
 
@@ -5592,9 +5592,9 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
-- [`template_defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template_defaults.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
