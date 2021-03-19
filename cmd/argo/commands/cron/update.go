@@ -64,6 +64,14 @@ func updateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 		if err != nil {
 			log.Fatal(err)
 		}
+		current, err := serviceClient.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{
+			Name: cronWf.Name,
+			Namespace: cronWf.Namespace,
+		})
+		if err != nil {
+			log.Fatalf("Failed to get existing cron workflow %q to update: %v", cronWf.Name, err)
+		}
+		cronWf.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{
 			Namespace:    cronWf.Namespace,
 			CronWorkflow: &cronWf,

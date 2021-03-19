@@ -58,6 +58,14 @@ func updateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 		if wftmpl.Namespace == "" {
 			wftmpl.Namespace = client.Namespace()
 		}
+		current, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
+			Name: wftmpl.Name,
+			Namespace: wftmpl.Namespace,
+		})
+		if err != nil {
+			log.Fatalf("Failed to get existing workflow template %q to update: %v", wftmpl.Name, err)
+		}
+		wftmpl.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
 			Namespace: wftmpl.Namespace,
 			Template:  &wftmpl,

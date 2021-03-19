@@ -895,6 +895,16 @@ func (s *CLISuite) TestTemplate() {
 				}
 			})
 	})
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"template", "update", "testdata/basic-workflowtemplate-update.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Name:")
+					assert.Contains(t, output, "Namespace:")
+					assert.Contains(t, output, "Created:")
+				}
+			})
+	})
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"template", "delete", "basic"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
