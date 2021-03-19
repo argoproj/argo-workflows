@@ -55,4 +55,5 @@ argo template [flags]
 * [argo template get](argo_template_get.md)	 - display details about a workflow template
 * [argo template lint](argo_template_lint.md)	 - validate a file or directory of workflow template manifests
 * [argo template list](argo_template_list.md)	 - list workflow templates
+* [argo template update](argo_template_update.md)	 - update a workflow template
 

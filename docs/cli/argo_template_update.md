@@ -1,19 +1,21 @@
-## argo cron
+## argo template update
 
-manage cron workflows
+update a workflow template
 
 ### Synopsis
 
-NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
+update a workflow template
 
 ```
-argo cron [flags]
+argo template update FILE1 FILE2... [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for cron
+  -h, --help            help for update
+  -o, --output string   Output format. One of: name|json|yaml|wide
+      --strict          perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands
@@ -49,13 +51,5 @@ argo cron [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo cron create](argo_cron_create.md)	 - create a cron workflow
-* [argo cron delete](argo_cron_delete.md)	 - delete a cron workflow
-* [argo cron get](argo_cron_get.md)	 - display details about a cron workflow
-* [argo cron lint](argo_cron_lint.md)	 - validate files or directories of cron workflow manifests
-* [argo cron list](argo_cron_list.md)	 - list cron workflows
-* [argo cron resume](argo_cron_resume.md)	 - resume zero or more cron workflows
-* [argo cron suspend](argo_cron_suspend.md)	 - suspend zero or more cron workflows
-* [argo cron update](argo_cron_update.md)	 - update a cron workflow
+* [argo template](argo_template.md)	 - manipulate workflow templates
 
