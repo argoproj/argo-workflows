@@ -752,10 +752,10 @@ spec:
         template: flip-coin
     # evaluate the result in parallel
     - - name: heads
-        template: heads                     # call heads template if "heads"
+        template: heads                       # call heads template if "heads"
         when: "{{steps.flip-coin.outputs.result}} == heads"
       - name: tails
-        template: tails                     # call tails template if "tails"
+        template: tails                       # call tails template if "tails"
         when: "{{steps.flip-coin.outputs.result}} == tails"
     - - name: flip-again
         template: flip-coin
@@ -768,10 +768,10 @@ spec:
             ( {{steps.flip-coin.outputs.result}} == tails &&
               {{steps.flip-again.outputs.result}} == tails )
       - name: heads-regex
-        template: heads                     # call heads template if ~ "hea"
+        template: heads                       # call heads template if ~ "hea"
         when: "{{steps.flip-again.outputs.result}} =~ hea"
       - name: tails-regex
-        template: tails                      # call heads template if ~ "tai"
+        template: tails                       # call heads template if ~ "tai"
         when: "{{steps.flip-again.outputs.result}} =~ tai"
 
   # Return heads or tails based on a random number
