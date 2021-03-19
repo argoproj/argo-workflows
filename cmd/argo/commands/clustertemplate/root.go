@@ -19,6 +19,7 @@ func NewClusterTemplateCommand() *cobra.Command {
 	command.AddCommand(NewCreateCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewLintCommand())
+	command.AddCommand(NewUpdateCommand())
 
 	return command
 }
