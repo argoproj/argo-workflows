@@ -19,6 +19,7 @@ import (
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -80,7 +81,11 @@ func (s *E2ESuite) TearDownSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {
+	start := time.Now()
 	s.DeleteResources()
+	if time.Since(start) > time.Second {
+		_, _ = fmt.Printf("LONG SET-UP took %v (maybe previous test was slow)\n", time.Since(start).Truncate(time.Second))
+	}
 	s.testStartedAt = time.Now()
 }
 
@@ -101,13 +106,15 @@ func (s *E2ESuite) AfterTest(suiteName, testName string) {
 
 func (s *E2ESuite) DeleteResources() {
 	ctx := context.Background()
-	// delete pods first, this means workflows can finish faster
-	err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow})
-	s.CheckError(err)
 
-	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
+	l := func(r schema.GroupVersionResource) string {
+		if r.Resource == "pods" {
+			return common.LabelKeyWorkflow
+		}
+		return Label
+	}
+
 	resources := []schema.GroupVersionResource{
-		{Version: "v1", Resource: "resourcequotas"},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
@@ -115,10 +122,20 @@ func (s *E2ESuite) DeleteResources() {
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "sensors"},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "eventsources"},
+		{Version: "v1", Resource: "pods"},
+		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
 	for _, r := range resources {
-		s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{}, hasTestLabel))
+		for {
+			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(2)}, metav1.ListOptions{LabelSelector: l(r)}))
+			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
+			s.CheckError(err)
+			if len(ls.Items) == 0 {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 
 	// delete archived workflows from the archive

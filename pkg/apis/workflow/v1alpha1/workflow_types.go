@@ -351,7 +351,10 @@ type WorkflowSpec struct {
 	// PodMetadata defines additional metadata that should be applied to workflow pods
 	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
 
-	OnExitTemplate *OnExitTemplate `json:"onExitTemplate,omitempty" protobuf:"bytes,39,opt,name=onExitTemplate"`
+	// TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
+	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
+
+	OnExitTemplate *OnExitTemplate `json:"onExitTemplate,omitempty" protobuf:"bytes,40,opt,name=onExitTemplate"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -491,7 +494,7 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
@@ -629,6 +632,36 @@ type Template struct {
 	// Timout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
+}
+
+// SetType will set the template object based on template type.
+func (tmpl *Template) SetType(tmplType TemplateType) {
+	switch tmplType {
+	case TemplateTypeSteps:
+		tmpl.setTemplateObjs(tmpl.Steps, nil, nil, nil, nil, nil, nil)
+	case TemplateTypeDAG:
+		tmpl.setTemplateObjs(nil, tmpl.DAG, nil, nil, nil, nil, nil)
+	case TemplateTypeContainer:
+		tmpl.setTemplateObjs(nil, nil, tmpl.Container, nil, nil, nil, nil)
+	case TemplateTypeScript:
+		tmpl.setTemplateObjs(nil, nil, nil, tmpl.Script, nil, nil, nil)
+	case TemplateTypeResource:
+		tmpl.setTemplateObjs(nil, nil, nil, nil, tmpl.Resource, nil, nil)
+	case TemplateTypeData:
+		tmpl.setTemplateObjs(nil, nil, nil, nil, nil, tmpl.Data, nil)
+	case TemplateTypeSuspend:
+		tmpl.setTemplateObjs(nil, nil, nil, nil, nil, nil, tmpl.Suspend)
+	}
+}
+
+func (tmpl *Template) setTemplateObjs(steps []ParallelSteps, dag *DAGTemplate, container *apiv1.Container, script *ScriptTemplate, resource *ResourceTemplate, data *Data, suspend *SuspendTemplate) {
+	tmpl.Steps = steps
+	tmpl.DAG = dag
+	tmpl.Container = container
+	tmpl.Script = script
+	tmpl.Resource = resource
+	tmpl.Data = data
+	tmpl.Suspend = suspend
 }
 
 // GetBaseTemplate returns a base template content.

@@ -45,15 +45,12 @@ START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 10ms
+DEFAULT_REQUEUE_TIME  ?= 100ms
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
-endif
-ifneq ($(CI),)
-AUTH_MODE             := client
 endif
 
 # Which mode to run in:
@@ -462,7 +459,7 @@ endif
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
 	killall goreman node || true
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo) $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server logs watch-pods $(shell [ $(START_UI) = false ]&& echo ui || echo) $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -471,6 +468,14 @@ $(GOPATH)/bin/stern:
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
 	stern -l workflows.argoproj.io/workflow 2>&1
+
+.PHONY: watch-pods
+watch-pods:
+	# NODE_ID:.metadata.name
+	# EXECUTION_CONTROL:.metadata.annotations.workflows\.argoproj\.io/execution
+	kubectl get pod \
+	  -o=custom-columns='WORKFLOW:.metadata.labels.workflows\.argoproj\.io/workflow,NODE_NAME:.metadata.annotations.workflows\.argoproj\.io/node-name,STATUS:.status.phase,MESSAGE:.metadata.annotations.workflows\.argoproj\.io/node-message,CTRS:.status.containerStatuses[*].name,CTR STATUS:.status.containerStatuses[*].state.terminated.reason,EXIT CODES:.status.containerStatuses[*].state.terminated.exitCode' \
+	  -w
 
 .PHONY: wait
 wait:
@@ -486,6 +491,11 @@ postgres-cli:
 .PHONY: mysql-cli
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
+
+start-e2e:
+	$(MAKE) start PROFILE=mysql E2E_EXECUTOR=emissary ALWAYS_OFFLOAD_NODE_STATUS=true AUTH_MODE=client
+
+test-e2e: test-api test-cli test-cron test-executor test-functional
 
 test-cli: ./dist/argo
 
@@ -531,6 +541,7 @@ dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	rm -Rf v3 vendor
 	# We have `hack/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
 	go run ./hack/swagger secondaryswaggergen
 

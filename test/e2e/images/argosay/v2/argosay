@@ -18,6 +18,7 @@ case ${1:-} in
     3)
       mkdir -p "$(dirname $3)"
       echo "$2" > "$3"
+      sleep 0.1 ;# sleep so the PNS executor has time to secure root file
       ;;
     default)
       exit 1

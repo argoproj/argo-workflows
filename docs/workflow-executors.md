@@ -73,6 +73,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Artifacts:
     * Output artifacts can be located on the base layer (e.g. `/tmp`)
     * Cannot capture artifacts from a base layer which has a volume mounted under it
+    * Cannot capture artifacts from base layer if the container is short-lived.
 * Configuration:
     * No additional configuration needed.
 * Process will no longer run with PID 1

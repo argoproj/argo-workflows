@@ -345,8 +345,6 @@ message DAGTask {
 
   // Depends are name of other targets which this depends on
   optional string depends = 12;
-
-  optional OnExitTemplate onExitTemplate = 39;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -765,12 +763,6 @@ message OSSBucket {
 
   // CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
   optional bool createBucketIfNotPresent = 5;
-}
-
-message OnExitTemplate {
-  optional string template = 1;
-
-  optional Arguments arguments = 2;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1525,7 +1517,8 @@ message WorkflowSpec {
   // PodMetadata defines additional metadata that should be applied to workflow pods
   optional Metadata podMetadata = 38;
 
-  optional OnExitTemplate onExitTemplate = 39;
+  // TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
+  optional Template templateDefaults = 39;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1619,8 +1612,6 @@ message WorkflowStep {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
-
-  optional OnExitTemplate onExitTemplate = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

@@ -25,7 +25,6 @@ data:
     python:alpine3.6:
        command: [python3]
   artifactRepository: |
-    archiveLogs: true
     s3:
       bucket: my-bucket
       endpoint: minio:9000

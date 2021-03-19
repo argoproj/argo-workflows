@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -1169,7 +1170,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		if node.Outputs == nil {
 			node.Outputs = &wfv1.Outputs{}
 		}
-		woc.log.Infof("Updating node %s exit code %v -> %v", node.ID, node.Outputs.ExitCode, exitCode)
+		woc.log.Infof("Updating node %s exit code %v -> %v", node.ID, node.Outputs.ExitCode, *exitCode)
 		if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
 			woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
 			if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
@@ -1537,6 +1538,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+	}
+
+	// Merge Template defaults to template
+	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
+	if err != nil {
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
@@ -2316,36 +2323,57 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
+func generateOutputResultRegex(name string, parentTmpl *wfv1.Template) (string, string) {
+	referenceRegex := fmt.Sprintf(`\.%s\.outputs\.result`, name)
+	expressionRegex := fmt.Sprintf(`\[['\"]%s['\"]\]\.outputs.result`, name)
+	if parentTmpl.DAG != nil {
+		referenceRegex = "tasks" + referenceRegex
+		expressionRegex = "tasks" + expressionRegex
+	} else if parentTmpl.Steps != nil {
+		referenceRegex = "steps" + referenceRegex
+		expressionRegex = "steps" + expressionRegex
+	}
+	return referenceRegex, expressionRegex
+}
+
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
-	var varRefNamePattern string
-	if parentTmpl.DAG != nil {
-		varRefNamePattern = "tasks([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
-	} else if parentTmpl.Steps != nil {
-		varRefNamePattern = "steps([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
-	}
-
 	jsonValue, err := json.Marshal(parentTmpl)
 	if err != nil {
-		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
+		log.Warnf("Unable to marshal template %q: %v", parentTmpl, err)
 	}
 
-	contain, err := regexp.MatchString(varRefNamePattern, string(jsonValue))
+	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
+	// This is most common, so should be done first.
+	referenceRegex, expressionRegex := generateOutputResultRegex(name, parentTmpl)
+	contains, err := regexp.MatchString(referenceRegex, string(jsonValue))
 	if err != nil {
-		log.Warnf("Error in Regex compilation. %s, %v", varRefNamePattern, err)
+		log.Warnf("Error in regex compilation %q: %v", referenceRegex, err)
 	}
-	return contain
+
+	if contains {
+		return true
+	}
+
+	// Next, consider expression case (e.g.: `expression: "steps['generate-random-1'].outputs.result"`)
+	contains, err = regexp.MatchString(expressionRegex, string(jsonValue))
+	if err != nil {
+		log.Warnf("Error in regex compilation %q: %v", expressionRegex, err)
+	}
+	return contains
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
 func getStepOrDAGTaskName(nodeName string) string {
-	if strings.Contains(nodeName, ".") {
-		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
-		// Retry, withItems and withParam scenario
-		if indx := strings.Index(name, "("); indx > 0 {
-			return name[0:indx]
-		}
-		return name
+	// If our name contains an open parenthesis, this node is a child of a Retry node or an expanded node
+	// (e.g. withItems, withParams, etc.). Ignore anything after the parenthesis.
+	if parenthesisIndex := strings.Index(nodeName, "("); parenthesisIndex >= 0 {
+		nodeName = nodeName[:parenthesisIndex]
+	}
+	// If our node contains a dot, we're a child node. We're only interested in the step that called us, so return the
+	// name of the node after the last dot.
+	if lastDotIndex := strings.LastIndex(nodeName, "."); lastDotIndex >= 0 {
+		nodeName = nodeName[lastDotIndex+1:]
 	}
 	return nodeName
 }
@@ -3231,6 +3259,33 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		if mergedWf.Spec.String() != woc.wf.Status.StoredWorkflowSpec.String() {
 			return fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
 		}
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Template) error {
+	if woc.execWf.Spec.TemplateDefaults != nil {
+		originalTmplType := originalTmpl.GetType()
+
+		tmplDefaultsJson, err := json.Marshal(woc.execWf.Spec.TemplateDefaults)
+		if err != nil {
+			return err
+		}
+
+		targetTmplJson, err := json.Marshal(originalTmpl)
+		if err != nil {
+			return err
+		}
+
+		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJson, targetTmplJson, wfv1.Template{})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(resultTmpl, originalTmpl)
+		if err != nil {
+			return err
+		}
+		originalTmpl.SetType(originalTmplType)
 	}
 	return nil
 }
