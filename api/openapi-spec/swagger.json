@@ -8240,9 +8240,6 @@
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "type": "object",
-      "required": [
-        "name"
-      ],
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
@@ -9052,6 +9049,10 @@
           "description": "Synchronization holds synchronization lock configuration for this Workflow",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
+        "templateDefaults": {
+          "description": "TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
           "type": "array",
@@ -9517,6 +9518,10 @@
         "synchronization": {
           "description": "Synchronization holds synchronization lock configuration for this Workflow",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
+        },
+        "templateDefaults": {
+          "description": "TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
         },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
