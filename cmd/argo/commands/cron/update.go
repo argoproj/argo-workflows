@@ -64,6 +64,9 @@ func updateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 		if err != nil {
 			log.Fatal(err)
 		}
+		if cronWf.Namespace == "" {
+			cronWf.Namespace = client.Namespace()
+		}
 		current, err := serviceClient.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{
 			Name: cronWf.Name,
 			Namespace: cronWf.Namespace,

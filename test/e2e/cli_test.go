@@ -1000,7 +1000,14 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
-
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"cron", "update", "cron/basic-update.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Schedule:                      5 5 5 * *")
+				}
+			})
+	})
 	s.Run("Create Parameter Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/param.yaml", "-p", "message=\"bar test passed\"", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
