@@ -2309,36 +2309,57 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
+func generateOutputResultRegex(name string, parentTmpl *wfv1.Template) (string, string) {
+	referenceRegex := fmt.Sprintf(`\.%s\.outputs\.result`, name)
+	expressionRegex := fmt.Sprintf(`\[['\"]%s['\"]\]\.outputs.result`, name)
+	if parentTmpl.DAG != nil {
+		referenceRegex = "tasks" + referenceRegex
+		expressionRegex = "tasks" + expressionRegex
+	} else if parentTmpl.Steps != nil {
+		referenceRegex = "steps" + referenceRegex
+		expressionRegex = "steps" + expressionRegex
+	}
+	return referenceRegex, expressionRegex
+}
+
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
-	var varRefNamePattern string
-	if parentTmpl.DAG != nil {
-		varRefNamePattern = "tasks([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
-	} else if parentTmpl.Steps != nil {
-		varRefNamePattern = "steps([[.](['\"])?)" + name + "((['\"])?]?).outputs.result"
-	}
-
 	jsonValue, err := json.Marshal(parentTmpl)
 	if err != nil {
-		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
+		log.Warnf("Unable to marshal template %q: %v", parentTmpl, err)
 	}
 
-	contain, err := regexp.MatchString(varRefNamePattern, string(jsonValue))
+	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
+	// This is most common, so should be done first.
+	referenceRegex, expressionRegex := generateOutputResultRegex(name, parentTmpl)
+	contains, err := regexp.MatchString(referenceRegex, string(jsonValue))
 	if err != nil {
-		log.Warnf("Error in Regex compilation. %s, %v", varRefNamePattern, err)
+		log.Warnf("Error in regex compilation %q: %v", referenceRegex, err)
 	}
-	return contain
+
+	if contains {
+		return true
+	}
+
+	// Next, consider expression case (e.g.: `expression: "steps['generate-random-1'].outputs.result"`)
+	contains, err = regexp.MatchString(expressionRegex, string(jsonValue))
+	if err != nil {
+		log.Warnf("Error in regex compilation %q: %v", expressionRegex, err)
+	}
+	return contains
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
 func getStepOrDAGTaskName(nodeName string) string {
-	if strings.Contains(nodeName, ".") {
-		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
-		// Retry, withItems and withParam scenario
-		if indx := strings.Index(name, "("); indx > 0 {
-			return name[0:indx]
-		}
-		return name
+	// If our name contains an open parenthesis, this node is a child of a Retry node or an expanded node
+	// (e.g. withItems, withParams, etc.). Ignore anything after the parenthesis.
+	if parenthesisIndex := strings.Index(nodeName, "("); parenthesisIndex >= 0 {
+		nodeName = nodeName[:parenthesisIndex]
+	}
+	// If our node contains a dot, we're a child node. We're only interested in the step that called us, so return the
+	// name of the node after the last dot.
+	if lastDotIndex := strings.LastIndex(nodeName, "."); lastDotIndex >= 0 {
+		nodeName = nodeName[lastDotIndex+1:]
 	}
 	return nodeName
 }
