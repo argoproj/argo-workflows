@@ -1685,8 +1685,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			// Inject the retryAttempt number
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
 
-			// Re-process the args to make sure {{retries}} variable is correctly updated
-			processedTmpl, err = common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
+			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
 			if err != nil {
 				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 			}
