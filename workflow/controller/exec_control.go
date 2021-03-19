@@ -120,7 +120,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID stri
 				firstErr = err
 			}
 		}
-
+		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes[childNode.ID] = childNode
 		woc.updated = true
