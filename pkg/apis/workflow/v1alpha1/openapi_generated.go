@@ -4206,7 +4206,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name is the name of the template",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4529,7 +4528,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
@@ -5558,6 +5556,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
 					},
+					"templateDefaults": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+						},
+					},
 				},
 			},
 		},
@@ -6278,6 +6282,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "PodMetadata defines additional metadata that should be applied to workflow pods",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
+						},
+					},
+					"templateDefaults": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
 					"workflowMetadata": {

@@ -2697,6 +2697,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(Metadata)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.TemplateDefaults != nil {
+		in, out := &in.TemplateDefaults, &out.TemplateDefaults
+		*out = new(Template)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
