@@ -290,10 +290,8 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
 	_, err = common.RunCommand("docker", killArgs...)
 	if err != nil {
-		if strings.Contains(err.Error(), "is not running") {
-			return nil
-		}
 		log.Warningf("Ignored error from 'docker kill --signal TERM': %s", err)
+		return nil
 	}
 	waitArgs := append([]string{"wait"}, containerIDs...)
 	waitCmd := exec.Command("docker", waitArgs...)
