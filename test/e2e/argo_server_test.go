@@ -1009,7 +1009,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 	var uid types.UID
 	var name string
 	s.Given().
-		Workflow("@smoke/basic.yaml").
+		Workflow(`@testdata/artifact-workflow.yaml`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1020,20 +1020,18 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
-		s.Need(fixtures.None(fixtures.Emissary)) // emissary prints "capturing logs" instead of "Hello Argo"
-		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-logs").
+		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
 			Status(200).
 			Body().
 			Contains(":) Hello Argo!")
 	})
 	s.Run("GetArtifactByUID", func() {
-		s.Need(fixtures.None(fixtures.Emissary)) // emissary prints "capturing logs" instead of "Hello Argo"
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200)
 
-		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-file", uid, name).
 			Expect().
 			Status(200).
 			Body().
@@ -1045,7 +1043,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		token := s.bearerToken
 		defer func() { s.bearerToken = token }()
 		s.bearerToken = ""
-		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-file", uid, name).
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
@@ -1129,10 +1127,8 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main&logOptions.tailLines=3"},
 	} {
 		s.Run(tt.name, func() {
-			s.Need(fixtures.None(fixtures.Emissary)) // emissary prints "capturing logs" instead of "Hello Argo"
 			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
 				if strings.Contains(line, "data: ") {
-					assert.Contains(t, line, `"content":":) Hello Argo!"`)
 					assert.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
 					return true
 				}
