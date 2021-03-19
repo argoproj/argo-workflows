@@ -58,6 +58,9 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -125,6 +128,9 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -156,6 +162,9 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -187,6 +196,9 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -220,6 +232,9 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -250,6 +265,9 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -285,6 +303,9 @@ spec:
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -294,11 +315,12 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute+35*time.Second).
+			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.LessOrEqual(t, 2, len(wfList.Items))
-				assert.True(t, wfList.Items[len(wfList.Items)-1].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				fmt.Printf("Succeeded: %s %+v\n", time.Now().String(), wfList)
+				assert.Equal(t, 1, len(wfList.Items))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
@@ -317,6 +339,9 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 1
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
@@ -327,11 +352,12 @@ spec:
           args: ["exit", "1"]`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute+35*time.Second).
+			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.LessOrEqual(t, 2, len(wfList.Items))
-				assert.True(t, wfList.Items[len(wfList.Items)-1].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				fmt.Printf("Failed: %s %+v\n", time.Now().String(), wfList)
+				assert.Equal(t, 1, len(wfList.Items))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }
