@@ -1077,6 +1077,14 @@ func (s *CLISuite) TestClusterTemplateCommands() {
 				}
 			})
 	})
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "update", "smoke/cluster-workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
 	s.Run("list", func() {
 		s.Given().
 			RunCli([]string{"cluster-template", "list"}, func(t *testing.T, output string, err error) {
