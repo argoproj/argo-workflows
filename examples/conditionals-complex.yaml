@@ -25,7 +25,7 @@ spec:
         template: flip-coin
     - - name: complex-condition
         template: heads-tails-or-twice-tails 
-        # call heads template if first flip was "heads" and second was "tail" OR both were "tails"
+        # call heads template if first flip was "heads" and second was "tails" OR both were "tails"
         when: >-
             ( {{steps.flip-coin.outputs.result}} == heads &&
               {{steps.flip-again.outputs.result}} == tails
