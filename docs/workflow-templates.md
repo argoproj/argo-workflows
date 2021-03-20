@@ -255,10 +255,18 @@ argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/exa
 > 2.7 and after
 
 Then submit a `WorkflowTemplate` as a `Workflow`:
+
 ```sh
 argo submit --from workflowtemplate/workflow-template-submittable
-
 ```
+
+If you need to submit a `WorkflowTemplate` as a `Workflow` with parameters:
+
+```sh
+argo submit --from workflowtemplate/workflow-template-submittable -p param1=value1
+```
+
+
 
 ### `kubectl`
 
