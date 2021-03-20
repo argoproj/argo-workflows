@@ -1069,7 +1069,62 @@ func TestRetriesVariable(t *testing.T) {
 		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
 	// ordering not preserved
-	assert.Subset(t, expected, actual)
+	assert.ElementsMatch(t, expected, actual)
+}
+
+var retriesVariableInPodSpecPatchTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    retryStrategy:
+      limit: 10
+    podSpecPatch: |
+      containers:
+        - name: main
+          resources:
+            limits:
+              memory: "{{=(sprig.int(retries) + 1) * 64}}Mi"
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello"]
+`
+
+// TestRetriesVariableInPodSpecPatch makes sure that {{retries}} variable in pod spec patch is correctly
+// updated before each retry
+func TestRetriesVariableInPodSpecPatch(t *testing.T) {
+	wf := unmarshalWF(retriesVariableInPodSpecPatchTemplate)
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	iterations := 5
+	var woc *wfOperationCtx
+	for i := 1; i <= iterations; i++ {
+		woc = newWorkflowOperationCtx(wf, controller)
+		if i != 1 {
+			makePodsPhase(ctx, woc, apiv1.PodFailed)
+		}
+		woc.operate(ctx)
+		wf = woc.wf
+	}
+
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, iterations)
+	expected := []string{}
+	actual := []string{}
+	for i := 0; i < iterations; i++ {
+		actual = append(actual, pods.Items[i].Spec.Containers[1].Resources.Limits.Memory().String())
+		expected = append(expected, fmt.Sprintf("%dMi", (i+1)*64))
+	}
+	// expecting memory limit to increase after each retry: "64Mi", "128Mi", "192Mi", "256Mi", "320Mi"
+	// ordering not preserved
+	assert.ElementsMatch(t, actual, expected)
 }
 
 var stepsRetriesVariableTemplate = `
@@ -1129,7 +1184,7 @@ func TestStepsRetriesVariable(t *testing.T) {
 		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
 	// ordering not preserved
-	assert.Subset(t, expected, actual)
+	assert.ElementsMatch(t, expected, actual)
 }
 
 func TestAssessNodeStatus(t *testing.T) {
