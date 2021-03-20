@@ -429,6 +429,14 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - argoproj.io
   resources:
   - workflows
