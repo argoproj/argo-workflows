@@ -39,7 +39,6 @@ type Controller struct {
 	keyLock              sync.KeyLock
 	wfClientset          versioned.Interface
 	wfLister             util.WorkflowLister
-	wfQueue              workqueue.RateLimitingInterface
 	wfInformer           cache.SharedIndexInformer
 	cronWfInformer       informers.GenericInformer
 	cronWfQueue          workqueue.RateLimitingInterface
@@ -63,7 +62,6 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		wfQueue:              metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
 		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
@@ -72,7 +70,6 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 
 func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cronWfQueue.ShutDown()
-	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 	if cc.instanceId != "" {
 		log.Infof("...with InstanceID: %s", cc.instanceId)
