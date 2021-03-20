@@ -111,15 +111,6 @@ func (e emissary) GetOutputStream(_ context.Context, containerName string, combi
 	return newMultiReaderCloser(files...), nil
 }
 
-func (e emissary) GetExitCode(_ context.Context, containerName string) (string, error) {
-	data, err := ioutil.ReadFile("/var/run/argo/ctr/" + containerName + "/exitcode")
-	if err != nil {
-		return "", err
-	}
-	exitCode, err := strconv.Atoi(string(data))
-	return strconv.Itoa(exitCode), err
-}
-
 func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 	for {
 		select {
@@ -129,7 +120,7 @@ func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 			if e.isComplete(containerNames) {
 				return nil
 			}
-			time.Sleep(3 * time.Second)
+			time.Sleep(time.Second)
 		}
 	}
 }

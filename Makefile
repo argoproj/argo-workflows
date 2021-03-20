@@ -45,15 +45,12 @@ START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 2s
+DEFAULT_REQUEUE_TIME  ?= 100ms
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
-endif
-ifneq ($(CI),)
-AUTH_MODE             := client
 endif
 
 # Which mode to run in:
@@ -64,7 +61,6 @@ K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubect
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
-
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
 endif
@@ -395,7 +391,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	go mod tidy
 
 	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
+	$(GOPATH)/bin/golangci-lint run --fix --verbose
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
@@ -421,7 +417,7 @@ ifeq ($(RUN_MODE),kubernetes)
 endif
 
 .PHONY: argosay
-argosay: test/e2e/images/argosay/v2/argosay
+argosay:
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
 	k3d image import argoproj/argosay:v2
@@ -430,19 +426,17 @@ ifeq ($(DOCKER_PUSH),true)
 	docker push argoproj/argosay:v2
 endif
 
-test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
-	cd test/e2e/images/argosay/v2 && GOOS=linux CGO_ENABLED=0 go build -ldflags '-w -s' -o argosay ./main
-
-dist/argosay: test/e2e/images/argosay/v2/main/argosay.go
-	go build -ldflags '-w -s' -o dist/argosay ./test/e2e/images/argosay/v2/main
+dist/argosay:
+	mkdir -p dist
+	cp test/e2e/images/argosay/v2/argosay dist/
 
 .PHONY: pull-images
 pull-images:
-	docker pull mysql:8
 	docker pull golang:1.15.7
 	docker pull debian:10.7-slim
-	docker pull argoproj/argosay:v2
+	docker pull mysql:8
 	docker pull argoproj/argosay:v1
+	docker pull argoproj/argosay:v2
 	docker pull python:alpine3.6
 
 $(GOPATH)/bin/goreman:
@@ -464,8 +458,8 @@ endif
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	killall goreman || true
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server $(shell [ $(START_UI) = false ]&& echo ui || echo) $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	killall goreman node || true
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server logs watch-pods $(shell [ $(START_UI) = false ]&& echo ui || echo) $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -474,6 +468,14 @@ $(GOPATH)/bin/stern:
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
 	stern -l workflows.argoproj.io/workflow 2>&1
+
+.PHONY: watch-pods
+watch-pods:
+	# NODE_ID:.metadata.name
+	# EXECUTION_CONTROL:.metadata.annotations.workflows\.argoproj\.io/execution
+	kubectl get pod \
+	  -o=custom-columns='WORKFLOW:.metadata.labels.workflows\.argoproj\.io/workflow,NODE_NAME:.metadata.annotations.workflows\.argoproj\.io/node-name,STATUS:.status.phase,MESSAGE:.metadata.annotations.workflows\.argoproj\.io/node-message,CTRS:.status.containerStatuses[*].name,CTR STATUS:.status.containerStatuses[*].state.terminated.reason,EXIT CODES:.status.containerStatuses[*].state.terminated.exitCode' \
+	  -w
 
 .PHONY: wait
 wait:
@@ -490,27 +492,19 @@ postgres-cli:
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
-.PHONY: test-cli
-test-cli: ./dist/argo pull-images
-	E2E_MODE=GRPC  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=HTTP1 $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
-	E2E_MODE=KUBE  $(GOTEST) -timeout 5m -count 1 --tags cli -p 1 ./test/e2e
+start-e2e:
+	$(MAKE) start PROFILE=mysql E2E_EXECUTOR=emissary ALWAYS_OFFLOAD_NODE_STATUS=true AUTH_MODE=client
 
-.PHONY: test-e2e-cron
-test-e2e-cron: pull-images
-	$(GOTEST) -count 1 --tags cron -parallel 10 ./test/e2e
+test-e2e: test-api test-cli test-cron test-executor test-functional
 
-.PHONY: test-executor
-test-executor: pull-images
-	$(GOTEST) -timeout 5m -count 1 --tags executor -p 1 ./test/e2e
+test-cli: ./dist/argo
+
+test-%:
+	$(GOTEST) -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
 
 .PHONY: test-examples
-test-examples: ./dist/argo pull-images
+test-examples: ./dist/argo
 	./hack/test-examples.sh
-
-.PHONY: test-functional
-test-functional: pull-images
-	$(GOTEST) -timeout 15m -count 1 --tags api,functional -p 1 ./test/e2e
 
 # clean
 
@@ -547,6 +541,7 @@ dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	rm -Rf v3 vendor
 	# We have `hack/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
 	go run ./hack/swagger secondaryswaggergen
 

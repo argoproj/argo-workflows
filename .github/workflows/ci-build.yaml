@@ -10,11 +10,11 @@ on:
       - "master"
 
 jobs:
-
   tests:
     name: Unit Tests
     runs-on: ubuntu-20.04
-    timeout-minutes: 10
+    # 5m30
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -31,13 +31,100 @@ jobs:
       - run: go mod download -x
       - run: make server/static/files.go STATIC_FILES=false
       - run: go build -v ./...
-      - run: make test STATIC_FILES=false
+      - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-20.04
+    # test-api: 7m (1m10s locally)
+    # test-cli: 12m (4m locally)
+    # test-cron: 8m
+    # test-executor 8m (2m locally)
+    # test-functional: 13m (7m locally)
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - test: test-api
+            containerRuntimeExecutor: emissary
+          - test: test-cli
+            containerRuntimeExecutor: emissary
+          - test: test-cron
+            containerRuntimeExecutor: emissary
+          - test: test-executor
+            containerRuntimeExecutor: docker
+          - test: test-executor
+            containerRuntimeExecutor: emissary
+          - test: test-executor
+            containerRuntimeExecutor: k8sapi
+          - test: test-executor
+            containerRuntimeExecutor: kubelet
+          - test: test-executor
+            containerRuntimeExecutor: pns
+          - test: test-functional
+            containerRuntimeExecutor: emissary
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.15.7"
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/pkg/mod
+          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/bin
+          key: go-bin-v1-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: dist/kustomize
+          key: kustomize
+      - run: make pull-images &
+      - name: Install and start K3S v1.18.8+k3s1
+        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
+      - name: Create Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
+          cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
+          echo "- name: fake_token_user" >> ~/.kube/config
+          echo "  user:" >> ~/.kube/config
+          echo "    token: xxxxxx" >> ~/.kube/config
+      - run: git fetch --tags
+      - name: Start Argo
+        run: |
+          echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
+          echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
+          echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
+          echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
+          PROFILE=minimal
+          if [ "${{matrix.test}}" = test-cli ] || [ "${{matrix.test}}" = test-api ]; then
+            PROFILE=mysql
+          fi
+          mkdir -p /tmp/log/argo-e2e
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+      - run: make wait
+      - run: make ${{matrix.test}}
+      - name: Upload logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{matrix.test}}-${{matrix.containerRuntimeExecutor}}
+          path: /tmp/log/argo-e2e
 
   codegen:
     name: Codegen
     runs-on: ubuntu-20.04
     needs: [ tests ]
-    timeout-minutes: 10
+    timeout-minutes: 9
     env:
       GOPATH: /home/runner/go
       PROTOC_ZIP: protoc-3.11.1-linux-x86_64.zip
@@ -78,6 +165,40 @@ jobs:
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
       - run: make codegen -B STATIC_FILES=false
-      - run: make lint STATIC_FILES=false
       - run: make validate-examples STATIC_FILES=false
+      - run: git diff --exit-code
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04
+    needs: [ tests, codegen ]
+    timeout-minutes: 5
+    env:
+      GOPATH: /home/runner/go
+    steps:
+      - uses: actions/checkout@v2
+      - run: cp server/static/files.go.stub server/static/files.go
+      - uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.36.0
+
+  ui:
+    name: UI
+    runs-on: ubuntu-20.04
+    timeout-minutes: 6
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "14"
+      - uses: actions/cache@v1
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+      - run: yarn --cwd ui install
+      - run: yarn --cwd ui build
+      - run: yarn --cwd ui test
+      - run: yarn --cwd ui lint
       - run: git diff --exit-code

@@ -44,3 +44,4 @@ Note that these environment variables may be removed at any time.
 | `EXECUTOR_RETRY_BACKOFF_STEPS` | `int` | The retry backoff steps when the workflow executor performs retries. |
 | `PNS_PRIVILEGED` | `bool` | Whether to always set privileged on for PNS when PNS executor is used. |
 | `REMOVE_LOCAL_ART_PATH` | `bool` | Whether to remove local artifacts. |
+| `RESOURCE_STATE_CHECK_INTERVAL` | `time.Duration` | The time interval between resource status checks against the specified success and failure conditions. |

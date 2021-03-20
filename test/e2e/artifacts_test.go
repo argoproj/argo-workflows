@@ -54,13 +54,12 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
 	s.Need(fixtures.BaseLayerArtifacts)
-	s.Need(fixtures.None(fixtures.PNS))
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: default-params
+  generateName: default-params-
 spec:
   entrypoint: start
   templates:
@@ -110,15 +109,6 @@ func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/same-input-output-path-optional.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
-}
-
-func (s *ArtifactsSuite) TestOutputArtifactS3BucketCreationEnabled() {
-	s.Need(fixtures.BaseLayerArtifacts)
-	s.Given().
-		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -84,4 +85,34 @@ func TestResourcePatchFlags(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, args, fakeFlags)
+}
+
+// TestResourceConditionsMatching tests whether the JSON response match
+// with either success or failure conditions.
+func TestResourceConditionsMatching(t *testing.T) {
+	var successReqs labels.Requirements
+	successSelector, err := labels.Parse("status.phase == Succeeded")
+	assert.NoError(t, err)
+	successReqs, _ = successSelector.Requirements()
+	assert.NoError(t, err)
+	var failReqs labels.Requirements
+	failSelector, err := labels.Parse("status.phase == Error")
+	assert.NoError(t, err)
+	failReqs, _ = failSelector.Requirements()
+	assert.NoError(t, err)
+
+	jsonBytes := []byte(`{"name": "test","status":{"phase":"Error"}`)
+	finished, err := matchConditions(jsonBytes, successReqs, failReqs)
+	assert.Error(t, err, `failure condition '{status.phase == [Error]}' evaluated true`)
+	assert.False(t, finished)
+
+	jsonBytes = []byte(`{"name": "test","status":{"phase":"Succeeded"}`)
+	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
+	assert.NoError(t, err)
+	assert.False(t, finished)
+
+	jsonBytes = []byte(`{"name": "test","status":{"phase":"Pending"}`)
+	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
+	assert.Error(t, err, "Neither success condition nor the failure condition has been matched. Retrying...")
+	assert.True(t, finished)
 }

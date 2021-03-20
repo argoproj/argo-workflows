@@ -81,7 +81,11 @@ func (s *E2ESuite) TearDownSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {
+	start := time.Now()
 	s.DeleteResources()
+	if time.Since(start) > time.Second {
+		_, _ = fmt.Printf("LONG SET-UP took %v (maybe previous test was slow)\n", time.Since(start).Truncate(time.Second))
+	}
 	s.testStartedAt = time.Now()
 }
 
@@ -94,26 +98,22 @@ func (s *E2ESuite) AfterTest(suiteName, testName string) {
 	} else {
 		_, _ = fmt.Println(color.Ize(color.Green, "=== PASS: "+suiteName+"/"+testName))
 		took := time.Since(s.testStartedAt)
-		if took > 20*time.Second {
+		if took > 15*time.Second {
 			s.slowTests = append(s.slowTests, fmt.Sprintf("%s/%s took %v", suiteName, testName, took.Truncate(time.Second)))
 		}
 	}
 }
 
-var foreground = metav1.DeletePropagationForeground
-
 func (s *E2ESuite) DeleteResources() {
 	ctx := context.Background()
-	// aggressive deletion options
-	deleteOptions := metav1.DeleteOptions{
-		GracePeriodSeconds: pointer.Int64Ptr(0),
-		PropagationPolicy:  &foreground,
-	}
-	// delete pods first, this means workflows can finish faster
-	err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(ctx, deleteOptions, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow})
-	s.CheckError(err)
 
-	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
+	l := func(r schema.GroupVersionResource) string {
+		if r.Resource == "pods" {
+			return common.LabelKeyWorkflow
+		}
+		return Label
+	}
+
 	resources := []schema.GroupVersionResource{
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
@@ -122,20 +122,19 @@ func (s *E2ESuite) DeleteResources() {
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "sensors"},
 		{Group: workflow.Group, Version: workflow.Version, Resource: "eventsources"},
+		{Version: "v1", Resource: "pods"},
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
 	for _, r := range resources {
-		resourceInterface := s.dynamicFor(r)
 		for {
-			err := resourceInterface.DeleteCollection(ctx, deleteOptions, hasTestLabel)
+			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(2)}, metav1.ListOptions{LabelSelector: l(r)}))
+			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
 			s.CheckError(err)
-			list, err := resourceInterface.List(ctx, hasTestLabel)
-			s.CheckError(err)
-			if len(list.Items) == 0 {
+			if len(ls.Items) == 0 {
 				break
 			}
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 

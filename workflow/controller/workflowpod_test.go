@@ -1184,6 +1184,22 @@ spec:
       args: ["hello world"]
 `
 
+var helloWorldWfWithInvalidPatchFormat = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    podSpecPatch: '{"containers"}' # not a valid JSON here
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
 func TestPodSpecPatch(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfWithPatch)
 	ctx := context.Background()
@@ -1205,6 +1221,12 @@ func TestPodSpecPatch(t *testing.T) {
 
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
+
+	wf = unmarshalWF(helloWorldWfWithInvalidPatchFormat)
+	woc = newWoc(*wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.EqualError(t, err, "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
 }
 
 func TestMainContainerCustomization(t *testing.T) {

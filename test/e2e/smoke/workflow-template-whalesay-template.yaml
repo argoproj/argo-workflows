@@ -19,9 +19,7 @@ spec:
       container:
         image: argoproj/argosay:v2
         args: ["echo", "{{inputs.parameters.message}}"]
-        imagePullPolicy: IfNotPresent
     - name: on-exit
       container:
         image: argoproj/argosay:v2
         args: ["echo", "Exit Handler"]
-        imagePullPolicy: IfNotPresent

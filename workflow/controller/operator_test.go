@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -2915,9 +2916,9 @@ func TestStepWFGetNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "generate") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "generate")
+			assert.Equal(t, "generate", getStepOrDAGTaskName(node.Name))
 		} else if strings.Contains(node.Name, "print-message") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "print-message")
+			assert.Equal(t, "print-message", getStepOrDAGTaskName(node.Name))
 		}
 	}
 }
@@ -2940,10 +2941,10 @@ func TestDAGWFGetNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, ".A") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "A")
+			assert.Equal(t, "A", getStepOrDAGTaskName(node.Name))
 		}
 		if strings.Contains(node.Name, ".B") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "B")
+			assert.Equal(t, "B", getStepOrDAGTaskName(node.Name))
 		}
 	}
 }
@@ -3626,9 +3627,9 @@ func TestContainerOutputsResult(t *testing.T) {
 
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "hello1") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello1")
+			assert.Equal(t, "hello1", getStepOrDAGTaskName(node.Name))
 		} else if strings.Contains(node.Name, "hello2") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello2")
+			assert.Equal(t, "hello2", getStepOrDAGTaskName(node.Name))
 		}
 	}
 }
@@ -4641,11 +4642,12 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
+		ExitCode: pointer.StringPtr("0"),
 	}
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(testutil.MustMarshallJSON(sampleOutputs)))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0), withOutputs(testutil.MustMarshallJSON(sampleOutputs)))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
@@ -6256,4 +6258,21 @@ func TestStepsFailFast(t *testing.T) {
 	if assert.NotNil(t, node) {
 		assert.Equal(t, wfv1.NodeFailed, node.Phase)
 	}
+}
+
+func TestGetStepOrDAGTaskName(t *testing.T) {
+	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script.py)"))
+	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script(.)py)"))
+}
+
+func TestGenerateOutputResultRegex(t *testing.T) {
+	dagTmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{}}
+	ref, expr := generateOutputResultRegex("template-name", dagTmpl)
+	assert.Equal(t, `tasks\.template-name\.outputs\.result`, ref)
+	assert.Equal(t, `tasks\[['\"]template-name['\"]\]\.outputs.result`, expr)
+
+	stepsTmpl := &wfv1.Template{Steps: []wfv1.ParallelSteps{}}
+	ref, expr = generateOutputResultRegex("template-name", stepsTmpl)
+	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
+	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }

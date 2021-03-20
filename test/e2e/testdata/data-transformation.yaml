@@ -1,9 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: data-transformation
-  labels:
-    argo-e2e: "true"
+  generateName: data-transformation-
 spec:
   entrypoint: artifact-example
   templates:

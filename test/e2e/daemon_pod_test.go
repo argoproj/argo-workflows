@@ -19,8 +19,7 @@ type DaemonPodSuite struct {
 
 func (s *DaemonPodSuite) TestWorkflowCompletesIfContainsDaemonPod() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+		Workflow(`
 metadata:
   generateName: whalesay-
 spec:
@@ -42,7 +41,6 @@ spec:
   - name: whale-tmpl
     container:
       image: argoproj/argosay:v2
-      args: ["echo", "hello world"]
 `).
 		When().
 		SubmitWorkflow().
@@ -50,6 +48,21 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.False(t, status.FinishedAt.IsZero())
+		})
+}
+
+func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
+	s.Given().
+		Workflow("@testdata/daemoned-pod-completed.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			node := status.Nodes.FindByDisplayName("daemoned")
+			if assert.NotNil(t, node) {
+				assert.Equal(t, v1alpha1.NodeSucceeded, node.Phase)
+			}
 		})
 }
 

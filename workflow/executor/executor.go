@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -64,6 +65,7 @@ type WorkflowExecutor struct {
 	PodName            string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
+	RESTClient         rest.Interface
 	Namespace          string
 	PodAnnotationsPath string
 	ExecutionControl   *common.ExecutionControl
@@ -96,10 +98,6 @@ type ContainerRuntimeExecutor interface {
 	// Used to capture script results as an output parameter, and to archive container logs
 	GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error)
 
-	// GetExitCode returns the exit code of the container
-	// Used to capture script exit code as an output parameter
-	GetExitCode(ctx context.Context, containerName string) (string, error)
-
 	// Wait waits for the container to complete.
 	Wait(ctx context.Context, containerNames []string) error
 
@@ -111,10 +109,11 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
 		ClientSet:          clientset,
+		RESTClient:         restClient,
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
@@ -708,24 +707,6 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	}
 
 	we.Template.Outputs.Result = &out
-	return nil
-}
-
-// CaptureScriptExitCode will add the exit code of a script template as output exit code
-func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
-	if !we.Template.HasOutput() {
-		log.Infof("Template type is neither of Script, Container, or Pod. Capturing exit code ignored")
-		return nil
-	}
-	log.Infof("Capturing script exit code")
-	exitCode, err := we.RuntimeExecutor.GetExitCode(ctx, common.MainContainerName)
-	if err != nil {
-		return err
-	}
-
-	if exitCode != "" {
-		we.Template.Outputs.ExitCode = &exitCode
-	}
 	return nil
 }
 

@@ -90,6 +90,9 @@ func initExecutor() *executor.WorkflowExecutor {
 	clientset, err := kubernetes.NewForConfig(config)
 	checkErr(err)
 
+	restClient := clientset.RESTClient()
+	checkErr(err)
+
 	podName, ok := os.LookupEnv(common.EnvVarPodName)
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
@@ -113,7 +116,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre, *tmpl)
+	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor
