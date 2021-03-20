@@ -39,6 +39,11 @@ func Test_Replace(t *testing.T) {
 				_, err := Replace("{{=foo}}", nil, true)
 				assert.NoError(t, err)
 			})
+			t.Run("AllowedRetries", func(t *testing.T) {
+				replaced, err := Replace("{{=sprig.int(retries)}}", nil, true)
+				assert.NoError(t, err)
+				assert.Equal(t, replaced, "{{=sprig.int(retries)}}")
+			})
 			t.Run("Disallowed", func(t *testing.T) {
 				_, err := Replace("{{=foo}}", nil, false)
 				assert.EqualError(t, err, "failed to evaluate expression \"foo\"")
