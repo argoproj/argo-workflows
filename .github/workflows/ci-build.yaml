@@ -48,6 +48,8 @@ jobs:
       max-parallel: 3
       matrix:
         include:
+          - test: test-functional
+            containerRuntimeExecutor: emissary
           - test: test-api
             containerRuntimeExecutor: emissary
           - test: test-cli
@@ -64,8 +66,6 @@ jobs:
             containerRuntimeExecutor: kubelet
           - test: test-executor
             containerRuntimeExecutor: pns
-          - test: test-functional
-            containerRuntimeExecutor: emissary
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
