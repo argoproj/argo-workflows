@@ -2510,15 +2510,18 @@ Here is an example for referring <code>WorkflowTemplate</code> as Workflow with 
 <p>You can create some example templates as follows:</p>
 <div class="highlight"><pre><span></span><code>argo template create https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/templates.yaml
 </code></pre></div>
-<p>The submit a workflow using one of those templates:</p>
+<p>Then submit a workflow using one of those templates:</p>
 <div class="highlight"><pre><span></span><code>argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/hello-world.yaml
 </code></pre></div>
 <blockquote>
-<p>2.7 and after
-The submit a <code>WorkflowTemplate</code> as a <code>Workflow</code>:
-<div class="highlight"><pre><span></span><code>argo submit --from workflowtemplate/workflow-template-submittable
-</code></pre></div></p>
+<p>2.7 and after</p>
 </blockquote>
+<p>Then submit a <code>WorkflowTemplate</code> as a <code>Workflow</code>:</p>
+<div class="highlight"><pre><span></span><code>argo submit --from workflowtemplate/workflow-template-submittable
+</code></pre></div>
+<p>If you need to submit a <code>WorkflowTemplate</code> as a <code>Workflow</code> with parameters:</p>
+<div class="highlight"><pre><span></span><code>argo submit --from workflowtemplate/workflow-template-submittable -p <span class="nv">param1</span><span class="o">=</span>value1
+</code></pre></div>
 <h3 id="kubectl"><code>kubectl</code><a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h3>
 <p>Using <code>kubectl apply -f</code> and <code>kubectl get wftmpl</code></p>
 <h3 id="gitops-via-argo-cd">GitOps via Argo CD<a class="headerlink" href="#gitops-via-argo-cd" title="Permanent link">&para;</a></h3>
