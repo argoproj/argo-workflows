@@ -45,6 +45,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         include:
           - test: test-api
