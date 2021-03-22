@@ -5,7 +5,7 @@ ARG DOCKER_VERSION=18.09.1
 ARG KUBECTL_VERSION=1.19.6
 ARG JQ_VERSION=1.6
 
-FROM golang:1.15.7 as builder
+FROM docker.io/library/golang:1.15.7 as builder
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
@@ -37,7 +37,7 @@ COPY . .
 
 ####################################################################################################
 
-FROM debian:10.7-slim as argoexec-base
+FROM docker.io/library/debian:10.7-slim as argoexec-base
 
 ARG DOCKER_CHANNEL
 ARG DOCKER_VERSION
@@ -73,7 +73,7 @@ COPY hack/nsswitch.conf /etc/
 
 ####################################################################################################
 
-FROM node:14.0.0 as argo-ui
+FROM docker.io/library/node:14.0.0 as argo-ui
 
 COPY ui/package.json ui/yarn.lock ui/
 
@@ -141,7 +141,7 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
-FROM scratch as workflow-controller
+FROM docker.io/library/scratch as workflow-controller
 
 USER 8737
 
@@ -153,7 +153,7 @@ ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
 
-FROM scratch as argocli
+FROM docker.io/library/scratch as argocli
 
 USER 8737
 
