@@ -1518,6 +1518,9 @@ message WorkflowSpec {
 
   // PodMetadata defines additional metadata that should be applied to workflow pods
   optional Metadata podMetadata = 38;
+
+  // TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
+  optional Template templateDefaults = 39;
 }
 
 // WorkflowStatus contains overall status information about a workflow

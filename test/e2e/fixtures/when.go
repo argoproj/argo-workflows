@@ -195,7 +195,7 @@ var ToBeArchived Condition = func(wf *wfv1.Workflow) (bool, string) {
 
 var ToHavePhase = func(p wfv1.WorkflowPhase) Condition {
 	return func(wf *wfv1.Workflow) (bool, string) {
-		return wf.Status.Phase == p, fmt.Sprintf("to be %s", p)
+		return wf.Status.Phase == p && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", fmt.Sprintf("to be %s", p)
 	}
 }
 

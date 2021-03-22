@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -1157,21 +1158,21 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-	// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
-	if exitCode := getExitCode(pod); exitCode != nil {
-		if node.Outputs == nil {
-			node.Outputs = &wfv1.Outputs{}
-		}
-		woc.log.Infof("Updating node %s exit code %v -> %v", node.ID, node.Outputs.ExitCode, *exitCode)
-		if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-			woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-			if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
-				node.Phase = wfv1.NodeError
-				node.Message = err.Error()
+
+	// we only need to update these values if the container transitions to complete
+	if !node.Phase.Fulfilled() && newPhase.Fulfilled() {
+		// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
+		if exitCode := getExitCode(pod); exitCode != nil {
+			woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
+			node.Outputs = &wfv1.Outputs{ExitCode: pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))}
+			if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+				woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
+				if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
+					node.Phase = wfv1.NodeError
+					node.Message = err.Error()
+				}
 			}
 		}
-		node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))
-		updated = true
 	}
 
 	if node.Phase != newPhase {
@@ -1530,6 +1531,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+	}
+
+	// Merge Template defaults to template
+	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
+	if err != nil {
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
@@ -3241,6 +3248,33 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		if mergedWf.Spec.String() != woc.wf.Status.StoredWorkflowSpec.String() {
 			return fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
 		}
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Template) error {
+	if woc.execWf.Spec.TemplateDefaults != nil {
+		originalTmplType := originalTmpl.GetType()
+
+		tmplDefaultsJson, err := json.Marshal(woc.execWf.Spec.TemplateDefaults)
+		if err != nil {
+			return err
+		}
+
+		targetTmplJson, err := json.Marshal(originalTmpl)
+		if err != nil {
+			return err
+		}
+
+		resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJson, targetTmplJson, wfv1.Template{})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(resultTmpl, originalTmpl)
+		if err != nil {
+			return err
+		}
+		originalTmpl.SetType(originalTmplType)
 	}
 	return nil
 }
