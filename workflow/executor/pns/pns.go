@@ -130,6 +130,9 @@ func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath
 }
 
 func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
+	ctx, cancel := context.WithCancel(ctx) // stop the polling when we are no longer waiting
+	defer cancel()
+
 	go p.pollRootProcesses(ctx, containerNames)
 
 	// Secure a filehandle on our own root. This is because we will chroot back and forth from

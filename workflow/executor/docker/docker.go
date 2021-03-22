@@ -185,6 +185,8 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 }
 
 func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
+	ctx, cancel := context.WithCancel(ctx) // stop the polling when we are no longer waiting
+	defer cancel()
 	go func() {
 		err := d.pollContainerIDs(ctx, containerNames)
 		if err != nil {
@@ -208,6 +210,8 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 }
 
 func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []string) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	for {
 		select {
 		case <-ctx.Done():
