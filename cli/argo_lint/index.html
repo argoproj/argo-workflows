@@ -1290,6 +1290,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#examples" title="Examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#options" title="Options" class="md-nav__link">
     Options
   </a>
@@ -2126,6 +2133,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#examples" title="Examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#options" title="Options" class="md-nav__link">
     Options
   </a>
@@ -2173,15 +2187,24 @@
                   <h1>argo lint</h1>
                 
                 <h2 id="argo-lint">argo lint<a class="headerlink" href="#argo-lint" title="Permanent link">&para;</a></h2>
-<p>validate files or directories of workflow manifests</p>
+<p>validate files or directories of manifests</p>
 <h3 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h3>
-<p>validate files or directories of workflow manifests</p>
+<p>validate files or directories of manifests</p>
 <div class="highlight"><pre><span></span><code>argo lint FILE... [flags]
 </code></pre></div>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code># Lint all manifests in a specified directory:
+
+  argo lint ./manifests
+
+# Lint only manifests of Workflows and CronWorkflows from stdin:
+
+  cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -
+</code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>      --all-kinds       Lint all kinds, not just workflows
-      --format string   Linting results output format. One of: pretty|simple (default &quot;pretty&quot;)
-  -h, --help            help for lint
+<div class="highlight"><pre><span></span><code>  -h, --help            help for lint
+      --kinds strings   Which kinds will be linted. Can be: workflows|workflowtemplates|cronworkflows|clusterworkflowtemplates (default [all])
+  -o, --output string   Linting results output format. One of: pretty|simple (default &quot;pretty&quot;)
       --strict          Perform strict workflow validation (default true)
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands<a class="headerlink" href="#options-inherited-from-parent-commands" title="Permanent link">&para;</a></h3>
