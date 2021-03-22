@@ -1,20 +1,19 @@
 package cron
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint"
+	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
 func NewLintCommand() *cobra.Command {
 	var (
 		strict bool
-		format string
+		output string
 	)
 
 	command := &cobra.Command{
@@ -26,28 +25,11 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			ctx, apiClient := client.NewAPIClient()
-			fmtr, err := lint.GetFormatter(format)
-			errors.CheckError(err)
-
-			res, err := lint.Lint(ctx, &lint.LintOptions{
-				ServiceClients: lint.ServiceClients{
-					CronWorkflowsClient: apiClient.NewCronWorkflowServiceClient(),
-				},
-				Files:            args,
-				Strict:           strict,
-				DefaultNamespace: client.Namespace(),
-				Formatter:        fmtr,
-			})
-			errors.CheckError(err)
-
-			fmt.Print(res.Msg())
-			if !res.Success {
-				os.Exit(1)
-			}
+			lint.RunLint(ctx, apiClient, args, []string{wf.CronWorkflowPlural}, client.Namespace(), output, strict)
 		},
 	}
 
-	command.Flags().StringVar(&format, "format", "pretty", "Linting results output format. One of: pretty|simple")
+	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict validation")
 	return command
 }
