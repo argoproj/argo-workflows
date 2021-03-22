@@ -205,7 +205,7 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			}
 			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
 			// we need a bit more time
-			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
+			if p.haveContainerPIDs(containerNames) && time.Since(start) > 30*time.Second {
 				return
 			}
 			time.Sleep(50 * time.Millisecond)
