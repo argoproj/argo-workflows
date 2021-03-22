@@ -59,7 +59,7 @@ func updateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 			wftmpl.Namespace = client.Namespace()
 		}
 		current, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
-			Name: wftmpl.Name,
+			Name:      wftmpl.Name,
 			Namespace: wftmpl.Namespace,
 		})
 		if err != nil {
