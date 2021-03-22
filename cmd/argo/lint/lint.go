@@ -7,10 +7,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
 	clusterworkflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
@@ -33,6 +36,10 @@ type LintOptions struct {
 	DefaultNamespace string
 	Formatter        Formatter
 	ServiceClients   ServiceClients
+
+	// Printer if not nil the lint result is written to this writer after each
+	// file is linted.
+	Printer io.Writer
 }
 
 // LintResult represents the result of linting objects from a single source
@@ -52,7 +59,8 @@ type LintResults struct {
 }
 
 type Formatter interface {
-	Format(*LintResults) string
+	Format(*LintResult) string
+	Summarize(*LintResults) string
 }
 
 var (
@@ -78,12 +86,45 @@ func GetFormatter(fmtr string) (Formatter, error) {
 	return f, nil
 }
 
+// RunLint lints the specified kinds in the specified files and prints the results to os.Stdout.
+// If linting fails it will exit with status code 1.
+func RunLint(ctx context.Context, client apiclient.Client, files, kinds []string, defaultNs, output string, strict bool) {
+	fmtr, err := GetFormatter(output)
+	errors.CheckError(err)
+
+	clients, err := getLintClients(client, kinds)
+	errors.CheckError(err)
+
+	res, err := Lint(ctx, &LintOptions{
+		ServiceClients:   clients,
+		Files:            files,
+		Strict:           strict,
+		DefaultNamespace: defaultNs,
+		Formatter:        fmtr,
+		Printer:          os.Stdout,
+	})
+	errors.CheckError(err)
+
+	if !res.Success {
+		os.Exit(1)
+	}
+}
+
 // Lint reads all files, returns linting errors of all of the enitities of the specified kinds.
 // Entities of other kinds are ignored.
 func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
+	var fmtr Formatter = defaultFormatter
+	var w io.Writer = ioutil.Discard
+	if opts.Formatter != nil {
+		fmtr = opts.Formatter
+	}
+	if opts.Printer != nil {
+		w = opts.Printer
+	}
+
 	results := &LintResults{
 		Results: []*LintResult{},
-		fmtr:    opts.Formatter,
+		fmtr:    fmtr,
 	}
 
 	for _, file := range opts.Files {
@@ -105,7 +146,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 			case info.IsDir():
 				return nil // skip
 			default:
-				log.Warnf("ignoring file with unknown extension: %s", path)
+				log.Debugf("ignoring file with unknown extension: %s", path)
 				return nil
 			}
 
@@ -114,16 +155,20 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 				return err
 			}
 
-			results.Results = append(results.Results, lintData(ctx, path, data, opts))
+			res := lintData(ctx, path, data, opts)
+			results.Results = append(results.Results, res)
 
-			return nil
+			_, err = w.Write([]byte(results.fmtr.Format(res)))
+			return err
 		})
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return results.evaluate(), nil
+	results.evaluate()
+	_, err := w.Write([]byte(results.fmtr.Summarize(results)))
+	return results, err
 }
 
 func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *LintResult {
@@ -200,7 +245,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 				)
 			}
 		default:
-			// silently ignore unknown kinds
+			continue // silently ignore unknown kinds
 		}
 
 		if err != nil {
@@ -237,14 +282,20 @@ func (l *LintResults) evaluate() *LintResults {
 	}
 
 	l.Success = success
-
-	var fmtr Formatter = defaultFormatter
-	if l.fmtr != nil {
-		fmtr = l.fmtr
-	}
-	l.msg = fmtr.Format(l)
+	l.msg = l.buildMsg()
 
 	return l
+}
+
+func (l *LintResults) buildMsg() string {
+	sb := &strings.Builder{}
+	for _, r := range l.Results {
+		sb.WriteString(l.fmtr.Format(r))
+	}
+
+	sb.WriteString(l.fmtr.Summarize(l))
+
+	return sb.String()
 }
 
 func getObjectName(kind string, obj metav1.Object, objIndex int) string {
@@ -259,4 +310,24 @@ func getObjectName(kind string, obj metav1.Object, objIndex int) string {
 	}
 
 	return fmt.Sprintf(`"%s" (%s)`, name, kind)
+}
+
+func getLintClients(client apiclient.Client, kinds []string) (ServiceClients, error) {
+	res := ServiceClients{}
+	for _, kind := range kinds {
+		switch kind {
+		case wf.WorkflowPlural, wf.WorkflowShortName:
+			res.WorkflowsClient = client.NewWorkflowServiceClient()
+		case wf.WorkflowTemplatePlural, wf.WorkflowTemplateShortName:
+			res.WorkflowTemplatesClient = client.NewWorkflowTemplateServiceClient()
+		case wf.CronWorkflowPlural, wf.CronWorkflowShortName:
+			res.CronWorkflowsClient = client.NewCronWorkflowServiceClient()
+		case wf.ClusterWorkflowTemplatePlural, wf.ClusterWorkflowTemplateShortName:
+			res.ClusterWorkflowTemplateClient = client.NewClusterWorkflowTemplateServiceClient()
+		default:
+			return res, fmt.Errorf("unknown kind: %s", kind)
+		}
+	}
+
+	return res, nil
 }

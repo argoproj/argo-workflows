@@ -3,59 +3,50 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint"
+	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
 func NewLintCommand() *cobra.Command {
 	var (
-		strict   bool
-		allKinds bool
-		format   string
+		strict    bool
+		lintKinds []string
+		output    string
 	)
+
+	allKinds := []string{wf.WorkflowPlural, wf.WorkflowTemplatePlural, wf.CronWorkflowPlural, wf.ClusterWorkflowTemplatePlural}
 
 	command := &cobra.Command{
 		Use:   "lint FILE...",
-		Short: "validate files or directories of workflow manifests",
+		Short: "validate files or directories of manifests",
+		Example: `
+# Lint all manifests in a specified directory:
+
+  argo lint ./manifests
+
+# Lint only manifests of Workflows and CronWorkflows from stdin:
+
+  cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -`,
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx, apiClient := client.NewAPIClient()
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			ctx, apiClient := client.NewAPIClient()
-			clients := lint.ServiceClients{
-				WorkflowsClient: apiClient.NewWorkflowServiceClient(),
+			if len(lintKinds) == 0 || strings.Contains(strings.Join(lintKinds, ","), "all") {
+				lintKinds = allKinds
 			}
-			if allKinds {
-				clients.WorkflowTemplatesClient = apiClient.NewWorkflowTemplateServiceClient()
-				clients.CronWorkflowsClient = apiClient.NewCronWorkflowServiceClient()
-				clients.ClusterWorkflowTemplateClient = apiClient.NewClusterWorkflowTemplateServiceClient()
-			}
-			fmtr, err := lint.GetFormatter(format)
-			errors.CheckError(err)
-
-			res, err := lint.Lint(ctx, &lint.LintOptions{
-				ServiceClients:   clients,
-				Files:            args,
-				Strict:           strict,
-				DefaultNamespace: client.Namespace(),
-				Formatter:        fmtr,
-			})
-			errors.CheckError(err)
-
-			fmt.Print(res.Msg())
-			if !res.Success {
-				os.Exit(1)
-			}
+			lint.RunLint(ctx, apiClient, args, lintKinds, client.Namespace(), output, strict)
 		},
 	}
 
-	command.Flags().BoolVar(&allKinds, "all-kinds", false, "Lint all kinds, not just workflows")
-	command.Flags().StringVar(&format, "format", "pretty", "Linting results output format. One of: pretty|simple")
+	command.Flags().StringSliceVar(&lintKinds, "kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
+	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
 
 	return command
