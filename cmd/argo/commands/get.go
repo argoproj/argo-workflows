@@ -352,13 +352,14 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	// Used to store children of a boundary node that has not been parsed yet
 	// Maps boundary Node name -> array of render Children
 	parentBoundaryMap := make(map[string][]renderNode)
-
 	// Used to store Non Boundary Parent nodes so render children can attach
 	// Maps non Boundary Parent Node name -> *nonBoundaryParentNode
 	nonBoundaryParentMap := make(map[string]*nonBoundaryParentNode)
 	// Used to store children which have a Non Boundary Parent from rendering perspective
 	// Maps non Boundary render Children name -> *nonBoundaryParentNode
 	nonBoundaryParentChildrenMap := make(map[string]*nonBoundaryParentNode)
+	// A node is a boundary node if any other node references it in its own node.boundaryID field.
+	isBoundaryNodeMap := make(map[string]bool)
 
 	// We have to do a 2 pass approach because anything that is a child
 	// of a nonBoundaryParent and also has a boundaryID we may not know which
@@ -371,6 +372,9 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 			log.Fatal("Missing node type in status node. Cannot get workflows created with Argo <= 2.0 using the default or wide output option.")
 			return nil
 		}
+
+		isBoundaryNodeMap[status.BoundaryID] = true
+
 		if isNonBoundaryParentNode(status.Type) {
 			n := nonBoundaryParentNode{nodeInfo: nodeInfo{id: id}}
 			nonBoundaryParentMap[id] = &n
@@ -384,7 +388,7 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	// 2nd Pass process everything
 	for id, status := range wf.Status.Nodes {
 		switch {
-		case isBoundaryNode(status.Type):
+		case isBoundaryNode(status.Type) || isBoundaryNodeMap[status.ID]:
 			n := boundaryNode{nodeInfo: nodeInfo{id: id}}
 			boundaryNodeMap[id] = &n
 			// Attach to my parent if needed
