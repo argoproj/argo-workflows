@@ -2937,10 +2937,10 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
 	if templateRef != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
-		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
+		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
 		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
