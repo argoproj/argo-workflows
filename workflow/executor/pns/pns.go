@@ -205,10 +205,11 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			}
 			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
 			// we need a bit more time
-			if p.haveContainerPIDs(containerNames) && time.Since(start) > 30*time.Second {
-				return
+			if !p.haveContainerPIDs(containerNames) || time.Since(start) < 5*time.Second {
+				time.Sleep(50 * time.Millisecond)
+			} else {
+				time.Sleep(10 * time.Second)
 			}
-			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
@@ -335,15 +336,17 @@ func (p *PNSExecutor) secureRootFiles() error {
 			if prevInfo, ok := p.pidFileHandles[pid]; ok {
 				_ = prevInfo.Close()
 			}
-			p.pidFileHandles[pid] = fs
-			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
+			p.mu.Lock()
+			defer p.mu.Unlock()
+			if p.pidFileHandles[pid] != fs {
+				p.pidFileHandles[pid] = fs
+				log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
+			}
 			containerName, err := containerNameForPID(pid)
 			if err != nil {
 				return err
 			}
 			if p.getContainerPID(containerName) != pid {
-				p.mu.Lock()
-				defer p.mu.Unlock()
 				p.containerNameToPID[containerName] = pid
 				log.Infof("mapped container name %q to pid %d", containerName, pid)
 			}

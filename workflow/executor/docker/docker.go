@@ -257,13 +257,14 @@ func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []
 				containerStatus[containerName] = status
 				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, containerID, createdAt, status)
 			}
-			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
-			// we need a bit more time
-			if d.haveContainers(containerNames) && time.Since(started) > 30*time.Second {
-				return nil
-			}
 		}
-		time.Sleep(1 * time.Second) // this is a hard-loop because containers can run very short periods of time
+		// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
+		// we need a bit more time
+		if !d.haveContainers(containerNames) || time.Since(started) < 15*time.Second {
+			time.Sleep(1 * time.Second) // this is a hard-loop because containers can run very short periods of time
+		} else {
+			time.Sleep(10 * time.Second)
+		}
 	}
 }
 
