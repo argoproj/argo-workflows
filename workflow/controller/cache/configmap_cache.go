@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type configMapCache struct {
@@ -60,7 +61,12 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	}
 
 	c.logInfo(log.Fields{}, "config map cache loaded")
-
+	cm.SetLabels(map[string]string{common.LabelKeyCacheLastHitTimestamp: time.Now().Format(time.RFC3339)})
+	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cm, metav1.UpdateOptions{})
+	if err != nil {
+		c.logError(err, log.Fields{}, "Error updating last hit timestamp label on cache")
+		return nil, fmt.Errorf("error updating last hit timestamp label on cache: %w", err)
+	}
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
 		c.logInfo(log.Fields{}, "config map cache miss: entry does not exist")
