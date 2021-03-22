@@ -141,7 +141,7 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
-FROM docker.io/library/scratch as workflow-controller
+FROM scratch as workflow-controller
 
 USER 8737
 
@@ -153,7 +153,7 @@ ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
 
-FROM docker.io/library/scratch as argocli
+FROM scratch as argocli
 
 USER 8737
 
