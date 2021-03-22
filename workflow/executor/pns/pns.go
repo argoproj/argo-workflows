@@ -196,8 +196,6 @@ OUTER:
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
 	start := time.Now()
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
-	defer cancel()
 	for {
 		select {
 		case <-ctx.Done():
