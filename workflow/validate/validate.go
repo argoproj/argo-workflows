@@ -205,7 +205,8 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 	if wf.Spec.OnExit != "" {
-		// now when validating onExit, {{workflow.status}} is now available as a global
+		// now when validating onExit, {{workflow.status}} and {{workflow.duration}} is now available as a global
+		ctx.globalParams[common.GlobalVarWorkflowDuration] = placeholderGenerator.NextPlaceholder()
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments)
