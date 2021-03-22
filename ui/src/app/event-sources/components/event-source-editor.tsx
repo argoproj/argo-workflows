@@ -28,7 +28,7 @@ export const EventSourceEditor = ({
                 {
                     key: 'manifest',
                     title: 'Manifest',
-                    content: <ObjectEditor type='io.argoproj.eventsource.v1alpha1.EventSource' value={eventSource} onChange={x => onChange({...x})} />
+                    content: <ObjectEditor type='io.argoproj.events.v1alpha1.EventSource' value={eventSource} onChange={x => onChange({...x})} />
                 },
 
                 {
