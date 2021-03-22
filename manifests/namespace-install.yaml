@@ -444,7 +444,7 @@ spec:
       - args:
         - server
         - --namespaced
-        image: argoproj/argocli:latest
+        image: docker.io/argoproj/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
@@ -500,7 +500,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: argoproj/workflow-controller:latest
+        image: docker.io/argoproj/workflow-controller:latest
         livenessProbe:
           httpGet:
             path: /metrics
