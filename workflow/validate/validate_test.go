@@ -631,7 +631,7 @@ spec:
   templates:
   - name: hello-hello-hello
     steps:
-    - - name: hello1!blah
+    - - name: hello1.blah
         template: whalesay
         arguments:
           parameters:

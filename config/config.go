@@ -122,13 +122,6 @@ func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error
 	return c.ContainerRuntimeExecutor, nil
 }
 
-func (c Config) GetWorkflowDefaults() *wfv1.Workflow {
-	if c.WorkflowDefaults != nil {
-		return c.WorkflowDefaults
-	}
-	return &wfv1.Workflow{}
-}
-
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
 type PodSpecLogStrategy struct {
 	FailedPod bool `json:"failedPod,omitempty"`
