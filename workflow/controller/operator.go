@@ -240,8 +240,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
-	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
-
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
@@ -262,6 +260,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.markWorkflowFailed(ctx, msg)
 			return
 		}
+		woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
 		if len(*wfConditions) > 0 {
 			woc.wf.Status.Conditions.JoinConditions(wfConditions)
@@ -284,6 +283,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
+		woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation(ctx)
 		if err == nil {
