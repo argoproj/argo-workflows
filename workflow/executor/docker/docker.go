@@ -190,8 +190,15 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 		if err != nil {
 			log.WithError(err).Error("failed to poll container IDs")
 		}
-
 	}()
+	for !d.haveContainers(containerNames) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			time.Sleep(1 * time.Second)
+		}
+	}
 	containerIDs, err := d.getContainerIDs(containerNames)
 	if err != nil {
 		return err
