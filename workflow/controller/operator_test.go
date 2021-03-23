@@ -6315,7 +6315,7 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }
 
-const rootRetryStrategyCompletes =`apiVersion: argoproj.io/v1alpha1
+const rootRetryStrategyCompletes = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: hello-world-5bd7v
