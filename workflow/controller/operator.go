@@ -1802,7 +1802,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if retryNodeName != "" {
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
 		if !retryNode.Fulfilled() && node.Fulfilled() { // if the retry child has completed we need to update outself
-			node, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
+			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
 			}
