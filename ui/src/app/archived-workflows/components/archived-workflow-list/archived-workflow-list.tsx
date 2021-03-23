@@ -40,14 +40,16 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         this.storage = new ScopedLocalStorage('ArchiveListOptions');
         const savedOptions = this.storage.getItem('options', {
             pagination: {limit: defaultPaginationLimit},
-            selectedPhases: []
+            selectedPhases: [],
+            selectedLabels: []
         } as State);
         const phaseQueryParam = this.queryParams('phase');
+        const labelQueryParam = this.queryParams('label');
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || savedOptions.pagination.limit},
             namespace: this.props.match.params.namespace || '',
             selectedPhases: phaseQueryParam.length > 0 ? phaseQueryParam : savedOptions.selectedPhases,
-            selectedLabels: this.queryParams('label'),
+            selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
             maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay()
         };

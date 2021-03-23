@@ -43,6 +43,7 @@ interface State {
 interface WorkflowListRenderOptions {
     paginationLimit: number;
     selectedPhases: WorkflowPhase[];
+    selectedLabels: string[];
 }
 
 const allBatchActionsEnabled: Actions.OperationDisabled = {
@@ -82,6 +83,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private get options() {
         const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
         options.selectedPhases = this.state.selectedPhases;
+        options.selectedLabels = this.state.selectedLabels;
         if (this.state.pagination.limit) {
             options.paginationLimit = this.state.pagination.limit;
         }
@@ -95,16 +97,19 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.storage = new ScopedLocalStorage('ListOptions');
         const savedOptions = this.storage.getItem('options', {
             paginationLimit: 0,
-            selectedPhases: []
+            selectedPhases: [],
+            selectedLabels: []
         } as WorkflowListRenderOptions);
+        const phaseQueryParam = this.queryParams('phase');
+        const labelQueryParam = this.queryParams('label');
         this.state = {
             pagination: {
                 offset: this.queryParam('offset'),
                 limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 500
             },
             namespace: this.props.match.params.namespace || '',
-            selectedPhases: this.queryParams('phase').length > 0 ? (this.queryParams('phase') as WorkflowPhase[]) : savedOptions.selectedPhases,
-            selectedLabels: this.queryParams('label'),
+            selectedPhases: phaseQueryParam.length > 0 ? (phaseQueryParam as WorkflowPhase[]) : savedOptions.selectedPhases,
+            selectedLabels: labelQueryParam.length > 0 ? (labelQueryParam as string[]) : savedOptions.selectedLabels,
             selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled}
         };
