@@ -351,7 +351,6 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
 		},
 	})
-
 	if err != nil {
 		panic(err)
 	}
