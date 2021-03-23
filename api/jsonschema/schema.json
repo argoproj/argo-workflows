@@ -4206,6 +4206,10 @@
         "secretKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SecretKeySecret is the secret selector to the bucket's secret key"
+        },
+        "securityToken": {
+          "description": "SecurityToken is the user's temporary security token",
+          "type": "string"
         }
       },
       "required": [

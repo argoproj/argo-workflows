@@ -3407,6 +3407,7 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+|`securityToken`|`string`|SecurityToken is the user's temporary security token|
 
 ## RawArtifact
 

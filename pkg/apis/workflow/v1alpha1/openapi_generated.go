@@ -2896,6 +2896,13 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"securityToken": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecurityToken is the user's temporary security token",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the path in the bucket where the artifact resides",
@@ -2950,6 +2957,13 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 						SchemaProps: spec.SchemaProps{
 							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
 							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"securityToken": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecurityToken is the user's temporary security token",
+							Type:        []string{"string"},
 							Format:      "",
 						},
 					},

@@ -763,6 +763,9 @@ message OSSBucket {
 
   // CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
   optional bool createBucketIfNotPresent = 5;
+
+  // SecurityToken is the user's temporary security token
+  optional string securityToken = 6;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
