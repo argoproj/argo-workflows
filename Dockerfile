@@ -149,11 +149,13 @@ FROM scratch as argocli
 
 USER 8737
 
+WORKDIR /home/argo
+
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.crt /
-COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.key /
+COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.crt /home/argo/
+COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.key /home/argo/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 
 ENTRYPOINT [ "argo" ]
