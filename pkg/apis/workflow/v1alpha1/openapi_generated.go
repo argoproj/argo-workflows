@@ -2898,7 +2898,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					},
 					"securityToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "SecurityToken is the user's temporary security token",
+							Description: "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2962,7 +2962,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					},
 					"securityToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "SecurityToken is the user's temporary security token",
+							Description: "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
 							Type:        []string{"string"},
 							Format:      "",
 						},
