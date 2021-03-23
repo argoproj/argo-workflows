@@ -130,9 +130,6 @@ func (p *PNSExecutor) CopyFile(containerName string, sourcePath string, destPath
 }
 
 func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
-	ctx, cancel := context.WithCancel(ctx) // stop the polling when we are no longer waiting
-	defer cancel()
-
 	go p.pollRootProcesses(ctx, containerNames)
 
 	// Secure a filehandle on our own root. This is because we will chroot back and forth from
@@ -196,6 +193,8 @@ OUTER:
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
 	start := time.Now()
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	for {
 		select {
 		case <-ctx.Done():
@@ -206,11 +205,10 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			}
 			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
 			// we need a bit more time
-			if !p.haveContainerPIDs(containerNames) || time.Since(start) < 5*time.Second {
-				time.Sleep(50 * time.Millisecond)
-			} else {
-				time.Sleep(10 * time.Second)
+			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
+				return
 			}
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
@@ -337,17 +335,15 @@ func (p *PNSExecutor) secureRootFiles() error {
 			if prevInfo, ok := p.pidFileHandles[pid]; ok {
 				_ = prevInfo.Close()
 			}
-			p.mu.Lock()
-			defer p.mu.Unlock()
-			if p.pidFileHandles[pid] != fs {
-				p.pidFileHandles[pid] = fs
-				log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
-			}
+			p.pidFileHandles[pid] = fs
+			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
 			containerName, err := containerNameForPID(pid)
 			if err != nil {
 				return err
 			}
 			if p.getContainerPID(containerName) != pid {
+				p.mu.Lock()
+				defer p.mu.Unlock()
 				p.containerNameToPID[containerName] = pid
 				log.Infof("mapped container name %q to pid %d", containerName, pid)
 			}
