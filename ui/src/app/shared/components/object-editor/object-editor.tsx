@@ -91,7 +91,12 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         renderIndentGuides: false,
                         scrollBeyondLastLine: true
                     }}
-                    onChange={() => setIsModified(true)}
+                    onChange={v => {
+                        if (!isModified) {
+                            setText(v);
+                            setIsModified(true);
+                        }
+                    }}
                 />
             </div>
             <div style={{paddingTop: '1em'}}>
