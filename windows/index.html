@@ -2265,6 +2265,7 @@ hello-hybrid-plqpp-764774907: Hello from Linux Container!
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Sharing process namespaces <a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod">doesn't work on Windows</a> so you can't use the Process Namespace Sharing (pns) workflow executor.</li>
+<li>The argoexec Windows container is built using <a href="https://github.com/argoproj/argo-workflows/blob/b18b9920f678f420552864eccf3d4b98f3604cfa/Dockerfile.windows#L28">nanoserver:1809</a> as the base image. Running a newer windows version (e.g. 1909) is currently <a href="https://github.com/argoproj/argo-workflows/issues/5376">not confirmed to be working</a>. If this is required, you need to build the argoexec container yourself by first adjusting the base image.</li>
 </ul>
 <h2 id="building-the-workflow-executor-image-for-windows">Building the workflow executor image for Windows<a class="headerlink" href="#building-the-workflow-executor-image-for-windows" title="Permanent link">&para;</a></h2>
 <p>To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described <a href="https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise">in the docs</a>.</p>
