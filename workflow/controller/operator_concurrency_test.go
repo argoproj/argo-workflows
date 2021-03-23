@@ -478,9 +478,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		// Nobody is waiting for the lock
-		assert.Empty(woc.wf.Status.Synchronization.Semaphore.Waiting)
-		// Nobody is holding the lock
-		assert.Empty(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders)
+		assert.Nil(woc.wf.Status.Synchronization)
 	})
 }
 
