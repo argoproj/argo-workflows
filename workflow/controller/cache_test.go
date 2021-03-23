@@ -60,6 +60,7 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	lastHitTimestamp, err := time.Parse(time.RFC3339, cm.Labels[common.LabelKeyCacheLastHitTimestamp])
 	assert.NoError(t, err)
 	assert.True(t, lastHitTimestamp.After(cm.CreationTimestamp.Time))
+	assert.Equal(t, lastHitTimestamp.Format(time.RFC3339), entry.LastHitTimestamp.Time.Format(time.RFC3339))
 
 	outputs := entry.Outputs
 	assert.NoError(t, err)

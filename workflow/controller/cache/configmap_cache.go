@@ -61,12 +61,8 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	}
 
 	c.logInfo(log.Fields{}, "config map cache loaded")
-	cm.SetLabels(map[string]string{common.LabelKeyCacheLastHitTimestamp: time.Now().Format(time.RFC3339)})
-	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cm, metav1.UpdateOptions{})
-	if err != nil {
-		c.logError(err, log.Fields{}, "Error updating last hit timestamp label on cache")
-		return nil, fmt.Errorf("error updating last hit timestamp label on cache: %w", err)
-	}
+	hitTime := time.Now()
+	cm.SetLabels(map[string]string{common.LabelKeyCacheLastHitTimestamp: hitTime.Format(time.RFC3339)})
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
 		c.logInfo(log.Fields{}, "config map cache miss: entry does not exist")
@@ -77,6 +73,20 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	err = json.Unmarshal([]byte(rawEntry), &entry)
 	if err != nil {
 		return nil, fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
+	}
+
+	entry.LastHitTimestamp = metav1.Time{Time: hitTime}
+	entryJSON, err := json.Marshal(entry)
+	if err != nil {
+		c.logError(err, log.Fields{"key": key}, "Unable to marshal cache entry with last hit timestamp")
+		return nil, fmt.Errorf("unable to marshal cache entry with last hit timestamp: %w", err)
+	}
+	cm.Data[key] = string(entryJSON)
+
+	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cm, metav1.UpdateOptions{})
+	if err != nil {
+		c.logError(err, log.Fields{}, "Error updating last hit timestamp on cache")
+		return nil, fmt.Errorf("error updating last hit timestamp on cache: %w", err)
 	}
 
 	return &entry, nil
