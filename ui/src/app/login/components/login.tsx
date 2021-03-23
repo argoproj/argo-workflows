@@ -18,7 +18,7 @@ const getRedirect = (): string => {
     if (urlParams.has('redirect')) {
         return 'redirect=' + urlParams.get('redirect');
     }
-    return '';
+    return 'redirect=' + window.location.origin + '/workflows';
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
