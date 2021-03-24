@@ -1738,6 +1738,15 @@ func (n NodeStatus) GetDuration() time.Duration {
 	return n.FinishedAt.Sub(n.StartedAt.Time)
 }
 
+func (n NodeStatus) HasChild(childID string) bool {
+	for _, nodeID := range n.Children {
+		if childID == nodeID {
+			return true
+		}
+	}
+	return false
+}
+
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint

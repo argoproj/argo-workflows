@@ -630,3 +630,12 @@ func TestTemplate_GetMainContainer(t *testing.T) {
 		assert.Equal(t, []string{"main"}, x.GetMainContainerNames())
 	})
 }
+
+func TestHasChild(t *testing.T) {
+	node := NodeStatus{
+		Children: []string{"a", "b"},
+	}
+	assert.True(t, node.HasChild("a"))
+	assert.False(t, node.HasChild("c"))
+	assert.False(t, node.HasChild(""))
+}

@@ -606,6 +606,6 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	}
 }
 
-func GenerateOnExitNodeName(parentDisplayName string) string {
-	return fmt.Sprintf("%s.onExit", parentDisplayName)
+func GenerateOnExitNodeName(parentNodeName string) string {
+	return fmt.Sprintf("%s.onExit", parentNodeName)
 }
