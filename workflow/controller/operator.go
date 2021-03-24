@@ -2940,7 +2940,24 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
 	if templateRef != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
-		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
+
+		// Previously we used `parentDisplayName` to generate all onExit node names. However, as these can be non-unique
+		// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
+		// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
+		// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
+		// If it doesn't, we use the new (and unique) name for all operations henceforth.
+		// TODO: This scaffold code should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
+		// When the scaffold code is removed, we should only have the following:
+		//
+		// 		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
+		//
+		// See more: https://github.com/argoproj/argo-workflows/issues/5502
+		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
+		legacyOnExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
+		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.wf.GetNodeByName(parentNodeName).HasChild(legacyNameNode.ID) {
+			onExitNodeName = legacyOnExitNodeName
+		}
+
 		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,

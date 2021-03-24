@@ -1802,7 +1802,7 @@ func TestOnExitDAGPhase(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
 	}
 
-	retryNode = woc.wf.GetNodeByName("B.onExit")
+	retryNode = woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
@@ -1927,7 +1927,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	retryNode := woc.wf.GetNodeByName("step-2.onExit")
+	retryNode := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
@@ -2195,7 +2195,7 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	onExitNode := woc.wf.GetNodeByName("A.onExit")
+	onExitNode := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
 	if assert.NotNil(t, onExitNode) {
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
