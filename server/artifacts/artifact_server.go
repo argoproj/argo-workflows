@@ -6,7 +6,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -14,27 +17,33 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/instanceid"
-	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
+	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 type ArtifactServer struct {
-	gatekeeper        auth.Gatekeeper
-	hydrator          hydrator.Interface
-	wfArchive         sqldb.WorkflowArchive
-	instanceIDService instanceid.Service
+	gatekeeper           auth.Gatekeeper
+	hydrator             hydrator.Interface
+	wfArchive            sqldb.WorkflowArchive
+	instanceIDService    instanceid.Service
+	artDriverFactory     artifact.NewDriverFunc
+	artifactRepositories artifactrepositories.Interface
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
-	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService}
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
+	return newArtifactServer(authN, hydrator, wfArchive, instanceIDService, artifact.NewDriver, artifactRepositories)
+}
+
+func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
-
 	ctx, err := a.gateKeeping(r)
 	if err != nil {
 		w.WriteHeader(401)
@@ -55,17 +64,16 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		a.serverInternalError(err, w)
 		return
 	}
-	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+
+	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName)
+
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
-	a.ok(w, data)
 }
 
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
-
 	ctx, err := a.gateKeeping(r)
 	if err != nil {
 		w.WriteHeader(401)
@@ -87,13 +95,12 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName)
+
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
-	a.ok(w, data)
 }
 
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
@@ -112,57 +119,76 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	return a.gatekeeper.Context(ctx)
 }
 
-func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
-	w.WriteHeader(200)
-	_, err := w.Write(data)
-	if err != nil {
-		a.serverInternalError(err, w)
-	}
-}
-
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	w.WriteHeader(500)
 	_, _ = w.Write([]byte(err.Error()))
 }
 
-func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId, artifactName string) ([]byte, error) {
+func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string) error {
 	kubeClient := auth.GetKubeClient(ctx)
 
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	if art == nil {
-		return nil, fmt.Errorf("artifact not found")
+		return fmt.Errorf("artifact not found")
 	}
 
-	driver, err := artifact.NewDriver(art, resources{kubeClient, wf.Namespace})
+	ref, err := a.artifactRepositories.Resolve(ctx, wf.Spec.ArtifactRepositoryRef, wf.Namespace)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	tmp, err := ioutil.TempFile(".", "artifact")
+	ar, err := a.artifactRepositories.Get(ctx, ref)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	path := tmp.Name()
-	defer func() { _ = os.Remove(path) }()
-
-	err = driver.Load(art, path)
+	l := ar.ToArtifactLocation()
+	err = art.Relocate(l)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	file, err := ioutil.ReadFile(path)
+	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
-		return nil, err
+		return err
+	}
+	tmp, err := ioutil.TempFile("/tmp", "artifact")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	err = driver.Load(art, tmpPath)
+	if err != nil {
+		return err
 	}
 
-	log.WithFields(log.Fields{"size": len(file)}).Debug("Artifact file size")
+	file, err := os.Open(tmpPath)
+	if err != nil {
+		return err
+	}
 
-	return file, nil
+	defer file.Close()
+
+	stats, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	contentLength := strconv.FormatInt(stats.Size(), 10)
+	log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
+
+	key, _ := art.GetKey()
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
+	w.WriteHeader(200)
+
+	http.ServeContent(w, r, "", time.Time{}, file)
+
+	return nil
 }
 
 func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, workflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

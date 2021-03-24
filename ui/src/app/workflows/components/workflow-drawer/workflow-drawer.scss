@@ -86,25 +86,10 @@
   }
 
   &__resourcesDuration {
-    display: flex;
-    align-items: center;
-
-    $gutter: 2em;
-
-    &--label {
-      margin-left: 0.5em;
-    }
-
     &--value {
-      font-weight: 600; 
+      font-weight: 600;
+      margin-right: 0.5em;
     }
-
-    &--container {
-      padding-left: $gutter / 2; 
-      margin-left: $gutter / 2; 
-      border-left: 1px solid $argo-color-gray-3;
-    }
-
   }
 
   &__conditions {

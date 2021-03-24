@@ -1,6 +1,7 @@
 package sqldb
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -10,9 +11,9 @@ import (
 	"upper.io/db.v3/mysql"
 	"upper.io/db.v3/postgresql"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 // CreateDBSession creates the dB session
@@ -33,24 +34,24 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 
 // CreatePostGresDBSession creates postgresDB session
 func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
 	}
 
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	ctx := context.Background()
+	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
 
-	var settings = postgresql.ConnectionURL{
+	settings := postgresql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
-		Host:     cfg.Host + ":" + cfg.Port,
+		Host:     cfg.GetHostname(),
 		Database: cfg.Database,
 	}
 
@@ -78,16 +79,16 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 
 // CreateMySQLDBSession creates Mysql DB session
 func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
 	}
 
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+	ctx := context.Background()
+	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, "", err
 	}
@@ -95,7 +96,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 	session, err := mysql.Open(mysql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
-		Host:     cfg.Host + ":" + cfg.Port,
+		Host:     cfg.GetHostname(),
 		Database: cfg.Database,
 	})
 	if err != nil {

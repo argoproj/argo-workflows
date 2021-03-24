@@ -45,6 +45,7 @@ spec:
         path: /go/src/github.com/golang/example
         git:
           repo: https://github.com/golang/example.git
+          revision: cfe12d6
     container:
       image: golang:1.8
       command: [sh, -c]

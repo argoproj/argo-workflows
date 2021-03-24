@@ -8,8 +8,8 @@ spec:
   templates:
   - name: error-container
     retryStrategy:
-      limit: 2
-      retryPolicy: "Always"   # Retry on errors AND failures. Also available: "OnFailure" (default), "OnError"
+      limit: "2"
+      retryPolicy: "Always"   # Retry on errors AND failures. Also available: "OnFailure" (default), "OnError", and "OnTransientError" (retry only on transient errors such as i/o or TLS handshake timeout. Available after v3.0.0-rc2)
     container:
       image: python
       command: ["python", "-c"]

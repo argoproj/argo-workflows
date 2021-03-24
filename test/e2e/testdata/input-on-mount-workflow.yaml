@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-on-mount-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: mnt
+          emptyDir: { }
+      container:
+        image: argoproj/argosay:v2
+        args: [ cat , /mnt/in-0 ]
+        volumeMounts:
+          - name: mnt
+            mountPath: /mnt
+      inputs:
+        artifacts:
+          - name: in-0
+            path: /mnt/in-0
+            raw:
+              data: hi

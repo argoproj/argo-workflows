@@ -1,4 +1,4 @@
-// +build e2e
+// +build cron
 
 package e2e
 
@@ -12,14 +12,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type CronSuite struct {
@@ -29,11 +28,15 @@ type CronSuite struct {
 func (s *CronSuite) SetupSuite() {
 	s.E2ESuite.SetupSuite()
 	// Since tests run in parallel, delete all cron resources before the test suite is run
-	s.E2ESuite.DeleteResources(fixtures.LabelCron)
+	s.E2ESuite.DeleteResources()
+}
+
+func (s *CronSuite) BeforeTest(suiteName, testName string) {
+	s.E2ESuite.BeforeTest(suiteName, testName)
 }
 
 func (s *CronSuite) TearDownSuite() {
-	s.E2ESuite.DeleteResources(fixtures.LabelCron)
+	s.E2ESuite.DeleteResources()
 	s.E2ESuite.TearDownSuite()
 }
 
@@ -45,8 +48,6 @@ func (s *CronSuite) TestBasic() {
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -54,16 +55,16 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
 			Wait(1 * time.Minute).
@@ -93,8 +94,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-timezone
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "%s"
   timezone: "%s"
@@ -103,10 +102,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`, scheduleInTestTimezone, testTimezone)).
+          image: argoproj/argosay:v2`, scheduleInTestTimezone, testTimezone)).
 			When().
 			CreateCronWorkflow().
 			Wait(1 * time.Minute).
@@ -122,8 +118,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-suspend
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -131,16 +125,16 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
 			Then().
@@ -158,8 +152,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-resume
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -167,16 +159,16 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]`).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
 			Then().
@@ -194,8 +186,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-forbid
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -203,16 +193,17 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["sleep 300"]`).
+          image: argoproj/argosay:v2
+          args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
 			Wait(2 * time.Minute).
@@ -230,7 +221,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-allow
   labels:
-    argo-e2e-cron: true
+    
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -238,16 +229,17 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["sleep 300"]`).
+          image: argoproj/argosay:v2
+          args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
 			Wait(2 * time.Minute).
@@ -263,8 +255,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-replace
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Replace"
@@ -272,23 +262,26 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["sleep 300"]`).
+          image: argoproj/argosay:v2
+          args: ["sleep", "300s"]`).
 			When().
 			CreateCronWorkflow().
 			Wait(2*time.Minute + 20*time.Second).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, 1, len(cronWf.Status.Active))
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				if assert.NotNil(t, cronWf.Status.LastScheduledTime) {
+					assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				}
 			})
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {
@@ -300,8 +293,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-succeed-1
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -309,19 +300,19 @@ spec:
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["python", -c]
-          args: ["import random; import sys; exit_code = random.choice([0]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"] `).
+          image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute).
+			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Equal(t, 1, len(wfList.Items))
@@ -337,8 +328,6 @@ spec:
 kind: CronWorkflow
 metadata:
   name: test-cron-wf-fail-1
-  labels:
-    argo-e2e-cron: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -346,19 +335,20 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 1
   workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["python", -c]
-          args: ["import random; import sys; exit_code = random.choice([1]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"] `).
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]`).
 			When().
 			CreateCronWorkflow().
-			Wait(2*time.Minute).
+			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Equal(t, 1, len(wfList.Items))
@@ -368,20 +358,32 @@ spec:
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
-	options.FieldSelector = fields.Everything().String()
-	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Equals, []string{cronWfName})
-	if err != nil {
-		panic(err)
-	}
-	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
-	options.LabelSelector = labelSelector.String()
+	options.LabelSelector = common.LabelKeyCronWorkflow + "=" + cronWfName
+}
+
+func (s *CronSuite) TestMalformedCronWorkflow() {
+	s.Given().
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
+		When().
+		WaitForWorkflow(1*time.Minute+15*time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectAuditEvents(
+			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
+			1,
+			func(t *testing.T, e []corev1.Event) {
+				assert.Equal(t, corev1.EventTypeWarning, e[0].Type)
+				assert.Equal(t, "Malformed", e[0].Reason)
+				assert.Equal(t, "cannot restore slice from map", e[0].Message)
+			},
+		)
 }
 
 func TestCronSuite(t *testing.T) {
-	if testing.Short() {
-		log.Infof("Skipping CronSuite because --short flag is enabled")
-		t.SkipNow()
-	}
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
 	var toWait time.Duration

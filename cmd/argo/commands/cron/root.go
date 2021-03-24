@@ -5,9 +5,10 @@ import (
 )
 
 func NewCronWorkflowCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "cron",
 		Short: "manage cron workflows",
+		Long:  `NextScheduledRun assumes that the workflow-controller uses UTC as its timezone`,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
 		},

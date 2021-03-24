@@ -6,7 +6,7 @@
 The Workflow of Workflows pattern involves a parent workflow triggering one or more child workflows, managing them, and acting their results.
  
 ## Examples
-You can use `workflowTemplateRef` to trigger a workflow inline.
+You can use `workflowTemplateRef` to trigger a workflow inline.  
 1. Define your workflow as a `workflowtemplate`.
 
 ```yaml

@@ -1,9 +1,9 @@
 import {ObjectMeta} from 'argo-ui/src/models/kubernetes';
 import * as React from 'react';
-import {WorkflowDag} from '..';
-import {labels, WorkflowStatus} from '../../../../models';
+import {WorkflowStatus} from '../../../../models';
 import {Notice} from '../../../shared/components/notice';
 import {Phase} from '../../../shared/components/phase';
+import {WorkflowDag} from '../workflow-dag/workflow-dag';
 
 interface Props {
     workflowMetadata: ObjectMeta;
@@ -14,7 +14,7 @@ interface Props {
 
 export class WorkflowPanel extends React.Component<Props> {
     public render() {
-        if (this.props.workflowMetadata.labels && this.props.workflowMetadata.labels[labels.completed] === 'true' && !this.props.workflowStatus.nodes) {
+        if (!this.props.workflowStatus.nodes && this.props.workflowStatus.phase) {
             return (
                 <div className='argo-container'>
                     <Notice>

@@ -14,8 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
 func NewLogsCommand() *cobra.Command {
@@ -25,7 +25,7 @@ func NewLogsCommand() *cobra.Command {
 		tailLines int64
 	)
 	logOptions := &corev1.PodLogOptions{}
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "logs WORKFLOW [POD]",
 		Short: "view logs of a pod or workflow",
 		Example: `# Print the logs of a workflow:
@@ -52,7 +52,6 @@ func NewLogsCommand() *cobra.Command {
   argo logs @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-
 			// parse all the args
 			workflow := ""
 			podName := ""
@@ -108,7 +107,7 @@ func NewLogsCommand() *cobra.Command {
 
 func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName string, logOptions *corev1.PodLogOptions) {
 	// logs
-	stream, err := serviceClient.PodLogs(ctx, &workflowpkg.WorkflowLogRequest{
+	stream, err := serviceClient.WorkflowLogs(ctx, &workflowpkg.WorkflowLogRequest{
 		Name:       workflow,
 		Namespace:  namespace,
 		PodName:    podName,

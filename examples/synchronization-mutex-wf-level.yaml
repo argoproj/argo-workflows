@@ -1,0 +1,17 @@
+# This example demonstrates the use of a Synchronization Mutex lock on workflow execution. Mutex lock limits
+# only one of the workflow execution in the namespace which has same Mutex lock.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: synchronization-wf-level-
+spec:
+  entrypoint: whalesay
+  synchronization:
+    mutex:
+      name:  test
+  templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]

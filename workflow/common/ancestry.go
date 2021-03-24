@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type DagContext interface {
@@ -19,17 +19,19 @@ type DagContext interface {
 type TaskResult string
 
 const (
-	TaskResultSucceeded TaskResult = "Succeeded"
-	TaskResultFailed    TaskResult = "Failed"
-	TaskResultErrored   TaskResult = "Errored"
-	TaskResultSkipped   TaskResult = "Skipped"
-	TaskResultDaemoned  TaskResult = "Daemoned"
+	TaskResultSucceeded    TaskResult = "Succeeded"
+	TaskResultFailed       TaskResult = "Failed"
+	TaskResultErrored      TaskResult = "Errored"
+	TaskResultSkipped      TaskResult = "Skipped"
+	TaskResultDaemoned     TaskResult = "Daemoned"
+	TaskResultAnySucceeded TaskResult = "AnySucceeded"
+	TaskResultAllFailed    TaskResult = "AllFailed"
 )
 
 var (
 	// TODO: This should use validate.workflowFieldNameFmt, but we can't import it here because an import cycle would be created
-	taskNameRegex   = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-z]+)|([a-zA-Z0-9][-a-zA-Z0-9]*)`)
-	taskResultRegex = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-z]+)`)
+	taskNameRegex   = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-zA-Z]+)|([a-zA-Z0-9][-a-zA-Z0-9]*)`)
+	taskResultRegex = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-zA-Z]+)`)
 )
 
 type expansionMatch struct {
@@ -38,31 +40,37 @@ type expansionMatch struct {
 	end      int
 }
 
-func GetTaskDependencies(task *wfv1.DAGTask, ctx DagContext) ([]string, string) {
+type DependencyType int
+
+const (
+	DependencyTypeTask DependencyType = iota
+	DependencyTypeItems
+)
+
+func GetTaskDependencies(task *wfv1.DAGTask, ctx DagContext) (map[string]DependencyType, string) {
 	depends := getTaskDependsLogic(task, ctx)
 	matches := taskNameRegex.FindAllStringSubmatchIndex(depends, -1)
 	var expansionMatches []expansionMatch
-	dependencies := make(map[string]bool)
+	dependencies := make(map[string]DependencyType)
 	for _, matchGroup := range matches {
 		// We have matched a taskName.TaskResult
 		if matchGroup[2] != -1 {
 			match := depends[matchGroup[2]:matchGroup[3]]
 			split := strings.Split(match, ".")
-			dependencies[split[0]] = true
+			if split[1] == string(TaskResultAnySucceeded) || split[1] == string(TaskResultAllFailed) {
+				dependencies[split[0]] = DependencyTypeItems
+			} else if _, ok := dependencies[split[0]]; !ok { // DependencyTypeItems takes precedence
+				dependencies[split[0]] = DependencyTypeTask
+			}
 		} else if matchGroup[4] != -1 {
 			match := depends[matchGroup[4]:matchGroup[5]]
-			dependencies[match] = true
+			dependencies[match] = DependencyTypeTask
 			expansionMatches = append(expansionMatches, expansionMatch{taskName: match, start: matchGroup[4], end: matchGroup[5]})
 		}
 	}
 
-	var out []string
-	for dependency := range dependencies {
-		out = append(out, dependency)
-	}
-
 	if len(expansionMatches) == 0 {
-		return out, depends
+		return dependencies, depends
 	}
 
 	sort.Slice(expansionMatches, func(i, j int) bool {
@@ -74,7 +82,7 @@ func GetTaskDependencies(task *wfv1.DAGTask, ctx DagContext) ([]string, string) 
 		depends = depends[:match.start] + expandDependency(match.taskName, matchTask) + depends[match.end:]
 	}
 
-	return out, depends
+	return dependencies, depends
 }
 
 func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
@@ -88,7 +96,7 @@ func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
 		split := strings.Split(matchGroup[1], ".")
 		taskName, taskResult := split[0], TaskResult(split[1])
 		switch taskResult {
-		case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultErrored, TaskResultDaemoned:
+		case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultErrored, TaskResultDaemoned, TaskResultAnySucceeded, TaskResultAllFailed:
 			// Do nothing
 		default:
 			return fmt.Errorf("task result '%s' for task '%s' is invalid", taskResult, taskName)

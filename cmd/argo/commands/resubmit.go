@@ -4,8 +4,8 @@ import (
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
 func NewResubmitCommand() *cobra.Command {
@@ -14,7 +14,7 @@ func NewResubmitCommand() *cobra.Command {
 		priority      int32
 		cliSubmitOpts cliSubmitOpts
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "resubmit [WORKFLOW...]",
 		Short: "resubmit one or more workflows",
 		Example: `# Resubmit a workflow:

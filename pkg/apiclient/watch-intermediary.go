@@ -3,7 +3,9 @@ package apiclient
 import (
 	"context"
 
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"google.golang.org/grpc/metadata"
+
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
 type watchIntermediary struct {
@@ -23,6 +25,13 @@ func (w watchIntermediary) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
 	case event := <-w.events:
 		return event, nil
 	}
+}
+
+func (w *watchIntermediary) SendHeader(metadata.MD) error {
+	// We invoke `SendHeader` in order to eagerly flush headers to allow us to send period
+	// keepalives when using HTTP/1 and Server Sent Events, so we need to implement this here,
+	// though we don't use the meta for anything.
+	return nil
 }
 
 func newWatchIntermediary(ctx context.Context) *watchIntermediary {

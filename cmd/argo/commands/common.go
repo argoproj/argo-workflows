@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // Global variables
@@ -17,6 +18,7 @@ var (
 	nodeTypeIconMap          map[wfv1.NodeType]string
 	workflowConditionIconMap map[wfv1.ConditionType]string
 	noColor                  bool
+	noUtf8                   bool
 )
 
 func init() {
@@ -40,20 +42,42 @@ const (
 )
 
 func initializeSession() {
-	jobStatusIconMap = map[wfv1.NodePhase]string{
-		wfv1.NodePending:   ansiFormat("◷", FgYellow),
-		wfv1.NodeRunning:   ansiFormat("●", FgCyan),
-		wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
-		wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
-		wfv1.NodeFailed:    ansiFormat("✖", FgRed),
-		wfv1.NodeError:     ansiFormat("⚠", FgRed),
-	}
-	nodeTypeIconMap = map[wfv1.NodeType]string{
-		wfv1.NodeTypeSuspend: ansiFormat("ǁ", FgCyan),
-	}
-	workflowConditionIconMap = map[wfv1.ConditionType]string{
-		wfv1.ConditionTypeMetricsError: ansiFormat("✖", FgRed),
-		wfv1.ConditionTypeSpecWarning:  ansiFormat("⚠", FgYellow),
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000Z",
+		FullTimestamp:   true,
+	})
+	if noUtf8 {
+		jobStatusIconMap = map[wfv1.NodePhase]string{
+			wfv1.NodePending:   ansiFormat("Pending", FgYellow),
+			wfv1.NodeRunning:   ansiFormat("Running", FgCyan),
+			wfv1.NodeSucceeded: ansiFormat("Succeeded", FgGreen),
+			wfv1.NodeSkipped:   ansiFormat("Skipped", FgDefault),
+			wfv1.NodeFailed:    ansiFormat("Failed", FgRed),
+			wfv1.NodeError:     ansiFormat("Error", FgRed),
+		}
+		nodeTypeIconMap = map[wfv1.NodeType]string{
+			wfv1.NodeTypeSuspend: ansiFormat("Suspend", FgCyan),
+		}
+		workflowConditionIconMap = map[wfv1.ConditionType]string{
+			wfv1.ConditionTypeMetricsError: ansiFormat("Error", FgRed),
+			wfv1.ConditionTypeSpecWarning:  ansiFormat("Warning", FgYellow),
+		}
+	} else {
+		jobStatusIconMap = map[wfv1.NodePhase]string{
+			wfv1.NodePending:   ansiFormat("◷", FgYellow),
+			wfv1.NodeRunning:   ansiFormat("●", FgCyan),
+			wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
+			wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
+			wfv1.NodeFailed:    ansiFormat("✖", FgRed),
+			wfv1.NodeError:     ansiFormat("⚠", FgRed),
+		}
+		nodeTypeIconMap = map[wfv1.NodeType]string{
+			wfv1.NodeTypeSuspend: ansiFormat("ǁ", FgCyan),
+		}
+		workflowConditionIconMap = map[wfv1.ConditionType]string{
+			wfv1.ConditionTypeMetricsError: ansiFormat("✖", FgRed),
+			wfv1.ConditionTypeSpecWarning:  ansiFormat("⚠", FgYellow),
+		}
 	}
 }
 

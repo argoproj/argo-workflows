@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,20 +10,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/test"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-var wfClientset = fakewfclientset.NewSimpleClientset()
-var wftmplGetter = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
-var cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+var (
+	wfClientset   = fakewfclientset.NewSimpleClientset()
+	wftmplGetter  = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
+	cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+)
 
 func createWorkflowTemplate(yamlStr string) error {
+	ctx := context.Background()
 	wftmpl := unmarshalWftmpl(yamlStr)
-	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(wftmpl)
+	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(ctx, wftmpl, metav1.CreateOptions{})
 	if err != nil && apierr.IsAlreadyExists(err) {
 		return nil
 	}
@@ -67,28 +72,6 @@ func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 }
 
 const invalidErr = "is invalid"
-
-const unknownField = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      unknown_field: ""
-`
-
-func TestUnknownField(t *testing.T) {
-	t.Skip("Cannot detect unknown fields yet")
-	_, err := validate(unknownField)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "invalid keys: unknown_field")
-	}
-}
 
 var dupTemplateNames = `
 apiVersion: argoproj.io/v1alpha1
@@ -170,6 +153,35 @@ spec:
       image: docker/whalesay:{{inputs.parameters.unresolved}}
 `
 
+var unresolvedStepInput = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: entry-step
+  arguments:
+    parameters: []
+  templates:
+    - steps:
+        - - name: a
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{inputs.parameters.message}}"
+            template: whalesay
+      name: entry-step
+      inputs:
+        parameters:
+          - name: message
+            value: hello world
+    - name: whalesay
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`
+
 var unresolvedOutput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -194,6 +206,10 @@ spec:
 
 func TestUnresolved(t *testing.T) {
 	_, err := validate(unresolvedInput)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve")
+	}
+	_, err = validate(unresolvedStepInput)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve")
 	}
@@ -518,9 +534,38 @@ spec:
       args: ["Global 1: {{workflow.parameters.message1}} Input 1: {{inputs.parameters.message1}} Input 2/Steps Input 1/Global 1: {{inputs.parameters.message2}} Input 3/Global 2: {{inputs.parameters.message3}} Input4/Steps Input 2 internal/Global 1: {{inputs.parameters.message4}}"]
 `
 
+var unsuppliedArgValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: step-with-unsupplied-param-
+spec:
+  arguments:
+    parameters:
+    - name: missing
+  entrypoint: whalesay
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+`
+
 func TestGlobalParam(t *testing.T) {
 	_, err := validate(globalParam)
 	assert.NoError(t, err)
+
+	_, err = validate(unsuppliedArgValue)
+	assert.EqualError(t, err, "spec.arguments.missing.value is required")
 }
 
 var invalidTemplateNames = `
@@ -792,6 +837,7 @@ spec:
       parameters:
       - name: outparam
 `
+
 var invalidOutputMultipleValueFrom = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -881,7 +927,7 @@ func TestInvalidOutputParam(t *testing.T) {
 	}
 	_, err = validate(invalidOutputIncompatibleValueFromParam)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), ".parameter must be specified for Steps templates")
+		assert.Contains(t, err.Error(), ".parameter or expression must be specified for Steps templates")
 	}
 }
 
@@ -1003,7 +1049,7 @@ spec:
       - name: argo-source
         path: /src
         git:
-          repo: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo-workflows.git
     container:
       image: alpine:latest
       command: [sh, -c]
@@ -1047,7 +1093,6 @@ spec:
 `
 
 func TestValidActiveDeadlineSeconds(t *testing.T) {
-	// ensure {{workflow.status}} is not available when not in exit handler
 	_, err := validate(activeDeadlineSeconds)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "activeDeadlineSeconds must be a positive integer > 0")
@@ -1135,11 +1180,11 @@ spec:
 func TestInvalidArgumentNoFromOrLocation(t *testing.T) {
 	_, err := validate(invalidStepsArgumentNoFromOrLocation)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from or artifact location is required")
+		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
 	}
 	_, err = validate(invalidDAGArgumentNoFromOrLocation)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from or artifact location is required")
+		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
 	}
 }
 
@@ -1541,46 +1586,6 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	}
 }
 
-var localTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: local-template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    template: B
-  - name: B
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-`
-
-func TestLocalTemplateRef(t *testing.T) {
-	_, err := validate(localTemplateRef)
-	assert.NoError(t, err)
-}
-
-var undefinedLocalTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: undefined-local-template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    template: undef
-`
-
-func TestUndefinedLocalTemplateRef(t *testing.T) {
-	_, err := validate(undefinedLocalTemplateRef)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "not found")
-	}
-}
-
 var templateRefTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -1594,62 +1599,9 @@ spec:
       command: [echo, hello]
 `
 
-var templateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    steps:
-      - - name: call-A
-          templateRef:
-            name: template-ref-target
-            template: A
-`
-
-var deprecatedTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: template-ref-target
-      template: A
-`
-
 func TestWorkflowTemplate(t *testing.T) {
 	err := validateWorkflowTemplate(templateRefTarget)
 	assert.NoError(t, err)
-}
-
-func TestTemplateRef(t *testing.T) {
-	err := createWorkflowTemplate(templateRefTarget)
-	assert.NoError(t, err)
-
-	wfConditions, err := validate(templateRef)
-	assert.NoError(t, err)
-	assert.Empty(t, wfConditions)
-
-	// This tests for deprecated behavior (calling template.templateRef) and should be removed next major version.
-	wfConditions, err = validate(deprecatedTemplateRef)
-	assert.NoError(t, err)
-
-	// Ensure that a deprecated SpecWarning was issued
-	foundSpecWarning := false
-	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.ConditionTypeSpecWarning {
-			foundSpecWarning = true
-			break
-		}
-	}
-	assert.True(t, foundSpecWarning)
 }
 
 var templateRefNestedTarget = `
@@ -1691,100 +1643,6 @@ func TestNestedTemplateRef(t *testing.T) {
 	wfConditions, err := validate(nestedTemplateRef)
 	assert.NoError(t, err)
 	assert.Empty(t, wfConditions)
-}
-
-var deprecatedTemplateRefNestedTarget = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: deprecated-template-ref-nested-target
-spec:
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: template-ref-target
-      template: A
-`
-
-var deprecatedNestedTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: deprecated-template-ref-nested-target
-      template: A
-`
-
-// This tests for deprecated behavior (calling template.templateRef) and should be removed next major version.
-func TestDeprecatedNestedTemplateRef(t *testing.T) {
-	err := createWorkflowTemplate(templateRefTarget)
-	assert.NoError(t, err)
-	err = createWorkflowTemplate(deprecatedTemplateRefNestedTarget)
-	assert.NoError(t, err)
-	wfConditions, err := validate(deprecatedNestedTemplateRef)
-	assert.NoError(t, err)
-
-	// Ensure that a deprecated SpecWarning was issued
-	foundSpecWarning := false
-	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.ConditionTypeSpecWarning {
-			foundSpecWarning = true
-			break
-		}
-	}
-	assert.True(t, foundSpecWarning)
-}
-
-var deprecatedTemplateRefNestedLocalTarget = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: template-ref-nested-local-target
-spec:
-  templates:
-  - name: A
-    template: B		# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-  - name: B
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-`
-
-var deprecatedNestedLocalTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-ref-
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    templateRef:	# This is DEPRECATED behavior and should not be used. Test should be removed next major version
-      name: template-ref-nested-local-target
-      template: A
-`
-
-// This tests for deprecated behavior (calling template.template aka "localRef") and should be removed next major version.
-func TestNestedLocalTemplateRef(t *testing.T) {
-	err := createWorkflowTemplate(deprecatedTemplateRefNestedLocalTarget)
-	assert.NoError(t, err)
-	wfConditions, err := validate(deprecatedNestedLocalTemplateRef)
-	assert.NoError(t, err)
-
-	// Ensure that a deprecated SpecWarning was issued
-	foundSpecWarning := false
-	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.ConditionTypeSpecWarning {
-			foundSpecWarning = true
-			break
-		}
-	}
-	assert.True(t, foundSpecWarning)
 }
 
 var undefinedTemplateRef = `
@@ -1901,15 +1759,19 @@ spec:
       args: ["hello world"]
 `
 
-// TestUnknownPodGCStrategy verifies pod gc strategy is correct.
-func TestUnknownPodGCStrategy(t *testing.T) {
+// TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
+func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 
-	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
-		wf.Spec.PodGC.Strategy = strat
+	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
+		wf.Spec.PodGC.Strategy = start
+		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+		assert.NoError(t, err)
+
+		wf.Spec.PodGC.LabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{"evicted": "true"}}
 		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
@@ -2006,49 +1868,6 @@ func TestAutomountServiceAccountTokenUse(t *testing.T) {
 		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
 		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
-	}
-}
-
-var templateResolutionWithPlaceholderWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: template-resolution-with-placeholder-
-spec:
-  entrypoint: template-resolution
-  arguments:
-    parameters:
-    - name: foo
-      value: /mnt/foo
-    - name: bar
-      value: /mnt/bar
-  volumes:
-  - name: workdir
-    emptyDir: {}
-  templates:
-  - name: template-resolution
-    template: multi-volume-mounts
-  - name: multi-volume-mounts
-    inputs:
-      parameters:
-      - name: foo
-      - name: bar
-    container:
-      image: debian:latest
-      volumeMounts:
-      - name: workdir
-        mountPath: "{{inputs.parameters.foo}}"
-      - name: workdir
-        mountPath: "{{inputs.parameters.bar}}"
-`
-
-// TestTemplateResolutionWithPlaceholderWorkflow verifies the placeholder use during a validation process.
-func TestTemplateResolutionWithPlaceholderWorkflow(t *testing.T) {
-	{
-		wf := unmarshalWf(templateResolutionWithPlaceholderWorkflow)
-		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
-		assert.NoError(t, err)
 	}
 }
 
@@ -2284,6 +2103,33 @@ spec:
 func TestInvalidMetricName(t *testing.T) {
 	_, err := validate(invalidMetricName)
 	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
+}
+
+var invalidMetricLabelName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: valid
+          help: "invalid"
+          labels:
+            - key: invalid.key
+              value: hi
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricLabelName(t *testing.T) {
+	_, err := validate(invalidMetricLabelName)
+	assert.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters, '_', or ':'")
 }
 
 var invalidMetricHelp = `
@@ -2615,4 +2461,272 @@ func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
 		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorKubelet})
 		assert.NoError(t, err)
 	})
+}
+
+var testWorkflowTemplateLabels = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-foobar-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay
+      metrics:
+        prometheus:
+          - name: intuit_data_persistplat_dppselfservice_workflow_test_duration
+            help: Duration of workflow
+            labels:
+              - key: label
+                value: "{{workflow.labels.testLabel}}"
+            gauge:
+              realtime: true
+              value: "{{duration}}"
+`
+
+func TestWorkflowTemplateLabels(t *testing.T) {
+	err := validateWorkflowTemplate(testWorkflowTemplateLabels)
+	assert.NoError(t, err)
+}
+
+const templateRefWithArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-artifact
+spec:
+  entrypoint: A
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: https://a.server.io/file
+  templates:
+  - name: A
+    inputs:
+      artifacts:
+      - name: binary-file
+        path: /usr/local/bin/binfile
+        mode: 0755
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+const wfWithWFTRefAndNoOwnArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithOutOwnArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndNoOwnArtifact)
+	assert.NoError(t, err)
+}
+
+const wfWithWFTRefAndOwnArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: http://localserver/file
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndOwnArtifactArgument)
+	assert.NoError(t, err)
+}
+
+var workflowTeamplateWithEnumValues = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+            - one
+            - two
+            - three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+var workflowTemplateWithEmptyEnumList = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum: []
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+var workflowTemplateWithArgumentValueNotFromEnumList = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+            -   two
+            -   three
+            -   four
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+func TestWorkflowTemplateWithEnumValue(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues)
+	assert.NoError(t, err)
+}
+
+func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList)
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+}
+
+func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList)
+	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+}
+
+var validActiveDeadlineSecondsArgoVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: timeout-bug-
+spec:
+  entrypoint: main
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: print-timeout
+            template: print-timeout
+          - name: use-timeout
+            template: use-timeout
+            dependencies: [print-timeout]
+            arguments:
+              parameters:
+                - name: timeout
+                  value: "{{tasks.print-timeout.outputs.result}}"
+
+    - name: print-timeout
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ['echo 5']
+
+    - name: use-timeout
+      inputs:
+        parameters:
+          - name: timeout
+      activeDeadlineSeconds: "{{inputs.parameters.timeout}}"
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["echo sleeping for 1m; sleep 60; echo done"]
+`
+
+func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
+	err := validateWorkflowTemplate(validActiveDeadlineSecondsArgoVariable)
+	assert.NoError(t, err)
+}
+
+func TestMaxLengthName(t *testing.T) {
+	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	assert.EqualError(t, err, "workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+
+	wftmpl := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
+	_, err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	assert.EqualError(t, err, "workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+
+	cwftmpl := &wfv1.ClusterWorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
+	_, err = ValidateClusterWorkflowTemplate(wftmplGetter, cwftmplGetter, cwftmpl)
+	assert.EqualError(t, err, "cluster workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+
+	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
+	err = ValidateCronWorkflow(wftmplGetter, cwftmplGetter, cwf)
+	assert.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }

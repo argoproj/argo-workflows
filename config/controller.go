@@ -1,61 +1,64 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
-	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
 
 type Controller interface {
-	Run(stopCh <-chan struct{}, onChange func(config Config) error)
-	Get() (Config, error)
+	Run(stopCh <-chan struct{}, onChange func(config interface{}) error)
+	Get(context.Context) (interface{}, error)
 }
 
 type controller struct {
 	namespace string
 	// name of the config map
-	configMap     string
-	kubeclientset kubernetes.Interface
+	configMap       string
+	kubeclientset   kubernetes.Interface
+	emptyConfigFunc func() interface{} // must return a pointer, non-nil
 }
 
-func NewController(namespace, name string, kubeclientset kubernetes.Interface) Controller {
+func NewController(namespace, name string, kubeclientset kubernetes.Interface, emptyConfigFunc func() interface{}) Controller {
 	log.WithField("name", name).Info("config map")
 	return &controller{
-		namespace:     namespace,
-		configMap:     name,
-		kubeclientset: kubeclientset,
+		namespace:       namespace,
+		configMap:       name,
+		kubeclientset:   kubeclientset,
+		emptyConfigFunc: emptyConfigFunc,
 	}
 }
 
-func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Config) error) error {
-	config, err := parseConfigMap(cm)
+func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config interface{}) error) error {
+	config, err := cc.parseConfigMap(cm)
 	if err != nil {
 		return err
 	}
 	return onChange(config)
 }
 
-func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
+func (cc *controller) parseConfigMap(cm *apiv1.ConfigMap) (interface{}, error) {
+	config := cc.emptyConfigFunc()
 	if cm == nil {
-		return emptyConfig, nil
+		return config, nil
 	}
 	// The key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
-	var config Config
 	rawConfig, ok := cm.Data["config"]
 	if ok && len(cm.Data) != 1 {
-		return emptyConfig, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
+		return config, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
 	}
 	if !ok {
 		for name, value := range cm.Data {
@@ -67,24 +70,24 @@ func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
 			}
 		}
 	}
-	err := yaml.Unmarshal([]byte(rawConfig), &config)
-	if err != nil {
-		return emptyConfig, err
-	}
-	return config, nil
+	err := yaml.Unmarshal([]byte(rawConfig), config)
+	return config, err
 }
 
-func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) error) {
+func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config interface{}) error) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	restClient := cc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", cc.configMap))
+	ctx := context.Background()
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
 		req := restClient.Get().
 			Namespace(cc.namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Do().Get()
+		return req.Do(ctx).Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
@@ -93,7 +96,7 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) e
 			Namespace(cc.namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Watch()
+		return req.Watch(ctx)
 	}
 	source := &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 	_, controller := cache.NewInformer(
@@ -120,11 +123,11 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) e
 	log.Info("Watching config map updates")
 }
 
-func (cc *controller) Get() (Config, error) {
+func (cc *controller) Get(ctx context.Context) (interface{}, error) {
 	cmClient := cc.kubeclientset.CoreV1().ConfigMaps(cc.namespace)
-	cm, err := cmClient.Get(cc.configMap, metav1.GetOptions{})
+	cm, err := cmClient.Get(ctx, cc.configMap, metav1.GetOptions{})
 	if err != nil && !apierr.IsNotFound(err) {
-		return emptyConfig, err
+		return cc.emptyConfigFunc(), err
 	}
-	return parseConfigMap(cm)
+	return cc.parseConfigMap(cm)
 }

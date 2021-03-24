@@ -1,22 +1,25 @@
 package artifactory
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
-type ArtifactoryArtifactDriver struct {
+type ArtifactDriver struct {
 	Username string
 	Password string
 }
 
-// Download artifact from an artifactory URL
-func (a *ArtifactoryArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
+var _ common.ArtifactDriver = &ArtifactDriver{}
 
+// Download artifact from an artifactory URL
+func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 	lf, err := os.Create(path)
 	if err != nil {
 		return err
@@ -50,8 +53,7 @@ func (a *ArtifactoryArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 }
 
 // UpLoad artifact to an artifactory URL
-func (a *ArtifactoryArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
-
+func (a *ArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -72,4 +74,8 @@ func (a *ArtifactoryArtifactDriver) Save(path string, artifact *wfv1.Artifact) e
 		return errors.InternalErrorf("saving file %s to artifactory failed with reason:%s", path, res.Status)
 	}
 	return nil
+}
+
+func (a *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }

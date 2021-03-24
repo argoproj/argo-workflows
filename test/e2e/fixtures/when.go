@@ -1,120 +1,250 @@
 package fixtures
 
 import (
+	"context"
 	"fmt"
+	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/argoproj/pkg/humanize"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/workflow/hydrator"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 type When struct {
 	t                 *testing.T
 	wf                *wfv1.Workflow
+	wfeb              *wfv1.WorkflowEventBinding
 	wfTemplates       []*wfv1.WorkflowTemplate
 	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
 	cronWf            *wfv1.CronWorkflow
 	client            v1alpha1.WorkflowInterface
+	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
-	workflowName      string
-	wfTemplateNames   []string
-	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
-	resourceQuota     *corev1.ResourceQuota
-	storageQuota      *corev1.ResourceQuota
-	configMap         *corev1.ConfigMap
 }
 
 func (w *When) SubmitWorkflow() *When {
+	w.t.Helper()
 	if w.wf == nil {
 		w.t.Fatal("No workflow to submit")
 	}
-	log.WithFields(log.Fields{"workflow": w.wf.Name}).Info("Submitting workflow")
-	wf, err := w.client.Create(w.wf)
+	_, _ = fmt.Println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
+	ctx := context.Background()
+	wf, err := w.client.Create(ctx, w.wf, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
-		w.workflowName = wf.Name
+		w.wf = wf
 	}
-	log.WithFields(log.Fields{"workflow": wf.Name, "uid": wf.UID}).Info("Workflow submitted")
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
+	w.t.Helper()
+	ctx := context.Background()
+	for _, tmpl := range w.wfTemplates {
+		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false), metav1.CreateOptions{})
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wf = wf
+		}
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
+	w.t.Helper()
+	ctx := context.Background()
+	for _, tmpl := range w.cwfTemplates {
+		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true), metav1.CreateOptions{})
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wf = wf
+		}
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
+	w.t.Helper()
+	_, _ = fmt.Println("Submitting workflow from cron workflow", w.cronWf.Name)
+	ctx := context.Background()
+	wf, err := w.client.Create(ctx, common.ConvertCronWorkflowToWorkflow(w.cronWf), metav1.CreateOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	} else {
+		w.wf = wf
+	}
+	return w
+}
+
+func (w *When) CreateWorkflowEventBinding() *When {
+	w.t.Helper()
+	if w.wfeb == nil {
+		w.t.Fatal("No workflow event to create")
+	}
+	_, _ = fmt.Println("Creating workflow event binding")
+	ctx := context.Background()
+	_, err := w.wfebClient.Create(ctx, w.wfeb, metav1.CreateOptions{})
+	if err != nil {
+		w.t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
 func (w *When) CreateWorkflowTemplates() *When {
+	w.t.Helper()
 	if len(w.wfTemplates) == 0 {
 		w.t.Fatal("No workflow templates to create")
 	}
+
+	ctx := context.Background()
 	for _, wfTmpl := range w.wfTemplates {
-		log.WithField("template", wfTmpl.Name).Info("Creating workflow template")
-		wfTmpl, err := w.wfTemplateClient.Create(wfTmpl)
+		_, _ = fmt.Println("Creating workflow template", wfTmpl.Name)
+		_, err := w.wfTemplateClient.Create(ctx, wfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
-		} else {
-			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
-		log.WithField("template", wfTmpl.Name).Info("Workflow template created")
 	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
 func (w *When) CreateClusterWorkflowTemplates() *When {
+	w.t.Helper()
 	if len(w.cwfTemplates) == 0 {
 		w.t.Fatal("No cluster workflow templates to create")
 	}
+
+	ctx := context.Background()
 	for _, cwfTmpl := range w.cwfTemplates {
-		log.WithField("template", cwfTmpl.Name).Info("Creating cluster workflow template")
-		wfTmpl, err := w.cwfTemplateClient.Create(cwfTmpl)
+		_, _ = fmt.Println("Creating cluster workflow template", cwfTmpl.Name)
+		_, err := w.cwfTemplateClient.Create(ctx, cwfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
-		} else {
-			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
-		log.WithField("template", wfTmpl.Name).Info("Cluster Workflow template created")
 	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
 func (w *When) CreateCronWorkflow() *When {
+	w.t.Helper()
 	if w.cronWf == nil {
 		w.t.Fatal("No cron workflow to create")
 	}
-	log.WithField("cronWorkflow", w.cronWf.Name).Info("Creating cron workflow")
-	cronWf, err := w.cronClient.Create(w.cronWf)
+	_, _ = fmt.Println("Creating cron workflow", w.cronWf.Name)
+
+	ctx := context.Background()
+	cronWf, err := w.cronClient.Create(ctx, w.cronWf, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
-		w.cronWorkflowName = cronWf.Name
+		w.cronWf = cronWf
 	}
-	log.WithField("uid", cronWf.UID).Info("Cron workflow created")
+	time.Sleep(1 * time.Second)
 	return w
 }
 
-func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condition string, duration time.Duration) *When {
-	return w.waitForWorkflow(w.workflowName, test, condition, duration)
+type Condition func(wf *wfv1.Workflow) (bool, string)
+
+var (
+	ToBeRunning             = ToHavePhase(wfv1.WorkflowRunning)
+	ToBeSucceeded           = ToHavePhase(wfv1.WorkflowSucceeded)
+	ToBeErrored             = ToHavePhase(wfv1.WorkflowError)
+	ToBeFailed              = ToHavePhase(wfv1.WorkflowFailed)
+	ToBeCompleted Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Labels[common.LabelKeyCompleted] == "true", "to be completed"
+	}
+	ToStart          Condition = func(wf *wfv1.Workflow) (bool, string) { return !wf.Status.StartedAt.IsZero(), "to start" }
+	ToHaveRunningPod Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
+		}), "to have running pod"
+	}
+)
+
+// `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
+// This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
+// creates a lot of warning messages in the logs that are cause by misuse rather than actual problems.
+var ToBeDone Condition = func(wf *wfv1.Workflow) (bool, string) {
+	toBeCompleted, _ := ToBeCompleted(wf)
+	return toBeCompleted && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", "to be done"
 }
 
-func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
+var ToBeArchived Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived", "to be archived"
+}
+
+var ToHavePhase = func(p wfv1.WorkflowPhase) Condition {
+	return func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Phase == p && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", fmt.Sprintf("to be %s", p)
+	}
+}
+
+var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil, "to be waiting on a mutex"
+}
+
+// Wait for a workflow to meet a condition:
+// Options:
+// * `time.Duration` - change the timeout - 30s by default
+// * `string` - either:
+//    * the workflow's name (not spaces)
+//    * or a new message (if it contain spaces) - default "to finish"
+// * `Condition` - a condition - `ToFinish` by default
+func (w *When) WaitForWorkflow(options ...interface{}) *When {
+	w.t.Helper()
+	timeout := defaultTimeout
+	workflowName := ""
+	if w.wf != nil {
+		workflowName = w.wf.Name
+	}
+	condition := ToBeDone
+	for _, opt := range options {
+		switch v := opt.(type) {
+		case time.Duration:
+			timeout = v
+		case string:
+			workflowName = v
+		case Condition:
+			condition = v
+		default:
+			w.t.Fatal("unknown option type: " + reflect.TypeOf(opt).String())
+		}
+	}
+
 	start := time.Now()
-	logCtx := log.WithFields(log.Fields{"workflow": workflowName, "condition": condition, "timeout": timeout})
-	logCtx.Info("Waiting for condition")
-	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName)).String()}
-	watch, err := w.client.Watch(opts)
+
+	fieldSelector := ""
+	if workflowName != "" {
+		fieldSelector = "metadata.name=" + workflowName
+	}
+
+	_, _ = fmt.Println("Waiting", timeout.String(), "for workflow", fieldSelector)
+
+	ctx := context.Background()
+	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
+	watch, err := w.client.Watch(ctx, opts)
 	if err != nil {
-		w.t.Fatal(err)
+		w.t.Error(err)
 	}
 	defer watch.Stop()
 	timeoutCh := make(chan bool, 1)
@@ -127,144 +257,168 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
 				w.hydrateWorkflow(wf)
-				if test(wf) {
-					logCtx.Infof("Condition met after %v", time.Since(start).Truncate(time.Second))
+				printWorkflow(wf)
+				if ok, message := condition(wf); ok {
+					_, _ = fmt.Printf("Condition %q met after %s\n", message, time.Since(start).Truncate(time.Second))
+					w.wf = wf
+					return w
+				}
+				// once done the workflow is done, the condition can never be met
+				// rather than wait maybe 30s for something that can never happen
+				if ok, _ = ToBeDone(wf); ok {
+					w.t.Errorf("condition never and cannot be met because the workflow is done")
 					return w
 				}
 			} else {
-				w.t.Fatal("not ok")
+				w.t.Errorf("not ok")
+				return w
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, condition)
+			w.t.Errorf("timeout after %v waiting for condition", timeout)
+			return w
 		}
 	}
 }
 
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
+	w.t.Helper()
 	err := w.hydrator.Hydrate(wf)
 	if err != nil {
 		w.t.Fatal(err)
 	}
 }
-func (w *When) WaitForWorkflowToStart(timeout time.Duration) *When {
-	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
-		return !wf.Status.StartedAt.IsZero()
-	}, "to start", timeout)
-}
-
-func (w *When) WaitForWorkflow(timeout time.Duration) *When {
-	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
-		return !wf.Status.FinishedAt.IsZero()
-	}, "to finish", timeout)
-}
-
-func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *When {
-	return w.waitForWorkflow(workflowName, func(wf *wfv1.Workflow) bool {
-		return !wf.Status.FinishedAt.IsZero()
-	}, "to finish", timeout)
-}
 
 func (w *When) Wait(timeout time.Duration) *When {
-	logCtx := log.WithFields(log.Fields{"cronWorkflow": w.cronWorkflowName})
-	logCtx.Infof("Waiting for %s", humanize.Duration(timeout))
+	w.t.Helper()
+	_, _ = fmt.Println("Waiting for", timeout.String())
 	time.Sleep(timeout)
-	logCtx.Infof("Done waiting")
+	_, _ = fmt.Println("Done waiting")
 	return w
 }
 
 func (w *When) DeleteWorkflow() *When {
-	log.WithField("workflow", w.workflowName).Info("Deleting")
-	err := w.client.Delete(w.workflowName, nil)
+	w.t.Helper()
+	_, _ = fmt.Println("Deleting", w.wf.Name)
+	ctx := context.Background()
+	err := w.client.Delete(ctx, w.wf.Name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
+	return w
+}
+
+func (w *When) And(block func()) *When {
+	w.t.Helper()
+	block()
+	return w
+}
+
+func (w *When) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *When {
+	w.t.Helper()
+	output, err := Exec(name, args...)
+	block(w.t, output, err)
 	return w
 }
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
-	block(w.t, output, err)
-	if w.t.Failed() {
-		w.t.FailNow()
-	}
-	return w
+	w.t.Helper()
+	return w.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (w *When) CreateConfigMap(name string, data map[string]string) *When {
-	//Clean if same map is already exist
-	err := w.kubeClient.CoreV1().ConfigMaps("argo").Delete(name, &metav1.DeleteOptions{})
-	if err != nil {
-		if !apierr.IsNotFound(err) {
-			panic(err)
-		}
-	}
-	obj, err := util.CreateConfigMap(w.kubeClient, "argo", name, data)
+	w.t.Helper()
+
+	ctx := context.Background()
+	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(ctx, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
+		Data:       data,
+	}, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.configMap = obj
 	return w
 }
 
-func (w *When) DeleteConfigMap() *When {
-	err := util.DeleteConfigMap(w.kubeClient, w.configMap)
-	if err != nil {
-		if !apierr.IsNotFound(err) {
-			w.t.Fatal(err)
-		}
-	}
-	w.configMap = nil
-	return w
-}
-
-func (w *When) MemoryQuota(quota string) *When {
-	obj, err := util.CreateHardMemoryQuota(w.kubeClient, "argo", "memory-quota", quota)
+func (w *When) DeleteConfigMap(name string) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.resourceQuota = obj
 	return w
 }
 
-func (w *When) StorageQuota(quota string) *When {
-	obj, err := util.CreateHardStorageQuota(w.kubeClient, "argo", "storage-quota", quota)
+func (w *When) PodsQuota(podLimit int) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.storageQuota = obj
+	podLimit += len(list.Items)
+	_, _ = fmt.Println("setting pods quota to", podLimit)
+	return w.createResourceQuota("pods-quota", corev1.ResourceList{"pods": resource.MustParse(strconv.Itoa(podLimit))})
+}
+
+func (w *When) MemoryQuota(memoryLimit string) *When {
+	w.t.Helper()
+	return w.createResourceQuota("memory-quota", corev1.ResourceList{corev1.ResourceLimitsMemory: resource.MustParse(memoryLimit)})
+}
+
+func (w *When) StorageQuota(storageLimit string) *When {
+	w.t.Helper()
+	return w.createResourceQuota("storage-quota", corev1.ResourceList{"requests.storage": resource.MustParse(storageLimit)})
+}
+
+func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(ctx, &corev1.ResourceQuota{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
+		Spec:       corev1.ResourceQuotaSpec{Hard: rl},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
 	return w
+}
+
+func (w *When) DeletePodsQuota() *When {
+	w.t.Helper()
+	return w.deleteResourceQuota("pods-quota")
 }
 
 func (w *When) DeleteStorageQuota() *When {
-	err := util.DeleteQuota(w.kubeClient, w.storageQuota)
-	if err != nil {
-		w.t.Fatal(err)
-	}
-	w.storageQuota = nil
-	return w
+	w.t.Helper()
+	return w.deleteResourceQuota("storage-quota")
 }
 
-func (w *When) DeleteQuota() *When {
-	err := util.DeleteQuota(w.kubeClient, w.resourceQuota)
+func (w *When) DeleteMemoryQuota() *When {
+	w.t.Helper()
+	return w.deleteResourceQuota("memory-quota")
+}
+
+func (w *When) deleteResourceQuota(name string) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.resourceQuota = nil
 	return w
 }
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:                w.t,
-		workflowName:     w.workflowName,
-		wfTemplateNames:  w.wfTemplateNames,
-		cronWorkflowName: w.cronWorkflowName,
-		client:           w.client,
-		cronClient:       w.cronClient,
-		hydrator:         w.hydrator,
-		kubeClient:       w.kubeClient,
+		t:          w.t,
+		wf:         w.wf,
+		cronWf:     w.cronWf,
+		client:     w.client,
+		cronClient: w.cronClient,
+		hydrator:   w.hydrator,
+		kubeClient: w.kubeClient,
 	}
 }
 
@@ -272,15 +426,16 @@ func (w *When) Given() *Given {
 	return &Given{
 		t:                 w.t,
 		client:            w.client,
+		wfebClient:        w.wfebClient,
 		wfTemplateClient:  w.wfTemplateClient,
 		cwfTemplateClient: w.cwfTemplateClient,
 		cronClient:        w.cronClient,
 		hydrator:          w.hydrator,
 		wf:                w.wf,
+		wfeb:              w.wfeb,
 		wfTemplates:       w.wfTemplates,
 		cwfTemplates:      w.cwfTemplates,
 		cronWf:            w.cronWf,
-		workflowName:      w.workflowName,
 		kubeClient:        w.kubeClient,
 	}
 }

@@ -1,21 +1,22 @@
 package kubelet
 
 import (
-	"fmt"
+	"context"
 	"io"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
 type KubeletExecutor struct {
 	cli *kubeletClient
 }
 
-func NewKubeletExecutor() (*KubeletExecutor, error) {
+func NewKubeletExecutor(namespace, podName string) (*KubeletExecutor, error) {
 	log.Infof("Creating a kubelet executor")
-	cli, err := newKubeletClient()
+	cli, err := newKubeletClient(namespace, podName)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
@@ -24,49 +25,39 @@ func NewKubeletExecutor() (*KubeletExecutor, error) {
 	}, nil
 }
 
-func (k *KubeletExecutor) GetFileContents(containerID string, sourcePath string) (string, error) {
+func (k *KubeletExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {
 	return "", errors.Errorf(errors.CodeNotImplemented, "GetFileContents() is not implemented in the kubelet executor.")
 }
 
-func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
+func (k *KubeletExecutor) CopyFile(containerName string, sourcePath string, destPath string, compressionLevel int) error {
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the kubelet executor.")
 }
 
-func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (k *KubeletExecutor) GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error) {
 	if !combinedOutput {
 		log.Warn("non combined output unsupported")
 	}
-	return k.cli.GetLogStream(containerID)
-}
-
-func (k *KubeletExecutor) GetExitCode(containerID string) (string, error) {
-	log.Infof("Getting exit code of %s", containerID)
-	_, status, err := k.cli.GetContainerStatus(containerID)
-	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not get container status")
-	}
-	if status != nil && status.State.Terminated != nil {
-		return fmt.Sprint(status.State.Terminated.ExitCode), nil
-	}
-	return "", nil
-}
-
-func (k *KubeletExecutor) WaitInit() error {
-	return nil
+	return k.cli.GetLogStream(containerName)
 }
 
 // Wait for the container to complete
-func (k *KubeletExecutor) Wait(containerID string) error {
-	return k.cli.WaitForTermination(containerID, 0)
+func (k *KubeletExecutor) Wait(ctx context.Context, containerNames []string) error {
+	return k.cli.WaitForTermination(ctx, containerNames, 0)
 }
 
-// Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func (k *KubeletExecutor) Kill(containerIDs []string) error {
-	for _, containerID := range containerIDs {
-		err := k.cli.KillGracefully(containerID)
-		if err != nil {
-			return err
-		}
+// Kill kills a list of containers first with a SIGTERM then with a SIGKILL after a grace period
+func (k *KubeletExecutor) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
+	return k.cli.KillGracefully(ctx, containerNames, terminationGracePeriodDuration)
+}
+
+func (k *KubeletExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	pod, err := k.cli.getPod()
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	var containerNames []string
+	for _, c := range pod.Status.ContainerStatuses {
+		containerNames = append(containerNames, c.Name)
+	}
+	return containerNames, nil
 }

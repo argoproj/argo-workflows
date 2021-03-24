@@ -13,6 +13,13 @@
   a {
     padding: 10px;
     color: $argo-color-gray-6;
+
+    &.active {
+      background-color: $argo-color-gray-3;
+      border: 1px solid $argo-color-gray-4;
+      border-radius: 5px;
+      cursor: default;
+    }
   }
 }
 
@@ -32,7 +39,7 @@
 
   .label {
     text-anchor: middle;
-    font-family: "Heebo", sans-serif;
+    font-family: sans-serif;
     text-rendering: optimizeLegibility;
   }
 

@@ -17,6 +17,7 @@ rules:
       - secrets
     verbs:
       - get
+      - create
   - apiGroups:
       - ""
     resources:
@@ -31,15 +32,28 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - secrets
+      - events
+    verbs:
+      - watch
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
     verbs:
       - get
+      - list
   - apiGroups:
       - argoproj.io
     resources:
+      - eventsources
+      - sensors
       - workflows
+      - workfloweventbindings
       - workflowtemplates
       - cronworkflows
+      - cronworkflows/finalizers
     verbs:
       - create
       - get

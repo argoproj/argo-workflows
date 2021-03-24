@@ -7,14 +7,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var d = uint64(1)
 
 func TestGitArtifactDriver_Load(t *testing.T) {
 	_ = os.Remove("git-ask-pass.sh")
-	driver := &GitArtifactDriver{}
+	driver := &ArtifactDriver{}
 	path := "/tmp/git-found"
 	assert.NoError(t, os.RemoveAll(path))
 	assert.NoError(t, os.MkdirAll(path, 0777))
@@ -35,7 +35,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 }
 
 func TestGitArtifactDriver_Save(t *testing.T) {
-	driver := &GitArtifactDriver{}
+	driver := &ArtifactDriver{}
 	err := driver.Save("", nil)
 	assert.Error(t, err)
 }
@@ -47,12 +47,12 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 	_ = os.Remove("git-ask-pass.sh")
 	tmp, err := ioutil.TempDir("", "")
 	assert.NoError(t, err)
-	driver := &GitArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
+	driver := &ArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
 	assert.NotEmpty(t, driver.Username)
 	err = driver.Load(&wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{
 			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argo.git",
+				Repo:     "https://github.com/argoproj/argo-workflows.git",
 				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
 				Revision: "HEAD",
 				Depth:    &d,
@@ -82,11 +82,11 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 			tmp, err := ioutil.TempDir("", "")
 			assert.NoError(t, err)
 			println(tmp)
-			driver := &GitArtifactDriver{SSHPrivateKey: string(data)}
+			driver := &ArtifactDriver{SSHPrivateKey: string(data)}
 			err = driver.Load(&wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					Git: &wfv1.GitArtifact{
-						Repo:                  "git@github.com:argoproj/argo.git",
+						Repo:                  "git@github.com:argoproj/argo-workflows.git",
 						Fetch:                 []string{"+refs/heads/*:refs/remotes/origin/*"},
 						Revision:              "HEAD",
 						InsecureIgnoreHostKey: tt.insecure,

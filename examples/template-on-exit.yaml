@@ -1,13 +1,13 @@
 # Example showing a Step with an onExit template. The onExit template ("exitContainer")
 # will run after the parent ("whalesay"), regardless of if it fails or succeeds.
 # This is also similarly possible with DAG Tasks
-# 
-#   STEP                                        PODNAME                             DURATION  MESSAGE
-#   ✔ container-on-exit-m6wq5 (step-template)
-#   ├---✔ stepA (whalesay)                     container-on-exit-m6wq5-3072376347  4s
-#   ├-✔ stepA.onExit (exitContainer)           container-on-exit-m6wq5-2711812994  4s
-#   ├---✔ stepB (whalesay)                     container-on-exit-m6wq5-2803967195  5s
-#   └-✔ stepB.onExit (exitContainer)           container-on-exit-m6wq5-22494146    4s
+#
+#  STEP                        TEMPLATE       PODNAME                             DURATION  MESSAGE
+#   ✔ container-on-exit-fp8r5  step-template
+#   ├───✔ stepA                whalesay       container-on-exit-fp8r5-2775884244  12s
+#   ├─✔ stepA.onExit           exitContainer  container-on-exit-fp8r5-2310719573  2s
+#   ├───✔ stepB                whalesay       container-on-exit-fp8r5-3252557200  3s
+#   └─✔ stepB.onExit           exitContainer  container-on-exit-fp8r5-949151358   2s
 #
 # Template onExit containers work for DAG Tasks and Steps.
 

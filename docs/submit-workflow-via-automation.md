@@ -1,8 +1,10 @@
 # Submitting A Workflow Via Automation
 
-![beta](assets/beta.svg)
+![GA](assets/ga.svg)
 
 > v2.8 and after
+
+You may want to consider using [events](events.md) or [webhooks](webhooks.md) instead.
 
 Firstly, to do any automation, you'll need an ([access token](access-token.md)). For this example, our role needs extra permissions:
 
@@ -59,6 +61,8 @@ See also:
 See also:
 
 * [access token](access-token.md)
+* [events](events.md)
+* [webhooks](webhooks.md)
 * [resuming a workflow via automation](resuming-workflow-via-automation.md)
 * [one workflow submitting another](workflow-submitting-workflow.md)
 * [async pattern](async-pattern.md)

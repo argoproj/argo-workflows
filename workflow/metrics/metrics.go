@@ -7,22 +7,23 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 const (
 	argoNamespace            = "argo"
 	workflowsSubsystem       = "workflows"
-	DefaultMetricsServerPort = "9090"
+	DefaultMetricsServerPort = 9090
 	DefaultMetricsServerPath = "/metrics"
 )
 
 type ServerConfig struct {
 	Enabled      bool
 	Path         string
-	Port         string
+	Port         int
 	TTL          time.Duration
 	IgnoreErrors bool
 }
@@ -43,15 +44,18 @@ type Metrics struct {
 	telemetryConfig ServerConfig
 
 	workflowsProcessed prometheus.Counter
+	podsByPhase        map[corev1.PodPhase]prometheus.Gauge
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
-	workflows          map[string]bool
+	workflows          map[string][]string
 	operationDurations prometheus.Histogram
 	errors             map[ErrorCause]prometheus.Counter
 	customMetrics      map[string]metric
 	workqueueMetrics   map[string]prometheus.Metric
+	workersBusy        map[string]prometheus.Gauge
 
 	// Used to quickly check if a metric desc is already used by the system
 	defaultMetricDescs map[string]bool
+	metricNameHelps    map[string]string
 	logMetric          *prometheus.CounterVec
 }
 
@@ -71,13 +75,16 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		metricsConfig:      metricsConfig,
 		telemetryConfig:    telemetryConfig,
 		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
+		podsByPhase:        getPodPhaseGauges(),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
-		workflows:          make(map[string]bool),
+		workflows:          make(map[string][]string),
 		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		workqueueMetrics:   make(map[string]prometheus.Metric),
+		workersBusy:        make(map[string]prometheus.Gauge),
 		defaultMetricDescs: make(map[string]bool),
+		metricNameHelps:    make(map[string]string),
 		logMetric: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "log_messages",
 			Help: "Total number of log messages.",
@@ -108,10 +115,16 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	for _, metric := range m.workflowsByPhase {
 		allMetrics = append(allMetrics, metric)
 	}
+	for _, metric := range m.podsByPhase {
+		allMetrics = append(allMetrics, metric)
+	}
 	for _, metric := range m.errors {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.workqueueMetrics {
+		allMetrics = append(allMetrics, metric)
+	}
+	for _, metric := range m.workersBusy {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.customMetrics {
@@ -120,48 +133,26 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	return allMetrics
 }
 
-func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
+func (m *Metrics) StopRealtimeMetricsForKey(key string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if m.workflows[key] {
+	if _, exists := m.workflows[key]; !exists {
 		return
 	}
-	m.workflows[key] = true
-	if _, ok := m.workflowsByPhase[phase]; ok {
-		m.workflowsByPhase[phase].Inc()
-	}
-}
 
-func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePhase) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	realtimeMetrics := m.workflows[key]
+	for _, metric := range realtimeMetrics {
+		delete(m.customMetrics, metric)
+	}
 
-	if fromPhase == toPhase || !m.workflows[key] {
-		return
-	}
-	if _, ok := m.workflowsByPhase[fromPhase]; ok {
-		m.workflowsByPhase[fromPhase].Dec()
-	}
-	if _, ok := m.workflowsByPhase[toPhase]; ok {
-		m.workflowsByPhase[toPhase].Inc()
-	}
-}
-
-func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	if !m.workflows[key] {
-		return
-	}
 	delete(m.workflows, key)
-	if _, ok := m.workflowsByPhase[phase]; ok {
-		m.workflowsByPhase[phase].Dec()
-	}
 }
 
 func (m *Metrics) OperationCompleted(durationSeconds float64) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	m.operationDurations.Observe(durationSeconds)
 }
 
@@ -173,15 +164,42 @@ func (m *Metrics) GetCustomMetric(key string) prometheus.Metric {
 	return m.customMetrics[key].metric
 }
 
-func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) error {
+func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prometheus.Metric, realtime bool) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if _, inUse := m.defaultMetricDescs[newMetric.Desc().String()]; inUse {
+	metricDesc := newMetric.Desc().String()
+	if _, inUse := m.defaultMetricDescs[metricDesc]; inUse {
 		return fmt.Errorf("metric '%s' is already in use by the system, please use a different name", newMetric.Desc())
 	}
+	name, help := recoverMetricNameAndHelpFromDesc(metricDesc)
+	if existingHelp, inUse := m.metricNameHelps[name]; inUse && help != existingHelp {
+		return fmt.Errorf("metric '%s' has help string '%s' but should have '%s' (help strings must be identical for metrics of the same name)", name, help, existingHelp)
+	} else {
+		m.metricNameHelps[name] = help
+	}
 	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now()}
+
+	// If this is a realtime metric, track it
+	if realtime {
+		m.workflows[ownerKey] = append(m.workflows[ownerKey], key)
+	}
+
 	return nil
+}
+
+func (m *Metrics) SetWorkflowPhaseGauge(phase v1alpha1.NodePhase, num int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.workflowsByPhase[phase].Set(float64(num))
+}
+
+func (m *Metrics) SetPodPhaseGauge(phase corev1.PodPhase, num int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.podsByPhase[phase].Set(float64(num))
 }
 
 type ErrorCause string
@@ -254,6 +272,7 @@ func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric {
 func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	return noopMetric{}
 }
+
 func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	return noopMetric{}
 }

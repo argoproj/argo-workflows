@@ -7,8 +7,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
 type retryOps struct {
@@ -21,7 +21,7 @@ func NewRetryCommand() *cobra.Command {
 		cliSubmitOpts cliSubmitOpts
 		retryOps      retryOps
 	)
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "retry [WORKFLOW...]",
 		Short: "retry zero or more workflows",
 		Example: `# Retry a workflow:

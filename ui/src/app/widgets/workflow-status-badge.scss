@@ -1,0 +1,46 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.status-badge {
+  font-size: small;
+  height: 20px;
+  vertical-align: middle;
+
+  .label, .status {
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 1px 4px;
+    color: white;
+  }
+
+  .label {
+    background-color: $argo-color-gray-8;
+    width: 120px;
+  }
+
+  .status {
+    background-color: $argo-color-gray-6;
+    width: 80px;
+  }
+
+  .Unknown {
+    background-color: $argo-color-gray-6;
+  }
+
+  .Pending {
+    background-color: $argo-status-warning-color;
+  }
+
+  .Running {
+    background-color: $argo-running-color;
+  }
+
+  .Failed, .Error {
+    background-color: $argo-failed-color;
+  }
+
+  .Succeeded {
+    background-color: $argo-success-color;
+  }
+}

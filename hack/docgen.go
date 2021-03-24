@@ -11,10 +11,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/spf13/cobra/doc"
-
-	"github.com/argoproj/argo/cmd/argo/commands"
 )
 
 const sectionHeader = `
@@ -113,7 +109,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo/blob/master/"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo-workflows/blob/master/"+example))
 	}
 	out += dropdownCloser
 	return out
@@ -204,8 +200,10 @@ type Set map[string]bool
 func NewDocGeneratorContext() *DocGeneratorContext {
 	return &DocGeneratorContext{
 		doneFields: make(Set),
-		queue: []string{"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
-			"io.argoproj.workflow.v1alpha1.WorkflowTemplate"},
+		queue: []string{
+			"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
+			"io.argoproj.workflow.v1alpha1.WorkflowTemplate",
+		},
 		external: []string{},
 		index:    make(map[string]Set),
 		jsonName: make(map[string]string),
@@ -344,38 +342,10 @@ func (c *DocGeneratorContext) generate() string {
 	return out
 }
 
-func removeContents(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = d.Close() }()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		err = os.RemoveAll(filepath.Join(dir, name))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func generateDocs() {
-	cmd := commands.NewCommand()
-	cmd.DisableAutoGenTag = true
-	err := removeContents("docs/cli")
-	if err != nil {
-		panic(err)
-	}
-	err = doc.GenMarkdownTree(cmd, "docs/cli")
-	if err != nil {
-		panic(err)
-	}
+	println("generating docs/fields.md")
 	c := NewDocGeneratorContext()
-	err = ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
+	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
 	if err != nil {
 		panic(err)
 	}

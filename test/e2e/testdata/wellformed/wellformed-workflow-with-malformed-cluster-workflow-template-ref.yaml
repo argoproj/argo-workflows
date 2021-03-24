@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wellformed
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  workflowTemplateRef:
+    name: malformed
+    clusterScope: true

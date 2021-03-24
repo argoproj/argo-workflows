@@ -1,6 +1,6 @@
-# Sychronization
+# Synchronization
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.10 and after
 
@@ -14,7 +14,7 @@ from a workflow or template within a workflow.
 For example:
 ```yaml
 apiVersion: v1
- kind: ConfigMap
+kind: ConfigMap
 metadata:
  name: my-config
 data:
@@ -86,8 +86,8 @@ spec:
       args: ["sleep 10; echo acquired lock"]
 ```
 Examples:
-1. [Workflow level](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
-2. [Step level](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
+1. [Workflow level](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
+2. [Step level](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 ### Other Parallelism support:
 In addition to this synchronization, the workflow controller supports a parallelism setting that applies to all workflows 

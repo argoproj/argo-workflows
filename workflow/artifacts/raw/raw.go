@@ -1,17 +1,20 @@
 package raw
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
-type RawArtifactDriver struct {
-}
+type ArtifactDriver struct{}
+
+var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // Store raw content as artifact
-func (a *RawArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
+func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 	lf, err := os.Create(path)
 	if err != nil {
 		return err
@@ -25,6 +28,10 @@ func (a *RawArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 }
 
 // Save is unsupported for raw output artifacts
-func (g *RawArtifactDriver) Save(string, *wfv1.Artifact) error {
+func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "Raw output artifacts unsupported")
+}
+
+func (a *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }

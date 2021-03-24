@@ -10,8 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
@@ -90,4 +90,20 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 		labels[labelSpec[0]] = labelSpec[1]
 	}
 	return labels, nil
+}
+
+// SetLogFormatter sets a log formatter for logrus
+func SetLogFormatter(logFormat string) {
+	timestampFormat := "2006-01-02T15:04:05.000Z"
+	switch strings.ToLower(logFormat) {
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{TimestampFormat: timestampFormat})
+	case "text":
+		log.SetFormatter(&log.TextFormatter{
+			TimestampFormat: timestampFormat,
+			FullTimestamp:   true,
+		})
+	default:
+		log.Fatalf("Unknown log format '%s'", logFormat)
+	}
 }

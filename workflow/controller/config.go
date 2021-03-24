@@ -8,14 +8,16 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(config config.Config) error {
+func (wfc *WorkflowController) updateConfig(v interface{}) error {
+	config := v.(*config.Config)
 	bytes, err := yaml.Marshal(config)
 	if err != nil {
 		return err
@@ -24,7 +26,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}
-	wfc.Config = config
+	wfc.Config = *config
 	if wfc.session != nil {
 		err := wfc.session.Close()
 		if err != nil {
@@ -32,6 +34,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 		}
 	}
 	wfc.session = nil
+	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
@@ -43,9 +46,13 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 			return err
 		}
 		log.Info("Persistence Session created successfully")
-		err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
-		if err != nil {
-			return err
+		if !persistence.SkipMigration {
+			err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Info("DB migration is disabled")
 		}
 
 		wfc.session = session
@@ -74,6 +81,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 		log.Info("Persistence configuration disabled")
 	}
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
+	wfc.updateEstimatorFactory()
 	return nil
 }
 

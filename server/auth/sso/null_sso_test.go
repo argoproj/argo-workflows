@@ -1,7 +1,6 @@
 package sso
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func Test_nullSSO_Authorize(t *testing.T) {
-	_, err := NullSSO.Authorize(context.Background(), "")
+	_, err := NullSSO.Authorize("")
 	assert.Error(t, err)
 }
 

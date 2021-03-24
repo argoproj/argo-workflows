@@ -1,6 +1,6 @@
 # Workflow Creator
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.9 and after
 
@@ -13,6 +13,8 @@ metadata:
   name: my-wf
   labels:
     workflows.argoproj.io/creator: admin
+    # labels must be DNS formatted, so the "@" is replaces by '.at.'  
+    workflows.argoproj.io/creator-email: admin.at.your.org
 ``` 
 
 !!! NOTE

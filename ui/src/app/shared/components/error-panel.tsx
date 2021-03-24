@@ -18,7 +18,7 @@ export class ErrorPanel extends React.Component<Props> {
                     <i className='fa fa-skull status-icon--failed' /> {this.props.error.message}
                 </h3>
                 <p>
-                    <i className='fa fa-reload' /> <a href='javascript:document.location.reload();'>Reload this page</a> to try again.
+                    <i className='fa fa-redo' /> <a href='javascript:document.location.reload();'>Reload this page</a> to try again.
                 </p>
                 {this.props.error.response && (
                     <>

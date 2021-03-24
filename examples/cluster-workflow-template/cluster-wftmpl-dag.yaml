@@ -40,10 +40,6 @@ spec:
           name: cluster-workflow-template-inner-dag
           template: inner-diamond
           clusterScope: true
-        arguments:
-          parameters:
-          - name: message
-            value: C
       - name: D
         dependencies: [B, C]
         templateRef:

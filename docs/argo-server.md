@@ -17,7 +17,7 @@ Use this mode if:
 * You want a drop-in replacement for the Argo UI.
 * If you need to prevent users from directly accessing the database.
 
-Hosted mode is provided as part of the standard [manifests](https://github.com/argoproj/argo/blob/master/manifests), [specifically in argo-server-deployment.yaml](https://github.com/argoproj/argo/blob/master/manifests/base/argo-server/argo-server-deployment.yaml) .
+Hosted mode is provided as part of the standard [manifests](https://github.com/argoproj/argo-workflows/blob/master/manifests), [specifically in argo-server-deployment.yaml](https://github.com/argoproj/argo-workflows/blob/master/manifests/base/argo-server/argo-server-deployment.yaml) .
 
 ## Local Mode
 
@@ -97,25 +97,33 @@ argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 
 You can get ingress working as follows:
 
-Update `service/argo-server` spec with `type: LoadBalancer`:
-
-```yaml
-    - name: web
-      port: 2746
-      targetPort: 2746
-  type: LoadBalancer
-```
-
-Add `BASH_HREF` as environment variable to `deployment/argo-server` :
+Add `BASE_HREF` as environment variable to `deployment/argo-server`. Do not forget to add a trailing '/' character.
 
 
 ```yaml
-        - name: argo-server
-          image: argoproj/argocli:latest
-          args: [server]
-          env:
-            - name: BASE_HREF
-              value: /argo/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+      - args:
+        - server
+        env:
+          - name: BASE_HREF
+            value: /argo/
+        image: argoproj/argocli:latest
+        name: argo-server
+...
 ```
 
 Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
@@ -126,7 +134,7 @@ kind: Ingress
 metadata:
   name: argo-server
   annotations:
-    ingress.kubernetes.io/rewrite-target: /
+    ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
     - http:
@@ -134,7 +142,7 @@ spec:
           - backend:
               serviceName: argo-server
               servicePort: 2746
-            path: /argo
+            path: /argo(/|$)(.*)
 ```
 
-[Learn more](https://github.com/argoproj/argo/issues/3080)
+[Learn more](https://github.com/argoproj/argo-workflows/issues/3080)

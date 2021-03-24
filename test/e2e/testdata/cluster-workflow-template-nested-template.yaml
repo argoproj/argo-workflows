@@ -2,20 +2,31 @@ apiVersion: argoproj.io/v1alpha1
 kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-nested-template
-  labels:
-    argo-e2e: true
 spec:
   templates:
     - name: whalesay-inner-template
-      templateRef:
-        name: cluster-workflow-template-whalesay-template
-        template: whalesay-template
-        clusterScope: true
       inputs:
         parameters:
-          - name: message
+            - name: message
+      steps:
+        - - name: step
+            templateRef:
+              name: cluster-workflow-template-whalesay-template
+              template: whalesay-template
+              clusterScope: true
+            arguments:
+              parameters:
+                  - name: message
+                    value: "{{inputs.parameters.message}}"
     - name: whalesay-template
-      template: whalesay-inner-template
       inputs:
         parameters:
-          - name: message
+            - name: message
+      steps:
+        - - name: step
+            template: whalesay-inner-template
+            arguments:
+              parameters:
+                  - name: message
+                    value: "{{inputs.parameters.message}}"
+

@@ -17,6 +17,18 @@ spec:
           - name: num
             value: "{{item}}"
         withItems: [1, 2, 3, 4]
+    - - name: print-nums
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.odd-or-even.outputs.parameters.num}}"
+    - - name: print-evenness
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.odd-or-even.outputs.parameters.evenness}}"
     # Next, for each even number, divide it by two (using a script template).
     # Skip odd numbers using a `when` clause.
     - - name: divide-by-2

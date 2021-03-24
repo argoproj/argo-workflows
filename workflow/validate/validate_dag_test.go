@@ -39,6 +39,35 @@ func TestDAGCycle(t *testing.T) {
 	}
 }
 
+var dagAnyWithoutExpandingTask = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-cycle-
+spec:
+  entrypoint: entry
+  templates:
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, hello]
+  - name: entry
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        depends: A.AnySucceeded
+        template: echo
+`
+
+func TestAnyWithoutExpandingTask(t *testing.T) {
+	_, err := validate(dagAnyWithoutExpandingTask)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "does not contain any items")
+	}
+}
+
 var dagUndefinedTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -186,7 +215,69 @@ spec:
         arguments:
           parameters:
           - name: message
-            value: "{{tasks.B.outputs.parameters.unresolvable}}"
+            value: "{{tasks.B.outputs.parameters.hosts}}"
+`
+
+var dagResolvedGlobalVar = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-global-var-
+spec:
+  entrypoint: unresolved
+  templates:
+  - name: first
+    container:
+      image: alpine:3.7
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+        globalName: global
+  - name: second
+    container:
+      image: alpine:3.7
+      command: [echo, "{{workflow.outputs.parameters.global}}"]
+  - name: unresolved
+    dag:
+      tasks:
+      - name: A
+        template: first
+      - name: B
+        dependencies: [A]
+        template: second
+`
+
+var dagResolvedGlobalVarReversed = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-global-var-
+spec:
+  entrypoint: unresolved
+  templates:
+  - name: first
+    container:
+      image: alpine:3.7
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+        globalName: global
+  - name: second
+    container:
+      image: alpine:3.7
+      command: [echo, "{{workflow.outputs.parameters.global}}"]
+  - name: unresolved
+    dag:
+      tasks:
+      - name: B
+        dependencies: [A]
+        template: second
+      - name: A
+        template: first
 `
 
 func TestDAGVariableResolution(t *testing.T) {
@@ -199,8 +290,13 @@ func TestDAGVariableResolution(t *testing.T) {
 
 	_, err = validate(dagResolvedVarNotAncestor)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.outputs.parameters.unresolvable}}")
+		assert.Contains(t, err.Error(), "templates.unresolved.tasks.C missing dependency 'B' for parameter 'message'")
 	}
+
+	_, err = validate(dagResolvedGlobalVar)
+	assert.NoError(t, err)
+	_, err = validate(dagResolvedGlobalVarReversed)
+	assert.NoError(t, err)
 }
 
 var dagResolvedArt = `
@@ -688,4 +784,112 @@ spec:
 func TestDependsAndContinueOn(t *testing.T) {
 	_, err := validate(dagDependsAndContinueOn)
 	assert.Error(t, err, "templates.dag-target cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'")
+}
+
+var dagDependsDigit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: 5A
+            template: pass
+          - name: B
+            depends: 5A
+            template: pass
+          - name: C
+            depends: 5A
+            template: fail
+          - name: should-execute-1
+            depends: "'5A' && (C.Succeeded || C.Failed)"   # For more information about this depends field, see: docs/enhanced-depends-logic.md
+            template: pass
+          - name: should-execute-2
+            depends: B || C
+            template: pass
+          - name: should-not-execute
+            depends: B && C
+            template: pass
+          - name: should-execute-3
+            depends: should-execute-2.Succeeded || should-not-execute
+            template: pass
+    - name: pass
+      container:
+        image: alpine:3.7
+        command:
+          - sh
+          - -c
+          - exit 0
+    - name: fail
+      container:
+        image: alpine:3.7
+        command:
+          - sh
+          - -c
+          - exit 1
+`
+
+func TestDAGDependsDigit(t *testing.T) {
+	_, err := validate(dagDependsDigit)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
+	}
+}
+
+var dagDependenciesDigit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: 5A
+            template: pass
+          - name: B
+            dependencies: [5A]
+            template: pass
+          - name: C
+            dependencies: [5A]
+            template: fail
+          - name: should-execute-1
+            depends: "'5A' && (C.Succeeded || C.Failed)"   # For more information about this depends field, see: docs/enhanced-depends-logic.md
+            template: pass
+          - name: should-execute-2
+            depends: B || C
+            template: pass
+          - name: should-not-execute
+            depends: B && C
+            template: pass
+          - name: should-execute-3
+            depends: should-execute-2.Succeeded || should-not-execute
+            template: pass
+    - name: pass
+      container:
+        image: alpine:3.7
+        command:
+          - sh
+          - -c
+          - exit 0
+    - name: fail
+      container:
+        image: alpine:3.7
+        command:
+          - sh
+          - -c
+          - exit 1
+`
+
+func TestDAGDependenciesDigit(t *testing.T) {
+	_, err := validate(dagDependenciesDigit)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
+	}
 }

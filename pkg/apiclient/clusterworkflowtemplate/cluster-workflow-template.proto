@@ -1,10 +1,9 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate";
+option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/clusterworkflowtemplate";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
-import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
+import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
 
 // Workflow Service
 //
@@ -13,7 +12,7 @@ package clusterworkflowtemplate;
 
 
 message ClusterWorkflowTemplateCreateRequest {
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate template = 1;
+    github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate template = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 2;
 }
 
@@ -29,7 +28,7 @@ message ClusterWorkflowTemplateListRequest {
 message ClusterWorkflowTemplateUpdateRequest {
     // DEPRECATED: This field is ignored.
     string name = 1 [deprecated=true];
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate template = 2;
+    github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate template = 2;
 }
 
 message ClusterWorkflowTemplateDeleteRequest {
@@ -39,27 +38,27 @@ message ClusterWorkflowTemplateDeleteRequest {
 message ClusterWorkflowTemplateDeleteResponse {
 }
 message ClusterWorkflowTemplateLintRequest {
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate template = 1;
+    github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate template = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 2;
 }
 
 service ClusterWorkflowTemplateService {
-    rpc CreateClusterWorkflowTemplate (ClusterWorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
+    rpc CreateClusterWorkflowTemplate (ClusterWorkflowTemplateCreateRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
         option (google.api.http) = {
 			post: "/api/v1/cluster-workflow-templates"
 			body: "*"
 		};
     }
 
-    rpc GetClusterWorkflowTemplate (ClusterWorkflowTemplateGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
+    rpc GetClusterWorkflowTemplate (ClusterWorkflowTemplateGetRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
         option (google.api.http).get = "/api/v1/cluster-workflow-templates/{name}";
     }
 
-    rpc ListClusterWorkflowTemplates (ClusterWorkflowTemplateListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplateList) {
+    rpc ListClusterWorkflowTemplates (ClusterWorkflowTemplateListRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplateList) {
         option (google.api.http).get = "/api/v1/cluster-workflow-templates";
     }
 
-    rpc UpdateClusterWorkflowTemplate (ClusterWorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
+    rpc UpdateClusterWorkflowTemplate (ClusterWorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
         option (google.api.http) = {
             put: "/api/v1/cluster-workflow-templates/{name}"
             body: "*"
@@ -70,7 +69,7 @@ service ClusterWorkflowTemplateService {
         option (google.api.http).delete = "/api/v1/cluster-workflow-templates/{name}";
     }
 
-    rpc LintClusterWorkflowTemplate (ClusterWorkflowTemplateLintRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
+    rpc LintClusterWorkflowTemplate (ClusterWorkflowTemplateLintRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate) {
         option (google.api.http) = {
 			post: "/api/v1/cluster-workflow-templates/lint"
 			body: "*"

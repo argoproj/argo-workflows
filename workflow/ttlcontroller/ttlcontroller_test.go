@@ -1,6 +1,7 @@
 package ttlcontroller
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,10 +12,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/test"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 var completedWf = `
@@ -44,8 +46,9 @@ spec:
       image: docker/whalesay:latest
     name: whalesay
 status:
-  phase: Running
+  phase: Succeeded
   startedAt: 2018-08-27T20:41:38Z
+  finishedAt: 2018-08-27T20:41:38Z
 `
 
 var succeededWf = `
@@ -223,6 +226,7 @@ status:
     ttlStrategy:
       secondsAfterCompletion: 10
 `
+
 var wftRefWithTTLinWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -344,18 +348,22 @@ func newTTLController() *Controller {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	return &Controller{
-		wfclientset:  wfclientset,
-		wfInformer:   wfInformer,
-		resyncPeriod: workflowTTLResyncPeriod,
-		clock:        clock,
-		workqueue:    workqueue.NewDelayingQueue(),
+		wfclientset: wfclientset,
+		wfInformer:  wfInformer,
+		clock:       clock,
+		workqueue:   workqueue.NewDelayingQueue(),
+		metrics:     metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
+}
+
+func enqueueWF(controller *Controller, un *unstructured.Unstructured) {
+	controller.enqueueWF(un)
+	time.Sleep(100*time.Millisecond + time.Second)
 }
 
 func TestEnqueueWF(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
-	var ten int32 = 10
 
 	controller := newTTLController()
 
@@ -363,24 +371,8 @@ func TestEnqueueWF(t *testing.T) {
 	wf := test.LoadWorkflowFromBytes([]byte(completedWf))
 	un, err = util.ToUnstructured(wf)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
-
-	// Veirfy we do not enqueue if workflow finished is not exceed the TTL
-	wf.Spec.TTLSecondsAfterFinished = &ten
-	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
-	un, err = util.ToUnstructured(wf)
-	assert.NoError(t, err)
-	controller.enqueueWF(un)
-	assert.Equal(t, 0, controller.workqueue.Len())
-
-	// Verify we enqueue when ttl is expired
-	wf.Spec.TTLSecondsAfterFinished = &ten
-	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
-	un, err = util.ToUnstructured(wf)
-	assert.NoError(t, err)
-	controller.enqueueWF(un)
-	assert.Equal(t, 1, controller.workqueue.Len())
 }
 
 func TestTTLStrategySucceded(t *testing.T) {
@@ -396,7 +388,7 @@ func TestTTLStrategySucceded(t *testing.T) {
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
 	un, err = util.ToUnstructured(wf)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 
 	wf1 := test.LoadWorkflowFromBytes([]byte(succeededWf))
@@ -404,29 +396,31 @@ func TestTTLStrategySucceded(t *testing.T) {
 	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf1)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller, un)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 	wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
 	wf2.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf2)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf2)
+
+	ctx := context.Background()
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf2, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
-	controller.processNextWorkItem()
+	enqueueWF(controller, un)
+	controller.processNextWorkItem(ctx)
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 	wf3 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
 	wf3.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf3)
 	assert.NoError(t, err)
-	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf3)
-	assert.NoError(t, err)
-	controller.enqueueWF(un)
-	controller.processNextWorkItem()
-	assert.Equal(t, 1, controller.workqueue.Len())
 
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf3, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	enqueueWF(controller, un)
+	controller.processNextWorkItem(ctx)
+	assert.Equal(t, 1, controller.workqueue.Len())
 }
 
 func TestTTLStrategyFailed(t *testing.T) {
@@ -442,7 +436,7 @@ func TestTTLStrategyFailed(t *testing.T) {
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
 	un, err = util.ToUnstructured(wf)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 
 	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
@@ -450,9 +444,8 @@ func TestTTLStrategyFailed(t *testing.T) {
 	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf1)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller, un)
 	assert.Equal(t, 1, controller.workqueue.Len())
-
 }
 
 func TestNoTTLStrategyFailed(t *testing.T) {
@@ -464,82 +457,21 @@ func TestNoTTLStrategyFailed(t *testing.T) {
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
 	un, err = util.ToUnstructured(wf)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
 
 	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
 	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	un, err = util.ToUnstructured(wf1)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller, un)
 	assert.Equal(t, 0, controller.workqueue.Len())
-
-}
-
-func TestNoTTLStrategyFailedButTTLSecondsAfterFinished(t *testing.T) {
-	var err error
-	var un *unstructured.Unstructured
-	var ten int32 = 10
-
-	controller := newTTLController()
-
-	// Veirfy we do not enqueue if not completed
-	wf := test.LoadWorkflowFromBytes([]byte(failedWf))
-	wf.Spec.TTLSecondsAfterFinished = &ten
-	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
-	un, err = util.ToUnstructured(wf)
-	assert.NoError(t, err)
-	controller.enqueueWF(un)
-	assert.Equal(t, 0, controller.workqueue.Len())
-
-	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
-	wf1.Spec.TTLSecondsAfterFinished = &ten
-	ttlstrategy := wfv1.TTLStrategy{SecondsAfterFailure: &ten}
-	wf1.Spec.TTLStrategy = &ttlstrategy
-	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
-	un, err = util.ToUnstructured(wf1)
-	assert.NoError(t, err)
-	controller.enqueueWF(un)
-	assert.Equal(t, 1, controller.workqueue.Len())
 }
 
 func TestTTLStrategyFromUnstructured(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
-	var ten int32 = 10
 	var five int32 = 5
-	controller := newTTLController()
-	wf := test.LoadWorkflowFromBytes([]byte(failedWf))
-	wf.Spec.TTLSecondsAfterFinished = &ten
-	ttlstrategy := wfv1.TTLStrategy{SecondsAfterFailure: &five}
-	wf.Spec.TTLStrategy = &ttlstrategy
-	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-6 * time.Second)}
-	un, err = util.ToUnstructured(wf)
-	assert.NoError(t, err)
-	controller.enqueueWF(un)
-	assert.Equal(t, 1, controller.workqueue.Len())
-
-	controller1 := newTTLController()
-	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
-	wf1.Spec.TTLSecondsAfterFinished = &ten
-	ttlstrategy1 := wfv1.TTLStrategy{SecondsAfterCompletion: &five}
-	wf1.Spec.TTLStrategy = &ttlstrategy1
-	wf1.Status.FinishedAt = metav1.Time{Time: controller1.clock.Now().Add(-6 * time.Second)}
-	un, err = util.ToUnstructured(wf1)
-	assert.NoError(t, err)
-	controller1.enqueueWF(un)
-	assert.Equal(t, 1, controller1.workqueue.Len())
-
-	controller2 := newTTLController()
-	wf2 := test.LoadWorkflowFromBytes([]byte(failedWf))
-	wf2.Spec.TTLSecondsAfterFinished = &ten
-	ttlstrategy2 := wfv1.TTLStrategy{SecondsAfterFailure: &five}
-	wf2.Spec.TTLStrategy = &ttlstrategy2
-	wf2.Status.FinishedAt = metav1.Time{Time: controller2.clock.Now().Add(-6 * time.Second)}
-	un, err = util.ToUnstructured(wf2)
-	assert.NoError(t, err)
-	controller2.enqueueWF(un)
-	assert.Equal(t, 1, controller2.workqueue.Len())
 
 	controller3 := newTTLController()
 	wf3 := test.LoadWorkflowFromBytes([]byte(failedWf))
@@ -549,7 +481,7 @@ func TestTTLStrategyFromUnstructured(t *testing.T) {
 	un, err = util.ToUnstructured(wf3)
 	t.Log(wf3.Spec.TTLStrategy)
 	assert.NoError(t, err)
-	controller.enqueueWF(un)
+	enqueueWF(controller3, un)
 	assert.Equal(t, 0, controller3.workqueue.Len())
 }
 
@@ -599,29 +531,26 @@ func TestTTLlExpired(t *testing.T) {
 
 func TestGetTTLStrategy(t *testing.T) {
 	var ten int32 = 10
-	wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
-	wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
-		SecondsAfterCompletion: &ten,
-	}
 
-	ttl := getTTLStrategy(wf)
-	assert.NotNil(t, ttl)
-	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	t.Run("TTLFromWorkflow", func(t *testing.T) {
+		wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
+		wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
+			SecondsAfterCompletion: &ten,
+		}
+		ttl := wf.GetTTLStrategy()
+		assert.NotNil(t, ttl)
+		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	})
 
-	wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
-	ttl = getTTLStrategy(wf1)
-	assert.NotNil(t, ttl)
-	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
-	wf1.Spec.TTLStrategy = nil
-	wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
-	ttl = getTTLStrategy(wf1)
-	assert.Nil(t, ttl)
+	t.Run("TTLInWfwithWorkflowTemplate", func(t *testing.T) {
+		wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
+		ttl := wf1.GetTTLStrategy()
+		assert.NotNil(t, ttl)
+		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 
-	wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
-	ttl = getTTLStrategy(wf2)
-	assert.NotNil(t, ttl)
-	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
-	wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
-	ttl = getTTLStrategy(wf2)
-	assert.Nil(t, ttl)
+		wf1.Spec.TTLStrategy = nil
+		wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
+		ttl = wf1.GetTTLStrategy()
+		assert.Nil(t, ttl)
+	})
 }

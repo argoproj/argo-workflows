@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/argoproj/argo/server/auth/sso"
+	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
 )
 
 type Modes map[Mode]bool
@@ -30,15 +30,15 @@ func (m Modes) Add(value string) error {
 	return nil
 }
 
-func GetMode(authorisation string) (Mode, error) {
-	if authorisation == "" {
-		return Server, nil
+func (m Modes) GetMode(authorisation string) (Mode, bool) {
+	if m[SSO] && strings.HasPrefix(authorisation, sso.Prefix) {
+		return SSO, true
 	}
-	if strings.HasPrefix(authorisation, sso.Prefix) {
-		return SSO, nil
+	if m[Client] && (strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ")) {
+		return Client, true
 	}
-	if strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ") {
-		return Client, nil
+	if m[Server] {
+		return Server, true
 	}
-	return "", errors.New("unrecognized token")
+	return "", false
 }

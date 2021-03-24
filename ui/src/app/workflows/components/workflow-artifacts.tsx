@@ -40,7 +40,7 @@ export const WorkflowArtifacts = (props: Props) => {
         <div className='white-box'>
             <div className='white-box__details'>
                 {artifacts.map(artifact => (
-                    <div className='row white-box__details-row' key={artifact.path}>
+                    <div className='row white-box__details-row' key={artifact.downloadUrl}>
                         <div className='columns small-2'>
                             <span>
                                 <a href={artifact.downloadUrl}>

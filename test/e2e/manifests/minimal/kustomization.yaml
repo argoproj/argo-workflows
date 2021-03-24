@@ -2,13 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../../../../manifests/quick-start/minimal
+- ../../../../manifests/quick-start/minimal
+- https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_eventbus.yaml
+- https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_eventsources.yaml
+- https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_sensors.yaml
 
 patchesStrategicMerge:
-  - ../mixins/argo-server-deployment.yaml
-  - ../mixins/workflow-controller-configmap.yaml
-  - ../mixins/workflow-controller-deployment.yaml
-  - ../mixins/cluster-workflow-template-rbac.yaml
+- ../mixins/argo-server-deployment.yaml
+- ../mixins/workflow-controller-configmap.yaml
+- ../mixins/workflow-controller-deployment.yaml
+- ../mixins/cluster-workflow-template-rbac.yaml
 
 commonLabels:
-  "app.kubernetes.io/part-of": "argo"
+  app.kubernetes.io/part-of: argo
+namespace: argo

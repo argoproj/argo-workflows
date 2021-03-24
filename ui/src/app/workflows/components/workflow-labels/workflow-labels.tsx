@@ -5,7 +5,7 @@ require('./workflow-labels.scss');
 
 interface WorkflowLabelsProps {
     workflow: models.Workflow;
-    onChange: (key: string) => void;
+    onChange: (key: string, value: string) => void;
 }
 
 export class WorkflowLabels extends React.Component<WorkflowLabelsProps, {}> {
@@ -18,16 +18,17 @@ export class WorkflowLabels extends React.Component<WorkflowLabelsProps, {}> {
         const w = this.props.workflow;
         if (w.metadata.labels) {
             labels.push(
-                Object.keys(w.metadata.labels).map(key => (
+                Object.entries(w.metadata.labels).map(([key, value]) => (
                     <div
+                        title={`List workflows labelled with ${key}=${value}`}
                         className='tag'
                         key={`${w.metadata.uid}-${key}`}
                         onClick={async e => {
                             e.preventDefault();
-                            this.props.onChange(key);
+                            this.props.onChange(key, value);
                         }}>
                         <div className='key'>{key}</div>
-                        <div className='value'>{w.metadata.labels[key]}</div>
+                        <div className='value'>{value}</div>
                     </div>
                 ))
             );

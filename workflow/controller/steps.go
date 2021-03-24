@@ -1,18 +1,19 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Knetic/govaluate"
-	"github.com/valyala/fasttemplate"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/template"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
 // stepsContext holds context information about this context's steps
@@ -31,7 +32,7 @@ type stepsContext struct {
 	onExitTemplate bool
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -39,7 +40,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
-			_ = woc.killDaemonedChildren(node.ID)
+			_ = woc.killDaemonedChildren(ctx, node.ID)
 		}
 	}()
 
@@ -47,11 +48,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	stepTemplateScope := tmplCtx.GetTemplateScope()
 
 	stepsCtx := stepsContext{
-		boundaryID: node.ID,
-		scope: &wfScope{
-			tmpl:  tmpl,
-			scope: make(map[string]interface{}),
-		},
+		boundaryID:     node.ID,
+		scope:          createScope(tmpl),
 		tmplCtx:        tmplCtx,
 		onExitTemplate: opts.onExitTemplate,
 	}
@@ -59,10 +57,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-		if woc.wf.GetNodeByName(sgNodeName) == nil {
-			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
-		} else {
-			_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+		{
+			sgNode := woc.wf.GetNodeByName(sgNodeName)
+			if sgNode == nil {
+				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{}, stepsCtx.boundaryID, wfv1.NodeRunning)
+			} else if !sgNode.Fulfilled() {
+				_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+			}
 		}
 		// The following will connect the step group node to its parents.
 		if i == 0 {
@@ -88,7 +89,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			}
 		}
 
-		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
+		sgNode := woc.executeStepGroup(ctx, stepGroup.Steps, sgNodeName, &stepsCtx)
 
 		if !sgNode.Fulfilled() {
 			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
@@ -139,6 +140,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			}
 		}
 	}
+
 	woc.updateOutboundNodes(nodeName, tmpl)
 	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
@@ -183,7 +185,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 
 // executeStepGroup examines a list of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
-func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
 	node := woc.wf.GetNodeByName(sgNodeName)
 	if node.Fulfilled() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
@@ -230,17 +232,17 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
-		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
+		childNode, err := woc.executeTemplate(ctx, childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
 				return node
 			case ErrParallelismReached:
+			case ErrTimeout:
+				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
-				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
-				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
-				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
+				return woc.markNodeError(node.Name, fmt.Errorf("step group deemed errored due to child %s error: %w", childNodeName, err))
 			}
 		}
 		if childNode != nil {
@@ -258,7 +260,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
@@ -281,7 +283,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}
-	woc.log.Infof("Step group node %v successful", node)
+	woc.log.Infof("Step group node %v successful", node.ID)
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 
@@ -348,9 +350,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-
-		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
+		newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
 			return nil, err
 		}
@@ -381,11 +381,15 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 
 		// Step 2: replace all artifact references
 		for j, art := range newStep.Arguments.Artifacts {
-			if art.From == "" {
+			if art.From == "" && art.FromExpression == "" {
 				continue
 			}
-			resolvedArt, err := scope.resolveArtifact(art.From)
+
+			resolvedArt, err := scope.resolveArtifact(&art)
 			if err != nil {
+				if art.Optional {
+					continue
+				}
 				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
@@ -427,11 +431,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 
 // expandStep expands a step containing withItems or withParams into multiple parallel steps
 func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
-	stepBytes, err := json.Marshal(step)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
+	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
 	var items []wfv1.Item
 	if len(step.WithItems) > 0 {
@@ -451,9 +451,24 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
 	}
 
+	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
+	// very poor performance, so we just nil them out
+	step.WithItems = nil
+	step.WithParam = ""
+	step.WithSequence = nil
+
+	stepBytes, err := json.Marshal(step)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	t, err := template.NewTemplate(string(stepBytes))
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
+	}
+
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(fstTmpl, step.Name, i, item, &newStep)
+		newStepName, err := processItem(t, step.Name, i, item, &newStep)
 		if err != nil {
 			return nil, err
 		}
@@ -495,6 +510,9 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		if node.Outputs.Result != nil {
 			localScope["outputs.result"] = *node.Outputs.Result
 		}
+		if node.Outputs.ExitCode != nil {
+			localScope[common.LocalVarExitCode] = *node.Outputs.ExitCode
+		}
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
 			localScope[key] = param.Value.String()
@@ -502,9 +520,8 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	}
 
 	if node.ResourcesDuration != nil {
-		localScope[common.LocalVarResourcesDuration] = node.ResourcesDuration.String()
 		for name, duration := range node.ResourcesDuration {
-			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = duration.String()
+			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = fmt.Sprint(duration.Duration().Seconds())
 		}
 	}
 

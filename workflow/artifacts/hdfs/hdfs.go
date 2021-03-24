@@ -1,6 +1,7 @@
 package hdfs
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,10 +10,11 @@ import (
 	"gopkg.in/jcmturner/gokrb5.v5/credentials"
 	"gopkg.in/jcmturner/gokrb5.v5/keytab"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 )
 
 // ArtifactDriver is a driver for HDFS
@@ -23,6 +25,8 @@ type ArtifactDriver struct {
 	HDFSUser   string
 	KrbOptions *KrbOptions
 }
+
+var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // KrbOptions is options for Kerberos
 type KrbOptions struct {
@@ -72,19 +76,19 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 }
 
 // CreateDriver constructs ArtifactDriver
-func CreateDriver(ci resource.Interface, art *wfv1.HDFSArtifact) (*ArtifactDriver, error) {
+func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArtifact) (*ArtifactDriver, error) {
 	var krbConfig string
 	var krbOptions *KrbOptions
 	var err error
 
 	if art.KrbConfigConfigMap != nil && art.KrbConfigConfigMap.Name != "" {
-		krbConfig, err = ci.GetConfigMapKey(art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
+		krbConfig, err = ci.GetConfigMapKey(ctx, art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if art.KrbCCacheSecret != nil && art.KrbCCacheSecret.Name != "" {
-		bytes, err := ci.GetSecret(art.KrbCCacheSecret.Name, art.KrbCCacheSecret.Key)
+		bytes, err := ci.GetSecret(ctx, art.KrbCCacheSecret.Name, art.KrbCCacheSecret.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +105,7 @@ func CreateDriver(ci resource.Interface, art *wfv1.HDFSArtifact) (*ArtifactDrive
 		}
 	}
 	if art.KrbKeytabSecret != nil && art.KrbKeytabSecret.Name != "" {
-		bytes, err := ci.GetSecret(art.KrbKeytabSecret.Name, art.KrbKeytabSecret.Key)
+		bytes, err := ci.GetSecret(ctx, art.KrbKeytabSecret.Name, art.KrbKeytabSecret.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -219,4 +223,8 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 	}
 
 	return hdfscli.CopyToRemote(path, driver.Path)
+}
+
+func (driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }

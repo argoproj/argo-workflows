@@ -1,31 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-diamond-
-  labels:
-    argo-e2e: true
+  generateName: dag-depends-
 spec:
-  entrypoint: diamond
+  entrypoint: main
   templates:
-    - name: diamond
+    - name: main
       dag:
         tasks:
-          - name: A
+          - name: P
             template: pass
-          - name: B
-            depends: "A"
-            template: pass
-          - name: C
-            depends: "A"
+          - name: F
             template: fail
           - name: should-execute-1
-            depends: "A && (C.Succeeded || C.Failed)"
+            depends: "P && (F.Succeeded || F.Failed)"
             template: pass
           - name: should-execute-2
-            depends: "B || C"
+            depends: "P || F"
             template: pass
           - name: should-not-execute
-            depends: "B && C"
+            depends: "P && F"
             template: pass
           - name: should-execute-3
             depends: "should-execute-2.Succeeded || should-not-execute"

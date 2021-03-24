@@ -1,17 +1,16 @@
-// +build e2e
+// +build functional
 
 package e2e
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type WorkflowTemplateSuite struct {
@@ -21,23 +20,21 @@ type WorkflowTemplateSuite struct {
 func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplate() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
-		WorkflowName("my-wf").
 		When().
 		CreateWorkflowTemplates().
-		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "--name", "my-wf", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.NodeSucceeded)
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		})
 }
 
 func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-nested-template.yaml").
-		When().Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		When().
 		CreateWorkflowTemplates().
@@ -46,8 +43,6 @@ func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 kind: Workflow
 metadata:
   generateName: workflow-template-nested-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:
@@ -63,12 +58,26 @@ spec:
               value: "hello from nested"
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.NodeSucceeded)
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		})
+}
 
+func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-with-enum-values.yaml").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-with-enum-values", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		}).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+		})
 }
 
 func TestWorkflowTemplateSuite(t *testing.T) {

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"net/url"
+	"path"
 	"reflect"
 	"sort"
 	"strings"
@@ -13,7 +15,10 @@ import (
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -21,13 +26,15 @@ type TemplateType string
 
 // Possible template types
 const (
-	TemplateTypeContainer TemplateType = "Container"
-	TemplateTypeSteps     TemplateType = "Steps"
-	TemplateTypeScript    TemplateType = "Script"
-	TemplateTypeResource  TemplateType = "Resource"
-	TemplateTypeDAG       TemplateType = "DAG"
-	TemplateTypeSuspend   TemplateType = "Suspend"
-	TemplateTypeUnknown   TemplateType = "Unknown"
+	TemplateTypeContainer    TemplateType = "Container"
+	TemplateTypeContainerSet TemplateType = "ContainerSet"
+	TemplateTypeSteps        TemplateType = "Steps"
+	TemplateTypeScript       TemplateType = "Script"
+	TemplateTypeResource     TemplateType = "Resource"
+	TemplateTypeDAG          TemplateType = "DAG"
+	TemplateTypeSuspend      TemplateType = "Suspend"
+	TemplateTypeData         TemplateType = "Data"
+	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -57,6 +64,7 @@ type NodeType string
 // Node types
 const (
 	NodeTypePod       NodeType = "Pod"
+	NodeTypeContainer NodeType = "Container"
 	NodeTypeSteps     NodeType = "Steps"
 	NodeTypeStepGroup NodeType = "StepGroup"
 	NodeTypeDAG       NodeType = "DAG"
@@ -75,6 +83,14 @@ const (
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
+)
+
+// VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows
+type VolumeClaimGCStrategy string
+
+const (
+	VolumeClaimGCOnCompletion VolumeClaimGCStrategy = "OnWorkflowCompletion"
+	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
 // Workflow is the definition of a workflow resource
@@ -123,6 +139,21 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 		}
 	}
 	return out
+}
+
+// GetTTLStrategy return TTLStrategy based on Order of precedence:
+// 1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
+func (w *Workflow) GetTTLStrategy() *TTLStrategy {
+	var ttlStrategy *TTLStrategy
+	// TTLStrategy from WorkflowTemplate
+	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
+	}
+	// TTLStrategy from Workflow
+	if w.Spec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Spec.GetTTLStrategy()
+	}
+	return ttlStrategy
 }
 
 var (
@@ -251,14 +282,6 @@ type WorkflowSpec struct {
 	// primary workflow.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,17,opt,name=onExit"`
 
-	// TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
-	// (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
-	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
-	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
-	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-	// DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
-	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"bytes,18,opt,name=ttlSecondsAfterFinished"`
-
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
 	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
 	// deleted after the time to live expires. If this field is unset,
@@ -301,9 +324,9 @@ type WorkflowSpec struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
-	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
-	//Controller will automatically add the selector with workflow name, if selector is empty.
-	//Optional: Defaults to empty.
+	// PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	// Controller will automatically add the selector with workflow name, if selector is empty.
+	// Optional: Defaults to empty.
 	// +optional
 	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 
@@ -318,6 +341,73 @@ type WorkflowSpec struct {
 
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
+
+	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+	VolumeClaimGC *VolumeClaimGC `json:"volumeClaimGC,omitempty" protobuf:"bytes,36,opt,name=volumeClaimGC,casttype=VolumeClaimGC"`
+
+	// RetryStrategy for all templates in the workflow.
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
+
+	// PodMetadata defines additional metadata that should be applied to workflow pods
+	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,38,opt,name=podMetadata"`
+
+	// TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
+	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
+}
+
+// GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
+	// If no volumeClaimGC strategy was provided, we default to the equivalent of "OnSuccess"
+	// to match the existing behavior for back-compat
+	if wfs.VolumeClaimGC == nil {
+		return &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}
+	}
+
+	return wfs.VolumeClaimGC
+}
+
+func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
+	return wfs.TTLStrategy
+}
+
+// GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
+// Example key format namespace/configmapname (argo/my-config)
+// Return []string
+func (wf *Workflow) GetSemaphoreKeys() []string {
+	keyMap := make(map[string]bool)
+	namespace := wf.Namespace
+	var templates []Template
+	if wf.Spec.WorkflowTemplateRef == nil {
+		templates = wf.Spec.Templates
+		if wf.Spec.Synchronization != nil {
+			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	} else if wf.Status.StoredWorkflowSpec != nil {
+		templates = wf.Status.StoredWorkflowSpec.Templates
+		if wf.Status.StoredWorkflowSpec.Synchronization != nil {
+			if configMapRef := wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	}
+
+	for _, tmpl := range templates {
+		if tmpl.Synchronization != nil {
+			if configMapRef := tmpl.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	}
+	var semaphoreKeys []string
+	for key := range keyMap {
+		semaphoreKeys = append(semaphoreKeys, key)
+	}
+	return semaphoreKeys
 }
 
 type ShutdownStrategy string
@@ -325,7 +415,12 @@ type ShutdownStrategy string
 const (
 	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
+	ShutdownStrategyNone      ShutdownStrategy = ""
 )
+
+func (s ShutdownStrategy) Enabled() bool {
+	return s != ShutdownStrategyNone
+}
 
 func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	switch s {
@@ -338,8 +433,9 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	}
 }
 
+// +kubebuilder:validation:Type=array
 type ParallelSteps struct {
-	Steps []WorkflowStep `json:"steps,omitempty" protobuf:"bytes,1,rep,name=steps"`
+	Steps []WorkflowStep `json:"-" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -379,7 +475,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
-func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
+func (p ParallelSteps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Steps)
 }
 
@@ -396,19 +492,7 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
-
-	// Template is the name of the template which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-
-	// Arguments hold arguments to the template.
-	// DEPRECATED: This field is not used.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
-
-	// TemplateRef is the reference to the template resource which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
@@ -436,6 +520,9 @@ type Template struct {
 	// Container is the main container image to run in the pod
 	Container *apiv1.Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
 
+	// ContainerSet groups multiple containers within a single pod.
+	ContainerSet *ContainerSetTemplate `json:"containerSet,omitempty" protobuf:"bytes,40,opt,name=containerSet"`
+
 	// Script runs a portion of code against an interpreter
 	Script *ScriptTemplate `json:"script,omitempty" protobuf:"bytes,13,opt,name=script"`
 
@@ -447,6 +534,9 @@ type Template struct {
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty" protobuf:"bytes,16,opt,name=suspend"`
+
+	// Data is a data template
+	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -473,7 +563,7 @@ type Template struct {
 	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
 	// before the system actively tries to terminate the pod; value must be positive integer
 	// This field is only applicable to container and script templates.
-	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
+	ActiveDeadlineSeconds *intstr.IntOrString `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
 
 	// RetryStrategy describes how to retry a template when it fails
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,22,opt,name=retryStrategy"`
@@ -482,6 +572,10 @@ type Template struct {
 	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
 	// pods created by those templates will not be counted towards this total.
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,23,opt,name=parallelism"`
+
+	// FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this
+	// template is expanded with `withItems`, etc.
+	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,41,opt,name=failFast"`
 
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
@@ -524,9 +618,6 @@ type Template struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
-	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
-
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 
@@ -535,23 +626,40 @@ type Template struct {
 
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
+
+	// Timout allows to set the total node execution timeout duration counting from the node's start time.
+	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
+	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
 
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-var _ TemplateReferenceHolder = &Template{}
-
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-func (tmpl *Template) GetTemplateName() string {
-	if tmpl.Template != "" {
-		return tmpl.Template
-	} else {
-		return tmpl.Name
+// SetType will set the template object based on template type.
+func (tmpl *Template) SetType(tmplType TemplateType) {
+	switch tmplType {
+	case TemplateTypeSteps:
+		tmpl.setTemplateObjs(tmpl.Steps, nil, nil, nil, nil, nil, nil)
+	case TemplateTypeDAG:
+		tmpl.setTemplateObjs(nil, tmpl.DAG, nil, nil, nil, nil, nil)
+	case TemplateTypeContainer:
+		tmpl.setTemplateObjs(nil, nil, tmpl.Container, nil, nil, nil, nil)
+	case TemplateTypeScript:
+		tmpl.setTemplateObjs(nil, nil, nil, tmpl.Script, nil, nil, nil)
+	case TemplateTypeResource:
+		tmpl.setTemplateObjs(nil, nil, nil, nil, tmpl.Resource, nil, nil)
+	case TemplateTypeData:
+		tmpl.setTemplateObjs(nil, nil, nil, nil, nil, tmpl.Data, nil)
+	case TemplateTypeSuspend:
+		tmpl.setTemplateObjs(nil, nil, nil, nil, nil, nil, tmpl.Suspend)
 	}
 }
 
-// DEPRECATED: Templates should not be used as TemplateReferenceHolder
-func (tmpl *Template) GetTemplateRef() *TemplateRef {
-	return tmpl.TemplateRef
+func (tmpl *Template) setTemplateObjs(steps []ParallelSteps, dag *DAGTemplate, container *apiv1.Container, script *ScriptTemplate, resource *ResourceTemplate, data *Data, suspend *SuspendTemplate) {
+	tmpl.Steps = steps
+	tmpl.DAG = dag
+	tmpl.Container = container
+	tmpl.Script = script
+	tmpl.Resource = resource
+	tmpl.Data = data
+	tmpl.Suspend = suspend
 }
 
 // GetBaseTemplate returns a base template content.
@@ -563,6 +671,22 @@ func (tmpl *Template) GetBaseTemplate() *Template {
 
 func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
+}
+
+func (tmpl *Template) GetSidecarNames() []string {
+	var containerNames []string
+	for _, s := range tmpl.Sidecars {
+		containerNames = append(containerNames, s.Name)
+	}
+	return containerNames
+}
+
+func (tmpl *Template) IsFailFast() bool {
+	return tmpl.FailFast != nil && *tmpl.FailFast
+}
+
+func (tmpl *Template) HasParallelism() bool {
+	return tmpl.Parallelism != nil && *tmpl.Parallelism > 0
 }
 
 type Artifacts []Artifact
@@ -605,11 +729,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *AnyString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *AnyString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -617,6 +741,9 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
+
+	// Enum holds a list of string values to choose from, for the actual value of the parameter
+	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -630,6 +757,9 @@ type ValueFrom struct {
 	// JQFilter expression against the resource object in resource templates
 	JQFilter string `json:"jqFilter,omitempty" protobuf:"bytes,3,opt,name=jqFilter"`
 
+	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
+
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
@@ -638,12 +768,14 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+
+	// Expression, if defined, is evaluated to specify the value for the parameter
+	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
-type SuppliedValueFrom struct {
-}
+type SuppliedValueFrom struct{}
 
 // Artifact indicates an artifact to place at a specified path
 type Artifact struct {
@@ -672,18 +804,65 @@ type Artifact struct {
 
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
 	Optional bool `json:"optional,omitempty" protobuf:"varint,8,opt,name=optional"`
+
+	// SubPath allows an artifact to be sourced from a subpath within the specified source
+	SubPath string `json:"subPath,omitempty" protobuf:"bytes,9,opt,name=subPath"`
+
+	// If mode is set, apply the permission recursively into the artifact if it is a folder
+	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
+
+	// FromExpression, if defined, is evaluated to specify the value for the artifact
+	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 }
 
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
+}
+
+// Matches returns whether the pod labels match with the label selector specified in podGC.
+func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+	if podGC == nil {
+		return true, nil
+	}
+	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
+	if err != nil {
+		return false, err
+	}
+	return selector.Matches(labels), nil
+}
+
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
+	if podGC != nil && podGC.LabelSelector != nil {
+		return podGC.LabelSelector
+	}
+	return nil
+}
+
+// VolumeClaimGC describes how to delete volumes from completed Workflows
+type VolumeClaimGC struct {
+	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+	Strategy VolumeClaimGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeClaimGCStrategy"`
+}
+
+// GetStrategy returns the VolumeClaimGCStrategy to use for the workflow
+func (vgc VolumeClaimGC) GetStrategy() VolumeClaimGCStrategy {
+	if vgc.Strategy == "" {
+		return VolumeClaimGCOnSuccess
+	}
+
+	return vgc.Strategy
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
 type ArchiveStrategy struct {
 	Tar  *TarStrategy  `json:"tar,omitempty" protobuf:"bytes,1,opt,name=tar"`
 	None *NoneStrategy `json:"none,omitempty" protobuf:"bytes,2,opt,name=none"`
+	Zip  *ZipStrategy  `json:"zip,omitempty" protobuf:"bytes,3,opt,name=zip"`
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
@@ -693,10 +872,21 @@ type TarStrategy struct {
 	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
 }
 
+// ZipStrategy will unzip zipped input artifacts
+type ZipStrategy struct{}
+
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 type NoneStrategy struct{}
+
+type ArtifactLocationType interface {
+	HasLocation() bool
+	GetKey() (string, error)
+	SetKey(key string) error
+}
+
+var keyUnsupportedErr = fmt.Errorf("key unsupported")
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
@@ -731,28 +921,164 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-// HasLocation whether or not an artifact has a location defined
+func (a *ArtifactLocation) Get() ArtifactLocationType {
+	if a == nil {
+		return nil
+	} else if a.Artifactory != nil {
+		return a.Artifactory
+	} else if a.Git != nil {
+		return a.Git
+	} else if a.GCS != nil {
+		return a.GCS
+	} else if a.HDFS != nil {
+		return a.HDFS
+	} else if a.HTTP != nil {
+		return a.HTTP
+	} else if a.OSS != nil {
+		return a.OSS
+	} else if a.Raw != nil {
+		return a.Raw
+	} else if a.S3 != nil {
+		return a.S3
+	}
+	return nil
+}
+
+// SetType sets the type of the artifact to type the argument.
+// Any existing value is deleted.
+func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
+	switch v := x.(type) {
+	case *ArtifactoryArtifact:
+		a.Artifactory = &ArtifactoryArtifact{}
+	case *GCSArtifact:
+		a.GCS = &GCSArtifact{}
+	case *HDFSArtifact:
+		a.HDFS = &HDFSArtifact{}
+	case *HTTPArtifact:
+		a.HTTP = &HTTPArtifact{}
+	case *OSSArtifact:
+		a.OSS = &OSSArtifact{}
+	case *RawArtifact:
+		a.Raw = &RawArtifact{}
+	case *S3Artifact:
+		a.S3 = &S3Artifact{}
+	default:
+		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
+	}
+	return nil
+}
+
+func (a *ArtifactLocation) HasLocationOrKey() bool {
+	return a.HasLocation() || a.HasKey()
+}
+
+// HasKey returns whether or not an artifact has a key. They may or may not also HasLocation.
+func (a *ArtifactLocation) HasKey() bool {
+	key, _ := a.GetKey()
+	return key != ""
+}
+
+// set the key to a new value, use path.Join to combine items
+func (a *ArtifactLocation) SetKey(key string) error {
+	v := a.Get()
+	if v == nil {
+		return keyUnsupportedErr
+	}
+	return v.SetKey(key)
+}
+
+func (a *ArtifactLocation) AppendToKey(x string) error {
+	key, err := a.GetKey()
+	if err != nil {
+		return err
+	}
+	return a.SetKey(path.Join(key, x))
+}
+
+// Relocate copies all location info from the parameter, except the key.
+// But only if it does not have a location already.
+func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
+	if a.HasLocation() {
+		return nil
+	}
+	if l == nil {
+		return fmt.Errorf("template artifact location not set")
+	}
+	key, err := a.GetKey()
+	if err != nil {
+		return err
+	}
+	*a = *l.DeepCopy()
+	return a.SetKey(key)
+}
+
+// HasLocation whether or not an artifact has a *full* location defined
+// An artifact that has a location implicitly has a key (i.e. HasKey() == true).
 func (a *ArtifactLocation) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+	v := a.Get()
+	return v != nil && v.HasLocation()
 }
 
+func (a *ArtifactLocation) IsArchiveLogs() bool {
+	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
+func (a *ArtifactLocation) GetKey() (string, error) {
+	v := a.Get()
+	if v == nil {
+		return "", keyUnsupportedErr
+	}
+	return v.GetKey()
+}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
+	// The name of the config map. Defaults to "artifact-repositories".
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
-	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	// The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
-func (r ArtifactRepositoryRef) GetConfigMap() string {
-	if r.ConfigMap == "" {
-		return "artifact-repositories"
+func (r *ArtifactRepositoryRef) GetConfigMapOr(configMap string) string {
+	if r == nil || r.ConfigMap == "" {
+		return configMap
 	}
 	return r.ConfigMap
+}
+
+func (r *ArtifactRepositoryRef) GetKeyOr(key string) string {
+	if r == nil || r.Key == "" {
+		return key
+	}
+	return r.Key
+}
+
+func (r *ArtifactRepositoryRef) String() string {
+	if r == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
+}
+
+var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: true}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type ArtifactRepositoryRefStatus struct {
+	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
+	// The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	// If this ref represents the default artifact repository, rather than a config map.
+	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
+}
+
+func (r *ArtifactRepositoryRefStatus) String() string {
+	if r == nil {
+		return "nil"
+	}
+	if r.Default {
+		return "default-artifact-repository"
+	}
+	return fmt.Sprintf("%s/%s", r.Namespace, r.ArtifactRepositoryRef.String())
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -846,9 +1172,6 @@ type TemplateRef struct {
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	// Template is the name of referred template in the resource.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-	// RuntimeResolution skips validation at creation time.
-	// By enabling this option, you can create the referred workflow template before the actual runtime.
-	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
@@ -857,12 +1180,44 @@ type TemplateRef struct {
 type Synchronization struct {
 	// Semaphore holds the Semaphore configuration
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex holds the Mutex lock details
+	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
+	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
+		return s.Semaphore.ConfigMapKeyRef
+	}
+	return nil
+}
+
+type SynchronizationType string
+
+const (
+	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
+	SynchronizationTypeMutex     SynchronizationType = "Mutex"
+	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
+)
+
+func (s *Synchronization) GetType() SynchronizationType {
+	if s.Semaphore != nil {
+		return SynchronizationTypeSemaphore
+	} else if s.Mutex != nil {
+		return SynchronizationTypeMutex
+	}
+	return SynchronizationTypeUnknown
 }
 
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
+}
+
+// Mutex holds Mutex configuration
+type Mutex struct {
+	// name of the mutex
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
@@ -908,21 +1263,67 @@ var _ ArgumentsProvider = &Arguments{}
 type Nodes map[string]NodeStatus
 
 func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	return n.Find(NodeWithDisplayName(name))
+}
+
+func (in Nodes) Any(f func(NodeStatus) bool) bool {
+	return in.Find(f) != nil
+}
+
+func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	for _, i := range n {
-		if i.DisplayName == name {
+		if f(i) {
 			return &i
 		}
 	}
 	return nil
 }
 
-func (in Nodes) Any(f func(node NodeStatus) bool) bool {
-	for _, i := range in {
-		if f(i) {
-			return true
+func NodeWithDisplayName(name string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool { return n.DisplayName == name }
+}
+
+func FailedPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeFailed
+}
+
+func SucceededPodNode(n NodeStatus) bool {
+	return n.Type == NodeTypePod && n.Phase == NodeSucceeded
+}
+
+// Children returns the children of the parent.
+func (s Nodes) Children(parentNodeId string) Nodes {
+	childNodes := make(Nodes)
+	parentNode, ok := s[parentNodeId]
+	if !ok {
+		return childNodes
+	}
+	for _, childID := range parentNode.Children {
+		if childNode, ok := s[childID]; ok {
+			childNodes[childID] = childNode
 		}
 	}
-	return false
+	return childNodes
+}
+
+// Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
+func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
+	filteredNodes := make(Nodes)
+	for _, node := range s {
+		if predicate(node) {
+			filteredNodes[node.ID] = node
+		}
+	}
+	return filteredNodes
+}
+
+// Map maps the nodes to new values, e.g. `x.Hostname`
+func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
+	values := make(map[string]interface{})
+	for _, node := range s {
+		values[node.ID] = f(node)
+	}
+	return values
 }
 
 // UserContainer is a container specified by a user.
@@ -939,13 +1340,19 @@ type UserContainer struct {
 // WorkflowStatus contains overall status information about a workflow
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
-	Phase NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
+	Phase WorkflowPhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=WorkflowPhase"`
 
 	// Time at which this workflow started
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`
 
 	// Time at which this workflow completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
+
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,17,opt,name=progress,casttype=Progress"`
 
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
@@ -981,37 +1388,9 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
-}
 
-type SemaphoreStatus struct {
-	// Holding stores the list of resource acquired synchronization lock for workflows.
-	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting indicates the list of current synchronization lock holders
-	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
-}
-
-type SemaphoreHolding struct {
-	// Semaphore stores the semaphore name.
-	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Holders stores the list of current holder names in the workflow.
-	// +listType=atomic
-	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
-}
-
-type WaitingStatus struct {
-	// Holders stores the list of current holder names
-	Holders HolderNames `json:"holders,omitempty" protobuf:"bytes,1,opt,name=holders"`
-}
-
-type HolderNames struct {
-	// Name stores the name of the resource holding lock
-	// +listType=atomic
-	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
-}
-
-type SynchronizationStatus struct {
-	// SemaphoreHolders stores this workflow's Semaphore holder details
-	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
+	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1029,9 +1408,10 @@ func (wf *Workflow) GetOffloadNodeStatusVersion() string {
 type RetryPolicy string
 
 const (
-	RetryPolicyAlways    RetryPolicy = "Always"
-	RetryPolicyOnFailure RetryPolicy = "OnFailure"
-	RetryPolicyOnError   RetryPolicy = "OnError"
+	RetryPolicyAlways           RetryPolicy = "Always"
+	RetryPolicyOnFailure        RetryPolicy = "OnFailure"
+	RetryPolicyOnError          RetryPolicy = "OnError"
+	RetryPolicyOnTransientError RetryPolicy = "OnTransientError"
 )
 
 // Backoff is a backoff strategy to use within retryStrategy
@@ -1039,21 +1419,33 @@ type Backoff struct {
 	// Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
-	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
+	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
 	// MaxDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
+}
+
+// RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
+// In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+type RetryNodeAntiAffinity struct{}
+
+// RetryAffinity prevents running steps on the same host.
+type RetryAffinity struct {
+	NodeAntiAffinity *RetryNodeAntiAffinity `json:"nodeAntiAffinity,omitempty" protobuf:"bytes,1,opt,name=nodeAntiAffinity"`
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
-	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
+	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryPolicy is a policy of NodePhase statuses that will be retried
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
+
+	// Affinity prevents running workflow's step on the same host
+	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -1078,10 +1470,14 @@ func (in ResourceDuration) String() string {
 type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
 
 func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
-	for n, d := range o {
-		in[n] += d
+	res := ResourcesDuration{}
+	for n, d := range in {
+		res[n] += d
 	}
-	return in
+	for n, d := range o {
+		res[n] += d
+	}
+	return res
 }
 
 func (in ResourcesDuration) String() string {
@@ -1166,6 +1562,8 @@ type ConditionType string
 const (
 	// ConditionTypeCompleted is a signifies the workflow has completed
 	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypePodRunning any workflow pods are currently running
+	ConditionTypePodRunning ConditionType = "PodRunning"
 	// ConditionTypeSpecWarning is a warning on the current application spec
 	ConditionTypeSpecWarning ConditionType = "SpecWarning"
 	// ConditionTypeSpecWarning is an error on the current application spec
@@ -1208,14 +1606,6 @@ type NodeStatus struct {
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
 
-	// StoredTemplateID is the ID of stored template.
-	// DEPRECATED: This value is not used anymore.
-	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
-
-	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-	// DEPRECATED: This value is not used anymore.
-	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
-
 	// TemplateScope is the template scope in which the template of this node was retrieved.
 	TemplateScope string `json:"templateScope,omitempty" protobuf:"bytes,20,opt,name=templateScope"`
 
@@ -1234,6 +1624,12 @@ type NodeStatus struct {
 
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
+
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,26,opt,name=progress,casttype=Progress"`
 
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
@@ -1272,14 +1668,9 @@ type NodeStatus struct {
 
 	// MemoizationStatus holds information about cached nodes
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
-}
 
-func (n Nodes) GetResourcesDuration() ResourcesDuration {
-	i := ResourcesDuration{}
-	for _, status := range n {
-		i = i.Add(status.ResourcesDuration)
-	}
-	return i
+	// SynchronizationStatus is the synchronization status of the node
+	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
@@ -1296,19 +1687,19 @@ func (phase NodePhase) FailedOrError() bool {
 	return phase == NodeFailed || phase == NodeError
 }
 
-// Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
+// Fulfilled returns whether or not the workflow has fulfilled its execution
 func (ws WorkflowStatus) Fulfilled() bool {
-	return ws.Phase.Fulfilled()
+	return ws.Phase.Completed()
 }
 
 // Successful return whether or not the workflow has succeeded
 func (ws WorkflowStatus) Successful() bool {
-	return ws.Phase == NodeSucceeded
+	return ws.Phase == WorkflowSucceeded
 }
 
 // Failed return whether or not the workflow has failed
 func (ws WorkflowStatus) Failed() bool {
-	return ws.Phase == NodeFailed
+	return ws.Phase == WorkflowFailed
 }
 
 func (ws WorkflowStatus) StartTime() *metav1.Time {
@@ -1331,6 +1722,13 @@ func (n NodeStatus) Completed() bool {
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
+func (ws *WorkflowStatus) GetDuration() time.Duration {
+	if ws.FinishedAt.IsZero() {
+		return 0
+	}
+	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
 }
 
 // Pending returns whether or not the node is in pending state
@@ -1401,13 +1799,20 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
+func (n NodeStatus) GetDuration() time.Duration {
+	if n.FinishedAt.IsZero() {
+		return 0
+	}
+	return n.FinishedAt.Sub(n.StartedAt.Time)
+}
+
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// Region contains the optional bucket region
 	Region string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
@@ -1416,16 +1821,25 @@ type S3Bucket struct {
 	Insecure *bool `json:"insecure,omitempty" protobuf:"varint,4,opt,name=insecure"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,5,opt,name=accessKeySecret"`
+	AccessKeySecret *apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,5,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,6,opt,name=secretKeySecret"`
+	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,6,opt,name=secretKeySecret"`
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
 
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
+}
+
+// CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
+type CreateS3BucketOptions struct {
+	// ObjectLocking Enable object locking
+	ObjectLocking bool `json:"objectLocking,omitempty" protobuf:"varint,3,opt,name=objectLocking"`
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -1433,7 +1847,16 @@ type S3Artifact struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
 
 	// Key is the key in the bucket where the artifact resides
-	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (s *S3Artifact) GetKey() (string, error) {
+	return s.Key, nil
+}
+
+func (s *S3Artifact) SetKey(key string) error {
+	s.Key = key
+	return nil
 }
 
 func (s *S3Artifact) HasLocation() bool {
@@ -1472,6 +1895,14 @@ func (g *GitArtifact) HasLocation() bool {
 	return g != nil && g.Repo != ""
 }
 
+func (g *GitArtifact) GetKey() (string, error) {
+	return "", keyUnsupportedErr
+}
+
+func (g *GitArtifact) SetKey(string) error {
+	return keyUnsupportedErr
+}
+
 func (g *GitArtifact) GetDepth() int {
 	if g == nil || g.Depth == nil {
 		return 0
@@ -1498,6 +1929,23 @@ type ArtifactoryArtifact struct {
 //func (a *ArtifactoryArtifact) String() string {
 //	return a.URL
 //}
+func (a *ArtifactoryArtifact) GetKey() (string, error) {
+	u, err := url.Parse(a.URL)
+	if err != nil {
+		return "", err
+	}
+	return u.Path, nil
+}
+
+func (a *ArtifactoryArtifact) SetKey(key string) error {
+	u, err := url.Parse(a.URL)
+	if err != nil {
+		return err
+	}
+	u.Path = key
+	a.URL = u.String()
+	return nil
+}
 
 func (a *ArtifactoryArtifact) HasLocation() bool {
 	return a != nil && a.URL != ""
@@ -1514,6 +1962,15 @@ type HDFSArtifact struct {
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
 }
 
+func (h *HDFSArtifact) GetKey() (string, error) {
+	return h.Path, nil
+}
+
+func (g *HDFSArtifact) SetKey(key string) error {
+	g.Path = key
+	return nil
+}
+
 func (h *HDFSArtifact) HasLocation() bool {
 	return h != nil && len(h.Addresses) > 0
 }
@@ -1523,7 +1980,7 @@ type HDFSConfig struct {
 	HDFSKrbConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSKrbConfig"`
 
 	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `json:"addresses" protobuf:"bytes,2,rep,name=addresses"`
+	Addresses []string `json:"addresses,omitempty" protobuf:"bytes,2,rep,name=addresses"`
 
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
@@ -1563,14 +2020,52 @@ type RawArtifact struct {
 	Data string `json:"data" protobuf:"bytes,1,opt,name=data"`
 }
 
+func (r *RawArtifact) GetKey() (string, error) {
+	return "", keyUnsupportedErr
+}
+
+func (r *RawArtifact) SetKey(string) error {
+	return keyUnsupportedErr
+}
+
 func (r *RawArtifact) HasLocation() bool {
 	return r != nil
+}
+
+// Header indicate a key-value request header to be used when fetching artifacts over HTTP
+type Header struct {
+	// Name is the header name
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+	// Value is the literal value to use for the header
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
+
+	// Headers are an optional list of headers to send with HTTP requests for artifacts
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
+}
+
+func (h *HTTPArtifact) GetKey() (string, error) {
+	u, err := url.Parse(h.URL)
+	if err != nil {
+		return "", err
+	}
+	return u.Path, nil
+}
+
+func (g *HTTPArtifact) SetKey(key string) error {
+	u, err := url.Parse(g.URL)
+	if err != nil {
+		return err
+	}
+	u.Path = key
+	g.URL = u.String()
+	return nil
 }
 
 func (h *HTTPArtifact) HasLocation() bool {
@@ -1579,12 +2074,11 @@ func (h *HTTPArtifact) HasLocation() bool {
 
 // GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
-
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
-	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+	ServiceAccountKeySecret *apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
 }
 
 // GCSArtifact is the location of a GCS artifact
@@ -1595,6 +2089,15 @@ type GCSArtifact struct {
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
+func (g *GCSArtifact) GetKey() (string, error) {
+	return g.Key, nil
+}
+
+func (g *GCSArtifact) SetKey(key string) error {
+	g.Key = key
+	return nil
+}
+
 func (g *GCSArtifact) HasLocation() bool {
 	return g != nil && g.Bucket != "" && g.Key != ""
 }
@@ -1602,16 +2105,19 @@ func (g *GCSArtifact) HasLocation() bool {
 // OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
+	AccessKeySecret *apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,3,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
+	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
+	CreateBucketIfNotPresent bool `json:"createBucketIfNotPresent,omitempty" protobuf:"varint,5,opt,name=createBucketIfNotPresent"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -1620,6 +2126,15 @@ type OSSArtifact struct {
 
 	// Key is the path in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (o *OSSArtifact) GetKey() (string, error) {
+	return o.Key, nil
+}
+
+func (o *OSSArtifact) SetKey(key string) error {
+	o.Key = key
+	return nil
 }
 
 func (o *OSSArtifact) HasLocation() bool {
@@ -1677,6 +2192,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
 		return TemplateTypeContainer
 	}
+	if tmpl.ContainerSet != nil {
+		return TemplateTypeContainerSet
+	}
 	if tmpl.Steps != nil {
 		return TemplateTypeSteps
 	}
@@ -1689,6 +2207,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
+	if tmpl.Data != nil {
+		return TemplateTypeData
+	}
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
@@ -1698,7 +2219,7 @@ func (tmpl *Template) GetType() TemplateType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
@@ -1707,10 +2228,56 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
 		return true
 	}
 	return false
+}
+
+func (tmpl *Template) IsMainContainerName(containerName string) bool {
+	for _, c := range tmpl.GetMainContainerNames() {
+		if c == containerName {
+			return true
+		}
+	}
+	return false
+}
+
+func (tmpl *Template) GetMainContainerNames() []string {
+	if tmpl != nil && tmpl.ContainerSet != nil {
+		out := make([]string, 0)
+		for _, c := range tmpl.ContainerSet.GetContainers() {
+			out = append(out, c.Name)
+		}
+		return out
+	} else {
+		return []string{"main"}
+	}
+}
+
+func (tmpl *Template) HasSequencedContainers() bool {
+	return tmpl != nil && tmpl.ContainerSet.HasSequencedContainers()
+}
+
+func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
+	if tmpl.Container != nil {
+		return tmpl.Container.VolumeMounts
+	} else if tmpl.Script != nil {
+		return tmpl.Script.VolumeMounts
+	} else if tmpl.ContainerSet != nil {
+		return tmpl.ContainerSet.VolumeMounts
+	}
+	return nil
+}
+
+// whether or not the template can and will have outputs (i.e. exit code and result)
+func (tmpl *Template) HasOutput() bool {
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil
+}
+
+// if logs should be saved as an artifact
+func (tmpl *Template) SaveLogsAsArtifact() bool {
+	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -1728,7 +2295,7 @@ type DAGTemplate struct {
 	// before failing the DAG itself.
 	// The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to
 	// completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
-	// More info and example about this feature at https://github.com/argoproj/argo/issues/1442
+	// More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442
 	FailFast *bool `json:"failFast,omitempty" protobuf:"varint,3,opt,name=failFast"`
 }
 
@@ -1738,7 +2305,7 @@ type DAGTask struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
-	Template string `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
@@ -1921,7 +2488,7 @@ func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, 
 		return nil
 	}
 	if tmpl, ok := wf.Status.StoredTemplates[tmplID]; ok {
-		return &tmpl
+		return tmpl.DeepCopy()
 	}
 	return nil
 }
@@ -2142,18 +2709,233 @@ type Counter struct {
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
-// Memoization
+// Memoization enables caching for the Outputs of the template
 type Memoize struct {
-	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	// Key is the key to use as the caching key
+	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	// Cache sets and configures the kind of cache
 	Cache *Cache `json:"cache" protobuf:"bytes,2,opt,name=cache"`
+	// MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
+	// than the MaxAge, it will be ignored.
+	MaxAge string `json:"maxAge" protobuf:"bytes,3,opt,name=maxAge"`
 }
 
+// MemoizationStatus is the status of this memoized node
 type MemoizationStatus struct {
-	Hit       bool   `json:"hit" protobuf:"bytes,1,opt,name=hit"`
-	Key       string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	// Hit indicates whether this node was created from a cache entry
+	Hit bool `json:"hit" protobuf:"bytes,1,opt,name=hit"`
+	// Key is the name of the key used for this node's cache
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	// Cache is the name of the cache that was used
 	CacheName string `json:"cacheName" protobuf:"bytes,3,opt,name=cacheName"`
 }
 
+// Cache is the configuration for the type of cache to be used
 type Cache struct {
+	// ConfigMap sets a ConfigMap-based cache
 	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
+}
+
+type SynchronizationAction interface {
+	LockWaiting(holderKey, lockKey string, currentHolders []string) bool
+	LockAcquired(holderKey, lockKey string, currentHolders []string) bool
+	LockReleased(holderKey, lockKey string) bool
+}
+
+type SemaphoreHolding struct {
+	// Semaphore stores the semaphore name.
+	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Holders stores the list of current holder names in the workflow.
+	// +listType=atomic
+	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
+}
+
+type SemaphoreStatus struct {
+	// Holding stores the list of resource acquired synchronization lock for workflows.
+	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting indicates the list of current synchronization lock holders.
+	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+}
+
+var _ SynchronizationAction = &SemaphoreStatus{}
+
+func (ss *SemaphoreStatus) GetHolding(semaphoreName string) (int, SemaphoreHolding) {
+	for i, holder := range ss.Holding {
+		if holder.Semaphore == semaphoreName {
+			return i, holder
+		}
+	}
+	return -1, SemaphoreHolding{}
+}
+
+func (ss *SemaphoreStatus) GetWaiting(semaphoreName string) (int, SemaphoreHolding) {
+	for i, holder := range ss.Waiting {
+		if holder.Semaphore == semaphoreName {
+			return i, holder
+		}
+	}
+	return -1, SemaphoreHolding{}
+}
+
+func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
+	i, semaphoreWaiting := ss.GetWaiting(lockKey)
+	if i < 0 {
+		ss.Waiting = append(ss.Waiting, SemaphoreHolding{Semaphore: lockKey, Holders: currentHolders})
+	} else {
+		semaphoreWaiting.Holders = currentHolders
+		ss.Waiting[i] = semaphoreWaiting
+	}
+	return true
+}
+
+func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
+	i, semaphoreHolding := ss.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
+	holdingName := items[len(items)-1]
+	if i < 0 {
+		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
+		return true
+	} else if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+		semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
+		ss.Holding[i] = semaphoreHolding
+		return true
+	}
+	return false
+}
+
+func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
+	i, semaphoreHolding := ss.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
+	holdingName := items[len(items)-1]
+	if i >= 0 {
+		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+		ss.Holding[i] = semaphoreHolding
+		return true
+	}
+	return false
+}
+
+// MutexHolding describes the mutex and the object which is holding it.
+type MutexHolding struct {
+	// Reference for the mutex
+	// e.g: ${namespace}/mutex/${mutexName}
+	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
+	// Holder is a reference to the object which holds the Mutex.
+	// Holding Scenario:
+	//   1. Current workflow's NodeID which is holding the lock.
+	//      e.g: ${NodeID}
+	// Waiting Scenario:
+	//   1. Current workflow or other workflow NodeID which is holding the lock.
+	//      e.g: ${WorkflowName}/${NodeID}
+	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
+}
+
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+type MutexStatus struct {
+	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
+	// +listType=atomic
+	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
+	// +listType=atomic
+	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+}
+
+var _ SynchronizationAction = &MutexStatus{}
+
+func (ms *MutexStatus) GetHolding(mutexName string) (int, MutexHolding) {
+	for i, holder := range ms.Holding {
+		if holder.Mutex == mutexName {
+			return i, holder
+		}
+	}
+	return -1, MutexHolding{}
+}
+
+func (ms *MutexStatus) GetWaiting(mutexName string) (int, MutexHolding) {
+	for i, holder := range ms.Waiting {
+		if holder.Mutex == mutexName {
+			return i, holder
+		}
+	}
+	return -1, MutexHolding{}
+}
+
+func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
+	if len(currentHolders) == 0 {
+		return false
+	}
+
+	i, mutexWaiting := ms.GetWaiting(lockKey)
+	if i < 0 {
+		ms.Waiting = append(ms.Waiting, MutexHolding{Mutex: lockKey, Holder: currentHolders[0]})
+		return true
+	} else if mutexWaiting.Holder != currentHolders[0] {
+		mutexWaiting.Holder = currentHolders[0]
+		ms.Waiting[i] = mutexWaiting
+		return true
+	}
+	return false
+}
+
+func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
+	i, mutexHolding := ms.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
+	holdingName := items[len(items)-1]
+	if i < 0 {
+		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
+		return true
+	} else if mutexHolding.Holder != holdingName {
+		mutexHolding.Holder = holdingName
+		ms.Holding[i] = mutexHolding
+		return true
+	}
+	return false
+}
+
+func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
+	i, holder := ms.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	if len(items) == 0 {
+		return false
+	}
+	holdingName := items[len(items)-1]
+	if i >= 0 && holder.Holder == holdingName {
+		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
+		return true
+	}
+	return false
+}
+
+// SynchronizationStatus stores the status of semaphore and mutex.
+type SynchronizationStatus struct {
+	// Semaphore stores this workflow's Semaphore holder details
+	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex stores this workflow's mutex holder details
+	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
+	switch syncType {
+	case SynchronizationTypeSemaphore:
+		return ss.Semaphore
+	case SynchronizationTypeMutex:
+		return ss.Mutex
+	default:
+		panic("invalid syncType in GetStatus")
+	}
+}
+
+// NodeSynchronizationStatus stores the status of a node
+type NodeSynchronizationStatus struct {
+	// Waiting is the name of the lock that this node is waiting for
+	Waiting string `json:"waiting,omitempty" protobuf:"bytes,1,opt,name=waiting"`
 }

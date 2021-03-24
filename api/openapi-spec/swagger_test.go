@@ -52,8 +52,8 @@ func TestSwagger(t *testing.T) {
 	t.Run("io.argoproj.workflow.v1alpha1.Parameter", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Parameter"].(obj)
 		properties := definition["properties"].(obj)
-		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["default"].(obj)["$ref"])
-		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["value"].(obj)["$ref"])
+		assert.Equal(t, "string", properties["default"].(obj)["type"])
+		assert.Equal(t, "string", properties["value"].(obj)["type"])
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.Histogram", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Histogram"].(obj)
@@ -64,6 +64,15 @@ func TestSwagger(t *testing.T) {
 	t.Run("io.argoproj.workflow.v1alpha1.Amount", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Amount"].(obj)
 		assert.Equal(t, "number", definition["type"])
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.Item", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Item"].(obj)
+		assert.Empty(t, definition["type"])
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.ParallelSteps", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.ParallelSteps"].(obj)
+		assert.Equal(t, "array", definition["type"])
+		assert.Equal(t, obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"}, definition["items"])
 	})
 	// this test makes sure we deal with `inline`
 	t.Run("io.argoproj.workflow.v1alpha1.UserContainer", func(t *testing.T) {

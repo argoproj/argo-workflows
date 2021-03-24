@@ -1,0 +1,16 @@
+package types
+
+import (
+	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
+	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	"k8s.io/client-go/kubernetes"
+
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+)
+
+type Clients struct {
+	Workflow    workflow.Interface
+	Sensor      sensor.Interface
+	EventSource eventsource.Interface
+	Kubernetes  kubernetes.Interface
+}

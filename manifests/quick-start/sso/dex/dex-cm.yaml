@@ -15,7 +15,7 @@ data:
     staticClients:
       - id: argo-server
         redirectURIs:
-          - https://localhost:2746/oauth2/callback
+          - http://localhost:2746/oauth2/callback
         name: Argo Server
         secret: ZXhhbXBsZS1hcHAtc2VjcmV0
     connectors:

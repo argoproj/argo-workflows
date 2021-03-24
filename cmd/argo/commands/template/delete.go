@@ -6,20 +6,17 @@ import (
 	"log"
 
 	"github.com/argoproj/pkg/errors"
-
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
 func NewDeleteCommand() *cobra.Command {
-	var (
-		all bool
-	)
+	var all bool
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "delete WORKFLOW_TEMPLATE",
 		Short: "delete a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {

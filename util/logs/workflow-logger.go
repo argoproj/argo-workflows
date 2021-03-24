@@ -10,15 +10,16 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/workflow/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // The goal of this class is to stream the logs of the workflow you want.
@@ -37,9 +38,8 @@ type sender interface {
 }
 
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
-
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
-	_, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
+	_, err := wfInterface.Get(ctx, req.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,11 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	if logOptions == nil {
 		logOptions = &corev1.PodLogOptions{}
 	}
-	logOptions.Timestamps = true
+	logCtx.WithField("options", logOptions).Debug("Log options")
+
+	// make a copy of requested log options and set timestamps to true, so they can be parsed out later
+	podLogStreamOptions := *logOptions
+	podLogStreamOptions.Timestamps = true
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
@@ -83,7 +87,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				defer wg.Done()
 				logCtx.Debug("Streaming pod logs")
 				defer logCtx.Debug("Pod logs stream done")
-				stream, err := podInterface.GetLogs(podName, logOptions).Stream()
+				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
 				if err != nil {
 					logCtx.Error(err)
 					return
@@ -120,7 +124,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		}
 	}
 
-	podWatch, err := podInterface.Watch(podListOptions)
+	podWatch, err := podInterface.Watch(ctx, podListOptions)
 	if err != nil {
 		return err
 	}
@@ -128,7 +132,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	// only list after we start the watch
 	logCtx.Debug("Listing workflow pods")
-	list, err := podInterface.List(podListOptions)
+	list, err := podInterface.List(ctx, podListOptions)
 	if err != nil {
 		return err
 	}
@@ -142,9 +146,9 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		ensureWeAreStreaming(&pod)
 	}
 
-	if req.GetLogOptions().Follow {
-		wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()}
-		wfWatch, err := wfInterface.Watch(wfListOptions)
+	if logOptions.Follow {
+		wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName(), ResourceVersion: "0"}
+		wfWatch, err := wfInterface.Watch(ctx, wfListOptions)
 		if err != nil {
 			return err
 		}
@@ -163,27 +167,27 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-ctx.Done():
 					return
-				case event, ok := <-wfWatch.ResultChan():
-					var wf *wfv1.Workflow
-					if ok {
-						wf, ok = event.Object.(*wfv1.Workflow)
-					}
-					if !ok {
+				case event, open := <-wfWatch.ResultChan():
+					if !open {
 						logCtx.Debug("Re-establishing workflow watch")
 						wfWatch.Stop()
-						wfWatch, err = wfInterface.Watch(wfListOptions)
+						wfWatch, err = wfInterface.Watch(ctx, wfListOptions)
 						if err != nil {
 							logCtx.Error(err)
 							return
 						}
 						continue
 					}
+					wf, ok := event.Object.(*wfv1.Workflow)
+					if !ok {
+						// object is probably probably metav1.Status
+						logCtx.WithError(apierr.FromObject(event.Object)).Warn("watch object was not a workflow")
+						return
+					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
 						return
 					}
-					// in case we re-establish the watch, make sure we start at the same place
-					wfListOptions.ResourceVersion = wf.ResourceVersion
 				}
 			}
 		}()
@@ -198,23 +202,25 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-stopWatchingPods:
 					return
-				case event, ok := <-podWatch.ResultChan():
-					var pod *corev1.Pod
-					if ok {
-						pod, ok = event.Object.(*corev1.Pod)
-					}
-					if !ok {
+				case event, open := <-podWatch.ResultChan():
+					if !open {
 						logCtx.Info("Re-establishing pod watch")
 						podWatch.Stop()
-						podWatch, err = podInterface.Watch(podListOptions)
+						podWatch, err = podInterface.Watch(ctx, podListOptions)
 						if err != nil {
 							logCtx.Error(err)
 							return
 						}
 						continue
 					}
+					pod, ok := event.Object.(*corev1.Pod)
+					if !ok {
+						// object is probably probably metav1.Status
+						logCtx.WithError(apierr.FromObject(event.Object)).Warn("watch object was not a pod")
+						return
+					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
-					if pod.Status.Phase == corev1.PodRunning {
+					if pod.Status.Phase != corev1.PodPending {
 						ensureWeAreStreaming(pod)
 					}
 					podListOptions.ResourceVersion = pod.ResourceVersion

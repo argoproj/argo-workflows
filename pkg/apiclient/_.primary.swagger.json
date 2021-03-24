@@ -11,8 +11,8 @@
     "https"
   ],
   "info": {
-    "title": "Argo",
-    "description": "Argo",
+    "title": "Argo Server API",
+    "description": "You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`",
     "version": "VERSION"
   },
   "securityDefinitions": {
@@ -32,10 +32,10 @@
     "io.k8s.apimachinery.pkg.runtime.Object": {
       "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ParallelSteps": {
+    "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ParallelSteps": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStep"
+        "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStep"
       }
     }
   }

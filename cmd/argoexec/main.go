@@ -1,21 +1,29 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"os/exec"
 
-	"github.com/argoproj/argo/cmd/argoexec/commands"
-	// load the azure plugin (required to authenticate against AKS clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	// load the gcp plugin (required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// load the oidc plugin (required to authenticate with OpenID Connect).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	// load authentication plugin for obtaining credentials from cloud providers.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 func main() {
-	if err := commands.NewRootCommand().Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	err := commands.NewRootCommand().Execute()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if exitError.ExitCode() >= 0 {
+				os.Exit(exitError.ExitCode())
+			} else {
+				os.Exit(137) // probably SIGTERM or SIGKILL
+			}
+		} else {
+			util.WriteTeriminateMessage(err.Error()) // we don't want to overwrite any other message
+			println(err.Error())
+			os.Exit(64)
+		}
 	}
 }

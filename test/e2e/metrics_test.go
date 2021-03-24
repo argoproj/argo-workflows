@@ -1,4 +1,4 @@
-// +build e2e
+// +build api
 
 package e2e
 
@@ -8,7 +8,7 @@ import (
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 const baseUrlMetrics = "http://localhost:9090/metrics"
@@ -41,6 +41,15 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 			Expect().
 			Status(200).
 			Body().
+			Contains(`HELP argo_workflows_count`).
+			Contains(`HELP argo_workflows_k8s_request_total`).
+			Contains(`argo_workflows_k8s_request_total{kind="leases",status_code="200",verb="Get"}`).
+			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="List"}`).
+			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="Watch"}`).
+			Contains(`HELP argo_workflows_pods_count`).
+			Contains(`HELP argo_workflows_workers_busy`).
+			Contains(`HELP argo_workflows_workflow_condition`).
+			Contains(`HELP argo_workflows_workflows_processed_count`).
 			Contains(`log_messages{level="info"}`).
 			Contains(`log_messages{level="warning"}`).
 			Contains(`log_messages{level="error"}`)

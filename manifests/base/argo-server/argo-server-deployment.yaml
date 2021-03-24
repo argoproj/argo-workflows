@@ -15,16 +15,28 @@ spec:
       containers:
         - name: argo-server
           image: argoproj/argocli:latest
-          args: [server]
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+          args: [ server ]
           ports:
             - name: web
               containerPort: 2746
           readinessProbe:
             httpGet:
               port: 2746
-              scheme: HTTP
+              scheme: HTTPS
               path: /
             initialDelaySeconds: 10
             periodSeconds: 20
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: tmp
+          emptyDir: { }
+      securityContext:
+        runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux

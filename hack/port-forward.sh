@@ -6,11 +6,12 @@ pf() {
   name=$1
   resource=$2
   port=$3
+  dest_port=${4:-"$port"}
   pid=$(lsof -i ":$port" | grep -v PID | awk '{print $2}' || true)
   if [ "$pid" != "" ]; then
     kill $pid
   fi
-  kubectl -n argo port-forward "$resource" "$port:$port" > /dev/null &
+  kubectl -n argo port-forward "$resource" "$port:$dest_port" > /dev/null &
   # wait until port forward is established
 	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
   info "$name on http://localhost:$port"
@@ -20,7 +21,12 @@ info() {
     echo '[INFO] ' "$@"
 }
 
-pf MinIO pod/minio 9000
+killall kubectl || true
+
+
+if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
+  pf MinIO deploy/minio 9000
+fi
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
@@ -34,13 +40,25 @@ fi
 
 mysql=$(kubectl -n argo get pod -l app=mysql -o name)
 if [[ "$mysql" != "" ]]; then
+	kubectl -n argo wait --for=condition=Available deploy mysql
   pf MySQL "$mysql" 3306
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
-  pf "Argo Server" deploy/argo-server 2746
+  kubectl -n argo wait --for=condition=Available deploy argo-server
+  pf "Argo Server" svc/argo-server 2746
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
-  pf "Workflow Controller" deploy/workflow-controller 9090
+  kubectl -n argo wait --for=condition=Available deploy workflow-controller
+  pf "Workflow Controller Metrics" svc/workflow-controller-metrics 9090
+  if [[ "$(kubectl -n argo get svc -l app=workflow-controller-pprof -o name)" != "" ]]; then
+    pf "Workflow Controller PProf" svc/workflow-controller-pprof 6060
+  fi
 fi
+
+if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
+  kubectl -n argo wait --for=condition=Available deploy prometheus
+  pf "Prometheus Server" svc/prometheus 9091 9090
+fi
+

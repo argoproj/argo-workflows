@@ -1,6 +1,6 @@
 # Offloading Large Workflows
 
-![beta](assets/beta.svg)
+![GA](assets/ga.svg)
 
 > v2.4 and after
 

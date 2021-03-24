@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: stop-terminate-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: A
+            template: sleep
+        - - name: B
+            template: pass
+
+    - name: sleep
+      container:
+        image: argoproj/argosay:v1
+        command: [ sleep ]
+        args: [ "999" ]
+
+    - name: pass
+      container:
+        image: argoproj/argosay:v1

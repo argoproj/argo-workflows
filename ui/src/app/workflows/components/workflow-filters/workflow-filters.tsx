@@ -1,26 +1,41 @@
 import * as React from 'react';
 import * as models from '../../../../models';
+import {WorkflowPhase} from '../../../../models';
 import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
+import {DataLoaderDropdown} from '../../../shared/components/data-loader-dropdown';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
+import {services} from '../../../shared/services';
 
 require('./workflow-filters.scss');
 
 interface WorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
-    phaseItems: string[];
-    selectedPhases: string[];
+    phaseItems: WorkflowPhase[];
+    selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
-    onChange: (namespace: string, selectedPhases: string[], labels: string[]) => void;
+    onChange: (namespace: string, selectedPhases: WorkflowPhase[], labels: string[]) => void;
 }
 
 export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
+    private set workflowTemplate(value: string) {
+        this.setLabel(models.labels.workflowTemplate, value);
+    }
+
+    private set cronWorkflow(value: string) {
+        this.setLabel(models.labels.cronWorkflow, value);
+    }
+
+    private get labelSuggestion() {
+        return this.getLabelSuggestions(this.props.workflows);
+    }
+
     public render() {
         return (
             <div className='wf-filters-container'>
                 <div className='row'>
-                    <div className='columns small-3 xlarge-12'>
+                    <div className='columns small-2 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
                         <NamespaceFilter
                             value={this.props.namespace}
@@ -29,23 +44,41 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                             }}
                         />
                     </div>
-                    <div className='columns small-3 xlarge-12'>
+                    <div className='columns small-2 xlarge-12'>
                         <p className='wf-filters-container__title'>Labels</p>
                         <TagsInput
                             placeholder=''
-                            autocomplete={this.getLabelSuggestions(this.props.workflows)}
+                            autocomplete={this.labelSuggestion}
                             tags={this.props.selectedLabels}
                             onChange={tags => {
                                 this.props.onChange(this.props.namespace, this.props.selectedPhases, tags);
                             }}
                         />
                     </div>
-                    <div className='columns small-6 xlarge-12'>
+                    <div className='columns small-2 xlarge-12'>
+                        <p className='wf-filters-container__title'>Workflow Template</p>
+                        <DataLoaderDropdown
+                            load={() => services.workflowTemplate.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
+                            onChange={value => (this.workflowTemplate = value)}
+                        />
+                    </div>
+                    <div className='columns small-2 xlarge-12'>
+                        <p className='wf-filters-container__title'>Cron Workflow</p>
+                        <DataLoaderDropdown
+                            load={() => services.cronWorkflows.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
+                            onChange={value => (this.cronWorkflow = value)}
+                        />
+                    </div>
+                    <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Phases</p>
                         <CheckboxFilter
                             selected={this.props.selectedPhases}
                             onChange={selected => {
-                                this.props.onChange(this.props.namespace, selected, this.props.selectedLabels);
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    selected.map(x => x as WorkflowPhase),
+                                    this.props.selectedLabels
+                                );
                             }}
                             items={this.getPhaseItems(this.props.workflows)}
                             type='phase'
@@ -54,6 +87,10 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                 </div>
             </div>
         );
+    }
+
+    private setLabel(name: string, value: string) {
+        this.props.onChange(this.props.namespace, this.props.selectedPhases, [name.concat('=' + value)]);
     }
 
     private getPhaseItems(workflows: models.Workflow[]) {
@@ -65,6 +102,20 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
             results.push({name: key, count: val});
         });
         return results;
+    }
+
+    private addCommonLabel(suggestions: string[]) {
+        const commonLabel = new Array<string>();
+        const commonLabelPool = [models.labels.cronWorkflow, models.labels.workflowTemplate, models.labels.clusterWorkflowTemplate];
+        commonLabelPool.forEach(labelPrefix => {
+            for (const label of suggestions) {
+                if (label.startsWith(labelPrefix)) {
+                    commonLabel.push(`${labelPrefix}`);
+                    break;
+                }
+            }
+        });
+        return commonLabel.concat(suggestions);
     }
 
     private getLabelSuggestions(workflows: models.Workflow[]) {
@@ -80,6 +131,6 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                     }
                 });
             });
-        return suggestions.sort((a, b) => a.localeCompare(b));
+        return this.addCommonLabel(suggestions.sort((a, b) => a.localeCompare(b)));
     }
 }

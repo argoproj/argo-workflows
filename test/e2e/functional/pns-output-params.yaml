@@ -60,9 +60,8 @@ spec:
       - name: C
       - name: D
     container:
-      image: argoproj/argosay:v1
-      command: [cowsay]
-      args: ["{{inputs.parameters.A}} {{inputs.parameters.B}} {{inputs.parameters.C}} {{inputs.parameters.D}}"]
+      image: argoproj/argosay:v2
+      args: [echo, "{{inputs.parameters.A}} {{inputs.parameters.B}} {{inputs.parameters.C}} {{inputs.parameters.D}}"]
 
   volumes:
   - name: outer

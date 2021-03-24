@@ -1,6 +1,7 @@
 package ttlcontroller
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -14,56 +15,58 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
-)
-
-const (
-	workflowTTLResyncPeriod = 20 * time.Minute
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	commonutil "github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type Controller struct {
-	wfclientset  wfclientset.Interface
-	wfInformer   cache.SharedIndexInformer
-	workqueue    workqueue.DelayingInterface
-	resyncPeriod time.Duration
-	clock        clock.Clock
+	wfclientset wfclientset.Interface
+	wfInformer  cache.SharedIndexInformer
+	workqueue   workqueue.DelayingInterface
+	clock       clock.Clock
+	metrics     *metrics.Metrics
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics) *Controller {
 	controller := &Controller{
-		wfclientset:  wfClientset,
-		wfInformer:   wfInformer,
-		workqueue:    workqueue.NewDelayingQueue(),
-		resyncPeriod: workflowTTLResyncPeriod,
-		clock:        clock.RealClock{},
+		wfclientset: wfClientset,
+		wfInformer:  wfInformer,
+		workqueue:   metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
+		clock:       clock.RealClock{},
+		metrics:     metrics,
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: common.UnstructuredHasCompletedLabel,
+		FilterFunc: func(obj interface{}) bool {
+			un, ok := obj.(*unstructured.Unstructured)
+			return ok && un.GetDeletionTimestamp() == nil && un.GetLabels()[common.LabelKeyCompleted] == "true" && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] != "Pending"
+		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: controller.enqueueWF,
 			UpdateFunc: func(old, new interface{}) {
 				controller.enqueueWF(new)
 			},
-			DeleteFunc: controller.enqueueWF,
 		},
 	})
 	return controller
 }
 
-func (c *Controller) Run(stopCh <-chan struct{}) error {
+func (c *Controller) Run(stopCh <-chan struct{}, workflowTTLWorkers int) error {
 	defer runtimeutil.HandleCrash()
 	defer c.workqueue.ShutDown()
-	log.Infof("Starting workflow TTL controller (resync %v)", c.resyncPeriod)
+	log.Infof("Starting workflow TTL controller (workflowTTLWorkers %d)", workflowTTLWorkers)
 	go c.wfInformer.Run(stopCh)
 	if ok := cache.WaitForCacheSync(stopCh, c.wfInformer.HasSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
-	go wait.Until(c.runWorker, time.Second, stopCh)
+	for i := 0; i < workflowTTLWorkers; i++ {
+		go wait.Until(c.runWorker, time.Second, stopCh)
+	}
 	log.Info("Started workflow TTL worker")
 	<-stopCh
 	log.Info("Shutting workflow TTL worker")
@@ -74,43 +77,21 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
 func (c *Controller) runWorker() {
-	for c.processNextWorkItem() {
+	ctx := context.Background()
+	for c.processNextWorkItem(ctx) {
 	}
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling the syncHandler.
-func (c *Controller) processNextWorkItem() bool {
-	obj, shutdown := c.workqueue.Get()
-
-	if shutdown {
+func (c *Controller) processNextWorkItem(ctx context.Context) bool {
+	key, quit := c.workqueue.Get()
+	if quit {
 		return false
 	}
+	defer c.workqueue.Done(key)
 
-	// We wrap this block in a func so we can defer c.workqueue.Done.
-	err := func(obj interface{}) error {
-		defer c.workqueue.Done(obj)
-		var key string
-		var ok bool
-		if key, ok = obj.(string); !ok {
-			// As the item in the workqueue is actually invalid, we call
-			// Forget here else we'd go into a loop of attempting to
-			// process a work item that is invalid.
-			//c.workqueue.Forget(obj)
-			runtimeutil.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
-			return nil
-		}
-		if err := c.deleteWorkflow(key); err != nil {
-			return fmt.Errorf("error deleting '%s': %s", key, err.Error())
-		}
-		//c.workqueue.Forget(obj)
-		return nil
-	}(obj)
-
-	if err != nil {
-		runtimeutil.HandleError(err)
-		return true
-	}
+	runtimeutil.HandleError(c.deleteWorkflow(ctx, key.(string)))
 
 	return true
 }
@@ -127,116 +108,71 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		log.Warnf("Failed to unmarshal workflow %v object: %v", obj, err)
 		return
 	}
-	now := c.clock.Now()
-	remaining, expiration := timeLeft(wf, &now)
-	if remaining == nil || *remaining > c.resyncPeriod {
+	remaining, ok := c.expiresIn(wf)
+	if !ok {
 		return
 	}
-	log.Infof("Found Workflow %s/%s set expire at %v (%s from now)", wf.Namespace, wf.Name, expiration, remaining)
-	var addAfter time.Duration
-	if *remaining > 0 {
-		addAfter = *remaining
-	}
-	var key string
-	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-		runtimeutil.HandleError(err)
-		return
-	}
-	//c.workqueue.Add(key)
-	log.Infof("Queueing workflow %s/%s for delete in %v", wf.Namespace, wf.Name, addAfter)
+	// if we try and delete in the next second, it is almost certain that the informer is out of sync. Because we
+	// double-check that sees if the workflow in the informer is already deleted and we'll make 2 API requests when
+	// one is enough.
+	// Additionally, this allows enough time to make sure the double checking that the workflow is actually expired
+	// truly works.
+	addAfter := remaining + time.Second
+	key, _ := cache.MetaNamespaceKeyFunc(obj)
+	log.Infof("Queueing %v workflow %s for delete in %v", wf.Status.Phase, key, addAfter.Truncate(time.Second))
 	c.workqueue.AddAfter(key, addAfter)
 }
 
-func (c *Controller) deleteWorkflow(key string) error {
-	obj, exists, err := c.wfInformer.GetIndexer().GetByKey(key)
+func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
+	// It should be impossible for a workflow to have been queue without a valid key.
+	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+	// Any workflow that was queued must need deleting, therefore we do not check the expiry again.
+	log.Infof("Deleting TTL expired workflow '%s'", key)
+	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
 		if apierr.IsNotFound(err) {
-			runtimeutil.HandleError(fmt.Errorf("foo '%s' in work queue no longer exists", key))
-			return nil
-		}
-		return err
-	}
-	if !exists {
-		return nil
-	}
-
-	// The workflow informer receives unstructured objects to deal with the possibility of invalid
-	// workflow manifests that are unable to unmarshal to workflow objects
-	un, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		log.Warnf("Key '%s' in index is not an unstructured", key)
-		return nil
-	}
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
-		return nil
-	}
-	if c.ttlExpired(wf) {
-		log.Infof("Deleting TTL expired workflow %s/%s", wf.Namespace, wf.Name)
-		policy := metav1.DeletePropagationForeground
-		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: &policy})
-		if err != nil {
+			log.Infof("Workflow already deleted '%s'", key)
+		} else {
 			return err
 		}
+	} else {
 		log.Infof("Successfully deleted '%s'", key)
 	}
 	return nil
 }
 
+// if the workflow both has a TTL and is expired
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
-	ttlStrategy := getTTLStrategy(wf)
-	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
-	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
+	expiresIn, ok := c.expiresIn(wf)
+	if !ok {
 		return false
 	}
-	now := c.clock.Now()
-
-	if wf.Status.Failed() && ttlStrategy != nil && ttlStrategy.SecondsAfterFailure != nil {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterFailure))
-		return now.After(expiry)
-	} else if wf.Status.Successful() && ttlStrategy != nil && ttlStrategy.SecondsAfterSuccess != nil {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterSuccess))
-		return now.After(expiry)
-	} else {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterCompletion))
-		return now.After(expiry)
-	}
+	return expiresIn <= 0
 }
 
-func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
-	ttlStrategy := getTTLStrategy(wf)
-	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
-		return nil, nil
+// expiresIn - seconds from now the workflow expires in, maybe <= 0
+// ok - if the workflow has a TTL
+func (c *Controller) expiresIn(wf *wfv1.Workflow) (expiresIn time.Duration, ok bool) {
+	ttl, ok := ttl(wf)
+	if !ok {
+		return 0, false
 	}
-
-	sinceUTC := since.UTC()
-	finishAtUTC := wf.Status.FinishedAt.UTC()
-	if finishAtUTC.After(sinceUTC) {
-		log.Infof("Warning: Found Workflow %s/%s finished in the future. This is likely due to time skew in the cluster. Workflow cleanup will be deferred.", wf.Namespace, wf.Name)
-	}
-	if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterFailure) * time.Second)
-		remaining := expireAtUTC.Sub(sinceUTC)
-		return &remaining, &expireAtUTC
-	} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterSuccess) * time.Second)
-		remaining := expireAtUTC.Sub(sinceUTC)
-		return &remaining, &expireAtUTC
-	} else if ttlStrategy.SecondsAfterCompletion != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterCompletion) * time.Second)
-		remaining := expireAtUTC.Sub(sinceUTC)
-		return &remaining, &expireAtUTC
-	} else {
-		return nil, nil
-	}
+	expiresAt := wf.Status.FinishedAt.Add(ttl)
+	return expiresAt.Sub(c.clock.Now()), true
 }
 
-func getTTLStrategy(wf *wfv1.Workflow) *wfv1.TTLStrategy {
-	ttlStrategy := wf.Spec.TTLStrategy
-
-	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
-		return wf.Status.StoredWorkflowSpec.TTLStrategy
+// ttl - the workflow's TTL
+// ok - if the workflow has a TTL
+func ttl(wf *wfv1.Workflow) (ttl time.Duration, ok bool) {
+	ttlStrategy := wf.GetTTLStrategy()
+	if ttlStrategy != nil {
+		if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
+			return time.Duration(*ttlStrategy.SecondsAfterFailure) * time.Second, true
+		} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
+			return time.Duration(*ttlStrategy.SecondsAfterSuccess) * time.Second, true
+		} else if wf.Status.Phase.Completed() && ttlStrategy.SecondsAfterCompletion != nil {
+			return time.Duration(*ttlStrategy.SecondsAfterCompletion) * time.Second, true
+		}
 	}
-	return ttlStrategy
+	return 0, false
 }

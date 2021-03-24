@@ -30,7 +30,7 @@ spec:
 
 You can run this example and get the logs:
 ```
-$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-windows.yaml
+$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-windows.yaml
 $ argo logs hello-windows-s9kk5
 hello-windows-s9kk5: "Hello from Windows Container!"
 ```
@@ -74,11 +74,39 @@ spec:
 
 Again, you can run this example and get the logs:
 ```
-$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-hybrid.yaml
+$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-hybrid.yaml
 $ argo logs hello-hybrid-plqpp
 hello-hybrid-plqpp-1977432187: "Hello from Windows Container!"
 hello-hybrid-plqpp-764774907: Hello from Linux Container!
 ```
+
+## Artifact mount path
+
+Artifacts work mostly the same way as on Linux. All paths get automatically mapped to the `C:` drive. For example:
+
+```yaml
+ # ...
+    - name: print-message
+      inputs:
+        artifacts:
+          # unpack the message input artifact
+          # and put it at C:\message
+          - name: message
+            path: "/message" # gets mapped to C:\message
+      nodeSelector:
+        kubernetes.io/os: windows
+      container:
+        image: mcr.microsoft.com/windows/nanoserver:1809
+        command: ["cmd", "/c"]
+        args: ["dir C:\\message"]   # List the C:\message directory
+```
+
+Remember that [volume mounts on Windows can only target a directory](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#storage) in the container, and not an individual file.
+
+## Limitations
+
+- Sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod) so you can't use the Process Namespace Sharing (pns) workflow executor.
+- The argoexec Windows container is built using [nanoserver:1809](https://github.com/argoproj/argo-workflows/blob/b18b9920f678f420552864eccf3d4b98f3604cfa/Dockerfile.windows#L28) as the base image. Running a newer windows version (e.g. 1909) is currently [not confirmed to be working](https://github.com/argoproj/argo-workflows/issues/5376). If this is required, you need to build the argoexec container yourself by first adjusting the base image.
 
 ## Building the workflow executor image for Windows
 
@@ -87,7 +115,7 @@ To build the workflow executor image for Windows you need a Windows machine runn
 You then clone the project and run the Docker build with the Dockerfile for Windows and `argoexec` as a target:
 
 ```
-git clone https://github.com/argoproj/argo.git
+git clone https://github.com/argoproj/argo-workflows.git
 cd argo
 docker build -t myargoexec -f .\Dockerfile.windows --target argoexec .
 ```

@@ -16,12 +16,12 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	argoutil "github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/printer"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	argoutil "github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/printer"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 const onExitSuffix = "onExit"
@@ -53,11 +53,9 @@ func (g getFlags) shouldPrint(node wfv1.NodeStatus) bool {
 }
 
 func NewGetCommand() *cobra.Command {
-	var (
-		getArgs getFlags
-	)
+	var getArgs getFlags
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
 		Example: `# Get information about a workflow:
@@ -88,6 +86,7 @@ func NewGetCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	command.Flags().BoolVar(&noUtf8, "no-utf8", false, "Use plain 7-bits ascii characters")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
@@ -141,10 +140,15 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if !wf.Status.StartedAt.IsZero() {
 		out += fmt.Sprintf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
+	if wf.Status.Phase == wfv1.WorkflowRunning {
+		if wf.Status.EstimatedDuration > 0 {
+			out += fmt.Sprintf(fmtStr, "EstimatedDuration:", humanize.Duration(wf.Status.EstimatedDuration.ToDuration()))
+		}
+	}
+	out += fmt.Sprintf(fmtStr, "Progress:", wf.Status.Progress)
 	if !wf.Status.ResourcesDuration.IsZero() {
 		out += fmt.Sprintf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
-
 	if len(wf.Spec.Arguments.Parameters) > 0 {
 		out += fmt.Sprintf(fmtStr, "Parameters:", "")
 		for _, param := range wf.Spec.Arguments.Parameters {
@@ -207,6 +211,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		_ = w.Flush()
 		out += writerBuffer.String()
 	}
+	writerBuffer := new(bytes.Buffer)
+	printer.PrintSecurityNudges(*wf, writerBuffer)
+	out += writerBuffer.String()
 	return out
 }
 
@@ -309,7 +316,6 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 func attachToParent(wf *wfv1.Workflow, n renderNode,
 	nonBoundaryParentChildrenMap map[string]*nonBoundaryParentNode, boundaryID string,
 	boundaryNodeMap map[string]*boundaryNode, parentBoundaryMap map[string][]renderNode) bool {
-
 	// Check first if I am a child of a nonBoundaryParent
 	// that implies I attach to that instead of my boundary. This was already
 	// figured out in Pass 1
@@ -338,7 +344,6 @@ func attachToParent(wf *wfv1.Workflow, n renderNode,
 // This takes the map of NodeStatus and converts them into a forrest
 // of trees of renderNodes and returns the set of roots for each tree
 func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
-
 	renderTreeRoots := make(map[string]renderNode)
 
 	// Used to store all boundary nodes so future render children can attach
@@ -441,27 +446,53 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 	nodePrefix string, childPrefix string, parentFiltered bool,
 	childIndex int, maxIndex int, childIndent bool, getArgs getFlags) {
 	var part, subp string
-	if parentFiltered && childIndent {
-		if maxIndex == 0 {
-			part = "--"
-			subp = "  "
-		} else if childIndex == 0 {
-			part = "·-"
-			subp = "| "
-		} else if childIndex == maxIndex {
-			part = "└-"
-			subp = "  "
-		} else {
-			part = "├-"
-			subp = "| "
+	if noUtf8 {
+		if parentFiltered && childIndent {
+			if maxIndex == 0 {
+				part = "--"
+				subp = "  "
+			} else if childIndex == 0 {
+				part = "+-"
+				subp = "| "
+			} else if childIndex == maxIndex {
+				part = "`-"
+				subp = "  "
+			} else {
+				part = "|-"
+				subp = "| "
+			}
+		} else if !parentFiltered {
+			if childIndex == maxIndex {
+				part = "`-"
+				subp = "  "
+			} else {
+				part = "|-"
+				subp = "| "
+			}
 		}
-	} else if !parentFiltered {
-		if childIndex == maxIndex {
-			part = "└-"
-			subp = "  "
-		} else {
-			part = "├-"
-			subp = "| "
+	} else {
+		if parentFiltered && childIndent {
+			if maxIndex == 0 {
+				part = "──"
+				subp = "  "
+			} else if childIndex == 0 {
+				part = "┬─"
+				subp = "│ "
+			} else if childIndex == maxIndex {
+				part = "└─"
+				subp = "  "
+			} else {
+				part = "├─"
+				subp = "│ "
+			}
+		} else if !parentFiltered {
+			if childIndex == maxIndex {
+				part = "└─"
+				subp = "  "
+			} else {
+				part = "├─"
+				subp = "│ "
+			}
 		}
 	}
 	var childNodePrefix, childChldPrefix string

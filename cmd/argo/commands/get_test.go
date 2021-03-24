@@ -8,18 +8,19 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 )
 
-func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
+func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs getFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
 	filtered, _ := filterNode(node, getArgs)
 	if !filtered {
-		printNode(w, node, nodePrefix, getArgs)
+		printNode(w, node, "", getArgs)
 	}
 	err := w.Flush()
 	assert.NoError(t, err)
@@ -30,7 +31,6 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, node
 func TestPrintNode(t *testing.T) {
 	nodeName := "testNode"
 	kubernetesNodeName := "testKnodeName"
-	nodePrefix := ""
 	nodeTemplateName := "testTemplate"
 	nodeTemplateRefName := "testTemplateRef"
 	nodeID := "testID"
@@ -52,55 +52,55 @@ func TestPrintNode(t *testing.T) {
 		Message:     nodeMessage,
 	}
 	node.HostNodeName = kubernetesNodeName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, getArgs)
 
 	// Compatibility test
 	getArgs.status = "Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
 
 	getArgs.status = ""
 	getArgs.nodeFieldSelectorString = "phase=Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
 
 	getArgs.nodeFieldSelectorString = "phase!=foobar"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
 
 	getArgs.nodeFieldSelectorString = "phase!=Running"
-	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, "", node, getArgs)
 
 	// Compatibility test
 	getArgs.nodeFieldSelectorString = ""
 	getArgs.status = "foobar"
-	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, "", node, getArgs)
 
 	getArgs.status = ""
 	getArgs.nodeFieldSelectorString = "phase=foobar"
-	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, "", node, getArgs)
 
 	getArgs = getFlags{
 		output: "",
 	}
 
 	node.TemplateName = nodeTemplateName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, getArgs)
 
 	node.TemplateRef = &wfv1.TemplateRef{
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
 	getArgs.output = "wide"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypePod
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
 
 	getArgs.status = "foobar"
-	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, "", node, getArgs)
 }
 
 func TestStatusToNodeFieldSelector(t *testing.T) {
@@ -108,7 +108,30 @@ func TestStatusToNodeFieldSelector(t *testing.T) {
 	assert.Equal(t, "phase=Running", one)
 }
 
-var indexTest = `apiVersion: argoproj.io/v1alpha1
+func Test_printWorkflowHelper(t *testing.T) {
+	t.Run("Progress", func(t *testing.T) {
+		var wf wfv1.Workflow
+		testutil.MustUnmarshallYAML(`
+status:
+  phase: Running
+  progress: 1/2
+`, &wf)
+		output := printWorkflowHelper(&wf, getFlags{})
+		assert.Regexp(t, `Progress: *1/2`, output)
+	})
+	t.Run("EstimatedDuration", func(t *testing.T) {
+		var wf wfv1.Workflow
+		testutil.MustUnmarshallYAML(`
+status:
+  estimatedDuration: 1
+  phase: Running
+`, &wf)
+		output := printWorkflowHelper(&wf, getFlags{})
+		assert.Regexp(t, `EstimatedDuration: *1 second`, output)
+	})
+	t.Run("IndexOrdering", func(t *testing.T) {
+		var wf wfv1.Workflow
+		testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-02T16:04:21Z"
@@ -338,15 +361,39 @@ status:
       type: Pod
   phase: Succeeded
   startedAt: "2020-06-02T16:04:21Z"
-`
+`, &wf)
+		output := printWorkflowHelper(&wf, getFlags{})
+		assert.Contains(t, output, `         
+   ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
+   ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
+   ├─ sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
+		assert.Contains(t, output, "This workflow does not have security context set. "+
+			"You can run your workflow pods more securely by setting it.\n"+
+			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
+	})
+}
 
-func TestIndexOrdering(t *testing.T) {
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(indexTest), &wf)
-	if assert.NoError(t, err) {
-		assert.Contains(t, printWorkflowHelper(&wf, getFlags{}), `         
-   ├- sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
-   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
-   ├- sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
+func Test_printWorkflowHelperNudges(t *testing.T) {
+	securedWf := wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{},
+		Spec: wfv1.WorkflowSpec{
+			SecurityContext: &corev1.PodSecurityContext{},
+		},
 	}
+
+	insecureWf := securedWf
+	insecureWf.Spec.SecurityContext = nil
+
+	securityNudges := "This workflow does not have security context set. " +
+		"You can run your workflow pods more securely by setting it.\n" +
+		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
+
+	t.Run("SecuredWorkflow", func(t *testing.T) {
+		output := printWorkflowHelper(&securedWf, getFlags{})
+		assert.NotContains(t, output, securityNudges)
+	})
+	t.Run("InsecureWorkflow", func(t *testing.T) {
+		output := printWorkflowHelper(&insecureWf, getFlags{})
+		assert.Contains(t, output, securityNudges)
+	})
 }

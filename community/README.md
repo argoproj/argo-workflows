@@ -35,13 +35,13 @@ manner.
 
 ## Contributing to Argo
 
-Read and abide by the [Argo Code of Conduct](https://github.com/argoproj/argo/blob/master/CODE_OF_CONDUCT.md).
+Read and abide by the [Argo Code of Conduct](https://github.com/argoproj/argo-workflows/blob/master/CODE_OF_CONDUCT.md).
 
-Contributors will be asked to read and sign a [CLA](https://github.com/argoproj/argo/blob/master/community/Argo%20Individual%20CLA.pdf). This agreement gives us permission to use and redistribute your contributions as part of the Argo Project and protects the users and contributors of the project.
+Contributors will be asked to read and sign a [CLA](https://github.com/argoproj/argo-workflows/blob/master/community/Argo%20Individual%20CLA.pdf). This agreement gives us permission to use and redistribute your contributions as part of the Argo Project and protects the users and contributors of the project.
 
 ## Community Meetings
 
-Approvers and owners for each project are responsible for organizing regular community meetings to provide status updates and solicit feedback.
+Approvers and owners for each project are responsible for organizing regular community meetings to provide status updates and solicit feedback. The meeting calendar can be found in [Google calendar](https://calendar.google.com/calendar/u/0/embed?src=argoproj@gmail.com) or with this [ICS link](https://calendar.google.com/calendar/ical/argoproj%40gmail.com/public/basic.ics).
 
 * Meeting agendas should be published at least one week prior to the meeting.
 * Community members should be able to attend the meetings remotely.

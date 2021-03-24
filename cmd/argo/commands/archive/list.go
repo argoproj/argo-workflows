@@ -9,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/printer"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/printer"
 )
 
 func NewListCommand() *cobra.Command {
@@ -21,8 +21,9 @@ func NewListCommand() *cobra.Command {
 		output    string
 		chunkSize int64
 	)
-	var command = &cobra.Command{
-		Use: "list",
+	command := &cobra.Command{
+		Use:   "list",
+		Short: "list workflows in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()

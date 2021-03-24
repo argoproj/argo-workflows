@@ -1,5 +1,5 @@
 site_name: Argo Workflows - The workflow engine for Kubernetes
-repo_url: https://github.com/argoproj/argo
+repo_url: https://github.com/argoproj/argo-workflows
 strict: true
 theme:
   name: material
@@ -14,6 +14,8 @@ google_analytics:
 markdown_extensions:
   - codehilite
   - admonition
+  - pymdownx.superfences
+  - pymdownx.details
   - toc:
       permalink: true
 nav:
@@ -26,36 +28,51 @@ nav:
           - workflow-concepts.md
           - cli.md
           - variables.md
-      # topics that don't require kubctl or re-configuration
+      # topics that don't require kubectl or re-configuration
       - Intermediate:
           - service-accounts.md
           - workflow-rbac.md
           - node-field-selector.md
+          - empty-dir.md
           - workflow-templates.md
+          - workflow-inputs.md
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
+          - container-set-template.md
           - work-avoidance.md
           - enhanced-depends-logic.md
+          - data-sourcing-and-transformation.md
           - artifact-repository-ref.md
+          - key-only-artifacts.md
+          - conditional-artifacts-parameters.md
           - resource-duration.md
+          - estimated-duration.md
+          - workflow-pod-security-context.md
+          - progress.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
+          - memoization.md
+          - tolerating-pod-deletion.md
+          - widgets.md
       # all other topics, including API access
       - Advanced:
-          - workflow-requirements.md
+          - workflow-restrictions.md
           - workflow-notifications.md
           - workflow-events.md
           - kubectl.md
           - access-token.md
           - rest-api.md
           - rest-examples.md
+          - events.md
+          - webhooks.md
           - submit-workflow-via-automation.md
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - security.md
+      - ide-setup.md
       - Examples: examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
@@ -86,6 +103,7 @@ nav:
           - argo lint: cli/argo_lint.md
           - argo list: cli/argo_list.md
           - argo logs: cli/argo_logs.md
+          - argo node: cli/argo_node.md
           - argo resubmit: cli/argo_resubmit.md
           - argo resume: cli/argo_resume.md
           - argo retry: cli/argo_retry.md
@@ -103,15 +121,15 @@ nav:
           - argo version: cli/argo_version.md
           - argo wait: cli/argo_wait.md
           - argo watch: cli/argo_watch.md
-      - API Reference: swagger.md
   - Operator Manual:
       - installation.md
+      - releases.md
       - Configuration:
           - managed-namespace.md
-          - service-accounts.md
           - configure-artifact-repository.md
           - workflow-controller-configmap.md
           - workflow-executors.md
+          - sidecar-injection.md
           - default-workflow-specs.md
           - offloading-large-workflows.md
           - workflow-archive.md
@@ -122,9 +140,12 @@ nav:
           - argo-server-auth-mode.md
           - tls.md
           - argo-server-sso.md
+      - high-availability.md
+      - disaster-recovery.md
       - scaling.md
       - cost-optimisation.md
       - windows.md
+      - environment-variables.md
   - Developer Guide:
       - CONTRIBUTING.md
       - architecture.md
@@ -132,9 +153,10 @@ nav:
       - versioning.md
       - public-api.md
       - static-code-analysis.md
+      - stress-testing.md
       - releasing.md
-  - Releases ⧉: https://github.com/argoproj/argo/releases
-  - Roadmap ⧉: https://github.com/argoproj/argo/milestones
+  - Releases ⧉: https://github.com/argoproj/argo-workflows/releases
+  - Roadmap: roadmap.md
   - Blog ⧉: https://blog.argoproj.io/
   - Slack ⧉: https://argoproj.github.io/community/join-slack
   - Twitter ⧉: https://twitter.com/argoproj

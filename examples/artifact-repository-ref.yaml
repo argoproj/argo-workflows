@@ -5,13 +5,13 @@ metadata:
 spec:
   entrypoint: main
   artifactRepositoryRef:
-    key: minio
+    key: my-key
   templates:
     - name: main
       container:
         image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+        command: [ sh, -c ]
+        args: [ "cowsay hello world | tee /tmp/hello_world.txt" ]
       outputs:
         artifacts:
           - name: hello_world

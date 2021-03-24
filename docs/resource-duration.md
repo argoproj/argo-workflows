@@ -1,6 +1,6 @@
 # Resource Duration
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.7 and after
 
@@ -9,7 +9,7 @@ information. This is intended to be an **indicative but not accurate** value.
 
 ## Calculation
 
-The calculation is always an estimate, and is calculated by [duration.go](https://github.com/argoproj/argo/blob/master/util/resource/duration.go) 
+The calculation is always an estimate, and is calculated by [duration.go](https://github.com/argoproj/argo-workflows/blob/master/util/resource/duration.go) 
 based on container duration, specified pod resource requests, limits, or (for memory and CPU) 
 defaults. 
 
@@ -20,7 +20,7 @@ Each indicator is divided by a common denominator depending on resource type.
 Each resource type has a denominator used to make large values smaller.
 
  * CPU: `1`
- * Memory: `100Mi`
+ * Memory: `1Gi`
  * Storage: `10Gi`
  * Ephemeral Storage: `10Gi`
  * All others: `1` 

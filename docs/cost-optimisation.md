@@ -39,9 +39,11 @@ Consider:
 
 > Suitable for all.
 
-A workflow (and for that matter, any Kubernetes resource) will incur a cost as long as they exist in your cluster. 
+A workflow (and for that matter, any Kubernetes resource) will incur a cost as long as they exist in your cluster, even after they are no longer running.
 
-The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running. 
+The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running.
+
+You should delete workflows once they are no longer needed, or enable a [Workflow Archive](workflow-archive.md) and you can still view them after they are removed from Kubernetes.
 
 Limit the total number of workflows using:
 
@@ -64,8 +66,6 @@ spec:
 ```
 
 You can set these configurations globally using [Default Workflow Spec](default-workflow-specs.md).
-
-If you need to keep records historically, use the [Workflow Archive](workflow-archive.md).
 
 Changing these settings will not delete workflows that have already run. To list old workflows:
 
@@ -107,16 +107,17 @@ This above limit is suitable for the Argo Server, as this is stateless. The Work
 
 > Suitable for all - unless you have large artifacts.
 
-Configure [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) to set the `executorResources`
+Configure [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) to set the `executor.resources`:
 
 ```yaml
-executorResources:
-  requests:
-    cpu: 100m
-    memory: 64Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
+executor: |
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 ```
 
-The correct values depend on the size of artifacts your workflows download. For artifacts > 10GB, memory usage may be large - [#1322](https://github.com/argoproj/argo/issues/1322).
+The correct values depend on the size of artifacts your workflows download. For artifacts > 10GB, memory usage may be large - [#1322](https://github.com/argoproj/argo-workflows/issues/1322).

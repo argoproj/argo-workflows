@@ -14,15 +14,21 @@ Subsequent sections will show how to use it.
 | HTTP | Yes | No | 2% |
 | OSS | Yes | Yes | - |
 | Raw | Yes | No | 5% |
-| S3 | Yes | Yes | 86% | 
+| S3 | Yes | Yes | 86% |
+
+The actual repository used by a workflow is choose by the following rules:
+
+1. Anything explicitly configured using [Artifact Repository Ref](artifact-repository-ref.md). This is the most flexible, safe, and secure option.
+2. From a config map named `artifact-repositories` if it has the `workflows.argoproj.io/default-artifact-repository` annotation in the workflow's namespace.                                        
+3. From a workflow controller configmap.
 
 ## Configuring Minio
 
 ```
 $ brew install helm # mac, helm 3.x
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # official Helm stable charts
+$ helm repo add minio https://helm.min.io/ # official minio Helm charts
 $ helm repo update
-$ helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
+$ helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 ```
 
 Login to the Minio UI using a web browser (port 9000) after obtaining the
@@ -38,11 +44,12 @@ On Minikube:
 $ minikube service --url argo-artifacts
 ```
 
-NOTE: When minio is installed via Helm, it uses the following hard-wired default
+NOTE: When minio is installed via Helm, it generates
 credentials, which you will use to login to the UI:
+Use the commands shown below to see the credentials
 
-- AccessKey: AKIAIOSFODNN7EXAMPLE
-- SecretKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+- AccessKey: kubectl get secret argo-artifacts -o jsonpath='{.data.accesskey}' | base64 --decode
+- SecretKey: kubectl get secret argo-artifacts -o jsonpath='{.data.secretkey}' | base64 --decode
 
 Create a bucket named `my-bucket` from the Minio UI.
 
@@ -142,12 +149,12 @@ access is on a per project rather than per bucket basis.
   (https://console.cloud.google.com/storage/settings).
 - Enable interoperability access if needed.
 - Create a new key if needed.
-- Configure `s3` artifact as following exmaple.
+- Configure `s3` artifact as following example.
 
 ```yaml
 artifacts:
   - name: my-output-artifact
-    path: /my-ouput-artifact
+    path: /my-output-artifact
     s3:
       endpoint: storage.googleapis.com
       bucket: my-gcs-bucket-name
@@ -168,7 +175,7 @@ artifacts:
 
 To configure artifact storage for Alibaba Cloud OSS, please first follow
 the [official documentation](https://www.alibabacloud.com/product/oss) to set up
-an OSS account and bucket. 
+an OSS account and bucket.
 
 Once it's set up, you can find endpoint and bucket
 information on your OSS dashboard and then use them like the following to
@@ -267,7 +274,7 @@ that you can specify a `keyFormat`.
 
 Argo also can use native GCS APIs to access a Google Cloud Storage bucket.
 
-`serviceAccountKeySecret` refereces to a k8 secret which stores a Google Cloud
+`serviceAccountKeySecret` references to a k8 secret which stores a Google Cloud
 service account key to access the bucket.
 
 Example:
@@ -313,7 +320,7 @@ configuring the default artifact repository described previously.
     outputs:
       artifacts:
       - name: my-output-artifact
-        path: /my-ouput-artifact
+        path: /my-output-artifact
         s3:
           endpoint: storage.googleapis.com
           bucket: my-gcs-bucket-name

@@ -26,21 +26,13 @@ kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 You now need to get a token:
 
 ```sh
-SECRET=$(kubectl -n argo get sa jenkins -o=jsonpath='{.secrets[0].name}')
-ARGO_TOKEN="Bearer $(kubectl -n argo get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
+SECRET=$(kubectl get sa jenkins -o=jsonpath='{.secrets[0].name}')
+ARGO_TOKEN="Bearer $(kubectl get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
 echo $ARGO_TOKEN
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
 
-!!!NOTE
-    The `ARGO_TOKEN` should always start with "Bearer ".
-
-Use that token with the CLI (you need to set `ARGO_SERVER` too):
-
-```sh
-ARGO_SERVER=http://localhost:2746 
-argo list
-```
+To use that token with the CLI you need to set `ARGO_SERVER` (see `argo --help`).
 
 Use that token in your API requests, e.g. to list workflows:
 

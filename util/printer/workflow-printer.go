@@ -11,14 +11,20 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) error {
+	if len(workflows) == 0 {
+		_, _ = fmt.Fprintln(out, "No workflows found")
+		return nil
+	}
+
 	switch opts.Output {
 	case "", "wide":
 		printTable(workflows, out, opts)
+		printCostOptimizationNudges(workflows, out)
 	case "name":
 		for _, wf := range workflows {
 			_, _ = fmt.Fprintln(out, wf.ObjectMeta.Name)
@@ -71,7 +77,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		}
 		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority)
 		if opts.Output == "wide" {
-			pending, running, completed := countPendingRunningCompleted(&wf)
+			pending, running, completed := countPendingRunningCompletedNodes(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
 			_, _ = fmt.Fprintf(w, "\t%s", parameterString(wf.Spec.Arguments.Parameters))
 		}
@@ -80,7 +86,50 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	_ = w.Flush()
 }
 
-func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
+// printCostOptimizationNudges prints cost optimization nudges for workflows
+func printCostOptimizationNudges(wfList []wfv1.Workflow, out io.Writer) {
+	completed, incomplete := countCompletedWorkflows(wfList)
+	if completed > 100 || incomplete > 100 {
+		_, _ = fmt.Fprint(out, "\nYou have at least ")
+		if incomplete > 100 {
+			_, _ = fmt.Fprintf(out, "%d incomplete ", incomplete)
+		}
+		if incomplete > 100 && completed > 100 {
+			_, _ = fmt.Fprint(out, "and ")
+		}
+		if completed > 100 {
+			_, _ = fmt.Fprintf(out, "%d completed ", completed)
+		}
+		_, _ = fmt.Fprintln(out, "workflows. Reducing the total number of workflows will reduce your costs.")
+		_, _ = fmt.Fprintln(out, "Learn more at https://argoproj.github.io/argo-workflows/cost-optimisation/")
+	}
+}
+
+// PrintSecurityNudges prints security nudges for single workflow
+func PrintSecurityNudges(wf wfv1.Workflow, out io.Writer) {
+	if wf.Spec.SecurityContext == nil {
+		_, _ = fmt.Fprintln(out, "\nThis workflow does not have security context set. "+
+			"You can run your workflow pods more securely by setting it.")
+		_, _ = fmt.Fprintln(out, "Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/")
+	}
+}
+
+// countCompletedWorkflows returns the number of completed and incomplete workflows
+func countCompletedWorkflows(wfList []wfv1.Workflow) (int, int) {
+	completed := 0
+	incomplete := 0
+	for _, wf := range wfList {
+		if wf.Status.Phase.Completed() {
+			completed++
+		} else {
+			incomplete++
+		}
+	}
+	return completed, incomplete
+}
+
+// countPendingRunningCompletedNodes returns the number of pending, running and completed workflow nodes
+func countPendingRunningCompletedNodes(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
@@ -124,24 +173,21 @@ func parameterString(params []wfv1.Parameter) string {
 }
 
 // WorkflowStatus returns a human readable inferred workflow status based on workflow phase and conditions
-func WorkflowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
+func WorkflowStatus(wf *wfv1.Workflow) string {
 	switch wf.Status.Phase {
-	case wfv1.NodeRunning:
+	case wfv1.WorkflowRunning:
 		if util.IsWorkflowSuspended(wf) {
 			return "Running (Suspended)"
 		}
-		return wf.Status.Phase
-	case wfv1.NodeFailed:
+	case wfv1.WorkflowFailed:
 		if wf.Spec.Shutdown != "" {
 			return "Failed (Terminated)"
 		}
-		return wf.Status.Phase
-	case "", wfv1.NodePending:
+	case wfv1.WorkflowUnknown, wfv1.WorkflowPending:
 		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-			return wfv1.NodePending
+			return "Pending"
 		}
 		return "Unknown"
-	default:
-		return wf.Status.Phase
 	}
+	return string(wf.Status.Phase)
 }

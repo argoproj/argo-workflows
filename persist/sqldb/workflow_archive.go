@@ -13,22 +13,24 @@ import (
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/instanceid"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
-const archiveTableName = "argo_archived_workflows"
-const archiveLabelsTableName = archiveTableName + "_labels"
+const (
+	archiveTableName       = "argo_archived_workflows"
+	archiveLabelsTableName = archiveTableName + "_labels"
+)
 
 type archivedWorkflowMetadata struct {
-	ClusterName string         `db:"clustername"`
-	InstanceID  string         `db:"instanceid"`
-	UID         string         `db:"uid"`
-	Name        string         `db:"name"`
-	Namespace   string         `db:"namespace"`
-	Phase       wfv1.NodePhase `db:"phase"`
-	StartedAt   time.Time      `db:"startedat"`
-	FinishedAt  time.Time      `db:"finishedat"`
+	ClusterName string             `db:"clustername"`
+	InstanceID  string             `db:"instanceid"`
+	UID         string             `db:"uid"`
+	Name        string             `db:"name"`
+	Namespace   string             `db:"namespace"`
+	Phase       wfv1.WorkflowPhase `db:"phase"`
+	StartedAt   time.Time          `db:"startedat"`
+	FinishedAt  time.Time          `db:"finishedat"`
 }
 
 type archivedWorkflowRecord struct {
@@ -44,12 +46,16 @@ type archivedWorkflowLabelRecord struct {
 	Value string `db:"value"`
 }
 
+//go:generate mockery -name WorkflowArchive
+
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
+	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
 	ListWorkflows(namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
+	IsEnabled() bool
 }
 
 type workflowArchive struct {
@@ -58,6 +64,10 @@ type workflowArchive struct {
 	managedNamespace  string
 	instanceIDService instanceid.Service
 	dbType            dbType
+}
+
+func (r *workflowArchive) IsEnabled() bool {
+	return true
 }
 
 // NewWorkflowArchive returns a new workflowArchive
@@ -122,6 +132,14 @@ func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStart
 	if err != nil {
 		return nil, err
 	}
+
+	// If we were passed 0 as the limit, then we should load all available archived workflows
+	// to match the behavior of the `List` operations in the Kubernetes API
+	if limit == 0 {
+		limit = -1
+		offset = -1
+	}
+
 	err = r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).

@@ -1,17 +1,28 @@
-export function getCollapsedNodeName(parent: string, numHidden: number): string {
-    return '@collapsed/' + parent + '/' + numHidden;
+import {NodeType} from '../../../../../models';
+
+interface CollapsedNode {
+    kind: string;
+    parent: string;
+    message: string;
+    type: NodeType;
+}
+
+export function getCollapsedNodeName(parent: string, message: string, type: NodeType): string {
+    return JSON.stringify({kind: 'collapsed', parent, message, type} as CollapsedNode);
 }
 
 export function isCollapsedNode(id: string): boolean {
-    return id.startsWith('@collapsed/');
+    try {
+        return (JSON.parse(id) as CollapsedNode).kind === 'collapsed';
+    } catch (e) {
+        return false;
+    }
 }
 
-export function getCollapsedNodeParent(id: string): string {
-    const split = id.split('/');
-    return split[1];
+export function getNodeParent(id: string): string {
+    return (JSON.parse(id) as CollapsedNode).parent;
 }
 
-export function getCollapsedNumHidden(id: string): number {
-    const split = id.split('/');
-    return Number(split[2]);
+export function getMessage(id: string): string {
+    return (JSON.parse(id) as CollapsedNode).message;
 }

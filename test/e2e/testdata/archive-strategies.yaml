@@ -1,9 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: archive-strategies
-  labels:
-    argo-e2e: true
+  generateName: archive-strategies-
 spec:
   entrypoint: main
   templates:

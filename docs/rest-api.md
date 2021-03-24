@@ -20,5 +20,5 @@ curl -H "Authorization: $ARGO_TOKEN" http://localhost:2746/api/v1/workflows/argo
 API reference docs :
  
 * [Latest docs](swagger.md) (maybe incorrect)
-* Interactively in the [Argo Server UI](http://localhost:2746/apidocs).
+* Interactively in the [Argo Server UI](http://localhost:2746/apidocs). (>= v2.10)
 

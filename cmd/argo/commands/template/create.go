@@ -7,11 +7,11 @@ import (
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type cliCreateOpts struct {
@@ -20,10 +20,8 @@ type cliCreateOpts struct {
 }
 
 func NewCreateCommand() *cobra.Command {
-	var (
-		cliCreateOpts cliCreateOpts
-	)
-	var command = &cobra.Command{
+	var cliCreateOpts cliCreateOpts
+	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -46,7 +44,6 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
-	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -65,8 +62,11 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	for _, wftmpl := range workflowTemplates {
+		if wftmpl.Namespace == "" {
+			wftmpl.Namespace = client.Namespace()
+		}
 		created, err := serviceClient.CreateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateCreateRequest{
-			Namespace: namespace,
+			Namespace: wftmpl.Namespace,
 			Template:  &wftmpl,
 		})
 		if err != nil {

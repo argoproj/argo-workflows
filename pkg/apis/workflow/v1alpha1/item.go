@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 )
 
 // Type represents the stored type of Item.
@@ -20,11 +22,10 @@ const (
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
-// +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
+// +kubebuilder:validation:Type=object
 type Item struct {
-	Value json.RawMessage `json:"value" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
+	Value json.RawMessage `json:"-" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
 }
 
 func ParseItem(s string) (Item, error) {
@@ -59,14 +60,15 @@ func (i *Item) UnmarshalJSON(value []byte) error {
 }
 
 func (i *Item) String() string {
-	jsonBytes, err := json.Marshal(i)
+	x, err := json.Marshal(i) // this produces a normalised string, e.g. white-space
 	if err != nil {
 		panic(err)
 	}
-	if jsonBytes[0] == '"' {
-		return string(jsonBytes[1 : len(jsonBytes)-1])
+	// this convenience to remove quotes from strings will cause many problems
+	if x[0] == '"' {
+		return jsonutil.Fix(string(x[1 : len(x)-1]))
 	}
-	return string(jsonBytes)
+	return jsonutil.Fix(string(x))
 }
 
 func (i Item) Format(s fmt.State, _ rune) {
@@ -88,22 +90,23 @@ func (i *Item) DeepCopyInto(out *Item) {
 	}
 }
 
+// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
 func (i Item) OpenAPISchemaType() []string {
-	return []string{}
+	return nil
 }
 
 func (i Item) OpenAPISchemaFormat() string { return "" }
 
 // you MUST assert `GetType() == Map` before invocation as this does not return errors
-func (i *Item) GetMapVal() map[string]interface{} {
-	val := make(map[string]interface{})
+func (i *Item) GetMapVal() map[string]Item {
+	val := make(map[string]Item)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }
 
 // you MUST assert `GetType() == List` before invocation as this does not return errors
-func (i *Item) GetListVal() []interface{} {
-	val := make([]interface{}, 0)
+func (i *Item) GetListVal() []Item {
+	val := make([]Item, 0)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }

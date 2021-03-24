@@ -110,6 +110,23 @@ spec:
         args: ["{{inputs.parameters.message}}"]
 ```
 
+### Adding labels/annotations to Workflows with `workflowMetadata`
+
+> 2.10.2 and after
+
+To automatically add labels and/or annotations to Workflows created from `WorkflowTemplates`, use `workflowMetadata`.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-submittable
+spec:
+  workflowMetadata:
+    labels:
+      example-label: example-value
+```
+
 ## Referencing other `WorkflowTemplates`
 
 You can reference `templates` from another `WorkflowTemplates` (see the [difference between the two](#workflowtemplate-vs-template)) using a `templateRef` field.
@@ -226,20 +243,30 @@ spec:
 You can create some example templates as follows:
 
 ```
-argo template create https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/templates.yaml
+argo template create https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/templates.yaml
 ```
 
-The submit a workflow using one of those templates:
+Then submit a workflow using one of those templates:
 
 ```
-argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/hello-world.yaml
+argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/hello-world.yaml
 ```
+
 > 2.7 and after
-The submit a `WorkflowTemplate` as a `Workflow`:
+
+Then submit a `WorkflowTemplate` as a `Workflow`:
+
 ```sh
 argo submit --from workflowtemplate/workflow-template-submittable
-
 ```
+
+If you need to submit a `WorkflowTemplate` as a `Workflow` with parameters:
+
+```sh
+argo submit --from workflowtemplate/workflow-template-submittable -p param1=value1
+```
+
+
 
 ### `kubectl`
 

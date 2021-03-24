@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 )
 
 type stopOps struct {
@@ -18,13 +18,11 @@ type stopOps struct {
 }
 
 func NewStopCommand() *cobra.Command {
-	var (
-		stopArgs stopOps
-	)
+	var stopArgs stopOps
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "stop WORKFLOW WORKFLOW2...",
-		Short: "stop zero or more workflows",
+		Short: "stop zero or more workflows allowing all exit handlers to run",
 		Example: `# Stop a workflow:
 
   argo stop my-wf
@@ -33,7 +31,6 @@ func NewStopCommand() *cobra.Command {
   argo stop @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()

@@ -11,22 +11,24 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/pkg/file"
-
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
 // ArtifactDriver is a driver for GCS
 type ArtifactDriver struct {
 	ServiceAccountKey string
 }
+
+var _ common.ArtifactDriver = &ArtifactDriver{}
 
 func (g *ArtifactDriver) newGCSClient() (*storage.Client, error) {
 	if g.ServiceAccountKey != "" {
@@ -97,6 +99,10 @@ func downloadObjects(client *storage.Client, bucket, key, path string) error {
 // download an object from the bucket
 func downloadObject(client *storage.Client, bucket, key, objName, path string) error {
 	objPrefix := filepath.Clean(key)
+	if os.PathSeparator == '\\' {
+		objPrefix = strings.ReplaceAll(objPrefix, "\\", "/")
+	}
+
 	relObjPath := strings.TrimPrefix(objName, objPrefix)
 	localPath := filepath.Join(path, relObjPath)
 	objectDir, _ := filepath.Split(localPath)
@@ -179,7 +185,7 @@ func listFileRelPaths(path string, relPath string) ([]string, error) {
 	}
 	for _, file := range files {
 		if file.IsDir() {
-			fs, err := listFileRelPaths(path+file.Name()+"/", relPath+file.Name()+"/")
+			fs, err := listFileRelPaths(path+file.Name()+string(os.PathSeparator), relPath+file.Name()+string(os.PathSeparator))
 			if err != nil {
 				return nil, err
 			}
@@ -198,20 +204,29 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 		return fmt.Errorf("test if %s is a dir: %v", path, err)
 	}
 	if isDir {
-		dirName := filepath.Clean(path) + "/"
+		dirName := filepath.Clean(path) + string(os.PathSeparator)
 		keyPrefix := filepath.Clean(key) + "/"
 		fileRelPaths, err := listFileRelPaths(dirName, "")
 		if err != nil {
 			return err
 		}
 		for _, relPath := range fileRelPaths {
-			err = uploadObject(client, bucket, keyPrefix+relPath, dirName+relPath)
+			fullKey := keyPrefix + relPath
+			if os.PathSeparator == '\\' {
+				fullKey = strings.ReplaceAll(fullKey, "\\", "/")
+			}
+
+			err = uploadObject(client, bucket, fullKey, dirName+relPath)
 			if err != nil {
 				return fmt.Errorf("upload %s: %v", dirName+relPath, err)
 			}
 		}
 	} else {
-		err = uploadObject(client, bucket, filepath.Clean(key), path)
+		objectKey := filepath.Clean(key)
+		if os.PathSeparator == '\\' {
+			objectKey = strings.ReplaceAll(objectKey, "\\", "/")
+		}
+		err = uploadObject(client, bucket, objectKey, path)
 		if err != nil {
 			return fmt.Errorf("upload %s: %v", path, err)
 		}
@@ -235,4 +250,8 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 		return fmt.Errorf("writer close: %v", err)
 	}
 	return nil
+}
+
+func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }

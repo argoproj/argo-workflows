@@ -1,14 +1,36 @@
-# https://github.com/golangci/golangci/wiki/Configuration
+# https://golangci-lint.run/usage/quick-start/
 run:
+  concurrency: 4
+  timeout: 5m
   skip-dirs:
     - pkg/client
     - vendor
     - ui
   skip-files:
     - server/static/files.go
+  build-tags:
+    - api
+    - cli
+    - cron
+    - executor
+    - examples
+    - functional
 linters:
   enable:
+    - deadcode
+    - errcheck
     - goimports
+    - gci
+    - gofumpt
+    - gosimple
+    - govet
+    - misspell
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unparam
+    - unused
+    - varcheck
 linters-settings:
   goimports:
-    local-prefixes: github.com/argoproj/argo
+    local-prefixes: github.com/argoproj/argo-workflows/

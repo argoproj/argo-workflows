@@ -30,4 +30,12 @@ export class CronWorkflowService {
     public delete(name: string, namespace: string) {
         return requests.delete(`api/v1/cron-workflows/${namespace}/${name}`);
     }
+
+    public suspend(name: string, namespace: string) {
+        return requests.put(`api/v1/cron-workflows/${namespace}/${name}/suspend`).then(res => res.body as CronWorkflow);
+    }
+
+    public resume(name: string, namespace: string) {
+        return requests.put(`api/v1/cron-workflows/${namespace}/${name}/resume`).then(res => res.body as CronWorkflow);
+    }
 }

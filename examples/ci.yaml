@@ -5,12 +5,12 @@ metadata:
 spec:
   # entrypoint is the name of the template used as the starting point of the workflow
   entrypoint: ci-example
-  # the 'ci-example' template accepts an parameter 'revision', with a default of 'master'.
+  # the 'ci-example' template accepts an parameter 'revision', with a default of 'cfe12d6'.
   # this can be overridden via argo CLI (e.g. `argo submit ci.yaml -p revision=0dea2d0`)
   arguments:
     parameters:
     - name: revision
-      value: master
+      value: cfe12d6
   # a temporary volume, named workdir, will be used as a working directory
   # for this workflow. This volume is passed around from step to step.
   volumeClaimTemplates:

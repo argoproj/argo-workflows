@@ -1,6 +1,6 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
-import {uiUrl} from '../../shared/base';
+import {uiUrl, uiUrlWithParams} from '../../shared/base';
 
 require('./login.scss');
 
@@ -13,6 +13,13 @@ const user = (token: string) => {
     document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
     document.location.href = path;
 };
+const getRedirect = (): string => {
+    const urlParams = new URLSearchParams(new URL(document.location.href).search);
+    if (urlParams.has('redirect')) {
+        return 'redirect=' + urlParams.get('redirect');
+    }
+    return 'redirect=' + window.location.origin + '/workflows';
+};
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
         <div className='argo-container'>
@@ -22,7 +29,7 @@ export const Login = () => (
                 </h3>
                 <p>It may not be necessary to be logged in to use Argo Workflows, it depends on how it is configured.</p>
                 <p>
-                    <a href='https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md'>Learn more</a>.
+                    <a href='https://argoproj.github.io/argo-workflows/argo-server-auth-mode/'>Learn more</a>.
                 </p>
             </div>
 
@@ -32,7 +39,11 @@ export const Login = () => (
                         If your organisation has configured <b>single sign-on</b>:
                     </p>
                     <div>
-                        <button className='argo-button argo-button--base-o' onClick={() => (document.location.href = uiUrl('oauth2/redirect'))}>
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
+                            }}>
                             <i className='fa fa-sign-in-alt' /> Login
                         </button>
                     </div>

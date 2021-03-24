@@ -1,12 +1,13 @@
 import {NodePhase, Workflow} from '../../models';
 import {services} from './services';
+import {WorkflowDeleteResponse} from './services/responses';
 import {Utils} from './utils';
 
 export type OperationDisabled = {
     [action in WorkflowOperationName]: boolean;
 };
 
-export type WorkflowOperationName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
+type WorkflowOperationName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
 
 export interface WorkflowOperation {
     title: WorkflowOperationName;
@@ -15,7 +16,7 @@ export interface WorkflowOperation {
     disabled: (wf: Workflow) => boolean;
 }
 
-export type WorkflowOperationAction = (wf: Workflow) => Promise<any>;
+export type WorkflowOperationAction = (wf: Workflow) => Promise<Workflow | WorkflowDeleteResponse>;
 
 export interface WorkflowOperations {
     [name: string]: WorkflowOperation;

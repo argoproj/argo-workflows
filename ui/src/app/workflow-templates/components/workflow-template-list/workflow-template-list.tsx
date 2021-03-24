@@ -1,133 +1,97 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import * as models from '../../../../models';
+import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
-import {Consumer} from '../../../shared/context';
-import {exampleWorkflowTemplate} from '../../../shared/examples';
+import {Context} from '../../../shared/context';
+import {Footnote} from '../../../shared/footnote';
+import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
+import {useQueryParams} from '../../../shared/use-query-params';
+import {WorkflowTemplateCreator} from '../workflow-template-creator';
 
 require('./workflow-template-list.scss');
 
-interface State {
-    loading: boolean;
-    namespace: string;
-    templates?: models.WorkflowTemplate[];
-    error?: Error;
-}
+const learnMore = <a href='https://argoproj.github.io/argo-workflows/workflow-templates/'>Learn more</a>;
 
-export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
-    private get namespace() {
-        return this.state.namespace;
-    }
+export const WorkflowTemplateList = ({match, location, history}: RouteComponentProps<any>) => {
+    // boiler-plate
+    const queryParams = new URLSearchParams(location.search);
+    const {navigation} = useContext(Context);
 
-    private set namespace(namespace: string) {
-        this.setState({namespace});
-        history.pushState(null, '', uiUrl('workflow-templates/' + namespace));
-        this.fetchWorkflowTemplates();
-        Utils.setCurrentNamespace(namespace);
-    }
+    // state for URL and query parameters
+    const [namespace, setNamespace] = useState(match.params.namespace || '');
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
 
-    private get sidePanel() {
-        return this.queryParam('sidePanel');
-    }
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel') === 'true');
+        }),
+        [history]
+    );
 
-    private set sidePanel(sidePanel) {
-        this.setQueryParams({sidePanel});
-    }
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('workflow-templates/{namespace}', {
+                    namespace,
+                    sidePanel
+                })
+            ),
+        [namespace, sidePanel]
+    );
 
-    constructor(props: RouteComponentProps<any>, context: any) {
-        super(props, context);
-        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || ''};
-    }
+    // internal state
+    const [error, setError] = useState<Error>();
+    const [templates, setTemplates] = useState<WorkflowTemplate[]>();
 
-    public componentDidMount(): void {
-        this.fetchWorkflowTemplates();
-    }
+    useEffect(() => {
+        services.workflowTemplate
+            .list(namespace)
+            .then(setTemplates)
+            .then(() => setError(null))
+            .catch(setError);
+    }, [namespace]);
 
-    public render() {
-        if (this.state.loading) {
-            return <Loading />;
-        }
-        if (this.state.error) {
-            throw this.state.error;
-        }
-        return (
-            <Consumer>
-                {ctx => (
-                    <Page
-                        title='Workflow Templates'
-                        toolbar={{
-                            breadcrumbs: [{title: 'Workflow Templates', path: uiUrl('workflow-templates')}],
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Create New Workflow Template',
-                                        iconClassName: 'fa fa-plus',
-                                        action: () => (this.sidePanel = 'new')
-                                    }
-                                ]
-                            },
-                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
-                        }}>
-                        {this.renderTemplates()}
-                        <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <ResourceEditor
-                                title='New Workflow Template'
-                                kind='WorkflowTemplate'
-                                upload={true}
-                                value={exampleWorkflowTemplate(this.namespace || 'default')}
-                                onSubmit={wfTmpl => {
-                                    services.workflowTemplate
-                                        .create(wfTmpl, wfTmpl.metadata.namespace)
-                                        .then(wf => ctx.navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)))
-                                        .catch(error => this.setState({error}));
-                                }}
-                                editing={true}
-                            />
-                        </SlidingPanel>
-                    </Page>
-                )}
-            </Consumer>
-        );
-    }
-
-    private fetchWorkflowTemplates(): void {
-        services.info
-            .getInfo()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.workflowTemplate.list(this.namespace);
-            })
-            .then(templates => this.setState({templates, loading: false}))
-            .catch(error => this.setState({error, loading: false}));
-    }
-
-    private renderTemplates() {
-        if (!this.state.templates) {
-            return <Loading />;
-        }
-        const learnMore = <a href='https://github.com/argoproj/argo/blob/master/docs/workflow-templates.md'>Learn more</a>;
-        if (this.state.templates.length === 0) {
-            return (
+    return (
+        <Page
+            title='Workflow Templates'
+            toolbar={{
+                breadcrumbs: [
+                    {title: 'Workflow Templates', path: uiUrl('workflow-templates')},
+                    {title: namespace, path: uiUrl('workflow-templates/' + namespace)}
+                ],
+                actionMenu: {
+                    items: [
+                        {
+                            title: 'Create New Workflow Template',
+                            iconClassName: 'fa fa-plus',
+                            action: () => setSidePanel(true)
+                        }
+                    ]
+                },
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+            }}>
+            <ErrorNotice error={error} />
+            {!templates ? (
+                <Loading />
+            ) : templates.length === 0 ? (
                 <ZeroState title='No workflow templates'>
                     <p>You can create new templates here or using the CLI.</p>
-                    <p>{learnMore}.</p>
+                    <p>
+                        <ExampleManifests />. {learnMore}.
+                    </p>
                 </ZeroState>
-            );
-        }
-        return (
-            <div className='row'>
-                <div className='columns small-12'>
+            ) : (
+                <>
                     <div className='argo-table-list'>
                         <div className='row argo-table-list__head'>
                             <div className='columns small-1' />
@@ -135,7 +99,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                             <div className='columns small-3'>NAMESPACE</div>
                             <div className='columns small-3'>CREATED</div>
                         </div>
-                        {this.state.templates.map(t => (
+                        {templates.map(t => (
                             <Link
                                 className='row argo-table-list__row'
                                 key={`${t.metadata.namespace}/${t.metadata.name}`}
@@ -151,11 +115,14 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                             </Link>
                         ))}
                     </div>
-                    <p>
-                        <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. {learnMore}.
-                    </p>
-                </div>
-            </div>
-        );
-    }
-}
+                    <Footnote>
+                        <InfoIcon /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
+                    </Footnote>
+                </>
+            )}
+            <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
+                <WorkflowTemplateCreator namespace={namespace} onCreate={wf => navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))} />
+            </SlidingPanel>
+        </Page>
+    );
+};

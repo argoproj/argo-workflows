@@ -2,6 +2,7 @@ package kubelet
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -19,9 +20,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/workflow/common"
-	execcommon "github.com/argoproj/argo/workflow/executor/common"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
 const (
@@ -37,11 +38,13 @@ type kubeletClient struct {
 	// - 127.0.0.1:10250
 	// - my-host.com:10250
 	kubeletEndpoint string
+	namespace       string
+	podName         string
 }
 
 var _ execcommon.KubernetesClientInterface = &kubeletClient{}
 
-func newKubeletClient() (*kubeletClient, error) {
+func newKubeletClient(namespace, podName string) (*kubeletClient, error) {
 	kubeletHost := os.Getenv(common.EnvVarDownwardAPINodeIP)
 	if kubeletHost == "" {
 		return nil, fmt.Errorf("empty envvar %s", common.EnvVarDownwardAPINodeIP)
@@ -72,7 +75,6 @@ func newKubeletClient() (*kubeletClient, error) {
 			return nil, errors.InternalWrapError(fmt.Errorf("fail to load certificate authority: %s", string(caCert)))
 		}
 		tlsConfig.RootCAs = caCertPool
-		tlsConfig.BuildNameToCertificate()
 	}
 	return &kubeletClient{
 		httpClient: &http.Client{
@@ -87,6 +89,8 @@ func newKubeletClient() (*kubeletClient, error) {
 			HandshakeTimeout: time.Second * 5,
 		},
 		kubeletEndpoint: fmt.Sprintf("%s:%d", kubeletHost, kubeletPort),
+		namespace:       namespace,
+		podName:         podName,
 	}, nil
 }
 
@@ -99,7 +103,7 @@ func checkHTTPErr(resp *http.Response) error {
 	return nil
 }
 
-func (k *kubeletClient) getPodList() (*corev1.PodList, error) {
+func (k *kubeletClient) getPod() (*corev1.Pod, error) {
 	u, err := url.ParseRequestURI(fmt.Sprintf("https://%s/pods", k.kubeletEndpoint))
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -112,6 +116,7 @@ func (k *kubeletClient) getPodList() (*corev1.PodList, error) {
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+	log.Infof("List pod %d (kubelet)", resp.StatusCode) // log that we are listing pods from Kubelet
 	err = checkHTTPErr(resp)
 	if err != nil {
 		return nil, err
@@ -123,27 +128,23 @@ func (k *kubeletClient) getPodList() (*corev1.PodList, error) {
 		_ = resp.Body.Close()
 		return nil, errors.InternalWrapError(err)
 	}
-	return podList, resp.Body.Close()
+	if err := resp.Body.Close(); err != nil {
+		return nil, err
+	}
+	for _, item := range podList.Items {
+		if item.Namespace == k.namespace && item.Name == k.podName {
+			return &item, nil
+		}
+	}
+	return nil, fmt.Errorf("pod %q is not found in the pod list", k.podName)
 }
 
-func (k *kubeletClient) GetLogStream(containerID string) (io.ReadCloser, error) {
-	podList, err := k.getPodList()
+func (k *kubeletClient) GetLogStream(containerName string) (io.ReadCloser, error) {
+	resp, err := k.doRequestLogs(k.namespace, k.podName, containerName)
 	if err != nil {
 		return nil, err
 	}
-	for _, pod := range podList.Items {
-		for _, container := range pod.Status.ContainerStatuses {
-			if execcommon.GetContainerID(&container) != containerID {
-				continue
-			}
-			resp, err := k.doRequestLogs(pod.Namespace, pod.Name, container.Name)
-			if err != nil {
-				return nil, err
-			}
-			return resp.Body, nil
-		}
-	}
-	return nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
+	return resp.Body, nil
 }
 
 func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) (*http.Response, error) {
@@ -166,20 +167,25 @@ func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) 
 	return resp, nil
 }
 
-func (k *kubeletClient) GetContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
-	podList, err := k.getPodList()
+func (k *kubeletClient) GetContainerStatus(ctx context.Context, containerName string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+	pod, containerStatus, err := k.GetContainerStatuses(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, s := range containerStatus {
+		if containerName == s.Name {
+			return pod, &s, nil
+		}
+	}
+	return nil, nil, fmt.Errorf("container %q is not found in the pod", containerName)
+}
+
+func (k *kubeletClient) GetContainerStatuses(ctx context.Context) (*corev1.Pod, []corev1.ContainerStatus, error) {
+	pod, err := k.getPod()
 	if err != nil {
 		return nil, nil, errors.InternalWrapError(err)
 	}
-	for _, pod := range podList.Items {
-		for _, container := range pod.Status.ContainerStatuses {
-			if execcommon.GetContainerID(&container) != containerID {
-				continue
-			}
-			return &pod, &container, nil
-		}
-	}
-	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
+	return pod, pod.Status.ContainerStatuses, nil
 }
 
 func (k *kubeletClient) exec(u *url.URL) (*url.URL, error) {
@@ -242,47 +248,38 @@ func (k *kubeletClient) readFileContents(u *url.URL) (*bytes.Buffer, error) {
 	}
 }
 
-// createArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
-func (k *kubeletClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
-	return k.getCommandOutput(containerID, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
+// createArchive exec in the given containerName and create a tarball of the given sourcePath. Works with directory
+func (k *kubeletClient) CreateArchive(ctx context.Context, containerName, sourcePath string) (*bytes.Buffer, error) {
+	return k.getCommandOutput(containerName, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
 }
 
-// GetFileContents exec in the given containerID and cat the given sourcePath.
-func (k *kubeletClient) GetFileContents(containerID, sourcePath string) (*bytes.Buffer, error) {
-	return k.getCommandOutput(containerID, fmt.Sprintf("command=cat&command=%s&output=1", sourcePath))
+// GetFileContents exec in the given containerName and cat the given sourcePath.
+func (k *kubeletClient) GetFileContents(containerName, sourcePath string) (*bytes.Buffer, error) {
+	return k.getCommandOutput(containerName, fmt.Sprintf("command=cat&command=%s&output=1", sourcePath))
 }
 
-func (k *kubeletClient) getCommandOutput(containerID, command string) (*bytes.Buffer, error) {
-	podList, err := k.getPodList()
+func (k *kubeletClient) getCommandOutput(containerName, command string) (*bytes.Buffer, error) {
+	pod, container, err := k.GetContainerStatus(context.Background(), containerName)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	for _, pod := range podList.Items {
-		for _, container := range pod.Status.ContainerStatuses {
-			if execcommon.GetContainerID(&container) != containerID {
-				continue
-			}
-			if container.State.Terminated != nil {
-				err = fmt.Errorf("container %s is terminated: %v", container.ContainerID, container.State.Terminated.String())
-				return nil, err
-			}
-			u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, command))
-			if err != nil {
-				return nil, err
-			}
-			u, err = k.exec(u)
-			if err != nil {
-				return nil, err
-			}
-			return k.readFileContents(u)
-		}
+	if container.State.Terminated != nil {
+		return nil, fmt.Errorf("container %q is terminated: %v", containerName, container.State.Terminated.String())
 	}
-	return nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
+	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s", k.kubeletEndpoint, pod.Namespace, pod.Name, containerName, command))
+	if err != nil {
+		return nil, err
+	}
+	u, err = k.exec(u)
+	if err != nil {
+		return nil, err
+	}
+	return k.readFileContents(u)
 }
 
-// WaitForTermination of the given containerID, set the timeout to 0 to discard it
-func (k *kubeletClient) WaitForTermination(containerID string, timeout time.Duration) error {
-	return execcommon.WaitForTermination(k, containerID, timeout)
+// WaitForTermination of the given container, set the timeout to 0 to discard it
+func (k *kubeletClient) WaitForTermination(ctx context.Context, containerNames []string, timeout time.Duration) error {
+	return execcommon.WaitForTermination(ctx, k, containerNames, timeout)
 }
 
 func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
@@ -294,10 +291,10 @@ func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.Contain
 	return err
 }
 
-func (k *kubeletClient) KillGracefully(containerID string) error {
-	return execcommon.KillGracefully(k, containerID)
+func (k *kubeletClient) KillGracefully(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
+	return execcommon.KillGracefully(ctx, k, containerNames, terminationGracePeriodDuration)
 }
 
-func (k *kubeletClient) CopyArchive(containerID, sourcePath, destPath string) error {
-	return execcommon.CopyArchive(k, containerID, sourcePath, destPath)
+func (k *kubeletClient) CopyArchive(ctx context.Context, containerName, sourcePath, destPath string) error {
+	return execcommon.CopyArchive(ctx, k, containerName, sourcePath, destPath)
 }

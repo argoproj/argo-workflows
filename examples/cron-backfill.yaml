@@ -5,6 +5,7 @@ kind: WorkflowTemplate
 metadata:
   name: job
 spec:
+  entrypoint: main
   arguments:
     parameters:
       - name: date

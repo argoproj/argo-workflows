@@ -1,11 +1,11 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
-import {Link} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
+import {DurationPanel} from '../../../shared/components/duration-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {formatDuration, wfDuration} from '../../../shared/duration';
+import {wfDuration} from '../../../shared/duration';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
 interface WorkflowsRowProps {
@@ -46,18 +46,23 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         />
                         <PhaseIcon value={wf.status.phase} />
                     </div>
-                    <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='row small-11'>
-                        <div className='columns small-3'>{wf.metadata.name}</div>
+                    <a
+                        href={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}
+                        className='small-11 row'
+                        ref={el => el && el.style.setProperty('max-width', '91.6666666667%', 'important')}>
+                        <div className='columns small-2'>{wf.metadata.name}</div>
                         <div className='columns small-2'>{wf.metadata.namespace}</div>
-                        <div className='columns small-2'>
+                        <div className='columns small-1'>
                             <Timestamp date={wf.status.startedAt} />
                         </div>
-                        <div className='columns small-2'>
+                        <div className='columns small-1'>
                             <Timestamp date={wf.status.finishedAt} />
                         </div>
                         <div className='columns small-1'>
-                            <Ticker>{() => formatDuration(wfDuration(wf.status))}</Ticker>
+                            <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
                         </div>
+                        <div className='columns small-1'>{wf.status.progress || '-'}</div>
+                        <div className='columns small-2'>{wf.status.message || '-'}</div>
                         <div className='columns small-1'>
                             <div className='workflows-list__labels-container'>
                                 <div
@@ -78,18 +83,18 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 </div>
                             </div>
                         </div>
-                    </Link>
-                    {this.state.hideDrawer ? (
-                        <span />
-                    ) : (
-                        <WorkflowDrawer
-                            name={wf.metadata.name}
-                            namespace={wf.metadata.namespace}
-                            onChange={key => {
-                                this.props.onChange(key);
-                            }}
-                        />
-                    )}
+                        {this.state.hideDrawer ? (
+                            <span />
+                        ) : (
+                            <WorkflowDrawer
+                                name={wf.metadata.name}
+                                namespace={wf.metadata.namespace}
+                                onChange={key => {
+                                    this.props.onChange(key);
+                                }}
+                            />
+                        )}
+                    </a>
                 </div>
             </div>
         );

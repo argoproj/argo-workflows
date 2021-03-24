@@ -3,6 +3,8 @@ package workflow
 // Workflow constants
 const (
 	Group                            string = "argoproj.io"
+	Version                          string = "v1alpha1"
+	APIVersion                       string = Group + "/" + Version
 	WorkflowKind                     string = "Workflow"
 	WorkflowSingular                 string = "workflow"
 	WorkflowPlural                   string = "workflows"
@@ -13,6 +15,7 @@ const (
 	WorkflowTemplatePlural           string = "workflowtemplates"
 	WorkflowTemplateShortName        string = "wftmpl"
 	WorkflowTemplateFullName         string = WorkflowTemplatePlural + "." + Group
+	WorkflowEventBindingPlural       string = "workfloweventbindings"
 	CronWorkflowKind                 string = "CronWorkflow"
 	CronWorkflowSingular             string = "cronworkflow"
 	CronWorkflowPlural               string = "cronworkflows"
@@ -23,38 +26,5 @@ const (
 	ClusterWorkflowTemplatePlural    string = "clusterworkflowtemplates"
 	ClusterWorkflowTemplateShortName string = "cwftmpl"
 	ClusterWorkflowTemplateFullName  string = ClusterWorkflowTemplatePlural + "." + Group
+	WorkflowEventBindingKind         string = "WorkflowEventBinding"
 )
-
-type CRD struct {
-	Kind, Singular, Plural, ShortName, FullName string
-}
-
-var CRDs = []CRD{
-	{
-		Kind:      ClusterWorkflowTemplateKind,
-		Singular:  ClusterWorkflowTemplateSingular,
-		Plural:    ClusterWorkflowTemplatePlural,
-		ShortName: ClusterWorkflowTemplateShortName,
-		FullName:  ClusterWorkflowTemplateFullName,
-	},
-	{
-		Kind:      CronWorkflowKind,
-		Singular:  CronWorkflowSingular,
-		Plural:    CronWorkflowPlural,
-		ShortName: CronWorkflowShortName,
-		FullName:  CronWorkflowFullName,
-	},
-	{
-		Kind:      WorkflowKind,
-		Singular:  WorkflowSingular,
-		Plural:    WorkflowPlural,
-		ShortName: WorkflowShortName,
-		FullName:  WorkflowFullName,
-	},
-	{
-		Kind:      WorkflowTemplateKind,
-		Singular:  WorkflowTemplateSingular,
-		ShortName: WorkflowTemplateShortName,
-		FullName:  WorkflowTemplateFullName,
-	},
-}

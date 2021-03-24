@@ -3,14 +3,15 @@ package sqldb
 import (
 	"fmt"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-var ExplosiveOffloadNodeStatusRepo OffloadNodeStatusRepo = &explosiveOffloadNodeStatusRepo{}
-var OffloadNotSupportedError = fmt.Errorf("offload node status is not supported")
+var (
+	ExplosiveOffloadNodeStatusRepo OffloadNodeStatusRepo = &explosiveOffloadNodeStatusRepo{}
+	OffloadNotSupportedError                             = fmt.Errorf("offload node status is not supported")
+)
 
-type explosiveOffloadNodeStatusRepo struct {
-}
+type explosiveOffloadNodeStatusRepo struct{}
 
 func (n *explosiveOffloadNodeStatusRepo) IsEnabled() bool {
 	return false

@@ -2,6 +2,7 @@ package git
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -16,18 +17,21 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
-// GitArtifactDriver is the artifact driver for a git repo
-type GitArtifactDriver struct {
+// ArtifactDriver is the artifact driver for a git repo
+type ArtifactDriver struct {
 	Username              string
 	Password              string
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
 }
 
-func (g *GitArtifactDriver) auth() (func(), transport.AuthMethod, []string, error) {
+var _ common.ArtifactDriver = &ArtifactDriver{}
+
+func (g *ArtifactDriver) auth() (func(), transport.AuthMethod, []string, error) {
 	if g.SSHPrivateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
@@ -91,11 +95,11 @@ esac
 }
 
 // Save is unsupported for git output artifacts
-func (g *GitArtifactDriver) Save(string, *wfv1.Artifact) error {
+func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.New("git output artifacts unsupported")
 }
 
-func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	closer, auth, env, err := g.auth()
 	if err != nil {
 		return err
@@ -157,10 +161,14 @@ func isAlreadyUpToDateErr(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
 }
 
-func (g *GitArtifactDriver) error(err error, cmd *exec.Cmd) error {
+func (g *ArtifactDriver) error(err error, cmd *exec.Cmd) error {
 	if exErr, ok := err.(*exec.ExitError); ok {
 		log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
 		return errors.New(strings.Split(string(exErr.Stderr), "\n")[0])
 	}
 	return err
+}
+
+func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
