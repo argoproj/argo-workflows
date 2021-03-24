@@ -6490,7 +6490,8 @@ func TestOnExitNameBackwardsCompatibility(t *testing.T) {
 	}
 }
 
-const testOnExitDAGStatusCompatibility = `apiVersion: argoproj.io/v1alpha1
+const testOnExitDAGStatusCompatibility = `
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: dag-diamond-8xw8l

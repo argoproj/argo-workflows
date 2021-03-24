@@ -260,7 +260,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.OnExit, childNode.Name, childNode.DisplayName, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
