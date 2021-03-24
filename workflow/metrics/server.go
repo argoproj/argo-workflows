@@ -9,10 +9,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 )
 
 // RunServer starts a metrics server
 func (m *Metrics) RunServer(ctx context.Context) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	if !m.metricsConfig.Enabled {
 		// If metrics aren't enabled, return
 		return
