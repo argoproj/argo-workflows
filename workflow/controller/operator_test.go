@@ -6314,3 +6314,118 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }
+
+const testOnExitNameBackwardsCompatibility = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-69h5d
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: run
+        onExit: pass
+        template: pass
+  - container:
+      args:
+      - exit 0
+      command:
+      - sh
+      - -c
+      image: alpine
+    name: pass
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    hello-world-69h5d:
+      children:
+      - hello-world-69h5d-4087924081
+      displayName: hello-world-69h5d
+      finishedAt: "2021-03-24T14:53:32Z"
+      id: hello-world-69h5d
+      name: hello-world-69h5d
+      outboundNodes:
+      - hello-world-69h5d-928074325
+      phase: Running
+      startedAt: "2021-03-24T14:53:18Z"
+      templateName: main
+      templateScope: local/hello-world-69h5d
+      type: Steps
+    hello-world-69h5d-928074325:
+      boundaryID: hello-world-69h5d
+      displayName: run.onExit
+      finishedAt: "2021-03-24T14:53:31Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-69h5d-928074325
+      name: run.onExit
+      phase: Running
+      startedAt: "2021-03-24T14:53:25Z"
+      templateName: pass
+      templateScope: local/hello-world-69h5d
+      type: Pod
+    hello-world-69h5d-2500098386:
+      boundaryID: hello-world-69h5d
+      children:
+      - hello-world-69h5d-928074325
+      displayName: run
+      finishedAt: "2021-03-24T14:53:24Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-69h5d-2500098386
+      name: hello-world-69h5d[0].run
+      phase: Succeeded
+      startedAt: "2021-03-24T14:53:18Z"
+      templateName: pass
+      templateScope: local/hello-world-69h5d
+      type: Pod
+    hello-world-69h5d-4087924081:
+      boundaryID: hello-world-69h5d
+      children:
+      - hello-world-69h5d-2500098386
+      displayName: '[0]'
+      finishedAt: "2021-03-24T14:53:32Z"
+      id: hello-world-69h5d-4087924081
+      name: hello-world-69h5d[0]
+      phase: Running
+      startedAt: "2021-03-24T14:53:18Z"
+      templateScope: local/hello-world-69h5d
+      type: StepGroup
+  phase: Running
+  startedAt: "2021-03-24T14:53:18Z"
+`
+
+// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
+// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
+// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
+// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
+// If it doesn't, we use the new (and unique) name for all operations henceforth.
+//
+// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
+// old name. When we call operate on it, we should NOT create another onExit node with the new name and instead respect
+// the old onExit node.
+//
+// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
+// See more: https://github.com/argoproj/argo-workflows/issues/5502
+func TestOnExitNameBackwardsCompatibility(t *testing.T) {
+	wf := unmarshalWF(testOnExitNameBackwardsCompatibility)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	createRunningPods(ctx, woc)
+
+	nodesBeforeOperation := len(woc.wf.Status.Nodes)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	// Number of nodes should not change (no new name node was created)
+	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
+	node := woc.wf.Status.Nodes.FindByDisplayName("run.onExit")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	}
+}

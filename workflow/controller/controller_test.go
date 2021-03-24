@@ -301,6 +301,31 @@ func withAnnotation(key, val string) with {
 	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }
 
+// createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
+// pod assessor
+func createRunningPods(ctx context.Context, woc *wfOperationCtx, with ...with) {
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {
+			pod, _ := podcs.Create(ctx, &apiv1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: node.ID,
+					Annotations: map[string]string{
+						"workflows.argoproj.io/node-name": node.Name,
+					},
+					Labels: map[string]string{
+						"workflows.argoproj.io/workflow": woc.wf.Name,
+					},
+				},
+				Status: apiv1.PodStatus{
+					Phase: apiv1.PodRunning,
+				},
+			}, metav1.CreateOptions{})
+			_ = woc.controller.podInformer.GetStore().Add(pod)
+		}
+	}
+}
+
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())

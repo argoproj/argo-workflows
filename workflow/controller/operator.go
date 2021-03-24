@@ -2650,21 +2650,6 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
-func (woc *wfOperationCtx) isChildNode(parent string, child string) bool {
-	parentID := woc.wf.NodeID(parent)
-	childID := woc.wf.NodeID(child)
-	node, ok := woc.wf.Status.Nodes[parentID]
-	if !ok {
-		panic(fmt.Sprintf("parent node %s not initialized", parent))
-	}
-	for _, nodeID := range node.Children {
-		if childID == nodeID {
-			return true
-		}
-	}
-	return false
-}
-
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
@@ -2969,7 +2954,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, paren
 		// See more: https://github.com/argoproj/argo-workflows/issues/5502
 		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
 		legacyOnExitNodeName := common.GenerateOnExitNodeName(parentNodeDisplayName)
-		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.isChildNode(parentNodeName, legacyOnExitNodeName) {
+		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.wf.GetNodeByName(parentNodeName).HasChild(legacyNameNode.ID) {
 			onExitNodeName = legacyOnExitNodeName
 		}
 
