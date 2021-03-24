@@ -185,16 +185,19 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 }
 
 func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
-	ctx, cancel := context.WithCancel(ctx) // stop the polling when we are no longer waiting
-	defer cancel()
 	go func() {
 		err := d.pollContainerIDs(ctx, containerNames)
 		if err != nil {
 			log.WithError(err).Error("failed to poll container IDs")
 		}
 	}()
-	for i := 0; !d.haveContainers(containerNames) && i < 5; i++ {
-		time.Sleep(1 * time.Second)
+	for !d.haveContainers(containerNames) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			time.Sleep(1 * time.Second)
+		}
 	}
 	containerIDs, err := d.getContainerIDs(containerNames)
 	if err != nil {
@@ -257,7 +260,7 @@ func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []
 		}
 		// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
 		// we need a bit more time
-		if !d.haveContainers(containerNames) || time.Since(started) < 15*time.Second {
+		if !d.haveContainers(containerNames) || time.Since(started) < 30*time.Second {
 			time.Sleep(1 * time.Second) // this is a hard-loop because containers can run very short periods of time
 		} else {
 			time.Sleep(10 * time.Second)
