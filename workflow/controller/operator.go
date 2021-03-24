@@ -2650,6 +2650,21 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
+func (woc *wfOperationCtx) isChildNode(parent string, child string) bool {
+	parentID := woc.wf.NodeID(parent)
+	childID := woc.wf.NodeID(child)
+	node, ok := woc.wf.Status.Nodes[parentID]
+	if !ok {
+		panic(fmt.Sprintf("parent node %s not initialized", parent))
+	}
+	for _, nodeID := range node.Children {
+		if childID == nodeID {
+			return true
+		}
+	}
+	return false
+}
+
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
@@ -2937,10 +2952,27 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentNodeName, parentNodeDisplayName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
 	if templateRef != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
+
+		// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
+		// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
+		// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
+		// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
+		// If it doesn't, we use the new (and unique) name for all operations henceforth.
+		// TODO: This scaffold code should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
+		// When the scaffold code is removed, we should only have the following:
+		//
+		// 		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
+		//
+		// See more: https://github.com/argoproj/argo-workflows/issues/5502
 		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
+		legacyOnExitNodeName := common.GenerateOnExitNodeName(parentNodeDisplayName)
+		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.isChildNode(parentNodeName, legacyOnExitNodeName) {
+			onExitNodeName = legacyOnExitNodeName
+		}
+
 		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
