@@ -303,7 +303,7 @@ func withAnnotation(key, val string) with {
 
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
 // pod assessor
-func createRunningPods(ctx context.Context, woc *wfOperationCtx, with ...with) {
+func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	for _, node := range woc.wf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {

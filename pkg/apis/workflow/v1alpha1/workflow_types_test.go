@@ -825,3 +825,12 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, suspendTmpl.Data)
 	})
 }
+
+func TestHasChild(t *testing.T) {
+	node := NodeStatus{
+		Children: []string{"a", "b"},
+	}
+	assert.True(t, node.HasChild("a"))
+	assert.False(t, node.HasChild("c"))
+	assert.False(t, node.HasChild(""))
+}
