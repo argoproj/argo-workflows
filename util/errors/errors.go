@@ -19,7 +19,7 @@ func IsTransientErr(err error) bool {
 	}
 	err = argoerrs.Cause(err)
 	isTransient := isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err)
-	if (isTransient) {
+	if isTransient {
 		log.Infof("Transient error: %v", err)
 	} else {
 		log.Errorf("Non-transient error: %v", err)
