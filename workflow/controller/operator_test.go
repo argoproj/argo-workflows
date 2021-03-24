@@ -6429,3 +6429,108 @@ func TestOnExitNameBackwardsCompatibility(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, node.Phase)
 	}
 }
+
+const testOnExitDAGStatusCompatibility = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-8xw8l
+spec:
+  entrypoint: diamond
+  templates:
+  - dag:
+      tasks:
+      - name: A
+        onExit: echo
+        template: echo
+      - depends: A
+        name: B
+        template: echo
+    name: diamond
+  - container:
+      command:
+      - echo
+      - hi
+      image: alpine:3.7
+    name: echo
+status:
+  nodes:
+    dag-diamond-8xw8l:
+      children:
+      - dag-diamond-8xw8l-1488416551
+      displayName: dag-diamond-8xw8l
+      finishedAt: "2021-03-24T15:37:06Z"
+      id: dag-diamond-8xw8l
+      name: dag-diamond-8xw8l
+      outboundNodes:
+      - dag-diamond-8xw8l-1505194170
+      phase: Running
+      startedAt: "2021-03-24T15:36:47Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-8xw8l
+      type: DAG
+    dag-diamond-8xw8l-1342580575:
+      boundaryID: dag-diamond-8xw8l
+      displayName: A.onExit
+      finishedAt: "2021-03-24T15:36:59Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-8xw8l-1342580575
+      name: A.onExit
+      phase: Running
+      startedAt: "2021-03-24T15:36:54Z"
+      templateName: echo
+      templateScope: local/dag-diamond-8xw8l
+      type: Pod
+    dag-diamond-8xw8l-1488416551:
+      boundaryID: dag-diamond-8xw8l
+      children:
+      - dag-diamond-8xw8l-1342580575
+      displayName: A
+      finishedAt: "2021-03-24T15:36:53Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-8xw8l-1488416551
+      name: dag-diamond-8xw8l.A
+      phase: Succeeded
+      startedAt: "2021-03-24T15:36:47Z"
+      templateName: echo
+      templateScope: local/dag-diamond-8xw8l
+      type: Pod
+  phase: Running
+  startedAt: "2021-03-24T15:36:47Z"
+`
+
+// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
+// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
+// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
+// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
+// If it doesn't, we use the new (and unique) name for all operations henceforth.
+//
+// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
+// old name. When we call operate on it, we should NOT create the subsequent DAG done ("B") until the onExit node name with
+// the old name finishes running.
+//
+// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
+// See more: https://github.com/argoproj/argo-workflows/issues/5502
+func TestOnExitDAGStatusCompatibility(t *testing.T) {
+	wf := unmarshalWF(testOnExitDAGStatusCompatibility)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	createRunningPods(ctx, woc)
+
+	nodesBeforeOperation := len(woc.wf.Status.Nodes)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	// Number of nodes should not change (no new name node was created)
+	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
+	node := woc.wf.Status.Nodes.FindByDisplayName("A.onExit")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	}
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	assert.Nil(t, nodeB)
+}
