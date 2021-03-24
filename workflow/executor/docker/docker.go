@@ -185,9 +185,19 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 }
 
 func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) error {
-	err := d.syncContainerIDs(ctx, containerNames)
-	if err != nil {
-		return err
+	go func() {
+		err := d.pollContainerIDs(ctx, containerNames)
+		if err != nil {
+			log.WithError(err).Error("failed to poll container IDs")
+		}
+	}()
+	for !d.haveContainers(containerNames) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			time.Sleep(1 * time.Second)
+		}
 	}
 	containerIDs, err := d.getContainerIDs(containerNames)
 	if err != nil {
@@ -197,7 +207,7 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 	return err
 }
 
-func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []string) error {
+func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -247,13 +257,14 @@ func (d *DockerExecutor) syncContainerIDs(ctx context.Context, containerNames []
 				containerStatus[containerName] = status
 				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, containerID, createdAt, status)
 			}
-			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
-			// we need a bit more time
-			if d.haveContainers(containerNames) && time.Since(started) > 3*time.Second {
-				return nil
-			}
 		}
-		time.Sleep(1 * time.Second) // this is a hard-loop because containers can run very short periods of time
+		// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
+		// we need a bit more time
+		if !d.haveContainers(containerNames) || time.Since(started) < 30*time.Second {
+			time.Sleep(1 * time.Second) // this is a hard-loop because containers can run very short periods of time
+		} else {
+			time.Sleep(10 * time.Second)
+		}
 	}
 }
 
@@ -291,7 +302,6 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 	_, err = common.RunCommand("docker", killArgs...)
 	if err != nil {
 		log.Warningf("Ignored error from 'docker kill --signal TERM': %s", err)
-		return nil
 	}
 	waitArgs := append([]string{"wait"}, containerIDs...)
 	waitCmd := exec.Command("docker", waitArgs...)
