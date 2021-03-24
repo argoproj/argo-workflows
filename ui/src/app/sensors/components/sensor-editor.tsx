@@ -28,7 +28,7 @@ export const SensorEditor = ({
                 {
                     key: 'manifest',
                     title: 'Manifest',
-                    content: <ObjectEditor type='io.argoproj.sensor.v1alpha1.Sensor' value={sensor} onChange={x => onChange({...x})} />
+                    content: <ObjectEditor type='io.argoproj.events.v1alpha1.Sensor' value={sensor} onChange={x => onChange({...x})} />
                 },
                 {
                     key: 'metadata',
