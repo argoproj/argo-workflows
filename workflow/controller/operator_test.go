@@ -3825,6 +3825,44 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.Equal(t, "testServiceAccountName", serviceAccountNameValue.String())
 }
 
+var unsuppliedArgValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-with-unsupplied-param-
+spec:
+  arguments:
+    parameters:
+    - name: missing
+  entrypoint: whalesay
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+`
+
+func TestUnsuppliedArgValue(t *testing.T) {
+	wf := unmarshalWF(unsuppliedArgValue)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
+	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value is required")
+}
+
 var maxDurationOnErroredFirstNode = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -6275,4 +6313,64 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	ref, expr = generateOutputResultRegex("template-name", stepsTmpl)
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
+}
+
+const rootRetryStrategyCompletes = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-5bd7v
+spec:
+  activeDeadlineSeconds: 300
+  entrypoint: whalesay
+  retryStrategy:
+    limit: 1
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    hello-world-5bd7v:
+      children:
+      - hello-world-5bd7v-643409622
+      displayName: hello-world-5bd7v
+      finishedAt: "2021-03-23T14:53:45Z"
+      id: hello-world-5bd7v
+      name: hello-world-5bd7v
+      phase: Succeeded
+      startedAt: "2021-03-23T14:53:39Z"
+      templateName: whalesay
+      templateScope: local/hello-world-5bd7v
+      type: Retry
+    hello-world-5bd7v-643409622:
+      displayName: hello-world-5bd7v(0)
+      finishedAt: "2021-03-23T14:53:44Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-5bd7v-643409622
+      name: hello-world-5bd7v(0)
+      phase: Succeeded
+      startedAt: "2021-03-23T14:53:39Z"
+      templateName: whalesay
+      templateScope: local/hello-world-5bd7v
+      type: Pod
+  phase: Running
+  startedAt: "2021-03-23T14:53:39Z"
+`
+
+func TestRootRetryStrategyCompletes(t *testing.T) {
+	wf := unmarshalWF(rootRetryStrategyCompletes)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

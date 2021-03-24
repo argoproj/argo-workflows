@@ -7,7 +7,24 @@ import (
 
 type formatterSimple struct{}
 
-func (f formatterSimple) Format(l *LintResults) string {
+func (f formatterSimple) Format(l *LintResult) string {
+	if !l.Linted {
+		return ""
+	}
+
+	if len(l.Errs) == 0 {
+		return ""
+	}
+
+	sb := &strings.Builder{}
+	for _, e := range l.Errs {
+		fmt.Fprintf(sb, "%s: %s\n", l.File, e)
+	}
+
+	return sb.String()
+}
+
+func (f formatterSimple) Summarize(l *LintResults) string {
 	if l.Success {
 		return "no linting errors found!\n"
 	}
@@ -16,21 +33,5 @@ func (f formatterSimple) Format(l *LintResults) string {
 		return "found nothing to lint in the specified paths, failing...\n"
 	}
 
-	sb := &strings.Builder{}
-
-	for _, r := range l.Results {
-		if !r.Linted {
-			continue
-		}
-
-		if len(r.Errs) == 0 {
-			continue
-		}
-
-		for _, e := range r.Errs {
-			fmt.Fprintf(sb, "%s: %s\n", r.File, e)
-		}
-	}
-
-	return sb.String()
+	return ""
 }
