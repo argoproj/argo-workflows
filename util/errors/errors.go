@@ -22,7 +22,7 @@ func IsTransientErr(err error) bool {
 	if (isTransient) {
 		log.Infof("Transient error: %v", err)
 	} else {
-		log.Errorf("Fatal error: %v", err)
+		log.Errorf("Non-transient error: %v", err)
 	}
 	return isTransient
 }
