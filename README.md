@@ -22,6 +22,10 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 * Easily orchestrate highly parallel jobs on Kubernetes.
 * Argo Workflows puts a cloud-scale supercomputer at your fingertips!
 
+## Try Argo Workflows
+
+[Access the demo enviromnment](https://workflows.apps.argoproj.io/workflows/argo) (login using Github)
+
 ## Quickstart
 ```bash
 kubectl create namespace argo
