@@ -108,6 +108,6 @@ func TestConfigMapCacheSave(t *testing.T) {
 	var entry cache.Entry
 	err = json.Unmarshal([]byte(cm.Data["hi-there-world"]), &entry)
 	assert.NoError(t, err)
-	assert.Equal(t, lastHitTimestampLabel, entry.LastHitTimestamp.Time)
-	assert.Equal(t, lastHitTimestampLabel, entry.CreationTimestamp.Time)
+	assert.Equal(t, lastHitTimestampLabel.Format(time.RFC3339), entry.LastHitTimestamp.Time.Format(time.RFC3339))
+	assert.Equal(t, lastHitTimestampLabel.Format(time.RFC3339), entry.CreationTimestamp.Time.Format(time.RFC3339))
 }
