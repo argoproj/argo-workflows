@@ -118,10 +118,14 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 		}
 	}
 
+	creationTime := time.Now()
+	cache.SetLabels(map[string]string{common.LabelKeyCacheLastHitTimestamp: creationTime.Format(time.RFC3339)})
+
 	newEntry := Entry{
 		NodeID:            nodeId,
 		Outputs:           value,
-		CreationTimestamp: metav1.Time{Time: time.Now()},
+		CreationTimestamp: metav1.Time{Time: creationTime},
+		LastHitTimestamp:  metav1.Time{Time: creationTime},
 	}
 
 	entryJSON, err := json.Marshal(newEntry)

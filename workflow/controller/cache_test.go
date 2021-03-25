@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -57,10 +58,10 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 
 	cm, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	lastHitTimestamp, err := time.Parse(time.RFC3339, cm.Labels[common.LabelKeyCacheLastHitTimestamp])
+	lastHitTimestampLabel, err := time.Parse(time.RFC3339, cm.Labels[common.LabelKeyCacheLastHitTimestamp])
 	assert.NoError(t, err)
-	assert.True(t, lastHitTimestamp.After(cm.CreationTimestamp.Time))
-	assert.Equal(t, lastHitTimestamp.Format(time.RFC3339), entry.LastHitTimestamp.Time.Format(time.RFC3339))
+	assert.True(t, lastHitTimestampLabel.After(entry.CreationTimestamp.Time))
+	assert.Equal(t, lastHitTimestampLabel.Format(time.RFC3339), entry.LastHitTimestamp.Time.Format(time.RFC3339))
 
 	outputs := entry.Outputs
 	assert.NoError(t, err)
@@ -102,4 +103,11 @@ func TestConfigMapCacheSave(t *testing.T) {
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
+	lastHitTimestampLabel, err := time.Parse(time.RFC3339, cm.Labels[common.LabelKeyCacheLastHitTimestamp])
+	assert.NoError(t, err)
+	var entry cache.Entry
+	err = json.Unmarshal([]byte(cm.Data["hi-there-world"]), &entry)
+	assert.NoError(t, err)
+	assert.Equal(t, lastHitTimestampLabel, entry.LastHitTimestamp.Time)
+	assert.Equal(t, lastHitTimestampLabel, entry.CreationTimestamp.Time)
 }
