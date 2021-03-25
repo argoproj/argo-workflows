@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -90,7 +91,12 @@ See %s`, help.ArgoSever),
 			var tlsConfig *tls.Config
 			if secure {
 				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
-				errors.CheckError(err)
+				if err != nil {
+					if strings.Contains(err.Error(), "no such file or directory") {
+						errors.CheckError(fmt.Errorf("%w. Did you mean to start Argo in insecure mode?\n\n\targo server --secure=false\n\n", err))
+					}
+					errors.CheckError(err)
+				}
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				errors.CheckError(err)
 				tlsConfig = &tls.Config{
