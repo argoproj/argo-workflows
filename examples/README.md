@@ -734,7 +734,7 @@ spec:
 
 ## Conditionals
 
-We also support conditional execution as shown in this example:
+We also support conditional execution. The syntax is implemented by [govaluate](https://github.com/Knetic/govaluate) which offers the support for complex syntax. See in the example:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -751,11 +751,28 @@ spec:
         template: flip-coin
     # evaluate the result in parallel
     - - name: heads
-        template: heads                 # call heads template if "heads"
+        template: heads                       # call heads template if "heads"
         when: "{{steps.flip-coin.outputs.result}} == heads"
       - name: tails
-        template: tails                 # call tails template if "tails"
+        template: tails                       # call tails template if "tails"
         when: "{{steps.flip-coin.outputs.result}} == tails"
+    - - name: flip-again
+        template: flip-coin
+    - - name: complex-condition
+        template: heads-tails-or-twice-tails
+        # call heads template if first flip was "heads" and second was "tails" OR both were "tails"
+        when: >-
+            ( {{steps.flip-coin.outputs.result}} == heads &&
+              {{steps.flip-again.outputs.result}} == tails
+            ) ||
+            ( {{steps.flip-coin.outputs.result}} == tails &&
+              {{steps.flip-again.outputs.result}} == tails )
+      - name: heads-regex
+        template: heads                       # call heads template if ~ "hea"
+        when: "{{steps.flip-again.outputs.result}} =~ hea"
+      - name: tails-regex
+        template: tails                       # call heads template if ~ "tai"
+        when: "{{steps.flip-again.outputs.result}} =~ tai"
 
   # Return heads or tails based on a random number
   - name: flip-coin
@@ -778,6 +795,12 @@ spec:
       image: alpine:3.6
       command: [sh, -c]
       args: ["echo \"it was tails\""]
+  
+  - name: heads-tails-or-twice-tails
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
 ```
 
 ## Retrying Failed or Errored Steps
