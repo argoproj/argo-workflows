@@ -3,7 +3,12 @@ package templateresolution
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
 
+	argoJson "github.com/argoproj/pkg/json"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,17 +24,81 @@ const maxResolveDepth int = 10
 
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type workflowTemplateInterfaceWrapper struct {
-	clientset typed.WorkflowTemplateInterface
+	clientset  typed.WorkflowTemplateInterface
+	httpClient http.RoundTripper
 }
 
 func WrapWorkflowTemplateInterface(clientset typed.WorkflowTemplateInterface) WorkflowTemplateNamespacedGetter {
-	return &workflowTemplateInterfaceWrapper{clientset: clientset}
+	return &workflowTemplateInterfaceWrapper{clientset: clientset, httpClient: http.DefaultTransport}
 }
 
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.WorkflowTemplate, error) {
 	ctx := context.TODO()
+
+	if strings.HasPrefix(name, "http://") || strings.HasPrefix(name, "https://") {
+		tpl, tplName, err := wrapper.getRemoteTemplate(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+
+		if tpl.ObjectMeta.Labels == nil {
+			tpl.ObjectMeta.Labels = make(map[string]string)
+		}
+
+		tpl.ObjectMeta.Labels["argoport-packagename"] = tplName
+
+		return tpl, nil
+	}
+
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
+}
+
+func (wrapper *workflowTemplateInterfaceWrapper) getRemoteTemplate(ctx context.Context, orgUrl string) (*wfv1.WorkflowTemplate, string, error) {
+	tagInd := strings.Index(orgUrl, "@")
+	tag := "latest"
+	if tagInd != -1 {
+		orgUrl, tag = orgUrl[:tagInd], orgUrl[tagInd+1:]
+	}
+
+	pUrl, err := url.Parse(orgUrl)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to parse remote template url %s: %w", orgUrl, err)
+	}
+
+	params := url.Values{}
+	params.Add("ref", tag)
+	pUrl.RawQuery = params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", pUrl.String(), nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get remote template %s: %w", orgUrl, err)
+	}
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := wrapper.httpClient.RoundTrip(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get remote template %s: %w", orgUrl, err)
+	}
+
+	tplStr, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read remote template from response %s: %w", orgUrl, err)
+	}
+
+	tplName := resp.Header.Get("argoport-template-name")
+
+	var wftmpl wfv1.WorkflowTemplate
+	err = argoJson.Unmarshal(tplStr, &wftmpl, argoJson.DisallowUnknownFields)
+	if err == nil {
+		return &wftmpl, tplName, nil
+	}
+	tpls, err := common.SplitWorkflowTemplateYAMLFile(tplStr, true)
+	if err == nil {
+		return &tpls[0], tplName, nil
+	}
+
+	return nil, "", fmt.Errorf("failed to parse remote template %s: %w", orgUrl, err)
 }
 
 // WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
@@ -144,6 +213,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 	if template == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)
 	}
+	//tmplRef.Name = template.Name
 	return template.DeepCopy(), nil
 }
 
@@ -209,6 +279,10 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 		if err != nil {
 			return nil, nil, false, err
 		}
+
+		// if tmplHolder.GetTemplateRef() != nil {
+		// 	tmplHolder.GetTemplateRef().Name = newTmpl.Name
+		// }
 		// Stored the found template.
 		if ctx.workflow != nil {
 			scope := ctx.tmplBase.GetResourceScope()

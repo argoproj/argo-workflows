@@ -229,6 +229,28 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
 	}
+
+	for i, template := range wf.Spec.Templates {
+		for j, steps := range template.Steps {
+			for k, step := range steps.Steps {
+				if step.TemplateRef != nil && (strings.HasPrefix(step.TemplateRef.Name, "http://") || strings.HasPrefix(step.TemplateRef.Name, "https://")) {
+					st := &wfv1.Template{}
+					curName := ""
+					for name, t := range wf.Status.StoredTemplates {
+						if strings.Contains(name, step.TemplateRef.Name) {
+							st = &t
+							curName = name
+							break
+						}
+					}
+					wf.Spec.Templates[i].Steps[j].Steps[k].TemplateRef.Name = st.Name
+					delete(wf.Status.StoredTemplates, curName)
+					wf.Status.StoredTemplates[st.Name] = *st
+				}
+			}
+		}
+	}
+
 	return wfConditions, nil
 }
 
@@ -440,6 +462,10 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, errors.InternalWrapError(err)
 		}
 		return nil, err
+	}
+
+	if tmplHolder.GetTemplateRef() != nil {
+		tmplHolder.GetTemplateRef().Name = resolvedTmpl.Name
 	}
 
 	// Validate retryStrategy
