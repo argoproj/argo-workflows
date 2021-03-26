@@ -9,7 +9,6 @@ import (
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -48,12 +47,14 @@ func NewServerCommand() *cobra.Command {
 		Short: "start the Argo Server",
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoSever),
-		Run: func(c *cobra.Command, args []string) {
+		RunE: func(c *cobra.Command, args []string) error {
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
 			config, err := client.GetConfig().ClientConfig()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			config.Burst = 30
 			config.QPS = 20.0
 
@@ -86,9 +87,13 @@ See %s`, help.ArgoSever),
 			var tlsConfig *tls.Config
 			if secure {
 				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
-				errors.CheckError(err)
-				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
-				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
+				if err != nil {
+					return err
+				}
+				tlsConfig = &tls.Config{
+					Certificates:       []tls.Certificate{cer},
+					InsecureSkipVerify: false, // InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
+				}
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
 			}
@@ -96,7 +101,9 @@ See %s`, help.ArgoSever),
 			modes := auth.Modes{}
 			for _, mode := range authModes {
 				err := modes.Add(mode)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
 				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo-workflows/argo-server-auth-mode/")
@@ -127,9 +134,14 @@ See %s`, help.ArgoSever),
 					}
 				}
 			}
+
 			server, err := apiserver.NewArgoServer(ctx, opts)
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
+
 			server.Run(ctx, port, browserOpenFunc)
+			return nil
 		},
 	}
 
@@ -140,7 +152,9 @@ See %s`, help.ArgoSever),
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
-	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
+	// We default to secure mode if we find certs available, otherwise we default to insecure mode.
+	_, err := os.Stat("argo-server.crt")
+	command.Flags().BoolVarP(&secure, "secure", "e", !os.IsNotExist(err), "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
