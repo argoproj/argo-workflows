@@ -75,7 +75,7 @@ controller's configmap like the following:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: argo-controller-configmap
+  name: workflow-controller-configmap
 data:
   config: |
     executor:
