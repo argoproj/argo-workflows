@@ -1,9 +1,10 @@
 package commands
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultSecureMode(t *testing.T) {

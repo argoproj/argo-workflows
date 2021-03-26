@@ -250,7 +250,7 @@ func TestChmod(t *testing.T) {
 		permissions perm
 	}{
 		{
-			0777,
+			0o777,
 			false,
 			perm{
 				"drwxrwxrwx",
@@ -258,7 +258,7 @@ func TestChmod(t *testing.T) {
 			},
 		},
 		{
-			0777,
+			0o777,
 			true,
 			perm{
 				"drwxrwxrwx",

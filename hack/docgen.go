@@ -345,7 +345,7 @@ func (c *DocGeneratorContext) generate() string {
 func generateDocs() {
 	println("generating docs/fields.md")
 	c := NewDocGeneratorContext()
-	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
+	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0o644)
 	if err != nil {
 		panic(err)
 	}
