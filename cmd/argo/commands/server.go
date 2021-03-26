@@ -159,14 +159,15 @@ See %s`, help.ArgoSever),
 					}
 				}
 			}
-			server, err := apiserver.NewArgoServer(ctx, opts)
-			if err != nil {
-				return err
-			}
 
 			if dryRun {
 				c.Println(fmt.Sprintf("would have run with settings: secure=%t, namespace=%s, baseHRef=%s, managedNamespace=%s", secure, namespace, baseHRef, managedNamespace))
 				return nil
+			}
+
+			server, err := apiserver.NewArgoServer(ctx, opts)
+			if err != nil {
+				return err
 			}
 
 			server.Run(ctx, port, browserOpenFunc)
