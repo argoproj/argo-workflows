@@ -141,7 +141,7 @@ func TestDefaultSecureMode(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, b.String(), "secure=true")
 
-	// Certs and no explicit insecure mode. We should default to insecure
+	// Certs and explicit insecure mode. We should default to insecure
 	b = new(bytes.Buffer)
 	cmd.SetOut(b)
 	cmd.SetErr(b)
@@ -158,5 +158,4 @@ func TestDefaultSecureMode(t *testing.T) {
 	err = cmd.Execute()
 	assert.NoError(t, err)
 	assert.Contains(t, b.String(), "secure=true")
-
 }
