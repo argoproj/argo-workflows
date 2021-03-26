@@ -31,6 +31,28 @@ Note that these environment variables may be removed at any time.
 | `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | Whether to bubble up template errors to workflow. Default true |
 | `INFORMER_WRITE_BACK` | `bool` | Whether to write back to informer instead of catching up. Deafult true |
 
+You can set the environment variables for controller in controller's container spec like the following:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  selector:
+    matchLabels:
+      app: workflow-controller
+  template:
+    metadata:
+      labels:
+        app: workflow-controller
+    spec:
+      containers:
+        - env:
+          - name: WORKFLOW_GC_PERIOD
+            value: 30s
+```
+
 ## Executor
 
 | Name | Type | Description|
@@ -45,3 +67,19 @@ Note that these environment variables may be removed at any time.
 | `PNS_PRIVILEGED` | `bool` | Whether to always set privileged on for PNS when PNS executor is used. |
 | `REMOVE_LOCAL_ART_PATH` | `bool` | Whether to remove local artifacts. |
 | `RESOURCE_STATE_CHECK_INTERVAL` | `time.Duration` | The time interval between resource status checks against the specified success and failure conditions. |
+
+You can set the environment variables for executor by customizing executor container's environment variables in your
+controller's configmap like the following:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argo-controller-configmap
+data:
+  config: |
+    executor:
+      env:
+      - name: RESOURCE_STATE_CHECK_INTERVAL
+        value: 3s
+```
