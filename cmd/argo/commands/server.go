@@ -43,7 +43,6 @@ func NewServerCommand() *cobra.Command {
 		frameOptions             string
 		accessControlAllowOrigin string
 		logFormat                string // --log-format
-		dryRun                   bool
 	)
 
 	command := cobra.Command{
@@ -145,11 +144,6 @@ See %s`, help.ArgoSever),
 				}
 			}
 
-			if dryRun {
-				c.Println(fmt.Sprintf("would have run with settings: secure=%t, namespace=%s, baseHRef=%s, managedNamespace=%s", secure, namespace, baseHRef, managedNamespace))
-				return nil
-			}
-
 			server, err := apiserver.NewArgoServer(ctx, opts)
 			if err != nil {
 				return err
@@ -171,8 +165,6 @@ See %s`, help.ArgoSever),
 	_, err := os.Stat("argo-server.crt")
 	command.Flags().BoolVarP(&secure, "secure", "e", !os.IsNotExist(err), "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
-	// necessary for testing
-	command.Flags().BoolVar(&dryRun, "dry-run", false, "Perform all checks needed to start the server without running it.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
