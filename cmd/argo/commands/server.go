@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 	"time"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -87,29 +86,15 @@ See %s`, help.ArgoSever),
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
 				"baseHRef":         baseHRef,
+				"secure":           secure,
 			}).Info()
 
 			var tlsConfig *tls.Config
-
-			// We default to secure mode if we find certs available, otherwise we default to insecure mode. If a user
-			// explicitly sets a secure mode, we use the user's mode without making any inference
-			cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
-
-			// Only check this error if we are trying to run in secure mode, either implicitly or explicitly
-			if secure && err != nil {
-
-				// Check if the error is a result of not finding the certs, if it is only default to insecure mode if
-				// we are implicitly in secure mode. If the user explicitly set secure mode (`--secure`), then don't switch
-				// to insecure mode and return the error
-				if !c.Flags().Changed("secure") && strings.Contains(err.Error(), "no such file or directory") {
-					log.Warn("No certificate files found, defaulting to insecure mode")
-					secure = false
-				} else {
+			if secure {
+				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
+				if err != nil {
 					return err
 				}
-			}
-
-			if secure {
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
@@ -182,7 +167,9 @@ See %s`, help.ArgoSever),
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
-	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
+	// We default to secure mode if we find certs available, otherwise we default to insecure mode.
+	_, err := os.Stat("argo-server.crt")
+	command.Flags().BoolVarP(&secure, "secure", "e", !os.IsNotExist(err), "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	// necessary for testing
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Perform all checks needed to start the server without running it.")
