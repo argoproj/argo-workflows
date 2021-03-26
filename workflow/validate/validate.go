@@ -108,7 +108,6 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfConditions := &wfv1.Conditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
-
 	var wfSpecHolder wfv1.WorkflowSpecHolder
 	var wfTmplRef *wfv1.TemplateRef
 	var err error
@@ -750,6 +749,9 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
+			if step.OnExitTemplate != nil {
+				ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, false, false)
+			}
 			resolvedTemplates[step.Name] = resolvedTmpl
 		}
 
@@ -1201,6 +1203,9 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
+		if task.OnExitTemplate != nil {
+			ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
+		}
 		taskBytes, err := json.Marshal(task)
 		if err != nil {
 			return errors.InternalWrapError(err)

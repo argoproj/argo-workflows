@@ -2944,14 +2944,18 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, onExitTmpl *wfv1.OnExitTemplate) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, onExitTmpl *wfv1.OnExitTemplate, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
 	if (templateRef != "" || onExitTmpl != nil) && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
 		arguments := woc.execWf.Spec.Arguments
 		exitTmplName := templateRef
+		var err error
 		if onExitTmpl != nil {
-			arguments = onExitTmpl.Arguments
+			arguments, err = woc.resolveExitTmplArgument(onExitTmpl.Arguments, prefix, outputs)
+			if err != nil {
+				return true, nil, err
+			}
 			exitTmplName = onExitTmpl.Template
 		}
 		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitTmplName}, tmplCtx, arguments, &executeTemplateOpts{
@@ -2962,6 +2966,46 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, paren
 		return true, onExitNode, err
 	}
 	return false, nil, nil
+}
+
+func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix string, outputs *wfv1.Outputs) (wfv1.Arguments, error) {
+	scope := createScope(nil)
+	for _, param := range outputs.Parameters {
+		scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
+	}
+	for _, arts := range outputs.Artifacts {
+		scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, arts.Name), arts)
+	}
+
+	stepBytes, err := json.Marshal(args)
+	if err != nil {
+		return args, errors.InternalWrapError(err)
+	}
+	newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	if err != nil {
+		return args, err
+	}
+	var newArgs wfv1.Arguments
+	err = json.Unmarshal([]byte(newStepStr), &newArgs)
+	if err != nil {
+		return args, errors.InternalWrapError(err)
+	}
+	// Step 2: replace all artifact references
+	for j, art := range newArgs.Artifacts {
+		if art.From == "" && art.FromExpression == "" {
+			continue
+		}
+		resolvedArt, err := scope.resolveArtifact(&art)
+		if err != nil {
+			if art.Optional {
+				continue
+			}
+			return args, fmt.Errorf("unable to resolve references: %s", err)
+		}
+		resolvedArt.Name = art.Name
+		newArgs.Artifacts[j] = *resolvedArt
+	}
+	return newArgs, nil
 }
 
 func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {

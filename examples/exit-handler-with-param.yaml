@@ -1,79 +1,47 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: conditional-artifacts-
+  generateName: exit-handler-with-param-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      onExitTemplate enables workflow to pass the arguments (parameters/Artifacts) to exit handler template.
+    workflows.argoproj.io/version: '>= 3.1.0'
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
-  onExitTemplate:
-    template: whalesay
-    arguments:
-      parameters:
-        - name: message
-          value: "{{workflow.name}}"
   templates:
     - name: main
       steps:
-        - - name: flip-coin
-            template: flip-coin
-        - - name: heads
-            template: heads
+        - - name: step-1
+            template: output
             onExitTemplate:
-              template: whalesay
+              template: exit
               arguments:
                 parameters:
                   - name: message
-                    value: "{{steps.flip-coin.outputs.result}}"
-            when: "{{steps.flip-coin.outputs.result}} == heads"
-          - name: tails
-            template: tails
-            onExitTemplate:
-              template: whalesay
-              arguments:
-                parameters:
-                  - name: message
-                    value: "{{steps.flip-coin.outputs.result}}"
-            when: "{{steps.flip-coin.outputs.result}} == tails"
+                    value: "{{steps.step-1.outputs.parameters.result}}"
+    
+    - name: output
+      container:
+        image: alpine:3.7
+        command: [sh, -c]
+        args: ["echo -n hello world > /tmp/hello_world.txt"]
       outputs:
-        artifacts:
+        parameters:
           - name: result
-            fromExpression: "steps['flip-coin'].outputs.result == 'heads' ? steps.heads.outputs.artifacts.result : steps.tails.outputs.artifacts.result"
-
-    - name: flip-coin
-      script:
-        image: python:alpine3.6
-        command: [ python ]
-        source: |
-          import random
-          print("heads" if random.randint(0,1) == 0 else "tails")
-
-    - name: heads
-      script:
-        image: python:alpine3.6
-        command: [ python ]
-        source: |
-          with open("result.txt", "w") as f:
-            f.write("it was heads")
-      outputs:
-        artifacts:
-          - name: result
-            path: /result.txt
-
-    - name: tails
-      script:
-        image: python:alpine3.6
-        command: [ python ]
-        source: |
-          with open("result.txt", "w") as f:
-            f.write("it was tails")
-      outputs:
-        artifacts:
-          - name: result
-            path: /result.txt
-    - name: whalesay
+            valueFrom:
+              default: "Foobar"   # Default value to use if retrieving valueFrom fails. If not provided workflow will fail instead
+              path: /tmp/hello_world.txt
+    
+    - name: exit
       inputs:
         parameters:
-        - name: message
-      container:
-        image: docker/whalesay
-        command: [cowsay]
-        args: ["hello world {{inputs.parameters.message}}"]
+          - name: message
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          print("{{inputs.parameters.message}}")
