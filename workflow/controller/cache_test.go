@@ -2,13 +2,16 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 )
 
@@ -45,8 +48,21 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
+
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Nil(t, cm.Labels)
+
 	entry, err := c.Load(ctx, "hi-there-world")
 	assert.NoError(t, err)
+
+	cm, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	lastHitTimestampLabel, err := time.Parse(time.RFC3339, cm.Labels[common.LabelKeyCacheLastHitTimestamp])
+	assert.NoError(t, err)
+	assert.True(t, lastHitTimestampLabel.After(entry.CreationTimestamp.Time))
+	assert.Equal(t, lastHitTimestampLabel.Format(time.RFC3339), entry.LastHitTimestamp.Time.Format(time.RFC3339))
+
 	outputs := entry.Outputs
 	assert.NoError(t, err)
 	if assert.Len(t, outputs.Parameters, 1) {
@@ -87,4 +103,11 @@ func TestConfigMapCacheSave(t *testing.T) {
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
+	lastHitTimestampLabel, err := time.Parse(time.RFC3339, cm.Labels[common.LabelKeyCacheLastHitTimestamp])
+	assert.NoError(t, err)
+	var entry cache.Entry
+	err = json.Unmarshal([]byte(cm.Data["hi-there-world"]), &entry)
+	assert.NoError(t, err)
+	assert.Equal(t, lastHitTimestampLabel.Format(time.RFC3339), entry.LastHitTimestamp.Time.Format(time.RFC3339))
+	assert.Equal(t, lastHitTimestampLabel.Format(time.RFC3339), entry.CreationTimestamp.Time.Format(time.RFC3339))
 }
