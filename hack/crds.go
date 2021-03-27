@@ -43,7 +43,7 @@ func cleanCRD(filename string) {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(filename, data, 0666)
+	err = ioutil.WriteFile(filename, data, 0o666)
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +72,7 @@ func removeCRDValidation(filename string) {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(filename, data, 0666)
+	err = ioutil.WriteFile(filename, data, 0o666)
 	if err != nil {
 		panic(err)
 	}
