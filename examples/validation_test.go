@@ -12,7 +12,7 @@ func TestValidateExamples(t *testing.T) {
 		t.Errorf("There was an error: %s", err)
 	}
 	if len(failures) > 0 {
-		var fails = []string{}
+		fails := []string{}
 		for path, fail := range failures {
 			fails = append(fails, fmt.Sprintf("Validation failed - %s: %s", path, strings.Join(fail, "\n")))
 		}
