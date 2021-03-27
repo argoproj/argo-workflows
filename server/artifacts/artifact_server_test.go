@@ -42,7 +42,7 @@ type fakeArtifactDriver struct {
 }
 
 func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	return ioutil.WriteFile(path, a.data, 0666)
+	return ioutil.WriteFile(path, a.data, 0o666)
 }
 
 func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {

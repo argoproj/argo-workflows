@@ -17,7 +17,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 	driver := &ArtifactDriver{}
 	path := "/tmp/git-found"
 	assert.NoError(t, os.RemoveAll(path))
-	assert.NoError(t, os.MkdirAll(path, 0777))
+	assert.NoError(t, os.MkdirAll(path, 0o777))
 	err := driver.Load(&wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{
 			Git: &wfv1.GitArtifact{

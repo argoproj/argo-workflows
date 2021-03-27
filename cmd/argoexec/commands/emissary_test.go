@@ -26,7 +26,7 @@ func TestEmissary(t *testing.T) {
 
 	x := filepath.Join(wd, "../../../dist/argosay")
 
-	err = ioutil.WriteFile(varRunArgo+"/template", []byte(`{}`), 0600)
+	err = ioutil.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
 	assert.NoError(t, err)
 
 	t.Run("Exit0", func(t *testing.T) {
@@ -62,7 +62,7 @@ func TestEmissary(t *testing.T) {
 			syscall.SIGTERM: "terminated",
 			syscall.SIGKILL: "killed",
 		} {
-			err := ioutil.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0600)
+			err := ioutil.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
 			assert.NoError(t, err)
 			var wg sync.WaitGroup
 			wg.Add(1)
@@ -83,7 +83,7 @@ func TestEmissary(t *testing.T) {
 		]
 	}
 }
-`), 0600)
+`), 0o600)
 		assert.NoError(t, err)
 		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
 		assert.NoError(t, err)
@@ -102,7 +102,7 @@ func TestEmissary(t *testing.T) {
 		]
 	}
 }
-`), 0600)
+`), 0o600)
 		assert.NoError(t, err)
 		err := run(x, []string{"echo", "hello", "/tmp/parameter"})
 		assert.NoError(t, err)
