@@ -39,14 +39,14 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 
 			defer func() {
-				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0600)
+				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o600)
 				if err != nil {
 					logger.Error(fmt.Errorf("failed to write exit code: %w", err))
 				}
 			}()
 
 			// this also indicates we've started
-			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0700); err != nil {
+			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o700); err != nil {
 				return fmt.Errorf("failed to create ctr directory: %w", err)
 			}
 
@@ -190,7 +190,7 @@ func saveArtifact(srcPath string) error {
 	dstPath := varRunArgo + "/outputs/artifacts/" + srcPath + ".tgz"
 	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
+	if err := os.MkdirAll(z, 0o700); err != nil { // chmod rwx------
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
 	}
 	dst, err := os.Create(dstPath)
@@ -224,7 +224,7 @@ func saveParameter(srcPath string) error {
 	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
 	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0700); err != nil { // chmod rwx------
+	if err := os.MkdirAll(z, 0o700); err != nil { // chmod rwx------
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
 	}
 	dst, err := os.Create(dstPath)
