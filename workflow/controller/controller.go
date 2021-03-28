@@ -176,6 +176,11 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTL
 	}
 }
 
+func (wfc *WorkflowController) runCacheController(ctx context.Context) {
+	cacheController := controllercache.NewController(wfc.namespace, wfc.kubeclientset, wfc.metrics, wfc.eventRecorderManager)
+	cacheController.Run(ctx)
+}
+
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
@@ -293,6 +298,7 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	go wfc.runTTLController(ctx, workflowTTLWorkers)
+	go wfc.runCacheController(ctx)
 	go wfc.runCronController(ctx)
 	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())

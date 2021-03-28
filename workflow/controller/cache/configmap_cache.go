@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"sync"
 	"time"
 
@@ -117,6 +118,11 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	}
 
 	creationTime := time.Now()
+	if c.gcStrategy != nil && c.gcStrategy.AfterNotHitDuration != "" {
+		cache.SetLabels(map[string]string{common.LabelKeyCacheGCAfterNotHitDuration: c.gcStrategy.AfterNotHitDuration})
+	} else {
+		cache.SetLabels(map[string]string{common.LabelKeyCacheGCAfterNotHitDuration: ""})
+	}
 
 	newEntry := Entry{
 		NodeID:            nodeId,
