@@ -120,7 +120,9 @@ It is possible to have the Argo Workflows Server use the Argo CD Dex instance fo
   metadata:
     name: argo-workflows-sso
   data:
+    # client-id is 'argo-workflows-sso'
     client-id: YXJnby13b3JrZmxvd3Mtc3Nv
+    # client-secret is 'MY-SECRET-STRING-CAN-BE-UUID'
     client-secret: TVktU0VDUkVULVNUUklORy1DQU4tQkUtVVVJRA==
   ```
 - `--auth-mode=sso` server argument added
