@@ -51,6 +51,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	log.Infof("Starting cache controller")
 	restClient := cc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
+	// TODO: Need a way to differentiate cache configmaps from other configmaps
 	labelSelector, _ := labels.Parse(common.LabelKeyCacheLastHitTimestamp)
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
@@ -145,43 +146,43 @@ func (cc *Controller) syncAll(ctx context.Context) {
 
 func (cc *Controller) syncConfigMap(cm *apiv1.ConfigMap) error {
 	log.Infof("Syncing ConfigMap: %s", cm.Name)
-	// TODO: Make this configurable via cache.gcStrategy gcAfterNotHitDuration
-	gcAfterNotHitDuration := "20s"
-	gcAfterNotHitDurationTime, err := time.ParseDuration(gcAfterNotHitDuration)
-	if err != nil {
-		return err
-	}
+	if gcAfterNotHitDuration := cm.Labels["gc-after-not-hit-duration"]; gcAfterNotHitDuration != "" {
+		gcAfterNotHitDurationTime, err := time.ParseDuration(gcAfterNotHitDuration)
+		if err != nil {
+			return err
+		}
 
-	var modified bool
-	for key, rawEntry := range cm.Data {
-		var entry Entry
-		err = json.Unmarshal([]byte(rawEntry), &entry)
-		if err != nil {
-			return fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
+		var modified bool
+		for key, rawEntry := range cm.Data {
+			var entry Entry
+			err = json.Unmarshal([]byte(rawEntry), &entry)
+			if err != nil {
+				return fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
+			}
+			if time.Since(entry.LastHitTimestamp.Time) > gcAfterNotHitDurationTime {
+				log.Infof("Deleting entry with key %s in ConfigMap %s since it's not been hit after %s", key, cm.Name, gcAfterNotHitDuration)
+				delete(cm.Data, key)
+				modified = true
+			}
 		}
-		if time.Since(entry.LastHitTimestamp.Time) > gcAfterNotHitDurationTime {
-			log.Infof("Deleting entry with key %s in ConfigMap %s since it's not been hit after %s", key, cm.Name, gcAfterNotHitDuration)
-			delete(cm.Data, key)
-			modified = true
-		}
-	}
-	if cm.Data == nil {
-		// TODO: Add delete permission in quickstart manifests
-		log.Infof("Deleting ConfigMap %s since it doesn't contain any cache entries", cm.Name)
-		request := cc.kubeclientset.CoreV1().RESTClient().Delete().RequestURI(cm.GetSelfLink())
-		stream, err := request.Stream(context.TODO())
-		if err != nil {
-			return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
-		}
-		defer func() { _ = stream.Close() }()
-	} else {
-		if modified {
-			request := cc.kubeclientset.CoreV1().RESTClient().Put().RequestURI(cm.GetSelfLink()).Body(cm)
+		if cm.Data == nil {
+			// TODO: Add delete permission in quickstart manifests
+			log.Infof("Deleting ConfigMap %s since it doesn't contain any cache entries", cm.Name)
+			request := cc.kubeclientset.CoreV1().RESTClient().Delete().RequestURI(cm.GetSelfLink())
 			stream, err := request.Stream(context.TODO())
 			if err != nil {
-				return fmt.Errorf("failed to patch ConfigMap %s: %w", cm.Name, err)
+				return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
 			}
 			defer func() { _ = stream.Close() }()
+		} else {
+			if modified {
+				request := cc.kubeclientset.CoreV1().RESTClient().Put().RequestURI(cm.GetSelfLink()).Body(cm)
+				stream, err := request.Stream(context.TODO())
+				if err != nil {
+					return fmt.Errorf("failed to patch ConfigMap %s: %w", cm.Name, err)
+				}
+				defer func() { _ = stream.Close() }()
+			}
 		}
 	}
 

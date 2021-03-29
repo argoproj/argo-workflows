@@ -54,7 +54,7 @@ type cacheFactory struct {
 }
 
 type Factory interface {
-	GetCache(ct CacheType, name string) MemoizationCache
+	GetCache(ct CacheType, name string, gcStrategy *wfv1.CacheGCStrategy) MemoizationCache
 }
 
 func NewCacheFactory(ki kubernetes.Interface, ns string) Factory {
@@ -73,14 +73,14 @@ const (
 )
 
 // Returns a cache if it exists and creates it otherwise
-func (cf *cacheFactory) GetCache(ct CacheType, name string) MemoizationCache {
+func (cf *cacheFactory) GetCache(ct CacheType, name string, gcStrategy *wfv1.CacheGCStrategy) MemoizationCache {
 	idx := string(ct) + "." + name
 	if c := cf.caches[idx]; c != nil {
 		return c
 	}
 	switch ct {
 	case ConfigMapCache:
-		c := NewConfigMapCache(cf.namespace, cf.kubeclient, name)
+		c := NewConfigMapCache(cf.namespace, cf.kubeclient, name, gcStrategy)
 		cf.caches[idx] = c
 		return c
 	default:

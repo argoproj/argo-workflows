@@ -23,14 +23,16 @@ type configMapCache struct {
 	name       string
 	kubeClient kubernetes.Interface
 	lock       sync.RWMutex
+	gcStrategy *wfv1.CacheGCStrategy
 }
 
-func NewConfigMapCache(ns string, ki kubernetes.Interface, n string) MemoizationCache {
+func NewConfigMapCache(ns string, ki kubernetes.Interface, n string, gcStrategy *wfv1.CacheGCStrategy) MemoizationCache {
 	return &configMapCache{
 		namespace:  ns,
 		name:       n,
 		kubeClient: ki,
 		lock:       sync.RWMutex{},
+		gcStrategy: gcStrategy,
 	}
 }
 
@@ -62,6 +64,7 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 
 	c.logInfo(log.Fields{}, "config map cache loaded")
 	hitTime := time.Now()
+
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
 		c.logInfo(log.Fields{}, "config map cache miss: entry does not exist")

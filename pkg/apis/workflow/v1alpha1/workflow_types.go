@@ -2899,6 +2899,13 @@ type MemoizationStatus struct {
 type Cache struct {
 	// ConfigMap sets a ConfigMap-based cache
 	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
+	GCStrategy *CacheGCStrategy `json:"gcStrategy" protobuf:"bytes,2,opt,name=gcStrategy"`
+}
+
+// CacheGCStrategy provides controls on how to GC memoization caches
+type CacheGCStrategy struct {
+	// AfterNotHitDuration specifies the maximum duration to keep the cache when it's not hit for a while before deleting it.
+	AfterNotHitDuration string `json:"afterNotHitDuration,omitempty" protobuf:"bytes,1,opt,name=afterNotHitDuration"`
 }
 
 type SynchronizationAction interface {
