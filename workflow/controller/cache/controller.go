@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	log "github.com/sirupsen/logrus"
@@ -52,7 +51,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	restClient := cc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
 	// TODO: Need a way to differentiate cache configmaps from other configmaps
-	labelSelector, _ := labels.Parse(common.LabelKeyCacheLastHitTimestamp)
+	labelSelector, _ := labels.Parse("gc-after-not-hit-duration")
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
 		req := restClient.Get().
