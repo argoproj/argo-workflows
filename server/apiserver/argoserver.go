@@ -16,7 +16,6 @@ import (
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
@@ -272,13 +271,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
+		grpc.WithInsecure(),
 	}
-	if as.tlsConfig != nil {
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
-	} else {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
-	}
-
 	webhookInterceptor := webhook.Interceptor(as.clients.Kubernetes)
 
 	// HTTP 1.1+JSON Server
