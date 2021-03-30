@@ -1143,6 +1143,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 
 	// we only need to update these values if the container transitions to complete
 	if !node.Phase.Fulfilled() && newPhase.Fulfilled() {
+		// If node skipped from pending to complete, send running event now.
+		// Do not send running event if skipped or omitted.
+		switch newPhase {
+		case wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError:
+			woc.recordNodePhaseEventOfPhase(node, wfv1.NodeRunning)
+		}
+
 		// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
 		if exitCode := getExitCode(pod); exitCode != nil {
 			woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
@@ -1983,7 +1990,7 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 }
 
-// Creates a node status that is or will be chaced
+// Creates a node status that is or will be cached
 func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
 		err := fmt.Errorf("cannot initialize a cached node from a non-memoized template")
@@ -1993,6 +2000,7 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, messages...)
 	node.MemoizationStatus = memStat
+	woc.recordNodePhaseEventOfPhase(node, wfv1.NodeRunning)
 	return node
 }
 
@@ -2036,6 +2044,9 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		node.DisplayName = nodeName
 	}
 
+	if node.Phase == wfv1.NodeRunning {
+		woc.recordNodePhaseEvent(&node)
+	}
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = node.StartedAt
 	}
@@ -2061,6 +2072,9 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).
 				Error("node is already fulfilled")
 		}
+		if phase == wfv1.NodeRunning {
+			woc.recordNodePhaseEvent(node)
+		}
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
 		woc.updated = true
@@ -2085,6 +2099,10 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 }
 
 func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
+	woc.recordNodePhaseEvent(node)
+}
+
+func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	if !woc.controller.Config.NodeEvents.IsEnabled() {
 		return
 	}
@@ -2093,7 +2111,8 @@ func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
 		message = message + ": " + node.Message
 	}
 	eventType := apiv1.EventTypeWarning
-	if node.Phase == wfv1.NodeSucceeded {
+	switch node.Phase {
+	case wfv1.NodeSucceeded, wfv1.NodeRunning:
 		eventType = apiv1.EventTypeNormal
 	}
 	woc.eventRecorder.AnnotatedEventf(
@@ -2106,6 +2125,12 @@ func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
 		fmt.Sprintf("WorkflowNode%s", node.Phase),
 		message,
 	)
+}
+
+func (woc *wfOperationCtx) recordNodePhaseEventOfPhase(node *wfv1.NodeStatus, phase wfv1.NodePhase) {
+	eventNode := node.DeepCopy()
+	eventNode.Phase = phase
+	woc.recordNodePhaseEvent(eventNode)
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error

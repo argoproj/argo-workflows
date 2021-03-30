@@ -3165,6 +3165,8 @@ spec:
         image: docker/whalesay:latest
 `: {
 			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node dag-events",
+			"Normal WorkflowNodeRunning Running node dag-events.a",
 			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a",
 			"Normal WorkflowNodeSucceeded Succeeded node dag-events",
 			"Normal WorkflowSucceeded Workflow completed",
@@ -3185,9 +3187,30 @@ spec:
         image: docker/whalesay:latest
 `: {
 			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node steps-events",
+			"Normal WorkflowNodeRunning Running node steps-events[0]",
+			"Normal WorkflowNodeRunning Running node steps-events[0].a",
 			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a",
 			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]",
 			"Normal WorkflowNodeSucceeded Succeeded node steps-events",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+		// no DAG or steps
+		`
+metadata:
+  name: no-dag-or-steps
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node no-dag-or-steps",
+			"Normal WorkflowNodeSucceeded Succeeded node no-dag-or-steps",
 			"Normal WorkflowSucceeded Workflow completed",
 		},
 	} {
