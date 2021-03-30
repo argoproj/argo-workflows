@@ -19,7 +19,10 @@ var (
 
 var overrides = clientcmd.ConfigOverrides{}
 
-var explicitPath string
+var (
+	explicitPath string
+	Offline      bool
+)
 
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
@@ -55,6 +58,7 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 				return GetAuthString()
 			},
 			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
+			Offline:              Offline,
 		})
 	if err != nil {
 		log.Fatal(err)
@@ -63,6 +67,9 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 }
 
 func Namespace() string {
+	if Offline {
+		return ""
+	}
 	if overrides.Context.Namespace != "" {
 		return overrides.Context.Namespace
 	}
