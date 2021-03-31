@@ -105,7 +105,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [SAS](https://www.sas.com/)
 1. [Schlumberger](https://slb.com/)
 1. [SegmentStream](https://segmentstream.com)
-1. [Sendible](https://sendible.com)
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Softonic](https://hello.softonic.com/)
 1. [Sohu](https://www.sohu.com/)

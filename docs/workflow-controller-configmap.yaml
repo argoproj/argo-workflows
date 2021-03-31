@@ -263,13 +263,10 @@ data:
 
   # SSO Configuration for the Argo server.
   # You must also start argo server with `--auth-mode sso`.
-  # https://argoproj.github.io/argo/argo-server-auth-mode/
+  # https://argoproj.github.io/argo-workflows/argo-server-auth-mode/
   sso: |
     # This is the root URL of the OIDC provider (required).
     issuer: https://issuer.root.url/
-    # This defines how long your login is valid for (in hours). (optional)
-    # If omitted, defaults to 24h. Example below is 10 days.
-    expiry: 240
     # This is name of the secret and the key in it that contain OIDC client
     # ID issued to the application by the provider (required).
     clientId:
