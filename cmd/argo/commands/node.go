@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -39,6 +40,7 @@ func NewNodeCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 1 {
 				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
 			}
 
 			if args[0] != "set" {
