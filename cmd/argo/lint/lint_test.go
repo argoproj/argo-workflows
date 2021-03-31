@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint/mocks"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wftemplatemocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate/mocks"
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -66,7 +68,7 @@ spec:
 func TestLintFile(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), lintFileData, 0644)
+	err = ioutil.WriteFile(file.Name(), lintFileData, 0o644)
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
@@ -95,7 +97,7 @@ func TestLintFile(t *testing.T) {
 func TestLintMultipleKinds(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), lintFileData, 0644)
+	err = ioutil.WriteFile(file.Name(), lintFileData, 0o644)
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
@@ -122,6 +124,58 @@ func TestLintMultipleKinds(t *testing.T) {
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "foo" (WorkflowTemplate): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
+}
+
+func TestLintWithOutput(t *testing.T) {
+	file, err := ioutil.TempFile("", "*.yaml")
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), lintFileData, 0o644)
+	assert.NoError(t, err)
+	defer os.Remove(file.Name())
+
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	_, err = w.Write(lintFileData)
+	assert.NoError(t, err)
+	w.Close()
+	stdin := os.Stdin
+	defer func() { os.Stdin = stdin }()
+	os.Stdin = r
+
+	fmtr, err := GetFormatter("simple")
+	assert.NoError(t, err)
+
+	wfServiceClientMock := &workflowmocks.WorkflowServiceClient{}
+	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
+	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
+	wftServiceSclientMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
+
+	mw := &mocks.MockWriter{}
+	mw.On("Write", mock.Anything).Return(0, nil)
+
+	res, err := Lint(context.Background(), &LintOptions{
+		Files: []string{file.Name(), "-"},
+		ServiceClients: ServiceClients{
+			WorkflowsClient:         wfServiceClientMock,
+			WorkflowTemplatesClient: wftServiceSclientMock,
+		},
+		Formatter: fmtr,
+		Printer:   mw,
+	})
+
+	expected := []string{
+		fmt.Sprintf("%s: in \"steps-\" (Workflow): lint error\n%s: in \"foo\" (WorkflowTemplate): lint error\n", file.Name(), file.Name()),
+		"stdin: in \"steps-\" (Workflow): lint error\nstdin: in \"foo\" (WorkflowTemplate): lint error\n",
+		"",
+	}
+	mw.AssertCalled(t, "Write", []byte(expected[0]))
+	mw.AssertCalled(t, "Write", []byte(expected[1]))
+	mw.AssertCalled(t, "Write", []byte(expected[2]))
+	assert.NoError(t, err)
+	assert.Equal(t, res.Success, false)
+	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 2)
+	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 2)
+	assert.Equal(t, strings.Join(expected, ""), res.Msg())
 }
 
 func TestLintStdin(t *testing.T) {
@@ -168,17 +222,17 @@ func TestGetFormatter(t *testing.T) {
 		"default": {
 			formatterName:  "",
 			expectedErr:    nil,
-			expectedOutput: defaultFormatter.Format(&LintResults{}),
+			expectedOutput: (&LintResults{fmtr: formatterPretty{}}).buildMsg(),
 		},
 		"pretty": {
 			formatterName:  "pretty",
 			expectedErr:    nil,
-			expectedOutput: formatterPretty{}.Format(&LintResults{}),
+			expectedOutput: (&LintResults{fmtr: formatterPretty{}}).buildMsg(),
 		},
 		"simple": {
 			formatterName:  "simple",
 			expectedErr:    nil,
-			expectedOutput: formatterSimple{}.Format(&LintResults{}),
+			expectedOutput: (&LintResults{fmtr: formatterSimple{}}).buildMsg(),
 		},
 		"unknown name": {
 			formatterName:  "foo",
@@ -206,7 +260,7 @@ func TestGetFormatter(t *testing.T) {
 
 			r, err := Lint(context.Background(), &LintOptions{Formatter: fmtr})
 			assert.NoError(t, err)
-			assert.Equal(t, test.expectedOutput, r.msg)
+			assert.Equal(t, test.expectedOutput, r.Msg())
 		})
 	}
 }

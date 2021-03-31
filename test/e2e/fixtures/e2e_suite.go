@@ -25,16 +25,18 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
 const (
-	Namespace      = "argo"
-	Label          = workflow.WorkflowFullName + "/test" // mark this workflow as a test
-	defaultTimeout = 30 * time.Second
+	Namespace = "argo"
+	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
 )
+
+var defaultTimeout = env.LookupEnvDurationOr("E2E_TIMEOUT", 30*time.Second)
 
 type E2ESuite struct {
 	suite.Suite

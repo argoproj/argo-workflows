@@ -41,7 +41,7 @@ func (g *ArtifactDriver) auth() (func(), transport.AuthMethod, []string, error) 
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		err = ioutil.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0600)
+		err = ioutil.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -77,7 +77,7 @@ case "$1" in
 Username*) echo "${GIT_USERNAME}" ;;
 Password*) echo "${GIT_PASSWORD}" ;;
 esac
-`), 0755)
+`), 0o755)
 			if err != nil {
 				return nil, nil, nil, err
 			}

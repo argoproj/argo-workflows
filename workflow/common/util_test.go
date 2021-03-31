@@ -57,14 +57,38 @@ func TestFindOverlappingVolume(t *testing.T) {
 		Name:      "workdir",
 		MountPath: "/user-mount",
 	}
+	volMntTrailing := corev1.VolumeMount{
+		Name:      "aux",
+		MountPath: "/trailing-slash/",
+	}
 	templateWithVolMount := &wfv1.Template{
 		Container: &corev1.Container{
-			VolumeMounts: []corev1.VolumeMount{volMnt},
+			VolumeMounts: []corev1.VolumeMount{volMnt, volMntTrailing},
 		},
 	}
+
+	deeperVolMnt := corev1.VolumeMount{
+		Name:      "workdir",
+		MountPath: "/user-mount/deeper",
+	}
+
+	templateWithDeeperVolMount := &wfv1.Template{
+		Container: &corev1.Container{
+			VolumeMounts: []corev1.VolumeMount{volMnt, deeperVolMnt},
+		},
+	}
+
 	assert.Equal(t, &volMnt, FindOverlappingVolume(templateWithVolMount, "/user-mount"))
 	assert.Equal(t, &volMnt, FindOverlappingVolume(templateWithVolMount, "/user-mount/subdir"))
-	assert.Nil(t, FindOverlappingVolume(templateWithVolMount, "/user-mount-coincidental-prefix"))
+	assert.Equal(t, &volMnt, FindOverlappingVolume(templateWithVolMount, "/user-mount/"))
+
+	assert.Equal(t, &deeperVolMnt, FindOverlappingVolume(templateWithDeeperVolMount, "/user-mount/deeper"))
+	assert.Equal(t, &deeperVolMnt, FindOverlappingVolume(templateWithDeeperVolMount, "/user-mount/deeper/with-subdir"))
+
+	assert.Equal(t, &volMntTrailing, FindOverlappingVolume(templateWithVolMount, "/trailing-slash/"))
+	assert.Equal(t, &volMntTrailing, FindOverlappingVolume(templateWithVolMount, "/trailing-slash/with-subpath"))
+
+	assert.Nil(t, FindOverlappingVolume(templateWithVolMount, "/user-mount-coincidental-prefix/"))
 }
 
 func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {

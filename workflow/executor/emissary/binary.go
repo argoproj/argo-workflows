@@ -16,7 +16,7 @@ func copyBinary() error {
 		return err
 	}
 	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile("/var/run/argo/argoexec", os.O_RDWR|os.O_CREATE, 0500) // r-x------
+	out, err := os.OpenFile("/var/run/argo/argoexec", os.O_RDWR|os.O_CREATE, 0o500) // r-x------
 	if err != nil {
 		return err
 	}

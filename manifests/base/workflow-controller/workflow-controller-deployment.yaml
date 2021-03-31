@@ -14,8 +14,11 @@ spec:
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: argoproj/workflow-controller:latest
+          image: docker.io/argoproj/workflow-controller:latest
           securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL

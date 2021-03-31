@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -39,7 +40,6 @@ type Controller struct {
 	keyLock              sync.KeyLock
 	wfClientset          versioned.Interface
 	wfLister             util.WorkflowLister
-	wfQueue              workqueue.RateLimitingInterface
 	wfInformer           cache.SharedIndexInformer
 	cronWfInformer       informers.GenericInformer
 	cronWfQueue          workqueue.RateLimitingInterface
@@ -63,7 +63,6 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		wfQueue:              metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
 		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
@@ -71,8 +70,8 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 }
 
 func (cc *Controller) Run(ctx context.Context) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 	defer cc.cronWfQueue.ShutDown()
-	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 	if cc.instanceId != "" {
 		log.Infof("...with InstanceID: %s", cc.instanceId)
@@ -105,6 +104,8 @@ func (cc *Controller) runCronWorker() {
 }
 
 func (cc *Controller) processNextCronItem(ctx context.Context) bool {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	key, quit := cc.cronWfQueue.Get()
 	if quit {
 		return false
@@ -203,6 +204,8 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 }
 
 func (cc *Controller) syncAll(ctx context.Context) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	log.Debug("Syncing all CronWorkflows")
 
 	workflows, err := cc.wfLister.List()

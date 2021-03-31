@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
@@ -58,6 +59,8 @@ func NewRootCommand() *cobra.Command {
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
+			defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 			cli.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
 			cmdutil.SetLogFormatter(logFormat)

@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -157,6 +158,8 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTLWorkers int) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, wfc.metrics)
 	err := ttlCtrl.Run(ctx.Done(), workflowTTLWorkers)
 	if err != nil {
@@ -165,6 +168,8 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTL
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.wfInformer, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
@@ -180,6 +185,7 @@ var indexers = cache.Indexers{
 
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 	defer wfc.podCleanupQueue.ShutDown()
@@ -213,6 +219,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
+	// Start the metrics server
+	go wfc.metrics.RunServer(ctx)
+
 	nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 	if !ok {
 		log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
@@ -236,6 +245,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
+				defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 				logCtx.Info("started leading")
 				ctx, cancel = context.WithCancel(ctx)
 
@@ -247,7 +258,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 				go wfc.runTTLController(ctx, workflowTTLWorkers)
 				go wfc.runCronController(ctx)
-				go wfc.metrics.RunServer(ctx)
 				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
@@ -335,6 +345,8 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 }
 
 func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	ctx := context.Background()
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
@@ -504,6 +516,8 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	periodicity := env.LookupEnvDurationOr("WORKFLOW_GC_PERIOD", 5*time.Minute)
 	log.Infof("Performing periodic GC every %v", periodicity)
 	ticker := time.NewTicker(periodicity)
@@ -552,6 +566,8 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 }
 
 func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	periodicity := env.LookupEnvDurationOr("ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
 	if wfc.Config.Persistence == nil {
 		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
@@ -584,6 +600,8 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 }
 
 func (wfc *WorkflowController) runWorker() {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	ctx := context.Background()
 	for wfc.processNextItem(ctx) {
 	}
@@ -1049,6 +1067,8 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 }
 
 func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
 		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
 		errors.CheckError(err)
@@ -1065,6 +1085,8 @@ func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 }
 
 func (wfc *WorkflowController) syncPodPhaseMetrics() {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
 		objs, err := wfc.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
 		if err != nil {

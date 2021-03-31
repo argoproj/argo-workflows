@@ -30,6 +30,15 @@ rules:
       - pods/exec
     verbs:
       - create
+  # Only needed if you are using ConfigMap-based cache for memoization.
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+      - get
+      - update
   # This allows one workflow to create another.
   # This is only needed for resource templates.
   - apiGroups:
