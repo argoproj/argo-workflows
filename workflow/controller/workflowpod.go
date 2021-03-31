@@ -535,6 +535,13 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			Name:  common.EnvVarContainerRuntimeExecutor,
 			Value: woc.getContainerRuntimeExecutor(),
 		},
+		// This flag was introduced in Go 16 and will be removed in Go 16.
+		// x509: cannot validate certificate for ... because it doesn't contain any IP SANs
+		// https://github.com/golang/go/issues/39568
+		{
+			Name:  "GODEBUG",
+			Value: "x509ignoreCN=0",
+		},
 	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
