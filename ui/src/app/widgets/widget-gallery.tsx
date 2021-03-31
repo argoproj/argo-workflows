@@ -60,7 +60,7 @@ export const WidgetGallery = ({namespace, name, label}: {namespace: string; name
             </>
         ))}
         <p>
-            Widgets not loading? Check for <a href='https://argoproj.github.io/argo/widgets'>solutions in the docs</a>.
+            Widgets not loading? Check for <a href='https://argoproj.github.io/argo-workflows/widgets'>solutions in the docs</a>.
         </p>
     </div>
 );
