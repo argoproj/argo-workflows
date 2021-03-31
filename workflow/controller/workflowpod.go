@@ -479,16 +479,25 @@ func containerIsPrivileged(ctr *apiv1.Container) bool {
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
-	var execEnvVars []apiv1.EnvVar
-	execEnvVars = append(execEnvVars, apiv1.EnvVar{
-		Name: common.EnvVarPodName,
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.name",
+	execEnvVars := []apiv1.EnvVar{
+		{
+			Name: common.EnvVarPodName,
+			ValueFrom: &apiv1.EnvVarSource{
+				FieldRef: &apiv1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.name",
+				},
 			},
 		},
-	})
+		{
+			// This flag was introduced in Go 15 and will be removed in Go 16.
+			// x509: cannot validate certificate for ... because it doesn't contain any IP SANs
+			// https://github.com/argoproj/argo-workflows/issues/5563 - Upgrade to Go 16
+			// https://github.com/golang/go/issues/39568
+			Name:  "GODEBUG",
+			Value: "x509ignoreCN=0",
+		},
+	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
