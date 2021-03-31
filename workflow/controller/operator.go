@@ -907,7 +907,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
 				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
-					woc.onNodeComplete(&node)
+					woc.recordNodePhaseEvent(&node)
 				}
 			}
 			if node.Succeeded() && match {
@@ -1141,15 +1141,14 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 
+	// If node is transitioning to complete, send running event now.
+	// Do not send running event if skipped or omitted.
+	if !node.Phase.Fulfilled() && newPhase.Completed() {
+		woc.recordNodePhaseEventAsPhase(node, wfv1.NodeRunning)
+	}
+
 	// we only need to update these values if the container transitions to complete
 	if !node.Phase.Fulfilled() && newPhase.Fulfilled() {
-		// If node skipped from pending to complete, send running event now.
-		// Do not send running event if skipped or omitted.
-		switch newPhase {
-		case wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError:
-			woc.recordNodePhaseEventOfPhase(node, wfv1.NodeRunning)
-		}
-
 		// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
 		if exitCode := getExitCode(pod); exitCode != nil {
 			woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
@@ -2000,7 +1999,7 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, messages...)
 	node.MemoizationStatus = memStat
-	woc.recordNodePhaseEventOfPhase(node, wfv1.NodeRunning)
+	woc.recordNodePhaseEventAsPhase(node, wfv1.NodeRunning)
 	return node
 }
 
@@ -2092,14 +2091,10 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.updated = true
 	}
 	if !woc.orig.Status.Nodes[node.ID].Fulfilled() && node.Fulfilled() {
-		woc.onNodeComplete(node)
+		woc.recordNodePhaseEvent(node)
 	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
-}
-
-func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
-	woc.recordNodePhaseEvent(node)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
@@ -2127,7 +2122,7 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	)
 }
 
-func (woc *wfOperationCtx) recordNodePhaseEventOfPhase(node *wfv1.NodeStatus, phase wfv1.NodePhase) {
+func (woc *wfOperationCtx) recordNodePhaseEventAsPhase(node *wfv1.NodeStatus, phase wfv1.NodePhase) {
 	eventNode := node.DeepCopy()
 	eventNode.Phase = phase
 	woc.recordNodePhaseEvent(eventNode)
