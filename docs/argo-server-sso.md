@@ -149,6 +149,7 @@ What this might look like in your chart configuration:
          - --auth-mode=sso
        sso:
          issuer: https://argo-cd.mydomain.com/api/dex
+         expiry: 240
          clientId:
            name: argo-workflows-sso
            key: client-id
