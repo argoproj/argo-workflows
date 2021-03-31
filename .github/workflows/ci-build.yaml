@@ -98,6 +98,8 @@ jobs:
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
       - run: git fetch --tags
+      - name: Ensure permission bits are set in the argoexec image
+        run: docker run argoproj/argoexec:latest -- setcap -v CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
       - name: Start Argo
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
