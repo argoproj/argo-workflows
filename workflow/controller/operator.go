@@ -372,7 +372,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}[node.Phase]
 
 	var onExitNode *wfv1.NodeStatus
-	if (woc.execWf.Spec.OnExit != "" || woc.execWf.Spec.OnExitTemplate != nil) && woc.GetShutdownStrategy().ShouldExecute(true) {
+	if (woc.execWf.Spec.GetExitTemplate(woc.execWf.Spec.Arguments) != nil) && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
 		var failures []failedNodeStatus
@@ -400,13 +400,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
-		templateName := woc.execWf.Spec.OnExit
-		arguments := woc.execWf.Spec.Arguments
-		if woc.execWf.Spec.OnExitTemplate != nil {
-			templateName = woc.execWf.Spec.OnExitTemplate.Template
-			arguments = woc.execWf.Spec.OnExitTemplate.Arguments
-		}
-		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: templateName}, tmplCtx, arguments, &executeTemplateOpts{onExitTemplate: true})
+		exitTemplate := woc.execWf.Spec.GetExitTemplate(woc.execWf.Spec.Arguments)
+
+		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitTemplate.Template}, tmplCtx, exitTemplate.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.WithError(err).Error("error in exit template execution")
@@ -2944,21 +2940,21 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, onExitTmpl *wfv1.OnExitTemplate, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
-	if (templateRef != "" || onExitTmpl != nil) && woc.GetShutdownStrategy().ShouldExecute(true) {
-		woc.log.Infof("Running OnExit handler: %s", templateRef)
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitTemplate *wfv1.ExitTemplate, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
+	if exitTemplate != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
+		woc.log.Infof("Running OnExit handler: %s", exitTemplate)
 		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
-		arguments := woc.execWf.Spec.Arguments
-		exitTmplName := templateRef
+		resolvedArgs := exitTemplate.Arguments
 		var err error
-		if onExitTmpl != nil {
-			arguments, err = woc.resolveExitTmplArgument(onExitTmpl.Arguments, prefix, outputs)
+		if !resolvedArgs.IsEmpty() && outputs != nil {
+			resolvedArgs, err = woc.resolveExitTmplArgument(exitTemplate.Arguments, prefix, outputs)
 			if err != nil {
 				return true, nil, err
 			}
-			exitTmplName = onExitTmpl.Template
+
 		}
-		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitTmplName}, tmplCtx, arguments, &executeTemplateOpts{
+
+		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitTemplate.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
 		})

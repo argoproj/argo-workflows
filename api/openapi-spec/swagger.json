@@ -6894,16 +6894,17 @@
           "description": "Depends are name of other targets which this depends on",
           "type": "string"
         },
+        "exitTemplate": {
+          "description": "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExitTemplate"
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitTemplate.template instead.",
           "type": "string"
-        },
-        "onExitTemplate": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OnExitTemplate"
         },
         "template": {
           "description": "Name of template to execute",
@@ -7012,6 +7013,17 @@
       "properties": {
         "serviceAccountName": {
           "description": "ServiceAccountName specifies the service account name of the executor container.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ExitTemplate": {
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "template": {
           "type": "string"
         }
       }
@@ -7627,17 +7639,6 @@
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.OnExitTemplate": {
-      "type": "object",
-      "properties": {
-        "arguments": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
-        },
-        "template": {
-          "type": "string"
         }
       }
     },
@@ -8967,6 +8968,10 @@
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
+        "exitTemplate": {
+          "description": "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExitTemplate"
+        },
         "hostAliases": {
           "type": "array",
           "items": {
@@ -9000,11 +9005,8 @@
           }
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.",
+          "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1. DEPRECATED: Use ExitTemplate.template instead.",
           "type": "string"
-        },
-        "onExitTemplate": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OnExitTemplate"
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
@@ -9222,16 +9224,17 @@
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
         },
+        "exitTemplate": {
+          "description": "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExitTemplate"
+        },
         "name": {
           "description": "Name of the step",
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitTemplate.template instead.",
           "type": "string"
-        },
-        "onExitTemplate": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OnExitTemplate"
         },
         "template": {
           "description": "Template is the name of the template to execute as the step",
@@ -9443,6 +9446,10 @@
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
+        "exitTemplate": {
+          "description": "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExitTemplate"
+        },
         "hostAliases": {
           "type": "array",
           "items": {
@@ -9476,11 +9483,8 @@
           }
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.",
+          "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1. DEPRECATED: Use ExitTemplate.template instead.",
           "type": "string"
-        },
-        "onExitTemplate": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OnExitTemplate"
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",

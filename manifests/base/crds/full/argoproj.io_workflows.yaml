@@ -680,93 +680,7 @@ spec:
                   serviceAccountName:
                     type: string
                 type: object
-              hostAliases:
-                items:
-                  properties:
-                    hostnames:
-                      items:
-                        type: string
-                      type: array
-                    ip:
-                      type: string
-                  type: object
-                type: array
-              hostNetwork:
-                type: boolean
-              imagePullSecrets:
-                items:
-                  properties:
-                    name:
-                      type: string
-                  type: object
-                type: array
-              metrics:
-                properties:
-                  prometheus:
-                    items:
-                      properties:
-                        counter:
-                          properties:
-                            value:
-                              type: string
-                          required:
-                          - value
-                          type: object
-                        gauge:
-                          properties:
-                            realtime:
-                              type: boolean
-                            value:
-                              type: string
-                          required:
-                          - realtime
-                          - value
-                          type: object
-                        help:
-                          type: string
-                        histogram:
-                          properties:
-                            buckets:
-                              items:
-                                type: number
-                              type: array
-                            value:
-                              type: string
-                          required:
-                          - buckets
-                          - value
-                          type: object
-                        labels:
-                          items:
-                            properties:
-                              key:
-                                type: string
-                              value:
-                                type: string
-                            required:
-                            - key
-                            - value
-                            type: object
-                          type: array
-                        name:
-                          type: string
-                        when:
-                          type: string
-                      required:
-                      - help
-                      - name
-                      type: object
-                    type: array
-                required:
-                - prometheus
-                type: object
-              nodeSelector:
-                additionalProperties:
-                  type: string
-                type: object
-              onExit:
-                type: string
-              onExitTemplate:
+              exitTemplate:
                 properties:
                   arguments:
                     properties:
@@ -1112,6 +1026,92 @@ spec:
                   template:
                     type: string
                 type: object
+              hostAliases:
+                items:
+                  properties:
+                    hostnames:
+                      items:
+                        type: string
+                      type: array
+                    ip:
+                      type: string
+                  type: object
+                type: array
+              hostNetwork:
+                type: boolean
+              imagePullSecrets:
+                items:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+                type: array
+              metrics:
+                properties:
+                  prometheus:
+                    items:
+                      properties:
+                        counter:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                          - value
+                          type: object
+                        gauge:
+                          properties:
+                            realtime:
+                              type: boolean
+                            value:
+                              type: string
+                          required:
+                          - realtime
+                          - value
+                          type: object
+                        help:
+                          type: string
+                        histogram:
+                          properties:
+                            buckets:
+                              items:
+                                type: number
+                              type: array
+                            value:
+                              type: string
+                          required:
+                          - buckets
+                          - value
+                          type: object
+                        labels:
+                          items:
+                            properties:
+                              key:
+                                type: string
+                              value:
+                                type: string
+                            required:
+                            - key
+                            - value
+                            type: object
+                          type: array
+                        name:
+                          type: string
+                        when:
+                          type: string
+                      required:
+                      - help
+                      - name
+                      type: object
+                    type: array
+                required:
+                - prometheus
+                type: object
+              nodeSelector:
+                additionalProperties:
+                  type: string
+                type: object
+              onExit:
+                type: string
               parallelism:
                 format: int64
                 type: integer
@@ -3338,11 +3338,7 @@ spec:
                               type: array
                             depends:
                               type: string
-                            name:
-                              type: string
-                            onExit:
-                              type: string
-                            onExitTemplate:
+                            exitTemplate:
                               properties:
                                 arguments:
                                   properties:
@@ -3688,6 +3684,10 @@ spec:
                                 template:
                                   type: string
                               type: object
+                            name:
+                              type: string
+                            onExit:
+                              type: string
                             template:
                               type: string
                             templateRef:
@@ -9367,11 +9367,7 @@ spec:
                                 type: array
                               depends:
                                 type: string
-                              name:
-                                type: string
-                              onExit:
-                                type: string
-                              onExitTemplate:
+                              exitTemplate:
                                 properties:
                                   arguments:
                                     properties:
@@ -9717,6 +9713,10 @@ spec:
                                   template:
                                     type: string
                                 type: object
+                              name:
+                                type: string
+                              onExit:
+                                type: string
                               template:
                                 type: string
                               templateRef:
@@ -18060,11 +18060,7 @@ spec:
                                 type: array
                               depends:
                                 type: string
-                              name:
-                                type: string
-                              onExit:
-                                type: string
-                              onExitTemplate:
+                              exitTemplate:
                                 properties:
                                   arguments:
                                     properties:
@@ -18410,6 +18406,10 @@ spec:
                                   template:
                                     type: string
                                 type: object
+                              name:
+                                type: string
+                              onExit:
+                                type: string
                               template:
                                 type: string
                               templateRef:
@@ -22716,93 +22716,7 @@ spec:
                       serviceAccountName:
                         type: string
                     type: object
-                  hostAliases:
-                    items:
-                      properties:
-                        hostnames:
-                          items:
-                            type: string
-                          type: array
-                        ip:
-                          type: string
-                      type: object
-                    type: array
-                  hostNetwork:
-                    type: boolean
-                  imagePullSecrets:
-                    items:
-                      properties:
-                        name:
-                          type: string
-                      type: object
-                    type: array
-                  metrics:
-                    properties:
-                      prometheus:
-                        items:
-                          properties:
-                            counter:
-                              properties:
-                                value:
-                                  type: string
-                              required:
-                              - value
-                              type: object
-                            gauge:
-                              properties:
-                                realtime:
-                                  type: boolean
-                                value:
-                                  type: string
-                              required:
-                              - realtime
-                              - value
-                              type: object
-                            help:
-                              type: string
-                            histogram:
-                              properties:
-                                buckets:
-                                  items:
-                                    type: number
-                                  type: array
-                                value:
-                                  type: string
-                              required:
-                              - buckets
-                              - value
-                              type: object
-                            labels:
-                              items:
-                                properties:
-                                  key:
-                                    type: string
-                                  value:
-                                    type: string
-                                required:
-                                - key
-                                - value
-                                type: object
-                              type: array
-                            name:
-                              type: string
-                            when:
-                              type: string
-                          required:
-                          - help
-                          - name
-                          type: object
-                        type: array
-                    required:
-                    - prometheus
-                    type: object
-                  nodeSelector:
-                    additionalProperties:
-                      type: string
-                    type: object
-                  onExit:
-                    type: string
-                  onExitTemplate:
+                  exitTemplate:
                     properties:
                       arguments:
                         properties:
@@ -23148,6 +23062,92 @@ spec:
                       template:
                         type: string
                     type: object
+                  hostAliases:
+                    items:
+                      properties:
+                        hostnames:
+                          items:
+                            type: string
+                          type: array
+                        ip:
+                          type: string
+                      type: object
+                    type: array
+                  hostNetwork:
+                    type: boolean
+                  imagePullSecrets:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                      type: object
+                    type: array
+                  metrics:
+                    properties:
+                      prometheus:
+                        items:
+                          properties:
+                            counter:
+                              properties:
+                                value:
+                                  type: string
+                              required:
+                              - value
+                              type: object
+                            gauge:
+                              properties:
+                                realtime:
+                                  type: boolean
+                                value:
+                                  type: string
+                              required:
+                              - realtime
+                              - value
+                              type: object
+                            help:
+                              type: string
+                            histogram:
+                              properties:
+                                buckets:
+                                  items:
+                                    type: number
+                                  type: array
+                                value:
+                                  type: string
+                              required:
+                              - buckets
+                              - value
+                              type: object
+                            labels:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  value:
+                                    type: string
+                                required:
+                                - key
+                                - value
+                                type: object
+                              type: array
+                            name:
+                              type: string
+                            when:
+                              type: string
+                          required:
+                          - help
+                          - name
+                          type: object
+                        type: array
+                    required:
+                    - prometheus
+                    type: object
+                  nodeSelector:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  onExit:
+                    type: string
                   parallelism:
                     format: int64
                     type: integer
@@ -25374,11 +25374,7 @@ spec:
                                   type: array
                                 depends:
                                   type: string
-                                name:
-                                  type: string
-                                onExit:
-                                  type: string
-                                onExitTemplate:
+                                exitTemplate:
                                   properties:
                                     arguments:
                                       properties:
@@ -25724,6 +25720,10 @@ spec:
                                     template:
                                       type: string
                                   type: object
+                                name:
+                                  type: string
+                                onExit:
+                                  type: string
                                 template:
                                   type: string
                                 templateRef:
@@ -31403,11 +31403,7 @@ spec:
                                     type: array
                                   depends:
                                     type: string
-                                  name:
-                                    type: string
-                                  onExit:
-                                    type: string
-                                  onExitTemplate:
+                                  exitTemplate:
                                     properties:
                                       arguments:
                                         properties:
@@ -31753,6 +31749,10 @@ spec:
                                       template:
                                         type: string
                                     type: object
+                                  name:
+                                    type: string
+                                  onExit:
+                                    type: string
                                   template:
                                     type: string
                                   templateRef:

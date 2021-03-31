@@ -341,12 +341,15 @@ message DAGTask {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
+  // DEPRECATED: Use ExitTemplate.template instead.
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
   optional string depends = 12;
 
-  optional OnExitTemplate onExitTemplate = 39;
+  // ExitTemplate hold the template and arguments which is invoked at the end of the
+  // workflow, irrespective of the success, failure, or error status of the primary template
+  optional ExitTemplate exitTemplate = 13;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -392,6 +395,12 @@ message Event {
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
   optional string serviceAccountName = 1;
+}
+
+message ExitTemplate {
+  optional string template = 1;
+
+  optional Arguments arguments = 2;
 }
 
 // GCSArtifact is the location of a GCS artifact
@@ -765,12 +774,6 @@ message OSSBucket {
 
   // CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
   optional bool createBucketIfNotPresent = 5;
-}
-
-message OnExitTemplate {
-  optional string template = 1;
-
-  optional Arguments arguments = 2;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1454,6 +1457,7 @@ message WorkflowSpec {
   // OnExit is a template reference which is invoked at the end of the
   // workflow, irrespective of the success, failure, or error of the
   // primary workflow.
+  // DEPRECATED: Use ExitTemplate.template instead.
   optional string onExit = 17;
 
   // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
@@ -1528,7 +1532,9 @@ message WorkflowSpec {
   // TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
   optional Template templateDefaults = 39;
 
-  optional OnExitTemplate onExitTemplate = 40;
+  // ExitTemplate hold the template and arguments which is invoked at the end of the
+  // workflow, irrespective of the success, failure, or error status of workflow
+  optional ExitTemplate exitTemplate = 40;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1621,9 +1627,12 @@ message WorkflowStep {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
+  // DEPRECATED: Use ExitTemplate.template instead.
   optional string onExit = 11;
 
-  optional OnExitTemplate onExitTemplate = 12;
+  // ExitTemplate hold the template and arguments which is invoked at the end of the
+  // workflow, irrespective of the success, failure, or error status of the primary template
+  optional ExitTemplate exitTemplate = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
