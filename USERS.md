@@ -64,6 +64,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [IBM](https://ibm.com)
 1. [InsideBoard](https://www.insideboard.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
+1. [Intralinks](https://www.intralinks.com/)
 1. [Intuit](https://www.intuit.com/)
 1. [InVision](https://www.invisionapp.com/)
 1. [İşbank](https://www.isbank.com.tr/en)
