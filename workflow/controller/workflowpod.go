@@ -537,6 +537,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		},
 		// This flag was introduced in Go 15 and will be removed in Go 16.
 		// x509: cannot validate certificate for ... because it doesn't contain any IP SANs
+		// https://github.com/argoproj/argo-workflows/issues/5563 - Upgrade to Go 16
 		// https://github.com/golang/go/issues/39568
 		{
 			Name:  "GODEBUG",
