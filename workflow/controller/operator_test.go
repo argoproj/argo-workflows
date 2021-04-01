@@ -6595,3 +6595,41 @@ func TestOnExitDAGStatusCompatibility(t *testing.T) {
 	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
 	assert.Nil(t, nodeB)
 }
+
+const testGlobalParamSubstitute = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-8xw8l
+spec:
+  entrypoint: "{{workflow.parameters.entrypoint}}"
+  arguments:
+    parameters:
+    - name: entrypoint
+      value: test
+    - name: mutex
+      value: mutex1
+  synchronization:
+    mutex:
+      name:  "{{workflow.parameters.mutex}}"
+  templates:
+  - name: whalesay1
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.parameters.message}}"]
+`
+
+func TestSubstituteGlobalVariables(t *testing.T) {
+	wf := unmarshalWF(testGlobalParamSubstitute)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	// ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow()
+	assert.NoError(t, err)
+	assert.NotNil(t, woc.execWf)
+	assert.Equal(t, "test", woc.execWf.Spec.Entrypoint)
+	assert.Equal(t, "mutex1", woc.execWf.Spec.Synchronization.Mutex.Name)
+}

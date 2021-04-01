@@ -261,7 +261,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.markWorkflowFailed(ctx, msg)
 			return
 		}
-		woc.setGlobalParameters(woc.execWf.Spec.Arguments)
+
 		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
 		if len(*wfConditions) > 0 {
 			woc.wf.Status.Conditions.JoinConditions(wfConditions)
@@ -284,7 +284,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
-		woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation(ctx)
 		if err == nil {
@@ -3207,6 +3206,11 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 		}
 		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
 	}
+	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
+	err := woc.substituteGlobalVariables()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -3290,6 +3294,22 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 			return err
 		}
 		originalTmpl.SetType(originalTmplType)
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) substituteGlobalVariables() error {
+	wfSpec, err := json.Marshal(woc.execWf.Spec)
+	if err != nil {
+		return err
+	}
+	resolveSpec, err := template.Replace(string(wfSpec), woc.globalParams, true)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal([]byte(resolveSpec), &woc.execWf.Spec)
+	if err != nil {
+		return err
 	}
 	return nil
 }
