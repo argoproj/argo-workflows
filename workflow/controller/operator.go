@@ -572,6 +572,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 
+	// Create WorkflowNode* events for nodes that have changed phase
+	woc.recordNodePhaseChangeEvents(&woc.orig.Status.Nodes, &woc.wf.Status.Nodes)
+
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
@@ -906,9 +909,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
-				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
-					woc.recordNodePhaseEvent(&node)
-				}
 			}
 			if node.Succeeded() && match {
 				woc.completedPods[pod.Name] = pod.Status.Phase
@@ -1139,12 +1139,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 				node.PodIP = pod.Status.PodIP
 			}
 		}
-	}
-
-	// If node is transitioning to complete, send running event now.
-	// Do not send running event if skipped or omitted.
-	if !node.Phase.Fulfilled() && newPhase.Completed() {
-		woc.recordNodePhaseEventAsPhase(node, wfv1.NodeRunning)
 	}
 
 	// we only need to update these values if the container transitions to complete
@@ -1999,7 +1993,6 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, messages...)
 	node.MemoizationStatus = memStat
-	woc.recordNodePhaseEventAsPhase(node, wfv1.NodeRunning)
 	return node
 }
 
@@ -2043,9 +2036,6 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		node.DisplayName = nodeName
 	}
 
-	if node.Phase == wfv1.NodeRunning {
-		woc.recordNodePhaseEvent(&node)
-	}
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = node.StartedAt
 	}
@@ -2071,9 +2061,6 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).
 				Error("node is already fulfilled")
 		}
-		if phase == wfv1.NodeRunning {
-			woc.recordNodePhaseEvent(node)
-		}
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
 		woc.updated = true
@@ -2090,17 +2077,11 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.log.Infof("node %s finished: %s", node.ID, node.FinishedAt)
 		woc.updated = true
 	}
-	if !woc.orig.Status.Nodes[node.ID].Fulfilled() && node.Fulfilled() {
-		woc.recordNodePhaseEvent(node)
-	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
-	if !woc.controller.Config.NodeEvents.IsEnabled() {
-		return
-	}
 	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
 	if node.Message != "" {
 		message = message + ": " + node.Message
@@ -2122,10 +2103,46 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	)
 }
 
-func (woc *wfOperationCtx) recordNodePhaseEventAsPhase(node *wfv1.NodeStatus, phase wfv1.NodePhase) {
-	eventNode := node.DeepCopy()
-	eventNode.Phase = phase
-	woc.recordNodePhaseEvent(eventNode)
+// recordNodePhaseChangeEvents creates WorkflowNode Kubernetes events for each node
+// that has changes logged during this execution of the operator loop.
+func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old *wfv1.Nodes, new *wfv1.Nodes) {
+	if !woc.controller.Config.NodeEvents.IsEnabled() {
+		return
+	}
+	oldNodes := *old
+	newNodes := *new
+
+	// Check for newly added nodes; send an event for new nodes
+	for nodeName, newNode := range newNodes {
+		_, ok := oldNodes[nodeName]
+		if !ok {
+			if newNode.Phase == wfv1.NodeRunning {
+				woc.recordNodePhaseEvent(&newNode)
+			} else if newNode.Completed() {
+				ephemeralNode := newNode.DeepCopy()
+				ephemeralNode.Phase = wfv1.NodeRunning
+				woc.recordNodePhaseEvent(ephemeralNode)
+				woc.recordNodePhaseEvent(&newNode)
+			}
+		}
+	}
+
+	// For each node in the old list, send an event if the state changed
+	for nodeName, oldNode := range oldNodes {
+		if oldNode.Fulfilled() {
+			continue
+		}
+		newNode := newNodes[nodeName]
+		if oldNode.Phase == newNode.Phase {
+			continue
+		}
+		if oldNode.Phase == wfv1.NodePending && newNode.Completed() {
+			ephemeralNode := newNode.DeepCopy()
+			ephemeralNode.Phase = wfv1.NodeRunning
+			woc.recordNodePhaseEvent(ephemeralNode)
+		}
+		woc.recordNodePhaseEvent(&newNode)
+	}
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error

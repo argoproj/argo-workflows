@@ -3224,7 +3224,7 @@ spec:
 			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
 			woc.operate(ctx)
-			assert.Equal(t, want, getEvents(controller, len(want)))
+			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
 		})
 	}
 }
