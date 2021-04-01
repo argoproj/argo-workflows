@@ -109,6 +109,14 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			return err
 		}
 
+		_, err = sess.
+			DeleteFrom(archiveLabelsTableName).
+			Where(db.Cond{"clustername": r.clusterName}).
+			And(db.Cond{"uid": wf.UID}).
+			Exec()
+		if err != nil {
+			return err
+		}
 		// insert the labels
 		for key, value := range wf.GetLabels() {
 			_, err := sess.Collection(archiveLabelsTableName).
