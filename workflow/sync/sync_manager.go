@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -46,6 +47,8 @@ func (cm *Manager) getWorkflowKey(key string) (string, error) {
 }
 
 func (cm *Manager) CheckWorkflowExistence() {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	log.Debug("Check the workflow existence")
 	for _, lock := range cm.syncLockMap {
 		keys := lock.getCurrentHolders()

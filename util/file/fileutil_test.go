@@ -39,7 +39,7 @@ func TestExistsInTar(t *testing.T) {
 		var buf bytes.Buffer
 		writer := tar.NewWriter(&buf)
 		for _, f := range files {
-			mode := os.FileMode(0600)
+			mode := os.FileMode(0o600)
 			if f.isDir {
 				mode |= os.ModeDir
 			}

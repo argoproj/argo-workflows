@@ -241,8 +241,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
-	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
-
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
@@ -263,6 +261,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.markWorkflowFailed(ctx, msg)
 			return
 		}
+		woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
 		if len(*wfConditions) > 0 {
 			woc.wf.Status.Conditions.JoinConditions(wfConditions)
@@ -285,6 +284,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
+		woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation(ctx)
 		if err == nil {
@@ -1161,21 +1161,21 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-	// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
-	if exitCode := getExitCode(pod); exitCode != nil {
-		if node.Outputs == nil {
-			node.Outputs = &wfv1.Outputs{}
-		}
-		woc.log.Infof("Updating node %s exit code %v -> %v", node.ID, node.Outputs.ExitCode, *exitCode)
-		if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-			woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-			if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
-				node.Phase = wfv1.NodeError
-				node.Message = err.Error()
+
+	// we only need to update these values if the container transitions to complete
+	if !node.Phase.Fulfilled() && newPhase.Fulfilled() {
+		// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
+		if exitCode := getExitCode(pod); exitCode != nil {
+			woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
+			node.Outputs = &wfv1.Outputs{ExitCode: pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))}
+			if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+				woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
+				if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
+					node.Phase = wfv1.NodeError
+					node.Message = err.Error()
+				}
 			}
 		}
-		node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))
-		updated = true
 	}
 
 	if node.Phase != newPhase {
@@ -1805,7 +1805,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if retryNodeName != "" {
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
 		if !retryNode.Fulfilled() && node.Fulfilled() { // if the retry child has completed we need to update outself
-			node, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
+			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
 			}
@@ -2943,7 +2943,23 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitTemplate *wfv1.ExitTemplate, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
 	if exitTemplate != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", exitTemplate)
-		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
+
+		// Previously we used `parentDisplayName` to generate all onExit node names. However, as these can be non-unique
+		// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
+		// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
+		// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
+		// If it doesn't, we use the new (and unique) name for all operations henceforth.
+		// TODO: This scaffold code should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
+		// When the scaffold code is removed, we should only have the following:
+		//
+		// 		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
+		//
+		// See more: https://github.com/argoproj/argo-workflows/issues/5502
+		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
+		legacyOnExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
+		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.wf.GetNodeByName(parentNodeName).HasChild(legacyNameNode.ID) {
+			onExitNodeName = legacyOnExitNodeName
+		}
 		resolvedArgs := exitTemplate.Arguments
 		var err error
 		if !resolvedArgs.IsEmpty() && outputs != nil {
@@ -2953,8 +2969,8 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitTemplate *wfv1
 			}
 
 		}
-
 		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitTemplate.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
 		})

@@ -51,7 +51,7 @@ func secondarySwaggerGen() {
 		panic(err)
 	}
 	newContents := strings.ReplaceAll(string(read), "argo-workflows", "argo_workflows")
-	err = ioutil.WriteFile("pkg/apiclient/_.secondary.swagger.json", []byte(newContents), 0666)
+	err = ioutil.WriteFile("pkg/apiclient/_.secondary.swagger.json", []byte(newContents), 0o666)
 	if err != nil {
 		panic(err)
 	}

@@ -4,8 +4,8 @@ import {createRef, useEffect, useState} from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import {uiUrl} from '../../base';
 import {ScopedLocalStorage} from '../../scoped-local-storage';
-import {ErrorNotice} from '../error-notice';
 import {parse, stringify} from '../object-parser';
+import {PhaseIcon} from '../phase-icon';
 import {ToggleButton} from '../toggle-button';
 
 interface Props<T> {
@@ -22,22 +22,10 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
     const [error, setError] = useState<Error>();
     const [lang, setLang] = useState<string>(storage.getItem('lang', defaultLang));
     const [text, setText] = useState<string>(stringify(value, lang));
-    const [isModified, setIsModified] = useState<boolean>(false);
 
     useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
     useEffect(() => setText(stringify(value, lang)), [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
-    if (onChange) {
-        useEffect(() => {
-            if (isModified) {
-                try {
-                    onChange(parse(text));
-                } catch (e) {
-                    setError(e);
-                }
-            }
-        }, [text, isModified]);
-    }
 
     useEffect(() => {
         if (type && lang === 'json') {
@@ -76,12 +64,11 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                 </ToggleButton>
                 {buttons}
             </div>
-            <ErrorNotice error={error} style={{margin: 0}} />
-            <div onBlur={() => setText(editor.current.editor.getModel().getValue())}>
+            <div>
                 <MonacoEditor
                     ref={editor}
                     key='editor'
-                    value={text}
+                    defaultValue={text}
                     language={lang}
                     height='400px'
                     options={{
@@ -91,10 +78,24 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         renderIndentGuides: false,
                         scrollBeyondLastLine: true
                     }}
-                    onChange={() => setIsModified(true)}
+                    onChange={v => {
+                        try {
+                            onChange(parse(v));
+                            setError(null);
+                        } catch (e) {
+                            setError(e);
+                        }
+                    }}
                 />
             </div>
             <div style={{paddingTop: '1em'}}>
+                {error && (
+                    <>
+                        <PhaseIcon value='Error' /> {error.message}
+                    </>
+                )}
+            </div>
+            <div>
                 {onChange && (
                     <>
                         <i className='fa fa-info-circle' />{' '}

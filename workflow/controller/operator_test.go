@@ -1069,7 +1069,62 @@ func TestRetriesVariable(t *testing.T) {
 		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
 	// ordering not preserved
-	assert.Subset(t, expected, actual)
+	assert.ElementsMatch(t, expected, actual)
+}
+
+var retriesVariableInPodSpecPatchTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    retryStrategy:
+      limit: 10
+    podSpecPatch: |
+      containers:
+        - name: main
+          resources:
+            limits:
+              memory: "{{=(sprig.int(retries) + 1) * 64}}Mi"
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello"]
+`
+
+// TestRetriesVariableInPodSpecPatch makes sure that {{retries}} variable in pod spec patch is correctly
+// updated before each retry
+func TestRetriesVariableInPodSpecPatch(t *testing.T) {
+	wf := unmarshalWF(retriesVariableInPodSpecPatchTemplate)
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	iterations := 5
+	var woc *wfOperationCtx
+	for i := 1; i <= iterations; i++ {
+		woc = newWorkflowOperationCtx(wf, controller)
+		if i != 1 {
+			makePodsPhase(ctx, woc, apiv1.PodFailed)
+		}
+		woc.operate(ctx)
+		wf = woc.wf
+	}
+
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, iterations)
+	expected := []string{}
+	actual := []string{}
+	for i := 0; i < iterations; i++ {
+		actual = append(actual, pods.Items[i].Spec.Containers[1].Resources.Limits.Memory().String())
+		expected = append(expected, fmt.Sprintf("%dMi", (i+1)*64))
+	}
+	// expecting memory limit to increase after each retry: "64Mi", "128Mi", "192Mi", "256Mi", "320Mi"
+	// ordering not preserved
+	assert.ElementsMatch(t, actual, expected)
 }
 
 var stepsRetriesVariableTemplate = `
@@ -1129,7 +1184,7 @@ func TestStepsRetriesVariable(t *testing.T) {
 		expected = append(expected, fmt.Sprintf("cowsay %d", i))
 	}
 	// ordering not preserved
-	assert.Subset(t, expected, actual)
+	assert.ElementsMatch(t, expected, actual)
 }
 
 func TestAssessNodeStatus(t *testing.T) {
@@ -3770,6 +3825,44 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.Equal(t, "testServiceAccountName", serviceAccountNameValue.String())
 }
 
+var unsuppliedArgValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-with-unsupplied-param-
+spec:
+  arguments:
+    parameters:
+    - name: missing
+  entrypoint: whalesay
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+`
+
+func TestUnsuppliedArgValue(t *testing.T) {
+	wf := unmarshalWF(unsuppliedArgValue)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
+	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value is required")
+}
+
 var maxDurationOnErroredFirstNode = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -6222,6 +6315,287 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }
 
+const rootRetryStrategyCompletes = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-5bd7v
+spec:
+  activeDeadlineSeconds: 300
+  entrypoint: whalesay
+  retryStrategy:
+    limit: 1
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    hello-world-5bd7v:
+      children:
+      - hello-world-5bd7v-643409622
+      displayName: hello-world-5bd7v
+      finishedAt: "2021-03-23T14:53:45Z"
+      id: hello-world-5bd7v
+      name: hello-world-5bd7v
+      phase: Succeeded
+      startedAt: "2021-03-23T14:53:39Z"
+      templateName: whalesay
+      templateScope: local/hello-world-5bd7v
+      type: Retry
+    hello-world-5bd7v-643409622:
+      displayName: hello-world-5bd7v(0)
+      finishedAt: "2021-03-23T14:53:44Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-5bd7v-643409622
+      name: hello-world-5bd7v(0)
+      phase: Succeeded
+      startedAt: "2021-03-23T14:53:39Z"
+      templateName: whalesay
+      templateScope: local/hello-world-5bd7v
+      type: Pod
+  phase: Running
+  startedAt: "2021-03-23T14:53:39Z"
+`
+
+func TestRootRetryStrategyCompletes(t *testing.T) {
+	wf := unmarshalWF(rootRetryStrategyCompletes)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+const testOnExitNameBackwardsCompatibility = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-69h5d
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: run
+        onExit: pass
+        template: pass
+  - container:
+      args:
+      - exit 0
+      command:
+      - sh
+      - -c
+      image: alpine
+    name: pass
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    hello-world-69h5d:
+      children:
+      - hello-world-69h5d-4087924081
+      displayName: hello-world-69h5d
+      finishedAt: "2021-03-24T14:53:32Z"
+      id: hello-world-69h5d
+      name: hello-world-69h5d
+      outboundNodes:
+      - hello-world-69h5d-928074325
+      phase: Running
+      startedAt: "2021-03-24T14:53:18Z"
+      templateName: main
+      templateScope: local/hello-world-69h5d
+      type: Steps
+    hello-world-69h5d-928074325:
+      boundaryID: hello-world-69h5d
+      displayName: run.onExit
+      finishedAt: "2021-03-24T14:53:31Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-69h5d-928074325
+      name: run.onExit
+      phase: Running
+      startedAt: "2021-03-24T14:53:25Z"
+      templateName: pass
+      templateScope: local/hello-world-69h5d
+      type: Pod
+    hello-world-69h5d-2500098386:
+      boundaryID: hello-world-69h5d
+      children:
+      - hello-world-69h5d-928074325
+      displayName: run
+      finishedAt: "2021-03-24T14:53:24Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-69h5d-2500098386
+      name: hello-world-69h5d[0].run
+      phase: Succeeded
+      startedAt: "2021-03-24T14:53:18Z"
+      templateName: pass
+      templateScope: local/hello-world-69h5d
+      type: Pod
+    hello-world-69h5d-4087924081:
+      boundaryID: hello-world-69h5d
+      children:
+      - hello-world-69h5d-2500098386
+      displayName: '[0]'
+      finishedAt: "2021-03-24T14:53:32Z"
+      id: hello-world-69h5d-4087924081
+      name: hello-world-69h5d[0]
+      phase: Running
+      startedAt: "2021-03-24T14:53:18Z"
+      templateScope: local/hello-world-69h5d
+      type: StepGroup
+  phase: Running
+  startedAt: "2021-03-24T14:53:18Z"
+`
+
+// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
+// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
+// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
+// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
+// If it doesn't, we use the new (and unique) name for all operations henceforth.
+//
+// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
+// old name. When we call operate on it, we should NOT create another onExit node with the new name and instead respect
+// the old onExit node.
+//
+// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
+// See more: https://github.com/argoproj/argo-workflows/issues/5502
+func TestOnExitNameBackwardsCompatibility(t *testing.T) {
+	wf := unmarshalWF(testOnExitNameBackwardsCompatibility)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	createRunningPods(ctx, woc)
+
+	nodesBeforeOperation := len(woc.wf.Status.Nodes)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	// Number of nodes should not change (no new name node was created)
+	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
+	node := woc.wf.Status.Nodes.FindByDisplayName("run.onExit")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	}
+}
+
+const testOnExitDAGStatusCompatibility = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-8xw8l
+spec:
+  entrypoint: diamond
+  templates:
+  - dag:
+      tasks:
+      - name: A
+        onExit: echo
+        template: echo
+      - depends: A
+        name: B
+        template: echo
+    name: diamond
+  - container:
+      command:
+      - echo
+      - hi
+      image: alpine:3.7
+    name: echo
+status:
+  nodes:
+    dag-diamond-8xw8l:
+      children:
+      - dag-diamond-8xw8l-1488416551
+      displayName: dag-diamond-8xw8l
+      finishedAt: "2021-03-24T15:37:06Z"
+      id: dag-diamond-8xw8l
+      name: dag-diamond-8xw8l
+      outboundNodes:
+      - dag-diamond-8xw8l-1505194170
+      phase: Running
+      startedAt: "2021-03-24T15:36:47Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-8xw8l
+      type: DAG
+    dag-diamond-8xw8l-1342580575:
+      boundaryID: dag-diamond-8xw8l
+      displayName: A.onExit
+      finishedAt: "2021-03-24T15:36:59Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-8xw8l-1342580575
+      name: A.onExit
+      phase: Running
+      startedAt: "2021-03-24T15:36:54Z"
+      templateName: echo
+      templateScope: local/dag-diamond-8xw8l
+      type: Pod
+    dag-diamond-8xw8l-1488416551:
+      boundaryID: dag-diamond-8xw8l
+      children:
+      - dag-diamond-8xw8l-1342580575
+      displayName: A
+      finishedAt: "2021-03-24T15:36:53Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-diamond-8xw8l-1488416551
+      name: dag-diamond-8xw8l.A
+      phase: Succeeded
+      startedAt: "2021-03-24T15:36:47Z"
+      templateName: echo
+      templateScope: local/dag-diamond-8xw8l
+      type: Pod
+  phase: Running
+  startedAt: "2021-03-24T15:36:47Z"
+`
+
+// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
+// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
+// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
+// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
+// If it doesn't, we use the new (and unique) name for all operations henceforth.
+//
+// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
+// old name. When we call operate on it, we should NOT create the subsequent DAG done ("B") until the onExit node name with
+// the old name finishes running.
+//
+// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
+// See more: https://github.com/argoproj/argo-workflows/issues/5502
+func TestOnExitDAGStatusCompatibility(t *testing.T) {
+	wf := unmarshalWF(testOnExitDAGStatusCompatibility)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	createRunningPods(ctx, woc)
+
+	nodesBeforeOperation := len(woc.wf.Status.Nodes)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	// Number of nodes should not change (no new name node was created)
+	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
+	node := woc.wf.Status.Nodes.FindByDisplayName("A.onExit")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	}
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	assert.Nil(t, nodeB)
+}
+
 var stepsOnExitTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -6248,7 +6622,6 @@ spec:
             - name: input
               value: '{{steps.leafB.outputs.parameters.result}}'
         template: whalesay
-
   - name: whalesay
     container:
       image: docker/whalesay
@@ -6316,7 +6689,6 @@ spec:
             - name: input
               value: '{{tasks.leafB.outputs.parameters.result}}'
         template: whalesay
-
   - name: whalesay
     container:
       image: docker/whalesay

@@ -429,6 +429,14 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - argoproj.io
   resources:
   - workflows
@@ -760,7 +768,7 @@ spec:
         - server
         - --auth-mode
         - client
-        image: argoproj/argocli:latest
+        image: docker.io/argoproj/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
@@ -865,7 +873,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: argoproj/workflow-controller:latest
+        image: docker.io/argoproj/workflow-controller:latest
         livenessProbe:
           httpGet:
             path: /metrics
@@ -877,9 +885,12 @@ spec:
         - containerPort: 9090
           name: metrics
         securityContext:
+          allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:

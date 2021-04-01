@@ -159,7 +159,7 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 		dirPath := filepath.Dir(driver.Path)
 		if dirPath != "." && dirPath != "/" {
 			// Follow umask for the permission
-			err = os.MkdirAll(dirPath, 0777)
+			err = os.MkdirAll(dirPath, 0o777)
 			if err != nil {
 				return err
 			}
@@ -208,7 +208,7 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 		dirPath := filepath.Dir(driver.Path)
 		if dirPath != "." && dirPath != "/" {
 			// Follow umask for the permission
-			err = hdfscli.MkdirAll(dirPath, 0777)
+			err = hdfscli.MkdirAll(dirPath, 0o777)
 			if err != nil {
 				return err
 			}

@@ -64,6 +64,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [IBM](https://ibm.com)
 1. [InsideBoard](https://www.insideboard.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
+1. [Intralinks](https://www.intralinks.com/)
 1. [Intuit](https://www.intuit.com/)
 1. [InVision](https://www.invisionapp.com/)
 1. [İşbank](https://www.isbank.com.tr/en)
@@ -106,6 +107,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Schlumberger](https://slb.com/)
 1. [SegmentStream](https://segmentstream.com)
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
+1. [Softonic](https://hello.softonic.com/)
 1. [Sohu](https://www.sohu.com/)
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
 1. [strongDM](https://www.strongdm.com/)
@@ -118,6 +120,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
+1. [Zhihu](https://www.zhihu.com/)
 
 ### Projects Using Argo
 

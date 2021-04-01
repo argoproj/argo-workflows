@@ -83,7 +83,7 @@ Cast to int:
 asInt(inputs.parameters["my-int-param"])
 ```
 
-Cast to flloat:
+Cast to float:
 
 ```
 asFloat(inputs.parameters["my-float-param"])

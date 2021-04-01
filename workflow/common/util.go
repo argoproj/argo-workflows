@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -34,18 +35,21 @@ import (
 // user specified volumeMounts in the template, and returns the deepest volumeMount
 // (if any). A return value of nil indicates the path is not under any volumeMount.
 func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
-	var volMnt *apiv1.VolumeMount
-	deepestLen := 0
-	for _, mnt := range tmpl.GetVolumeMounts() {
-		if path != mnt.MountPath && !strings.HasPrefix(path, mnt.MountPath+"/") {
-			continue
-		}
-		if len(mnt.MountPath) > deepestLen {
-			volMnt = &mnt
-			deepestLen = len(mnt.MountPath)
+	volumeMounts := tmpl.GetVolumeMounts()
+	sort.Slice(volumeMounts, func(i, j int) bool {
+		return len(volumeMounts[i].MountPath) > len(volumeMounts[j].MountPath)
+	})
+	for _, mnt := range volumeMounts {
+		normalizedMountPath := strings.TrimRight(mnt.MountPath, "/")
+		if path == normalizedMountPath || isSubPath(path, normalizedMountPath) {
+			return &mnt
 		}
 	}
-	return volMnt
+	return nil
+}
+
+func isSubPath(path string, normalizedMountPath string) bool {
+	return strings.HasPrefix(path, normalizedMountPath+"/")
 }
 
 type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
@@ -327,6 +331,6 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	}
 }
 
-func GenerateOnExitNodeName(parentDisplayName string) string {
-	return fmt.Sprintf("%s.onExit", parentDisplayName)
+func GenerateOnExitNodeName(parentNodeName string) string {
+	return fmt.Sprintf("%s.onExit", parentNodeName)
 }

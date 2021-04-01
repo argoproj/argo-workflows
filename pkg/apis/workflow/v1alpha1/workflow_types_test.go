@@ -896,10 +896,19 @@ func TestWorkflowSpec_GetExitTemplate(t *testing.T) {
 	existTmpl := spec.GetExitTemplate(Arguments{})
 	assert.NotNil(t, existTmpl)
 	assert.Equal(t, "test", existTmpl.Template)
-	assert.Equal(t, &args, existTmpl.Arguments)
+	assert.Equal(t, args, existTmpl.Arguments)
 	spec = WorkflowSpec{OnExit: "test-tmpl"}
 	existTmpl = spec.GetExitTemplate(args)
 	assert.NotNil(t, existTmpl)
 	assert.Equal(t, "test-tmpl", existTmpl.Template)
-	assert.Equal(t, &args, existTmpl.Arguments)
+	assert.Equal(t, args, existTmpl.Arguments)
+}
+
+func TestHasChild(t *testing.T) {
+	node := NodeStatus{
+		Children: []string{"a", "b"},
+	}
+	assert.True(t, node.HasChild("a"))
+	assert.False(t, node.HasChild("c"))
+	assert.False(t, node.HasChild(""))
 }

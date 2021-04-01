@@ -22,6 +22,7 @@ type Entry struct {
 	NodeID            string        `json:"nodeID"`
 	Outputs           *wfv1.Outputs `json:"outputs"`
 	CreationTimestamp metav1.Time   `json:"creationTimestamp"`
+	LastHitTimestamp  metav1.Time   `json:"lastHitTimestamp"`
 }
 
 func (e *Entry) Hit() bool {
