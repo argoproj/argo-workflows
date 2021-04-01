@@ -103,14 +103,14 @@ func TestGetUser(t *testing.T) {
 	for _, tt := range []struct {
 		name string
 		url  string
-		user bool
+		user string
 	}{
 		{"Username in SSH url", "gitaly@github.com:argoproj/argo-workflows.git", "gitaly"},
 		{"Default username", "https://github.com/argoproj/argo-workflows.git", "git"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			sshUser, _ := GetUser(tt.url)
-			assert.Equal(sshUser, tt.user)
+			assert.Equal(t, sshUser, tt.user)
 		})
 	}
 }
