@@ -192,7 +192,7 @@ endif
 argo-server.crt: argo-server.key
 
 argo-server.key:
-	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
+	go run ./hack/certs
 
 .PHONY: cli-image
 cli-image: dist/argocli.image
