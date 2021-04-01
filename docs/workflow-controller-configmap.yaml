@@ -268,8 +268,8 @@ data:
     # This is the root URL of the OIDC provider (required).
     issuer: https://issuer.root.url/
     # This defines how long your login is valid for (in hours). (optional)
-    # If omitted, defaults to 24h. Example below is 10 days.
-    expiry: 240
+    # If omitted, defaults to 10h. Example below is 10 days.
+    expiry: 240h
     # This is name of the secret and the key in it that contain OIDC client
     # ID issued to the application by the provider (required).
     clientId:
