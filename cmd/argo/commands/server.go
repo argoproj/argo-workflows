@@ -100,7 +100,7 @@ See %s`, help.ArgoSever),
 				}
 				tlsConfig = &tls.Config{
 					Certificates:       []tls.Certificate{cer},
-					InsecureSkipVerify: false, // InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
+					InsecureSkipVerify: true,
 					MinVersion:         uint16(tlsMinVersion),
 				}
 			} else {
