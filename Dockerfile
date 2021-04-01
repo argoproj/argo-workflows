@@ -129,7 +129,6 @@ FROM argoexec-base as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
 RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
-
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
