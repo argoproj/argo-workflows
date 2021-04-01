@@ -40,7 +40,7 @@ func main() {
 		BasicConstraintsValid: true,
 	}
 
-	for _, h := range []string{"localhost"} {
+	for _, h := range []string{"localhost", "127.0.0.1"} {
 		if ip := net.ParseIP(h); ip != nil {
 			template.IPAddresses = append(template.IPAddresses, ip)
 		} else {
