@@ -193,10 +193,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
-	err := woc.setExecWorkflow()
+	err := woc.setExecWorkflow(ctx)
 	if err != nil {
-		woc.log.WithError(err).Errorf("Unable to get Workflow Template Reference for workflow")
-		woc.markWorkflowError(ctx, err)
 		return
 	}
 
@@ -241,7 +239,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
-	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
 		err := woc.createPDBResource(ctx)
@@ -249,23 +246,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
 			woc.markWorkflowFailed(ctx, msg)
 			return
-		}
-		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-
-		// Validate the execution wfSpec
-		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
-		if err != nil {
-			msg := fmt.Sprintf("invalid spec: %s", err.Error())
-			woc.markWorkflowFailed(ctx, msg)
-			return
-		}
-
-		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
-		if len(*wfConditions) > 0 {
-			woc.wf.Status.Conditions.JoinConditions(wfConditions)
-			woc.updated = true
 		}
 
 		woc.workflowDeadline = woc.getWorkflowDeadline()
@@ -3189,7 +3169,7 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 	return woc.execWf.Spec.RetryStrategy
 }
 
-func (woc *wfOperationCtx) setExecWorkflow() error {
+func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
 		err := woc.setStoredWfSpec()
 		if err != nil {
@@ -3198,13 +3178,39 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
 		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
 	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
-		return fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
+		err := fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
+		woc.log.WithError(err).Errorf("Unable to get Workflow Template Reference for workflow")
+		woc.markWorkflowError(ctx, err)
+		return err
 	} else {
 		err := woc.controller.setWorkflowDefaults(woc.wf)
 		if err != nil {
+			woc.log.WithError(err).Errorf("Unable to get Workflow Template Reference for workflow")
+			woc.markWorkflowError(ctx, err)
 			return err
 		}
 		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
+	}
+
+	// Perform one-time workflow validation
+	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
+		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+
+		// Validate the execution wfSpec
+		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+		if err != nil {
+			msg := fmt.Sprintf("invalid spec: %s", err.Error())
+			woc.markWorkflowFailed(ctx, msg)
+			return err
+		}
+
+		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
+		if len(*wfConditions) > 0 {
+			woc.wf.Status.Conditions.JoinConditions(wfConditions)
+			woc.updated = true
+		}
 	}
 	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
 	err := woc.substituteGlobalVariables()

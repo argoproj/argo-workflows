@@ -4733,7 +4733,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-	err := woc.setExecWorkflow()
+	err := woc.setExecWorkflow(context.Background())
 	assert.NoError(t, err)
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -6627,7 +6627,7 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 
 	// ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.setExecWorkflow()
+	err := woc.setExecWorkflow(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, woc.execWf)
 	assert.Equal(t, "test", woc.execWf.Spec.Entrypoint)

@@ -554,7 +554,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.setExecWorkflow()
+	err := woc.setExecWorkflow(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
 }

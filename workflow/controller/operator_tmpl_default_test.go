@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,7 +127,7 @@ func TestSetTemplateDefault(t *testing.T) {
 	t.Run("tmplDefaultInConfig", func(t *testing.T) {
 		wf := unmarshalWF(defaultWf)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow()
+		err := woc.setExecWorkflow(context.Background())
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -153,7 +154,7 @@ func TestSetTemplateDefault(t *testing.T) {
 			},
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow()
+		err := woc.setExecWorkflow(context.Background())
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -183,7 +184,7 @@ func TestSetTemplateDefault(t *testing.T) {
 			},
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow()
+		err := woc.setExecWorkflow(context.Background())
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -224,7 +225,7 @@ func TestSetTemplateDefault(t *testing.T) {
 			},
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setExecWorkflow()
+		err := woc.setExecWorkflow(context.Background())
 		assert.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
