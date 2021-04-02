@@ -17,7 +17,7 @@ spec:
       steps:
         - - name: step-1
             template: output
-            onExitTemplate:
+            exitTemplate:
               template: exit
               arguments:
                 parameters:
@@ -26,7 +26,7 @@ spec:
     
     - name: output
       container:
-        image: alpine:3.7
+        image: python:alpine3.6
         command: [sh, -c]
         args: ["echo -n hello world > /tmp/hello_world.txt"]
       outputs:

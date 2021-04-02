@@ -17,7 +17,7 @@ spec:
       steps:
         - - name: step-1
             template: output
-            onExitTemplate:
+            exitTemplate:
               template: exit
               arguments:
                 artifacts:
@@ -42,6 +42,6 @@ spec:
           - name: message
             path: /tmp/message
       container:
-        image: alpine:latest
+        image: python:alpine3.6
         command: [sh, -c]
         args: ["cat /tmp/message"]

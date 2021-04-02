@@ -1728,6 +1728,15 @@ ExecutorConfig holds configurations of an executor container.
 
 _No description available_
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
