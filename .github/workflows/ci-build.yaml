@@ -123,7 +123,7 @@ jobs:
       - name: Load the Argo docker images to test
         run: make load-images
       - name: Test the permission bits on argoexec
-        run: getcap -v /usr/local/bin/argoexec
+        run: docker run argoproj/argoexec:latest getcap -v /usr/local/bin/argoexec
       - name: Install and start K3S v1.18.8+k3s1
         run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Create Kubeconfig
