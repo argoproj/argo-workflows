@@ -10,6 +10,31 @@ on:
       - "master"
 
 jobs:
+  image-build:
+    name: Building images
+    runs-on: ubuntu-20.04
+    # 5m30
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.15.7"
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/pkg/mod
+          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/dist/docker-images
+          key: docker-images-${{ github.ref }}
+      - run: go mod download -x
+      - run: make server/static/files.go STATIC_FILES=false
+      - run: make images
   tests:
     name: Unit Tests
     runs-on: ubuntu-20.04
@@ -37,11 +62,10 @@ jobs:
       - run: go build -v ./...
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
       - run: bash <(curl -s https://codecov.io/bash)
-      - run: make images
 
   e2e-tests:
     name: E2E Tests
-    needs: [ tests ]
+    needs: [ image-build ]
     runs-on: ubuntu-20.04
     # test-api: 7m (1m10s locally)
     # test-cli: 12m (4m locally)
