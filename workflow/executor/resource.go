@@ -52,10 +52,16 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if err != nil {
 		return "", "", "", err
 	}
-	resourceName := fmt.Sprintf("%s.%s/%s", obj.GroupVersionKind().Kind, obj.GroupVersionKind().Group, obj.GetName())
+	group := obj.GroupVersionKind().Group
+	resourceName := obj.GetName()
+	if group == "" || resourceName == "" {
+		return "", "", "", errors.New(errors.CodeBadRequest, "Both group and name are required but at least one of them is missing from the manifest")
+	}
+
+	resourceFullName := fmt.Sprintf("%s.%s/%s", obj.GroupVersionKind().Kind, group, resourceName)
 	selfLink := obj.GetSelfLink()
-	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceName, selfLink)
-	return obj.GetNamespace(), resourceName, selfLink, nil
+	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
+	return obj.GetNamespace(), resourceFullName, selfLink, nil
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
