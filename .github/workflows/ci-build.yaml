@@ -116,6 +116,8 @@ jobs:
         with:
           path: dist/docker-images
           key: docker-images-${{ github.sha }}
+      - name: Test for Argo Docker images
+        run:  ls -l dist/docker-images ; test -e dist/docker-images/argocli.image
       - name: Pull auxiliary images
         run: make pull-images &
       - name: Load the Argo docker images to test
