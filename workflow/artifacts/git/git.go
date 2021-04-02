@@ -34,13 +34,13 @@ var _ common.ArtifactDriver = &ArtifactDriver{}
 
 var sshURLRegex = regexp.MustCompile("^(ssh://)?([^/:]*?)@[^@]+$")
 
-func GetUser(url string) (string, bool) {
+func GetUser(url string) string {
 	matches := sshURLRegex.FindStringSubmatch(url)
 	if len(matches) > 2 {
-		return matches[2], true
+		return matches[2]
 	}
 	// default to `git` user unless username is specified in SSH url
-	return "git", false
+	return "git"
 }
 
 func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []string, error) {
@@ -112,7 +112,7 @@ func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 }
 
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	sshUser, _ := GetUser(path)
+	sshUser := GetUser(path)
 	closer, auth, env, err := g.auth(sshUser)
 	if err != nil {
 		return err

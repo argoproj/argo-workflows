@@ -109,7 +109,7 @@ func TestGetUser(t *testing.T) {
 		{"Default username", "https://github.com/argoproj/argo-workflows.git", "git"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			sshUser, _ := GetUser(tt.url)
+			sshUser := GetUser(tt.url)
 			assert.Equal(t, sshUser, tt.user)
 		})
 	}
