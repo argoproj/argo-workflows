@@ -30,7 +30,7 @@ jobs:
           key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
       - uses: actions/cache@v2
         with:
-          path: /home/runner/dist/docker-images
+          path: dist/docker-images
           key: docker-images-${{ github.sha }}
       - run: go mod download -x
       - run: make server/static/files.go STATIC_FILES=false
@@ -114,7 +114,7 @@ jobs:
           key: kustomize
       - uses: actions/cache@v2
         with:
-          path: /home/runner/dist/docker-images
+          path: dist/docker-images
           key: docker-images-${{ github.sha }}
       - name: Pull auxiliary images
         run: make pull-images &
