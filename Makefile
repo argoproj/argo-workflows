@@ -149,7 +149,7 @@ build: clis images
 images: cli-image executor-image controller-image
 
 .PHONY: load-images
-load-images: load-argocli-image load-controller-image load-argo-exec-image
+load-images: load-argocli-image load-controller-image load-argoexec-image
 
 .PHONY: load-argocli-image
 load-argocli-image: dist/docker-images/argocli.image

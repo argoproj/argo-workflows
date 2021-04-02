@@ -116,10 +116,10 @@ jobs:
         with:
           path: dist/docker-images
           key: docker-images-${{ github.sha }}
-      - name: Test for Argo Docker images
-        run:  ls -l dist/docker-images ; test -e dist/docker-images/argocli.image
       - name: Pull auxiliary images
         run: make pull-images &
+      - name: Touch Docker image archives to make sure they are used.
+        run:  touch dist/docker-images/*.image
       - name: Load the Argo docker images to test
         run: make load-images
       - name: Install and start K3S v1.18.8+k3s1
