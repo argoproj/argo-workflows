@@ -31,7 +31,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: /home/runner/dist/docker-images
-          key: docker-images-${{ github.ref }}
+          key: docker-images-${{ github.sha }}
       - run: go mod download -x
       - run: make server/static/files.go STATIC_FILES=false
       - run: make images
@@ -53,10 +53,6 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/dist/docker-images
-          key: docker-images-${{ github.ref }}
       - run: go mod download -x
       - run: make server/static/files.go STATIC_FILES=false
       - run: go build -v ./...
@@ -119,7 +115,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: /home/runner/dist/docker-images
-          key: docker-images-${{ github.ref }}
+          key: docker-images-${{ github.sha }}
       - name: Pull auxiliary images
         run: make pull-images &
       - name: Load the Argo docker images to test
