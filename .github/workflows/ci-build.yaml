@@ -125,7 +125,12 @@ jobs:
       - name: Test the permission bits on argoexec
         run: docker run --entrypoint=getcap argoproj/argoexec:latest -v /usr/local/bin/argoexec
       - name: Install and start K3S v1.18.8+k3s1
-        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
+        run: |
+          mkdir -p run/data-dir/agent
+          ln -s $HOME/dist/docker-images run/data-dir/agent/images
+          curl -sfL https://get.k3s.io > install-and-start-k3s.sh
+          chmod 755 install-and-start-k3s.sh
+          INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 ./install-and-start-k3s.sh --data-dir=run/data-dir
       - name: Create Kubeconfig
         run: |
           mkdir -p ~/.kube
