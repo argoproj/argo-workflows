@@ -70,8 +70,8 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
-				log.Warnf("Failed to create new S3 client: %v", err)
 				if isTransientS3Err(err) {
+					log.Warnf("Failed to create new S3 client: %v", err)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to create new S3 client: %v", err)
@@ -81,8 +81,8 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 				return true, nil
 			}
 			if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
-				log.Warnf("Failed to get file: %v", origErr)
 				if isTransientS3Err(origErr) {
+					log.Warnf("Failed to get file: %v", origErr)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to get file: %v", origErr)
@@ -90,8 +90,8 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 			// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
 			isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
 			if err != nil {
-				log.Warnf("Failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
 				if isTransientS3Err(err) {
+					log.Warnf("Failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
@@ -102,8 +102,8 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 			}
 
 			if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
-				log.Warnf("Failed to get directory: %v", err)
 				if isTransientS3Err(err) {
+					log.Warnf("Failed to get directory: %v", err)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to get directory: %v", err)
@@ -124,16 +124,16 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
-				log.Warnf("Failed to create new S3 client: %v", err)
 				if isTransientS3Err(err) {
+					log.Warnf("Failed to create new S3 client: %v", err)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to create new S3 client: %v", err)
 			}
 			isDir, err := file.IsDirectory(path)
 			if err != nil {
-				log.Warnf("Failed to test if %s is a directory: %v", path, err)
 				if isTransientS3Err(err) {
+					log.Warnf("Failed to test if %s is a directory: %v", path, err)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to test if %s is a directory: %v", path, err)
@@ -147,8 +147,8 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 					ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
 				})
 				if err != nil {
-					log.Warnf("Failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
 					if isTransientS3Err(err) {
+						log.Warnf("Failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
 						return false, nil
 					}
 					return false, fmt.Errorf("failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
@@ -157,16 +157,16 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 
 			if isDir {
 				if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
-					log.Warnf("Failed to put directory: %v", err)
 					if isTransientS3Err(err) {
+						log.Warnf("Failed to put directory: %v", err)
 						return false, nil
 					}
 					return false, fmt.Errorf("failed to put directory: %v", err)
 				}
 			} else {
 				if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
-					log.Warnf("Failed to put file: %v", err)
 					if isTransientS3Err(err) {
+						log.Warnf("Failed to put file: %v", err)
 						return false, nil
 					}
 					return false, fmt.Errorf("failed to put file: %v", err)
@@ -187,6 +187,7 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
 				if isTransientS3Err(err) {
+					log.Warnf("Failed to create new S3 client: %v", err)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to create new S3 client: %v", err)
@@ -194,6 +195,7 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 			files, err = s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
 			if err != nil {
 				if isTransientS3Err(err) {
+					log.Warnf("Failed to list directory: %v", err)
 					return false, nil
 				}
 				return false, fmt.Errorf("failed to list directory: %v", err)
