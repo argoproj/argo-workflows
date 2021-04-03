@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -129,6 +131,19 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
+
+	if len(os.Args) > 1 {
+		cmdPathPieces := os.Args[1:]
+
+		pluginHandler := NewDefaultPluginHandler([]string{CLIName})
+		// only look for suitable extension executables if
+		// the specified command does not already exist
+		if _, _, err := command.Find(cmdPathPieces); err != nil {
+			if err := HandlePluginCommand(pluginHandler, cmdPathPieces); err != nil {
+				log.Fatalf("Error: %v\n", err)
+			}
+		}
+	}
 
 	return command
 }
