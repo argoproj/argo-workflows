@@ -219,7 +219,7 @@ cli-image: dist/docker-images/argocli.image
 dist/docker-images/argocli.image: $(CLI_PKGS) go.sum argo-server.crt argo-server.key Dockerfile
 	$(call docker_build,argocli)
 	mkdir -p dist/docker-images
-	docker save argoproj/argocli:latest > dist/docker-images/argocli.image
+	docker save argoproj/argocli:$(VERSION) > dist/docker-images/argocli.image
 
 .PHONY: clis
 clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-windows-amd64.gz
@@ -243,7 +243,7 @@ controller-image: dist/docker-images/controller.image
 dist/docker-images/controller.image: $(CONTROLLER_PKGS) go.sum Dockerfile
 	$(call docker_build,workflow-controller)
 	mkdir -p dist/docker-images
-	docker save argoproj/workflow-controller:latest > dist/docker-images/controller.image
+	docker save argoproj/workflow-controller:$(VERSION) > dist/docker-images/controller.image
 
 # argoexec
 
@@ -262,13 +262,13 @@ dist/docker-images/argoexec.image: dist/argoexec Dockerfile
 	[ -e argoexec ] || mv dist/argoexec .
 	$(call docker_build,argoexec-dev)
 	mv argoexec dist/
-	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
+	docker tag argoproj/argoexec-dev:$(VERSION) argoproj/argoexec:$(VERSION)
 else
 dist/docker-images/argoexec.image: $(ARGOEXEC_PKGS) go.sum
 	$(call docker_build,argoexec)
 endif
 	mkdir -p dist/docker-images
-	docker save argoproj/argoexec:latest > dist/docker-images/argoexec.image
+	docker save argoproj/argoexec:$(VERSION) > dist/docker-images/argoexec.image
 
 # generation
 
