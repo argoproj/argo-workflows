@@ -34,7 +34,7 @@ jobs:
           key: docker-images-${{ github.sha }}
       - run: go mod download -x
       - run: make server/static/files.go STATIC_FILES=false
-      - run: make images
+      - run: make images VERSION=${{ github.sha }}
   tests:
     name: Unit Tests
     runs-on: ubuntu-20.04
@@ -151,8 +151,8 @@ jobs:
             PROFILE=mysql
           fi
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info VERSION=${{ github.sha }}
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info VERSION=${{ github.sha }} 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m
       - name: Upload logs
