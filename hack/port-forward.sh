@@ -7,10 +7,7 @@ pf() {
   resource=$2
   port=$3
   dest_port=${4:-"$port"}
-  pid=$(lsof -i ":$port" | grep -v PID | awk '{print $2}' || true)
-  if [ "$pid" != "" ]; then
-    kill $pid
-  fi
+  ./hack/free-port.sh $port
   kubectl -n argo port-forward "$resource" "$port:$dest_port" > /dev/null &
   # wait until port forward is established
 	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
