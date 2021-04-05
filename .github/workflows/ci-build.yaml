@@ -118,12 +118,12 @@ jobs:
           key: docker-images-${{ github.sha }}
       - name: Pull auxiliary images
         run: make pull-images &
+      - name: Pre-generate server key
+        run: make argo-server.crt
       - name: Touch Docker image archives to make sure they are used.
-        run:  touch dist/docker-images/*.image
+        run:  touch dist/docker-images/*.tar
       - name: Load the Argo docker images to test
         run: make load-images
-      - name: Test the permission bits on argoexec
-        run: docker run --entrypoint=getcap argoproj/argoexec:latest -v /usr/local/bin/argoexec
       - name: Install and start K3S v1.18.8+k3s1
         run: |
           mkdir -p run/data-dir/agent
