@@ -10,31 +10,6 @@ on:
       - "master"
 
 jobs:
-  image-build:
-    name: Building images
-    runs-on: ubuntu-20.04
-    # 5m30
-    timeout-minutes: 12
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.15.7"
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/.cache/go-build
-          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/go/pkg/mod
-          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: dist/docker-images
-          key: docker-images-${{ github.sha }}
-      - run: go mod download -x
-      - run: make server/static/files.go STATIC_FILES=false
-      - run: make images VERSION=${{ github.sha }}
   tests:
     name: Unit Tests
     runs-on: ubuntu-20.04
@@ -61,7 +36,6 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
-    needs: [ image-build ]
     runs-on: ubuntu-20.04
     # test-api: 7m (1m10s locally)
     # test-cli: 12m (4m locally)
@@ -112,25 +86,9 @@ jobs:
         with:
           path: dist/kustomize
           key: kustomize
-      - uses: actions/cache@v2
-        with:
-          path: dist/docker-images
-          key: docker-images-${{ github.sha }}
-      - name: Pull auxiliary images
-        run: make pull-images &
-      - name: Pre-generate server key
-        run: make argo-server.crt
-      - name: Touch Docker image archives to make sure they are used.
-        run:  touch dist/docker-images/*.tar
-      - name: Load the Argo docker images to test
-        run: make load-images
+      - run: make pull-images &
       - name: Install and start K3S v1.18.8+k3s1
-        run: |
-          mkdir -p run/data-dir/agent
-          ln -s $HOME/dist/docker-images run/data-dir/agent/images
-          curl -sfL https://get.k3s.io > install-and-start-k3s.sh
-          chmod 755 install-and-start-k3s.sh
-          INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 ./install-and-start-k3s.sh --data-dir=run/data-dir
+        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Create Kubeconfig
         run: |
           mkdir -p ~/.kube
@@ -151,8 +109,8 @@ jobs:
             PROFILE=mysql
           fi
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info VERSION=${{ github.sha }}
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info VERSION=${{ github.sha }} 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
+          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m
       - name: Upload logs

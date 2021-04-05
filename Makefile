@@ -148,21 +148,6 @@ build: clis images
 .PHONY: images
 images: cli-image executor-image controller-image
 
-.PHONY: load-images
-load-images: load-argocli-image load-controller-image load-argoexec-image
-
-.PHONY: load-argocli-image
-load-argocli-image: dist/docker-images/argocli.tar
-	docker load < dist/docker-images/argocli.tar
-
-.PHONY: load-controller-image
-load-controller-image:
-	docker load < dist/docker-images/controller.tar
-
-.PHONY: load-argoexec-image
-load-argoexec-image:
-	docker load < dist/docker-images/argoexec.tar
-
 # cli
 
 .PHONY: cli
@@ -214,12 +199,11 @@ argo-server.key:
 	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
 
 .PHONY: cli-image
-cli-image: dist/docker-images/argocli.tar
+cli-image: dist/argocli.image
 
-dist/docker-images/argocli.tar: $(CLI_PKGS) go.sum argo-server.crt argo-server.key Dockerfile
+dist/argocli.image: $(CLI_PKGS) go.sum argo-server.crt argo-server.key
 	$(call docker_build,argocli)
-	mkdir -p dist/docker-images
-	docker save argoproj/argocli:$(VERSION) > dist/docker-images/argocli.tar
+	touch dist/argocli.image
 
 .PHONY: clis
 clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-windows-amd64.gz
@@ -238,12 +222,11 @@ else
 endif
 
 .PHONY: controller-image
-controller-image: dist/docker-images/controller.tar
+controller-image: dist/controller.image
 
-dist/docker-images/controller.tar: $(CONTROLLER_PKGS) go.sum Dockerfile
+dist/controller.image: $(CONTROLLER_PKGS) go.sum Dockerfile
 	$(call docker_build,workflow-controller)
-	mkdir -p dist/docker-images
-	docker save argoproj/workflow-controller:$(VERSION) > dist/docker-images/controller.tar
+	touch dist/controller.image
 
 # argoexec
 
@@ -255,20 +238,19 @@ else
 endif
 
 .PHONY: executor-image
-executor-image: dist/docker-images/argoexec.tar
+executor-image: dist/argoexec.image
 
 ifeq ($(DEV_IMAGE),true)
-dist/docker-images/argoexec.tar: dist/argoexec Dockerfile
+dist/argoexec.image: dist/argoexec
 	[ -e argoexec ] || mv dist/argoexec .
 	$(call docker_build,argoexec-dev)
 	mv argoexec dist/
-	docker tag argoproj/argoexec-dev:$(VERSION) argoproj/argoexec:$(VERSION)
+	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
 else
-dist/docker-images/argoexec.tar: $(ARGOEXEC_PKGS) go.sum
+dist/argoexec.image: $(ARGOEXEC_PKGS) go.sum
 	$(call docker_build,argoexec)
 endif
-	mkdir -p dist/docker-images
-	docker save argoproj/argoexec:$(VERSION) > dist/docker-images/argoexec.tar
+	touch dist/argoexec.image
 
 # generation
 
