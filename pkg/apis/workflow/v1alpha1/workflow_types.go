@@ -1279,6 +1279,11 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	return nil
 }
 
+func (ns NodeStatus) IsPodCreated() bool {
+	// If node is waiting for synchronize lock, Pod will not be created in this scenario
+	return ns.SynchronizationStatus == nil || ns.SynchronizationStatus.Waiting == ""
+}
+
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
