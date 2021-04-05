@@ -2309,7 +2309,10 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 func getStepOrDAGTaskName(nodeName string) string {
 	// If our name contains an open parenthesis, this node is a child of a Retry node or an expanded node
 	// (e.g. withItems, withParams, etc.). Ignore anything after the parenthesis.
-	if parenthesisIndex := strings.Index(nodeName, "("); parenthesisIndex >= 0 {
+	if parenthesisIndex := strings.LastIndex(nodeName, "("); parenthesisIndex >= 0 {
+		if parenthesisIndex > 0 && nodeName[parenthesisIndex-1] == ')' {
+			parenthesisIndex = strings.LastIndex(nodeName[:parenthesisIndex], "(")
+		}
 		nodeName = nodeName[:parenthesisIndex]
 	}
 	// If our node contains a dot, we're a child node. We're only interested in the step that called us, so return the
@@ -2762,7 +2765,9 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 }
 
 func generateNodeName(name string, index int, desc interface{}) string {
-	newName := fmt.Sprintf("%s(%d:%v)", name, index, desc)
+	// Do not display parentheses in node name. Nodes are still guaranteed to be unique due to the index number
+	cleanName := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprint(desc), "(", ""), ")", "")
+	newName := fmt.Sprintf("%s(%d:%v)", name, index, cleanName)
 	if out := util.RecoverIndexFromNodeName(newName); out != index {
 		panic(fmt.Sprintf("unrecoverable digit in generateName; wanted '%d' and got '%d'", index, out))
 	}
