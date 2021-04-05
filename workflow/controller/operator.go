@@ -2361,7 +2361,7 @@ func getStepOrDAGTaskName(nodeName string) string {
 	// If our name contains an open parenthesis, this node is a child of a Retry node or an expanded node
 	// (e.g. withItems, withParams, etc.). Ignore anything after the parenthesis.
 	if parenthesisIndex := strings.LastIndex(nodeName, "("); parenthesisIndex >= 0 {
-		if parenthesisIndex > 0 && nodeName[parenthesisIndex - 1] == ')' {
+		if parenthesisIndex > 0 && nodeName[parenthesisIndex-1] == ')' {
 			parenthesisIndex = strings.LastIndex(nodeName[:parenthesisIndex], "(")
 		}
 		nodeName = nodeName[:parenthesisIndex]
