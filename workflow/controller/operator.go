@@ -975,9 +975,9 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			// Added `ContainerCreating` condition to avoid workflow stuck in running state with the pod deleted in ContainerCreating
+			// Added node.Message condition to avoid workflow stuck in running state with the pod deleted in ContainerCreating
 			// https://github.com/argoproj/argo-workflows/issues/5543
-			if node.Pending() && !strings.Contains(node.Message, "ContainerCreating") {
+			if node.Pending() && node.Message != "" {
 				continue
 			}
 			if recentlyStarted {
