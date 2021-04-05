@@ -6300,7 +6300,7 @@ func TestStepsFailFast(t *testing.T) {
 
 func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script.py)"))
-	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script(.)py)"))
+	assert.Equal(t, "step3", getStepOrDAGTaskName("bug-rqq5f[0].fanout[0].fanout1(0:1)(0)[0].fanout2(0:1).step3(0)"))
 }
 
 func TestGenerateOutputResultRegex(t *testing.T) {
