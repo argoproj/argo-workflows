@@ -591,7 +591,7 @@ spec:
         - server
         - --auth-mode
         - client
-        image: argoproj/argocli:v2.12.10
+        image: argoproj/argocli:v2.12.11
         name: argo-server
         ports:
         - containerPort: 2746
@@ -633,11 +633,11 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.12.10
+        - argoproj/argoexec:v2.12.11
         - --namespaced
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.12.10
+        image: argoproj/workflow-controller:v2.12.11
         livenessProbe:
           httpGet:
             path: /metrics

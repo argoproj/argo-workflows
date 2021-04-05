@@ -13,7 +13,7 @@
   "info": {
     "description": "You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`",
     "title": "Argo Server API",
-    "version": "v2.12.10"
+    "version": "v2.12.11"
   },
   "paths": {
     "/api/v1/archived-workflows": {
