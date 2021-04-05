@@ -977,7 +977,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			// again instead of marking it as an error. Check if that's the case.
 			// Added node.Message condition to avoid workflow stuck in running state with the pod deleted in ContainerCreating
 			// https://github.com/argoproj/argo-workflows/issues/5543
-			if node.Pending() && node.Message != "" {
+			if node.Pending() && !strings.Contains(node.Message, "ContainerCreating") {
 				continue
 			}
 			if recentlyStarted {
