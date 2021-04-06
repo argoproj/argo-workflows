@@ -16,9 +16,10 @@ import (
 
 // ArtifactDriver is a driver for OSS
 type ArtifactDriver struct {
-	Endpoint  string
-	AccessKey string
-	SecretKey string
+	Endpoint      string
+	AccessKey     string
+	SecretKey     string
+	SecurityToken string
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -27,7 +28,11 @@ var _ common.ArtifactDriver = &ArtifactDriver{}
 var ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
-	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
+	var options []oss.ClientOption
+	if token := ossDriver.SecurityToken; token != "" {
+		options = append(options, oss.SecurityToken(token))
+	}
+	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new OSS client: %w", err)
 	}

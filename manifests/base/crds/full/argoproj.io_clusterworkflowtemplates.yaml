@@ -530,6 +530,8 @@ spec:
                               required:
                               - key
                               type: object
+                            securityToken:
+                              type: string
                           required:
                           - key
                           type: object
@@ -1442,6 +1444,8 @@ spec:
                             required:
                             - key
                             type: object
+                          securityToken:
+                            type: string
                         required:
                         - key
                         type: object
@@ -2867,6 +2871,8 @@ spec:
                                             required:
                                             - key
                                             type: object
+                                          securityToken:
+                                            type: string
                                         required:
                                         - key
                                         type: object
@@ -3272,6 +3278,8 @@ spec:
                                     required:
                                     - key
                                     type: object
+                                  securityToken:
+                                    type: string
                                 required:
                                 - key
                                 type: object
@@ -4153,6 +4161,8 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                securityToken:
+                                  type: string
                               required:
                               - key
                               type: object
@@ -4598,6 +4608,8 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                securityToken:
+                                  type: string
                               required:
                               - key
                               type: object
@@ -7125,6 +7137,8 @@ spec:
                               required:
                               - key
                               type: object
+                            securityToken:
+                              type: string
                           required:
                           - key
                           type: object
@@ -8550,6 +8564,8 @@ spec:
                                               required:
                                               - key
                                               type: object
+                                            securityToken:
+                                              type: string
                                           required:
                                           - key
                                           type: object
@@ -8955,6 +8971,8 @@ spec:
                                       required:
                                       - key
                                       type: object
+                                    securityToken:
+                                      type: string
                                   required:
                                   - key
                                   type: object
@@ -9836,6 +9854,8 @@ spec:
                                     required:
                                     - key
                                     type: object
+                                  securityToken:
+                                    type: string
                                 required:
                                 - key
                                 type: object
@@ -10281,6 +10301,8 @@ spec:
                                     required:
                                     - key
                                     type: object
+                                  securityToken:
+                                    type: string
                                 required:
                                 - key
                                 type: object
