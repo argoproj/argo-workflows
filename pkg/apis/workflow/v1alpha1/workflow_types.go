@@ -1287,7 +1287,7 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 
 func (ns NodeStatus) GetPendingReason() NodePendingReason {
 	// If node is waiting for synchronize lock, Pod will not be created in this scenario
-	if ns.SynchronizationStatus != nil || ns.SynchronizationStatus.Waiting != "" {
+	if ns.SynchronizationStatus != nil && ns.SynchronizationStatus.Waiting != "" {
 		return WaitingForSyncLock
 	}
 	return ""
