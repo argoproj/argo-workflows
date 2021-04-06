@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -27,7 +28,18 @@ type GitArtifactDriver struct {
 	InsecureIgnoreHostKey bool
 }
 
-func (g *GitArtifactDriver) auth() (func(), transport.AuthMethod, []string, error) {
+var sshURLRegex = regexp.MustCompile("^(ssh://)?([^/:]*?)@[^@]+$")
+
+func GetUser(url string) string {
+	matches := sshURLRegex.FindStringSubmatch(url)
+	if len(matches) > 2 {
+		return matches[2]
+	}
+	// default to `git` user unless username is specified in SSH url
+	return "git"
+}
+
+func (g *GitArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []string, error) {
 	if g.SSHPrivateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
@@ -41,7 +53,7 @@ func (g *GitArtifactDriver) auth() (func(), transport.AuthMethod, []string, erro
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		auth := &ssh2.PublicKeys{User: "git", Signer: signer}
+		auth := &ssh2.PublicKeys{User: sshUser, Signer: signer}
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
@@ -96,7 +108,8 @@ func (g *GitArtifactDriver) Save(string, *wfv1.Artifact) error {
 }
 
 func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	closer, auth, env, err := g.auth()
+	sshUser := GetUser(path)
+	closer, auth, env, err := g.auth(sshUser)
 	if err != nil {
 		return err
 	}
