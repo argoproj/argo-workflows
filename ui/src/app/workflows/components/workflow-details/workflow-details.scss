@@ -2,7 +2,7 @@
 
 .workflow-details {
 
-  overflow-y: scroll;
+  overflow-y: hidden;
 
   &, & > .row {
     height: calc(100vh - 2 * #{$top-bar-height});

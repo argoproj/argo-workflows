@@ -2127,6 +2127,9 @@ type OSSBucket struct {
 
 	// CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
 	CreateBucketIfNotPresent bool `json:"createBucketIfNotPresent,omitempty" protobuf:"varint,5,opt,name=createBucketIfNotPresent"`
+
+	// SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm
+	SecurityToken string `json:"securityToken,omitempty" protobuf:"bytes,6,opt,name=securityToken"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
