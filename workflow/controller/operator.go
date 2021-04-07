@@ -195,6 +195,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	err := woc.setExecWorkflow(ctx)
 	if err != nil {
+		woc.log.WithError(err).Errorf("Unable to set ExecWorkflow")
 		return
 	}
 
@@ -3186,13 +3187,11 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
 	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
 		err := fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
-		woc.log.WithError(err).Errorf("Unable to get Workflow Template Reference for workflow")
 		woc.markWorkflowError(ctx, err)
 		return err
 	} else {
 		err := woc.controller.setWorkflowDefaults(woc.wf)
 		if err != nil {
-			woc.log.WithError(err).Errorf("Unable to get Workflow Template Reference for workflow")
 			woc.markWorkflowError(ctx, err)
 			return err
 		}
