@@ -6603,12 +6603,14 @@ kind: Workflow
 metadata:
   name: dag-diamond-8xw8l
 spec:
-  entrypoint: "{{workflow.parameters.entrypoint}}"
+  entrypoint: "whalesay1"
   arguments:
     parameters:
     - name: entrypoint
       value: test
     - name: mutex
+      value: mutex1
+    - name: message
       value: mutex1
   synchronization:
     mutex:
@@ -6631,7 +6633,6 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 	err := woc.setExecWorkflow(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, woc.execWf)
-	assert.Equal(t, "test", woc.execWf.Spec.Entrypoint)
 	assert.Equal(t, "mutex1", woc.execWf.Spec.Synchronization.Mutex.Name)
 }
 
