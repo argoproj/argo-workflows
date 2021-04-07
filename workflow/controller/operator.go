@@ -975,9 +975,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() {
+			// Node will be in pending state without Pod create if Node is waiting for Synchronize lock
+			if node.Pending() && node.GetReason() == wfv1.WaitingForSyncLock {
 				continue
 			}
+
 			if recentlyStarted {
 				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
@@ -2360,7 +2362,10 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 func getStepOrDAGTaskName(nodeName string) string {
 	// If our name contains an open parenthesis, this node is a child of a Retry node or an expanded node
 	// (e.g. withItems, withParams, etc.). Ignore anything after the parenthesis.
-	if parenthesisIndex := strings.Index(nodeName, "("); parenthesisIndex >= 0 {
+	if parenthesisIndex := strings.LastIndex(nodeName, "("); parenthesisIndex >= 0 {
+		if parenthesisIndex > 0 && nodeName[parenthesisIndex-1] == ')' {
+			parenthesisIndex = strings.LastIndex(nodeName[:parenthesisIndex], "(")
+		}
 		nodeName = nodeName[:parenthesisIndex]
 	}
 	// If our node contains a dot, we're a child node. We're only interested in the step that called us, so return the
@@ -2836,7 +2841,9 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 }
 
 func generateNodeName(name string, index int, desc interface{}) string {
-	newName := fmt.Sprintf("%s(%d:%v)", name, index, desc)
+	// Do not display parentheses in node name. Nodes are still guaranteed to be unique due to the index number
+	cleanName := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprint(desc), "(", ""), ")", "")
+	newName := fmt.Sprintf("%s(%d:%v)", name, index, cleanName)
 	if out := util.RecoverIndexFromNodeName(newName); out != index {
 		panic(fmt.Sprintf("unrecoverable digit in generateName; wanted '%d' and got '%d'", index, out))
 	}

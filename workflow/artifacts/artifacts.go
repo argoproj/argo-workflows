@@ -123,9 +123,10 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		}
 
 		driver := oss.ArtifactDriver{
-			Endpoint:  art.OSS.Endpoint,
-			AccessKey: accessKey,
-			SecretKey: secretKey,
+			Endpoint:      art.OSS.Endpoint,
+			AccessKey:     accessKey,
+			SecretKey:     secretKey,
+			SecurityToken: art.OSS.SecurityToken,
 		}
 		return &driver, nil
 	}
