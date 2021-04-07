@@ -23,6 +23,15 @@ func (s *RunAsNonRootSuite) TestRunAsNonRootWorkflow() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+func (s *RunAsNonRootSuite) TestRunAsNonRootWithOutputParams() {
+	s.Need(fixtures.None(fixtures.Docker, fixtures.K8SAPI, fixtures.Kubelet))
+	s.Given().
+		Workflow("@smoke/runasnonroot-output-params-pipeline.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func TestRunAsNonRootSuite(t *testing.T) {
 	suite.Run(t, new(RunAsNonRootSuite))
 }
