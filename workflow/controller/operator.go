@@ -3181,6 +3181,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
 		err := woc.setStoredWfSpec()
 		if err != nil {
+			woc.markWorkflowError(ctx, err)
 			return err
 		}
 		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
