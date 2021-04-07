@@ -60,6 +60,8 @@ func (s *CLISuite) setMode(mode string) {
 		_ = os.Unsetenv("ARGO_TOKEN")
 		_ = os.Unsetenv("ARGO_NAMESPACE")
 		_ = os.Setenv("KUBECONFIG", kubeConfig)
+	case OFFLINE:
+		_ = os.Unsetenv("KUBECONFIG")
 	default:
 		panic(mode)
 	}
@@ -716,6 +718,24 @@ func (s *CLISuite) TestWorkflowLint() {
 					assert.Contains(t, output, "no linting errors found")
 				}
 			})
+	})
+}
+
+func (s *CLISuite) TestWorkflowOfflineLint() {
+	s.setMode(OFFLINE)
+	s.Run("LintFile", func() {
+		s.Given().RunCli([]string{"lint", "--offline=true", "--kinds=workflow", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "no linting errors found")
+			}
+		})
+	})
+	s.Run("LintFile", func() {
+		s.Given().RunCli([]string{"lint", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.Error(t, err) {
+				assert.Contains(t, output, "invalid configuration: no configuration has been provided")
+			}
+		})
 	})
 }
 
