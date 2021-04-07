@@ -112,12 +112,12 @@ If no rule matches, we deny the user access.
 
 > v2.12 and after
 
-By default, your SSO session will expire after 10 hours. You can change this by adding an expiry value to your [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) under the SSO heading.
+By default, your SSO session will expire after 10 hours. You can change this by adding a sessionExpiry value to your [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) under the SSO heading.
 
     ```yaml
     sso:
       # Expiry defines how long your login is valid for in hours. (optional)
-      expiry: 240h
+      sessionExpiry: 240h
     ```
 
 ## Sharing the Argo CD Dex Instance using Oauth2
@@ -161,8 +161,8 @@ What this might look like in your chart configuration:
          - --auth-mode=sso
        sso:
          issuer: https://argo-cd.mydomain.com/api/dex
-         # Expiry defines how long your login is valid for in hours. (optional, default: 10h)
-         expiry: 240h
+         # sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)
+         sessionExpiry: 240h
          clientId:
            name: argo-workflows-sso
            key: client-id
