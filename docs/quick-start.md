@@ -26,7 +26,7 @@ If you are running Argo Workflows locally (e.g. using Minikube or Docker for Des
 kubectl -n argo port-forward deployment/argo-server 2746:2746
 ```
 
-This will serve the user interface on http://localhost:2746
+This will serve the user interface on https://localhost:2746
 
 If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then [follow these instructions](argo-server.md#access-the-argo-workflows-ui). 
 
