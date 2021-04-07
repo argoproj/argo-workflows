@@ -84,7 +84,7 @@ func NewGetCommand() *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
+	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|short|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().BoolVar(&noUtf8, "no-utf8", false, "Use plain 7-bits ascii characters")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
@@ -106,7 +106,7 @@ func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
 	case "yaml":
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
-	case "wide", "":
+	case "short", "wide", "":
 		fmt.Print(printWorkflowHelper(wf, getArgs))
 	default:
 		log.Fatalf("Unknown output format: %s", getArgs.output)
@@ -189,6 +189,8 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
+		} else if getArgs.output == "short" {
+			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\tNODENAME\n", ansiFormat("STEP", FgDefault))
 		} else {
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		}
@@ -209,7 +211,11 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 			onExitRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 		}
 		_ = w.Flush()
-		out += writerBuffer.String()
+		if getArgs.output == "short" {
+			out = writerBuffer.String()
+		} else {
+			out += writerBuffer.String()
+		}
 	}
 	writerBuffer := new(bytes.Buffer)
 	printer.PrintSecurityNudges(*wf, writerBuffer)
@@ -539,6 +545,11 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 			args[len(args)-1] = node.HostNodeName
 		}
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
+	} else if getArgs.output == "short" {
+		if node.Type == wfv1.NodeTypePod {
+			args[len(args)-1] = node.HostNodeName
+		}
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	}
