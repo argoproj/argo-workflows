@@ -45,7 +45,7 @@ ARG KUBECTL_VERSION
 ARG JQ_VERSION
 
 RUN apt-get update && \
-    apt-get --no-install-recommends install -y curl procps git apt-utils apt-transport-https ca-certificates tar mime-support && \
+    apt-get --no-install-recommends install -y curl procps git apt-utils apt-transport-https ca-certificates tar mime-support libcap2-bin && \
     apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
@@ -128,7 +128,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 FROM argoexec-base as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
-
+RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
@@ -136,7 +136,7 @@ ENTRYPOINT [ "argoexec" ]
 FROM argoexec-base as argoexec-dev
 
 ADD argoexec /usr/local/bin/
-
+RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
