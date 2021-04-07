@@ -3145,7 +3145,6 @@ metadata:
 spec:
   entrypoint: 123
 `: {
-			"Normal WorkflowRunning Workflow Running",
 			"Warning WorkflowFailed invalid spec: template name '123' undefined",
 		},
 		// DAG
