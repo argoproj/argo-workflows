@@ -974,9 +974,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() {
+			// Node will be in pending state without Pod create if Node is waiting for Synchronize lock
+			if node.Pending() && node.GetReason() == wfv1.WaitingForSyncLock {
 				continue
 			}
+
 			if recentlyStarted {
 				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means

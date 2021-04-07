@@ -639,3 +639,19 @@ func TestHasChild(t *testing.T) {
 	assert.False(t, node.HasChild("c"))
 	assert.False(t, node.HasChild(""))
 }
+
+func TestNodeStatusGetReason(t *testing.T) {
+	nodeStatus := NodeStatus{Phase: NodePending}
+	nodeStatusWithLock := NodeStatus{Phase: NodePending, SynchronizationStatus: &NodeSynchronizationStatus{Waiting: "test"}}
+	t.Run("WaitingForLockReason", func(t *testing.T) {
+		assert.Equal(t, NodeReason(""), nodeStatus.GetReason())
+		assert.Equal(t, WaitingForSyncLock, nodeStatusWithLock.GetReason())
+	})
+	t.Run("EmptyReason", func(t *testing.T) {
+		nodeStatus.Phase = NodeRunning
+		nodeStatusWithLock.Phase = NodeRunning
+		nodeStatusWithLock.SynchronizationStatus = nil
+		assert.Equal(t, NodeReason(""), nodeStatus.GetReason())
+		assert.Equal(t, NodeReason(""), nodeStatusWithLock.GetReason())
+	})
+}
