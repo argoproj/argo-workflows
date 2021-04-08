@@ -280,7 +280,6 @@ type WorkflowSpec struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
-	// DEPRECATED: Use ExitTemplate.template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,17,opt,name=onExit"`
 
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
@@ -354,20 +353,6 @@ type WorkflowSpec struct {
 
 	// TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
 	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
-
-	// ExitTemplate hold the template and arguments which is invoked at the end of the
-	// workflow, irrespective of the success, failure, or error status of workflow
-	ExitTemplate *ExitTemplate `json:"exitTemplate,omitempty" protobuf:"bytes,40,opt,name=exitTemplate"`
-}
-
-func (wfs WorkflowSpec) GetExitTemplate(args Arguments) *ExitTemplate {
-	if wfs.OnExit != "" {
-		return &ExitTemplate{Template: wfs.OnExit, Arguments: args}
-	}
-	if wfs.ExitTemplate != nil && wfs.ExitTemplate.Arguments.IsEmpty() {
-		wfs.ExitTemplate.Arguments = args
-	}
-	return wfs.ExitTemplate
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -1152,9 +1137,15 @@ type WorkflowStep struct {
 	// DEPRECATED: Use ExitTemplate.template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
-	// ExitTemplate hold the template and arguments which is invoked at the end of the
+	// Hooks hold exit hook which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error status of the primary template
-	ExitTemplate *ExitTemplate `json:"exitTemplate,omitempty" protobuf:"bytes,12,opt,name=exitTemplate"`
+	Hooks *Hooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+}
+
+type Hooks struct {
+	// Exit hold the template and arguments which is invoked at the end of the
+	// workflow, irrespective of the success, failure, or error status of the primary template
+	Exit *ExitTemplate `json:"exit,omitempty" protobuf:"bytes,1,opt,name=exit"`
 }
 
 type ExitTemplate struct {
@@ -1164,14 +1155,14 @@ type ExitTemplate struct {
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
 
-func (step *WorkflowStep) GetExitTemplate(args Arguments) *ExitTemplate {
+func (step *WorkflowStep) GetExitHook(args Arguments) *ExitTemplate {
 	if step.OnExit != "" {
 		return &ExitTemplate{Template: step.OnExit, Arguments: args}
 	}
-	if step.ExitTemplate != nil && step.ExitTemplate.Arguments.IsEmpty() {
-		step.ExitTemplate.Arguments = args
+	if step.Hooks != nil && step.Hooks.Exit != nil && step.Hooks.Exit.Arguments.IsEmpty() {
+		step.Hooks.Exit.Arguments = args
 	}
-	return step.ExitTemplate
+	return step.Hooks.Exit
 }
 
 func (step *WorkflowStep) GetTemplateName() string {
@@ -2386,21 +2377,21 @@ type DAGTask struct {
 	// Depends are name of other targets which this depends on
 	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
 
-	// ExitTemplate hold the template and arguments which is invoked at the end of the
+	// Hooks hold exit hook which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error status of the primary template
-	ExitTemplate *ExitTemplate `json:"exitTemplate,omitempty" protobuf:"bytes,13,opt,name=exitTemplate"`
+	Hooks *Hooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
 
-func (t *DAGTask) GetExitTemplate(args Arguments) *ExitTemplate {
+func (t *DAGTask) GetExitHook(args Arguments) *ExitTemplate {
 	if t.OnExit != "" {
 		return &ExitTemplate{Template: t.OnExit, Arguments: args}
 	}
-	if t.ExitTemplate != nil && t.ExitTemplate.Arguments.IsEmpty() {
-		t.ExitTemplate.Arguments = args
+	if t.Hooks != nil && t.Hooks.Exit != nil && t.Hooks.Exit.Arguments.IsEmpty() {
+		t.Hooks.Exit.Arguments = args
 	}
-	return t.ExitTemplate
+	return t.Hooks.Exit
 }
 
 func (t *DAGTask) GetTemplateName() string {

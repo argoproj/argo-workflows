@@ -17,12 +17,13 @@ spec:
       steps:
         - - name: step-1
             template: output
-            exitTemplate:
-              template: exit
-              arguments:
-                artifacts:
-                  - name: message
-                    from: "{{steps.step-1.outputs.artifacts.result}}"
+            hooks:
+              exit:
+                template: exit
+                arguments:
+                  artifacts:
+                    - name: message
+                      from: "{{steps.step-1.outputs.artifacts.result}}"
     
     - name: output
       script:

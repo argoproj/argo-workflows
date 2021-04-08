@@ -836,17 +836,19 @@ func TestDAGTask_GetExitTemplate(t *testing.T) {
 		},
 	}
 	task := DAGTask{
-		ExitTemplate: &ExitTemplate{
-			Template:  "test",
-			Arguments: args,
+		Hooks: &Hooks{
+			Exit: &ExitTemplate{
+				Template:  "test",
+				Arguments: args,
+			},
 		},
 	}
-	existTmpl := task.GetExitTemplate(Arguments{})
+	existTmpl := task.GetExitHook(Arguments{})
 	assert.NotNil(t, existTmpl)
 	assert.Equal(t, "test", existTmpl.Template)
 	assert.Equal(t, args, existTmpl.Arguments)
 	task = DAGTask{OnExit: "test-tmpl"}
-	existTmpl = task.GetExitTemplate(args)
+	existTmpl = task.GetExitHook(args)
 	assert.NotNil(t, existTmpl)
 	assert.Equal(t, "test-tmpl", existTmpl.Template)
 	assert.Equal(t, args, existTmpl.Arguments)
@@ -862,43 +864,19 @@ func TestStep_GetExitTemplate(t *testing.T) {
 		},
 	}
 	task := WorkflowStep{
-		ExitTemplate: &ExitTemplate{
-			Template:  "test",
-			Arguments: args,
+		Hooks: &Hooks{
+			Exit: &ExitTemplate{
+				Template:  "test",
+				Arguments: args,
+			},
 		},
 	}
-	existTmpl := task.GetExitTemplate(Arguments{})
+	existTmpl := task.GetExitHook(Arguments{})
 	assert.NotNil(t, existTmpl)
 	assert.Equal(t, "test", existTmpl.Template)
 	assert.Equal(t, args, existTmpl.Arguments)
 	task = WorkflowStep{OnExit: "test-tmpl"}
-	existTmpl = task.GetExitTemplate(args)
-	assert.NotNil(t, existTmpl)
-	assert.Equal(t, "test-tmpl", existTmpl.Template)
-	assert.Equal(t, args, existTmpl.Arguments)
-}
-
-func TestWorkflowSpec_GetExitTemplate(t *testing.T) {
-	args := Arguments{
-		Parameters: []Parameter{
-			{
-				Name:  "test",
-				Value: AnyStringPtr("welcome"),
-			},
-		},
-	}
-	spec := WorkflowSpec{
-		ExitTemplate: &ExitTemplate{
-			Template:  "test",
-			Arguments: args,
-		},
-	}
-	existTmpl := spec.GetExitTemplate(Arguments{})
-	assert.NotNil(t, existTmpl)
-	assert.Equal(t, "test", existTmpl.Template)
-	assert.Equal(t, args, existTmpl.Arguments)
-	spec = WorkflowSpec{OnExit: "test-tmpl"}
-	existTmpl = spec.GetExitTemplate(args)
+	existTmpl = task.GetExitHook(args)
 	assert.NotNil(t, existTmpl)
 	assert.Equal(t, "test-tmpl", existTmpl.Template)
 	assert.Equal(t, args, existTmpl.Arguments)

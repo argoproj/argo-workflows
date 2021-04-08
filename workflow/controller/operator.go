@@ -372,7 +372,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}[node.Phase]
 
 	var onExitNode *wfv1.NodeStatus
-	if (woc.execWf.Spec.GetExitTemplate(woc.execWf.Spec.Arguments) != nil) && woc.GetShutdownStrategy().ShouldExecute(true) {
+	if woc.execWf.Spec.OnExit != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
 		var failures []failedNodeStatus
@@ -398,11 +398,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
-
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
-		exitTemplate := woc.execWf.Spec.GetExitTemplate(woc.execWf.Spec.Arguments)
-
-		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitTemplate.Template}, tmplCtx, exitTemplate.Arguments, &executeTemplateOpts{onExitTemplate: true})
+		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.WithError(err).Error("error in exit template execution")

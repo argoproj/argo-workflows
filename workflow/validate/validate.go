@@ -749,7 +749,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			if step.ExitTemplate != nil {
+			if step.Hooks != nil && step.Hooks.Exit != nil {
 				ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, false, false)
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
@@ -1203,7 +1203,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
-		if task.ExitTemplate != nil {
+		if task.Hooks != nil && task.Hooks.Exit != nil {
 			ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 		}
 		taskBytes, err := json.Marshal(task)
