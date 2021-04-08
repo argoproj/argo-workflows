@@ -19,8 +19,10 @@ import (
 
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/argoproj/argo-workflows/v3"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
@@ -71,6 +73,8 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			version := argo.GetVersion()
+			config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-controller", version.Version))
 			config.Burst = burst
 			config.QPS = qps
 
