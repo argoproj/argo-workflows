@@ -98,6 +98,7 @@ jobs:
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
       - run: git fetch --tags
+      - run: make executor-image
       - name: Start Argo
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
