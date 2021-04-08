@@ -1,0 +1,24 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.graph.pipeline {
+  .edge {
+    path {
+      stroke-dasharray: 8;
+    }
+  }
+
+  .node {
+    &.Running {
+      text.icon {
+        animation: none;
+      }
+    }
+  }
+
+  .edge.flow {
+    path {
+      stroke: $argo-running-color;
+      animation: flowing infinite linear 4s;
+    }
+  }
+}

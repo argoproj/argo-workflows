@@ -99,6 +99,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
+	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
@@ -268,6 +269,7 @@ swagger: \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
+	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
@@ -352,6 +354,9 @@ pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/i
 
 pkg/apiclient/sensor/sensor.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/sensor/sensor.proto
 	$(call protoc,pkg/apiclient/sensor/sensor.proto)
+
+pkg/apiclient/pipeline/pipeline.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/pipeline/pipeline.proto
+	$(call protoc,pkg/apiclient/pipeline/pipeline.proto)
 
 pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
@@ -472,7 +477,6 @@ endif
 	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
-	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif

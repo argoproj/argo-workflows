@@ -1190,6 +1190,209 @@
         }
       }
     },
+    "/api/v1/pipelines/{namespace}": {
+      "get": {
+        "tags": [
+          "PipelineService"
+        ],
+        "operationId": "PipelineService_ListPipelines",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.labelSelector",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.fieldSelector",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "name": "listOptions.watch",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "name": "listOptions.allowWatchBookmarks",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "name": "listOptions.timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "name": "listOptions.limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "name": "listOptions.continue",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pipelines/{namespace}/{name}": {
+      "get": {
+        "tags": [
+          "PipelineService"
+        ],
+        "operationId": "PipelineService_GetPipeline",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "getOptions.resourceVersion",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "PipelineService"
+        ],
+        "operationId": "PipelineService_DeletePipeline",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional.",
+            "name": "deleteOptions.gracePeriodSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Specifies the target UID.\n+optional.",
+            "name": "deleteOptions.preconditions.uid",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Specifies the target ResourceVersion\n+optional.",
+            "name": "deleteOptions.preconditions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
+            "name": "deleteOptions.orphanDependents",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional.",
+            "name": "deleteOptions.propagationPolicy",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi",
+            "description": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional.",
+            "name": "deleteOptions.dryRun",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pipeline.DeletePipelineResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sensors/{namespace}": {
       "get": {
         "tags": [
@@ -1789,6 +1992,217 @@
         }
       }
     },
+    "/api/v1/stream/pipelines/{namespace}": {
+      "get": {
+        "tags": [
+          "PipelineService"
+        ],
+        "operationId": "PipelineService_WatchPipelines",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.labelSelector",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.fieldSelector",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "name": "listOptions.watch",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "name": "listOptions.allowWatchBookmarks",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "name": "listOptions.timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "name": "listOptions.limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "name": "listOptions.continue",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "title": "Stream result of pipeline.PipelineWatchEvent",
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/pipeline.PipelineWatchEvent"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stream/pipelines/{namespace}/logs": {
+      "get": {
+        "tags": [
+          "PipelineService"
+        ],
+        "operationId": "PipelineService_PipelineLogs",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "optional - only return entries for this pipeline.",
+            "name": "name",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "optional - only return entries for this step.",
+            "name": "stepName",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional.",
+            "name": "podLogOptions.container",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
+            "name": "podLogOptions.follow",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
+            "name": "podLogOptions.previous",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional.",
+            "name": "podLogOptions.sinceSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
+            "name": "podLogOptions.sinceTime.seconds",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "int32",
+            "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
+            "name": "podLogOptions.sinceTime.nanos",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
+            "name": "podLogOptions.timestamps",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional.",
+            "name": "podLogOptions.tailLines",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
+            "name": "podLogOptions.limitBytes",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
+            "name": "podLogOptions.insecureSkipTLSVerifyBackend",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "title": "Stream result of pipeline.LogEntry",
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/pipeline.LogEntry"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/stream/sensors/{namespace}": {
       "get": {
         "tags": [
@@ -1993,6 +2407,101 @@
                 },
                 "result": {
                   "$ref": "#/definitions/sensor.LogEntry"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stream/steps/{namespace}": {
+      "get": {
+        "tags": [
+          "PipelineService"
+        ],
+        "operationId": "PipelineService_WatchSteps",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.labelSelector",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.fieldSelector",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "name": "listOptions.watch",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "name": "listOptions.allowWatchBookmarks",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "name": "listOptions.timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "name": "listOptions.limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "name": "listOptions.continue",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "title": "Stream result of pipeline.StepWatchEvent",
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/pipeline.StepWatchEvent"
                 }
               }
             }
@@ -3485,6 +3994,377 @@
         },
         "namespace": {
           "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container": {
+      "type": "object",
+      "properties": {
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "image": {
+          "type": "string"
+        },
+        "in": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Interface"
+        },
+        "volumeMounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Group": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTP": {
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Interface": {
+      "type": "object",
+      "properties": {
+        "fifo": {
+          "type": "boolean"
+        },
+        "http": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTP"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "topic": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "time": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline": {
+      "type": "object",
+      "title": "+kubebuilder:object:root=true\n+kubebuilder:resource:shortName=pl\n+kubebuilder:subresource:status\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineStatus"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineSpec": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "title": "+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineStatus": {
+      "type": "object",
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Condition"
+          }
+        },
+        "message": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Replicas": {
+      "type": "object",
+      "title": "Used to calculate the number of replicas.\nmin(r.max, max(r.min, pending/ratio))\nExample:\nmin=1, max=4, ratio=100\npending=0, replicas=1\npending=100, replicas=1\npending=200, replicas=2\npending=300, replicas=3\npending=400, replicas=4\npending=500, replicas=4",
+      "properties": {
+        "max": {
+          "type": "integer",
+          "title": "this is both the min, and the initial value"
+        },
+        "min": {
+          "type": "integer"
+        },
+        "ratio": {
+          "type": "integer",
+          "title": "takes precedence over min"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN": {
+      "type": "object",
+      "properties": {
+        "clusterId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "natsUrl": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "subjectPrefix": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sink": {
+      "type": "object",
+      "properties": {
+        "kafka": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        },
+        "name": {
+          "type": "string"
+        },
+        "stan": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SinkStatus": {
+      "type": "object",
+      "properties": {
+        "lastMessage": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message"
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Source": {
+      "type": "object",
+      "properties": {
+        "kafka": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        },
+        "name": {
+          "type": "string"
+        },
+        "stan": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus": {
+      "type": "object",
+      "properties": {
+        "lastMessage": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message"
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics"
+          }
+        },
+        "pending": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Step": {
+      "type": "object",
+      "title": "+kubebuilder:object:root=true\n+kubebuilder:subresource:status\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`\n+kubebuilder:printcolumn:name=\"Replicas\",type=string,JSONPath=`.status.replicas`",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepStatus"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container"
+        },
+        "filter": {
+          "type": "string"
+        },
+        "git": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git"
+        },
+        "group": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Group"
+        },
+        "handler": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler"
+        },
+        "map": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "replicas": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Replicas"
+        },
+        "restartPolicy": {
+          "type": "string"
+        },
+        "sinks": {
+          "type": "array",
+          "title": "+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sink"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "title": "+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Source"
+          }
+        },
+        "terminator": {
+          "type": "boolean"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepStatus": {
+      "type": "object",
+      "properties": {
+        "lastScaleTime": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "message": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        },
+        "replicas": {
+          "type": "integer"
+        },
+        "sinkStatuses": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SinkStatus"
+          }
+        },
+        "sourceStatuses": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus"
+          }
         }
       }
     },
@@ -6544,7 +7424,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
         },
         "startupProbe": {
-          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "stdin": {
@@ -7929,7 +8809,7 @@
           "type": "string"
         },
         "startupProbe": {
-          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "stdin": {
@@ -8505,7 +9385,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
         },
         "startupProbe": {
-          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "stdin": {
@@ -11990,6 +12870,37 @@
       "description": "Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9 \u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e \u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e \u003csign\u003e            ::= \"+\" | \"-\" \u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e \u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e \u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation.",
       "type": "string"
     },
+    "io.k8s.apimachinery.pkg.apis.meta.v1.Condition": {
+      "description": "// other fields\n}",
+      "type": "object",
+      "title": "Condition contains details for one aspect of the current state of this API Resource.\n---\nThis struct is intended for direct use as an array at the field path .status.conditions.  For example,\ntype FooStatus struct{\n    // Represents the observations of a foo's current state.\n    // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\"\n    // +patchMergeKey=type\n    // +patchStrategy=merge\n    // +listType=map\n    // +listMapKey=type\n    Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`",
+      "properties": {
+        "lastTransitionTime": {
+          "title": "lastTransitionTime is the last time the condition transitioned from one status to another.\nThis should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Type=string\n+kubebuilder:validation:Format=date-time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "message": {
+          "type": "string",
+          "title": "message is a human readable message indicating details about the transition.\nThis may be an empty string.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=32768"
+        },
+        "observedGeneration": {
+          "type": "string",
+          "title": "observedGeneration represents the .metadata.generation that the condition was set based upon.\nFor instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date\nwith respect to the current state of the instance.\n+optional\n+kubebuilder:validation:Minimum=0"
+        },
+        "reason": {
+          "type": "string",
+          "title": "reason contains a programmatic identifier indicating the reason for the condition's last transition.\nProducers of specific condition types may define expected values and meanings for this field,\nand whether the values are considered a guaranteed API.\nThe value should be a CamelCase string.\nThis field may not be empty.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=1024\n+kubebuilder:validation:MinLength=1\n+kubebuilder:validation:Pattern=`^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$`"
+        },
+        "status": {
+          "type": "string",
+          "title": "status of the condition, one of True, False, Unknown.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Enum=True;False;Unknown"
+        },
+        "type": {
+          "type": "string",
+          "title": "type of condition in CamelCase or in foo.example.com/CamelCase.\n---\nMany .condition.type values are consistent across resources like Available, but because arbitrary conditions can be\nuseful (see .node.status.conditions), the ability to deconflict is important.\nThe regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$`\n+kubebuilder:validation:MaxLength=316"
+        }
+      }
+    },
     "io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions": {
       "description": "CreateOptions may be provided when creating an API object.",
       "type": "object",
@@ -12313,6 +13224,52 @@
     },
     "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
       "type": "string"
+    },
+    "pipeline.DeletePipelineResponse": {
+      "type": "object"
+    },
+    "pipeline.LogEntry": {
+      "type": "object",
+      "title": "structured log entry",
+      "properties": {
+        "msg": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "pipelineName": {
+          "type": "string"
+        },
+        "stepName": {
+          "type": "string"
+        },
+        "time": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        }
+      }
+    },
+    "pipeline.PipelineWatchEvent": {
+      "type": "object",
+      "properties": {
+        "object": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "pipeline.StepWatchEvent": {
+      "type": "object",
+      "properties": {
+        "object": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Step"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
     },
     "sensor.CreateSensorRequest": {
       "type": "object",

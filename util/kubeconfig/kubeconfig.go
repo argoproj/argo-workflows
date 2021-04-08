@@ -114,7 +114,11 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
-		auth, err := exec.GetAuthenticator(in.ExecProvider)
+		cluster, err := restclient.ConfigToExecCluster(in)
+		if err != nil {
+			return "", err
+		}
+		auth, err := exec.GetAuthenticator(in.ExecProvider, cluster)
 		if err != nil {
 			return "", err
 		}
