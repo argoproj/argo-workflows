@@ -127,7 +127,6 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
             (items, item, type) => {
                 setWorkflows([...items]);
                 if (type === 'ADDED') {
-                    console.log('ALEX');
                     markFlowing(ID.join('Workflow', item.metadata.namespace, item.metadata.name));
                 }
             },
@@ -266,7 +265,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
                         nodeGenresTitle={'Type'}
                         nodeGenres={genres}
                         nodeClassNamesTitle={'Status'}
-                        nodeClassNames={{'': true, 'Pending': true, 'Ready': true, 'Running': true, 'Failed': true, 'Succeeded': true, 'Error': true}}
+                        nodeClassNames={{Pending: true, Ready: true, Running: true, Failed: true, Succeeded: true, Error: true}}
                         iconShapes={{workflow: 'circle', collapsed: 'circle', conditions: 'circle'}}
                         horizontal={true}
                         selectedNode={selectedNode}
