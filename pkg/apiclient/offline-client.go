@@ -12,8 +12,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
-type offlineClient struct {
-}
+type offlineClient struct{}
 
 var NotImplError error = fmt.Errorf("Not implemented for offline client, only valid for kind '--kinds=workflows'")
 

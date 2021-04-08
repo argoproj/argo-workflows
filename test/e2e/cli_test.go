@@ -25,6 +25,7 @@ const (
 	KUBE    = "KUBE"
 	HTTP1   = "HTTP1"
 	DEFAULT = HTTP1
+	OFFLINE = "OFFLINE"
 )
 
 type CLISuite struct {

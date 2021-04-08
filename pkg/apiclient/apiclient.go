@@ -66,6 +66,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		if opts.ClientConfigSupplier != nil {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
+
 		ctx, client, err := newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 		return ctx, client, err
 	}
