@@ -106,7 +106,7 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                             icon='plus'
                             onClick={() => {
                                 services.workflows
-                                    .create(workflow, workflow.metadata.namespace)
+                                    .create(workflow, Utils.getNamespace(workflow.metadata.namespace))
                                     .then(onCreate)
                                     .catch(setError);
                             }}>
