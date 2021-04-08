@@ -95,12 +95,6 @@
             "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
           },
           "type": "array"
-        },
-        "volumes": {
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
-          },
-          "type": "array"
         }
       },
       "type": "object"
@@ -108,6 +102,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git": {
       "properties": {
         "branch": {
+          "description": "+kubebuilder:default=.",
           "type": "string"
         },
         "image": {
@@ -124,8 +119,17 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Group": {
       "properties": {
+        "endOfGroup": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
         "key": {
           "type": "string"
+        },
+        "storage": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Storage"
         }
       },
       "type": "object"
@@ -158,6 +162,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka": {
       "properties": {
         "name": {
+          "title": "+kubebuilder:default=default",
           "type": "string"
         },
         "topic": {
@@ -258,6 +263,7 @@
           "type": "integer"
         },
         "min": {
+          "title": "+kubebuilder:default=1",
           "type": "integer"
         },
         "ratio": {
@@ -274,6 +280,7 @@
           "type": "string"
         },
         "name": {
+          "title": "+kubebuilder:default=default",
           "type": "string"
         },
         "natsUrl": {
@@ -294,6 +301,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
         },
         "name": {
+          "title": "+kubebuilder:default=default",
           "type": "string"
         },
         "stan": {
@@ -322,6 +330,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
         },
         "name": {
+          "title": "+kubebuilder:default=default",
           "type": "string"
         },
         "stan": {
@@ -384,12 +393,18 @@
           "type": "string"
         },
         "name": {
+          "title": "+kubebuilder:default=default",
           "type": "string"
         },
         "replicas": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Replicas"
         },
         "restartPolicy": {
+          "title": "+kubebuilder:default=OnFailure",
+          "type": "string"
+        },
+        "serviceAccountName": {
+          "title": "+kubebuilder:default=pipeline-runner",
           "type": "string"
         },
         "sinks": {
@@ -408,6 +423,13 @@
         },
         "terminator": {
           "type": "boolean"
+        },
+        "volumes": {
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+          },
+          "title": "+patchStrategy=merge\n+patchMergeKey=name",
+          "type": "array"
         }
       },
       "type": "object"
@@ -437,6 +459,18 @@
             "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus"
           },
           "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Storage": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "subPath": {
+          "title": "volume name",
+          "type": "string"
         }
       },
       "type": "object"

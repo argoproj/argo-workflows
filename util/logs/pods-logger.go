@@ -17,7 +17,6 @@ import (
 type Callback func(pod *corev1.Pod, data []byte) error
 
 func LogPods(ctx context.Context, namespace, labelSelector string, podLogOptions *corev1.PodLogOptions, callback Callback) error {
-	log.WithField("labelSelector", labelSelector).Info("log pods")
 	coreV1 := auth.GetKubeClient(ctx).CoreV1()
 	if podLogOptions == nil {
 		podLogOptions = &corev1.PodLogOptions{}

@@ -18,6 +18,9 @@ info() {
     echo '[INFO] ' "$@"
 }
 
+killall kubectl || true
+
+
 if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
   pf MinIO deploy/minio 9000
 fi
@@ -56,4 +59,3 @@ if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
   pf "Prometheus Server" svc/prometheus 9091 9090
 fi
 
-wait
