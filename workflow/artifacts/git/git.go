@@ -150,7 +150,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		// We still rely on forking git for checkout, since go-git does not have a reliable
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
 		log.Infof("Checking out revision %s", inputArtifact.Git.Revision)
-		cmd := exec.Command("git", "checkout", inputArtifact.Git.Revision)
+		cmd := exec.Command("git", "checkout", strings.TrimPrefix(inputArtifact.Git.Revision, "refs/heads/"))
 		cmd.Dir = path
 		cmd.Env = env
 		output, err := cmd.Output()
