@@ -1,5 +1,6 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
+import {Link} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {DurationPanel} from '../../../shared/components/duration-panel';
@@ -46,10 +47,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         />
                         <PhaseIcon value={wf.status.phase} />
                     </div>
-                    <a
-                        href={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}
-                        className='small-11 row'
-                        ref={el => el && el.style.setProperty('max-width', '91.6666666667%', 'important')}>
+                    <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='small-11 row'>
                         <div className='columns small-2'>{wf.metadata.name}</div>
                         <div className='columns small-2'>{wf.metadata.namespace}</div>
                         <div className='columns small-1'>
@@ -94,7 +92,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 }}
                             />
                         )}
-                    </a>
+                    </Link>
                 </div>
             </div>
         );
