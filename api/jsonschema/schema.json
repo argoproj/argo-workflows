@@ -4773,6 +4773,35 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Task": {
+      "properties": {
+        "nodeId": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        }
+      },
+      "required": [
+        "nodeId",
+        "template"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.TaskResult": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "properties": {
@@ -5823,6 +5852,29 @@
         },
         "namespace": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
+      "properties": {
+        "templates": {
+          "description": "Key NodeID, value: Template",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus": {
+      "properties": {
+        "nodes": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TaskResult"
+          },
+          "type": "object"
         }
       },
       "type": "object"

@@ -1089,6 +1089,20 @@ message TarStrategy {
   optional int32 compressionLevel = 1;
 }
 
+message Task {
+  optional string nodeId = 1;
+
+  optional Template template = 2;
+}
+
+message TaskResult {
+  optional string phase = 1;
+
+  optional string message = 2;
+
+  optional Outputs outputs = 3;
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 message Template {
   // Name is the name of the template
@@ -1615,6 +1629,23 @@ message WorkflowStep {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+}
+
+message WorkflowTaskSet {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowTaskSetSpec spec = 2;
+
+  optional WorkflowTaskSetStatus status = 3;
+}
+
+message WorkflowTaskSetSpec {
+  // Key NodeID, value: Template
+  repeated Task templates = 1;
+}
+
+message WorkflowTaskSetStatus {
+  map<string, TaskResult> nodes = 1;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
