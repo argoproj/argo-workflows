@@ -21,7 +21,7 @@ export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; o
                     icon='plus'
                     onClick={() => {
                         services.cronWorkflows
-                            .create(cronWorkflow, cronWorkflow.metadata.namespace)
+                            .create(cronWorkflow, Utils.getNamespace(cronWorkflow.metadata.namespace))
                             .then(onCreate)
                             .catch(setError);
                     }}>
