@@ -43,6 +43,8 @@ jobs:
     # test-executor 8m (2m locally)
     # test-functional: 13m (7m locally)
     timeout-minutes: 20
+    env:
+      KUBECONFIG: /root/.kube/config
     strategy:
       fail-fast: false
       matrix:
@@ -102,10 +104,10 @@ jobs:
         run: |
           mkdir -p ~/.kube
           until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
-          cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-          echo "- name: fake_token_user" >> ~/.kube/config
-          echo "  user:" >> ~/.kube/config
-          echo "    token: xxxxxx" >> ~/.kube/config
+          cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > $KUBECONFIG
+          echo "- name: fake_token_user" >> $KUBECONFIG
+          echo "  user:" >> $KUBECONFIG
+          echo "    token: xxxxxx" >> $KUBECONFIG
       - run: git fetch --tags
       - run: make executor-image STATIC_FILES=false DEV_IMAGE=true
       - run: until kubectl cluster-info ; do sleep 10s ; done
