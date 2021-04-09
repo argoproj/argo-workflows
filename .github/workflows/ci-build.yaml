@@ -98,7 +98,7 @@ jobs:
           path: dist/kustomize
           key: kustomize
       - run: git fetch --tags
-      - run: make executor-image STATIC_FILES=false DEV_IMAGE=true &
+      - run: mkdir -p /tmp/log/argo-e2e
       - name: Install and start K3S v1.18.8+k3s1
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
@@ -107,7 +107,6 @@ jobs:
           echo "- name: fake_token_user" >> $KUBECONFIG
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
-      - run: make executor-image STATIC_FILES=false DEV_IMAGE=true
       - run: until kubectl cluster-info ; do sleep 10s ; done
       - name: Set-up /etc/hosts
         run: |
@@ -115,11 +114,10 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-      - run: mkdir -p /tmp/log/argo-e2e
       - run: until kubectl cluster-info ; do sleep 10s ; done
       - run: make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
       - run: make start   PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
-      - run: make wait
+      - run: make executor-image wait STATIC_FILES=false DEV_IMAGE=true
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m
       - name: Upload logs
         if: ${{ failure() }}
