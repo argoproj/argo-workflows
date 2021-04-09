@@ -1393,6 +1393,42 @@
         }
       }
     },
+    "/api/v1/pipelines/{namespace}/{name}/restart": {
+      "post": {
+        "tags": [
+          "PipelineService"
+        ],
+        "operationId": "PipelineService_RestartPipeline",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pipeline.RestartPipelineResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sensors/{namespace}": {
       "get": {
         "tags": [
@@ -13293,6 +13329,9 @@
           "type": "string"
         }
       }
+    },
+    "pipeline.RestartPipelineResponse": {
+      "type": "object"
     },
     "pipeline.StepWatchEvent": {
       "type": "object",

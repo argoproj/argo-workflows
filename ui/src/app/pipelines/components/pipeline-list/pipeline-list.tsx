@@ -53,9 +53,6 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                     {title: 'Pipelines', path: uiUrl('pipelines')},
                     {title: namespace, path: uiUrl('pipelines/' + namespace)}
                 ],
-                actionMenu: {
-                    items: [{title: 'Reload', iconClassName: 'fa fa-redo-alt', action: () => history.go(0)}]
-                },
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
             <ErrorNotice error={error} />
@@ -75,8 +72,8 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                             <div className='columns small-1' />
                             <div className='columns small-3'>NAME</div>
                             <div className='columns small-3'>NAMESPACE</div>
-                            <div className='columns small-3'>MESSAGE</div>
-                            <div className='columns small-2'>CONDITIONS</div>
+                            <div className='columns small-2'>MESSAGE</div>
+                            <div className='columns small-3'>CONDITIONS</div>
                         </div>
                         {pipelines.map(p => (
                             <Link
@@ -88,8 +85,8 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                                 </div>
                                 <div className='columns small-3'>{p.metadata.name}</div>
                                 <div className='columns small-3'>{p.metadata.namespace}</div>
-                                <div className='columns small-3'>{p.status && p.status.message}</div>
-                                <div className='columns small-2'>{p.status && p.status.conditions && p.status.conditions.map(c => c.type).join(',')}</div>
+                                <div className='columns small-2'>{p.status && p.status.message}</div>
+                                <div className='columns small-3'>{p.status && p.status.conditions && p.status.conditions.map(c => c.type).join(',')}</div>
                             </Link>
                         ))}
                     </div>

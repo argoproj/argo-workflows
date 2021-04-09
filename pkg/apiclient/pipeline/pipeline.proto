@@ -13,7 +13,6 @@ message ListPipelinesRequest {
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
 }
 
-
 message PipelineWatchEvent {
     string type = 1;
     github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline object = 2;
@@ -23,6 +22,14 @@ message GetPipelineRequest {
     string name = 1;
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+}
+
+message RestartPipelineRequest {
+    string name = 1;
+    string namespace = 2;
+}
+
+message RestartPipelineResponse {
 }
 
 message DeletePipelineRequest {
@@ -72,6 +79,9 @@ service PipelineService {
     }
     rpc GetPipeline (GetPipelineRequest) returns (github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline) {
         option (google.api.http).get = "/api/v1/pipelines/{namespace}/{name}";
+    }
+    rpc RestartPipeline (RestartPipelineRequest) returns (RestartPipelineResponse) {
+        option (google.api.http).post = "/api/v1/pipelines/{namespace}/{name}/restart";
     }
     rpc DeletePipeline (DeletePipelineRequest) returns (DeletePipelineResponse) {
         option (google.api.http).delete = "/api/v1/pipelines/{namespace}/{name}";

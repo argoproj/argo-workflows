@@ -9377,6 +9377,9 @@
       },
       "type": "object"
     },
+    "pipeline.RestartPipelineResponse": {
+      "type": "object"
+    },
     "pipeline.StepWatchEvent": {
       "properties": {
         "object": {

@@ -86,6 +86,19 @@ func (s *server) GetPipeline(ctx context.Context, req *pipelinepkg.GetPipelineRe
 	return item, runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, item)
 }
 
+func (s *server) RestartPipeline(ctx context.Context, req *pipelinepkg.RestartPipelineRequest) (*pipelinepkg.RestartPipelineResponse, error) {
+	client := auth.GetKubeClient(ctx)
+	err := client.CoreV1().Pods(req.Namespace).DeleteCollection(
+		ctx,
+		metav1.DeleteOptions{},
+		metav1.ListOptions{LabelSelector: dfv1.KeyPipelineName + "=" + req.Name},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &pipelinepkg.RestartPipelineResponse{}, nil
+}
+
 func (s *server) DeletePipeline(ctx context.Context, req *pipelinepkg.DeletePipelineRequest) (*pipelinepkg.DeletePipelineResponse, error) {
 	client := auth.GetDynamicClient(ctx)
 	opts := metav1.DeleteOptions{}
