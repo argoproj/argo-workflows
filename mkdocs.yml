@@ -140,6 +140,7 @@ nav:
           - argo-server-auth-mode.md
           - tls.md
           - argo-server-sso.md
+          - argo-server-sso-argocd.md
       - high-availability.md
       - disaster-recovery.md
       - scaling.md
