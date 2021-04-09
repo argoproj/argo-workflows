@@ -49,22 +49,31 @@ jobs:
         include:
           - test: test-api
             containerRuntimeExecutor: emissary
+            profile: mysql
           - test: test-cli
             containerRuntimeExecutor: emissary
+            profile: mysql
           - test: test-cron
             containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: docker
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: k8sapi
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: kubelet
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: pns
+            profile: minimal
           - test: test-functional
             containerRuntimeExecutor: emissary
+            profile: minimal
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -98,22 +107,18 @@ jobs:
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
       - run: git fetch --tags
-      - run: until kubectl cluster-info ; do sleep 10s ; done
       - run: make executor-image STATIC_FILES=false DEV_IMAGE=true
-      - name: Start Argo
+      - run: until kubectl cluster-info ; do sleep 10s ; done
+      - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          PROFILE=minimal
-          if [ "${{matrix.test}}" = test-cli ] || [ "${{matrix.test}}" = test-api ]; then
-            PROFILE=mysql
-          fi
-          mkdir -p /tmp/log/argo-e2e
-          until kubectl cluster-info ; do sleep 10s ; done
-          make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
-          make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+      - run: mkdir -p /tmp/log/argo-e2e
+      - run: until kubectl cluster-info ; do sleep 10s ; done
+      - run: make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
+      - run: make start   PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m
       - name: Upload logs
