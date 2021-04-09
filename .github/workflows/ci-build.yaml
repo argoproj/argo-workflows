@@ -98,6 +98,7 @@ jobs:
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
       - run: git fetch --tags
+      - run: until kubectl cluster-info ; do sleep 10s ; done
       - run: make executor-image STATIC_FILES=false DEV_IMAGE=true
       - name: Start Argo
         run: |
@@ -111,8 +112,8 @@ jobs:
           fi
           mkdir -p /tmp/log/argo-e2e
           until kubectl cluster-info ; do sleep 10s ; done
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+          make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
+          make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m
       - name: Upload logs
