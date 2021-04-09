@@ -44,7 +44,7 @@ jobs:
     # test-functional: 13m (7m locally)
     timeout-minutes: 20
     env:
-      KUBECONFIG: /root/.kube/config
+      KUBECONFIG: /home/runner/.kubeconfig
     strategy:
       fail-fast: false
       matrix:
