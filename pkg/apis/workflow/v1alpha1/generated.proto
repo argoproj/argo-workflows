@@ -780,6 +780,9 @@ message OSSBucket {
 
   // CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
   optional bool createBucketIfNotPresent = 5;
+
+  // SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm
+  optional string securityToken = 6;
 }
 
 // Outputs hold parameters, artifacts, and results from a step

@@ -38,6 +38,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -6300,7 +6301,8 @@ func TestStepsFailFast(t *testing.T) {
 
 func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script.py)"))
-	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script(.)py)"))
+	assert.Equal(t, "step3", getStepOrDAGTaskName("bug-rqq5f[0].fanout[0].fanout1(0:1)(0)[0].fanout2(0:1).step3(0)"))
+	assert.Equal(t, "divide-by-2", getStepOrDAGTaskName("parameter-aggregation[0].divide-by-2(0:1)(0)"))
 }
 
 func TestGenerateOutputResultRegex(t *testing.T) {
@@ -6594,4 +6596,123 @@ func TestOnExitDAGStatusCompatibility(t *testing.T) {
 
 	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
 	assert.Nil(t, nodeB)
+}
+
+var wfPending = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2021-04-05T21:50:18Z"
+  name: hello-world-4srt7
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 300
+  entrypoint: whalesay
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+    name: whalesay
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  finishedAt: null
+  nodes:
+    hello-world-4srt7:
+      displayName: hello-world-4srt7
+      finishedAt: null
+      id: hello-world-4srt7
+      name: hello-world-4srt7
+      phase: Pending
+      progress: 0/1
+      startedAt: "2021-04-05T21:50:18Z"
+      templateName: whalesay
+      templateScope: local/hello-world-4srt7
+      type: Pod
+  phase: Running
+  progress: 0/1
+  startedAt: "2021-04-05T21:50:18Z"
+`
+
+func TestWfPendingWithNoPod(t *testing.T) {
+	wf := unmarshalWF(wfPending)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+}
+
+var wfPendingWithSync = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-mpdht
+  namespace: argo
+spec:
+  entrypoint: whalesay
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+    synchronization:
+      mutex:
+        name: welcome
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    hello-world-mpdht:
+      displayName: hello-world-mpdht
+      finishedAt: null
+      id: hello-world-mpdht
+      message: 'Waiting for argo/Mutex/welcome lock. Lock status: 0/1 '
+      name: hello-world-mpdht
+      phase: Pending
+      progress: 0/1
+      startedAt: "2021-04-05T22:11:21Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/welcome
+      templateName: whalesay
+      templateScope: local/hello-world-mpdht
+      type: Pod
+  phase: Running
+  progress: 0/1
+  startedAt: "2021-04-05T22:11:21Z"
+  synchronization:
+    mutex:
+      waiting:
+      - holder: argo/hello-world-tmph8/hello-world-tmph8
+        mutex: argo/Mutex/welcome
+`
+
+func TestMutexWfPendingWithNoPod(t *testing.T) {
+	wf := unmarshalWF(wfPendingWithSync)
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc)
+	_, _, _, err := controller.syncManager.TryAcquire(wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Phase)
 }

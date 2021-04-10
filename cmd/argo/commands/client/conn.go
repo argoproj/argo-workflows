@@ -2,12 +2,15 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 )
@@ -86,6 +89,8 @@ func GetAuthString() string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	version := argo.GetVersion()
+	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-cli", version.Version))
 	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
 	if err != nil {
 		log.Fatal(err)
