@@ -16,8 +16,10 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
+	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/apiserver"
@@ -59,6 +61,8 @@ See %s`, help.ArgoSever),
 			if err != nil {
 				return err
 			}
+			version := argo.GetVersion()
+			config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-server", version.Version))
 			config.Burst = 30
 			config.QPS = 20.0
 
