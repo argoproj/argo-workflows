@@ -3146,7 +3146,6 @@ metadata:
 spec:
   entrypoint: 123
 `: {
-			"Normal WorkflowRunning Workflow Running",
 			"Warning WorkflowFailed invalid spec: template name '123' undefined",
 		},
 		// DAG
@@ -4734,7 +4733,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-	err := woc.setExecWorkflow()
+	err := woc.setExecWorkflow(context.Background())
 	assert.NoError(t, err)
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -6596,6 +6595,45 @@ func TestOnExitDAGStatusCompatibility(t *testing.T) {
 
 	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
 	assert.Nil(t, nodeB)
+}
+
+const testGlobalParamSubstitute = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-8xw8l
+spec:
+  entrypoint: "whalesay1"
+  arguments:
+    parameters:
+    - name: entrypoint
+      value: test
+    - name: mutex
+      value: mutex1
+    - name: message
+      value: mutex1
+  synchronization:
+    mutex:
+      name:  "{{workflow.parameters.mutex}}"
+  templates:
+  - name: whalesay1
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.parameters.message}}"]
+`
+
+func TestSubstituteGlobalVariables(t *testing.T) {
+	wf := unmarshalWF(testGlobalParamSubstitute)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	// ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(context.Background())
+	assert.NoError(t, err)
+	assert.NotNil(t, woc.execWf)
+	assert.Equal(t, "mutex1", woc.execWf.Spec.Synchronization.Mutex.Name)
 }
 
 var wfPending = `
