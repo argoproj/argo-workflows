@@ -20,20 +20,22 @@ spec:
   - name: suspend
     steps:
     - - name: leafA
-        exitTemplate: 
-          template: exitContainer
-          arguments:
-            parameters:
-            - name: input
-              value: '{{steps.leafA.outputs.parameters.result}}'
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
+                value: '{{steps.leafA.outputs.parameters.result}}'
         template: whalesay
     - - name: leafB
-        exitTemplate: 
-          template: exitContainer
-          arguments:
-            parameters:
-            - name: input
-              value: '{{steps.leafB.outputs.parameters.result}}'
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
+                value: '{{steps.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -86,21 +88,23 @@ spec:
     dag:
       tasks:
       - name: leafA
-        exitTemplate: 
-          template: exitContainer
-          arguments:
-            parameters:
-            - name: input
-              value: '{{tasks.leafA.outputs.parameters.result}}'
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
+                value: '{{tasks.leafA.outputs.parameters.result}}'
         template: whalesay
       - name: leafB
         dependencies: [leafA]
-        exitTemplate: 
-          template: exitContainer
-          arguments:
-            parameters:
-            - name: input
-              value: '{{tasks.leafB.outputs.parameters.result}}'
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
+                value: '{{tasks.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -155,11 +159,12 @@ spec:
         onExit: exitContainer
         template: whalesay
     - - name: leafB
-        exitTemplate: 
-          template: exitContainer
-          arguments:
-            parameters:
-            - name: input
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
               value: '{{steps.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay
@@ -217,11 +222,12 @@ spec:
         template: whalesay
       - name: leafB
         dependencies: [leafA]
-        exitTemplate: 
-          template: exitContainer
-          arguments:
-            parameters:
-            - name: input
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
               value: '{{tasks.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay

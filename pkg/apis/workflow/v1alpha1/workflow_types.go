@@ -1165,6 +1165,9 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *ExitTemplate {
 	if step.OnExit != "" {
 		return &ExitTemplate{Template: step.OnExit, Arguments: args}
 	}
+	if step.Hooks == nil {
+		return nil
+	}
 	if step.Hooks != nil && step.Hooks.Exit != nil && step.Hooks.Exit.Arguments.IsEmpty() {
 		step.Hooks.Exit.Arguments = args
 	}
@@ -2404,6 +2407,9 @@ var _ TemplateReferenceHolder = &DAGTask{}
 func (t *DAGTask) GetExitHook(args Arguments) *ExitTemplate {
 	if t.OnExit != "" {
 		return &ExitTemplate{Template: t.OnExit, Arguments: args}
+	}
+	if t.Hooks == nil {
+		return nil
 	}
 	if t.Hooks != nil && t.Hooks.Exit != nil && t.Hooks.Exit.Arguments.IsEmpty() {
 		t.Hooks.Exit.Arguments = args
