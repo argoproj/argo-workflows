@@ -1804,6 +1804,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sso-login-time" title="SSO Login Time" class="md-nav__link">
+    SSO Login Time
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sharing-the-argo-cd-dex-instance-using-oauth2" title="Sharing the Argo CD Dex Instance using Oauth2" class="md-nav__link">
     Sharing the Argo CD Dex Instance using Oauth2
   </a>
@@ -2125,6 +2132,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sso-login-time" title="SSO Login Time" class="md-nav__link">
+    SSO Login Time
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sharing-the-argo-cd-dex-instance-using-oauth2" title="Sharing the Argo CD Dex Instance using Oauth2" class="md-nav__link">
     Sharing the Argo CD Dex Instance using Oauth2
   </a>
@@ -2235,6 +2249,18 @@ kubectl create secret -n argo generic client-secret-secret \
 </code></pre></div>
 <p>The precedence must be the lowest of all your service accounts. </p>
 </div>
+<h2 id="sso-login-time">SSO Login Time<a class="headerlink" href="#sso-login-time" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>v2.12 and after</p>
+</blockquote>
+<p>By default, your SSO session will expire after 10 hours. You can change this by adding a sessionExpiry value to your <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> under the SSO heading.</p>
+<div class="codehilite"><pre><span></span><code>```<span class="nv">yaml</span>
+<span class="nv">sso</span>:
+  # <span class="nv">Expiry</span> <span class="nv">defines</span> <span class="nv">how</span> <span class="nv">long</span> <span class="nv">your</span> <span class="nv">login</span> <span class="nv">is</span> <span class="nv">valid</span> <span class="k">for</span> <span class="nv">in</span> <span class="nv">hours</span>. <span class="ss">(</span><span class="nv">optional</span><span class="ss">)</span>
+  <span class="nv">sessionExpiry</span>: <span class="mi">240</span><span class="nv">h</span>
+```
+</code></pre></div>
+
 <h2 id="sharing-the-argo-cd-dex-instance-using-oauth2">Sharing the Argo CD Dex Instance using Oauth2<a class="headerlink" href="#sharing-the-argo-cd-dex-instance-using-oauth2" title="Permanent link">&para;</a></h2>
 <p>It is possible to have the Argo Workflows Server use the Argo CD Dex instance for SSO, for instance if you use Okta with SAML which cannot integrate with Argo Workflows directly. In order to make this happen, you will need the following:</p>
 <ul>
@@ -2271,6 +2297,8 @@ kubectl create secret -n argo generic client-secret-secret \
          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">--auth-mode=sso</span>
        <span class="nt">sso</span><span class="p">:</span>
          <span class="nt">issuer</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https://argo-cd.mydomain.com/api/dex</span>
+         <span class="c1"># sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)</span>
+         <span class="nt">sessionExpiry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">240h</span>
          <span class="nt">clientId</span><span class="p">:</span>
            <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
            <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">client-id</span>
