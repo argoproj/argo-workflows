@@ -1634,8 +1634,8 @@ message WorkflowStep {
   // DEPRECATED: Use ExitTemplate.template instead.
   optional string onExit = 11;
 
-  // Hooks hold exit hook which is invoked at the end of the
-  // workflow, irrespective of the success, failure, or error status of the primary template
+  // Hooks holds exit hook which is invoked at the end of the
+  // template, irrespective of the success, failure, or error status of the primary template
   optional Hooks hooks = 12;
 }
 

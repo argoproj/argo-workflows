@@ -1577,7 +1577,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"hooks": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
+							Description: "Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Hooks"),
 						},
 					},
@@ -5890,7 +5890,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"hooks": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
+							Description: "Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Hooks"),
 						},
 					},

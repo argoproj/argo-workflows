@@ -3424,7 +3424,7 @@
         },
         "hooks": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Hooks",
-          "description": "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
+          "description": "Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
         },
         "name": {
           "description": "Name is the name of the target",
@@ -5770,7 +5770,7 @@
         },
         "hooks": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Hooks",
-          "description": "ExitTemplate hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
+          "description": "Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template"
         },
         "name": {
           "description": "Name of the step",

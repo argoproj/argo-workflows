@@ -3163,7 +3163,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
-|`hooks`|[`Hooks`](#hooks)|Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template|
+|`hooks`|[`Hooks`](#hooks)|Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template|
 |`name`|`string`|Name of the step|
 |~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use ExitTemplate.template instead.|
 |`template`|`string`|Template is the name of the template to execute as the step|

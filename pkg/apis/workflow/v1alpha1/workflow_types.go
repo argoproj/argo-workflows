@@ -1143,8 +1143,8 @@ type WorkflowStep struct {
 	// DEPRECATED: Use ExitTemplate.template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
-	// Hooks hold exit hook which is invoked at the end of the
-	// workflow, irrespective of the success, failure, or error status of the primary template
+	// Hooks holds exit hook which is invoked at the end of the
+	// template, irrespective of the success, failure, or error status of the primary template
 	Hooks *Hooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
 }
 
