@@ -554,6 +554,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
+	// Create WorkflowNode* events for nodes that have changed phase
+	woc.recordNodePhaseChangeEvents(&woc.orig.Status.Nodes, &woc.wf.Status.Nodes)
+
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
 		panic("workflow should be hydrated")
 	}
@@ -571,9 +574,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	case "false":
 		time.Sleep(1 * time.Second)
 	}
-
-	// Create WorkflowNode* events for nodes that have changed phase
-	woc.recordNodePhaseChangeEvents(&woc.orig.Status.Nodes, &woc.wf.Status.Nodes)
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
@@ -2114,34 +2114,29 @@ func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old *wfv1.Nodes, new *wfv
 
 	// Check for newly added nodes; send an event for new nodes
 	for nodeName, newNode := range newNodes {
-		_, ok := oldNodes[nodeName]
-		if !ok {
+		oldNode, exists := oldNodes[nodeName]
+		if exists {
+			if oldNode.Phase == newNode.Phase {
+				continue
+			}
+			if oldNode.Phase == wfv1.NodePending && newNode.Completed() {
+				origPhase := newNode.Phase
+				newNode.Phase = wfv1.NodeRunning
+				woc.recordNodePhaseEvent(&newNode)
+				newNode.Phase = origPhase
+			}
+			woc.recordNodePhaseEvent(&newNode)
+		} else {
 			if newNode.Phase == wfv1.NodeRunning {
 				woc.recordNodePhaseEvent(&newNode)
 			} else if newNode.Completed() {
-				ephemeralNode := newNode.DeepCopy()
-				ephemeralNode.Phase = wfv1.NodeRunning
-				woc.recordNodePhaseEvent(ephemeralNode)
+				origPhase := newNode.Phase
+				newNode.Phase = wfv1.NodeRunning
+				woc.recordNodePhaseEvent(&newNode)
+				newNode.Phase = origPhase
 				woc.recordNodePhaseEvent(&newNode)
 			}
 		}
-	}
-
-	// For each node in the old list, send an event if the state changed
-	for nodeName, oldNode := range oldNodes {
-		if oldNode.Fulfilled() {
-			continue
-		}
-		newNode := newNodes[nodeName]
-		if oldNode.Phase == newNode.Phase {
-			continue
-		}
-		if oldNode.Phase == wfv1.NodePending && newNode.Completed() {
-			ephemeralNode := newNode.DeepCopy()
-			ephemeralNode.Phase = wfv1.NodeRunning
-			woc.recordNodePhaseEvent(ephemeralNode)
-		}
-		woc.recordNodePhaseEvent(&newNode)
 	}
 }
 
