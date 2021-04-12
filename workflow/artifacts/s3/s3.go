@@ -76,30 +76,37 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 			if err != nil {
 				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
 			}
-			origErr := s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
-			if origErr == nil {
-				return true, nil
-			}
-			if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
-				return !isTransientS3Err(origErr), fmt.Errorf("failed to get file: %v", origErr)
-			}
-			// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
-			isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
-			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
-			}
-			if !isDir {
-				// It's neither a file, nor a directory. Return the original NoSuchKey error
-				return false, errors.New(errors.CodeNotFound, origErr.Error())
-			}
-
-			if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to get directory: %v", err)
-			}
-			return true, nil
+			return loadS3Artifact(s3cli, inputArtifact, path)
 		})
 
 	return err
+}
+
+// loadS3Artifact downloads artifacts from an S3 compliant storage
+// returns true if the download is completed or can't be retried (non-transient error)
+// returns false if it can be retried (transient error)
+func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path string) (bool, error) {
+	origErr := s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
+	if origErr == nil {
+		return true, nil
+	}
+	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
+		return !isTransientS3Err(origErr), fmt.Errorf("failed to get file: %v", origErr)
+	}
+	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
+	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if err != nil {
+		return !isTransientS3Err(err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
+	}
+	if !isDir {
+		// It's neither a file, nor a directory. Return the original NoSuchKey error
+		return true, errors.New(errors.CodeNotFound, origErr.Error())
+	}
+
+	if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
+		return !isTransientS3Err(err), fmt.Errorf("failed to get directory: %v", err)
+	}
+	return true, nil
 }
 
 // Save saves an artifact to S3 compliant storage
@@ -114,35 +121,42 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 			if err != nil {
 				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
 			}
-			isDir, err := file.IsDirectory(path)
-			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to test if %s is a directory: %v", path, err)
-			}
-
-			createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
-			if createBucketIfNotPresent != nil {
-				log.Infof("Trying to create bucket: %s", outputArtifact.S3.Bucket)
-				err := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
-					Region:        outputArtifact.S3.Region,
-					ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
-				})
-				if err != nil {
-					return !isTransientS3Err(err), fmt.Errorf("failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
-				}
-			}
-
-			if isDir {
-				if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
-					return !isTransientS3Err(err), fmt.Errorf("failed to put directory: %v", err)
-				}
-			} else {
-				if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
-					return !isTransientS3Err(err), fmt.Errorf("failed to put file: %v", err)
-				}
-			}
-			return true, nil
+			return saveS3Artifact(s3cli, path, outputArtifact)
 		})
 	return err
+}
+
+// loadS3Artifact uploads artifacts to an S3 compliant storage
+// returns true if the upload is completed or can't be retried (non-transient error)
+// returns false if it can be retried (transient error)
+func saveS3Artifact(s3cli argos3.S3Client, path string, outputArtifact *wfv1.Artifact) (bool, error) {
+	isDir, err := file.IsDirectory(path)
+	if err != nil {
+		return true, fmt.Errorf("failed to test if %s is a directory: %v", path, err)
+	}
+
+	createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
+	if createBucketIfNotPresent != nil {
+		log.Infof("Trying to create bucket: %s", outputArtifact.S3.Bucket)
+		err := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
+			Region:        outputArtifact.S3.Region,
+			ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
+		})
+		if err != nil {
+			return !isTransientS3Err(err), fmt.Errorf("failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
+		}
+	}
+
+	if isDir {
+		if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+			return !isTransientS3Err(err), fmt.Errorf("failed to put directory: %v", err)
+		}
+	} else {
+		if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+			return !isTransientS3Err(err), fmt.Errorf("failed to put file: %v", err)
+		}
+	}
+	return true, nil
 }
 
 func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
