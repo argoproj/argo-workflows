@@ -222,16 +222,16 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
 
-	nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
-	if !ok {
-		log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
-	}
-
-	if nodeID == "off" {
+	leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
+	if leaderElectionOff == "true" {
 		log.Info("Leader election is turned off. Running in single-instance mode")
 		logCtx := log.WithField("id", "single-instance")
 		go wfc.startLeading(ctx, logCtx, podCleanupWorkers, workflowTTLWorkers, wfWorkers, podWorkers)
 	} else {
+		nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
+		if !ok {
+			log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+		}
 		logCtx := log.WithField("id", nodeID)
 
 		var cancel context.CancelFunc
