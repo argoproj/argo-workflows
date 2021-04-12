@@ -300,6 +300,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
+	var errCount int
 	for _, wf := range workflows {
 		if wf.Labels[common.LabelKeyCronWorkflow] != woc.cronWf.Name {
 			continue
@@ -309,6 +310,14 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 				successfulWorkflows = append(successfulWorkflows, wf)
 			} else {
 				failedWorkflows = append(failedWorkflows, wf)
+				if woc.cronWf.Spec.SuspendAfterFailedJobsLimit != nil && *woc.cronWf.Spec.SuspendAfterFailedJobsLimit >= 0 {
+					errCount++
+					limit := int(*woc.cronWf.Spec.SuspendAfterFailedJobsLimit)
+					if errCount > limit {
+						woc.cronWf.Spec.Suspend = true
+						woc.log.Infof("Suspended CronWorkflow %s since there are %d failed workflows, which exceeds the allowed limit: %d", woc.cronWf.Name, errCount, limit)
+					}
+				}
 			}
 		}
 	}
