@@ -290,7 +290,6 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
-
 }
 
 func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
