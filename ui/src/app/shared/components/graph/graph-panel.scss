@@ -51,7 +51,6 @@
 }
 
 .graph {
-  overflow: scroll;
   text-align: center;
   max-height: calc(100vh - 2 * #{$top-bar-height});
 

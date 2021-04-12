@@ -20,7 +20,7 @@ export const EventSourceCreator = ({onCreate, namespace}: {namespace: string; on
                     icon='plus'
                     onClick={() => {
                         services.eventSource
-                            .create(eventSource, eventSource.metadata.namespace)
+                            .create(eventSource, Utils.getNamespace(eventSource.metadata.namespace))
                             .then(onCreate)
                             .catch(setError);
                     }}>

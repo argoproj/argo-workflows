@@ -43,6 +43,7 @@
     width: 100%;
     transition: width 0.2s;
     float: left;
+    overflow: auto;
 
     .workflow-dag {
       margin: 0;
