@@ -15,7 +15,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type configMapCache struct {
@@ -62,7 +61,6 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 
 	c.logInfo(log.Fields{}, "config map cache loaded")
 	hitTime := time.Now()
-	cm.SetLabels(map[string]string{common.LabelKeyCacheLastHitTimestamp: hitTime.Format(time.RFC3339)})
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
 		c.logInfo(log.Fields{}, "config map cache miss: entry does not exist")
@@ -119,7 +117,6 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	}
 
 	creationTime := time.Now()
-	cache.SetLabels(map[string]string{common.LabelKeyCacheLastHitTimestamp: creationTime.Format(time.RFC3339)})
 
 	newEntry := Entry{
 		NodeID:            nodeId,

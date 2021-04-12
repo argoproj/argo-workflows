@@ -99,6 +99,9 @@ func TestPrintNode(t *testing.T) {
 	node.Type = wfv1.NodeTypePod
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
 
+	getArgs.output = "short"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
+
 	getArgs.status = "foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
 }

@@ -93,6 +93,12 @@ const (
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
+type NodeReason string
+
+const (
+	WaitingForSyncLock NodeReason = "PendingForSyncLock"
+)
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -1279,6 +1285,14 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	return nil
 }
 
+func (ns NodeStatus) GetReason() NodeReason {
+	// If node is waiting for synchronize lock, Pod will not be created in this scenario
+	if ns.SynchronizationStatus != nil && ns.SynchronizationStatus.Waiting != "" {
+		return WaitingForSyncLock
+	}
+	return ""
+}
+
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
@@ -2127,6 +2141,9 @@ type OSSBucket struct {
 
 	// CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
 	CreateBucketIfNotPresent bool `json:"createBucketIfNotPresent,omitempty" protobuf:"varint,5,opt,name=createBucketIfNotPresent"`
+
+	// SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm
+	SecurityToken string `json:"securityToken,omitempty" protobuf:"bytes,6,opt,name=securityToken"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
