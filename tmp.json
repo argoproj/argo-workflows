@@ -1,0 +1,22 @@
+{
+  "name": "whalesay",
+  "inputs": {},
+  "outputs": {},
+  "metadata": {},
+  "container": {
+    "name": "",
+    "image": "docker/whalesay",
+    "command": [
+      "cowsay"
+    ],
+    "args": [
+      "hello world"
+    ],
+    "resources": {
+      "limits": {
+        "cpu": "100m",
+        "memory": "32Mi"
+      }
+    }
+  }
+}
