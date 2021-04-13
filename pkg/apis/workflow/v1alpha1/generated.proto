@@ -341,7 +341,7 @@ message DAGTask {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use ExitHook.template instead.
+  // DEPRECATED: Use LifecycleHook.template instead.
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
@@ -349,7 +349,7 @@ message DAGTask {
 
   // Hooks hold exit hook which is invoked at the end of the
   // workflow, irrespective of the success, failure, or error status of the primary template
-  optional LifecycleHook hooks = 13;
+  optional LifecycleHooks hooks = 13;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -395,12 +395,6 @@ message Event {
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
   optional string serviceAccountName = 1;
-}
-
-message ExitHook {
-  optional string template = 1;
-
-  optional Arguments arguments = 2;
 }
 
 // GCSArtifact is the location of a GCS artifact
@@ -557,9 +551,15 @@ message Item {
 }
 
 message LifecycleHook {
+  optional string template = 1;
+
+  optional Arguments arguments = 2;
+}
+
+message LifecycleHooks {
   // Exit hold the template and arguments which is invoked at the end of the
   // workflow, irrespective of the success, failure, or error status of the primary template
-  optional ExitHook exit = 1;
+  optional LifecycleHook exit = 1;
 }
 
 // A link to another app.
@@ -1631,12 +1631,12 @@ message WorkflowStep {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use ExitHook.template instead.
+  // DEPRECATED: Use LifecycleHook.template instead.
   optional string onExit = 11;
 
   // Hooks holds exit hook which is invoked at the end of the
   // template, irrespective of the success, failure, or error status of the primary template
-  optional LifecycleHook hooks = 12;
+  optional LifecycleHooks hooks = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

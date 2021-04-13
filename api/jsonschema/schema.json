@@ -3423,7 +3423,7 @@
           "type": "string"
         },
         "hooks": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHooks",
           "description": "Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
         },
         "name": {
@@ -3431,7 +3431,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitHook.template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use LifecycleHook.template instead.",
           "type": "string"
         },
         "template": {
@@ -3544,17 +3544,6 @@
       "properties": {
         "serviceAccountName": {
           "description": "ServiceAccountName specifies the service account name of the executor container.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.ExitHook": {
-      "properties": {
-        "arguments": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
-        },
-        "template": {
           "type": "string"
         }
       },
@@ -3823,8 +3812,19 @@
     },
     "io.argoproj.workflow.v1alpha1.LifecycleHook": {
       "properties": {
+        "arguments": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "template": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.LifecycleHooks": {
+      "properties": {
         "exit": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExitHook",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook",
           "description": "Exit hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
         }
       },
@@ -5769,7 +5769,7 @@
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified"
         },
         "hooks": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHooks",
           "description": "Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template"
         },
         "name": {
@@ -5777,7 +5777,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitHook.template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use LifecycleHook.template instead.",
           "type": "string"
         },
         "template": {

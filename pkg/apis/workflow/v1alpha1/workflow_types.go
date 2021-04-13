@@ -1140,21 +1140,21 @@ type WorkflowStep struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
-	// DEPRECATED: Use ExitHook.template instead.
+	// DEPRECATED: Use LifecycleHook.template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
 	// Hooks holds exit hook which is invoked at the end of the
 	// template, irrespective of the success, failure, or error status of the primary template
-	Hooks *LifecycleHook `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+	Hooks *LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+}
+
+type LifecycleHooks struct {
+	// Exit hold the template and arguments which is invoked at the end of the
+	// workflow, irrespective of the success, failure, or error status of the primary template
+	Exit *LifecycleHook `json:"exit,omitempty" protobuf:"bytes,1,opt,name=exit"`
 }
 
 type LifecycleHook struct {
-	// Exit hold the template and arguments which is invoked at the end of the
-	// workflow, irrespective of the success, failure, or error status of the primary template
-	Exit *ExitHook `json:"exit,omitempty" protobuf:"bytes,1,opt,name=exit"`
-}
-
-type ExitHook struct {
 	Template  string    `json:"template,omitempty" protobuf:"bytes,1,opt,name=template"`
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 }
@@ -1165,12 +1165,12 @@ func (step *WorkflowStep) HasExitHook() bool {
 	return step.Hooks != nil && step.Hooks.Exit != nil
 }
 
-func (step *WorkflowStep) GetExitHook(args Arguments) *ExitHook {
+func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 	if step.Hooks == nil && step.OnExit == "" {
 		return nil
 	}
 	if step.OnExit != "" {
-		return &ExitHook{Template: step.OnExit, Arguments: args}
+		return &LifecycleHook{Template: step.OnExit, Arguments: args}
 	}
 	hooks := step.Hooks.DeepCopy()
 
@@ -2397,7 +2397,7 @@ type DAGTask struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
-	// DEPRECATED: Use ExitHook.template instead.
+	// DEPRECATED: Use LifecycleHook.template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
 	// Depends are name of other targets which this depends on
@@ -2405,17 +2405,17 @@ type DAGTask struct {
 
 	// Hooks hold exit hook which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error status of the primary template
-	Hooks *LifecycleHook `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
+	Hooks *LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
 
-func (t *DAGTask) GetExitHook(args Arguments) *ExitHook {
+func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 	if t.Hooks == nil && t.OnExit == "" {
 		return nil
 	}
 	if t.OnExit != "" {
-		return &ExitHook{Template: t.OnExit, Arguments: args}
+		return &LifecycleHook{Template: t.OnExit, Arguments: args}
 	}
 	hooks := t.Hooks.DeepCopy()
 
