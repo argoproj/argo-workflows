@@ -60,12 +60,14 @@ func waitContainer(ctx context.Context) error {
 	// Saving output parameters
 	err = wfExecutor.SaveParameters(ctx)
 	if err != nil {
+		wfExecutor.AnnotateOutputs(ctx, logArt)
 		wfExecutor.AddError(err)
 		return err
 	}
 	// Saving output artifacts
 	err = wfExecutor.SaveArtifacts(ctx)
 	if err != nil {
+		wfExecutor.AnnotateOutputs(ctx, logArt)
 		wfExecutor.AddError(err)
 		return err
 	}
