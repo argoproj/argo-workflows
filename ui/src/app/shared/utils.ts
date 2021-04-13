@@ -105,5 +105,16 @@ export const Utils = {
     // return a namespace, never return null/undefined, defaults to "default"
     getNamespace(namespace: string) {
         return this.managedNamespace || namespace || this.currentNamespace || 'default';
+    },
+
+    // renders a template literal with context variables
+    renderTemplate(template: string, context: any) {
+        context.toEpoch = (datetime: string) => {
+            return Math.floor(new Date(datetime).getTime() / 1000);
+        }
+        return template.replace(new RegExp("\\$\{([^\{]+)\}", "g"), function(_unused, expression){
+            const f = new Function("context", "with(context) { return " + expression + "}");
+            return f(context);
+        });
     }
 };
