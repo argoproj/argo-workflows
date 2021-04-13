@@ -166,16 +166,3 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 
 	return files, err
 }
-
-// isTransientS3Err checks if an minio.ErrorResponse error is transient (retryable)
-func isTransientS3Err(err error) bool {
-	if err == nil {
-		return false
-	}
-	for _, transientErrCode := range s3TransientErrorCodes {
-		if argos3.IsS3ErrCode(err, transientErrCode) {
-			return true
-		}
-	}
-	return false
-}

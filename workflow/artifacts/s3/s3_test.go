@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -359,17 +358,4 @@ func TestSaveS3Artifact(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestIsTransientOSSErr(t *testing.T) {
-	for _, errCode := range s3TransientErrorCodes {
-		err := minio.ErrorResponse{Code: errCode}
-		assert.True(t, isTransientS3Err(err))
-	}
-
-	err := minio.ErrorResponse{Code: "NoSuchBucket"}
-	assert.False(t, isTransientS3Err(err))
-
-	nonOSSErr := errors.New("UnseenError")
-	assert.False(t, isTransientS3Err(nonOSSErr))
 }
