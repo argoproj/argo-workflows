@@ -101,8 +101,8 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 
 func TestGetCheckoutRevision(t *testing.T) {
 	for _, tt := range []struct {
-		in string
-		expected  string
+		in       string
+		expected string
 	}{
 		{"my-branch", "my-branch"},
 		{"refs/heads/my-branch", "my-branch"},
