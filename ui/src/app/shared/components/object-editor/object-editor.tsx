@@ -34,6 +34,13 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
         }
     }, [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
+    useEffect(() => {
+        // we ONLY want to change the text, if the normalized version has changed, this prevents white-space changes
+        // from resulting in a significant change
+        if (text !== stringify(parse(editor.current.editor.getValue()), lang)) {
+            editor.current.editor.setValue(text);
+        }
+    }, [text, lang]);
 
     useEffect(() => {
         if (type && lang === 'json') {
