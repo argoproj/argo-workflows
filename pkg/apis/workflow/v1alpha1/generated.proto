@@ -341,7 +341,7 @@ message DAGTask {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use ExitTemplate.template instead.
+  // DEPRECATED: Use ExitHook.template instead.
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
@@ -349,7 +349,7 @@ message DAGTask {
 
   // Hooks hold exit hook which is invoked at the end of the
   // workflow, irrespective of the success, failure, or error status of the primary template
-  optional Hooks hooks = 13;
+  optional LifecycleHook hooks = 13;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -397,7 +397,7 @@ message ExecutorConfig {
   optional string serviceAccountName = 1;
 }
 
-message ExitTemplate {
+message ExitHook {
   optional string template = 1;
 
   optional Arguments arguments = 2;
@@ -534,12 +534,6 @@ message Histogram {
   repeated Amount buckets = 4;
 }
 
-message Hooks {
-  // Exit hold the template and arguments which is invoked at the end of the
-  // workflow, irrespective of the success, failure, or error status of the primary template
-  optional ExitTemplate exit = 1;
-}
-
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 message Inputs {
   // Parameters are a list of parameters passed as inputs
@@ -560,6 +554,12 @@ message Inputs {
 // +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
+}
+
+message LifecycleHook {
+  // Exit hold the template and arguments which is invoked at the end of the
+  // workflow, irrespective of the success, failure, or error status of the primary template
+  optional ExitHook exit = 1;
 }
 
 // A link to another app.
@@ -1631,12 +1631,12 @@ message WorkflowStep {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use ExitTemplate.template instead.
+  // DEPRECATED: Use ExitHook.template instead.
   optional string onExit = 11;
 
   // Hooks holds exit hook which is invoked at the end of the
   // template, irrespective of the success, failure, or error status of the primary template
-  optional Hooks hooks = 12;
+  optional LifecycleHook hooks = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
