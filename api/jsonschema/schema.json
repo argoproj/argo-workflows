@@ -3423,7 +3423,7 @@
           "type": "string"
         },
         "hooks": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Hooks",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook",
           "description": "Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
         },
         "name": {
@@ -3431,7 +3431,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitTemplate.template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitHook.template instead.",
           "type": "string"
         },
         "template": {
@@ -3549,7 +3549,7 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.ExitTemplate": {
+    "io.argoproj.workflow.v1alpha1.ExitHook": {
       "properties": {
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
@@ -3780,15 +3780,6 @@
       ],
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.Hooks": {
-      "properties": {
-        "exit": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExitTemplate",
-          "description": "Exit hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "properties": {
         "links": {
@@ -3829,6 +3820,15 @@
     },
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
+    },
+    "io.argoproj.workflow.v1alpha1.LifecycleHook": {
+      "properties": {
+        "exit": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExitHook",
+          "description": "Exit hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template"
+        }
+      },
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -5769,7 +5769,7 @@
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified"
         },
         "hooks": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Hooks",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook",
           "description": "Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template"
         },
         "name": {
@@ -5777,7 +5777,7 @@
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitTemplate.template instead.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use ExitHook.template instead.",
           "type": "string"
         },
         "template": {
