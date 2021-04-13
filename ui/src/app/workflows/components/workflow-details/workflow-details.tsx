@@ -7,6 +7,7 @@ import {execSpec, Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
@@ -201,11 +202,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [namespace, name]);
 
     const openLink = (link: Link) => {
-        const url = link.url
-            .replace(/\${metadata\.namespace}/g, workflow.metadata.namespace)
-            .replace(/\${metadata\.name}/g, workflow.metadata.name)
-            .replace(/\${status\.startedAt}/g, workflow.status.startedAt)
-            .replace(/\${status\.finishedAt}/g, workflow.status.finishedAt);
+        const url = ProcessURL(link.url, workflow);
+
         if ((window.event as MouseEvent).ctrlKey) {
             window.open(url, '_blank');
         } else {

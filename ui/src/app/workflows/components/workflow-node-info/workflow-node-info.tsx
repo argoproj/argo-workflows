@@ -132,6 +132,11 @@ const WorkflowNodeSummary = (props: Props) => {
         });
     }
 
+    const object = props.workflow;
+    object.metadata.name = props.node.id;
+    object.status.startedAt = props.node.startedAt;
+    object.status.finishedAt = props.node.finishedAt;
+
     const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
     return (
         <div className='white-box'>
@@ -158,22 +163,7 @@ const WorkflowNodeSummary = (props: Props) => {
                         logs
                     </Button>
                 )}{' '}
-                {props.node.type === 'Pod' && (
-                    <Links
-                        button={true}
-                        object={{
-                            metadata: {
-                                namespace: props.workflow.metadata.namespace,
-                                name: props.node.id
-                            },
-                            status: {
-                                startedAt: props.node.startedAt,
-                                finishedAt: props.node.finishedAt
-                            }
-                        }}
-                        scope='pod'
-                    />
-                )}
+                {props.node.type === 'Pod' && <Links button={true} object={object} scope='pod' />}
             </div>
         </div>
     );

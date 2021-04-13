@@ -555,7 +555,7 @@ message Link {
   // Either "workflow" or "pod"
   optional string scope = 2;
 
-  // The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}".
+  // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${metadata.annotations.userDefinedKey}"
   optional string url = 3;
 }
 
