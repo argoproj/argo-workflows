@@ -4,6 +4,8 @@
 
 > v2.9 and after
 
+It is possible to use [Dex](https://github.com/dexidp/dex) for authentication. [This document](argo-server-sso-argocd.md) describes how to set up ArgoWorkflows and ArgoCD so that ArgoWorkflows uses ArgoCD's Dex server for authentication.
+
 ## To start Argo Server with SSO.
 
 Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values.
@@ -119,55 +121,3 @@ By default, your SSO session will expire after 10 hours. You can change this by 
       # Expiry defines how long your login is valid for in hours. (optional)
       sessionExpiry: 240h
     ```
-
-## Sharing the Argo CD Dex Instance using Oauth2
-
-It is possible to have the Argo Workflows Server use the Argo CD Dex instance for SSO, for instance if you use Okta with SAML which cannot integrate with Argo Workflows directly. In order to make this happen, you will need the following:
-
-- You must be using at least Dex [v2.23.0](https://github.com/dexidp/dex/releases/tag/v2.23.0), because that's when `staticClients[].secretEnv` was added.
-- A secret created above with a `client-id` and `client-secret` to be used by both Dex and Argo Workflows Server. It is called `argo-workflows-sso` in this example.
-- `--auth-mode=sso` server argument added
-- A Dex `staticClients` configured for `argo-workflows-sso`
-- The `sso` configuration filled out in Argo Workflows Server to match
-
-What this might look like in your chart configuration:
-
-`argo-cd/values.yaml`:
-```yaml
-     dex:
-       image:
-         tag: v2.23.0
-       env:
-         - name: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
-           valueFrom:
-             secretKeyRef:
-               name: argo-workflows-sso
-               key: client-secret
-     server:
-       config:
-         dex.config: |
-           staticClients:
-           - id: argo-workflows-sso
-             name: Argo Workflow
-             redirectURIs:
-               - https://argo-workflows.mydomain.com/oauth2/callback
-             secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
-```
-
-`argo/values.yaml`:
-```yaml
-     server:
-       extraArgs:
-         - --auth-mode=sso
-       sso:
-         issuer: https://argo-cd.mydomain.com/api/dex
-         # sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)
-         sessionExpiry: 240h
-         clientId:
-           name: argo-workflows-sso
-           key: client-id
-         clientSecret:
-           name: argo-workflows-sso
-           key: client-secret
-         redirectUrl: https://argo-workflows.mydomain.com/oauth2/callback
-```
