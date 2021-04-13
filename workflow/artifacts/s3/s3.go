@@ -126,7 +126,7 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 	return err
 }
 
-// loadS3Artifact uploads artifacts to an S3 compliant storage
+// saveS3Artifact uploads artifacts to an S3 compliant storage
 // returns true if the upload is completed or can't be retried (non-transient error)
 // returns false if it can be retried (transient error)
 func saveS3Artifact(s3cli argos3.S3Client, path string, outputArtifact *wfv1.Artifact) (bool, error) {
