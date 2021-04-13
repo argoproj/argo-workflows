@@ -1631,6 +1631,7 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 }
 
 func (s *ArgoServerSuite) TestPipelineService() {
+	s.T().SkipNow()
 	s.Run("GetPipeline", func() {
 		s.e().GET("/api/v1/pipelines/argo/not-exists").
 			Expect().
