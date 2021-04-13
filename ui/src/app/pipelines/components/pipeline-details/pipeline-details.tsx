@@ -5,15 +5,15 @@ import {RouteComponentProps} from 'react-router';
 import {Pipeline} from '../../../../models/pipeline';
 import {Step} from '../../../../models/step';
 import {uiUrl} from '../../../shared/base';
+import {ErrorNotice} from '../../../shared/components/error-notice';
+import {GraphPanel} from '../../../shared/components/graph/graph-panel';
+import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
-import {ErrorNotice} from "../../../shared/components/error-notice";
-import {Loading} from "../../../shared/components/loading";
-import {GraphPanel} from "../../../shared/components/graph/graph-panel";
-import {graph} from "./pipeline-graph";
-import {StepSidePanel} from "../step-side-panel";
+import {StepSidePanel} from '../step-side-panel';
+import {graph} from './pipeline-graph';
 
 require('./pipeline.scss');
 
@@ -78,12 +78,13 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                             title: 'Restart',
                             iconClassName: 'fa fa-redo',
                             action: () => {
-                                        services.pipeline
-                                            .restartPipeline(namespace, name)
-                                            .then(() => setError(null))
-                                            .then(() => notifications.show({type: NotificationType.Success,content: "Your pipeline pods should terminate within ~30s, before being re-created"} ))
-                                            .catch(setError);
-
+                                services.pipeline
+                                    .restartPipeline(namespace, name)
+                                    .then(() => setError(null))
+                                    .then(() =>
+                                        notifications.show({type: NotificationType.Success, content: 'Your pipeline pods should terminate within ~30s, before being re-created'})
+                                    )
+                                    .catch(setError);
                             }
                         },
                         {

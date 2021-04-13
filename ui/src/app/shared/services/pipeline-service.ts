@@ -33,9 +33,8 @@ export class PipelineService {
         return requests.get(`api/v1/pipelines/${namespace}/${name}`).then(res => res.body as Pipeline);
     }
 
-    restartPipeline(namespace: string, name: string) {
+    public restartPipeline(namespace: string, name: string) {
         return requests.post(`api/v1/pipelines/${namespace}/${name}/restart`);
-
     }
     public deletePipeline(namespace: string, name: string) {
         return requests.delete(`api/v1/pipelines/${namespace}/${name}`);
