@@ -1810,13 +1810,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#sharing-the-argo-cd-dex-instance-using-oauth2" title="Sharing the Argo CD Dex Instance using Oauth2" class="md-nav__link">
-    Sharing the Argo CD Dex Instance using Oauth2
-  </a>
-  
-</li>
-      
       
       
       
@@ -1825,6 +1818,18 @@
   
 </nav>
     
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../argo-server-sso-argocd/" title="Use ArgoCD Dex for authentication" class="md-nav__link">
+      Use ArgoCD Dex for authentication
+    </a>
   </li>
 
         
@@ -2138,13 +2143,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#sharing-the-argo-cd-dex-instance-using-oauth2" title="Sharing the Argo CD Dex Instance using Oauth2" class="md-nav__link">
-    Sharing the Argo CD Dex Instance using Oauth2
-  </a>
-  
-</li>
-      
       
       
       
@@ -2169,6 +2167,7 @@
 <blockquote>
 <p>v2.9 and after</p>
 </blockquote>
+<p>It is possible to use <a href="https://github.com/dexidp/dex">Dex</a> for authentication. <a href="../argo-server-sso-argocd/">This document</a> describes how to set up ArgoWorkflows and ArgoCD so that ArgoWorkflows uses ArgoCD's Dex server for authentication.</p>
 <h2 id="to-start-argo-server-with-sso">To start Argo Server with SSO.<a class="headerlink" href="#to-start-argo-server-with-sso" title="Permanent link">&para;</a></h2>
 <p>Firstly, configure the settings <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> with the correct OAuth 2 values.</p>
 <p>Next, create the k8s secrets for holding the OAuth2 <code>client-id</code> and <code>client-secret</code>. You may refer to the kubernetes documentation on <a href="https://kubernetes.io/docs/tasks/configmap-secret/">Managing secrets</a>. For example by using kubectl with literals:
@@ -2260,53 +2259,6 @@ kubectl create secret -n argo generic client-secret-secret \
   <span class="nv">sessionExpiry</span>: <span class="mi">240</span><span class="nv">h</span>
 ```
 </code></pre></div>
-
-<h2 id="sharing-the-argo-cd-dex-instance-using-oauth2">Sharing the Argo CD Dex Instance using Oauth2<a class="headerlink" href="#sharing-the-argo-cd-dex-instance-using-oauth2" title="Permanent link">&para;</a></h2>
-<p>It is possible to have the Argo Workflows Server use the Argo CD Dex instance for SSO, for instance if you use Okta with SAML which cannot integrate with Argo Workflows directly. In order to make this happen, you will need the following:</p>
-<ul>
-<li>You must be using at least Dex <a href="https://github.com/dexidp/dex/releases/tag/v2.23.0">v2.23.0</a>, because that's when <code>staticClients[].secretEnv</code> was added.</li>
-<li>A secret created above with a <code>client-id</code> and <code>client-secret</code> to be used by both Dex and Argo Workflows Server. It is called <code>argo-workflows-sso</code> in this example.</li>
-<li><code>--auth-mode=sso</code> server argument added</li>
-<li>A Dex <code>staticClients</code> configured for <code>argo-workflows-sso</code></li>
-<li>The <code>sso</code> configuration filled out in Argo Workflows Server to match</li>
-</ul>
-<p>What this might look like in your chart configuration:</p>
-<p><code>argo-cd/values.yaml</code>:
-<div class="highlight"><pre><span></span><code>     <span class="nt">dex</span><span class="p">:</span>
-       <span class="nt">image</span><span class="p">:</span>
-         <span class="nt">tag</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v2.23.0</span>
-       <span class="nt">env</span><span class="p">:</span>
-         <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span>
-           <span class="nt">valueFrom</span><span class="p">:</span>
-             <span class="nt">secretKeyRef</span><span class="p">:</span>
-               <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
-               <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">client-secret</span>
-     <span class="nt">server</span><span class="p">:</span>
-       <span class="nt">config</span><span class="p">:</span>
-         <span class="nt">dex.config</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-           <span class="no">staticClients:</span>
-           <span class="no">- id: argo-workflows-sso</span>
-             <span class="no">name: Argo Workflow</span>
-             <span class="no">redirectURIs:</span>
-               <span class="no">- https://argo-workflows.mydomain.com/oauth2/callback</span>
-             <span class="no">secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span>
-</code></pre></div></p>
-<p><code>argo/values.yaml</code>:
-<div class="highlight"><pre><span></span><code>     <span class="nt">server</span><span class="p">:</span>
-       <span class="nt">extraArgs</span><span class="p">:</span>
-         <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">--auth-mode=sso</span>
-       <span class="nt">sso</span><span class="p">:</span>
-         <span class="nt">issuer</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https://argo-cd.mydomain.com/api/dex</span>
-         <span class="c1"># sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)</span>
-         <span class="nt">sessionExpiry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">240h</span>
-         <span class="nt">clientId</span><span class="p">:</span>
-           <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
-           <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">client-id</span>
-         <span class="nt">clientSecret</span><span class="p">:</span>
-           <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
-           <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">client-secret</span>
-         <span class="nt">redirectUrl</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https://argo-workflows.mydomain.com/oauth2/callback</span>
-</code></pre></div></p>
                 
                   
                 
@@ -2342,13 +2294,13 @@ kubectl create secret -n argo generic client-secret-secret \
           </a>
         
         
-          <a href="../high-availability/" title="High-Availability (HA)" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../argo-server-sso-argocd/" title="Use ArgoCD Dex for authentication" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                High-Availability (HA)
+                Use ArgoCD Dex for authentication
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
