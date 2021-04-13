@@ -2340,14 +2340,35 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
 func getStepOrDAGTaskName(nodeName string) string {
-	// If our name contains an open parenthesis, this node is a child of a Retry node or an expanded node
-	// (e.g. withItems, withParams, etc.). Ignore anything after the parenthesis.
-	if parenthesisIndex := strings.LastIndex(nodeName, "("); parenthesisIndex >= 0 {
-		if parenthesisIndex > 0 && nodeName[parenthesisIndex-1] == ')' {
-			parenthesisIndex = strings.LastIndex(nodeName[:parenthesisIndex], "(")
+	// Extract the task or step name by ignoring retry IDs and expanded IDs that are included in parenthesis at the end
+	// of a node. Example: ".fanout1(0:1)(0)[0]" -> "fanout"
+
+	// Closer is what opened our current parenthesis. Example: if we see a ")", our opener is a "("
+	opener := ""
+loop:
+	for i := len(nodeName) - 1; i >= 0; i-- {
+		char := string(nodeName[i])
+		switch {
+		case char == opener:
+			// If we find the opener, we are no longer inside a parenthesis or bracket
+			opener = ""
+		case opener != "":
+			// If the opener is not empty, then we are inside a parenthesis or bracket
+			// Do nothing
+		case char == ")":
+			// We are going inside a parenthesis
+			opener = "("
+		case char == "]":
+			// We are going inside a bracket
+			opener = "["
+		default:
+			// If the current character is not a parenthesis or bracket, and we are not inside one already, we have found
+			// the end of the node name.
+			nodeName = nodeName[:i+1]
+			break loop
 		}
-		nodeName = nodeName[:parenthesisIndex]
 	}
+
 	// If our node contains a dot, we're a child node. We're only interested in the step that called us, so return the
 	// name of the node after the last dot.
 	if lastDotIndex := strings.LastIndex(nodeName, "."); lastDotIndex >= 0 {
@@ -2822,7 +2843,8 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 
 func generateNodeName(name string, index int, desc interface{}) string {
 	// Do not display parentheses in node name. Nodes are still guaranteed to be unique due to the index number
-	cleanName := strings.ReplaceAll(strings.ReplaceAll(fmt.Sprint(desc), "(", ""), ")", "")
+	replacer := strings.NewReplacer("(", "", ")", "")
+	cleanName := replacer.Replace(fmt.Sprint(desc))
 	newName := fmt.Sprintf("%s(%d:%v)", name, index, cleanName)
 	if out := util.RecoverIndexFromNodeName(newName); out != index {
 		panic(fmt.Sprintf("unrecoverable digit in generateName; wanted '%d' and got '%d'", index, out))
