@@ -2343,7 +2343,7 @@ func getStepOrDAGTaskName(nodeName string) string {
 	// Extract the task or step name by ignoring retry IDs and expanded IDs that are included in parenthesis at the end
 	// of a node. Example: ".fanout1(0:1)(0)[0]" -> "fanout"
 
-	// Closer is what opened our current parenthesis. Example: if we see a ")", our opener is a "("
+	// Opener is what opened our current parenthesis. Example: if we see a ")", our opener is a "("
 	opener := ""
 loop:
 	for i := len(nodeName) - 1; i >= 0; i-- {
