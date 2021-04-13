@@ -124,6 +124,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
+1. [DevSamurai](https://www.devsamurai.com/)
 
 ### Projects Using Argo
 
