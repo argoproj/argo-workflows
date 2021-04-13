@@ -728,10 +728,18 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 
-// AddError adds an error to the list of encountered errors durign execution
+// AddError adds an error to the list of encountered errors during execution
 func (we *WorkflowExecutor) AddError(err error) {
 	log.Errorf("executor error: %+v", err)
 	we.errors = append(we.errors, err)
+}
+
+// HasError return the first error if exist
+func (we *WorkflowExecutor) HasError() error {
+	if len(we.errors) > 0 {
+		return we.errors[0]
+	}
+	return nil
 }
 
 // AddAnnotation adds an annotation to the workflow pod
