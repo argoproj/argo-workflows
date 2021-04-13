@@ -11,9 +11,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitTemplate *wfv1.ExitTemplate, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
-	if exitTemplate != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
-		woc.log.Infof("Running OnExit handler: %s", exitTemplate)
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.ExitHook, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
+	if exitHook != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
+		woc.log.Infof("Running OnExit handler: %s", exitHook)
 
 		// Previously we used `parentDisplayName` to generate all onExit node names. However, as these can be non-unique
 		// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
@@ -31,16 +31,16 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitTemplate *wfv1
 		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.wf.GetNodeByName(parentNodeName).HasChild(legacyNameNode.ID) {
 			onExitNodeName = legacyOnExitNodeName
 		}
-		resolvedArgs := exitTemplate.Arguments
+		resolvedArgs := exitHook.Arguments
 		var err error
 		if !resolvedArgs.IsEmpty() && outputs != nil {
-			resolvedArgs, err = woc.resolveExitTmplArgument(exitTemplate.Arguments, prefix, outputs)
+			resolvedArgs, err = woc.resolveExitTmplArgument(exitHook.Arguments, prefix, outputs)
 			if err != nil {
 				return true, nil, err
 			}
 
 		}
-		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitTemplate.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
 
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
