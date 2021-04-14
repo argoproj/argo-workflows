@@ -1,20 +1,20 @@
 import {ObjectMeta} from 'argo-ui/src/models/kubernetes';
+import {Liquid} from 'liquidjs';
 import {useEffect, useState} from 'react';
 import React = require('react');
 import {Link, Workflow} from '../../../models';
 import {services} from '../services';
 import {Button} from './button';
 
+const engine = new Liquid({
+    outputDelimiterLeft: '${',
+    outputDelimiterRight: '}'
+});
+
 export const ProcessURL = (url: string, jsonObject: any) => {
     /* replace ${} from input url with corresponding elements from object
     return null if element is not found*/
-    return url.replace(/\${[^}]*}/g, x => {
-        const res = x
-            .replace(/[${}]+/g, '')
-            .split('.')
-            .reduce((p: any, c: string) => (p && p[c]) || null, jsonObject);
-        return res;
-    });
+    return engine.parseAndRenderSync(url, jsonObject);
 };
 
 export const Links = ({scope, object, button}: {scope: string; object: {metadata: ObjectMeta; workflow?: Workflow; status?: any}; button?: boolean}) => {
