@@ -264,8 +264,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             <div className='row argo-table-list__head'>
                                 <div className='columns small-1 workflows-list__status' />
                                 <div className='row small-11'>
-                                    <div className='columns small-2'>NAME</div>
-                                    <div className='columns small-2'>NAMESPACE</div>
+                                    <div className='columns small-3'>NAME</div>
+                                    <div className='columns small-1'>NAMESPACE</div>
                                     <div className='columns small-1'>STARTED</div>
                                     <div className='columns small-1'>FINISHED</div>
                                     <div className='columns small-1'>DURATION</div>
