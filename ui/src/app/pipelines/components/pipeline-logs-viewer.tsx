@@ -1,4 +1,3 @@
-import {Select} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
@@ -36,7 +35,13 @@ export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespa
                 <div className='columns small-3 medium-2'>
                     <p>Container</p>
                     <div style={{marginBottom: '1em'}}>
-                        <Select options={['main', 'sidecar', 'init']} onChange={option => setContainer(option.value)} value={container} />
+                        {['init', 'main', 'sidecar'].map(x => (
+                            <div key={x}>
+                                <a onClick={() => setContainer(x)}>
+                                    {x === container ? <i className='fa fa-angle-right' /> : <span>&nbsp;&nbsp;</span>} {x}
+                                </a>
+                            </div>
+                        ))}
                     </div>
                     <ErrorNotice error={error} />
                 </div>
