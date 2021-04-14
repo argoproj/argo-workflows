@@ -2315,7 +2315,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 					},
 					"scope": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Either \"workflow\" or \"pod\"",
+							Description: "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2323,7 +2323,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 					},
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The URL. May contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\" and \"${status.finishedAt}\".",
+							Description: "The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${workflow.metadata.annotations.userDefinedKey}\"",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",

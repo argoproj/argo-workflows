@@ -122,6 +122,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                                 namespace: workflow.metadata.namespace,
                                 name: podName
                             },
+                            workflow,
                             status: {
                                 startedAt: workflow.status.startedAt,
                                 finishedAt: workflow.status.finishedAt
