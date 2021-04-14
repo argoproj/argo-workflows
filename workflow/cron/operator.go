@@ -108,8 +108,14 @@ func (woc *cronWfOperationCtx) validateCronWorkflow() error {
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf)
 	if err != nil {
+		woc.cronWf.Spec.Suspend = true
+		woc.log.Infof("Suspended CronWorkflow %s since its spec is invalid: %v", woc.cronWf.Name, err)
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
+		if woc.cronWf.Spec.Suspend {
+			woc.cronWf.Spec.Suspend = false
+			woc.log.Infof("Un-suspended CronWorkflow %s since its spec is valid", woc.cronWf.Name)
+		}
 		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSpecError)
 	}
 	return err
