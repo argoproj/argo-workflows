@@ -99,6 +99,23 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 	}
 }
 
+func TestGetCheckoutRevision(t *testing.T) {
+	for _, tt := range []struct {
+		in       string
+		expected string
+	}{
+		{"my-branch", "my-branch"},
+		{"refs/heads/my-branch", "my-branch"},
+		{"refs/tags/1.0.0", "refs/tags/1.0.0"},
+		{"ae7b5432cfa15577d4740fb047762254be3652db", "ae7b5432cfa15577d4740fb047762254be3652db"},
+	} {
+		t.Run(tt.in, func(t *testing.T) {
+			result := getRevisionForCheckout(tt.in)
+			assert.Equal(t, result, tt.expected)
+		})
+	}
+}
+
 func TestGetUser(t *testing.T) {
 	for _, tt := range []struct {
 		name string

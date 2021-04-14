@@ -145,8 +145,9 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 	if inputArtifact.Git.Revision != "" {
 		// We still rely on forking git for checkout, since go-git does not have a reliable
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
-		log.Infof("Checking out revision %s", inputArtifact.Git.Revision)
-		cmd := exec.Command("git", "checkout", inputArtifact.Git.Revision)
+		rev := getRevisionForCheckout(inputArtifact.Git.Revision)
+		log.Info("Checking out revision ", rev)
+		cmd := exec.Command("git", "checkout", rev)
 		cmd.Dir = path
 		cmd.Env = env
 		output, err := cmd.Output()
@@ -164,6 +165,12 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 	}
 	return nil
+}
+
+// getRevisionForCheckout trims "refs/heads/" from the revision name (if present)
+// so that `git checkout` will succeed.
+func getRevisionForCheckout(revision string) string {
+	return strings.TrimPrefix(revision, "refs/heads/")
 }
 
 func isAlreadyUpToDateErr(err error) bool {
