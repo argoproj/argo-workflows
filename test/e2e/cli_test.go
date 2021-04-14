@@ -44,7 +44,7 @@ func (s *CLISuite) setMode(mode string) {
 	_ = os.Unsetenv("ARGO_INSTANCEID")
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 	_ = os.Unsetenv("ARGO_BASE_HREF")
-	_ = os.Unsetenv("ARGO_SECURE")
+	_ = os.Setenv("ARGO_SECURE", "false")
 	_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 	_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
 	_ = os.Setenv("ARGO_NAMESPACE", "argo")
