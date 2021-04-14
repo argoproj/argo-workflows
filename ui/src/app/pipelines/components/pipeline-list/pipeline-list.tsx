@@ -13,6 +13,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
+import {Timestamp} from "../../../shared/components/timestamp";
 
 export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
     // state for URL and query parameters
@@ -70,8 +71,9 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                     <div className='argo-table-list'>
                         <div className='row argo-table-list__head'>
                             <div className='columns small-1' />
-                            <div className='columns small-3'>NAME</div>
-                            <div className='columns small-3'>NAMESPACE</div>
+                            <div className='columns small-2'>NAME</div>
+                            <div className='columns small-2'>NAMESPACE</div>
+                            <div className='columns small-2'>CREATED</div>
                             <div className='columns small-2'>MESSAGE</div>
                             <div className='columns small-3'>CONDITIONS</div>
                         </div>
@@ -83,8 +85,11 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                                 <div className='columns small-1'>
                                     <PhaseIcon value={p.status && (p.status.phase as NodePhase)} />
                                 </div>
-                                <div className='columns small-3'>{p.metadata.name}</div>
-                                <div className='columns small-3'>{p.metadata.namespace}</div>
+                                <div className='columns small-2'>{p.metadata.name}</div>
+                                <div className='columns small-2'>{p.metadata.namespace}</div>
+                                <div className='columns small-2'>
+                                    <Timestamp date={p.metadata.creationTimestamp} />
+                                </div>
                                 <div className='columns small-2'>{p.status && p.status.message}</div>
                                 <div className='columns small-3'>{p.status && p.status.conditions && p.status.conditions.map(c => c.type).join(',')}</div>
                             </Link>
