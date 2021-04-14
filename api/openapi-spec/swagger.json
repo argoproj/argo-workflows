@@ -7238,7 +7238,7 @@
           "type": "string"
         },
         "url": {
-          "description": "The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${metadata.annotations.userDefinedKey}\"",
+          "description": "The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"",
           "type": "string"
         }
       },

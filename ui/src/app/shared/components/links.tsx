@@ -1,7 +1,7 @@
 import {ObjectMeta} from 'argo-ui/src/models/kubernetes';
 import {useEffect, useState} from 'react';
 import React = require('react');
-import {Link} from '../../../models';
+import {Link, Workflow} from '../../../models';
 import {services} from '../services';
 import {Button} from './button';
 
@@ -17,7 +17,7 @@ export const ProcessURL = (url: string, jsonObject: any) => {
     });
 };
 
-export const Links = ({scope, object, button}: {scope: string; object: {metadata: ObjectMeta; status?: any}; button?: boolean}) => {
+export const Links = ({scope, object, button}: {scope: string; object: {metadata: ObjectMeta; workflow?: Workflow; status?: any}; button?: boolean}) => {
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
 

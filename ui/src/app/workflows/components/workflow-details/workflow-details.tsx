@@ -202,7 +202,18 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [namespace, name]);
 
     const openLink = (link: Link) => {
-        const url = ProcessURL(link.url, workflow);
+        const object = {
+            metadata: {
+                namespace: workflow.metadata.namespace,
+                name: workflow.metadata.name
+            },
+            workflow,
+            status: {
+                startedAt: workflow.status.startedAt,
+                finishedAt: workflow.status.finishedAt
+            }
+        };
+        const url = ProcessURL(link.url, object);
 
         if ((window.event as MouseEvent).ctrlKey) {
             window.open(url, '_blank');

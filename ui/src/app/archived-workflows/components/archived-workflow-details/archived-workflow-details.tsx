@@ -262,6 +262,17 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private openLink(link: Link) {
-        document.location.href = ProcessURL(link.url, this.state.workflow);
+        const object = {
+            metadata: {
+                namespace: this.state.workflow.metadata.namespace,
+                name: this.state.workflow.metadata.name
+            },
+            workflow: this.state.workflow,
+            status: {
+                startedAt: this.state.workflow.status.startedAt,
+                finishedAt: this.state.workflow.status.finishedAt
+            }
+        };
+        document.location.href = ProcessURL(link.url, object);
     }
 }
