@@ -7234,7 +7234,7 @@
           "type": "string"
         },
         "scope": {
-          "description": "Either \"workflow\" or \"pod\"",
+          "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"",
           "type": "string"
         },
         "url": {
