@@ -620,7 +620,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 
 // reapplyUpdate GETs the latest version of the workflow, re-applies the updates and
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
-// https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
+// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
 	// if this condition is true, then this func will always error
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
