@@ -6,6 +6,7 @@ import {execSpec, Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
@@ -261,10 +262,17 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private openLink(link: Link) {
-        document.location.href = link.url
-            .replace(/\${metadata\.namespace}/g, this.state.workflow.metadata.namespace)
-            .replace(/\${metadata\.name}/g, this.state.workflow.metadata.name)
-            .replace(/\${status\.startedAt}/g, this.state.workflow.status.startedAt)
-            .replace(/\${status\.finishedAt}/g, this.state.workflow.status.finishedAt);
+        const object = {
+            metadata: {
+                namespace: this.state.workflow.metadata.namespace,
+                name: this.state.workflow.metadata.name
+            },
+            workflow: this.state.workflow,
+            status: {
+                startedAt: this.state.workflow.status.startedAt,
+                finishedAt: this.state.workflow.status.finishedAt
+            }
+        };
+        document.location.href = ProcessURL(link.url, object);
     }
 }
