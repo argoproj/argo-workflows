@@ -119,7 +119,7 @@ jobs:
       - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make executor-image wait STATIC_FILES=false DEV_IMAGE=true
         timeout-minutes: 3
-      - run: make ${{matrix.test}} E2E_TIMEOUT=1m
+      - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - name: Upload logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
