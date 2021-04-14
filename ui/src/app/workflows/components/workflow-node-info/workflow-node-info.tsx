@@ -166,6 +166,7 @@ const WorkflowNodeSummary = (props: Props) => {
                                 namespace: props.workflow.metadata.namespace,
                                 name: props.node.id
                             },
+                            workflow: props.workflow,
                             status: {
                                 startedAt: props.node.startedAt,
                                 finishedAt: props.node.finishedAt
