@@ -546,6 +546,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#daylight-saving" title="Daylight Saving" class="md-nav__link">
+    Daylight Saving
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2218,6 +2225,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#daylight-saving" title="Daylight Saving" class="md-nav__link">
+    Daylight Saving
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2378,6 +2392,125 @@
 <p>For example, if a <code>CronWorkflow</code> that runs every minute is last run at 12:05:00, and the controller crashes between 12:05:55 and 12:06:05, then the expected execution time of 12:06:00 would be missed. However, if <code>startingDeadlineSeconds</code> is set to a value greater than 65 (the amount of time passing between the last scheduled run time of 12:05:00 and the current controller restart time of 12:06:05), then a single instance of the <code>CronWorkflow</code> will be executed exactly at 12:06:05.</p>
 <p>Currently only a single instance will be executed as a result of setting <code>startingDeadlineSeconds</code>.</p>
 <p>This setting can also be configured in tandem with <code>concurrencyPolicy</code> to achieve more fine-tuned control.</p>
+<h3 id="daylight-saving">Daylight Saving<a class="headerlink" href="#daylight-saving" title="Permanent link">&para;</a></h3>
+<p>Daylight Saving (DST) is taking into account when using timezone. This guarantees argo only schedule workflow once when the clock moves forward or back.</p>
+<p>For example, with timezone set at <code>America/Los_Angeles</code>, we have daylight saving 
+- +1 hour (DST start) 2020-03-08 02:00:00</p>
+<table>
+<thead>
+<tr>
+<th>cron</th>
+<th>sequence</th>
+<th>workflow execution time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>59 1 * * *</td>
+<td>1</td>
+<td>2020-03-08 01:59:00 -0800 PST</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>2020-03-09 01:59:00 -0700 PDT</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>2020-03-10 01:59:00 -0700 PDT</td>
+</tr>
+<tr>
+<td>0 2 * * *</td>
+<td>1</td>
+<td>2020-03-09 02:00:00 -0700 PDT</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>2020-03-10 02:00:00 -0700 PDT</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>2020-03-11 02:00:00 -0700 PDT</td>
+</tr>
+<tr>
+<td>1 2 * * *</td>
+<td>1</td>
+<td>2020-03-09 02:01:00 -0700 PDT</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>2020-03-10 02:01:00 -0700 PDT</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>2020-03-11 02:01:00 -0700 PDT</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>-1 hour (DST end) 2020-11-01 02:00:00</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>cron</th>
+<th>sequence</th>
+<th>workflow execution time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>59 1 * * *</td>
+<td>1</td>
+<td>2020-11-01 01:59:00 -0700 PDT</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>2020-11-01 01:59:00 -0800 PST</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>2020-11-02 01:59:00 -0800 PST</td>
+</tr>
+<tr>
+<td>0 2 * * *</td>
+<td>1</td>
+<td>2020-11-01 02:00:00 -0800 PST</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>2020-11-02 02:00:00 -0800 PST</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>2020-11-03 02:00:00 -0800 PST</td>
+</tr>
+<tr>
+<td>1 2 * * *</td>
+<td>1</td>
+<td>2020-11-01 02:01:00 -0800 PST</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>2020-11-02 02:01:00 -0800 PST</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>2020-11-03 02:01:00 -0800 PST</td>
+</tr>
+</tbody>
+</table>
 <h2 id="managing-cronworkflow">Managing <code>CronWorkflow</code><a class="headerlink" href="#managing-cronworkflow" title="Permanent link">&para;</a></h2>
 <h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow</code> can be created from the CLI by using basic commands:</p>
