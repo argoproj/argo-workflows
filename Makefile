@@ -12,7 +12,7 @@ GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --q
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
-DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
 
 GREP_LOGS             := ""
 
@@ -39,8 +39,6 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-$(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION) STATIC_FILES=$(STATIC_FILES))
-
 START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
@@ -57,7 +55,9 @@ endif
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
-K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
+KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
+DOCKER_DESKTOP        := $(shell [[ "$(KUBECTX)" == "docker-desktop" ]] && echo true || echo false)
+K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
@@ -69,6 +69,10 @@ RUN_MODE              := kubernetes
 endif
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
+
+$(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
+$(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH))
+$(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
 
 override LDFLAGS += \
   -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
@@ -103,7 +107,7 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	[ -e ./vendor ] || go mod vendor
+	go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
 
@@ -178,10 +182,10 @@ dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS)
+dist/argo-%: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS)
+dist/argo: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
@@ -197,7 +201,7 @@ argo-server.key:
 .PHONY: cli-image
 cli-image: dist/argocli.image
 
-dist/argocli.image: $(CLI_PKGS) argo-server.crt argo-server.key
+dist/argocli.image: $(CLI_PKGS) go.sum argo-server.crt argo-server.key
 	$(call docker_build,argocli)
 	touch dist/argocli.image
 
@@ -209,7 +213,7 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 .PHONY: controller
 controller: dist/workflow-controller
 
-dist/workflow-controller: $(CONTROLLER_PKGS)
+dist/workflow-controller: $(CONTROLLER_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
@@ -220,13 +224,13 @@ endif
 .PHONY: controller-image
 controller-image: dist/controller.image
 
-dist/controller.image: $(CONTROLLER_PKGS) Dockerfile
+dist/controller.image: $(CONTROLLER_PKGS) go.sum Dockerfile
 	$(call docker_build,workflow-controller)
 	touch dist/controller.image
 
 # argoexec
 
-dist/argoexec: $(ARGOEXEC_PKGS)
+dist/argoexec: $(ARGOEXEC_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
@@ -243,7 +247,7 @@ dist/argoexec.image: dist/argoexec
 	mv argoexec dist/
 	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
 else
-dist/argoexec.image: $(ARGOEXEC_PKGS)
+dist/argoexec.image: $(ARGOEXEC_PKGS) go.sum
 	$(call docker_build,argoexec)
 endif
 	touch dist/argoexec.image
@@ -416,6 +420,18 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
 
+# nuke is like "clean" but attempts to return you to a state as if it had never been installed at all
+# this only available in "safe" local development
+ifeq (true,$(filter true, $(DOCKER_DESKTOP) $(K3D)))
+nuke:
+	kubectl delete --ignore-not-found workflow,cronworkflow,clusterworkflowtemplate,workflowtemplate,workfloweventbinding --all || true
+	kubectl delete --ignore-not-found ns argo
+	kubectl delete --ignore-not-found -k manifests/base/crds/minimal
+	git clean -fxd
+	docker image rm argoproj/argoexec  argoproj/argoexec-dev argoproj/argocli argoproj/workflow-controller || true
+	docker system prune -f
+endif
+
 .PHONY: argosay
 argosay:
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
@@ -444,7 +460,7 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
-start: install executor-image controller cli $(GOPATH)/bin/goreman
+start: install controller cli $(GOPATH)/bin/goreman
 else
 start: install executor-image controller-image cli-image
 endif
@@ -458,8 +474,7 @@ endif
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	killall goreman node || true
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start controller argo-server logs watch-pods $(shell [ $(START_UI) = false ]&& echo ui || echo) $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -478,7 +493,7 @@ watch-pods:
 	  -w
 
 .PHONY: wait
-wait:
+wait: executor-image
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
 	# Wait for Argo Server
@@ -575,7 +590,7 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
-docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
+docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
 .PHONY: validate-examples

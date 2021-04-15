@@ -9,7 +9,7 @@ import {PhaseIcon} from '../phase-icon';
 import {ToggleButton} from '../toggle-button';
 
 interface Props<T> {
-    type: string;
+    type?: string;
     value: T;
     buttons?: React.ReactNode;
     onChange?: (value: T) => void;
@@ -26,6 +26,13 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
     useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
     useEffect(() => setText(stringify(value, lang)), [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
+    useEffect(() => {
+        // we ONLY want to change the text, if the normalized version has changed, this prevents white-space changes
+        // from resulting in a significant change
+        if (text !== stringify(parse(editor.current.editor.getValue()), lang)) {
+            editor.current.editor.setValue(text);
+        }
+    }, [text, lang]);
 
     useEffect(() => {
         if (type && lang === 'json') {
@@ -79,31 +86,29 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         scrollBeyondLastLine: true
                     }}
                     onChange={v => {
-                        try {
-                            onChange(parse(v));
-                            setError(null);
-                        } catch (e) {
-                            setError(e);
+                        if (onChange) {
+                            try {
+                                onChange(parse(v));
+                                setError(null);
+                            } catch (e) {
+                                setError(e);
+                            }
                         }
                     }}
                 />
             </div>
-            <div style={{paddingTop: '1em'}}>
-                {error && (
-                    <>
-                        <PhaseIcon value='Error' /> {error.message}
-                    </>
-                )}
-            </div>
-            <div>
-                {onChange && (
-                    <>
-                        <i className='fa fa-info-circle' />{' '}
-                        {lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
-                    </>
-                )}{' '}
-                <a href='https://argoproj.github.io/argo-workflows/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
-            </div>
+            {error && (
+                <div style={{paddingTop: '1em'}}>
+                    <PhaseIcon value='Error' /> {error.message}
+                </div>
+            )}
+            {onChange && (
+                <div>
+                    <i className='fa fa-info-circle' />{' '}
+                    {lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
+                    <a href='https://argoproj.github.io/argo-workflows/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
+                </div>
+            )}
         </>
     );
 };

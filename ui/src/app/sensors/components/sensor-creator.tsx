@@ -20,7 +20,7 @@ export const SensorCreator = ({namespace, onCreate}: {namespace: string; onCreat
                     icon='plus'
                     onClick={() => {
                         services.sensor
-                            .create(sensor, sensor.metadata.namespace)
+                            .create(sensor, Utils.getNamespace(sensor.metadata.namespace))
                             .then(onCreate)
                             .catch(setError);
                     }}>

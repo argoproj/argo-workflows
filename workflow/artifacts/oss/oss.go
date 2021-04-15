@@ -11,23 +11,32 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
 // ArtifactDriver is a driver for OSS
 type ArtifactDriver struct {
-	Endpoint  string
-	AccessKey string
-	SecretKey string
+	Endpoint      string
+	AccessKey     string
+	SecretKey     string
+	SecurityToken string
 }
 
-var _ common.ArtifactDriver = &ArtifactDriver{}
+var (
+	_            common.ArtifactDriver = &ArtifactDriver{}
+	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
 
-// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
-var ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+	// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
+	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+)
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
-	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
+	var options []oss.ClientOption
+	if token := ossDriver.SecurityToken; token != "" {
+		options = append(options, oss.SecurityToken(token))
+	}
+	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new OSS client: %w", err)
 	}
@@ -36,7 +45,7 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 
 // Downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
 func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			log.Infof("OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
@@ -72,7 +81,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 
 // Saves an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
 func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			log.Infof("OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
@@ -117,7 +126,7 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	var files []string
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
