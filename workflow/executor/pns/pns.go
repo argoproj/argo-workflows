@@ -171,7 +171,7 @@ OUTER:
 				return ctx.Err()
 			default:
 				p, err := gops.FindProcess(pid)
-				log.Debugf("%q pid %d: %v", containerNames, pid, p)
+				log.Infof("ALEX %q pid %d: %v", containerNames, pid, p)
 				if err != nil {
 					return fmt.Errorf("failed to find %q process: %w", containerName, err)
 				}
@@ -340,7 +340,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 					_ = prevInfo.Close()
 				}
 				p.pidFileHandles[pid] = fs
-				log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
+				log.Infof("ALEX secured root for pid %d root: %s (%q)", pid, proc.Executable(), fs.Name())
 			}
 
 			containerName, err := containerNameForPID(pid)
