@@ -13,6 +13,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -210,6 +211,10 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 		return true, errors.Errorf(errors.CodeNotFound, "The error is detected to be transient: %v. Retrying...", err)
 	}
 	if err != nil {
+		err = errors.Cause(err)
+		if apierr.IsNotFound(err) {
+			return false, errors.Errorf(errors.CodeNotFound, "The resource has been deleted while its status was still being checked. Will not be retried: %v", err)
+		}
 		return false, err
 	}
 
@@ -220,10 +225,6 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	}
 	jsonString := string(jsonBytes)
 	log.Info(jsonString)
-
-	if strings.Contains(jsonString, "NotFound") {
-		return false, errors.Errorf(errors.CodeNotFound, "The resource has been deleted. Will not be retried.")
-	}
 	if !gjson.Valid(jsonString) {
 		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
 	}
