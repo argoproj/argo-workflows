@@ -2085,7 +2085,32 @@
 <li>A "Get Help" button in the bottom right of the window linking to you organisation help pages or chat room. </li>
 <li>Deep-links to your facilities (e.g. logging facility) in the user interface for both the workflow and each workflow pod.</li>
 </ul>
-<p>See <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> </p>
+<p>Links can contain placeholder variables. Placeholder variables are indicated by the dollar sign and curly braces: <code>${variable}</code>.</p>
+<p>These are the commonly used variables:</p>
+<ul>
+<li><code>${metadata.namespace}</code>: Kubernetes namespace of the current workflow / pod / event source / sensor</li>
+<li><code>${metadata.name}</code>: Name of the current workflow / pod / event source / sensor</li>
+<li><code>${status.startedAt}</code>: Start timestamp of the workflow / pod, in the format of <code>2021-01-01T10:35:56Z</code></li>
+<li><code>${status.finishedAt}</code>: End timestamp of the workflow / pod, in the format of  <code>2021-01-01T10:35:56Z</code>. If the workflow/pod is still running, this variable will be <code>null</code></li>
+</ul>
+<p>See <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> for a complete example</p>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>Epoch timestamps are available now. These are useful if we want to add links to logging facilities like <a href="https://grafana.com/">Grafana</a>
+or <a href="https://datadoghq.com/">DataDog</a>, as they support Unix epoch timestamp formats as URL
+parameters:</p>
+<ul>
+<li><code>${status.startedAtEpoch}</code>: Start timestamp of the workflow/pod, in the Unix epoch time format in <strong>milliseconds</strong>, e.g. <code>1609497000000</code>.</li>
+<li><code>${status.finishedAtEpoch}</code>: End timestamp of the workflow/pod, in the Unix epoch time format in  <strong>milliseconds</strong>, e.g. <code>1609497000000</code>. If the workflow/pod is still running, this variable will represent the currnet time.</li>
+</ul>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>In addition to the above variables, we can now access all <a href="../fields/#workflow">workflow fields</a> under <code>${workflow}</code>.</p>
+<p>For example, one may find it useful to define a custom label in the workflow and access it by <code>${workflow.metadata.labels.custom_label_name}</code></p>
+<p>We can also access workflow fields in a pod link. For example, <code>${workflow.metadata.name}</code> returns
+the name of the workflow instead of the name of the pod.</p>
                 
                   
                 
