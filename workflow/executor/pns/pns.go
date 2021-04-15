@@ -171,6 +171,7 @@ OUTER:
 				return ctx.Err()
 			default:
 				p, err := gops.FindProcess(pid)
+				log.Debugf("%q pid %d: %v", containerNames, pid, p)
 				if err != nil {
 					return fmt.Errorf("failed to find %q process: %w", containerName, err)
 				}
@@ -182,6 +183,8 @@ OUTER:
 			}
 		}
 	}
+
+	log.Infof("the process for containers %q have exited - checking with Kubernetes API", containerNames)
 
 	return p.K8sAPIExecutor.Wait(ctx, containerNames)
 }
@@ -331,12 +334,15 @@ func (p *PNSExecutor) secureRootFiles() error {
 				return err
 			}
 
-			// the main container may have switched (e.g. gone from busybox to the user's container)
-			if prevInfo, ok := p.pidFileHandles[pid]; ok {
-				_ = prevInfo.Close()
+			if p.pidFileHandles[pid] != fs {
+				// the main container may have switched (e.g. gone from busybox to the user's container)
+				if prevInfo, ok := p.pidFileHandles[pid]; ok {
+					_ = prevInfo.Close()
+				}
+				p.pidFileHandles[pid] = fs
+				log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
 			}
-			p.pidFileHandles[pid] = fs
-			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
+
 			containerName, err := containerNameForPID(pid)
 			if err != nil {
 				return err
