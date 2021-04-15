@@ -5,7 +5,24 @@ import {Link, Workflow} from '../../../models';
 import {services} from '../services';
 import {Button} from './button';
 
+const addEpochTimestamp = (jsonObject: {metadata: ObjectMeta; workflow?: Workflow; status?: any}) => {
+    if (jsonObject === undefined || jsonObject.status.startedAt === undefined) {
+        return;
+    }
+
+    const toEpoch = (datetime: string) => {
+        if (datetime) {
+            return new Date(datetime).getTime();
+        } else {
+            return Date.now();
+        }
+    };
+    jsonObject.status.startedAtEpoch = toEpoch(jsonObject.status.startedAt);
+    jsonObject.status.finishedAtEpoch = toEpoch(jsonObject.status.finishedAt);
+};
+
 export const ProcessURL = (url: string, jsonObject: any) => {
+    addEpochTimestamp(jsonObject);
     /* replace ${} from input url with corresponding elements from object
     return null if element is not found*/
     return url.replace(/\${[^}]*}/g, x => {
@@ -34,7 +51,7 @@ export const Links = ({scope, object, button}: {scope: string; object: {metadata
     };
 
     const openLink = (url: string) => {
-        if ((window.event as MouseEvent).ctrlKey) {
+        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
             window.open(url, '_blank');
         } else {
             document.location.href = url;
