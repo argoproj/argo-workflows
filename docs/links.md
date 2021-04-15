@@ -23,7 +23,7 @@ See [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) for
 > v3.1 and after
 
 Epoch timestamps are available now. These are useful if we want to add links to logging facilities like [Grafana](https://grafana.com/)
-or [DataDog](https://datadoghq.com/), as they support Unit epoch timestamp formats as URL
+or [DataDog](https://datadoghq.com/), as they support Unix epoch timestamp formats as URL
 parameters:
 
 - `${status.startedAtEpoch}`: Start timestamp of the workflow/pod, in the Unix epoch time format in **milliseconds**, e.g. `1609497000000`.
