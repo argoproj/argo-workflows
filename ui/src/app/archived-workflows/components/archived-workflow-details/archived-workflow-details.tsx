@@ -273,6 +273,12 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 finishedAt: this.state.workflow.status.finishedAt
             }
         };
-        document.location.href = ProcessURL(link.url, object);
+        const url = ProcessURL(link.url, object);
+
+        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
+            window.open(url, '_blank');
+        } else {
+            document.location.href = url;
+        }
     }
 }
