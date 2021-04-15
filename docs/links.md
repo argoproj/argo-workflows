@@ -10,14 +10,24 @@ You can configure Argo Server to show custom links:
 * Deep-links to your facilities (e.g. logging facility) in the user interface for both the workflow and each workflow pod.
 
 Links can contain placeholder variables. Placeholder variables are indicated by the dollar sign and curly braces: `${variable}`.
-There are currently 4 variables available:
 
-| Variable                | Description                                                                                                                                               |
-|:-----------------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `${metadata.namespace}` | Kubernetes namespace of the current workflow/pod/event source/sensor                                                                                      |
-| `${metadata.name}`      | Name of the current workflow/pod/event source/sensor                                                                                                      |
-| `${status.startedAt}`   | Start timestamp of the workflow/pod, in the format of `2021-01-01T10:35:56Z`                                                                              |
-| `${status.finishedAt}`  | End timestamp of the workflow/pod, in the format of  `2021-01-01T10:35:56Z`. If the workflow/pod is still running, this variable will be an empty string. |
+These are the commonly used variables:
+
+- `${metadata.namespace}`: Kubernetes namespace of the current workflow / pod / event source / sensor
+- `${metadata.name}`: Name of the current workflow / pod / event source / sensor
+- `${status.startedAt}`: Start timestamp of the workflow / pod, in the format of `2021-01-01T10:35:56Z`
+- `${status.finishedAt}`: End timestamp of the workflow / pod, in the format of  `2021-01-01T10:35:56Z`. If the workflow/pod is still running, this variable will be `null`
+
+See [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) for a complete example
+
+> v3.1 and after
+
+Epoch timestamps are available now. These are useful if we want to add links to logging facilities like [Grafana](https://grafana.com/)
+or [DataDog](https://datadoghq.com/), as they support Unit epoch timestamp formats as URL
+parameters:
+
+- `${status.startedAtEpoch}`: Start timestamp of the workflow/pod, in the Unix epoch time format in **milliseconds**, e.g. `1609497000000`.
+- `${status.finishedAtEpoch}`: End timestamp of the workflow/pod, in the Unix epoch time format in  **milliseconds**, e.g. `1609497000000`. If the workflow/pod is still running, this variable will represent the currnet time.
 
 > v3.1 and after
 
@@ -27,44 +37,3 @@ For example, one may find it useful to define a custom label in the workflow and
 
 We can also access workflow fields in a pod link. For example, `${workflow.metadata.name}` returns
 the name of the workflow instead of the name of the pod.
-
-## Filters
-
-> v3.1 and after
-
-Link placeholder now supports filters powered by [LiquidJS](https://liquidjs.com/filters/overview.html).
-
-For example, to convert the start timestamp to a different time format:
-
-```
-${status.startedAt | date: '%Y%m%dT%H%M%S'}
-```
-
-This is useful if we want to add links to logging facilities like [Grafana](https://grafana.com/)
-or [DataDog](https://datadoghq.com/), as they support different timestamp formats as URL
-parameters.
-
-For example, to link to a specific time range of a Grafana dashboard:
-
-```yaml
-links: |
-  - name: Grafana
-    scope: workflow
-    url: "https://grafana/dashboard?workflowName=${metadata.name}&from=${status.startedAt | date: '%s%3N'}&to=${ status.finishedAt | date: '%s%3N' | default: 'now' }"
-```
-
-This will make sure `status.startedAt` and `status.finishedAt` are converted to Unix epoch time in milliseconds which is support by
-Grafana. Furthermore, `status.finishedAt` will be converted to `now` if the workflow is still running.
-
-Visit [LiquidJS](https://liquidjs.com/filters/overview.html) for available filters.
-
-!!! Warning
-    Since the URL is provided through a YAML string. It's important to make sure the YAML format is valid. Double quote the URL if 
-    it includes special characters, (e.g. `: `). Escape any internal double quotes into `\"` or use single quotes `'` instead.
-
-    For example:
-    ```
-    url: "https://grafana/dashboard?to=${ status.startedAt | date: '%Y%m%dT%H%M%S' }"
-    ```
-
-See [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) for a complete example

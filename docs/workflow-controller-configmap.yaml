@@ -43,10 +43,6 @@ data:
     - name: Example Workflow Link
       scope: workflow
       url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
-    # Adds a button to the workflow page but the timestamps are converted to Unix epoch time instead.
-    - name: Example Workflow Link
-      scope: workflow
-      url: "http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt | date: '%s'}&finishedAt=${ status.finishedAt | date: '%s' | default: 'now' }"
     # Adds a button next to the pod.  E.g. linking to you logging facility but for the pod only.
     - name: Example Pod Link
       scope: pod
