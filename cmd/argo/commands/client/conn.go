@@ -73,7 +73,6 @@ func Namespace() string {
 	if Offline {
 		return ""
 	}
-
 	if overrides.Context.Namespace != "" {
 		return overrides.Context.Namespace
 	}
