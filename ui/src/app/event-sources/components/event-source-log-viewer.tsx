@@ -100,7 +100,7 @@ export const EventSourceLogsViewer = ({
                             }}
                         />
                     )}
-                    <Links scope='sensor-logs' object={eventSource} />
+                    <Links scope='event-source-logs' object={eventSource} />
                 </div>
             </div>
         </div>
