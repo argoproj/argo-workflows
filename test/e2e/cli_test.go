@@ -725,16 +725,9 @@ func (s *CLISuite) TestWorkflowLint() {
 func (s *CLISuite) TestWorkflowOfflineLint() {
 	s.setMode(OFFLINE)
 	s.Run("LintFile", func() {
-		s.Given().RunCli([]string{"lint", "--offline=true", "--kinds=workflow", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"lint", "--offline=true", "--kinds=workflows", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "no linting errors found")
-			}
-		})
-	})
-	s.Run("LintFile", func() {
-		s.Given().RunCli([]string{"lint", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
-				assert.Contains(t, output, "invalid configuration: no configuration has been provided")
 			}
 		})
 	})
@@ -1222,6 +1215,9 @@ func (s *CLISuite) TestArchive() {
 	s.Run("List", func() {
 		s.Given().
 			RunCli([]string{"archive", "list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
+				if err != nil {
+					fmt.Sprintf("The error is: %v", err.Error())
+				}
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					assert.Contains(t, lines[0], "NAMESPACE")
