@@ -157,35 +157,6 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 		time.Sleep(1 * time.Second)
 	}
 
-OUTER:
-	for _, containerName := range containerNames {
-		pid := p.getContainerPID(containerName)
-		if pid == 0 {
-			log.Infof("container %q pid unknown - maybe short running, or late starting container", containerName)
-			continue
-		}
-		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
-		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				p, err := gops.FindProcess(pid)
-				log.Infof("ALEX %q pid %d: %v", containerNames, pid, p)
-				if err != nil {
-					return fmt.Errorf("failed to find %q process: %w", containerName, err)
-				}
-				if p == nil {
-					log.Infof("%q pid %d completed", containerName, pid)
-					continue OUTER
-				}
-				time.Sleep(time.Second)
-			}
-		}
-	}
-
-	log.Infof("the process for containers %q have exited - checking with Kubernetes API", containerNames)
-
 	return p.K8sAPIExecutor.Wait(ctx, containerNames)
 }
 
