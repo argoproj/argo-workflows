@@ -1215,9 +1215,6 @@ func (s *CLISuite) TestArchive() {
 	s.Run("List", func() {
 		s.Given().
 			RunCli([]string{"archive", "list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
-				if err != nil {
-					fmt.Sprintf("The error is: %v", err.Error())
-				}
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					assert.Contains(t, lines[0], "NAMESPACE")
