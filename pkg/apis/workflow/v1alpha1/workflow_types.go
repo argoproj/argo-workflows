@@ -1156,14 +1156,21 @@ const (
 
 type LifecycleHooks map[LifecycleEvent]LifecycleHook
 
-func (lch LifecycleHooks) GetExitHook() *LifecycleHook {
-	hook := lch[ExitLifecycleEvent]
+func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
+	hook := lchs[ExitLifecycleEvent]
 	return &hook
 }
 
 type LifecycleHook struct {
 	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
+}
+
+func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
+	if lch.Arguments.IsEmpty() {
+		lch.Arguments = args
+	}
+	return lch
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
@@ -1179,12 +1186,7 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 	if step.OnExit != "" {
 		return &LifecycleHook{Template: step.OnExit, Arguments: args}
 	}
-	exitHooks := step.Hooks.GetExitHook().DeepCopy()
-
-	if exitHooks != nil && exitHooks.Arguments.IsEmpty() {
-		exitHooks.Arguments = args
-	}
-	return exitHooks
+	return step.Hooks.GetExitHook().WithArgs(args).DeepCopy()
 }
 
 func (step *WorkflowStep) GetTemplateName() string {
@@ -2424,12 +2426,7 @@ func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 	if t.OnExit != "" {
 		return &LifecycleHook{Template: t.OnExit, Arguments: args}
 	}
-	exitHooks := t.Hooks.GetExitHook().DeepCopy()
-
-	if exitHooks != nil && exitHooks.Arguments.IsEmpty() {
-		exitHooks.Arguments = args
-	}
-	return exitHooks
+	return t.Hooks.GetExitHook().WithArgs(args).DeepCopy()
 }
 
 func (t *DAGTask) HasExitHook() bool {
