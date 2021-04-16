@@ -48,7 +48,10 @@ func NewCreateCommand() *cobra.Command {
 
 func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewCronWorkflowServiceClient()
+	serviceClient, err := apiClient.NewCronWorkflowServiceClient()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
