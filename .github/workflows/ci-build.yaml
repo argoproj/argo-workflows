@@ -120,6 +120,9 @@ jobs:
       - run: make executor-image wait STATIC_FILES=false DEV_IMAGE=true
         timeout-minutes: 3
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
+      - name: Get wait container logs
+        if: ${{ failure() }}
+        run: kubectl get pod -o name | xargs -L 1 kubectl logs -c wait
       - name: Upload logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1

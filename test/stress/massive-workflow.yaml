@@ -31,7 +31,6 @@ spec:
           stress: "true"
       container:
         image: argoproj/argosay:v2
-        imagePullPolicy: IfNotPresent
         resources:
           requests:
             memory: 2Mi
