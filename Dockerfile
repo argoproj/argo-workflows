@@ -1,3 +1,4 @@
+#syntax=docker/dockerfile:1.2
 
 ARG DOCKER_CHANNEL=stable
 ARG DOCKER_VERSION=18.09.1
