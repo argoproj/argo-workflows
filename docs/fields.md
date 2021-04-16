@@ -3163,9 +3163,9 @@ WorkflowStep is a reference to a template to execute in a series of step
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
-|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`name`|`string`|Name of the step|
-|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use LifecycleHook.template instead.|
+|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Template is the name of the template to execute as the step|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
 |`when`|`string`|When is an expression in which the step should conditionally execute|
@@ -3808,9 +3808,9 @@ DAGTask represents a node in the graph during DAG execution
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
 |`depends`|`string`|Depends are name of other targets which this depends on|
-|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task|
 |`name`|`string`|Name is the name of the target|
-|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use LifecycleHook.template instead.|
+|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Name of template to execute|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute.|
 |`when`|`string`|When is an expression in which the task should conditionally execute|

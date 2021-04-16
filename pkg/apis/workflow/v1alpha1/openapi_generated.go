@@ -1562,7 +1562,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"onExit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use LifecycleHook.template instead.",
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1576,7 +1576,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"hooks": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
+							Description: "Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -5873,14 +5873,14 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"onExit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use LifecycleHook.template instead.",
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"hooks": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template",
+							Description: "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

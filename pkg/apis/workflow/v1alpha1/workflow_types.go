@@ -1140,11 +1140,11 @@ type WorkflowStep struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
-	// DEPRECATED: Use LifecycleHook.template instead.
+	// DEPRECATED: Use Hooks[exit].Template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
-	// Hooks holds exit hook which is invoked at the end of the
-	// template, irrespective of the success, failure, or error status of the primary template
+	// Hooks holds the lifecycle hook which is invoked at lifecycle of
+	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
 }
 
@@ -1160,12 +1160,6 @@ func (lch LifecycleHooks) GetExitHook() *LifecycleHook {
 	hook := lch[ExitLifecycleEvent]
 	return &hook
 }
-
-//type LifecycleHooks struct {
-//	// Exit hold the template and arguments which is invoked at the end of the
-//	// workflow, irrespective of the success, failure, or error status of the primary template
-//	Exit *LifecycleHook `json:"exit," protobuf:"bytes,1,opt,name=exit"`
-//}
 
 type LifecycleHook struct {
 	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
@@ -2410,14 +2404,14 @@ type DAGTask struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
-	// DEPRECATED: Use LifecycleHook.template instead.
+	// DEPRECATED: Use Hooks[exit].Template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
 	// Depends are name of other targets which this depends on
 	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
 
-	// Hooks hold exit hook which is invoked at the end of the
-	// workflow, irrespective of the success, failure, or error status of the primary template
+	// Hooks hold the lifecycle hook which is invoked at lifecycle of
+	// task, irrespective of the success, failure, or error status of the primary task
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 }
 
