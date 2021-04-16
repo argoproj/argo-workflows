@@ -15,6 +15,7 @@ Note that these environment variables may be removed at any time.
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | The requeue time for the rate limiter of the workflow queue. |
 | `GZIP_IMPLEMENTATION` | `string` | The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip". |
 | `LEADER_ELECTION_IDENTITY` | `string` | The ID used for workflow controllers to elect a leader. |
+| `LEADER_ELECTION_DISABLE` | `bool` | Whether leader election should be disabled. |
 | `LEADER_ELECTION_LEASE_DURATION` | `time.Duration` | The duration that non-leader candidates will wait to force acquire leadership. |
 | `LEADER_ELECTION_RENEW_DEADLINE` | `time.Duration` | The duration that the acting master will retry refreshing leadership before giving up. |
 | `LEADER_ELECTION_RETRY_PERIOD` | `time.Duration` | The duration that the leader election clients should wait between tries of actions. |
