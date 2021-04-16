@@ -1771,6 +1771,13 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#default-configuration" title="Default configuration:" class="md-nav__link">
+    Default configuration:
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#plain-text" title="Plain Text" class="md-nav__link">
     Plain Text
   </a>
@@ -2122,6 +2129,13 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#default-configuration" title="Default configuration:" class="md-nav__link">
+    Default configuration:
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#plain-text" title="Plain Text" class="md-nav__link">
     Plain Text
   </a>
@@ -2181,9 +2195,23 @@
 </blockquote>
 <p>If you're running Argo Server you have three options with increasing transport security (note - you should also be
 running <a href="../argo-server/#auth-mode">authentication</a>):</p>
+<h3 id="default-configuration">Default configuration:<a class="headerlink" href="#default-configuration" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>v2.8 - 2.12</p>
+</blockquote>
+<p>Defaults to <a href="#plain-text">Plain Text</a></p>
+<blockquote>
+<p>v3.0 and after</p>
+</blockquote>
+<p>Defaults to <a href="#encrypted">Encrypted</a> if cert is available</p>
+<p>Argo image/deployment defaults to <a href="#encrypted">Encrypted</a> with a self-signed certificate expires after 365 days.</p>
 <h2 id="plain-text">Plain Text<a class="headerlink" href="#plain-text" title="Permanent link">&para;</a></h2>
 <p><em>Recommended for: dev</em></p>
-<p>This is the default setting: everything is sent in plain text.</p>
+<p>Everything is sent in plain text.</p>
+<p>Start Argo Server with the --secure=false (or ARGO_SECURE=false) flag, e.g.:</p>
+<div class="highlight"><pre><span></span><code>export ARGO_SECURE=false
+argo --secure=false
+</code></pre></div>
 <p>To secure the UI you may front it with a HTTPS proxy.</p>
 <h2 id="encrypted">Encrypted<a class="headerlink" href="#encrypted" title="Permanent link">&para;</a></h2>
 <p><em>Recommended for: development and test environments</em></p>
