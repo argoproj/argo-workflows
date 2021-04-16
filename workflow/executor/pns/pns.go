@@ -157,32 +157,6 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 		time.Sleep(1 * time.Second)
 	}
 
-OUTER:
-	for _, containerName := range containerNames {
-		pid := p.getContainerPID(containerName)
-		if pid == 0 {
-			log.Infof("container %q pid unknown - maybe short running, or late starting container", containerName)
-			continue
-		}
-		log.Infof("Waiting for %q pid %d to complete", containerName, pid)
-		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				p, err := gops.FindProcess(pid)
-				if err != nil {
-					return fmt.Errorf("failed to find %q process: %w", containerName, err)
-				}
-				if p == nil {
-					log.Infof("%q pid %d completed", containerName, pid)
-					continue OUTER
-				}
-				time.Sleep(time.Second)
-			}
-		}
-	}
-
 	return p.K8sAPIExecutor.Wait(ctx, containerNames)
 }
 
@@ -331,12 +305,15 @@ func (p *PNSExecutor) secureRootFiles() error {
 				return err
 			}
 
-			// the main container may have switched (e.g. gone from busybox to the user's container)
-			if prevInfo, ok := p.pidFileHandles[pid]; ok {
-				_ = prevInfo.Close()
+			if p.pidFileHandles[pid] != fs {
+				// the main container may have switched (e.g. gone from busybox to the user's container)
+				if prevInfo, ok := p.pidFileHandles[pid]; ok {
+					_ = prevInfo.Close()
+				}
+				p.pidFileHandles[pid] = fs
+				log.Infof("secured root for pid %d root: %s (%q)", pid, proc.Executable(), fs.Name())
 			}
-			p.pidFileHandles[pid] = fs
-			log.Infof("secured root for pid %d root: %s", pid, proc.Executable())
+
 			containerName, err := containerNameForPID(pid)
 			if err != nil {
 				return err

@@ -129,12 +129,12 @@ define protoc
      perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
-# docker_build,image_name
+# docker_build,target,image_name
 define docker_build
-	docker buildx build -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) --progress plain .
-	docker run --rm -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) version
-	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
-	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(1):$(VERSION) ; fi
+	docker buildx build -t $(IMAGE_NAMESPACE)/$(2):$(VERSION) --target $(1) --progress plain .
+	docker run --rm -t $(IMAGE_NAMESPACE)/$(2):$(VERSION) version
+	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(2):$(VERSION); fi
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(2):$(VERSION) ; fi
 endef
 
 ifndef $(GOPATH)
@@ -202,7 +202,7 @@ argo-server.key:
 cli-image: dist/argocli.image
 
 dist/argocli.image: $(CLI_PKGS) go.sum argo-server.crt argo-server.key
-	$(call docker_build,argocli)
+	$(call docker_build,argocli,argocli)
 	touch dist/argocli.image
 
 .PHONY: clis
@@ -225,7 +225,7 @@ endif
 controller-image: dist/controller.image
 
 dist/controller.image: $(CONTROLLER_PKGS) go.sum Dockerfile
-	$(call docker_build,workflow-controller)
+	$(call docker_build,workflow-controller,workflow-controller)
 	touch dist/controller.image
 
 # argoexec
@@ -243,12 +243,11 @@ executor-image: dist/argoexec.image
 ifeq ($(DEV_IMAGE),true)
 dist/argoexec.image: dist/argoexec
 	[ -e argoexec ] || mv dist/argoexec .
-	$(call docker_build,argoexec-dev)
+	$(call docker_build,argoexec-dev,argoexec)
 	mv argoexec dist/
-	docker tag argoproj/argoexec-dev:latest argoproj/argoexec:latest
 else
 dist/argoexec.image: $(ARGOEXEC_PKGS) go.sum
-	$(call docker_build,argoexec)
+	$(call docker_build,argoexec,argoexec)
 endif
 	touch dist/argoexec.image
 
