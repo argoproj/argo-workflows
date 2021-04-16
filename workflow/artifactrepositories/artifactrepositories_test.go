@@ -94,6 +94,22 @@ func TestArtifactRepositories(t *testing.T) {
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		assert.NoError(t, err)
 	})
+	t.Run("DefaultWithNamespace", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := k.CoreV1().ConfigMaps("my-wf-ns").Create(ctx, &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "artifact-repositories",
+			},
+		}, metav1.CreateOptions{})
+		assert.NoError(t, err)
+
+		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
+		if assert.NoError(t, err) {
+			assert.Equal(t, wfv1.DefaultArtifactRepositoryRefStatus, ref)
+		}
+		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
+		assert.NoError(t, err)
+	})
 	t.Run("Default", func(t *testing.T) {
 		ctx := context.Background()
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
