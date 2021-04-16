@@ -24,8 +24,16 @@ func NewLintCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
+
 			ctx, apiClient := client.NewAPIClient()
-			lint.RunLint(ctx, apiClient, args, []string{wf.ClusterWorkflowTemplatePlural}, client.Namespace(), output, strict)
+			opts := lint.LintOptions{
+				Files:            args,
+				DefaultNamespace: client.Namespace(),
+				Strict:           strict,
+				Printer:          os.Stdout,
+			}
+
+			lint.RunLint(ctx, apiClient, []string{wf.ClusterWorkflowTemplatePlural}, output, false, opts)
 		},
 	}
 

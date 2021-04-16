@@ -215,7 +215,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         };
         const url = ProcessURL(link.url, object);
 
-        if ((window.event as MouseEvent).ctrlKey) {
+        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
             window.open(url, '_blank');
         } else {
             document.location.href = url;

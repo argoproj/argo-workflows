@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
 import {EventSource} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
+import {Links} from '../../shared/components/links';
 import {services} from '../../shared/services';
 import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 
@@ -99,6 +100,7 @@ export const EventSourceLogsViewer = ({
                             }}
                         />
                     )}
+                    <Links scope='event-source-logs' object={eventSource} />
                 </div>
             </div>
         </div>

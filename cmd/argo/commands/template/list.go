@@ -26,7 +26,10 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
+			if err != nil {
+				log.Fatal(err)
+			}
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = apiv1.NamespaceAll
