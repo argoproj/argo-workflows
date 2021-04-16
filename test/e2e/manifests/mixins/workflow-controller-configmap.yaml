@@ -11,7 +11,7 @@ data:
       podSpecPatch: |
         terminationGracePeriodSeconds: 3
   executor: |
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Never
     resources:
       requests:
         cpu: 0.1

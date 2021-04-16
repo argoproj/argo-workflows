@@ -1,0 +1,2681 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "pkg/apiclient/pipeline/pipeline.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/pipelines/{namespace}": {
+      "get": {
+        "operationId": "PipelineService_ListPipelines",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.labelSelector",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.fieldSelector",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.watch",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "listOptions.allowWatchBookmarks",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "listOptions.resourceVersion",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.resourceVersionMatch",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.timeoutSeconds",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "listOptions.limit",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "listOptions.continue",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PipelineService"
+        ]
+      }
+    },
+    "/api/v1/pipelines/{namespace}/{name}": {
+      "get": {
+        "operationId": "PipelineService_GetPipeline",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "getOptions.resourceVersion",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PipelineService"
+        ]
+      },
+      "delete": {
+        "operationId": "PipelineService_DeletePipeline",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pipeline.DeletePipelineResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.gracePeriodSeconds",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "deleteOptions.preconditions.uid",
+            "description": "Specifies the target UID.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.preconditions.resourceVersion",
+            "description": "Specifies the target ResourceVersion\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.orphanDependents",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "deleteOptions.propagationPolicy",
+            "description": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.dryRun",
+            "description": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "PipelineService"
+        ]
+      }
+    },
+    "/api/v1/pipelines/{namespace}/{name}/restart": {
+      "post": {
+        "operationId": "PipelineService_RestartPipeline",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pipeline.RestartPipelineResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PipelineService"
+        ]
+      }
+    },
+    "/api/v1/stream/pipelines/{namespace}": {
+      "get": {
+        "operationId": "PipelineService_WatchPipelines",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/pipeline.PipelineWatchEvent"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of pipeline.PipelineWatchEvent"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.labelSelector",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.fieldSelector",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.watch",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "listOptions.allowWatchBookmarks",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "listOptions.resourceVersion",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.resourceVersionMatch",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.timeoutSeconds",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "listOptions.limit",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "listOptions.continue",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PipelineService"
+        ]
+      }
+    },
+    "/api/v1/stream/pipelines/{namespace}/logs": {
+      "get": {
+        "operationId": "PipelineService_PipelineLogs",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/pipeline.LogEntry"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of pipeline.LogEntry"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "description": "optional - only return entries for this pipeline.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "stepName",
+            "description": "optional - only return entries for this step.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "podLogOptions.container",
+            "description": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "podLogOptions.follow",
+            "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "podLogOptions.previous",
+            "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "podLogOptions.sinceSeconds",
+            "description": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "podLogOptions.sinceTime.seconds",
+            "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "podLogOptions.sinceTime.nanos",
+            "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "podLogOptions.timestamps",
+            "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "podLogOptions.tailLines",
+            "description": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "podLogOptions.limitBytes",
+            "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "podLogOptions.insecureSkipTLSVerifyBackend",
+            "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "PipelineService"
+        ]
+      }
+    },
+    "/api/v1/stream/steps/{namespace}": {
+      "get": {
+        "operationId": "PipelineService_WatchSteps",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/pipeline.StepWatchEvent"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of pipeline.StepWatchEvent"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.labelSelector",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.fieldSelector",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.watch",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "listOptions.allowWatchBookmarks",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "listOptions.resourceVersion",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.resourceVersionMatch",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "listOptions.timeoutSeconds",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "listOptions.limit",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "listOptions.continue",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PipelineService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "volumeMounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.VolumeMount"
+          }
+        },
+        "in": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Interface"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string",
+          "description": "+kubebuilder:default=."
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Group": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "endOfGroup": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "storage": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Storage"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTP": {
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Interface": {
+      "type": "object",
+      "properties": {
+        "fifo": {
+          "type": "boolean"
+        },
+        "http": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTP"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        },
+        "url": {
+          "type": "string"
+        },
+        "topic": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "time": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "errors": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineStatus"
+        }
+      },
+      "title": "+kubebuilder:object:root=true\n+kubebuilder:resource:shortName=pl\n+kubebuilder:subresource:status\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineSpec": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec"
+          },
+          "title": "+patchStrategy=merge\n+patchMergeKey=name"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineStatus": {
+      "type": "object",
+      "properties": {
+        "phase": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Condition"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Replicas": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "integer",
+          "format": "int32",
+          "title": "+kubebuilder:default=1"
+        },
+        "max": {
+          "type": "integer",
+          "format": "int64",
+          "title": "this is both the min, and the initial value"
+        },
+        "ratio": {
+          "type": "integer",
+          "format": "int64",
+          "title": "takes precedence over min"
+        }
+      },
+      "title": "Used to calculate the number of replicas.\nmin(r.max, max(r.min, pending/ratio))\nExample:\nmin=1, max=4, ratio=100\npending=0, replicas=1\npending=100, replicas=1\npending=200, replicas=2\npending=300, replicas=3\npending=400, replicas=4\npending=500, replicas=4"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        },
+        "natsUrl": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "subjectPrefix": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sink": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        },
+        "stan": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
+        },
+        "kafka": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SinkStatus": {
+      "type": "object",
+      "properties": {
+        "lastMessage": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message"
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Source": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        },
+        "stan": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
+        },
+        "kafka": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus": {
+      "type": "object",
+      "properties": {
+        "lastMessage": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message"
+        },
+        "pending": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Step": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepStatus"
+        }
+      },
+      "title": "+kubebuilder:object:root=true\n+kubebuilder:subresource:status\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`\n+kubebuilder:printcolumn:name=\"Replicas\",type=string,JSONPath=`.status.replicas`"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        },
+        "container": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container"
+        },
+        "handler": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler"
+        },
+        "git": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git"
+        },
+        "filter": {
+          "type": "string"
+        },
+        "map": {
+          "type": "string"
+        },
+        "group": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Group"
+        },
+        "replicas": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Replicas"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Source"
+          },
+          "title": "+patchStrategy=merge\n+patchMergeKey=name"
+        },
+        "sinks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sink"
+          },
+          "title": "+patchStrategy=merge\n+patchMergeKey=name"
+        },
+        "restartPolicy": {
+          "type": "string",
+          "title": "+kubebuilder:default=OnFailure"
+        },
+        "terminator": {
+          "type": "boolean"
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.Volume"
+          },
+          "title": "+patchStrategy=merge\n+patchMergeKey=name"
+        },
+        "serviceAccountName": {
+          "type": "string",
+          "title": "+kubebuilder:default=pipeline-runner"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepStatus": {
+      "type": "object",
+      "properties": {
+        "phase": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "replicas": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "lastScaleTime": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "sourceStatuses": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus"
+          }
+        },
+        "sinkStatuses": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SinkStatus"
+          }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Storage": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "subPath": {
+          "type": "string",
+          "title": "volume name"
+        }
+      }
+    },
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        }
+      }
+    },
+    "grpc.gateway.runtime.StreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        }
+      }
+    },
+    "k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource": {
+      "type": "object",
+      "properties": {
+        "volumeID": {
+          "type": "string",
+          "title": "Unique ID of the persistent disk resource in AWS (Amazon EBS volume).\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type of the volume that you want to mount.\nTip: Ensure that the filesystem type is supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\nTODO: how do we prevent errors in the filesystem from compromising the machine\n+optional"
+        },
+        "partition": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The partition in the volume that you want to mount.\nIf omitted, the default is to mount by volume name.\nExamples: For volume /dev/sda1, you specify the partition as \"1\".\nSimilarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty).\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Specify \"true\" to force and set the ReadOnly property in VolumeMounts to \"true\".\nIf omitted, the default is \"false\".\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\n+optional"
+        }
+      },
+      "description": "Represents a Persistent Disk resource in AWS.\n\nAn AWS EBS disk must exist before mounting to a container. The disk\nmust also be in the same AWS zone as the kubelet. An AWS EBS disk\ncan only be mounted as read/write once. AWS EBS volumes support\nownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.AzureDiskVolumeSource": {
+      "type": "object",
+      "properties": {
+        "diskName": {
+          "type": "string",
+          "title": "The Name of the data disk in the blob storage"
+        },
+        "diskURI": {
+          "type": "string",
+          "title": "The URI the data disk in the blob storage"
+        },
+        "cachingMode": {
+          "type": "string",
+          "title": "Host Caching mode: None, Read Only, Read Write.\n+optional"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
+        },
+        "kind": {
+          "type": "string",
+          "title": "Expected values Shared: multiple blob disks per storage account  Dedicated: single blob disk per storage account  Managed: azure managed data disk (only in managed availability set). defaults to shared"
+        }
+      },
+      "description": "AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod."
+    },
+    "k8s.io.api.core.v1.AzureFileVolumeSource": {
+      "type": "object",
+      "properties": {
+        "secretName": {
+          "type": "string",
+          "title": "the name of secret that contains Azure Storage Account Name and Key"
+        },
+        "shareName": {
+          "type": "string",
+          "title": "Share Name"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
+        }
+      },
+      "description": "AzureFile represents an Azure File Service mount on the host and bind mount to the pod."
+    },
+    "k8s.io.api.core.v1.CSIVolumeSource": {
+      "type": "object",
+      "properties": {
+        "driver": {
+          "type": "string",
+          "description": "Driver is the name of the CSI driver that handles this volume.\nConsult with your admin for the correct name as registered in the cluster."
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount. Ex. \"ext4\", \"xfs\", \"ntfs\".\nIf not provided, the empty value is passed to the associated CSI driver\nwhich will determine the default filesystem to apply.\n+optional"
+        },
+        "volumeAttributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "VolumeAttributes stores driver-specific properties that are passed to the CSI\ndriver. Consult your driver's documentation for supported values.\n+optional"
+        },
+        "nodePublishSecretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "title": "NodePublishSecretRef is a reference to the secret object containing\nsensitive information to pass to the CSI driver to complete the CSI\nNodePublishVolume and NodeUnpublishVolume calls.\nThis field is optional, and  may be empty if no secret is required. If the\nsecret object contains more than one secret, all secret references are passed.\n+optional"
+        }
+      },
+      "title": "Represents a source location of a volume to mount, managed by an external CSI driver"
+    },
+    "k8s.io.api.core.v1.CephFSVolumeSource": {
+      "type": "object",
+      "properties": {
+        "monitors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required: Monitors is a collection of Ceph monitors\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it"
+        },
+        "path": {
+          "type": "string",
+          "title": "Optional: Used as the mounted root, rather than the full Ceph tree, default is /\n+optional"
+        },
+        "user": {
+          "type": "string",
+          "title": "Optional: User is the rados user name, default is admin\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+        },
+        "secretFile": {
+          "type": "string",
+          "title": "Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "title": "Optional: SecretRef is reference to the authentication secret for User, default is empty.\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+        }
+      },
+      "description": "Represents a Ceph Filesystem mount that lasts the lifetime of a pod\nCephfs volumes do not support ownership management or SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.CinderVolumeSource": {
+      "type": "object",
+      "properties": {
+        "volumeID": {
+          "type": "string",
+          "title": "volume id used to identify the volume in cinder.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "title": "Optional: points to a secret object containing parameters used to connect\nto OpenStack.\n+optional"
+        }
+      },
+      "description": "Represents a cinder volume resource in Openstack.\nA Cinder volume must exist before mounting to a container.\nThe volume must also be in the same region as the kubelet.\nCinder volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.ConfigMapProjection": {
+      "type": "object",
+      "properties": {
+        "localObjectReference": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+          },
+          "title": "If unspecified, each key-value pair in the Data field of the referenced\nConfigMap will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the ConfigMap,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
+        },
+        "optional": {
+          "type": "boolean",
+          "title": "Specify whether the ConfigMap or its keys must be defined\n+optional"
+        }
+      },
+      "description": "Adapts a ConfigMap into a projected volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a\nprojected volume as files using the keys in the Data field as the file names,\nunless the items element is populated with specific mappings of keys to paths.\nNote that this is identical to a configmap volume source without the default\nmode."
+    },
+    "k8s.io.api.core.v1.ConfigMapVolumeSource": {
+      "type": "object",
+      "properties": {
+        "localObjectReference": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+          },
+          "title": "If unspecified, each key-value pair in the Data field of the referenced\nConfigMap will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the ConfigMap,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
+        },
+        "defaultMode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Optional: mode bits used to set permissions on created files by default.\nMust be an octal value between 0000 and 0777 or a decimal value between 0 and 511.\nYAML accepts both octal and decimal values, JSON requires decimal values for mode bits.\nDefaults to 0644.\nDirectories within the path are not affected by this setting.\nThis might be in conflict with other options that affect the file\nmode, like fsGroup, and the result can be other mode bits set.\n+optional"
+        },
+        "optional": {
+          "type": "boolean",
+          "title": "Specify whether the ConfigMap or its keys must be defined\n+optional"
+        }
+      },
+      "description": "Adapts a ConfigMap into a volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a\nvolume as files using the keys in the Data field as the file names, unless\nthe items element is populated with specific mappings of keys to paths.\nConfigMap volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.DownwardAPIProjection": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIVolumeFile"
+          },
+          "title": "Items is a list of DownwardAPIVolume file\n+optional"
+        }
+      },
+      "description": "Represents downward API info for projecting into a projected volume.\nNote that this is identical to a downwardAPI volume source without the default\nmode."
+    },
+    "k8s.io.api.core.v1.DownwardAPIVolumeFile": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "title": "Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'"
+        },
+        "fieldRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ObjectFieldSelector",
+          "title": "Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.\n+optional"
+        },
+        "resourceFieldRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ResourceFieldSelector",
+          "title": "Selects a resource of the container: only resources limits and requests\n(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.\n+optional"
+        },
+        "mode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Optional: mode bits used to set permissions on this file, must be an octal value\nbetween 0000 and 0777 or a decimal value between 0 and 511.\nYAML accepts both octal and decimal values, JSON requires decimal values for mode bits.\nIf not specified, the volume defaultMode will be used.\nThis might be in conflict with other options that affect the file\nmode, like fsGroup, and the result can be other mode bits set.\n+optional"
+        }
+      },
+      "title": "DownwardAPIVolumeFile represents information to create the file containing the pod field"
+    },
+    "k8s.io.api.core.v1.DownwardAPIVolumeSource": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIVolumeFile"
+          },
+          "title": "Items is a list of downward API volume file\n+optional"
+        },
+        "defaultMode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Optional: mode bits to use on created files by default. Must be a\nOptional: mode bits used to set permissions on created files by default.\nMust be an octal value between 0000 and 0777 or a decimal value between 0 and 511.\nYAML accepts both octal and decimal values, JSON requires decimal values for mode bits.\nDefaults to 0644.\nDirectories within the path are not affected by this setting.\nThis might be in conflict with other options that affect the file\nmode, like fsGroup, and the result can be other mode bits set.\n+optional"
+        }
+      },
+      "description": "DownwardAPIVolumeSource represents a volume containing downward API info.\nDownward API volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.EmptyDirVolumeSource": {
+      "type": "object",
+      "properties": {
+        "medium": {
+          "type": "string",
+          "title": "What type of storage medium should back this directory.\nThe default is \"\" which means to use the node's default medium.\nMust be an empty string (default) or Memory.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir\n+optional"
+        },
+        "sizeLimit": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity",
+          "title": "Total amount of local storage required for this EmptyDir volume.\nThe size limit is also applicable for memory medium.\nThe maximum usage on memory medium EmptyDir would be the minimum value between\nthe SizeLimit specified here and the sum of memory limits of all containers in a pod.\nThe default is nil which means that the limit is undefined.\nMore info: http://kubernetes.io/docs/user-guide/volumes#emptydir\n+optional"
+        }
+      },
+      "description": "Represents an empty directory for a pod.\nEmpty directory volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.EphemeralVolumeSource": {
+      "type": "object",
+      "properties": {
+        "volumeClaimTemplate": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaimTemplate",
+          "description": "Will be used to create a stand-alone PVC to provision the volume.\nThe pod in which this EphemeralVolumeSource is embedded will be the\nowner of the PVC, i.e. the PVC will be deleted together with the\npod.  The name of the PVC will be `\u003cpod name\u003e-\u003cvolume name\u003e` where\n`\u003cvolume name\u003e` is the name from the `PodSpec.Volumes` array\nentry. Pod validation will reject the pod if the concatenated name\nis not valid for a PVC (for example, too long).\n\nAn existing PVC with that name that is not owned by the pod\nwill *not* be used for the pod to avoid using an unrelated\nvolume by mistake. Starting the pod is then blocked until\nthe unrelated PVC is removed. If such a pre-created PVC is\nmeant to be used by the pod, the PVC has to updated with an\nowner reference to the pod once the pod exists. Normally\nthis should not be necessary, but it may be useful when\nmanually reconstructing a broken cluster.\n\nThis field is read-only and no changes will be made by Kubernetes\nto the PVC after it has been created.\n\nRequired, must not be nil."
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional"
+        }
+      },
+      "description": "Represents an ephemeral volume that is handled by a normal storage driver."
+    },
+    "k8s.io.api.core.v1.FCVolumeSource": {
+      "type": "object",
+      "properties": {
+        "targetWWNs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Optional: FC target worldwide names (WWNs)\n+optional"
+        },
+        "lun": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Optional: FC target lun number\n+optional"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nTODO: how do we prevent errors in the filesystem from compromising the machine\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
+        },
+        "wwids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Optional: FC volume world wide identifiers (wwids)\nEither wwids or combination of targetWWNs and lun must be set, but not both simultaneously.\n+optional"
+        }
+      },
+      "description": "Represents a Fibre Channel volume.\nFibre Channel volumes can only be mounted as read/write once.\nFibre Channel volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.FlexVolumeSource": {
+      "type": "object",
+      "properties": {
+        "driver": {
+          "type": "string",
+          "description": "Driver is the name of the driver to use for this volume."
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\". The default filesystem depends on FlexVolume script.\n+optional"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "title": "Optional: SecretRef is reference to the secret object containing\nsensitive information to pass to the plugin scripts. This may be\nempty if no secret object is specified. If the secret object\ncontains more than one secret, all secrets are passed to the plugin\nscripts.\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Optional: Extra command options if any.\n+optional"
+        }
+      },
+      "description": "FlexVolume represents a generic volume resource that is\nprovisioned/attached using an exec based plugin."
+    },
+    "k8s.io.api.core.v1.FlockerVolumeSource": {
+      "type": "object",
+      "properties": {
+        "datasetName": {
+          "type": "string",
+          "title": "Name of the dataset stored as metadata -\u003e name on the dataset for Flocker\nshould be considered as deprecated\n+optional"
+        },
+        "datasetUUID": {
+          "type": "string",
+          "title": "UUID of the dataset. This is unique identifier of a Flocker dataset\n+optional"
+        }
+      },
+      "description": "Represents a Flocker volume mounted by the Flocker agent.\nOne and only one of datasetName and datasetUUID should be set.\nFlocker volumes do not support ownership management or SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.GCEPersistentDiskVolumeSource": {
+      "type": "object",
+      "properties": {
+        "pdName": {
+          "type": "string",
+          "title": "Unique name of the PD resource in GCE. Used to identify the disk in GCE.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type of the volume that you want to mount.\nTip: Ensure that the filesystem type is supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk\nTODO: how do we prevent errors in the filesystem from compromising the machine\n+optional"
+        },
+        "partition": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The partition in the volume that you want to mount.\nIf omitted, the default is to mount by volume name.\nExamples: For volume /dev/sda1, you specify the partition as \"1\".\nSimilarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty).\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "ReadOnly here will force the ReadOnly setting in VolumeMounts.\nDefaults to false.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk\n+optional"
+        }
+      },
+      "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must\nalso be in the same GCE project and zone as the kubelet. A GCE PD\ncan only be mounted as read/write once or read-only many times. GCE\nPDs support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.GitRepoVolumeSource": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string",
+          "title": "Repository URL"
+        },
+        "revision": {
+          "type": "string",
+          "title": "Commit hash for the specified revision.\n+optional"
+        },
+        "directory": {
+          "type": "string",
+          "title": "Target directory name.\nMust not contain or start with '..'.  If '.' is supplied, the volume directory will be the\ngit repository.  Otherwise, if specified, the volume will contain the git repository in\nthe subdirectory with the given name.\n+optional"
+        }
+      },
+      "description": "Represents a volume that is populated with the contents of a git repository.\nGit repo volumes do not support ownership management.\nGit repo volumes support SELinux relabeling.\n\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an\nEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir\ninto the Pod's container."
+    },
+    "k8s.io.api.core.v1.GlusterfsVolumeSource": {
+      "type": "object",
+      "properties": {
+        "endpoints": {
+          "type": "string",
+          "title": "EndpointsName is the endpoint name that details Glusterfs topology.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod"
+        },
+        "path": {
+          "type": "string",
+          "title": "Path is the Glusterfs volume path.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.\nDefaults to false.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod\n+optional"
+        }
+      },
+      "description": "Represents a Glusterfs mount that lasts the lifetime of a pod.\nGlusterfs volumes do not support ownership management or SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.HostPathVolumeSource": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "title": "Path of the directory on the host.\nIf the path is a symlink, it will follow the link to the real path.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath"
+        },
+        "type": {
+          "type": "string",
+          "title": "Type for HostPath Volume\nDefaults to \"\"\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath\n+optional"
+        }
+      },
+      "description": "Represents a host path mapped into a pod.\nHost path volumes do not support ownership management or SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.ISCSIVolumeSource": {
+      "type": "object",
+      "properties": {
+        "targetPortal": {
+          "type": "string",
+          "description": "iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port\nis other than default (typically TCP ports 860 and 3260)."
+        },
+        "iqn": {
+          "type": "string",
+          "description": "Target iSCSI Qualified Name."
+        },
+        "lun": {
+          "type": "integer",
+          "format": "int32",
+          "description": "iSCSI Target Lun number."
+        },
+        "iscsiInterface": {
+          "type": "string",
+          "title": "iSCSI Interface Name that uses an iSCSI transport.\nDefaults to 'default' (tcp).\n+optional"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type of the volume that you want to mount.\nTip: Ensure that the filesystem type is supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi\nTODO: how do we prevent errors in the filesystem from compromising the machine\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "ReadOnly here will force the ReadOnly setting in VolumeMounts.\nDefaults to false.\n+optional"
+        },
+        "portals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port\nis other than default (typically TCP ports 860 and 3260).\n+optional"
+        },
+        "chapAuthDiscovery": {
+          "type": "boolean",
+          "title": "whether support iSCSI Discovery CHAP authentication\n+optional"
+        },
+        "chapAuthSession": {
+          "type": "boolean",
+          "title": "whether support iSCSI Session CHAP authentication\n+optional"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "title": "CHAP Secret for iSCSI target and initiator authentication\n+optional"
+        },
+        "initiatorName": {
+          "type": "string",
+          "title": "Custom iSCSI Initiator Name.\nIf initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface\n\u003ctarget portal\u003e:\u003cvolume name\u003e will be created for the connection.\n+optional"
+        }
+      },
+      "description": "Represents an ISCSI disk.\nISCSI volumes can only be mounted as read/write once.\nISCSI volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.KeyToPath": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "The key to project."
+        },
+        "path": {
+          "type": "string",
+          "description": "The relative path of the file to map the key to.\nMay not be an absolute path.\nMay not contain the path element '..'.\nMay not start with the string '..'."
+        },
+        "mode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Optional: mode bits used to set permissions on this file.\nMust be an octal value between 0000 and 0777 or a decimal value between 0 and 511.\nYAML accepts both octal and decimal values, JSON requires decimal values for mode bits.\nIf not specified, the volume defaultMode will be used.\nThis might be in conflict with other options that affect the file\nmode, like fsGroup, and the result can be other mode bits set.\n+optional"
+        }
+      },
+      "description": "Maps a string key to a path within a volume."
+    },
+    "k8s.io.api.core.v1.LocalObjectReference": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names\nTODO: Add other useful fields. apiVersion, kind, uid?\n+optional"
+        }
+      },
+      "description": "LocalObjectReference contains enough information to let you locate the\nreferenced object inside the same namespace."
+    },
+    "k8s.io.api.core.v1.NFSVolumeSource": {
+      "type": "object",
+      "properties": {
+        "server": {
+          "type": "string",
+          "title": "Server is the hostname or IP address of the NFS server.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#nfs"
+        },
+        "path": {
+          "type": "string",
+          "title": "Path that is exported by the NFS server.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#nfs"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "ReadOnly here will force\nthe NFS export to be mounted with read-only permissions.\nDefaults to false.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#nfs\n+optional"
+        }
+      },
+      "description": "Represents an NFS mount that lasts the lifetime of a pod.\nNFS volumes do not support ownership management or SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.ObjectFieldSelector": {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "title": "Version of the schema the FieldPath is written in terms of, defaults to \"v1\".\n+optional"
+        },
+        "fieldPath": {
+          "type": "string",
+          "description": "Path of the field to select in the specified API version."
+        }
+      },
+      "description": "ObjectFieldSelector selects an APIVersioned field of an object."
+    },
+    "k8s.io.api.core.v1.PersistentVolumeClaimSpec": {
+      "type": "object",
+      "properties": {
+        "accessModes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "AccessModes contains the desired access modes the volume should have.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1\n+optional"
+        },
+        "selector": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "title": "A label query over volumes to consider for binding.\n+optional"
+        },
+        "resources": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ResourceRequirements",
+          "title": "Resources represents the minimum resources the volume should have.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources\n+optional"
+        },
+        "volumeName": {
+          "type": "string",
+          "title": "VolumeName is the binding reference to the PersistentVolume backing this claim.\n+optional"
+        },
+        "storageClassName": {
+          "type": "string",
+          "title": "Name of the StorageClass required by the claim.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1\n+optional"
+        },
+        "volumeMode": {
+          "type": "string",
+          "title": "volumeMode defines what type of volume is required by the claim.\nValue of Filesystem is implied when not included in claim spec.\n+optional"
+        },
+        "dataSource": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.TypedLocalObjectReference",
+          "title": "This field can be used to specify either:\n* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)\n* An existing PVC (PersistentVolumeClaim)\n* An existing custom resource that implements data population (Alpha)\nIn order to use custom resource types that implement data population,\nthe AnyVolumeDataSource feature gate must be enabled.\nIf the provisioner or an external controller can support the specified data source,\nit will create a new volume based on the contents of the specified data source.\n+optional"
+        }
+      },
+      "title": "PersistentVolumeClaimSpec describes the common attributes of storage devices\nand allows a Source for provider-specific attributes"
+    },
+    "k8s.io.api.core.v1.PersistentVolumeClaimTemplate": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+          "description": "May contain labels and annotations that will be copied into the PVC\nwhen creating it. No other fields are allowed and will be rejected during\nvalidation.\n\n+optional"
+        },
+        "spec": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaimSpec",
+          "description": "The specification for the PersistentVolumeClaim. The entire content is\ncopied unchanged into the PVC that gets created from this\ntemplate. The same fields as in a PersistentVolumeClaim\nare also valid here."
+        }
+      },
+      "description": "PersistentVolumeClaimTemplate is used to produce\nPersistentVolumeClaim objects as part of an EphemeralVolumeSource."
+    },
+    "k8s.io.api.core.v1.PersistentVolumeClaimVolumeSource": {
+      "type": "object",
+      "properties": {
+        "claimName": {
+          "type": "string",
+          "title": "ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Will force the ReadOnly setting in VolumeMounts.\nDefault false.\n+optional"
+        }
+      },
+      "description": "PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace.\nThis volume finds the bound PV and mounts that volume for the pod. A\nPersistentVolumeClaimVolumeSource is, essentially, a wrapper around another\ntype of volume that is owned by someone else (the system)."
+    },
+    "k8s.io.api.core.v1.PhotonPersistentDiskVolumeSource": {
+      "type": "object",
+      "properties": {
+        "pdID": {
+          "type": "string",
+          "title": "ID that identifies Photon Controller persistent disk"
+        },
+        "fsType": {
+          "type": "string",
+          "description": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified."
+        }
+      },
+      "description": "Represents a Photon Controller persistent disk resource."
+    },
+    "k8s.io.api.core.v1.PodLogOptions": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string",
+          "title": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional"
+        },
+        "follow": {
+          "type": "boolean",
+          "title": "Follow the log stream of the pod. Defaults to false.\n+optional"
+        },
+        "previous": {
+          "type": "boolean",
+          "title": "Return previous terminated container logs. Defaults to false.\n+optional"
+        },
+        "sinceSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
+        },
+        "sinceTime": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "title": "An RFC3339 timestamp from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
+        },
+        "timestamps": {
+          "type": "boolean",
+          "title": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional"
+        },
+        "tailLines": {
+          "type": "string",
+          "format": "int64",
+          "title": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional"
+        },
+        "limitBytes": {
+          "type": "string",
+          "format": "int64",
+          "title": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional"
+        },
+        "insecureSkipTLSVerifyBackend": {
+          "type": "boolean",
+          "title": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional"
+        }
+      },
+      "description": "PodLogOptions is the query options for a Pod's logs REST call."
+    },
+    "k8s.io.api.core.v1.PortworxVolumeSource": {
+      "type": "object",
+      "properties": {
+        "volumeID": {
+          "type": "string",
+          "title": "VolumeID uniquely identifies a Portworx volume"
+        },
+        "fsType": {
+          "type": "string",
+          "description": "FSType represents the filesystem type to mount\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\". Implicitly inferred to be \"ext4\" if unspecified."
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
+        }
+      },
+      "description": "PortworxVolumeSource represents a Portworx volume resource."
+    },
+    "k8s.io.api.core.v1.ProjectedVolumeSource": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.VolumeProjection"
+          },
+          "title": "list of volume projections\n+optional"
+        },
+        "defaultMode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Mode bits used to set permissions on created files by default.\nMust be an octal value between 0000 and 0777 or a decimal value between 0 and 511.\nYAML accepts both octal and decimal values, JSON requires decimal values for mode bits.\nDirectories within the path are not affected by this setting.\nThis might be in conflict with other options that affect the file\nmode, like fsGroup, and the result can be other mode bits set.\n+optional"
+        }
+      },
+      "title": "Represents a projected volume source"
+    },
+    "k8s.io.api.core.v1.QuobyteVolumeSource": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string",
+          "title": "Registry represents a single or multiple Quobyte Registry services\nspecified as a string as host:port pair (multiple entries are separated with commas)\nwhich acts as the central registry for volumes"
+        },
+        "volume": {
+          "type": "string",
+          "description": "Volume is a string that references an already created Quobyte volume by name."
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "ReadOnly here will force the Quobyte volume to be mounted with read-only permissions.\nDefaults to false.\n+optional"
+        },
+        "user": {
+          "type": "string",
+          "title": "User to map volume access to\nDefaults to serivceaccount user\n+optional"
+        },
+        "group": {
+          "type": "string",
+          "title": "Group to map volume access to\nDefault is no group\n+optional"
+        },
+        "tenant": {
+          "type": "string",
+          "title": "Tenant owning the given Quobyte volume in the Backend\nUsed with dynamically provisioned Quobyte volumes, value is set by the plugin\n+optional"
+        }
+      },
+      "description": "Represents a Quobyte mount that lasts the lifetime of a pod.\nQuobyte volumes do not support ownership management or SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.RBDVolumeSource": {
+      "type": "object",
+      "properties": {
+        "monitors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "A collection of Ceph monitors.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it"
+        },
+        "image": {
+          "type": "string",
+          "title": "The rados image name.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type of the volume that you want to mount.\nTip: Ensure that the filesystem type is supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#rbd\nTODO: how do we prevent errors in the filesystem from compromising the machine\n+optional"
+        },
+        "pool": {
+          "type": "string",
+          "title": "The rados pool name.\nDefault is rbd.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+        },
+        "user": {
+          "type": "string",
+          "title": "The rados user name.\nDefault is admin.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+        },
+        "keyring": {
+          "type": "string",
+          "title": "Keyring is the path to key ring for RBDUser.\nDefault is /etc/ceph/keyring.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "title": "SecretRef is name of the authentication secret for RBDUser. If provided\noverrides keyring.\nDefault is nil.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "ReadOnly here will force the ReadOnly setting in VolumeMounts.\nDefaults to false.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+        }
+      },
+      "description": "Represents a Rados Block Device mount that lasts the lifetime of a pod.\nRBD volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.ResourceFieldSelector": {
+      "type": "object",
+      "properties": {
+        "containerName": {
+          "type": "string",
+          "title": "Container name: required for volumes, optional for env vars\n+optional"
+        },
+        "resource": {
+          "type": "string",
+          "title": "Required: resource to select"
+        },
+        "divisor": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity",
+          "title": "Specifies the output format of the exposed resources, defaults to \"1\"\n+optional"
+        }
+      },
+      "title": "ResourceFieldSelector represents container resources (cpu, memory) and their output format"
+    },
+    "k8s.io.api.core.v1.ResourceRequirements": {
+      "type": "object",
+      "properties": {
+        "limits": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity"
+          },
+          "title": "Limits describes the maximum amount of compute resources allowed.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/\n+optional"
+        },
+        "requests": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity"
+          },
+          "title": "Requests describes the minimum amount of compute resources required.\nIf Requests is omitted for a container, it defaults to Limits if that is explicitly specified,\notherwise to an implementation-defined value.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/\n+optional"
+        }
+      },
+      "description": "ResourceRequirements describes the compute resource requirements."
+    },
+    "k8s.io.api.core.v1.ScaleIOVolumeSource": {
+      "type": "object",
+      "properties": {
+        "gateway": {
+          "type": "string",
+          "description": "The host address of the ScaleIO API Gateway."
+        },
+        "system": {
+          "type": "string",
+          "description": "The name of the storage system as configured in ScaleIO."
+        },
+        "secretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "description": "SecretRef references to the secret for ScaleIO user and other\nsensitive information. If this is not provided, Login operation will fail."
+        },
+        "sslEnabled": {
+          "type": "boolean",
+          "title": "Flag to enable/disable SSL communication with Gateway, default false\n+optional"
+        },
+        "protectionDomain": {
+          "type": "string",
+          "title": "The name of the ScaleIO Protection Domain for the configured storage.\n+optional"
+        },
+        "storagePool": {
+          "type": "string",
+          "title": "The ScaleIO Storage Pool associated with the protection domain.\n+optional"
+        },
+        "storageMode": {
+          "type": "string",
+          "title": "Indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.\nDefault is ThinProvisioned.\n+optional"
+        },
+        "volumeName": {
+          "type": "string",
+          "description": "The name of a volume already created in the ScaleIO system\nthat is associated with this volume source."
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\".\nDefault is \"xfs\".\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
+        }
+      },
+      "title": "ScaleIOVolumeSource represents a persistent ScaleIO volume"
+    },
+    "k8s.io.api.core.v1.SecretProjection": {
+      "type": "object",
+      "properties": {
+        "localObjectReference": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+          },
+          "title": "If unspecified, each key-value pair in the Data field of the referenced\nSecret will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the Secret,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
+        },
+        "optional": {
+          "type": "boolean",
+          "title": "Specify whether the Secret or its key must be defined\n+optional"
+        }
+      },
+      "description": "Adapts a secret into a projected volume.\n\nThe contents of the target Secret's Data field will be presented in a\nprojected volume as files using the keys in the Data field as the file names.\nNote that this is identical to a secret volume source without the default\nmode."
+    },
+    "k8s.io.api.core.v1.SecretVolumeSource": {
+      "type": "object",
+      "properties": {
+        "secretName": {
+          "type": "string",
+          "title": "Name of the secret in the pod's namespace to use.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#secret\n+optional"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+          },
+          "title": "If unspecified, each key-value pair in the Data field of the referenced\nSecret will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the Secret,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
+        },
+        "defaultMode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Optional: mode bits used to set permissions on created files by default.\nMust be an octal value between 0000 and 0777 or a decimal value between 0 and 511.\nYAML accepts both octal and decimal values, JSON requires decimal values\nfor mode bits. Defaults to 0644.\nDirectories within the path are not affected by this setting.\nThis might be in conflict with other options that affect the file\nmode, like fsGroup, and the result can be other mode bits set.\n+optional"
+        },
+        "optional": {
+          "type": "boolean",
+          "title": "Specify whether the Secret or its keys must be defined\n+optional"
+        }
+      },
+      "description": "Adapts a Secret into a volume.\n\nThe contents of the target Secret's Data field will be presented in a volume\nas files using the keys in the Data field as the file names.\nSecret volumes support ownership management and SELinux relabeling."
+    },
+    "k8s.io.api.core.v1.ServiceAccountTokenProjection": {
+      "type": "object",
+      "properties": {
+        "audience": {
+          "type": "string",
+          "title": "Audience is the intended audience of the token. A recipient of a token\nmust identify itself with an identifier specified in the audience of the\ntoken, and otherwise should reject the token. The audience defaults to the\nidentifier of the apiserver.\n+optional"
+        },
+        "expirationSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "ExpirationSeconds is the requested duration of validity of the service\naccount token. As the token approaches expiration, the kubelet volume\nplugin will proactively rotate the service account token. The kubelet will\nstart trying to rotate the token if the token is older than 80 percent of\nits time to live or if the token is older than 24 hours.Defaults to 1 hour\nand must be at least 10 minutes.\n+optional"
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is the path relative to the mount point of the file to project the\ntoken into."
+        }
+      },
+      "description": "ServiceAccountTokenProjection represents a projected service account token\nvolume. This projection can be used to insert a service account token into\nthe pods runtime filesystem for use against APIs (Kubernetes API Server or\notherwise)."
+    },
+    "k8s.io.api.core.v1.StorageOSVolumeSource": {
+      "type": "object",
+      "properties": {
+        "volumeName": {
+          "type": "string",
+          "description": "VolumeName is the human-readable name of the StorageOS volume.  Volume\nnames are only unique within a namespace."
+        },
+        "volumeNamespace": {
+          "type": "string",
+          "title": "VolumeNamespace specifies the scope of the volume within StorageOS.  If no\nnamespace is specified then the Pod's namespace will be used.  This allows the\nKubernetes name scoping to be mirrored within StorageOS for tighter integration.\nSet VolumeName to any name to override the default behaviour.\nSet to \"default\" if you are not using namespaces within StorageOS.\nNamespaces that do not pre-exist within StorageOS will be created.\n+optional"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "title": "SecretRef specifies the secret to use for obtaining the StorageOS API\ncredentials.  If not specified, default values will be attempted.\n+optional"
+        }
+      },
+      "description": "Represents a StorageOS persistent volume resource."
+    },
+    "k8s.io.api.core.v1.TypedLocalObjectReference": {
+      "type": "object",
+      "properties": {
+        "apiGroup": {
+          "type": "string",
+          "title": "APIGroup is the group for the resource being referenced.\nIf APIGroup is not specified, the specified Kind must be in the core API group.\nFor any other third-party types, APIGroup is required.\n+optional"
+        },
+        "kind": {
+          "type": "string",
+          "title": "Kind is the type of resource being referenced"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the name of resource being referenced"
+        }
+      },
+      "description": "TypedLocalObjectReference contains enough information to let you locate the\ntyped referenced object inside the same namespace."
+    },
+    "k8s.io.api.core.v1.Volume": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Volume's name.\nMust be a DNS_LABEL and unique within the pod.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
+        },
+        "volumeSource": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.VolumeSource",
+          "description": "VolumeSource represents the location and type of the mounted volume.\nIf not specified, the Volume is implied to be an EmptyDir.\nThis implied behavior is deprecated and will be removed in a future version."
+        }
+      },
+      "description": "Volume represents a named volume in a pod that may be accessed by any container in the pod."
+    },
+    "k8s.io.api.core.v1.VolumeMount": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "This must match the Name of a Volume."
+        },
+        "readOnly": {
+          "type": "boolean",
+          "title": "Mounted read-only if true, read-write otherwise (false or unspecified).\nDefaults to false.\n+optional"
+        },
+        "mountPath": {
+          "type": "string",
+          "description": "Path within the container at which the volume should be mounted.  Must\nnot contain ':'."
+        },
+        "subPath": {
+          "type": "string",
+          "title": "Path within the volume from which the container's volume should be mounted.\nDefaults to \"\" (volume's root).\n+optional"
+        },
+        "mountPropagation": {
+          "type": "string",
+          "title": "mountPropagation determines how mounts are propagated from the host\nto container and the other way around.\nWhen not set, MountPropagationNone is used.\nThis field is beta in 1.10.\n+optional"
+        },
+        "subPathExpr": {
+          "type": "string",
+          "title": "Expanded path within the volume from which the container's volume should be mounted.\nBehaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.\nDefaults to \"\" (volume's root).\nSubPathExpr and SubPath are mutually exclusive.\n+optional"
+        }
+      },
+      "description": "VolumeMount describes a mounting of a Volume within a container."
+    },
+    "k8s.io.api.core.v1.VolumeProjection": {
+      "type": "object",
+      "properties": {
+        "secret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretProjection",
+          "title": "information about the secret data to project\n+optional"
+        },
+        "downwardAPI": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIProjection",
+          "title": "information about the downwardAPI data to project\n+optional"
+        },
+        "configMap": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapProjection",
+          "title": "information about the configMap data to project\n+optional"
+        },
+        "serviceAccountToken": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ServiceAccountTokenProjection",
+          "title": "information about the serviceAccountToken data to project\n+optional"
+        }
+      },
+      "title": "Projection that may be projected along with other supported volume types"
+    },
+    "k8s.io.api.core.v1.VolumeSource": {
+      "type": "object",
+      "properties": {
+        "hostPath": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.HostPathVolumeSource",
+          "title": "HostPath represents a pre-existing file or directory on the host\nmachine that is directly exposed to the container. This is generally\nused for system agents or other privileged things that are allowed\nto see the host machine. Most containers will NOT need this.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath\n---\nTODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not\nmount host directories as read/write.\n+optional"
+        },
+        "emptyDir": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.EmptyDirVolumeSource",
+          "title": "EmptyDir represents a temporary directory that shares a pod's lifetime.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir\n+optional"
+        },
+        "gcePersistentDisk": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.GCEPersistentDiskVolumeSource",
+          "title": "GCEPersistentDisk represents a GCE Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk\n+optional"
+        },
+        "awsElasticBlockStore": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource",
+          "title": "AWSElasticBlockStore represents an AWS Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\n+optional"
+        },
+        "gitRepo": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.GitRepoVolumeSource",
+          "title": "GitRepo represents a git repository at a particular revision.\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an\nEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir\ninto the Pod's container.\n+optional"
+        },
+        "secret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretVolumeSource",
+          "title": "Secret represents a secret that should populate this volume.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#secret\n+optional"
+        },
+        "nfs": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.NFSVolumeSource",
+          "title": "NFS represents an NFS mount on the host that shares a pod's lifetime\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#nfs\n+optional"
+        },
+        "iscsi": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ISCSIVolumeSource",
+          "title": "ISCSI represents an ISCSI Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://examples.k8s.io/volumes/iscsi/README.md\n+optional"
+        },
+        "glusterfs": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.GlusterfsVolumeSource",
+          "title": "Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md\n+optional"
+        },
+        "persistentVolumeClaim": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaimVolumeSource",
+          "title": "PersistentVolumeClaimVolumeSource represents a reference to a\nPersistentVolumeClaim in the same namespace.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional"
+        },
+        "rbd": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.RBDVolumeSource",
+          "title": "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.\nMore info: https://examples.k8s.io/volumes/rbd/README.md\n+optional"
+        },
+        "flexVolume": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.FlexVolumeSource",
+          "title": "FlexVolume represents a generic volume resource that is\nprovisioned/attached using an exec based plugin.\n+optional"
+        },
+        "cinder": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.CinderVolumeSource",
+          "title": "Cinder represents a cinder volume attached and mounted on kubelets host machine.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
+        },
+        "cephfs": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.CephFSVolumeSource",
+          "title": "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime\n+optional"
+        },
+        "flocker": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.FlockerVolumeSource",
+          "title": "Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running\n+optional"
+        },
+        "downwardAPI": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIVolumeSource",
+          "title": "DownwardAPI represents downward API about the pod that should populate this volume\n+optional"
+        },
+        "fc": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.FCVolumeSource",
+          "title": "FC represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.\n+optional"
+        },
+        "azureFile": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.AzureFileVolumeSource",
+          "title": "AzureFile represents an Azure File Service mount on the host and bind mount to the pod.\n+optional"
+        },
+        "configMap": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapVolumeSource",
+          "title": "ConfigMap represents a configMap that should populate this volume\n+optional"
+        },
+        "vsphereVolume": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.VsphereVirtualDiskVolumeSource",
+          "title": "VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine\n+optional"
+        },
+        "quobyte": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.QuobyteVolumeSource",
+          "title": "Quobyte represents a Quobyte mount on the host that shares a pod's lifetime\n+optional"
+        },
+        "azureDisk": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.AzureDiskVolumeSource",
+          "title": "AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.\n+optional"
+        },
+        "photonPersistentDisk": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.PhotonPersistentDiskVolumeSource",
+          "title": "PhotonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine"
+        },
+        "projected": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ProjectedVolumeSource",
+          "title": "Items for all in one resources secrets, configmaps, and downward API"
+        },
+        "portworxVolume": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.PortworxVolumeSource",
+          "title": "PortworxVolume represents a portworx volume attached and mounted on kubelets host machine\n+optional"
+        },
+        "scaleIO": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ScaleIOVolumeSource",
+          "title": "ScaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.\n+optional"
+        },
+        "storageos": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.StorageOSVolumeSource",
+          "title": "StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.\n+optional"
+        },
+        "csi": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.CSIVolumeSource",
+          "title": "CSI (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).\n+optional"
+        },
+        "ephemeral": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.EphemeralVolumeSource",
+          "description": "Ephemeral represents a volume that is handled by a cluster storage driver (Alpha feature).\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional"
+        }
+      },
+      "description": "Represents the source of a volume to mount.\nOnly one of its members may be specified."
+    },
+    "k8s.io.api.core.v1.VsphereVirtualDiskVolumeSource": {
+      "type": "object",
+      "properties": {
+        "volumePath": {
+          "type": "string",
+          "title": "Path that identifies vSphere volume vmdk"
+        },
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\n+optional"
+        },
+        "storagePolicyName": {
+          "type": "string",
+          "title": "Storage Policy Based Management (SPBM) profile name.\n+optional"
+        },
+        "storagePolicyID": {
+          "type": "string",
+          "title": "Storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.\n+optional"
+        }
+      },
+      "description": "Represents a vSphere volume resource."
+    },
+    "k8s.io.apimachinery.pkg.api.resource.Quantity": {
+      "type": "object",
+      "properties": {
+        "string": {
+          "type": "string"
+        }
+      },
+      "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true"
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.Condition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "type of condition in CamelCase or in foo.example.com/CamelCase.\n---\nMany .condition.type values are consistent across resources like Available, but because arbitrary conditions can be\nuseful (see .node.status.conditions), the ability to deconflict is important.\nThe regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$`\n+kubebuilder:validation:MaxLength=316"
+        },
+        "status": {
+          "type": "string",
+          "title": "status of the condition, one of True, False, Unknown.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Enum=True;False;Unknown"
+        },
+        "observedGeneration": {
+          "type": "string",
+          "format": "int64",
+          "title": "observedGeneration represents the .metadata.generation that the condition was set based upon.\nFor instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date\nwith respect to the current state of the instance.\n+optional\n+kubebuilder:validation:Minimum=0"
+        },
+        "lastTransitionTime": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "title": "lastTransitionTime is the last time the condition transitioned from one status to another.\nThis should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Type=string\n+kubebuilder:validation:Format=date-time"
+        },
+        "reason": {
+          "type": "string",
+          "title": "reason contains a programmatic identifier indicating the reason for the condition's last transition.\nProducers of specific condition types may define expected values and meanings for this field,\nand whether the values are considered a guaranteed API.\nThe value should be a CamelCase string.\nThis field may not be empty.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=1024\n+kubebuilder:validation:MinLength=1\n+kubebuilder:validation:Pattern=`^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$`"
+        },
+        "message": {
+          "type": "string",
+          "title": "message is a human readable message indicating details about the transition.\nThis may be an empty string.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=32768"
+        }
+      },
+      "description": "// other fields\n}",
+      "title": "Condition contains details for one aspect of the current state of this API Resource.\n---\nThis struct is intended for direct use as an array at the field path .status.conditions.  For example,\ntype FooStatus struct{\n    // Represents the observations of a foo's current state.\n    // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\"\n    // +patchMergeKey=type\n    // +patchStrategy=merge\n    // +listType=map\n    // +listMapKey=type\n    Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`"
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions": {
+      "type": "object",
+      "properties": {
+        "gracePeriodSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional"
+        },
+        "preconditions": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Preconditions",
+          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+k8s:conversion-gen=false\n+optional"
+        },
+        "orphanDependents": {
+          "type": "boolean",
+          "title": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional"
+        },
+        "propagationPolicy": {
+          "type": "string",
+          "title": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional"
+        },
+        "dryRun": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional"
+        }
+      },
+      "description": "DeleteOptions may be provided when deleting an API object."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.FieldsV1": {
+      "type": "object",
+      "properties": {
+        "Raw": {
+          "type": "string",
+          "format": "byte",
+          "description": "Raw is the underlying serialization of this object."
+        }
+      },
+      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff\n+protobuf.options.(gogoproto.goproto_stringer)=false"
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions": {
+      "type": "object",
+      "properties": {
+        "resourceVersion": {
+          "type": "string",
+          "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional"
+        }
+      },
+      "description": "GetOptions is the standard query options to the standard REST get call."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector": {
+      "type": "object",
+      "properties": {
+        "matchLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels\nmap is equivalent to an element of matchExpressions, whose key field is \"key\", the\noperator is \"In\", and the values array contains only \"value\". The requirements are ANDed.\n+optional"
+        },
+        "matchExpressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement"
+          },
+          "title": "matchExpressions is a list of label selector requirements. The requirements are ANDed.\n+optional"
+        }
+      },
+      "title": "A label selector is a label query over a set of resources. The result of matchLabels and\nmatchExpressions are ANDed. An empty label selector matches all objects. A null\nlabel selector matches no objects.\n+structType=atomic"
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "key is the label key that the selector applies to.\n+patchMergeKey=key\n+patchStrategy=merge"
+        },
+        "operator": {
+          "type": "string",
+          "description": "operator represents a key's relationship to a set of values.\nValid operators are In, NotIn, Exists and DoesNotExist."
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "values is an array of string values. If the operator is In or NotIn,\nthe values array must be non-empty. If the operator is Exists or DoesNotExist,\nthe values array must be empty. This array is replaced during a strategic\nmerge patch.\n+optional"
+        }
+      },
+      "description": "A label selector requirement is a selector that contains values, a key, and an operator that\nrelates the key and values."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta": {
+      "type": "object",
+      "properties": {
+        "selfLink": {
+          "type": "string",
+          "description": "selfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "String that identifies the server's internal version of this object that\ncan be used by clients to determine when objects have changed.\nValue must be treated as opaque by clients and passed unmodified back to the server.\nPopulated by the system.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
+        },
+        "continue": {
+          "type": "string",
+          "description": "continue may be set if the user set a limit on the number of items returned, and indicates that\nthe server has more data available. The value is opaque and may be used to issue another request\nto the endpoint that served this list to retrieve the next set of available objects. Continuing a\nconsistent list may not be possible if the server configuration has changed or more than a few\nminutes have passed. The resourceVersion field returned when using this continue value will be\nidentical to the value in the first response, unless you have received this token from an error\nmessage."
+        },
+        "remainingItemCount": {
+          "type": "string",
+          "format": "int64",
+          "title": "remainingItemCount is the number of subsequent items in the list which are not included in this\nlist response. If the list request contained label or field selectors, then the number of\nremaining items is unknown and the field will be left unset and omitted during serialization.\nIf the list is complete (either because it is not chunking or because this is the last chunk),\nthen there are no more remaining items and this field will be left unset and omitted during\nserialization.\nServers older than v1.15 do not set this field.\nThe intended use of the remainingItemCount is *estimating* the size of a collection. Clients\nshould not rely on the remainingItemCount to be set or to be exact.\n+optional"
+        }
+      },
+      "description": "ListMeta describes metadata that synthetic resources must have, including lists and\nvarious status objects. A resource may have only one of {ObjectMeta, ListMeta}."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions": {
+      "type": "object",
+      "properties": {
+        "labelSelector": {
+          "type": "string",
+          "title": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional"
+        },
+        "fieldSelector": {
+          "type": "string",
+          "title": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional"
+        },
+        "watch": {
+          "type": "boolean",
+          "title": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional"
+        },
+        "allowWatchBookmarks": {
+          "type": "boolean",
+          "title": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional"
+        },
+        "resourceVersionMatch": {
+          "type": "string",
+          "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional"
+        },
+        "timeoutSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional"
+        },
+        "limit": {
+          "type": "string",
+          "format": "int64",
+          "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned."
+        },
+        "continue": {
+          "type": "string",
+          "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications."
+        }
+      },
+      "description": "ListOptions is the query options to a standard REST list call."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry": {
+      "type": "object",
+      "properties": {
+        "manager": {
+          "type": "string",
+          "description": "Manager is an identifier of the workflow managing these fields."
+        },
+        "operation": {
+          "type": "string",
+          "description": "Operation is the type of operation which lead to this ManagedFieldsEntry being created.\nThe only valid values for this field are 'Apply' and 'Update'."
+        },
+        "apiVersion": {
+          "type": "string",
+          "description": "APIVersion defines the version of this resource that this field set\napplies to. The format is \"group/version\" just like the top-level\nAPIVersion field. It is necessary to track the version of a field\nset because it cannot be automatically converted."
+        },
+        "time": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "title": "Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'\n+optional"
+        },
+        "fieldsType": {
+          "type": "string",
+          "title": "FieldsType is the discriminator for the different fields format and version.\nThere is currently only one possible value: \"FieldsV1\""
+        },
+        "fieldsV1": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.FieldsV1",
+          "title": "FieldsV1 holds the first JSON version format as described in the \"FieldsV1\" type.\n+optional"
+        }
+      },
+      "description": "ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource\nthat the fieldset applies to."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional"
+        },
+        "generateName": {
+          "type": "string",
+          "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/namespaces\n+optional"
+        },
+        "selfLink": {
+          "type": "string",
+          "description": "SelfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional"
+        },
+        "uid": {
+          "type": "string",
+          "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
+        },
+        "generation": {
+          "type": "string",
+          "format": "int64",
+          "title": "A sequence number representing a specific generation of the desired state.\nPopulated by the system. Read-only.\n+optional"
+        },
+        "creationTimestamp": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
+        },
+        "deletionTimestamp": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
+        },
+        "deletionGracePeriodSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Number of seconds allowed for this object to gracefully terminate before\nit will be removed from the system. Only set when deletionTimestamp is also set.\nMay only be shortened.\nRead-only.\n+optional"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels\n+optional"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations\n+optional"
+        },
+        "ownerReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference"
+          },
+          "title": "List of objects depended by this object. If ALL objects in the list have\nbeen deleted, this object will be garbage collected. If this object is managed by a controller,\nthen an entry in this list will point to this controller, with the controller field set to true.\nThere cannot be more than one managing controller.\n+optional\n+patchMergeKey=uid\n+patchStrategy=merge"
+        },
+        "finalizers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Must be empty before the object is deleted from the registry. Each entry\nis an identifier for the responsible component that will remove the entry\nfrom the list. If the deletionTimestamp of the object is non-nil, entries\nin this list can only be removed.\nFinalizers may be processed and removed in any order.  Order is NOT enforced\nbecause it introduces significant risk of stuck finalizers.\nfinalizers is a shared field, any actor with permission can reorder it.\nIf the finalizer list is processed in order, then this can lead to a situation\nin which the component responsible for the first finalizer in the list is\nwaiting for a signal (field value, external system, or other) produced by a\ncomponent responsible for a finalizer later in the list, resulting in a deadlock.\nWithout enforced ordering finalizers are free to order amongst themselves and\nare not vulnerable to ordering changes in the list.\n+optional\n+patchStrategy=merge"
+        },
+        "clusterName": {
+          "type": "string",
+          "title": "The name of the cluster which the object belongs to.\nThis is used to distinguish resources with same name and namespace in different clusters.\nThis field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.\n+optional"
+        },
+        "managedFields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry"
+          },
+          "description": "ManagedFields maps workflow-id and version to the set of fields\nthat are managed by that workflow. This is mostly for internal\nhousekeeping, and users typically shouldn't need to set or\nunderstand this field. A workflow can be the user's name, a\ncontroller's name, or the name of a specific apply path like\n\"ci-cd\". The set of fields is always in the version that the\nworkflow used when modifying the object.\n\n+optional"
+        }
+      },
+      "description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects\nusers must create."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference": {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "description": "API version of the referent."
+        },
+        "kind": {
+          "type": "string",
+          "title": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names"
+        },
+        "uid": {
+          "type": "string",
+          "title": "UID of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids"
+        },
+        "controller": {
+          "type": "boolean",
+          "title": "If true, this reference points to the managing controller.\n+optional"
+        },
+        "blockOwnerDeletion": {
+          "type": "boolean",
+          "title": "If true, AND if the owner has the \"foregroundDeletion\" finalizer, then\nthe owner cannot be deleted from the key-value store until this\nreference is removed.\nDefaults to false.\nTo set this field, a user needs \"delete\" permission of the owner,\notherwise 422 (Unprocessable Entity) will be returned.\n+optional"
+        }
+      },
+      "description": "OwnerReference contains enough information to let you identify an owning\nobject. An owning object must be in the same namespace as the dependent, or\nbe cluster-scoped, so there is no namespace field."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.Preconditions": {
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "title": "Specifies the target UID.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "Specifies the target ResourceVersion\n+optional"
+        }
+      },
+      "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out."
+    },
+    "k8s.io.apimachinery.pkg.apis.meta.v1.Time": {
+      "type": "object",
+      "properties": {
+        "seconds": {
+          "type": "string",
+          "format": "int64",
+          "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive."
+        },
+        "nanos": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context."
+        }
+      },
+      "description": "Time is a wrapper around time.Time which supports correct\nmarshaling to YAML and JSON.  Wrappers are provided for many\nof the factory methods that the time package offers.\n\n+protobuf.options.marshal=false\n+protobuf.as=Timestamp\n+protobuf.options.(gogoproto.goproto_stringer)=false"
+    },
+    "pipeline.DeletePipelineResponse": {
+      "type": "object"
+    },
+    "pipeline.LogEntry": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "pipelineName": {
+          "type": "string"
+        },
+        "stepName": {
+          "type": "string"
+        },
+        "time": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "msg": {
+          "type": "string"
+        }
+      },
+      "title": "structured log entry"
+    },
+    "pipeline.PipelineWatchEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "object": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline"
+        }
+      }
+    },
+    "pipeline.RestartPipelineResponse": {
+      "type": "object"
+    },
+    "pipeline.StepWatchEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "object": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Step"
+        }
+      }
+    }
+  }
+}

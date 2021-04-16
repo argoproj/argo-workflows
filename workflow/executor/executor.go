@@ -1089,10 +1089,10 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 			sidecarNames = append(sidecarNames, n)
 		}
 	}
+	log.Infof("Killing sidecars %q", sidecarNames)
 	if len(sidecarNames) == 0 {
 		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
 	}
-	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }
