@@ -3163,7 +3163,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
-|`hooks`|[`LifecycleHooks`](#lifecyclehooks)|Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template|
 |`name`|`string`|Name of the step|
 |~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use LifecycleHook.template instead.|
 |`template`|`string`|Template is the name of the template to execute as the step|
@@ -3808,7 +3808,7 @@ DAGTask represents a node in the graph during DAG execution
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
 |`depends`|`string`|Depends are name of other targets which this depends on|
-|`hooks`|[`LifecycleHooks`](#lifecyclehooks)|Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template|
 |`name`|`string`|Name is the name of the target|
 |~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use LifecycleHook.template instead.|
 |`template`|`string`|Name of template to execute|
@@ -3945,7 +3945,7 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 |`error`|`boolean`|_No description available_|
 |`failed`|`boolean`|_No description available_|
 
-## LifecycleHooks
+## LifecycleHook
 
 _No description available_
 
@@ -3961,7 +3961,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`exit`|[`LifecycleHook`](#lifecyclehook)|Exit hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template|
+|`arguments`|[`Arguments`](#arguments)|_No description available_|
+|`template`|`string`|_No description available_|
 
 ## Item
 
@@ -4152,25 +4153,6 @@ ArtifactPaths expands a step from a collection of artifacts
 |`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 |`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
-
-## LifecycleHook
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
-
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`arguments`|[`Arguments`](#arguments)|_No description available_|
-|`template`|`string`|_No description available_|
 
 # External Fields
 

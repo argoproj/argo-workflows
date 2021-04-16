@@ -349,7 +349,7 @@ message DAGTask {
 
   // Hooks hold exit hook which is invoked at the end of the
   // workflow, irrespective of the success, failure, or error status of the primary template
-  optional LifecycleHooks hooks = 13;
+  map<string, LifecycleHook> hooks = 13;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -554,12 +554,6 @@ message LifecycleHook {
   optional string template = 1;
 
   optional Arguments arguments = 2;
-}
-
-message LifecycleHooks {
-  // Exit hold the template and arguments which is invoked at the end of the
-  // workflow, irrespective of the success, failure, or error status of the primary template
-  optional LifecycleHook exit = 1;
 }
 
 // A link to another app.
@@ -1636,7 +1630,7 @@ message WorkflowStep {
 
   // Hooks holds exit hook which is invoked at the end of the
   // template, irrespective of the success, failure, or error status of the primary template
-  optional LifecycleHooks hooks = 12;
+  map<string, LifecycleHook> hooks = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

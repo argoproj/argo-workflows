@@ -836,8 +836,8 @@ func TestDAGTask_GetExitTemplate(t *testing.T) {
 		},
 	}
 	task := DAGTask{
-		Hooks: &LifecycleHooks{
-			Exit: &LifecycleHook{
+		Hooks: map[LifecycleEvent]LifecycleHook{
+			ExitLifecycleEvent: LifecycleHook{
 				Template:  "test",
 				Arguments: args,
 			},
@@ -864,8 +864,8 @@ func TestStep_GetExitTemplate(t *testing.T) {
 		},
 	}
 	task := WorkflowStep{
-		Hooks: &LifecycleHooks{
-			Exit: &LifecycleHook{
+		Hooks: map[LifecycleEvent]LifecycleHook{
+			ExitLifecycleEvent: LifecycleHook{
 				Template:  "test",
 				Arguments: args,
 			},

@@ -1145,14 +1145,27 @@ type WorkflowStep struct {
 
 	// Hooks holds exit hook which is invoked at the end of the
 	// template, irrespective of the success, failure, or error status of the primary template
-	Hooks *LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
 }
 
-type LifecycleHooks struct {
-	// Exit hold the template and arguments which is invoked at the end of the
-	// workflow, irrespective of the success, failure, or error status of the primary template
-	Exit *LifecycleHook `json:"exit," protobuf:"bytes,1,opt,name=exit"`
+type LifecycleEvent string
+
+const (
+	ExitLifecycleEvent = "exit"
+)
+
+type LifecycleHooks map[LifecycleEvent]LifecycleHook
+
+func (lch LifecycleHooks) GetExitHook() *LifecycleHook {
+	hook := lch[ExitLifecycleEvent]
+	return &hook
 }
+
+//type LifecycleHooks struct {
+//	// Exit hold the template and arguments which is invoked at the end of the
+//	// workflow, irrespective of the success, failure, or error status of the primary template
+//	Exit *LifecycleHook `json:"exit," protobuf:"bytes,1,opt,name=exit"`
+//}
 
 type LifecycleHook struct {
 	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
@@ -1162,17 +1175,17 @@ type LifecycleHook struct {
 var _ TemplateReferenceHolder = &WorkflowStep{}
 
 func (step *WorkflowStep) HasExitHook() bool {
-	return step.Hooks != nil && step.Hooks.Exit != nil
+	return (step.Hooks != nil && step.Hooks.GetExitHook() != nil) || step.OnExit != ""
 }
 
 func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
-	if step.Hooks == nil && step.OnExit == "" {
+	if !step.HasExitHook() {
 		return nil
 	}
 	if step.OnExit != "" {
 		return &LifecycleHook{Template: step.OnExit, Arguments: args}
 	}
-	exitHooks := step.Hooks.Exit.DeepCopy()
+	exitHooks := step.Hooks.GetExitHook().DeepCopy()
 
 	if exitHooks != nil && exitHooks.Arguments.IsEmpty() {
 		exitHooks.Arguments = args
@@ -2405,19 +2418,19 @@ type DAGTask struct {
 
 	// Hooks hold exit hook which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error status of the primary template
-	Hooks *LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
+	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
 
 func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
-	if t.Hooks == nil && t.OnExit == "" {
+	if !t.HasExitHook() {
 		return nil
 	}
 	if t.OnExit != "" {
 		return &LifecycleHook{Template: t.OnExit, Arguments: args}
 	}
-	exitHooks := t.Hooks.Exit.DeepCopy()
+	exitHooks := t.Hooks.GetExitHook().DeepCopy()
 
 	if exitHooks != nil && exitHooks.Arguments.IsEmpty() {
 		exitHooks.Arguments = args
@@ -2426,7 +2439,7 @@ func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 }
 
 func (t *DAGTask) HasExitHook() bool {
-	return t.Hooks != nil && t.Hooks.Exit != nil
+	return (t.Hooks != nil && t.Hooks.GetExitHook() != nil) || t.OnExit != ""
 }
 
 func (t *DAGTask) GetTemplateName() string {

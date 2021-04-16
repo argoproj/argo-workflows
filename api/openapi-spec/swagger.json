@@ -6842,7 +6842,10 @@
         },
         "hooks": {
           "description": "Hooks hold exit hook which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHooks"
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
         },
         "name": {
           "description": "Name is the name of the target",
@@ -7235,18 +7238,6 @@
         },
         "template": {
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.LifecycleHooks": {
-      "type": "object",
-      "required": [
-        "exit"
-      ],
-      "properties": {
-        "exit": {
-          "description": "Exit hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
         }
       }
     },
@@ -9187,7 +9178,10 @@
         },
         "hooks": {
           "description": "Hooks holds exit hook which is invoked at the end of the template, irrespective of the success, failure, or error status of the primary template",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHooks"
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
         },
         "name": {
           "description": "Name of the step",

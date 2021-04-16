@@ -1203,7 +1203,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
-		if task.Hooks != nil && task.Hooks.Exit != nil {
+		if task.HasExitHook() {
 			ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 		}
 		taskBytes, err := json.Marshal(task)
