@@ -3338,7 +3338,11 @@ spec:
                                       type: object
                                     template:
                                       type: string
+                                  required:
+                                  - template
                                   type: object
+                              required:
+                              - exit
                               type: object
                             name:
                               type: string
@@ -9382,7 +9386,11 @@ spec:
                                         type: object
                                       template:
                                         type: string
+                                    required:
+                                    - template
                                     type: object
+                                required:
+                                - exit
                                 type: object
                               name:
                                 type: string

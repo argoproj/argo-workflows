@@ -7226,6 +7226,9 @@
     },
     "io.argoproj.workflow.v1alpha1.LifecycleHook": {
       "type": "object",
+      "required": [
+        "template"
+      ],
       "properties": {
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
@@ -7237,6 +7240,9 @@
     },
     "io.argoproj.workflow.v1alpha1.LifecycleHooks": {
       "type": "object",
+      "required": [
+        "exit"
+      ],
       "properties": {
         "exit": {
           "description": "Exit hold the template and arguments which is invoked at the end of the workflow, irrespective of the success, failure, or error status of the primary template",

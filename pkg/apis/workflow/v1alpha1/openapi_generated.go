@@ -2314,8 +2314,9 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"template": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"arguments": {
@@ -2325,6 +2326,7 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 						},
 					},
 				},
+				Required: []string{"template"},
 			},
 		},
 		Dependencies: []string{
@@ -2345,6 +2347,7 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHooks(ref common.ReferenceCallba
 						},
 					},
 				},
+				Required: []string{"exit"},
 			},
 		},
 		Dependencies: []string{
