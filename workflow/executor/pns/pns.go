@@ -311,7 +311,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 					_ = prevInfo.Close()
 				}
 				p.pidFileHandles[pid] = fs
-				log.Infof("ALEX secured root for pid %d root: %s (%q)", pid, proc.Executable(), fs.Name())
+				log.Infof("secured root for pid %d root: %s (%q)", pid, proc.Executable(), fs.Name())
 			}
 
 			containerName, err := containerNameForPID(pid)
