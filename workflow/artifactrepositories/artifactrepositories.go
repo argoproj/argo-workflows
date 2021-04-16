@@ -3,6 +3,7 @@ package artifactrepositories
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -52,7 +53,7 @@ func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRe
 	}
 	for _, r := range refs {
 		resolvedRef, _, err := s.get(ctx, r)
-		if apierr.IsNotFound(err) {
+		if err != nil && (apierr.IsNotFound(err) || strings.Contains(err.Error(), "config map missing key")) {
 			continue
 		}
 		if err != nil {
@@ -61,7 +62,7 @@ func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRe
 		log.WithField("artifactRepositoryRef", r).Info("resolved artifact repository")
 		return resolvedRef, nil
 	}
-	return nil, fmt.Errorf("failed to find any artifact repository - should never happen")
+	return nil, fmt.Errorf(`failed to find any artifact repository for artifact repository ref "%v"`, ref)
 }
 
 func (s *artifactRepositories) Get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*config.ArtifactRepository, error) {
