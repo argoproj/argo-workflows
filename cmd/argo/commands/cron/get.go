@@ -30,7 +30,8 @@ func NewGetCommand() *cobra.Command {
 			}
 
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewCronWorkflowServiceClient()
+			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 
 			for _, arg := range args {

@@ -28,7 +28,9 @@ func NewDeleteCommand() *cobra.Command {
 
 func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
+	serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
+	errors.CheckError(err)
+
 	var delWFTmplNames []string
 	if allWFs {
 		cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{})

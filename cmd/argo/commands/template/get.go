@@ -22,7 +22,10 @@ func NewGetCommand() *cobra.Command {
 		Short: "display details about a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
+			if err != nil {
+				log.Fatal(err)
+			}
 			namespace := client.Namespace()
 			for _, name := range args {
 				wftmpl, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{

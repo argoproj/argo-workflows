@@ -19,9 +19,9 @@ import (
 type Client interface {
 	NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error)
 	NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient
-	NewCronWorkflowServiceClient() cronworkflowpkg.CronWorkflowServiceClient
-	NewWorkflowTemplateServiceClient() workflowtemplatepkg.WorkflowTemplateServiceClient
-	NewClusterWorkflowTemplateServiceClient() clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient
+	NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error)
+	NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error)
+	NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error)
 	NewInfoServiceClient() (infopkg.InfoServiceClient, error)
 }
 
@@ -32,6 +32,7 @@ type Opts struct {
 	// DEPRECATED: use `ClientConfigSupplier`
 	ClientConfig         clientcmd.ClientConfig
 	ClientConfigSupplier func() clientcmd.ClientConfig
+	Offline              bool
 }
 
 func (o Opts) String() string {
@@ -51,6 +52,9 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	log.WithField("opts", opts).Debug("Client options")
+	if opts.Offline {
+		return newOfflineClient()
+	}
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
@@ -62,6 +66,8 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		if opts.ClientConfigSupplier != nil {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
-		return newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+
+		ctx, client, err := newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+		return ctx, client, err
 	}
 }
