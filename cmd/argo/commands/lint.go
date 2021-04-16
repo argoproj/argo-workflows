@@ -17,6 +17,7 @@ func NewLintCommand() *cobra.Command {
 		strict    bool
 		lintKinds []string
 		output    string
+		offline   bool
 	)
 
 	allKinds := []string{wf.WorkflowPlural, wf.WorkflowTemplatePlural, wf.CronWorkflowPlural, wf.ClusterWorkflowTemplatePlural}
@@ -33,6 +34,7 @@ func NewLintCommand() *cobra.Command {
 
   cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -`,
 		Run: func(cmd *cobra.Command, args []string) {
+			client.Offline = offline
 			ctx, apiClient := client.NewAPIClient()
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -41,13 +43,20 @@ func NewLintCommand() *cobra.Command {
 			if len(lintKinds) == 0 || strings.Contains(strings.Join(lintKinds, ","), "all") {
 				lintKinds = allKinds
 			}
-			lint.RunLint(ctx, apiClient, args, lintKinds, client.Namespace(), output, strict)
+			ops := lint.LintOptions{
+				Files:            args,
+				Strict:           strict,
+				DefaultNamespace: client.Namespace(),
+				Printer:          os.Stdout,
+			}
+			lint.RunLint(ctx, apiClient, lintKinds, output, offline, ops)
 		},
 	}
 
 	command.Flags().StringSliceVar(&lintKinds, "kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
 	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
+	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting")
 
 	return command
 }

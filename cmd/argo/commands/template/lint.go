@@ -25,7 +25,13 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			ctx, apiClient := client.NewAPIClient()
-			lint.RunLint(ctx, apiClient, args, []string{wf.WorkflowTemplatePlural}, client.Namespace(), output, strict)
+			opts := lint.LintOptions{
+				Files:            args,
+				Strict:           strict,
+				DefaultNamespace: client.Namespace(),
+				Printer:          os.Stdout,
+			}
+			lint.RunLint(ctx, apiClient, []string{wf.WorkflowTemplatePlural}, output, false, opts)
 		},
 	}
 
