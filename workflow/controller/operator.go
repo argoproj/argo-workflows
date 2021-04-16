@@ -270,6 +270,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
+		err = woc.taskSetReconciliation()
+		if err == nil {
+			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+		}
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
@@ -844,6 +848,28 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	return node, true, nil
 }
 
+func (woc *wfOperationCtx) taskSetReconciliation() error {
+	taskSet, err := woc.getWorkflowTaskSet()
+	if err != nil {
+		return err
+	}
+	if taskSet == nil || taskSet.Status == nil {
+		return nil
+	}
+	for nodeID, taskResult := range taskSet.Status.Nodes {
+		node, ok := woc.wf.Status.Nodes[nodeID]
+		if !ok {
+			continue
+		}
+		node.Outputs = taskResult.Outputs
+		node.Phase = taskResult.Phase
+		fmt.Println(nodeID)
+		fmt.Println(node)
+		woc.wf.Status.Nodes[nodeID] = node
+	}
+	return nil
+}
+
 // podReconciliation is the process by which a workflow will examine all its related
 // pods and update the node state before continuing the evaluation of the workflow.
 // Records all pods which were observed completed, which will be labeled completed=true
@@ -1012,6 +1038,21 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 			}
 		}
 	}
+}
+
+func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
+	obj, exist, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, nil
+	}
+	taskSet, err := wfutil.UnstructuredToTaskSet(obj)
+	if err != nil {
+		return nil, err
+	}
+	return taskSet, nil
 }
 
 // getAllWorkflowPods returns all pods related to the current workflow
@@ -1715,6 +1756,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	switch processedTmpl.GetType() {
+	case wfv1.TemplateTypeUnknown:
+		node, err = woc.executeTaskSet(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeContainer:
 		node, err = woc.executeContainer(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeContainerSet:
@@ -2197,6 +2240,20 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		}
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	}
+	if node.Phase == wfv1.NodePending {
+		err := woc.controller.taskSetManager.CreateTaskSet(ctx, woc.wf, node.ID, *tmpl)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return woc.markNodePhase(nodeName, wfv1.NodeRunning), nil
 }
 
 func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {

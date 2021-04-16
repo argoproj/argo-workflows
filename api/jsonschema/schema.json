@@ -4773,6 +4773,35 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Task": {
+      "properties": {
+        "nodeId": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        }
+      },
+      "required": [
+        "nodeId",
+        "template"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.TaskResult": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "properties": {
@@ -5823,6 +5852,55 @@
         },
         "namespace": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSet": {
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
+      "properties": {
+        "templates": {
+          "description": "Key NodeID, value: Template",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus": {
+      "properties": {
+        "nodes": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TaskResult"
+          },
+          "type": "object"
         }
       },
       "type": "object"

@@ -57,6 +57,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/signal"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
+	"github.com/argoproj/argo-workflows/v3/workflow/taskset"
 	"github.com/argoproj/argo-workflows/v3/workflow/ttlcontroller"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -106,6 +107,8 @@ type WorkflowController struct {
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
+	taskSetManager        *taskset.WorkflowTaskSetManager
+	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
 }
 
 const (
@@ -114,6 +117,7 @@ const (
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
+	workflowTaskSetResyncPeriod         = 20 * time.Minute
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -195,6 +199,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
+	wfc.wfTaskSetInformer = informer.NewTolerantWorkflowTaskSetInformer(wfc.dynamicInterface, workflowTaskSetResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
@@ -218,6 +223,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if err != nil {
 		log.Fatal(err)
 	}
+	nextWorkflow := func(key string) {
+		wfc.wfQueue.AddRateLimited(key)
+	}
+	wfc.taskSetManager = taskset.NewWorkflowTaskSetManager(wfc.wfclientset.ArgoprojV1alpha1(), wfc.wfTaskSetInformer, nextWorkflow, wfc.metrics)
 
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
@@ -255,6 +264,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 				}
 				go wfc.workflowGarbageCollector(ctx.Done())
 				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
+				go wfc.taskSetManager.Run(ctx)
 
 				go wfc.runTTLController(ctx, workflowTTLWorkers)
 				go wfc.runCronController(ctx)
