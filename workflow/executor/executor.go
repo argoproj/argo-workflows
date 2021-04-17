@@ -943,7 +943,7 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 
 			file, err := os.Stat(filePath)
 			if os.IsNotExist(err) {
-				continue
+				return
 			}
 			if err != nil {
 				log.Fatal(err)
