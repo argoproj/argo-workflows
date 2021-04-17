@@ -96,6 +96,12 @@ metadata:
 		})
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
+		t.Run("Invalid", func(t *testing.T) {
+			x := cronWf.DeepCopy()
+			x.Spec.Schedule = "invalid"
+			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: x})
+			assert.Error(t, err)
+		})
 		t.Run("Labelled", func(t *testing.T) {
 			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
 			if assert.NoError(t, err) {
