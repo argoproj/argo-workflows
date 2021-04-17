@@ -118,9 +118,9 @@ jobs:
       - run: make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
       - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make executor-image STATIC_FILES=false DEV_IMAGE=true
-        timeout-minutes: 3
+        timeout-minutes: 4
       - run: make wait
-        timeout-minutes: 3
+        timeout-minutes: 1
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - name: Get wait container logs
         if: ${{ failure() }}
