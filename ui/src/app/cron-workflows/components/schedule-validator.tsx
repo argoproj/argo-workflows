@@ -1,5 +1,5 @@
 import React = require('react');
-import {InfoIcon, SuccessIcon, WarningIcon} from '../../shared/components/fa-icons';
+import {SuccessIcon, WarningIcon} from '../../shared/components/fa-icons';
 
 const x = require('cronstrue');
 
