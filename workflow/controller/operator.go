@@ -554,6 +554,10 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
+	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
+	// with it, so copy from the original workflow.
+	woc.wf.TypeMeta = woc.orig.TypeMeta
+
 	// Create WorkflowNode* events for nodes that have changed phase
 	woc.recordNodePhaseChangeEvents(&woc.orig.Status.Nodes, &woc.wf.Status.Nodes)
 
