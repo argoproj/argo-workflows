@@ -874,11 +874,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
-					c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-					err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-					if err != nil {
-						woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-						node.Phase = wfv1.NodeError
+					if node.Succeeded() {
+						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+						err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+						if err != nil {
+							woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+							node.Phase = wfv1.NodeError
+						}
 					}
 				}
 				if node.Phase == wfv1.NodeRunning {
