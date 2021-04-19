@@ -137,8 +137,7 @@ FROM scratch as workflow-controller
 
 USER 8737
 
-ADD --chown=8737 https://github.com/golang/go/raw/master/lib/time/zoneinfo.zip /zoneinfo.zip
-ENV ZONEINFO /zoneinfo.zip
+COPY --chown=8737 --from=workflow-controller-build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --chown=8737 --from=workflow-controller-build /go/src/github.com/argoproj/argo-workflows/dist/workflow-controller /bin/
 
 ENTRYPOINT [ "workflow-controller" ]

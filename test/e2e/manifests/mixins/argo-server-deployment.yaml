@@ -9,3 +9,10 @@ spec:
       containers:
         - name: argo-server
           imagePullPolicy: Never
+          args:
+            - server
+            - --secure=false
+            - --auth-mode=hybrid
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
