@@ -60,6 +60,19 @@ func newServer() *ArtifactServer {
 		Status: wfv1.WorkflowStatus{
 			Nodes: wfv1.Nodes{
 				"my-node": wfv1.NodeStatus{
+					Inputs: &wfv1.Inputs{
+						Artifacts: wfv1.Artifacts{
+							{
+								Name: "my-s3-input-artifact",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										// S3 is a configured artifact repo, so does not need key
+										Key: "my-wf/my-node/my-s3-input-artifact.tgz",
+									},
+								},
+							},
+						},
+					},
 					Outputs: &wfv1.Outputs{
 						Artifacts: wfv1.Artifacts{
 							{
@@ -132,6 +145,10 @@ func TestArtifactServer_GetArtifact(t *testing.T) {
 		fileName     string
 		artifactName string
 	}{
+		{
+			fileName:     "my-s3-input-artifact.tgz",
+			artifactName: "my-s3-input-artifact",
+		},
 		{
 			fileName:     "my-s3-artifact.tgz",
 			artifactName: "my-s3-artifact",

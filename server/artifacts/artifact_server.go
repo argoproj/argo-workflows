@@ -129,6 +129,9 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	if art == nil {
+		art = wf.Status.Nodes[nodeId].Inputs.GetArtifactByName(artifactName)
+	}
+	if art == nil {
 		return fmt.Errorf("artifact not found")
 	}
 
