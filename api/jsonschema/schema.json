@@ -3706,6 +3706,32 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.HTTP": {
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "headers": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
+          },
+          "type": "array"
+        },
+        "method": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "headers",
+        "method",
+        "url",
+        "data"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
       "properties": {
@@ -3723,6 +3749,29 @@
       },
       "required": [
         "url"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeader": {
+      "properties": {
+        "fromConfigMap": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "fromSecrete": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "fromSecrete",
+        "fromConfigMap"
       ],
       "type": "object"
     },
@@ -4857,6 +4906,9 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "ip",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "http": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP"
         },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",

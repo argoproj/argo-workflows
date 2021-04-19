@@ -496,6 +496,16 @@ message HDFSKrbConfig {
   optional string krbServicePrincipalName = 6;
 }
 
+message HTTP {
+  repeated HTTPHeader headers = 1;
+
+  optional string method = 2;
+
+  optional string url = 3;
+
+  optional string data = 4;
+}
+
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 message HTTPArtifact {
   // URL of the artifact
@@ -503,6 +513,16 @@ message HTTPArtifact {
 
   // Headers are an optional list of headers to send with HTTP requests for artifacts
   repeated Header headers = 2;
+}
+
+message HTTPHeader {
+  optional string name = 1;
+
+  optional string value = 2;
+
+  optional k8s.io.api.core.v1.SecretKeySelector fromSecrete = 3;
+
+  optional k8s.io.api.core.v1.ConfigMapKeySelector fromConfigMap = 4;
 }
 
 // Header indicate a key-value request header to be used when fetching artifacts over HTTP
@@ -1151,6 +1171,8 @@ message Template {
 
   // Data is a data template
   optional Data data = 39;
+
+  optional HTTP http = 42;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge

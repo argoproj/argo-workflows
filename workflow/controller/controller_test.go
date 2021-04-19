@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"github.com/argoproj/argo-workflows/v3/workflow/taskset"
 	"testing"
 	"time"
 
@@ -188,6 +189,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.throttler = wfc.newThrottler()
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
+		wfc.taskSetManager =  taskset.NewWorkflowTaskSetManager(wfclientset.ArgoprojV1alpha1(), wfc.wfTaskSetInformer,func(key string){}, wfc.metrics )
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
