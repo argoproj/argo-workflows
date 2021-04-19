@@ -8,6 +8,8 @@ spec:
     kind: WorkflowTaskSet
     listKind: WorkflowTaskSetList
     plural: workflowtasksets
+    shortNames:
+    - wfTaskSet
     singular: workflowtaskset
   scope: Namespaced
   versions:

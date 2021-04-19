@@ -3384,6 +3384,56 @@ spec:
                           type: string
                       type: object
                     type: array
+                  http:
+                    properties:
+                      data:
+                        type: string
+                      headers:
+                        items:
+                          properties:
+                            fromConfigMap:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            fromSecrete:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            name:
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - fromConfigMap
+                          - fromSecrete
+                          - name
+                          - value
+                          type: object
+                        type: array
+                      method:
+                        type: string
+                      url:
+                        type: string
+                    required:
+                    - data
+                    - headers
+                    - method
+                    - url
+                    type: object
                   initContainers:
                     items:
                       properties:
@@ -9077,6 +9127,56 @@ spec:
                             type: string
                         type: object
                       type: array
+                    http:
+                      properties:
+                        data:
+                          type: string
+                        headers:
+                          items:
+                            properties:
+                              fromConfigMap:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                              fromSecrete:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                              name:
+                                type: string
+                              value:
+                                type: string
+                            required:
+                            - fromConfigMap
+                            - fromSecrete
+                            - name
+                            - value
+                            type: object
+                          type: array
+                        method:
+                          type: string
+                        url:
+                          type: string
+                      required:
+                      - data
+                      - headers
+                      - method
+                      - url
+                      type: object
                     initContainers:
                       items:
                         properties:
@@ -17440,6 +17540,56 @@ spec:
                             type: string
                         type: object
                       type: array
+                    http:
+                      properties:
+                        data:
+                          type: string
+                        headers:
+                          items:
+                            properties:
+                              fromConfigMap:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                              fromSecrete:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                              name:
+                                type: string
+                              value:
+                                type: string
+                            required:
+                            - fromConfigMap
+                            - fromSecrete
+                            - name
+                            - value
+                            type: object
+                          type: array
+                        method:
+                          type: string
+                        url:
+                          type: string
+                      required:
+                      - data
+                      - headers
+                      - method
+                      - url
+                      type: object
                     initContainers:
                       items:
                         properties:
@@ -24074,6 +24224,56 @@ spec:
                               type: string
                           type: object
                         type: array
+                      http:
+                        properties:
+                          data:
+                            type: string
+                          headers:
+                            items:
+                              properties:
+                                fromConfigMap:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                fromSecrete:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - fromConfigMap
+                              - fromSecrete
+                              - name
+                              - value
+                              type: object
+                            type: array
+                          method:
+                            type: string
+                          url:
+                            type: string
+                        required:
+                        - data
+                        - headers
+                        - method
+                        - url
+                        type: object
                       initContainers:
                         items:
                           properties:
@@ -29767,6 +29967,56 @@ spec:
                                 type: string
                             type: object
                           type: array
+                        http:
+                          properties:
+                            data:
+                              type: string
+                            headers:
+                              items:
+                                properties:
+                                  fromConfigMap:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  fromSecrete:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  name:
+                                    type: string
+                                  value:
+                                    type: string
+                                required:
+                                - fromConfigMap
+                                - fromSecrete
+                                - name
+                                - value
+                                type: object
+                              type: array
+                            method:
+                              type: string
+                            url:
+                              type: string
+                          required:
+                          - data
+                          - headers
+                          - method
+                          - url
+                          type: object
                         initContainers:
                           items:
                             properties:

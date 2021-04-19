@@ -3706,6 +3706,36 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.HTTP": {
+      "properties": {
+        "data": {
+          "description": "Data is a body of http request",
+          "type": "string"
+        },
+        "headers": {
+          "description": "Headers holds the http headers",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
+          },
+          "type": "array"
+        },
+        "method": {
+          "description": "Method is http methods (POST, GET, UPDATE)",
+          "type": "string"
+        },
+        "url": {
+          "description": "URL is a invoke URL",
+          "type": "string"
+        }
+      },
+      "required": [
+        "headers",
+        "method",
+        "url",
+        "data"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
       "properties": {
@@ -3723,6 +3753,33 @@
       },
       "required": [
         "url"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeader": {
+      "properties": {
+        "fromConfigMap": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
+          "description": "FromConfigMap is the configmap selector to the header value"
+        },
+        "fromSecrete": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "FromSecrete is the secret selector to the header value"
+        },
+        "name": {
+          "description": "Name is the name of the hearder",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the value of the header value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "fromSecrete",
+        "fromConfigMap"
       ],
       "type": "object"
     },
@@ -4858,6 +4915,10 @@
           "x-kubernetes-patch-merge-key": "ip",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "http": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP",
+          "description": "HTTP is http template"
+        },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
           "items": {
@@ -5854,6 +5915,32 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSet": {
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {

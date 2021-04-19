@@ -496,6 +496,20 @@ message HDFSKrbConfig {
   optional string krbServicePrincipalName = 6;
 }
 
+message HTTP {
+  // Headers holds the http headers
+  repeated HTTPHeader headers = 1;
+
+  // Method is http methods (POST, GET, UPDATE)
+  optional string method = 2;
+
+  // URL is a invoke URL
+  optional string url = 3;
+
+  // Data is a body of http request
+  optional string data = 4;
+}
+
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 message HTTPArtifact {
   // URL of the artifact
@@ -503,6 +517,20 @@ message HTTPArtifact {
 
   // Headers are an optional list of headers to send with HTTP requests for artifacts
   repeated Header headers = 2;
+}
+
+message HTTPHeader {
+  // Name is the name of the hearder
+  optional string name = 1;
+
+  // Value is the value of the header value
+  optional string value = 2;
+
+  // FromSecrete is the secret selector to the header value
+  optional k8s.io.api.core.v1.SecretKeySelector fromSecrete = 3;
+
+  // FromConfigMap is the configmap selector to the header value
+  optional k8s.io.api.core.v1.ConfigMapKeySelector fromConfigMap = 4;
 }
 
 // Header indicate a key-value request header to be used when fetching artifacts over HTTP
@@ -1152,6 +1180,9 @@ message Template {
   // Data is a data template
   optional Data data = 39;
 
+  // HTTP is http template
+  optional HTTP http = 42;
+
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
   // +patchMergeKey=name
@@ -1631,12 +1662,23 @@ message WorkflowStep {
   optional string onExit = 11;
 }
 
+// +genclient
+// +genclient:noStatus
+// +kubebuilder:resource:shortName=wfTaskSet
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskSet {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowTaskSetSpec spec = 2;
 
   optional WorkflowTaskSetStatus status = 3;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskSetList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowTaskSet items = 2;
 }
 
 message WorkflowTaskSetSpec {
