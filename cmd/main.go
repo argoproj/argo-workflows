@@ -31,7 +31,7 @@ func main() {
 
 	wfclientset := wfclientset.NewForConfigOrDie(config)
 
-	update(wfclientset, "steps-zqfcr")
+	update(wfclientset, "hello-world-4zfcw")
 }
 
 func update(wfclientset *wfclientset.Clientset, wfname string) {
@@ -41,7 +41,7 @@ func update(wfclientset *wfclientset.Clientset, wfname string) {
 		APIVersion: workflow.APIVersion,
 	}
 	taskResult := v1alpha1.TaskResult{
-		Phase:   v1alpha1.NodeFailed,
+		Phase:   v1alpha1.NodeSucceeded,
 		Message: "http failed",
 		Outputs: &v1alpha1.Outputs{
 			Parameters: []v1alpha1.Parameter{
