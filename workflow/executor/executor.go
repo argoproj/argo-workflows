@@ -943,16 +943,16 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 
 			file, err := os.Stat(filePath)
 			if os.IsNotExist(err) {
-				return
-			}
-			if err != nil {
+				// noop
+			} else if err != nil {
 				log.Fatal(err)
+			} else {
+				newModTime := file.ModTime()
+				if modTime != nil && !modTime.Equal(file.ModTime()) {
+					res <- struct{}{}
+				}
+				modTime = &newModTime
 			}
-			newModTime := file.ModTime()
-			if modTime != nil && !modTime.Equal(file.ModTime()) {
-				res <- struct{}{}
-			}
-			modTime = &newModTime
 			time.Sleep(pollInterval)
 		}
 	}()
