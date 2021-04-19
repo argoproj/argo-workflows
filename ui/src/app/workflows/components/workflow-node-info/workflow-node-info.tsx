@@ -137,7 +137,7 @@ const WorkflowNodeSummary = (props: Props) => {
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>YAML</Button>}{' '}
+                {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>MANIFEST</Button>}{' '}
                 {props.node.type === 'Pod' && props.onShowContainerLogs && (
                     <DropDownButton
                         onClick={() => showLogs()}
