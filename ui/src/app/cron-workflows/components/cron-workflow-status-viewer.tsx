@@ -6,7 +6,6 @@ import {ConditionsPanel} from '../../shared/conditions-panel';
 import {WorkflowLink} from '../../workflows/components/workflow-link';
 import {PrettySchedule} from './pretty-schedule';
 
-const parser = require('cron-parser');
 export const CronWorkflowStatusViewer = ({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) => {
     if (status === null) {
         return null;
@@ -25,14 +24,6 @@ export const CronWorkflowStatusViewer = ({spec, status}: {spec: CronWorkflowSpec
                         )
                     },
                     {title: 'Last Scheduled Time', value: <Timestamp date={status.lastScheduledTime} />},
-                    {
-                        title: 'Next Scheduled Time',
-                        value: (
-                            <>
-                                <Timestamp date={getNextScheduledTime(spec.schedule, spec.timezone)} /> (assumes workflow-controller is in UTC)
-                            </>
-                        )
-                    },
                     {title: 'Conditions', value: <ConditionsPanel conditions={status.conditions} />}
                 ].map(attr => (
                     <div className='row white-box__details-row' key={attr.title}>
@@ -47,17 +38,4 @@ export const CronWorkflowStatusViewer = ({spec, status}: {spec: CronWorkflowSpec
 
 function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]) {
     return active.reverse().map(activeWf => <WorkflowLink key={activeWf.uid} namespace={activeWf.namespace} name={activeWf.name} />);
-}
-
-function getNextScheduledTime(schedule: string, tz: string): string {
-    let out = '';
-    try {
-        out = parser
-            .parseExpression(schedule, {utc: !tz, tz})
-            .next()
-            .toISOString();
-    } catch (e) {
-        // Do nothing
-    }
-    return out;
 }
