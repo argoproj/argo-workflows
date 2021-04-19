@@ -47,7 +47,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
     useEffect(
         useQueryParams(history, p => {
             setShowFlow(p.get('showFlow') === 'true');
-            setShowWorkflows(p.get('showWorkflows') !== 'false');
+            setShowWorkflows(p.get('showWorkflows') === 'true');
             setExpanded(p.get('expanded') === 'true');
             setSelectedNode(p.get('selectedNode'));
             setTab(p.get('tab'));
