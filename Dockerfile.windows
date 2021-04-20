@@ -5,7 +5,7 @@
 ####################################################################################################
 # had issues with official golange image for windows so I'm using plain servercore
 FROM mcr.microsoft.com/windows/servercore:ltsc2019 as builder
-ENV GOLANG_VERSION=1.15.7
+ENV GOLANG_VERSION=1.16.3
 SHELL ["powershell", "-Command"]
 
 ARG IMAGE_OS=windows
