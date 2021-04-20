@@ -433,7 +433,10 @@ endif
 
 .PHONY: argosay
 argosay:
-	go build -o argosay ./main
+	cd test/e2e/images/argosay/v2 && go build -o argosay ./main
+
+.PHONY: argosay-image
+argosay-image: argosay
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
 	k3d image import argoproj/argosay:v2
@@ -442,7 +445,7 @@ ifeq ($(DOCKER_PUSH),true)
 	docker push argoproj/argosay:v2
 endif
 
-dist/argosay:
+dist/argosay: argosay
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
 
