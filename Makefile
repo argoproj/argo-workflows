@@ -221,8 +221,6 @@ else
 endif
 
 argoexec-image:
-argoexec-dev-image: dist/argoexec
-	docker tag $(IMAGE_NAMESPACE)/argoexec-dev:$(VERSION) $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
@@ -413,7 +411,7 @@ nuke:
 	kubectl delete --ignore-not-found ns argo
 	kubectl delete --ignore-not-found -k manifests/base/crds/minimal
 	git clean -fxd
-	docker image rm argoproj/argoexec  argoproj/argoexec-dev argoproj/argocli argoproj/workflow-controller || true
+	docker image rm argoproj/argoexec argoproj/argocli argoproj/workflow-controller || true
 	docker system prune -f
 endif
 
@@ -478,7 +476,7 @@ watch-pods:
 	  -w
 
 .PHONY: wait
-wait: argoexec-image
+wait:
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
 	# Wait for Argo Server
