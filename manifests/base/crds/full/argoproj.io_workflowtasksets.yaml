@@ -3209,42 +3209,32 @@ spec:
                       type: array
                     http:
                       properties:
-                        data:
+                        body:
+                          format: byte
                           type: string
                         headers:
                           items:
                             properties:
-                              fromConfigMap:
-                                properties:
-                                  key:
-                                    type: string
-                                  name:
-                                    type: string
-                                  optional:
-                                    type: boolean
-                                required:
-                                - key
-                                type: object
-                              fromSecrete:
-                                properties:
-                                  key:
-                                    type: string
-                                  name:
-                                    type: string
-                                  optional:
-                                    type: boolean
-                                required:
-                                - key
-                                type: object
                               name:
                                 type: string
                               value:
                                 type: string
+                              valueFrom:
+                                properties:
+                                  secretKeyRef:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                type: object
                             required:
-                            - fromConfigMap
-                            - fromSecrete
                             - name
-                            - value
                             type: object
                           type: array
                         method:
@@ -3252,9 +3242,6 @@ spec:
                         url:
                           type: string
                       required:
-                      - data
-                      - headers
-                      - method
                       - url
                       type: object
                     initContainers:
