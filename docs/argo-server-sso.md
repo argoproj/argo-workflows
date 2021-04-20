@@ -8,7 +8,7 @@ It is possible to use [Dex](https://github.com/dexidp/dex) for authentication. [
 
 ## To start Argo Server with SSO.
 
-Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values.
+Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values. If working towards an oidc configuration the ArgoCD project has [guides](https://argoproj.github.io/argo-cd/operator-manual/user-management/#existing-oidc-provider) on its similar (though different) process for setting up oidc providers. It also includes examples for specific providers.
 
 Next, create the k8s secrets for holding the OAuth2 `client-id` and `client-secret`. You may refer to the kubernetes documentation on [Managing secrets](https://kubernetes.io/docs/tasks/configmap-secret/). For example by using kubectl with literals:
 ```
@@ -49,7 +49,9 @@ All users will need to log in again. Sorry.
 
 > v2.12 and after
 
-You can optionally add RBAC to SSO. This allows you to give different users different access levels. Except for `client` auth mode, all users of the Argo Server must ultimately use a service account. So we allow you to define rules that map a user (maybe using their OIDC groups) to a service account by annotating the service account.  
+You can optionally add RBAC to SSO. This allows you to give different users different access levels. Except for `client` auth mode, all users of the Argo Server must ultimately use a service account. So we allow you to define rules that map a user (maybe using their OIDC groups) to a service account in the same namespace as argo server by annotating the service account.
+
+To allow service accounts to manage resources in other namespaces create a role and role binding in the target namespace.
 
 RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.
 
