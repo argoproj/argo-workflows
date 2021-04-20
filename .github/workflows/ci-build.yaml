@@ -99,6 +99,7 @@ jobs:
           key: kustomize
       - run: git fetch --tags
       - run: mkdir -p /tmp/log/argo-e2e
+      - run: make argoexec-image STATIC_FILES=false DEV_IMAGE=true &
       - name: Install and start K3S
         timeout-minutes: 3
         run: |
