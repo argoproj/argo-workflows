@@ -97,7 +97,6 @@ jobs:
         with:
           path: dist/kustomize
           key: kustomize
-      - uses: docker/setup-buildx-action@v1
       - run: git fetch --tags
       - run: mkdir -p /tmp/log/argo-e2e
       - name: Install and start K3S
