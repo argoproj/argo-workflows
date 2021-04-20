@@ -134,14 +134,6 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
-FROM argoexec-base as argoexec-dev
-
-ADD argoexec-dev /usr/local/bin/argoexec
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
-ENTRYPOINT [ "argoexec" ]
-
-####################################################################################################
-
 FROM scratch as workflow-controller
 
 USER 8737

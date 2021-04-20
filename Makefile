@@ -220,10 +220,6 @@ else
 	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
 
-dist/argoexec-dev: dist/argoexec
-	cp dist/argoexec dist/argoexec-dev
-
-argoexec-dev: dist/argoexec-dev argoexec-dev-image
 argoexec-image:
 
 %-image:
@@ -449,7 +445,7 @@ $(GOPATH)/bin/goreman:
 ifeq ($(RUN_MODE),local)
 start: install controller cli $(GOPATH)/bin/goreman
 else
-start: install argoexec-dev workflow-controller-image argocli-image
+start: install argoexec-image workflow-controller-image argocli-image
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 	# Check dex, minio, postgres and mysql are in hosts file
