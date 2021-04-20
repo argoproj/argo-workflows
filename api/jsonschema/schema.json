@@ -4052,6 +4052,20 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.NodeResult": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.NodeStatus": {
       "description": "NodeStatus contains status information about an individual node in the workflow",
       "properties": {
@@ -4826,35 +4840,6 @@
         "compressionLevel": {
           "description": "CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.",
           "type": "integer"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.Task": {
-      "properties": {
-        "nodeId": {
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-        }
-      },
-      "required": [
-        "nodeId",
-        "template"
-      ],
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.TaskResult": {
-      "properties": {
-        "message": {
-          "type": "string"
-        },
-        "outputs": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
-        },
-        "phase": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -5945,12 +5930,19 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "properties": {
-        "templates": {
-          "description": "Key NodeID, value: Template",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+        "nodes": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
           },
-          "type": "array"
+          "type": "object"
+        },
+        "templates": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          },
+          "type": "array",
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         }
       },
       "type": "object"
@@ -5959,7 +5951,7 @@
       "properties": {
         "nodes": {
           "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TaskResult"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
           },
           "type": "object"
         }

@@ -665,6 +665,14 @@ message MutexStatus {
   repeated MutexHolding waiting = 2;
 }
 
+message NodeResult {
+  optional string phase = 1;
+
+  optional string message = 2;
+
+  optional Outputs outputs = 3;
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 message NodeStatus {
   // ID is a unique identifier of a node within the worklow
@@ -1115,20 +1123,6 @@ message TarStrategy {
   // CompressionLevel specifies the gzip compression level to use for the artifact.
   // Defaults to gzip.DefaultCompression.
   optional int32 compressionLevel = 1;
-}
-
-message Task {
-  optional string nodeId = 1;
-
-  optional Template template = 2;
-}
-
-message TaskResult {
-  optional string phase = 1;
-
-  optional string message = 2;
-
-  optional Outputs outputs = 3;
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -1663,8 +1657,7 @@ message WorkflowStep {
 }
 
 // +genclient
-// +genclient:noStatus
-// +kubebuilder:resource:shortName=wfTaskSet
+// +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskSet {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -1682,12 +1675,15 @@ message WorkflowTaskSetList {
 }
 
 message WorkflowTaskSetSpec {
-  // Key NodeID, value: Template
-  repeated Task templates = 1;
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated Template templates = 1;
+
+  map<string, NodeStatus> nodes = 2;
 }
 
 message WorkflowTaskSetStatus {
-  map<string, TaskResult> nodes = 1;
+  map<string, NodeResult> nodes = 1;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
