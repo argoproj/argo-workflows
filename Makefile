@@ -129,13 +129,6 @@ define protoc
      perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
-# docker_build,target,image_name
-define docker_build
-	docker buildx build -t $(IMAGE_NAMESPACE)/$(2):$(VERSION) --target $(1) --progress plain .
-	docker run --rm -t $(IMAGE_NAMESPACE)/$(2):$(VERSION) version
-	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(2):$(VERSION); fi
-	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$(2):$(VERSION) ; fi
-endef
 
 ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
@@ -146,7 +139,7 @@ endif
 build: clis images
 
 .PHONY: images
-images: cli-image executor-image controller-image
+images: argocli-image argoexec-image workflow-controller-image
 
 # cli
 
@@ -183,14 +176,14 @@ dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
 dist/argo-%: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS) go.sum
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
+	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
 dist/argo: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
-	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
+	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 else
-	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
+	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 endif
 
 argo-server.crt: argo-server.key
@@ -198,12 +191,7 @@ argo-server.crt: argo-server.key
 argo-server.key:
 	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
 
-.PHONY: cli-image
-cli-image: dist/argocli.image
-
-dist/argocli.image: $(CLI_PKGS) go.sum argo-server.crt argo-server.key
-	$(call docker_build,argocli,argocli)
-	touch dist/argocli.image
+argocli-image:
 
 .PHONY: clis
 clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-windows-amd64.gz
@@ -216,40 +204,36 @@ controller: dist/workflow-controller
 dist/workflow-controller: $(CONTROLLER_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
-	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
+	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 else
-	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/workflow-controller
+	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/workflow-controller
 endif
 
-.PHONY: controller-image
-controller-image: dist/controller.image
-
-dist/controller.image: $(CONTROLLER_PKGS) go.sum Dockerfile
-	$(call docker_build,workflow-controller,workflow-controller)
-	touch dist/controller.image
+workflow-controller-image:
 
 # argoexec
 
 dist/argoexec: $(ARGOEXEC_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
-	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
 
-.PHONY: executor-image
-executor-image: dist/argoexec.image
+argoexec-image:
 
-ifeq ($(DEV_IMAGE),true)
-dist/argoexec.image: dist/argoexec
-	[ -e argoexec ] || mv dist/argoexec .
-	$(call docker_build,argoexec-dev,argoexec)
-	mv argoexec dist/
-else
-dist/argoexec.image: $(ARGOEXEC_PKGS) go.sum
-	$(call docker_build,argoexec,argoexec)
-endif
-	touch dist/argoexec.image
+%-image:
+	[ ! -e dist/$* ] || mv dist/$* .
+	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* .
+	[ ! -e $* ] || mv $* dist/
+	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
+	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
+
+scan-images: scan-workflow-controller scan-argoexec scan-argocli
+
+scan-%:
+	docker scan --severity=high $(IMAGE_NAMESPACE)/$*:$(VERSION)
 
 # generation
 
@@ -427,7 +411,7 @@ nuke:
 	kubectl delete --ignore-not-found ns argo
 	kubectl delete --ignore-not-found -k manifests/base/crds/minimal
 	git clean -fxd
-	docker image rm argoproj/argoexec  argoproj/argoexec-dev argoproj/argocli argoproj/workflow-controller || true
+	docker image rm argoproj/argoexec argoproj/argocli argoproj/workflow-controller || true
 	docker system prune -f
 endif
 
@@ -461,7 +445,7 @@ $(GOPATH)/bin/goreman:
 ifeq ($(RUN_MODE),local)
 start: install controller cli $(GOPATH)/bin/goreman
 else
-start: install executor-image controller-image cli-image
+start: install argoexec-image workflow-controller-image argocli-image
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 	# Check dex, minio, postgres and mysql are in hosts file
@@ -492,7 +476,7 @@ watch-pods:
 	  -w
 
 .PHONY: wait
-wait: executor-image
+wait:
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
 	# Wait for Argo Server
