@@ -56,8 +56,8 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	resourceGroup := obj.GroupVersionKind().Group
 	resourceName := obj.GetName()
 	resourceKind := obj.GroupVersionKind().Kind
-	if resourceGroup == "" || resourceName == "" || resourceKind == "" {
-		return "", "", "", errors.New(errors.CodeBadRequest, "Group, kind, and name are all required but at least one of them is missing from the manifest")
+	if resourceName == "" || resourceKind == "" {
+		return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
 	resourceFullName := fmt.Sprintf("%s.%s/%s", resourceKind, resourceGroup, resourceName)
 	selfLink := obj.GetSelfLink()
