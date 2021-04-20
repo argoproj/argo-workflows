@@ -4,7 +4,6 @@ ARG DOCKER_CHANNEL=stable
 ARG DOCKER_VERSION=18.09.1
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ARG KUBECTL_VERSION=1.19.6
-ARG JQ_VERSION=1.6
 
 FROM docker.io/library/golang:1.15.7 as builder
 
@@ -43,20 +42,21 @@ FROM alpine:3 as argoexec-base
 ARG DOCKER_CHANNEL
 ARG DOCKER_VERSION
 ARG KUBECTL_VERSION
-ARG JQ_VERSION
 
 RUN apk --no-cache add curl procps git tar libcap jq
 
-COPY hack/recurl.sh hack/arch.sh hack/os.sh /
-RUN if [ $(./arch.sh) = ppc64le ] || [ $(./arch.sh) = s390x ]; then \
-        ./recurl.sh docker.tgz https://download.docker.com/$(./os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-18.06.3-ce.tgz; \
+COPY hack/arch.sh hack/os.sh /bin/
+
+RUN ls
+RUN if [ $(arch.sh) = ppc64le ] || [ $(arch.sh) = s390x ]; then \
+        curl -o docker.tgz https://download.docker.com/$(os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-18.06.3-ce.tgz; \
     else \
-        ./recurl.sh docker.tgz https://download.docker.com/$(./os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-${DOCKER_VERSION}.tgz; \
+        curl -o docker.tgz https://download.docker.com/$(os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-${DOCKER_VERSION}.tgz; \
     fi && \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
-RUN ./recurl.sh /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(./os.sh)/$(./arch.sh)/kubectl
-RUN rm recurl.sh arch.sh os.sh
+RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(os.sh)/$(arch.sh)/kubectl
+RUN rm /bin/arch.sh /bin/os.sh
 
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
