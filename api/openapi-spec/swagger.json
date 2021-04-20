@@ -8250,6 +8250,21 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Task": {
+      "type": "object",
+      "required": [
+        "nodeId",
+        "template"
+      ],
+      "properties": {
+        "nodeId": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "type": "object",
@@ -9333,19 +9348,11 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "type": "object",
       "properties": {
-        "nodes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
-          }
-        },
-        "templates": {
+        "tasks": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          },
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+          }
         }
       }
     },

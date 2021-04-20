@@ -12,20 +12,13 @@ type WorkflowTaskSet struct {
 	Status            *WorkflowTaskSetStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
-func (in *WorkflowTaskSet) GetTemplateByName(name string) *Template {
-	for _, t := range in.Spec.Templates {
-		if t.Name == name {
-			return &t
-		}
-	}
-	return nil
+type WorkflowTaskSetSpec struct {
+	Tasks []Task `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
 }
 
-type WorkflowTaskSetSpec struct {
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Templates []Template `json:"templates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
-	Nodes     Nodes      `json:"nodes,omitempty" protobuf:"bytes,2,rep,name=nodes,casttype=Nodes"`
+type Task struct {
+	NodeID   string   `json:"nodeId" protobuf:"bytes,1,opt,name=nodeId"`
+	Template Template `json:"template" protobuf:"bytes,2,opt,name=template"`
 }
 
 type WorkflowTaskSetStatus struct {

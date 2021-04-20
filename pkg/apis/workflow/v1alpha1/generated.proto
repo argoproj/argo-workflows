@@ -1119,6 +1119,12 @@ message TarStrategy {
   optional int32 compressionLevel = 1;
 }
 
+message Task {
+  optional string nodeId = 1;
+
+  optional Template template = 2;
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 message Template {
   // Name is the name of the template
@@ -1669,11 +1675,7 @@ message WorkflowTaskSetList {
 }
 
 message WorkflowTaskSetSpec {
-  // +patchStrategy=merge
-  // +patchMergeKey=name
-  repeated Template templates = 1;
-
-  map<string, NodeStatus> nodes = 2;
+  repeated Task tasks = 1;
 }
 
 message WorkflowTaskSetStatus {
