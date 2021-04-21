@@ -17,6 +17,7 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {Utils} from '../../../shared/utils';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {SensorCreator} from '../sensor-creator';
 import {SensorSidePanel} from '../sensor-side-panel';
@@ -30,7 +31,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(match.params.namespace || '');
+     const [namespace, setNamespace] = useState((Utils.managedNamespace ? Utils.managedNamespace : match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
 
@@ -45,7 +46,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
     useEffect(
         () =>
             history.push(
-                historyUrl('sensors/{namespace}', {
+                historyUrl('sensors' + (Utils.managedNamespace ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel,
                     selectedNode

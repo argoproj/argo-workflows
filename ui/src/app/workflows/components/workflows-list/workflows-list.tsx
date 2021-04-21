@@ -107,7 +107,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 offset: this.queryParam('offset'),
                 limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 500
             },
-            namespace: this.props.match.params.namespace || '',
+            namespace: (Utils.managedNamespace ? Utils.managedNamespace : this.props.match.params.namespace) || '',
             selectedPhases: phaseQueryParam.length > 0 ? (phaseQueryParam as WorkflowPhase[]) : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? (labelQueryParam as string[]) : savedOptions.selectedLabels,
             selectedWorkflows: new Map<string, models.Workflow>(),
@@ -223,7 +223,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private saveHistory() {
         this.storage.setItem('options', this.options, {} as WorkflowListRenderOptions);
-        this.url = uiUrl('workflows/' + this.state.namespace || '' + '?' + this.filterParams.toString());
+        let newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
+        this.url = uiUrl('workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
     }
 

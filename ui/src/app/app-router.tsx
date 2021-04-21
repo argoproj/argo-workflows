@@ -79,12 +79,12 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                         navItems={[
                             {
                                 title: 'Workflows',
-                                path: workflowsUrl + '/' + namespace,
+                                path: workflowsUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-stream'
                             },
                             {
                                 title: 'Workflow Templates',
-                                path: workflowTemplatesUrl + '/' + namespace,
+                                path: workflowTemplatesUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-window-maximize'
                             },
                             {
@@ -94,37 +94,37 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             },
                             {
                                 title: 'Cron Workflows',
-                                path: cronWorkflowsUrl + '/' + namespace,
+                                path: cronWorkflowsUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-clock'
                             },
                             {
                                 title: 'Event Flow',
-                                path: eventFlowUrl + '/' + namespace,
+                                path: eventFlowUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-broadcast-tower'
                             },
                             {
                                 title: 'Event Sources',
-                                path: eventSourceUrl + '/' + namespace,
+                                path: eventSourceUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fas fa-bolt'
                             },
                             {
                                 title: 'Sensors',
-                                path: sensorUrl + '/' + namespace,
+                                path: sensorUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-satellite-dish'
                             },
                             {
                                 title: 'Workflow Event Bindings',
-                                path: workflowsEventBindingsUrl + '/' + namespace,
+                                path: workflowsEventBindingsUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-link'
                             },
                             {
                                 title: 'Archived Workflows',
-                                path: archivedWorkflowsUrl + '/' + namespace,
+                                path: archivedWorkflowsUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-archive'
                             },
                             {
                                 title: 'Reports',
-                                path: reportsUrl + '/' + namespace,
+                                path: reportsUrl + (Utils.managedNamespace ? '' : ('/' + namespace)),
                                 iconClassName: 'fa fa-chart-bar'
                             },
                             {
@@ -164,6 +164,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
                                 <Route exact={true} strict={true} path={loginUrl} component={login.component} />
+                                {Utils.managedNamespace && <Redirect to={workflowsUrl} />}
                                 {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
                             </Switch>
                         </ErrorBoundary>
