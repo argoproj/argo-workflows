@@ -119,7 +119,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private saveHistory() {
-        let newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
+        const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
         this.url = uiUrl(
             'reports' +
                 (newNamespace ? '/' + newNamespace : '') +

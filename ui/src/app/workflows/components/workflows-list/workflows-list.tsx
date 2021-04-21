@@ -223,7 +223,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private saveHistory() {
         this.storage.setItem('options', this.options, {} as WorkflowListRenderOptions);
-        let newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
+        const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
         this.url = uiUrl('workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
     }

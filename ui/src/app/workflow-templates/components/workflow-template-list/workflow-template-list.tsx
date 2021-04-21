@@ -15,8 +15,8 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
 import {useQueryParams} from '../../../shared/use-query-params';
+import {Utils} from '../../../shared/utils';
 import {WorkflowTemplateCreator} from '../workflow-template-creator';
 
 require('./workflow-template-list.scss');

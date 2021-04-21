@@ -144,7 +144,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private saveHistory() {
         this.storage.setItem('options', this.state, {} as State);
-        let newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
+        const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
         this.url = uiUrl('archived-workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
     }
