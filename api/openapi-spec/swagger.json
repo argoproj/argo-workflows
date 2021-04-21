@@ -7220,6 +7220,20 @@
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
     },
+    "io.argoproj.workflow.v1alpha1.LifecycleRule": {
+      "description": "LifecycleRule specifies how to manage bucket's lifecycle",
+      "type": "object",
+      "properties": {
+        "markDeletionAfterDays": {
+          "description": "MarkDeletionAfterDays is the number of days before we delete objects in the bucket",
+          "type": "integer"
+        },
+        "markInfrequentAccessAfterDays": {
+          "description": "MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type",
+          "type": "integer"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
       "type": "object",
@@ -7566,6 +7580,10 @@
         "key": {
           "description": "Key is the path in the bucket where the artifact resides",
           "type": "string"
+        },
+        "lifecycleRule": {
+          "description": "LifecycleRule specifies how to manage bucket's lifecycle",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleRule"
         },
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",

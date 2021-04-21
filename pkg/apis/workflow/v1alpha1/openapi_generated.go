@@ -55,6 +55,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Histogram":                   schema_pkg_apis_workflow_v1alpha1_Histogram(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs":                      schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item":                        schema_pkg_apis_workflow_v1alpha1_Item(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleRule":               schema_pkg_apis_workflow_v1alpha1_LifecycleRule(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Link":                        schema_pkg_apis_workflow_v1alpha1_Link(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus":           schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize":                     schema_pkg_apis_workflow_v1alpha1_Memoize(ref),
@@ -2298,6 +2299,33 @@ func schema_pkg_apis_workflow_v1alpha1_Item(ref common.ReferenceCallback) common
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_LifecycleRule(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "LifecycleRule specifies how to manage bucket's lifecycle",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"markInfrequentAccessAfterDays": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"markDeletionAfterDays": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MarkDeletionAfterDays is the number of days before we delete objects in the bucket",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2903,6 +2931,12 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"lifecycleRule": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LifecycleRule specifies how to manage bucket's lifecycle",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleRule"),
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the path in the bucket where the artifact resides",
@@ -2916,7 +2950,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -2967,11 +3001,17 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
+					"lifecycleRule": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LifecycleRule specifies how to manage bucket's lifecycle",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleRule"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 

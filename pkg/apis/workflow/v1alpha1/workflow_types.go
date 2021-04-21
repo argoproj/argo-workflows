@@ -2144,6 +2144,9 @@ type OSSBucket struct {
 
 	// SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm
 	SecurityToken string `json:"securityToken,omitempty" protobuf:"bytes,6,opt,name=securityToken"`
+
+	// LifecycleRule specifies how to manage bucket's lifecycle
+	LifecycleRule *LifecycleRule `json:"lifecycleRule,omitempty" protobuf:"bytes,7,opt,name=lifecycleRule"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -2152,6 +2155,15 @@ type OSSArtifact struct {
 
 	// Key is the path in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+// LifecycleRule specifies how to manage bucket's lifecycle
+type LifecycleRule struct {
+	// MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type
+	MarkInfrequentAccessAfterDays *int32 `json:"markInfrequentAccessAfterDays,omitempty" protobuf:"bytes,1,opt,name=markInfrequentAccessAfterDays"`
+
+	// MarkDeletionAfterDays is the number of days before we delete objects in the bucket
+	MarkDeletionAfterDays *int32 `json:"markDeletionAfterDays,omitempty" protobuf:"bytes,2,opt,name=markDeletionAfterDays"`
 }
 
 func (o *OSSArtifact) GetKey() (string, error) {
