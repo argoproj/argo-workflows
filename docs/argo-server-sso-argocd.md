@@ -81,7 +81,7 @@ metadata:
 data:
   # SSO Configuration for the Argo server.
   # You must also start argo server with `--auth-mode sso`.
-  # https://argoproj.github.io/argo/argo-server-auth-mode/
+  # https://argoproj.github.io/argo-workflows/argo-server-auth-mode/
   sso: |
     # This is the root URL of the OIDC provider (required).
     issuer: https://argo-cd.mydomain.com/api/dex
