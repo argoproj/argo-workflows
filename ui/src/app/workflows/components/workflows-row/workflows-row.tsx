@@ -48,8 +48,8 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         <PhaseIcon value={wf.status.phase} />
                     </div>
                     <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='small-11 row'>
-                        <div className='columns small-2'>{wf.metadata.name}</div>
-                        <div className='columns small-2'>{wf.metadata.namespace}</div>
+                        <div className='columns small-3'>{wf.metadata.name}</div>
+                        <div className='columns small-1'>{wf.metadata.namespace}</div>
                         <div className='columns small-1'>
                             <Timestamp date={wf.status.startedAt} />
                         </div>
