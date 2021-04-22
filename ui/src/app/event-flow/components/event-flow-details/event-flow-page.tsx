@@ -38,7 +38,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState((Utils.managedNamespace ? Utils.managedNamespace : match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') !== 'false');
     const [expanded, setExpanded] = useState(queryParams.get('expanded') === 'true');

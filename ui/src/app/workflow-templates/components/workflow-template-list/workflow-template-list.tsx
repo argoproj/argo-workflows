@@ -29,7 +29,7 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState((Utils.managedNamespace ? Utils.managedNamespace : match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
 
     useEffect(

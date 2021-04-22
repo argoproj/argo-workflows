@@ -107,7 +107,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 offset: this.queryParam('offset'),
                 limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 500
             },
-            namespace: (Utils.managedNamespace ? Utils.managedNamespace : this.props.match.params.namespace) || '',
+            namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             selectedPhases: phaseQueryParam.length > 0 ? (phaseQueryParam as WorkflowPhase[]) : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? (labelQueryParam as string[]) : savedOptions.selectedLabels,
             selectedWorkflows: new Map<string, models.Workflow>(),
@@ -179,7 +179,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
                             {this.sidePanel === 'submit-new-workflow' && (
                                 <WorkflowCreator
-                                    namespace={Utils.getNamespace(this.state.namespace)}
+                                    namespace={Utils.getNamespaceWithDefault(this.state.namespace)}
                                     onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
                                 />
                             )}

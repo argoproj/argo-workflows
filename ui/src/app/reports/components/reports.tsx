@@ -58,7 +58,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             archivedWorkflows: !!this.queryParam('archivedWorkflows'),
-            namespace: (Utils.managedNamespace ? Utils.managedNamespace : this.props.match.params.namespace) || '',
+            namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             labels: (this.queryParam('labels') || '').split(',').filter(v => v !== '')
         };
     }

@@ -10,7 +10,7 @@ import {Utils} from '../../shared/utils';
 import {EventSourceEditor} from './event-source-editor';
 
 export const EventSourceCreator = ({onCreate, namespace}: {namespace: string; onCreate: (eventSource: EventSource) => void}) => {
-    const [eventSource, setEventSource] = useState<EventSource>(exampleEventSource(Utils.getNamespace(namespace)));
+    const [eventSource, setEventSource] = useState<EventSource>(exampleEventSource(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -20,7 +20,7 @@ export const EventSourceCreator = ({onCreate, namespace}: {namespace: string; on
                     icon='plus'
                     onClick={() => {
                         services.eventSource
-                            .create(eventSource, Utils.getNamespace(eventSource.metadata.namespace))
+                            .create(eventSource, Utils.getNamespaceWithDefault(eventSource.metadata.namespace))
                             .then(onCreate)
                             .catch(setError);
                     }}>

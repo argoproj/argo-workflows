@@ -69,6 +69,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             .catch(setError);
     }, []);
 
+    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + namespace;
     return (
         <>
             {popupProps && <Popup {...popupProps} />}
@@ -79,12 +80,12 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                         navItems={[
                             {
                                 title: 'Workflows',
-                                path: workflowsUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: workflowsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-stream'
                             },
                             {
                                 title: 'Workflow Templates',
-                                path: workflowTemplatesUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: workflowTemplatesUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-window-maximize'
                             },
                             {
@@ -94,37 +95,37 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             },
                             {
                                 title: 'Cron Workflows',
-                                path: cronWorkflowsUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: cronWorkflowsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-clock'
                             },
                             {
                                 title: 'Event Flow',
-                                path: eventFlowUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: eventFlowUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-broadcast-tower'
                             },
                             {
                                 title: 'Event Sources',
-                                path: eventSourceUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: eventSourceUrl + namespaceSuffix,
                                 iconClassName: 'fas fa-bolt'
                             },
                             {
                                 title: 'Sensors',
-                                path: sensorUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: sensorUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-satellite-dish'
                             },
                             {
                                 title: 'Workflow Event Bindings',
-                                path: workflowsEventBindingsUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: workflowsEventBindingsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-link'
                             },
                             {
                                 title: 'Archived Workflows',
-                                path: archivedWorkflowsUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: archivedWorkflowsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-archive'
                             },
                             {
                                 title: 'Reports',
-                                path: reportsUrl + (Utils.managedNamespace ? '' : '/' + namespace),
+                                path: reportsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-chart-bar'
                             },
                             {

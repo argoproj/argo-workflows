@@ -47,7 +47,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         const labelQueryParam = this.queryParams('label');
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || savedOptions.pagination.limit},
-            namespace: (Utils.managedNamespace ? Utils.managedNamespace : this.props.match.params.namespace) || '',
+            namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             selectedPhases: phaseQueryParam.length > 0 ? phaseQueryParam : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
