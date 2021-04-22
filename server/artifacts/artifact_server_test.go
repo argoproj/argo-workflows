@@ -66,7 +66,6 @@ func newServer() *ArtifactServer {
 								Name: "my-s3-input-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									S3: &wfv1.S3Artifact{
-										// S3 is a configured artifact repo, so does not need key
 										Key: "my-wf/my-node/my-s3-input-artifact.tgz",
 									},
 								},
@@ -138,17 +137,13 @@ func newServer() *ArtifactServer {
 	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
 }
 
-func TestArtifactServer_GetArtifact(t *testing.T) {
+func TestArtifactServer_GetOutputArtifact(t *testing.T) {
 	s := newServer()
 
 	tests := []struct {
 		fileName     string
 		artifactName string
 	}{
-		{
-			fileName:     "my-s3-input-artifact.tgz",
-			artifactName: "my-s3-input-artifact",
-		},
 		{
 			fileName:     "my-s3-artifact.tgz",
 			artifactName: "my-s3-artifact",
@@ -168,7 +163,7 @@ func TestArtifactServer_GetArtifact(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
 			w := &testhttp.TestResponseWriter{}
-			s.GetArtifact(w, r)
+			s.GetOutputArtifact(w, r)
 			if assert.Equal(t, 200, w.StatusCode) {
 				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
 				assert.Equal(t, "my-data", w.Output)
@@ -177,20 +172,47 @@ func TestArtifactServer_GetArtifact(t *testing.T) {
 	}
 }
 
-func TestArtifactServer_GetArtifactWithoutInstanceID(t *testing.T) {
+func TestArtifactServer_GetInputArtifact(t *testing.T) {
+	s := newServer()
+
+	tests := []struct {
+		fileName     string
+		artifactName string
+	}{
+		{
+			fileName:     "my-s3-input-artifact.tgz",
+			artifactName: "my-s3-input-artifact",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.artifactName, func(t *testing.T) {
+			r := &http.Request{}
+			r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
+			w := &testhttp.TestResponseWriter{}
+			s.GetInputArtifact(w, r)
+			if assert.Equal(t, 200, w.StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
+				assert.Equal(t, "my-data", w.Output)
+			}
+		})
+	}
+}
+
+func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-ns/your-wf/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
-	s.GetArtifact(w, r)
+	s.GetOutputArtifact(w, r)
 	assert.NotEqual(t, 200, w.StatusCode)
 }
 
-func TestArtifactServer_GetArtifactByUID(t *testing.T) {
+func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-uuid/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
-	s.GetArtifactByUID(w, r)
+	s.GetOutputArtifactByUID(w, r)
 	assert.Equal(t, 500, w.StatusCode)
 }
