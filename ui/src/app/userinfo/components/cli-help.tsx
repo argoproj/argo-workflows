@@ -13,7 +13,7 @@ export const CliHelp = () => {
             .split(';')
             .map(x => x.trim())
             .find(x => x.startsWith('authorization=')) || ''
-    ).replace(/^authorization="?(.*)"?$/, '$1');
+    ).replace(/^authorization="?(.*?)"?$/, '$1');
 
     const text = `export ARGO_SERVER='${document.location.hostname}:${document.location.port || (argoSecure ? 443 : 80)}' 
 export ARGO_HTTP1=true  
