@@ -17,6 +17,7 @@ import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
+import {Utils} from '../../../shared/utils';
 import {ID} from './id';
 
 const introductionText = (
@@ -33,7 +34,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(match.params.namespace || '');
+    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
 
     useEffect(
@@ -46,7 +47,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
     useEffect(
         () =>
             history.push(
-                historyUrl('workflow-event-bindings/{namespace}', {
+                historyUrl('workflow-event-bindings' + (Utils.managedNamespace ? '' : '/{namespace}'), {
                     namespace,
                     selectedWorkflowEventBinding
                 })
