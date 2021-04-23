@@ -157,18 +157,20 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         return (
             <>
                 {this.tab === 'summary' ? (
-                    <div className='argo-container'>
-                        <div className='workflow-details__content'>
-                            <WorkflowSummaryPanel workflow={this.state.workflow} />
-                            {execSpec(this.state.workflow).arguments && execSpec(this.state.workflow).arguments.parameters && (
-                                <React.Fragment>
-                                    <h6>Parameters</h6>
-                                    <WorkflowParametersPanel parameters={execSpec(this.state.workflow).arguments.parameters} />
-                                </React.Fragment>
-                            )}
-                            <h6>Artifacts</h6>
-                            <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
-                            <WorkflowResourcePanel workflow={this.state.workflow} />
+                    <div className='workflow-details__container'>
+                        <div className='argo-container'>
+                            <div className='workflow-details__content'>
+                                <WorkflowSummaryPanel workflow={this.state.workflow} />
+                                {execSpec(this.state.workflow).arguments && execSpec(this.state.workflow).arguments.parameters && (
+                                    <React.Fragment>
+                                        <h6>Parameters</h6>
+                                        <WorkflowParametersPanel parameters={execSpec(this.state.workflow).arguments.parameters} />
+                                    </React.Fragment>
+                                )}
+                                <h6>Artifacts</h6>
+                                <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
+                                <WorkflowResourcePanel workflow={this.state.workflow} />
+                            </div>
                         </div>
                     </div>
                 ) : (
