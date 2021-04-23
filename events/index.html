@@ -2418,12 +2418,12 @@ requirements</a>.</p>
 <h4 id="headers">Headers<a class="headerlink" href="#headers" title="Permanent link">&para;</a></h4>
 <p>HTTP header names are lowercase and only include those that have <code>x-</code> as their prefix. Their values are lists, not single values.    </p>
 <ul>
-<li>Wrong: <code>metadata["X-Github-Event"] = "push"</code></li>
-<li>Wrong: <code>metadata["x-github-event"] = "push"</code></li>
-<li>Wrong: <code>metadata["X-Github-Event"] = ["push"]</code></li>
-<li>Wrong: <code>metadata["github-event"] = ["push"]</code></li>
-<li>Wrong: <code>metadata["authorization"] = ["push"]</code></li>
-<li>Right: <code>metadata["x-github-event"] = ["push"]</code></li>
+<li>Wrong: <code>metadata["X-Github-Event"] == "push"</code></li>
+<li>Wrong: <code>metadata["x-github-event"] == "push"</code></li>
+<li>Wrong: <code>metadata["X-Github-Event"] == ["push"]</code></li>
+<li>Wrong: <code>metadata["github-event"] == ["push"]</code></li>
+<li>Wrong: <code>metadata["authorization"] == ["push"]</code></li>
+<li>Right: <code>metadata["x-github-event"] == ["push"]</code></li>
 </ul>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code>metadata[&quot;x-argo&quot;] == [&quot;yes&quot;]
