@@ -56,7 +56,7 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
     useEffect(() => {
         services.info
             .getInfo()
-            .then(info => setNamespace(Utils.getNamespace(info.managedNamespace)))
+            .then(info => setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace)))
             .then(() => setError(null))
             .catch(setError);
     }, []);
