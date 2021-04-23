@@ -11,7 +11,7 @@ import {Utils} from '../../shared/utils';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) => {
-    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>(exampleCronWorkflow(Utils.getNamespace(namespace)));
+    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>(exampleCronWorkflow(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -21,7 +21,7 @@ export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; o
                     icon='plus'
                     onClick={() => {
                         services.cronWorkflows
-                            .create(cronWorkflow, Utils.getNamespace(cronWorkflow.metadata.namespace))
+                            .create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace))
                             .then(onCreate)
                             .catch(setError);
                     }}>
