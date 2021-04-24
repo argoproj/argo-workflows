@@ -125,12 +125,16 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private get filterParams() {
         const params = new URLSearchParams();
-        this.state.selectedPhases.forEach(phase => {
-            params.append('phase', phase);
-        });
-        this.state.selectedLabels.forEach(label => {
-            params.append('label', label);
-        });
+        if (this.state.selectedPhases) {
+            this.state.selectedPhases.forEach(phase => {
+                params.append('phase', phase);
+            });
+        }
+        if (this.state.selectedLabels) {
+            this.state.selectedLabels.forEach(label => {
+                params.append('label', label);
+            });
+        }
         params.append('minStartedAt', this.state.minStartedAt.toISOString());
         params.append('maxStartedAt', this.state.maxStartedAt.toISOString());
         if (this.state.pagination.offset) {
