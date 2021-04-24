@@ -65,12 +65,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private get filterParams() {
         const params = new URLSearchParams();
-        this.state.selectedPhases.forEach(phase => {
-            params.append('phase', phase);
-        });
-        this.state.selectedLabels.forEach(label => {
-            params.append('label', label);
-        });
+        if (this.state.selectedPhases) {
+            this.state.selectedPhases.forEach(phase => {
+                params.append('phase', phase);
+            });
+        }
+        if (this.state.selectedLabels) {
+            this.state.selectedLabels.forEach(label => {
+                params.append('label', label);
+            });
+        }
         if (this.state.pagination.offset) {
             params.append('offset', this.state.pagination.offset);
         }
