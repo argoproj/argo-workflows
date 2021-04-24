@@ -1802,7 +1802,7 @@ func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
 	return ResourceScope(resourceScope), resourceName
 }
 
-var _ TemplateReferenceHolder = &NodeStatus{}
+//var _ TemplateReferenceHolder = &NodeStatus{}
 
 func (n *NodeStatus) GetTemplateName() string {
 	return n.TemplateName

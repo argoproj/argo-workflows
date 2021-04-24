@@ -137,9 +137,11 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts, useNodeNameAsPodName bool) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
-
+	if useNodeNameAsPodName {
+		nodeID = nodeName
+	}
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
@@ -542,6 +544,10 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		{
 			Name:  "GODEBUG",
 			Value: "x509ignoreCN=0",
+		},
+		{
+			Name:  common.EnvVarWorkflowName,
+			Value: woc.wf.Name,
 		},
 	}
 	if woc.controller.Config.Executor != nil {

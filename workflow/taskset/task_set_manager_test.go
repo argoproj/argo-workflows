@@ -2,7 +2,6 @@ package taskset
 
 import (
 	"context"
-	"fmt"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
@@ -17,10 +16,9 @@ func TestCreateTaskSet(t *testing.T) {
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	taskSetInformer := informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 	queueWorkflowFunc := func ( key string){
-		fmt.Println(key)
 	}
 	metrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
-	taskSetMgr := NewWorkflowTaskSetManager(wfclientset.ArgoprojV1alpha1(), taskSetInformer,queueWorkflowFunc, metrics )
+	taskSetMgr := NewWorkflowTaskSetManager(wfclientset.ArgoprojV1alpha1(), taskSetInformer, queueWorkflowFunc, metrics)
 
 	wf := v1alpha1.Workflow{
 		ObjectMeta: v1.ObjectMeta{
@@ -35,13 +33,12 @@ func TestCreateTaskSet(t *testing.T) {
 		HTTP:                         &v1alpha1.HTTP{
 			URL:    "http://test.com",
 		},
-
 	}
 	err := taskSetMgr.CreateTaskSet(context.Background(), &wf, nodeID, tmpl)
 	assert.NoError(t, err)
 	taskSet, err := wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(context.Background(), "test", v1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, taskSet)
-	assert.Len(t, taskSet.Spec.Templates,1)
-	assert.Equal(t, tmpl, taskSet.Spec.Templates[0].Template)
+	assert.Len(t, taskSet.Spec.Tasks,1)
+	assert.Equal(t, tmpl, taskSet.Spec.Tasks[0].Template)
 }

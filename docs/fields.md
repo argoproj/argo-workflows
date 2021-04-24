@@ -1572,6 +1572,8 @@ Arguments to a template
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
 
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
@@ -2273,6 +2275,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
@@ -2649,7 +2653,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`data`|`string`|_No description available_|
+|`body`|`byte`|_No description available_|
 |`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|_No description available_|
 |`method`|`string`|_No description available_|
 |`url`|`string`|_No description available_|
@@ -2763,6 +2767,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
@@ -3070,6 +3076,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
@@ -3671,8 +3679,6 @@ MetricLabel is a single label for a prometheus metric
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
-
-- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 </details>
 
 ### Fields
@@ -3907,10 +3913,9 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`fromConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|_No description available_|
-|`fromSecrete`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 |`name`|`string`|_No description available_|
 |`value`|`string`|_No description available_|
+|`valueFrom`|[`HTTPHeaderSource`](#httpheadersource)|_No description available_|
 
 ## Cache
 
@@ -3943,6 +3948,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
@@ -4146,6 +4153,64 @@ ArtifactPaths expands a step from a collection of artifacts
 |`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 |`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
+
+## HTTPHeaderSource
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
+
+- [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
+
+- [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/workspace-workflow.yaml)
+
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
+- [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
+
+- [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
+
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
+
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
+
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
+
+- [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
+
+- [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
+
+- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 
 # External Fields
 

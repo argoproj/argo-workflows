@@ -3708,7 +3708,8 @@
     },
     "io.argoproj.workflow.v1alpha1.HTTP": {
       "properties": {
-        "data": {
+        "body": {
+          "format": "byte",
           "type": "string"
         },
         "headers": {
@@ -3725,10 +3726,7 @@
         }
       },
       "required": [
-        "headers",
-        "method",
-        "url",
-        "data"
+        "url"
       ],
       "type": "object"
     },
@@ -3754,25 +3752,27 @@
     },
     "io.argoproj.workflow.v1alpha1.HTTPHeader": {
       "properties": {
-        "fromConfigMap": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
-        },
-        "fromSecrete": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        },
         "name": {
           "type": "string"
         },
         "value": {
           "type": "string"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeaderSource"
         }
       },
       "required": [
-        "name",
-        "value",
-        "fromSecrete",
-        "fromConfigMap"
+        "name"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeaderSource": {
+      "properties": {
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Header": {
@@ -4040,6 +4040,20 @@
           },
           "type": "array",
           "x-kubernetes-list-type": "atomic"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.NodeResult": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
         }
       },
       "type": "object"
@@ -4835,20 +4849,6 @@
         "nodeId",
         "template"
       ],
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.TaskResult": {
-      "properties": {
-        "message": {
-          "type": "string"
-        },
-        "outputs": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
-        },
-        "phase": {
-          "type": "string"
-        }
-      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Template": {
@@ -5936,8 +5936,7 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "properties": {
-        "templates": {
-          "description": "Key NodeID, value: Template",
+        "tasks": {
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
           },
@@ -5950,7 +5949,7 @@
       "properties": {
         "nodes": {
           "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TaskResult"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
           },
           "type": "object"
         }

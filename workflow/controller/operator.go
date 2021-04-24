@@ -861,13 +861,30 @@ func (woc *wfOperationCtx) taskSetReconciliation() error {
 		if !ok {
 			continue
 		}
-		node.Outputs = taskResult.Outputs
+		node.Outputs = taskResult.Outputs.DeepCopy()
 		node.Phase = taskResult.Phase
-		fmt.Println(nodeID)
-		fmt.Println(node)
+		node.Message = taskResult.Message
 		woc.wf.Status.Nodes[nodeID] = node
 	}
 	return nil
+}
+
+func isAgentPod(pod *apiv1.Pod) bool {
+	return strings.Contains(pod.Name, "agent")
+}
+
+func (woc *wfOperationCtx) reconcileAgentNode(pod *apiv1.Pod) {
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeAgent {
+			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
+				if !node.Fulfilled() {
+					woc.wf.Status.Nodes[node.ID] = *newState
+					woc.addOutputsToGlobalScope(node.Outputs)
+					woc.updated = true
+				}
+			}
+		}
+	}
 }
 
 // podReconciliation is the process by which a workflow will examine all its related
@@ -887,7 +904,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		if pod == nil {
 			return
 		}
+		if isAgentPod(pod) {
+			woc.reconcileAgentNode(pod)
+		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
+
 		nodeID := woc.wf.NodeID(nodeNameForPod)
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
@@ -1064,6 +1085,7 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 	pods := make([]*apiv1.Pod, len(objs))
 	for i, obj := range objs {
 		pod, ok := obj.(*apiv1.Pod)
+		fmt.Println(pod.Name)
 		if !ok {
 			return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
 		}
@@ -2242,20 +2264,6 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	return nil
 }
 
-func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	node := woc.wf.GetNodeByName(nodeName)
-	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeAgent, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	}
-	if node.Phase == wfv1.NodePending {
-		err := woc.controller.taskSetManager.CreateTaskSet(ctx, woc.wf, node.ID, *tmpl)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return woc.markNodePhase(nodeName, wfv1.NodeRunning), nil
-}
-
 func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
@@ -2274,7 +2282,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
-	})
+	}, false)
 
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
@@ -2434,7 +2442,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
-	})
+	}, false)
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
@@ -2722,12 +2730,32 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	_, err := woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
+	_, err := woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline}, false)
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
 
 	return node, err
+}
+
+func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeAgent, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	}
+	if node.Phase == wfv1.NodePending {
+		err := woc.controller.taskSetManager.CreateTaskSet(ctx, woc.wf, node.ID, *tmpl)
+		if err != nil {
+			return nil, err
+		}
+	}
+	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
+	mainCtr.Command = []string{"argoexec", "agent"}
+	_, err := woc.createWorkflowPod(ctx, woc.wf.Name+"-agent", []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true}, true)
+	if err != nil {
+		return woc.requeueIfTransientErr(err, node.Name)
+	}
+	return node, nil
 }
 
 func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
@@ -2745,7 +2773,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "data", string(dataTemplate)}
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
+	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true}, false)
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
@@ -3378,6 +3406,20 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 		return err
 	}
 	err = json.Unmarshal([]byte(resolveSpec), &woc.execWf.Spec)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) DeleteAgentPod(ctx context.Context) error {
+	agentPodName := fmt.Sprintf("%s-agent", woc.wf.Name)
+	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("Deleting Agent Pod")
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+		var err error
+		err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(ctx, agentPodName, metav1.DeleteOptions{})
+		return apierr.IsNotFound(err) || err == nil, err
+	})
 	if err != nil {
 		return err
 	}

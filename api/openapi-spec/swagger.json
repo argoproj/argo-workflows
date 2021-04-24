@@ -7123,14 +7123,12 @@
     "io.argoproj.workflow.v1alpha1.HTTP": {
       "type": "object",
       "required": [
-        "headers",
-        "method",
-        "url",
-        "data"
+        "url"
       ],
       "properties": {
-        "data": {
-          "type": "string"
+        "body": {
+          "type": "string",
+          "format": "byte"
         },
         "headers": {
           "type": "array",
@@ -7169,23 +7167,25 @@
     "io.argoproj.workflow.v1alpha1.HTTPHeader": {
       "type": "object",
       "required": [
-        "name",
-        "value",
-        "fromSecrete",
-        "fromConfigMap"
+        "name"
       ],
       "properties": {
-        "fromConfigMap": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
-        },
-        "fromSecrete": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        },
         "name": {
           "type": "string"
         },
         "value": {
           "type": "string"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeaderSource"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeaderSource": {
+      "type": "object",
+      "properties": {
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -7455,6 +7455,20 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
           },
           "x-kubernetes-list-type": "atomic"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.NodeResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
         }
       }
     },
@@ -8248,20 +8262,6 @@
         },
         "template": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.TaskResult": {
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string"
-        },
-        "outputs": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
-        },
-        "phase": {
-          "type": "string"
         }
       }
     },
@@ -9347,8 +9347,7 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "type": "object",
       "properties": {
-        "templates": {
-          "description": "Key NodeID, value: Template",
+        "tasks": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
@@ -9362,7 +9361,7 @@
         "nodes": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TaskResult"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
           }
         }
       }

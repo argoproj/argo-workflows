@@ -6,7 +6,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -17,7 +17,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	informer "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	argowait "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -48,6 +47,7 @@ func NewWorkflowTaskSetManager(client v1alpha1.ArgoprojV1alpha1Interface, inform
 func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.Workflow, nodeId string, tmpl wfv1.Template) error {
 	key := fmt.Sprintf("%s/%s", wf.Namespace, wf.Name)
 	log.WithField("workflow", wf.Name).WithField("namespace", wf.Namespace).WithField("TaskSet", key).Infof("Creating TaskSet")
+
 	obj, exists, err := wfts.wfTaskSetInformer.Informer().GetIndexer().GetByKey(key)
 	if err != nil {
 		log.WithError(err).Error(fmt.Sprintf("Failed to get TaskSet '%s' from informer index", key))
@@ -56,14 +56,14 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 
 	if !exists {
 		taskSet := wfv1.WorkflowTaskSet{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       workflow.WorkflowTaskSetKind,
 				APIVersion: workflow.APIVersion,
 			},
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Namespace: wf.Namespace,
 				Name:      wf.Name,
-				OwnerReferences: []v1.OwnerReference{
+				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: wf.APIVersion,
 						Kind:       wf.Kind,
@@ -73,7 +73,7 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 				},
 			},
 			Spec: wfv1.WorkflowTaskSetSpec{
-				Templates: []wfv1.Task{
+				Tasks: []wfv1.Task{
 					{
 						NodeID:   nodeId,
 						Template: tmpl,
@@ -83,8 +83,8 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 		}
 		err = argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
 			var err error
-			_, err = wfts.wfTaskSetClient.WorkflowTaskSets(wf.Namespace).Create(ctx, &taskSet, v1.CreateOptions{})
-			return !errorsutil.IsTransientErr(err), err
+			_, err = wfts.wfTaskSetClient.WorkflowTaskSets(wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
+			return err == nil, err
 		})
 		if err != nil {
 			log.Errorf(err.Error())
@@ -101,16 +101,19 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 			NodeID:   nodeId,
 			Template: tmpl,
 		}
-		taskSet.Spec.Templates = append(taskSet.Spec.Templates, task)
-		err = argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
-			var err error
-			_, err = wfts.wfTaskSetClient.WorkflowTaskSets(wf.Namespace).Update(ctx, taskSet, v1.UpdateOptions{})
-			return !errorsutil.IsTransientErr(err), err
-		})
+		if existing := taskSet.Spec.Tasks.GetTask(nodeId); existing == nil {
+			taskSet.Spec.Tasks = append(taskSet.Spec.Tasks, task)
+			err = argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
+				var err error
+				_, err = wfts.wfTaskSetClient.WorkflowTaskSets(wf.Namespace).Update(ctx, taskSet, metav1.UpdateOptions{})
+				return err == nil, err
+			})
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
+
 	}
 	return nil
 }

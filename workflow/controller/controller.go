@@ -687,11 +687,15 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc.persistUpdates(ctx)
 		return true
 	}
-
 	startTime := time.Now()
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
+		err = woc.DeleteAgentPod(ctx)
+		if err != nil {
+			woc.log.Errorf("unable to delete the agent pod: %v", err)
+		}
+
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
 		if woc.execWf.Spec.PodGC != nil {

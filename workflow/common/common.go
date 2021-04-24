@@ -119,6 +119,8 @@ const (
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
 	// EnvVarArgoTrace is used enable tracing statements in Argo components
 	EnvVarArgoTrace = "ARGO_TRACE"
+	// EnvVarWorkflowName contains the workflow name for current
+	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"

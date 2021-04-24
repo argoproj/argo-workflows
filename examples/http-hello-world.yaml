@@ -5,9 +5,30 @@ metadata:
   labels:
     workflows.argoproj.io/archive-strategy: "false"
 spec:
-  entrypoint: http
+  entrypoint: main
   templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "http://10.97.34.196:8080/"}]
+        - - name: bad
+            template: http
+            continueOn:
+              failed: true
+            arguments:
+              parameters: [{name: url, value: "http://10.97.34.196:8080/bad"}]
+        - - name: wait
+            template: http
+            arguments:
+              parameters: [{name: url, value: "http://10.97.34.196:8080/wait"}]
+  
     - name: http
+      inputs:
+        parameters:
+          - name: url
       http:
-        url: https://www.google.com/
+       # url: http://dummy.restapiexample.com/api/v1/employees
+       url: "{{inputs.parameters.url}}"
       

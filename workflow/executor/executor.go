@@ -78,6 +78,7 @@ type WorkflowExecutor struct {
 	// list of errors that occurred during execution.
 	// the first of these is used as the overall message of the node
 	errors []error
+	WorkflowName string
 }
 
 type Initializer interface {

@@ -497,13 +497,13 @@ message HDFSKrbConfig {
 }
 
 message HTTP {
-  repeated HTTPHeader headers = 1;
+  optional string method = 1;
 
-  optional string method = 2;
+  optional string url = 2;
 
-  optional string url = 3;
+  repeated HTTPHeader headers = 3;
 
-  optional string data = 4;
+  optional bytes body = 4;
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
@@ -520,9 +520,11 @@ message HTTPHeader {
 
   optional string value = 2;
 
-  optional k8s.io.api.core.v1.SecretKeySelector fromSecrete = 3;
+  optional HTTPHeaderSource valueFrom = 3;
+}
 
-  optional k8s.io.api.core.v1.ConfigMapKeySelector fromConfigMap = 4;
+message HTTPHeaderSource {
+  optional k8s.io.api.core.v1.SecretKeySelector secretKeyRef = 1;
 }
 
 // Header indicate a key-value request header to be used when fetching artifacts over HTTP
@@ -655,6 +657,14 @@ message MutexStatus {
   // Waiting is a list of mutexes and their respective objects this workflow is waiting for.
   // +listType=atomic
   repeated MutexHolding waiting = 2;
+}
+
+message NodeResult {
+  optional string phase = 1;
+
+  optional string message = 2;
+
+  optional Outputs outputs = 3;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -1113,14 +1123,6 @@ message Task {
   optional string nodeId = 1;
 
   optional Template template = 2;
-}
-
-message TaskResult {
-  optional string phase = 1;
-
-  optional string message = 2;
-
-  optional Outputs outputs = 3;
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -1654,8 +1656,7 @@ message WorkflowStep {
 }
 
 // +genclient
-// +genclient:noStatus
-// +kubebuilder:resource:shortName=wfTaskSet
+// +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskSet {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -1673,12 +1674,11 @@ message WorkflowTaskSetList {
 }
 
 message WorkflowTaskSetSpec {
-  // Key NodeID, value: Template
-  repeated Task templates = 1;
+  repeated Task tasks = 1;
 }
 
 message WorkflowTaskSetStatus {
-  map<string, TaskResult> nodes = 1;
+  map<string, NodeResult> nodes = 1;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
