@@ -12,17 +12,13 @@ spec:
         - - name: good
             template: http
             arguments:
-              parameters: [{name: url, value: "http://10.97.34.196:8080/"}]
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/lists.json"}]
         - - name: bad
             template: http
             continueOn:
               failed: true
             arguments:
-              parameters: [{name: url, value: "http://10.97.34.196:8080/bad"}]
-        - - name: wait
-            template: http
-            arguments:
-              parameters: [{name: url, value: "http://10.97.34.196:8080/wait"}]
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
   
     - name: http
       inputs:
