@@ -1,8 +1,7 @@
 import * as React from 'react';
-import {NodePhase} from '../../../models';
 import {PhaseIcon} from './phase-icon';
 
-export const Phase = ({value}: {value: NodePhase}) => {
+export const Phase = ({value}: {value: string}) => {
     return (
         <>
             <PhaseIcon value={value} /> {value}

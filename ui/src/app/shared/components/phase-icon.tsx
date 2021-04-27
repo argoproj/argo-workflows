@@ -1,8 +1,7 @@
 import * as classNames from 'classnames';
 import * as React from 'react';
-import {NodePhase} from '../../../models';
 import {Utils} from '../utils';
 
-export const PhaseIcon = ({value}: {value: NodePhase}) => {
+export const PhaseIcon = ({value}: {value: string}) => {
     return <i className={classNames('fa', Utils.statusIconClasses(value))} aria-hidden='true' />;
 };
