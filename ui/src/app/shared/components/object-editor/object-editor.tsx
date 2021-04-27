@@ -24,15 +24,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
     const [text, setText] = useState<string>(stringify(value, lang));
 
     useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
-    useEffect(() => {
-        const newText = stringify(value, lang);
-        setText(newText);
-        // we ONLY want to change the text, if the normalized version has changed, this prevents white-space changes
-        // from resulting in a significant change
-        if (newText !== stringify(parse(editor.current.editor.getValue()), lang)) {
-            editor.current.editor.setValue(newText);
-        }
-    }, [value]);
+    useEffect(() => setText(stringify(value, lang)), [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
     useEffect(() => {
         // we ONLY want to change the text, if the normalized version has changed, this prevents white-space changes
