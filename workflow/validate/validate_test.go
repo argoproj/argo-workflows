@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -2729,6 +2730,65 @@ func TestMaxLengthName(t *testing.T) {
 	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
 	err = ValidateCronWorkflow(wftmplGetter, cwftmplGetter, cwf)
 	assert.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
+}
+
+func TestGetNameFieldValue(t *testing.T) {
+	t.Run("Name field exists", func(t *testing.T) {
+		type testStruct struct {
+			Name string
+		}
+		s := testStruct{
+			Name: "test",
+		}
+		val, err := getNameFieldValue(reflect.ValueOf(s))
+		assert.NoError(t, err)
+		assert.Equal(t, "test", val)
+	})
+	t.Run("Name field missing", func(t *testing.T) {
+		type testStruct struct {
+			Description string
+		}
+		s := testStruct{
+			Description: "test",
+		}
+		_, err := getNameFieldValue(reflect.ValueOf(s))
+		assert.Error(t, err)
+	})
+	t.Run("Name field embedded", func(t *testing.T) {
+		type subStruct struct {
+			Name string
+		}
+		type testStruct struct {
+			subStruct
+			Description string
+		}
+		s := testStruct{
+			subStruct: subStruct{
+				Name: "test",
+			},
+			Description: "description",
+		}
+		val, err := getNameFieldValue(reflect.ValueOf(s))
+		assert.NoError(t, err)
+		assert.Equal(t, "test", val)
+	})
+	t.Run("Name field embedded missing", func(t *testing.T) {
+		type subStruct struct {
+			Value string
+		}
+		type testStruct struct {
+			subStruct
+			Description string
+		}
+		s := testStruct{
+			subStruct: subStruct{
+				Value: "test",
+			},
+			Description: "description",
+		}
+		_, err := getNameFieldValue(reflect.ValueOf(s))
+		assert.Error(t, err)
+	})
 }
 
 func TestVerifyNoCycles(t *testing.T) {
