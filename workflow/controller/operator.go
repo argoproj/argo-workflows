@@ -2114,30 +2114,27 @@ func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old *wfv1.Nodes, new *wfv
 		return
 	}
 	oldNodes := *old
-	newNodes := *new
 
 	// Check for newly added nodes; send an event for new nodes
-	for nodeName, newNode := range newNodes {
+	for nodeName, newNode := range *new {
 		oldNode, exists := oldNodes[nodeName]
 		if exists {
 			if oldNode.Phase == newNode.Phase {
 				continue
 			}
 			if oldNode.Phase == wfv1.NodePending && newNode.Completed() {
-				origPhase := newNode.Phase
-				newNode.Phase = wfv1.NodeRunning
-				woc.recordNodePhaseEvent(&newNode)
-				newNode.Phase = origPhase
+				ephemeralNode := newNode.DeepCopy()
+				ephemeralNode.Phase = wfv1.NodeRunning
+				woc.recordNodePhaseEvent(ephemeralNode)
 			}
 			woc.recordNodePhaseEvent(&newNode)
 		} else {
 			if newNode.Phase == wfv1.NodeRunning {
 				woc.recordNodePhaseEvent(&newNode)
 			} else if newNode.Completed() {
-				origPhase := newNode.Phase
-				newNode.Phase = wfv1.NodeRunning
-				woc.recordNodePhaseEvent(&newNode)
-				newNode.Phase = origPhase
+				ephemeralNode := newNode.DeepCopy()
+				ephemeralNode.Phase = wfv1.NodeRunning
+				woc.recordNodePhaseEvent(ephemeralNode)
 				woc.recordNodePhaseEvent(&newNode)
 			}
 		}
