@@ -43,7 +43,16 @@ func NewStopCommand() *cobra.Command {
   argo stop my-wf
 
 # Stop the latest workflow:
+
   argo stop @latest
+
+# Stop multiple workflows by label selector
+
+  argo stop -l workflows.argoproj.io/test=true
+
+# Stop multiple workflows by field selector
+
+  argo stop --field-selector metadata.namespace=argo
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 && !stopArgs.hasSelector() {
@@ -60,7 +69,7 @@ func NewStopCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
 	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
-	command.Flags().StringVarP(&stopArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	command.Flags().StringVarP(&stopArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().StringVar(&stopArgs.fieldSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&stopArgs.dryRun, "dry-run", false, "If true, only stop the workflows that would be stopped, without stopping them.")
 	return command
