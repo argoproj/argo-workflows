@@ -545,15 +545,6 @@ message Item {
   optional bytes value = 1;
 }
 
-// LifecycleRule specifies how to manage bucket's lifecycle
-message LifecycleRule {
-  // MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type
-  optional int32 markInfrequentAccessAfterDays = 1;
-
-  // MarkDeletionAfterDays is the number of days before we delete objects in the bucket
-  optional int32 markDeletionAfterDays = 2;
-}
-
 // A link to another app.
 // +patchStrategy=merge
 // +patchMergeKey=name
@@ -777,7 +768,16 @@ message OSSBucket {
   optional string securityToken = 6;
 
   // LifecycleRule specifies how to manage bucket's lifecycle
-  optional LifecycleRule lifecycleRule = 7;
+  optional OSSLifecycleRule lifecycleRule = 7;
+}
+
+// OSSLifecycleRule specifies how to manage bucket's lifecycle
+message OSSLifecycleRule {
+  // MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type
+  optional int32 markInfrequentAccessAfterDays = 1;
+
+  // MarkDeletionAfterDays is the number of days before we delete objects in the bucket
+  optional int32 markDeletionAfterDays = 2;
 }
 
 // Outputs hold parameters, artifacts, and results from a step

@@ -2,6 +2,7 @@ package oss
 
 import (
 	"fmt"
+	"k8s.io/utils/pointer"
 	"strings"
 	"time"
 
@@ -107,7 +108,7 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 			}
 			objectName := outputArtifact.OSS.Key
 			if outputArtifact.OSS.LifecycleRule != nil {
-				err = ossDriver.setBucketLifecycleRule(osscli, outputArtifact)
+				err = setBucketLifecycleRule(osscli, outputArtifact)
 				return !isTransientOSSErr(err), err
 			}
 			isDir, err := file.IsDirectory(path)
@@ -152,17 +153,17 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 	return files, err
 }
 
-func (ossDriver *ArtifactDriver) setBucketLifecycleRule(client *oss.Client, artifact *wfv1.Artifact) error {
-	if artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays == nil && artifact.OSS.LifecycleRule.MarkDeletionAfterDays == nil {
+func setBucketLifecycleRule(client *oss.Client, artifact *wfv1.Artifact) error {
+	if artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays == 0 && artifact.OSS.LifecycleRule.MarkDeletionAfterDays == 0 {
 		return nil
 	}
 	var markInfrequentAccessAfterDays int
 	var markDeletionAfterDays int
-	if artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays != nil {
-		markInfrequentAccessAfterDays = int(*artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays)
+	if artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays != 0 {
+		markInfrequentAccessAfterDays = int(artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays)
 	}
-	if artifact.OSS.LifecycleRule.MarkDeletionAfterDays != nil {
-		markDeletionAfterDays = int(*artifact.OSS.LifecycleRule.MarkDeletionAfterDays)
+	if artifact.OSS.LifecycleRule.MarkDeletionAfterDays != 0 {
+		markDeletionAfterDays = int(artifact.OSS.LifecycleRule.MarkDeletionAfterDays)
 	}
 	if markInfrequentAccessAfterDays > markDeletionAfterDays {
 		return fmt.Errorf("markInfrequentAccessAfterDays cannot be large than markDeletionAfterDays")
@@ -171,9 +172,8 @@ func (ossDriver *ArtifactDriver) setBucketLifecycleRule(client *oss.Client, arti
 	// Set expiration rule.
 	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", artifact.OSS.Key, true, markInfrequentAccessAfterDays)
 	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
-	deleteMark := true
 	expiration := oss.LifecycleExpiration{
-		ExpiredObjectDeleteMarker: &deleteMark,
+		ExpiredObjectDeleteMarker: pointer.BoolPtr(true),
 	}
 	// Convert to Infrequent Access (IA) storage type for objects that are expired after a period of time.
 	versionTransition := oss.LifecycleVersionTransition{

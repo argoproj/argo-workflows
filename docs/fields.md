@@ -3416,7 +3416,7 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 |`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
-|`lifecycleRule`|[`LifecycleRule`](#lifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
+|`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
 
@@ -4019,9 +4019,9 @@ Header indicate a key-value request header to be used when fetching artifacts ov
 |`name`|`string`|Name is the header name|
 |`value`|`string`|Value is the literal value to use for the header|
 
-## LifecycleRule
+## OSSLifecycleRule
 
-LifecycleRule specifies how to manage bucket's lifecycle
+OSSLifecycleRule specifies how to manage bucket's lifecycle
 
 ### Fields
 | Field Name | Field Type | Description   |
