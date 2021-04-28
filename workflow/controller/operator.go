@@ -559,7 +559,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	woc.wf.TypeMeta = woc.orig.TypeMeta
 
 	// Create WorkflowNode* events for nodes that have changed phase
-	woc.recordNodePhaseChangeEvents(&woc.orig.Status.Nodes, &woc.wf.Status.Nodes)
+	woc.recordNodePhaseChangeEvents(woc.orig.Status.Nodes, woc.wf.Status.Nodes)
 
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
 		panic("workflow should be hydrated")
@@ -2109,15 +2109,14 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 
 // recordNodePhaseChangeEvents creates WorkflowNode Kubernetes events for each node
 // that has changes logged during this execution of the operator loop.
-func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old *wfv1.Nodes, new *wfv1.Nodes) {
+func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old wfv1.Nodes, new wfv1.Nodes) {
 	if !woc.controller.Config.NodeEvents.IsEnabled() {
 		return
 	}
-	oldNodes := *old
 
 	// Check for newly added nodes; send an event for new nodes
-	for nodeName, newNode := range *new {
-		oldNode, exists := oldNodes[nodeName]
+	for nodeName, newNode := range new {
+		oldNode, exists := old[nodeName]
 		if exists {
 			if oldNode.Phase == newNode.Phase {
 				continue
