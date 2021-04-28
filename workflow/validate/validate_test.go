@@ -2730,3 +2730,214 @@ func TestMaxLengthName(t *testing.T) {
 	err = ValidateCronWorkflow(wftmplGetter, cwftmplGetter, cwf)
 	assert.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }
+
+func TestVerifyNoCycles(t *testing.T) {
+	tests := map[string]struct {
+		depGraph map[string][]string
+		hasErr   bool
+		errMsg   string
+	}{
+		"no cycle": {
+			depGraph: map[string][]string{
+				"a": {},
+				"b": {"a"},
+				"c": {"a"},
+				"d": {"b", "c"},
+			},
+			hasErr: false,
+			errMsg: "",
+		},
+		"has cycle 1": {
+			depGraph: map[string][]string{
+				"a": {"d"},
+				"b": {"a"},
+				"c": {"b"},
+				"d": {"c"},
+			},
+			hasErr: true,
+			errMsg: "dependency cycle detected: d->c->b->a->d",
+		},
+		"has cycle 2": {
+			depGraph: map[string][]string{
+				"a": {},
+				"b": {"a"},
+				"c": {"b"},
+				"d": {"e"},
+				"e": {"d"},
+			},
+			hasErr: true,
+			errMsg: "dependency cycle detected: e->d->e",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := verifyNoCycles(tc.depGraph)
+			if tc.hasErr {
+				assert.Errorf(t, err, tc.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+var invalidContainerSetEmpty = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: workspace
+          emptyDir: { }
+      containerSet:
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+`
+
+func TestInvalidContainerSetEmpty(t *testing.T) {
+	_, err := validate(invalidContainerSetEmpty)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.main.containerSet.containers must have at least one container")
+	}
+}
+
+var invalidContainerSetDuplicateNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: workspace
+          emptyDir: { }
+      containerSet:
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: a
+            image: argoproj/argosay:v2
+`
+
+func TestInvalidContainerSetDuplicateNames(t *testing.T) {
+	_, err := validate(invalidContainerSetDuplicateNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.main.containerSet.containers[1].name 'a' is not unique")
+	}
+}
+
+var invalidContainerSetDependencyNotFound = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: workspace
+          emptyDir: { }
+      containerSet:
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+            dependencies:
+              - c
+`
+
+func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
+	_, err := validate(invalidContainerSetDependencyNotFound)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.main.containerSet.containers.b dependency 'c' not defined")
+	}
+}
+
+var invalidContainerSetDependencyCycle = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: workspace
+          emptyDir: { }
+      containerSet:
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+            dependencies:
+              - b
+          - name: b
+            image: argoproj/argosay:v2
+            dependencies:
+              - a
+`
+
+func TestInvalidContainerSetDependencyCycle(t *testing.T) {
+	_, err := validate(invalidContainerSetDependencyCycle)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.main.containerSet.containers dependency cycle detected: b->a->b")
+	}
+}
+
+var validContainerSet = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: workspace
+          emptyDir: { }
+      containerSet:
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+            dependencies:
+              - a
+          - name: c
+            image: argoproj/argosay:v2
+            dependencies:
+              - a
+          - name: d
+            image: argoproj/argosay:v2
+            dependencies:
+              - b
+              - c
+`
+
+func TestValidContainerSet(t *testing.T) {
+	_, err := validate(validContainerSet)
+	assert.NoError(t, err)
+}
