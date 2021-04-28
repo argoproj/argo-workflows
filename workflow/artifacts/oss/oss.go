@@ -2,7 +2,6 @@ package oss
 
 import (
 	"fmt"
-	"k8s.io/utils/pointer"
 	"strings"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -108,7 +108,7 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 			}
 			objectName := outputArtifact.OSS.Key
 			if outputArtifact.OSS.LifecycleRule != nil {
-				err = setBucketLifecycleRule(osscli, outputArtifact)
+				err = setBucketLifecycleRule(osscli, outputArtifact.OSS)
 				return !isTransientOSSErr(err), err
 			}
 			isDir, err := file.IsDirectory(path)
@@ -153,24 +153,24 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 	return files, err
 }
 
-func setBucketLifecycleRule(client *oss.Client, artifact *wfv1.Artifact) error {
-	if artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays == 0 && artifact.OSS.LifecycleRule.MarkDeletionAfterDays == 0 {
+func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) error {
+	if ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays == 0 && ossArtifact.LifecycleRule.MarkDeletionAfterDays == 0 {
 		return nil
 	}
 	var markInfrequentAccessAfterDays int
 	var markDeletionAfterDays int
-	if artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays != 0 {
-		markInfrequentAccessAfterDays = int(artifact.OSS.LifecycleRule.MarkInfrequentAccessAfterDays)
+	if ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays != 0 {
+		markInfrequentAccessAfterDays = int(ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays)
 	}
-	if artifact.OSS.LifecycleRule.MarkDeletionAfterDays != 0 {
-		markDeletionAfterDays = int(artifact.OSS.LifecycleRule.MarkDeletionAfterDays)
+	if ossArtifact.LifecycleRule.MarkDeletionAfterDays != 0 {
+		markDeletionAfterDays = int(ossArtifact.LifecycleRule.MarkDeletionAfterDays)
 	}
 	if markInfrequentAccessAfterDays > markDeletionAfterDays {
 		return fmt.Errorf("markInfrequentAccessAfterDays cannot be large than markDeletionAfterDays")
 	}
 
 	// Set expiration rule.
-	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", artifact.OSS.Key, true, markInfrequentAccessAfterDays)
+	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", ossArtifact.Key, true, markInfrequentAccessAfterDays)
 	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
 	expiration := oss.LifecycleExpiration{
 		ExpiredObjectDeleteMarker: pointer.BoolPtr(true),
@@ -186,7 +186,7 @@ func setBucketLifecycleRule(client *oss.Client, artifact *wfv1.Artifact) error {
 	}
 	versionTransitionRule := oss.LifecycleRule{
 		ID:                    "version-transition-rule",
-		Prefix:                artifact.OSS.Key,
+		Prefix:                ossArtifact.Key,
 		Status:                string(oss.VersionEnabled),
 		Expiration:            &expiration,
 		NonVersionExpiration:  &versionExpiration,
@@ -195,7 +195,7 @@ func setBucketLifecycleRule(client *oss.Client, artifact *wfv1.Artifact) error {
 
 	// Set lifecycle rules to the bucket.
 	rules := []oss.LifecycleRule{expirationRule, versionTransitionRule}
-	err := client.SetBucketLifecycle(artifact.OSS.Bucket, rules)
+	err := client.SetBucketLifecycle(ossArtifact.Bucket, rules)
 	return err
 }
 
