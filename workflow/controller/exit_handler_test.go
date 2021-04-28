@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var stepsOnExitTmpl = `
@@ -49,6 +51,7 @@ spec:
           default: "welcome"
           path: /tmp/hello_world.txt
   - name: exitContainer
+
     container:
       image: docker/whalesay
       command: [cowsay]
@@ -156,7 +159,7 @@ spec:
   - name: suspend
     steps:
     - - name: leafA
-        onExit: exitContainer
+        onExit: exitContainer1
         template: whalesay
     - - name: leafB
         hooks:
@@ -165,7 +168,7 @@ spec:
             arguments:
               parameters:
               - name: input
-              value: '{{steps.leafB.outputs.parameters.result}}'
+                value: '{{steps.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -179,6 +182,14 @@ spec:
           default: "welcome"
           path: /tmp/hello_world.txt
   - name: exitContainer
+    inputs:
+      parameters:
+      - name: input
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]
+  - name: exitContainer1
     container:
       image: docker/whalesay
       command: [cowsay]
@@ -193,12 +204,41 @@ func TestStepsTmplOnExit(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodFailed)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1.operate(ctx)
 	onExitNodeIsPresent := false
-	for _, node := range woc.wf.Status.Nodes {
-		if strings.Contains(node.Name, "onExit") {
+	for _, node := range woc1.wf.Status.Nodes {
+		if node.Phase == wfv1.NodePending && strings.Contains(node.Name, "onExit") {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+
+	assert.True(t, onExitNodeIsPresent)
+	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
+	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
+	woc2.operate(ctx)
+	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
+	for idx, node := range woc2.wf.Status.Nodes {
+		if strings.Contains(node.Name, ".leafB") {
+			node.Outputs = &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:  "result",
+						Value: wfv1.AnyStringPtr("Welcome"),
+					},
+				},
+			}
+			woc2.wf.Status.Nodes[idx] = node
+		}
+	}
+
+	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
+	woc3.operate(ctx)
+	onExitNodeIsPresent = false
+	for _, node := range woc3.wf.Status.Nodes {
+		if node.Phase == wfv1.NodePending && strings.Contains(node.Name, "onExit") {
 			onExitNodeIsPresent = true
 			break
 		}
@@ -218,7 +258,7 @@ spec:
     dag:
       tasks:
       - name: leafA
-        onExit: exitContainer
+        onExit: exitContainer1
         template: whalesay
       - name: leafB
         dependencies: [leafA]
@@ -228,7 +268,7 @@ spec:
             arguments:
               parameters:
               - name: input
-              value: '{{tasks.leafB.outputs.parameters.result}}'
+                value: '{{tasks.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -242,6 +282,14 @@ spec:
           default: "welcome"
           path: /tmp/hello_world.txt
   - name: exitContainer
+    inputs:
+      parameters:
+      - name: input
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world  {{inputs.parameters.input}}"]
+  - name: exitContainer1
     container:
       image: docker/whalesay
       command: [cowsay]
@@ -256,12 +304,40 @@ func TestDAGOnExit(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodFailed)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1.operate(ctx)
 	onExitNodeIsPresent := false
-	for _, node := range woc.wf.Status.Nodes {
+	for _, node := range woc1.wf.Status.Nodes {
 		if strings.Contains(node.Name, "onExit") {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
+
+	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
+	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
+	woc2.operate(ctx)
+	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
+	for idx, node := range woc2.wf.Status.Nodes {
+		if strings.Contains(node.Name, ".leafB") {
+			node.Outputs = &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:  "result",
+						Value: wfv1.AnyStringPtr("Welcome"),
+					},
+				},
+			}
+			woc2.wf.Status.Nodes[idx] = node
+		}
+	}
+	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
+	woc3.operate(ctx)
+	onExitNodeIsPresent = false
+	for _, node := range woc3.wf.Status.Nodes {
+		if node.Phase == wfv1.NodePending && strings.Contains(node.Name, "onExit") {
 			onExitNodeIsPresent = true
 			break
 		}

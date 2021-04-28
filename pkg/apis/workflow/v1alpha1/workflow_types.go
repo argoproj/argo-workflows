@@ -1157,8 +1157,11 @@ const (
 type LifecycleHooks map[LifecycleEvent]LifecycleHook
 
 func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
-	hook := lchs[ExitLifecycleEvent]
-	return &hook
+	hook, ok := lchs[ExitLifecycleEvent]
+	if ok {
+		return &hook
+	}
+	return nil
 }
 
 type LifecycleHook struct {
@@ -1170,7 +1173,7 @@ func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
 	if lch.Arguments.IsEmpty() {
 		lch.Arguments = args
 	}
-	return lch
+	return lch.DeepCopy()
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
@@ -1186,7 +1189,7 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 	if step.OnExit != "" {
 		return &LifecycleHook{Template: step.OnExit, Arguments: args}
 	}
-	return step.Hooks.GetExitHook().WithArgs(args).DeepCopy()
+	return step.Hooks.GetExitHook().WithArgs(args)
 }
 
 func (step *WorkflowStep) GetTemplateName() string {
@@ -2426,7 +2429,7 @@ func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 	if t.OnExit != "" {
 		return &LifecycleHook{Template: t.OnExit, Arguments: args}
 	}
-	return t.Hooks.GetExitHook().WithArgs(args).DeepCopy()
+	return t.Hooks.GetExitHook().WithArgs(args)
 }
 
 func (t *DAGTask) HasExitHook() bool {
