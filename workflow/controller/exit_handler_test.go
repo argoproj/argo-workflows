@@ -148,6 +148,165 @@ func TestDAGOnExitTmpl(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
+var stepsOnExitTmplWithArt = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-on-exit
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: leafA
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
+                value: '{{steps.leafA.outputs.artifacts.result}}'
+        template: whalesay
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+    outputs:
+      artifacts:
+      - name: result
+        path: /tmp/hello_world.txt
+  - name: exitContainer
+    inputs:
+      artifacts:
+      - name: input
+        path: /my-artifact
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]
+`
+
+func TestStepsOnExitTmplWithArt(t *testing.T) {
+	wf := unmarshalWF(stepsOnExitTmplWithArt)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	for idx, node := range woc.wf.Status.Nodes {
+		if strings.Contains(node.Name, ".leafA") {
+			node.Outputs = &wfv1.Outputs{
+				Artifacts: wfv1.Artifacts{
+					{
+						Name: "result",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							S3: &wfv1.S3Artifact{Key: "test"},
+						},
+					},
+				},
+			}
+			woc.wf.Status.Nodes[idx] = node
+		}
+	}
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1.operate(ctx)
+	onExitNodeIsPresent := false
+	for _, node := range woc1.wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
+}
+
+var dagOnExitTmplWithArt = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-on-exit
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    dag:
+      tasks:
+      - name: leafA
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              parameters:
+              - name: input
+                value: '{{tasks.leafA.outputs.parameters.result}}'
+        template: whalesay
+      - name: leafB
+        dependencies: [leafA]
+        hooks:
+          exit: 
+            template: exitContainer
+            arguments:
+              artifacts:
+              - name: input
+                value: '{{tasks.leafB.outputs.parameters.result}}'
+        template: whalesay
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: "welcome"
+          path: /tmp/hello_world.txt
+  - name: exitContainer
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]
+`
+
+func TestDAGOnExitTmplWithArt(t *testing.T) {
+	wf := unmarshalWF(dagOnExitTmpl)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	for idx, node := range woc.wf.Status.Nodes {
+		if strings.Contains(node.Name, ".leafA") {
+			node.Outputs = &wfv1.Outputs{
+				Artifacts: wfv1.Artifacts{
+					{
+						Name: "result",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							S3: &wfv1.S3Artifact{Key: "test"},
+						},
+					},
+				},
+			}
+			woc.wf.Status.Nodes[idx] = node
+		}
+	}
+	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1.operate(ctx)
+	onExitNodeIsPresent := false
+	for _, node := range woc1.wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
+}
+
 var stepsTmplOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
