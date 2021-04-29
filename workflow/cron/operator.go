@@ -29,13 +29,13 @@ import (
 
 type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
-	name        string
-	cronWf      *v1alpha1.CronWorkflow
-	wfClientset versioned.Interface
-	wfClient    typed.WorkflowInterface
-	cronWfIf    typed.CronWorkflowInterface
-	log         *log.Entry
-	metrics     *metrics.Metrics
+	name                            string
+	cronWf                          *v1alpha1.CronWorkflow
+	wfClientset                     versioned.Interface
+	wfClient                        typed.WorkflowInterface
+	cronWfIf                        typed.CronWorkflowInterface
+	log                             *log.Entry
+	metrics                         *metrics.Metrics
 	consecutiveSubmissionErrorCount int
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
