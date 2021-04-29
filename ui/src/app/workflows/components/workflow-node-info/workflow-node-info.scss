@@ -2,7 +2,7 @@
 
 .workflow-node-info {
 
-    max-height: calc(100vh - 2 * #{$top-bar-height});
+    height: calc(100vh - 2 * #{$top-bar-height});
     overflow-y: auto;
 
     .tabs {
