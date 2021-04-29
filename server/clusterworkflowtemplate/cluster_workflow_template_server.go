@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sort"
 
+
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -13,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
@@ -36,7 +40,9 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, req.Template, v1.CreateOptions{})
+	created, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, req.Template, v1.CreateOptions{})
+	util.CleanMetadata(created)
+	return created, err
 }
 
 func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateGetRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
@@ -57,6 +63,7 @@ func (cwts *ClusterWorkflowTemplateServer) getTemplateAndValidate(ctx context.Co
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(wfTmpl)
 	return wfTmpl, nil
 }
 
@@ -73,7 +80,8 @@ func (cwts *ClusterWorkflowTemplateServer) ListClusterWorkflowTemplates(ctx cont
 	}
 
 	sort.Sort(cwfList.Items)
-
+	util.RemoveSelfLink(cwfList)
+	util.RemoveManagedFields(cwfList.Items)
 	return cwfList, nil
 }
 
@@ -101,7 +109,7 @@ func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx conte
 	if err != nil {
 		return nil, err
 	}
-
+	util.CleanMetadata(req.Template)
 	return req.Template, nil
 }
 
@@ -122,5 +130,6 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 	}
 
 	res, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Update(ctx, req.Template, v1.UpdateOptions{})
+	util.CleanMetadata(res)
 	return res, err
 }

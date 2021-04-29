@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +22,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type archivedWorkflowServer struct {
@@ -107,7 +112,10 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	sort.Sort(items)
-	return &wfv1.WorkflowList{ListMeta: meta, Items: items}, nil
+	list := &wfv1.WorkflowList{ListMeta: meta, Items: items}
+	util.RemoveSelfLink(list)
+	util.RemoveManagedFields(list.Items)
+	return list, nil
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
@@ -125,6 +133,7 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *w
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
+	util.CleanMetadata(wf)
 	return wf, err
 }
 

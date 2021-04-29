@@ -6,6 +6,10 @@ import (
 	"io"
 	"regexp"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -14,6 +18,7 @@ import (
 	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type eventSourceServer struct{}
@@ -25,6 +30,7 @@ func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsour
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(es)
 	return es, nil
 }
 
@@ -35,6 +41,7 @@ func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcep
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(es)
 	return es, nil
 }
 
@@ -53,6 +60,7 @@ func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsour
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(es)
 	return es, nil
 }
 
@@ -62,6 +70,8 @@ func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourc
 	if err != nil {
 		return nil, err
 	}
+	util.RemoveSelfLink(list)
+	util.RemoveManagedFields(list.Items)
 	return list, nil
 }
 
@@ -126,6 +136,7 @@ func (e *eventSourceServer) WatchEventSources(in *eventsourcepkg.ListEventSource
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
+			util.CleanMetadata(es)
 			err := srv.Send(&eventsourcepkg.EventSourceWatchEvent{Type: string(event.Type), Object: es})
 			if err != nil {
 				return err

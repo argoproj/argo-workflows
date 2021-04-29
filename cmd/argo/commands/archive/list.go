@@ -4,6 +4,10 @@ import (
 	"os"
 	"sort"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -13,6 +17,7 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/printer"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func NewListCommand() *cobra.Command {
@@ -46,6 +51,7 @@ func NewListCommand() *cobra.Command {
 				listOpts.Continue = resp.Continue
 			}
 			sort.Sort(workflows)
+			util.CleanMetadata(workflows)
 			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true})
 			errors.CheckError(err)
 		},

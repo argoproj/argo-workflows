@@ -6,6 +6,10 @@ import (
 	"io"
 	"regexp"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -14,6 +18,7 @@ import (
 	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type sensorServer struct{}
@@ -24,17 +29,23 @@ func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensor
 	if err != nil {
 		return nil, err
 	}
+	util.RemoveSelfLink(list)
+	util.RemoveManagedFields(list.Items)
 	return list, nil
 }
 
 func (s *sensorServer) GetSensor(ctx context.Context, in *sensorpkg.GetSensorRequest) (*sv1.Sensor, error) {
 	client := auth.GetSensorClient(ctx)
-	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Get(ctx, in.Name, metav1.GetOptions{})
+	sensor, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Get(ctx, in.Name, metav1.GetOptions{})
+	util.CleanMetadata(sensor)
+	return sensor, err
 }
 
 func (s *sensorServer) CreateSensor(ctx context.Context, in *sensorpkg.CreateSensorRequest) (*sv1.Sensor, error) {
 	client := auth.GetSensorClient(ctx)
-	return client.ArgoprojV1alpha1().Sensors(in.Namespace).Create(ctx, in.Sensor, metav1.CreateOptions{})
+	created, err := client.ArgoprojV1alpha1().Sensors(in.Namespace).Create(ctx, in.Sensor, metav1.CreateOptions{})
+	util.CleanMetadata(created)
+	return created, err
 }
 
 func (s *sensorServer) UpdateSensor(ctx context.Context, in *sensorpkg.UpdateSensorRequest) (*sv1.Sensor, error) {
@@ -108,6 +119,7 @@ func (s *sensorServer) WatchSensors(in *sensorpkg.ListSensorsRequest, srv sensor
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
+			util.CleanMetadata(es)
 			err := srv.Send(&sensorpkg.SensorWatchEvent{Type: string(event.Type), Object: es})
 			if err != nil {
 				return err

@@ -131,7 +131,7 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	return &wf, err
 }
 
-func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
+func FromUnstructuredObj(un *unstructured.Unstructured, v metav1.Object) error {
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
 	if err != nil {
 		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {
@@ -139,10 +139,14 @@ func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
 			if err != nil {
 				return err
 			}
-			return json.Unmarshal(data, v)
+			if err := json.Unmarshal(data, v); err != nil {
+				return err
+			}
+		} else {
+			return err
 		}
-		return err
 	}
+	CleanMetadata(v)
 	return nil
 }
 

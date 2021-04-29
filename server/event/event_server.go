@@ -4,6 +4,9 @@ import (
 	"context"
 	"sync"
 
+
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/event/dispatch"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type Controller struct {
@@ -91,5 +95,11 @@ func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg
 	if in.ListOptions != nil {
 		listOptions = *in.ListOptions
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(ctx, listOptions)
+	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(ctx, listOptions)
+	if err != nil {
+		return nil, err
+	}
+	util.RemoveSelfLink(list)
+	util.RemoveManagedFields(list.Items)
+	return list, nil
 }

@@ -86,6 +86,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -123,6 +124,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 		}
 		return &newWf, nil
 	}
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -156,6 +158,8 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 
 	// we make no promises about the overall list sorting, we just sort each page
 	sort.Sort(wfList.Items)
+	util.RemoveSelfLink(wfList)
+	util.RemoveManagedFields(wfList.Items)
 
 	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
 	if req.Fields != "" {
@@ -234,6 +238,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				return err
 			}
 			logCtx.Debug("Sending workflow event")
+			util.CleanMetadata(wf)
 			err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(event.Type), Object: wf})
 			if err != nil {
 				return err
@@ -281,6 +286,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 				return apierr.FromObject(event.Object)
 			}
 			log.Debug("Sending event")
+			util.CleanMetadata(e)
 			err = ws.Send(e)
 			if err != nil {
 				return err
@@ -324,6 +330,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -348,6 +355,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(created)
 	return created, nil
 }
 
@@ -373,7 +381,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, err
 	}
-
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -399,7 +407,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 	if err != nil {
 		return nil, err
 	}
-
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -425,6 +433,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -447,6 +456,7 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -492,6 +502,7 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -506,7 +517,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	if err != nil {
 		return nil, err
 	}
-
+	util.CleanMetadata(req.Workflow)
 	return req.Workflow, nil
 }
 
@@ -529,7 +540,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	if err != nil {
 		return err
 	}
-
+	util.CleanMetadata(wf)
 	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
@@ -550,6 +561,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(wf)
 	return wf, nil
 }
 
@@ -571,6 +583,7 @@ func getLatestWorkflow(ctx context.Context, wfClient versioned.Interface, namesp
 			latest = wf
 		}
 	}
+	util.CleanMetadata(&latest)
 	return &latest, nil
 }
 
@@ -614,5 +627,10 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	util.CleanMetadata(wf)
+	return wf, nil
 }

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sort"
 
+
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -13,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
@@ -37,7 +41,9 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Create(ctx, req.Template, v1.CreateOptions{})
+	created, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Create(ctx, req.Template, v1.CreateOptions{})
+	util.CleanMetadata(created)
+	return created, err
 }
 
 func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
@@ -54,6 +60,7 @@ func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, n
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(wfTmpl)
 	return wfTmpl, nil
 }
 
@@ -70,7 +77,8 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	}
 
 	sort.Sort(wfList.Items)
-
+	util.RemoveSelfLink(wfList)
+	util.RemoveManagedFields(wfList.Items)
 	return wfList, nil
 }
 
@@ -97,6 +105,7 @@ func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(req.Template)
 	return req.Template, nil
 }
 
@@ -116,5 +125,6 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 		return nil, err
 	}
 	res, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Update(ctx, req.Template, v1.UpdateOptions{})
+	util.CleanMetadata(res)
 	return res, err
 }

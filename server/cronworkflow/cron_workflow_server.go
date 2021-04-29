@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
@@ -36,6 +38,7 @@ func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *c
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(req.CronWorkflow)
 	return req.CronWorkflow, nil
 }
 
@@ -45,7 +48,13 @@ func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *
 		options = req.ListOptions
 	}
 	c.instanceIDService.With(options)
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(ctx, *options)
+	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(ctx, *options)
+	if err != nil {
+		return nil, err
+	}
+	util.RemoveSelfLink(list)
+	util.RemoveManagedFields(list.Items)
+	return list, nil
 }
 
 func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
@@ -61,7 +70,9 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(ctx, req.CronWorkflow, metav1.CreateOptions{})
+	created, err := wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(ctx, req.CronWorkflow, metav1.CreateOptions{})
+	util.CleanMetadata(created)
+	return created, err
 }
 
 func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cronworkflowpkg.GetCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
@@ -83,7 +94,9 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 	if err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow); err != nil {
 		return nil, err
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(ctx, req.CronWorkflow, metav1.UpdateOptions{})
+	updated, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(ctx, req.CronWorkflow, metav1.UpdateOptions{})
+	util.CleanMetadata(updated)
+	return updated, err
 }
 
 func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req *cronworkflowpkg.DeleteCronWorkflowRequest) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
@@ -117,7 +130,9 @@ func setCronWorkflowSuspend(ctx context.Context, setTo bool, namespace, name str
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshall cron workflow patch data: %w", err)
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(namespace).Patch(ctx, name, types.MergePatchType, data, metav1.PatchOptions{})
+	patched, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(namespace).Patch(ctx, name, types.MergePatchType, data, metav1.PatchOptions{})
+	util.CleanMetadata(patched)
+	return patched, err
 }
 
 func (c *cronWorkflowServiceServer) getCronWorkflowAndValidate(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {
@@ -130,5 +145,6 @@ func (c *cronWorkflowServiceServer) getCronWorkflowAndValidate(ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
+	util.CleanMetadata(cronWf)
 	return cronWf, nil
 }
