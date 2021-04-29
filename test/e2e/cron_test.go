@@ -394,6 +394,46 @@ spec:
 				assert.Equal(t, true, cronWf.Spec.Suspend)
 			})
 	})
+	s.Run("TestSuspendCronWfWithInvalidSpec", func() {
+		s.T().Parallel()
+		var listOptions v1.ListOptions
+		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-with-invalid-spec")
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-with-invalid-spec
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Forbid"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 4
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    unknown: unknown
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]`).
+			When().
+			CreateCronWorkflow().
+			Wait(2*time.Minute+25*time.Second).
+			Then().
+			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
+				assert.Equal(t, 0, len(wfList.Items))
+			}).
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, true, cronWf.Spec.Suspend)
+				assert.Equal(t, 0, len(cronWf.Status.Active))
+			})
+	})
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
@@ -419,11 +459,7 @@ func (s *CronSuite) TestMalformedCronWorkflow() {
 				assert.Equal(t, "Malformed", e[0].Reason)
 				assert.Equal(t, "cannot restore slice from map", e[0].Message)
 			},
-		).
-		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			assert.Equal(t, 1, len(cronWf.Status.Active))
-			assert.Equal(t, true, cronWf.Spec.Suspend)
-		})
+		)
 }
 
 func TestCronSuite(t *testing.T) {
