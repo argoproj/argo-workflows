@@ -107,7 +107,7 @@ spec:
             arguments:
               parameters:
               - name: input
-                value: '{{tasks.leafB.outputs.parameters.result}}'
+                from: '{{tasks.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -163,9 +163,9 @@ spec:
           exit: 
             template: exitContainer
             arguments:
-              parameters:
+              artifacts:
               - name: input
-                value: '{{steps.leafA.outputs.artifacts.result}}'
+                from: '{{steps.leafA.outputs.artifacts.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -265,6 +265,10 @@ spec:
           default: "welcome"
           path: /tmp/hello_world.txt
   - name: exitContainer
+    inputs:
+      artifacts:
+      - name: input
+        path: /my-artifact
     container:
       image: docker/whalesay
       command: [cowsay]
