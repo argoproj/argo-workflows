@@ -610,6 +610,10 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ContainerSet != nil {
+		err = tmpl.ContainerSet.Validate(tmpl)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.%s", tmpl.Name, err.Error())
+		}
 	}
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
@@ -1019,28 +1023,6 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 	return nil
 }
 
-// getNameFieldValue gets the value of the `Name` field from the struct
-// if not found from the struct, it checks embedded field instead
-func getNameFieldValue(s reflect.Value) (string, error) {
-	for i := 0; i < s.NumField(); i++ {
-		typeField := s.Type().Field(i)
-		if typeField.Name == "Name" {
-			return s.Field(i).String(), nil
-		}
-	}
-	// if not found, look for embedded struct fields
-	for i := 0; i < s.NumField(); i++ {
-		typeField := s.Type().Field(i)
-		if typeField.Anonymous {
-			name, err := getNameFieldValue(s.Field(i))
-			if err == nil {
-				return name, nil
-			}
-		}
-	}
-	return "", errors.InternalError("No 'Name' field in struct")
-}
-
 // validateWorkflowFieldNames accepts a slice of structs and
 // verifies that the Name field of the structs are:
 // * unique
@@ -1056,9 +1038,19 @@ func validateWorkflowFieldNames(slice interface{}) error {
 		items[i] = s.Index(i).Interface()
 	}
 	names := make(map[string]bool)
+	getNameFieldValue := func(val interface{}) (string, error) {
+		s := reflect.ValueOf(val)
+		for i := 0; i < s.NumField(); i++ {
+			typeField := s.Type().Field(i)
+			if typeField.Name == "Name" {
+				return s.Field(i).String(), nil
+			}
+		}
+		return "", errors.InternalError("No 'Name' field in struct")
+	}
 
 	for i, item := range items {
-		name, err := getNameFieldValue(reflect.ValueOf(item))
+		name, err := getNameFieldValue(item)
 		if err != nil {
 			return err
 		}
@@ -1358,39 +1350,6 @@ func sortDAGTasks(tmpl *wfv1.Template) error {
 	tmpl.DAG.Tasks = make([]wfv1.DAGTask, len(tmpl.DAG.Tasks))
 	for index, node := range sortingResult {
 		tmpl.DAG.Tasks[index] = *taskMap[node.NodeName]
-	}
-	return nil
-}
-
-// validateContainerSet validates a ContainerSet template, returns error if the validation fails
-func (ctx *templateValidationCtx) validateContainerSet(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
-	err := validateNonLeaf(tmpl)
-	if err != nil {
-		return err
-	}
-	if len(tmpl.ContainerSet.Containers) == 0 {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s must have at least one container", tmpl.Name)
-	}
-
-	err = validateWorkflowFieldNames(tmpl.ContainerSet.Containers)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.containers%s", tmpl.Name, err.Error())
-	}
-
-	nameToContainer := make(map[string]wfv1.ContainerNode)
-	for _, ctr := range tmpl.ContainerSet.Containers {
-		nameToContainer[ctr.Name] = ctr
-	}
-
-	for _, ctr := range tmpl.ContainerSet.Containers {
-		for _, depName := range ctr.Dependencies {
-			_, ok := nameToContainer[depName]
-			if !ok {
-				return errors.Errorf(errors.CodeBadRequest,
-					"templates.%s.containers.%s dependency '%s' not defined",
-					tmpl.Name, ctr.Name, depName)
-			}
-		}
 	}
 	return nil
 }
