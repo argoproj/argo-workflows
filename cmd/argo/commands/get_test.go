@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 )
 
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs getFlags) {
@@ -114,7 +113,7 @@ func TestStatusToNodeFieldSelector(t *testing.T) {
 func Test_printWorkflowHelper(t *testing.T) {
 	t.Run("Progress", func(t *testing.T) {
 		var wf wfv1.Workflow
-		testutil.MustUnmarshalYAML(`
+		wfv1.MustUnmarshal(`
 status:
   phase: Running
   progress: 1/2
@@ -124,7 +123,7 @@ status:
 	})
 	t.Run("EstimatedDuration", func(t *testing.T) {
 		var wf wfv1.Workflow
-		testutil.MustUnmarshalYAML(`
+		wfv1.MustUnmarshal(`
 status:
   estimatedDuration: 1
   phase: Running
@@ -134,7 +133,7 @@ status:
 	})
 	t.Run("IndexOrdering", func(t *testing.T) {
 		var wf wfv1.Workflow
-		testutil.MustUnmarshalYAML(`apiVersion: argoproj.io/v1alpha1
+		wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-02T16:04:21Z"

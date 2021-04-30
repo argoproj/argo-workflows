@@ -31,8 +31,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
+
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -5403,7 +5402,7 @@ status:
 
 func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	var pod apiv1.Pod
-	testutil.MustUnmarshalYAML(podWithFailed, &pod)
+	wfv1.MustUnmarshal(podWithFailed, &pod)
 	assert.NotNil(t, pod)
 	nodeStatus, msg := newWoc().inferFailedReason(&pod)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
@@ -5517,7 +5516,7 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	}}
 	var pod apiv1.Pod
 	for _, tt := range tests {
-		testutil.MustUnmarshalYAML(tt.podDetail, &pod)
+		wfv1.MustUnmarshal(tt.podDetail, &pod)
 		assert.NotNil(t, pod)
 		nodeStatus, msg := newWoc().inferFailedReason(&pod)
 		assert.Equal(t, tt.phase, nodeStatus)
