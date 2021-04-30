@@ -11,10 +11,13 @@ type WorkflowTaskSet struct {
 	Spec              WorkflowTaskSetSpec    `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status            *WorkflowTaskSetStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
-type Tasks []Task
-type WorkflowTaskSetSpec struct {
-	Tasks Tasks `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
-}
+
+type (
+	Tasks               []Task
+	WorkflowTaskSetSpec struct {
+		Tasks Tasks `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
+	}
+)
 
 func (t Tasks) GetTask(nodeID string) *Task {
 	for _, task := range t {

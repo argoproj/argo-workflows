@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var http = `apiVersion: argoproj.io/v1alpha1
@@ -24,6 +24,7 @@ spec:
         url: https://www.google.com/
 
 `
+
 var taskSet = `apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
 metadata:
@@ -76,11 +77,10 @@ func TestHTTPTemplate(t *testing.T) {
 		for _, pod := range pods.Items {
 			assert.Equal(t, pod.Name, "hello-world-agent")
 		}
-		//tss, err :=controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).List(ctx, metav1.ListOptions{})
+		// tss, err :=controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).List(ctx, metav1.ListOptions{})
 		ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
 		assert.NoError(t, err)
 		assert.NotNil(t, ts)
 		assert.Len(t, ts.Spec.Tasks, 1)
 	})
-
 }

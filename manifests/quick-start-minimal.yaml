@@ -293,6 +293,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workflowtasksets
+  - workflowtasksets/finalizers
   verbs:
   - get
   - list
@@ -481,6 +483,16 @@ rules:
   verbs:
   - create
   - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets
+  verbs:
+  - watch
+  - get
+  - list
+  - patch
+  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

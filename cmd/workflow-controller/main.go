@@ -54,7 +54,6 @@ func NewRootCommand() *cobra.Command {
 		qps                      float32
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
-		agentImage               string // --agent-image
 
 	)
 
@@ -133,8 +132,6 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
-	command.Flags().StringVar(&agentImage, "agent-image", "", "Agent image to use")
-
 	return &command
 }
 

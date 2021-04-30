@@ -48,3 +48,13 @@ rules:
     verbs:
       - create
       - get
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets
+    verbs:
+      - watch
+      - get
+      - list
+      - patch
+      - update

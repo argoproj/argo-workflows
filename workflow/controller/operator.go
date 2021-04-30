@@ -3415,8 +3415,8 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 func (woc *wfOperationCtx) DeleteAgentPod(ctx context.Context) error {
 	agentPodName := fmt.Sprintf("%s-agent", woc.wf.Name)
 	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("Deleting Agent Pod")
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		var err error
+	var err error
+	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(ctx, agentPodName, metav1.DeleteOptions{})
 		return apierr.IsNotFound(err) || err == nil, err
 	})

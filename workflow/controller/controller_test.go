@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"github.com/argoproj/argo-workflows/v3/workflow/taskset"
 	"testing"
 	"time"
 
@@ -37,6 +36,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/taskset"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -196,7 +196,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-		wfc.taskSetManager =  taskset.NewWorkflowTaskSetManager(wfclientset.ArgoprojV1alpha1(), wfc.wfTaskSetInformer, func(key string) {}, wfc.metrics)
+		wfc.taskSetManager = taskset.NewWorkflowTaskSetManager(wfclientset.ArgoprojV1alpha1(), wfc.wfTaskSetInformer, func(key string) {}, wfc.metrics)
 		wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
 		go wfc.wfInformer.Run(ctx.Done())

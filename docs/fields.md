@@ -3679,6 +3679,8 @@ MetricLabel is a single label for a prometheus metric
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 </details>
 
 ### Fields

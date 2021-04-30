@@ -77,7 +77,7 @@ type WorkflowExecutor struct {
 	memoizedSecrets map[string][]byte
 	// list of errors that occurred during execution.
 	// the first of these is used as the overall message of the node
-	errors []error
+	errors       []error
 	WorkflowName string
 }
 
