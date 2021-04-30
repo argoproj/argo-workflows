@@ -37,8 +37,22 @@ func MustUnmarshal(text, v interface{}) {
 	}
 }
 
+func MustMarshallJSON(v interface{}) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}
+
 func MustUnmarshalClusterWorkflow(text interface{}) *ClusterWorkflowTemplate {
 	x := &ClusterWorkflowTemplate{}
+	MustUnmarshal(text, &x)
+	return x
+}
+
+func MustUnmarshalCronWorkflow(text interface{}) *CronWorkflow {
+	x := &CronWorkflow{}
 	MustUnmarshal(text, &x)
 	return x
 }

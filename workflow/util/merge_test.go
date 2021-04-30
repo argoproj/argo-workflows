@@ -1,6 +1,7 @@
 package util
 
 import (
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,8 +41,8 @@ spec:
 `
 
 func TestMergeWorkflows(t *testing.T) {
-	patchWf := unmarshalWF(origWF)
-	targetWf := unmarshalWF(patchWF)
+	patchWf := wfv1.MustUnmarshalWorkflow(origWF)
+	targetWf := wfv1.MustUnmarshalWorkflow(patchWF)
 
 	err := MergeTo(patchWf, targetWf)
 	assert.NoError(t, err)
@@ -219,11 +220,11 @@ spec:
 
 func TestJoinWfSpecs(t *testing.T) {
 	assert := assert.New(t)
-	wfDefault := unmarshalWF(wfDefault)
-	wf1 := unmarshalWF(wf)
-	// wf1 := unmarshalWF(wf1)
-	wft := unmarshalWFT(wft)
-	result := unmarshalWF(resultSpec)
+	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
+	wf1 := wfv1.MustUnmarshalWorkflow(wf)
+	// wf1 := wfv1.MustUnmarshalWorkflow(wf1)
+	wft := wfv1.MustUnmarshalWorkflowTemplate(wft)
+	result := wfv1.MustUnmarshalWorkflow(resultSpec)
 
 	targetWf, err := JoinWorkflowSpec(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
 	assert.NoError(err)
@@ -235,8 +236,8 @@ func TestJoinWfSpecs(t *testing.T) {
 func TestJoinWorkflowMetaData(t *testing.T) {
 	assert := assert.New(t)
 	t.Run("WfDefaultMetaData", func(t *testing.T) {
-		wfDefault := unmarshalWF(wfDefault)
-		wf1 := unmarshalWF(wf)
+		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
+		wf1 := wfv1.MustUnmarshalWorkflow(wf)
 		JoinWorkflowMetaData(&wf1.ObjectMeta, nil, &wfDefault.ObjectMeta)
 		assert.Contains(wf1.Labels, "testLabel")
 		assert.Equal("default", wf1.Labels["testLabel"])
@@ -244,9 +245,9 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 		assert.Equal("default", wf1.Annotations["testAnnotation"])
 	})
 	t.Run("WFTMetadata", func(t *testing.T) {
-		wfDefault := unmarshalWF(wfDefault)
-		wf2 := unmarshalWF(wf)
-		wft1 := unmarshalWFT(wft)
+		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
+		wf2 := wfv1.MustUnmarshalWorkflow(wf)
+		wft1 := wfv1.MustUnmarshalWorkflowTemplate(wft)
 		JoinWorkflowMetaData(&wf2.ObjectMeta, wft1.Spec.WorkflowMetadata, &wfDefault.ObjectMeta)
 		assert.Contains(wf2.Labels, "testLabel")
 		assert.Equal("wft", wf2.Labels["testLabel"])
@@ -254,11 +255,11 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 		assert.Equal("wft", wf2.Annotations["testAnnotation"])
 	})
 	t.Run("WfMetadata", func(t *testing.T) {
-		wfDefault := unmarshalWF(wfDefault)
-		wf2 := unmarshalWF(wf)
+		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
+		wf2 := wfv1.MustUnmarshalWorkflow(wf)
 		wf2.Labels = map[string]string{"testLabel": "wf"}
 		wf2.Annotations = map[string]string{"testAnnotation": "wf"}
-		wft1 := unmarshalWFT(wft)
+		wft1 := wfv1.MustUnmarshalWorkflowTemplate(wft)
 		JoinWorkflowMetaData(&wf2.ObjectMeta, wft1.Spec.WorkflowMetadata, &wfDefault.ObjectMeta)
 		assert.Contains(wf2.Labels, "testLabel")
 		assert.Equal("wf", wf2.Labels["testLabel"])

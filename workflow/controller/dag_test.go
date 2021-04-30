@@ -11,13 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test"
+
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // TestDagXfail verifies a DAG can fail properly
 func TestDagXfail(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag_xfail.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_xfail.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -26,7 +26,7 @@ func TestDagXfail(t *testing.T) {
 
 // TestDagRetrySucceeded verifies a DAG will be marked Succeeded if retry was successful
 func TestDagRetrySucceeded(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag_retry_succeeded.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_retry_succeeded.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -35,7 +35,7 @@ func TestDagRetrySucceeded(t *testing.T) {
 
 // TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
 func TestDagRetryExhaustedXfail(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag-exhausted-retries-xfail.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-exhausted-retries-xfail.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -44,7 +44,7 @@ func TestDagRetryExhaustedXfail(t *testing.T) {
 
 // TestDagDisableFailFast test disable fail fast function
 func TestDagDisableFailFast(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag-disable-fail-fast.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-disable-fail-fast.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -101,7 +101,7 @@ func TestSingleDependency(t *testing.T) {
 		} else {
 			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
 		}
-		wf := unmarshalWF(wfString)
+		wf := wfv1.MustUnmarshalWorkflow(wfString)
 
 		ctx := context.Background()
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -186,7 +186,7 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(artifactResolutionWhenSkippedDAG)
+	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkippedDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -768,7 +768,7 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTaskVariables)
+	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTaskVariables)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -991,7 +991,7 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTask)
+	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTask)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1040,7 +1040,7 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(dagWithParamAndGlobalParam)
+	wf := wfv1.MustUnmarshalWorkflow(dagWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1278,7 +1278,7 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(terminatingDAGWithRetryStrategyNodes)
+	wf := wfv1.MustUnmarshalWorkflow(terminatingDAGWithRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1436,7 +1436,7 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
+	wf := wfv1.MustUnmarshalWorkflow(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1625,7 +1625,7 @@ func TestRetryStrategyNodes(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testRetryStrategyNodes)
+	wf := wfv1.MustUnmarshalWorkflow(testRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1790,7 +1790,7 @@ func TestOnExitDAGPhase(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testOnExitNodeDAGPhase)
+	wf := wfv1.MustUnmarshalWorkflow(testOnExitNodeDAGPhase)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1920,7 +1920,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testOnExitNonLeaf)
+	wf := wfv1.MustUnmarshalWorkflow(testOnExitNonLeaf)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -2031,7 +2031,7 @@ status:
 `
 
 func TestDagOptionalInputArtifacts(t *testing.T) {
-	wf := unmarshalWF(testDagOptionalInputArtifacts)
+	wf := wfv1.MustUnmarshalWorkflow(testDagOptionalInputArtifacts)
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -2188,7 +2188,7 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testDagTargetTaskOnExit)
+	wf := wfv1.MustUnmarshalWorkflow(testDagTargetTaskOnExit)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -2340,7 +2340,7 @@ func TestEmptyWithParamDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testEmptyWithParamDAG)
+	wf := wfv1.MustUnmarshalWorkflow(testEmptyWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -3017,7 +3017,7 @@ func TestFailsWithParamDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testFailsWithParamDAG)
+	wf := wfv1.MustUnmarshalWorkflow(testFailsWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -3140,7 +3140,7 @@ status:
 `
 
 func TestLeafContinueOn(t *testing.T) {
-	wf := unmarshalWF(testLeafContinueOn)
+	wf := wfv1.MustUnmarshalWorkflow(testLeafContinueOn)
 	cancel, controller := newController(wf)
 	defer cancel()
 

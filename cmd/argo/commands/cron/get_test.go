@@ -1,11 +1,11 @@
 package cron
 
 import (
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
 )
 
 var invalidCwf = `
@@ -53,16 +53,14 @@ Conditions:
 ✖ SubmissionError              Failed to submit Workflow: spec.templates[0].name: 'argosay!3' is invalid: name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character (e.g. My-name1-2, 123-NAME)`
 
 func TestPrintCronWorkflow(t *testing.T) {
-	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(invalidCwf), &cronWf)
-	out := getCronWorkflowGet(&cronWf)
+	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
+	out := getCronWorkflowGet(cronWf)
 	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
-	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(invalidCwf), &cronWf)
-	next, err := GetNextRuntime(&cronWf)
+	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
+	next, err := GetNextRuntime(cronWf)
 	if assert.NoError(t, err) {
 		assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 		assert.Greater(t, next.Unix(), time.Now().Unix())

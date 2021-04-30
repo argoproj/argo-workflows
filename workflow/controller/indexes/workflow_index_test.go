@@ -11,7 +11,7 @@ import (
 
 func TestWorkflowIndexFunc(t *testing.T) {
 	obj := &unstructured.Unstructured{}
-	testutil.MustUnmarshallYAML(`
+	testutil.MustUnmarshalYAML(`
 apiVersion: v1
 kind: Pod
 metadata:

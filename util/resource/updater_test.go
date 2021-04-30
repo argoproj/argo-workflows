@@ -11,7 +11,7 @@ import (
 
 func TestUpdater(t *testing.T) {
 	wf := &wfv1.Workflow{}
-	util.MustUnmarshallYAML(`
+	util.MustUnmarshalYAML(`
 status:
   nodes:
     root:

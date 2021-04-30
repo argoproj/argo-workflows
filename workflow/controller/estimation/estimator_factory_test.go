@@ -18,7 +18,7 @@ import (
 
 func Test_estimatorFactory(t *testing.T) {
 	informer := testutil.NewSharedIndexInformer()
-	wfFailed := testutil.MustUnmarshallUnstructured(`
+	wfFailed := testutil.MustUnmarshalUnstructured(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -26,7 +26,7 @@ metadata:
   labels:
     workflows.argoproj.io/phase: Failed
 `)
-	informer.Indexer.SetByIndex(indexes.ClusterWorkflowTemplateIndex, "my-ns/my-cwft", testutil.MustUnmarshallUnstructured(`
+	informer.Indexer.SetByIndex(indexes.ClusterWorkflowTemplateIndex, "my-ns/my-cwft", testutil.MustUnmarshalUnstructured(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -34,7 +34,7 @@ metadata:
   labels:
     workflows.argoproj.io/phase: Succeeded
 `), wfFailed)
-	informer.Indexer.SetByIndex(indexes.CronWorkflowIndex, "my-ns/my-cwf", testutil.MustUnmarshallUnstructured(`
+	informer.Indexer.SetByIndex(indexes.CronWorkflowIndex, "my-ns/my-cwf", testutil.MustUnmarshalUnstructured(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -42,7 +42,7 @@ metadata:
   labels:
     workflows.argoproj.io/phase: Succeeded
 `), wfFailed)
-	informer.Indexer.SetByIndex(indexes.WorkflowTemplateIndex, "my-ns/my-wftmpl", testutil.MustUnmarshallUnstructured(`
+	informer.Indexer.SetByIndex(indexes.WorkflowTemplateIndex, "my-ns/my-wftmpl", testutil.MustUnmarshalUnstructured(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -54,7 +54,7 @@ metadata:
 	r, err := labels.ParseToRequirements("workflows.argoproj.io/phase=Succeeded,workflows.argoproj.io/workflow-template=my-archived-wftmpl")
 	assert.NoError(t, err)
 	wfArchive.On("ListWorkflows", "my-ns", time.Time{}, time.Time{}, labels.Requirements(r), 1, 0).Return(wfv1.Workflows{
-		*testutil.MustUnmarshallWorkflow(`
+		*testutil.MustUnmarshalWorkflow(`
 metadata:
   name: my-archived-wftmpl-baseline`),
 	}, nil)

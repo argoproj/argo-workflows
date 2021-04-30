@@ -38,7 +38,7 @@ spec:
         command: [cowsay]
         args: ["hello world"]
 `
-	wf := unmarshalWF(workflowYaml)
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
 	newWf := wf.DeepCopy()
 	wfClientSet := argofake.NewSimpleClientset()
 	ctx := context.Background()
@@ -167,18 +167,6 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 	}
 }
 
-func unmarshalWF(yamlStr string) *wfv1.Workflow {
-	var wf wfv1.Workflow
-	wfv1.MustUnmarshal([]byte(yamlStr), &wf)
-	return &wf
-}
-
-func unmarshalWFT(yamlStr string) *wfv1.WorkflowTemplate {
-	var wft wfv1.WorkflowTemplate
-	wfv1.MustUnmarshal([]byte(yamlStr), &wft)
-	return &wft
-}
-
 var yamlStr = `
 containers:
   - name: main
@@ -282,7 +270,7 @@ status:
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
+	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
@@ -309,7 +297,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 
 func TestStopWorkflowByNodeName(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
+	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
@@ -435,7 +423,7 @@ status:
 
 func TestUpdateSuspendedNode(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(susWorkflow)
+	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
@@ -452,7 +440,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	noSpaceWf := unmarshalWF(susWorkflow)
+	noSpaceWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 	noSpaceWf.Name = "suspend-template-no-outputs"
 	node := noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"]
 	node.Outputs = nil
@@ -727,7 +715,7 @@ status:
 func TestDeepDeleteNodes(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	kubeClient := &kubefake.Clientset{}
-	origWf := unmarshalWF(deepDeleteOfNodes)
+	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})

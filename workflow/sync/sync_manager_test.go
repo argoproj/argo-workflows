@@ -310,11 +310,6 @@ var WorkflowExistenceFunc = func(s string) bool {
 	return false
 }
 
-// Deprecated
-func unmarshalWF(yamlStr string) *wfv1.Workflow {
-	return wfv1.MustUnmarshalWorkflow(yamlStr)
-}
-
 func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 	syncLimitConfig := func(lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
@@ -351,7 +346,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithStatus)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
@@ -362,7 +357,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithStatus)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
 		wf.Status.Synchronization.Semaphore.Holding = invalidSync
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
@@ -377,7 +372,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			nextKey = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
@@ -469,7 +464,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -538,7 +533,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithTmplSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
 
 		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -598,7 +593,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 		}, WorkflowExistenceFunc)
 		var wfs []wfv1.Workflow
 		for i := 0; i < 3; i++ {
-			wf := unmarshalWF(wfWithSemaphore)
+			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "acquired", i)
 			status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
 			assert.NoError(err)
@@ -609,7 +604,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 
 		}
 		for i := 0; i < 3; i++ {
-			wf := unmarshalWF(wfWithSemaphore)
+			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "wait", i)
 			status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
 			assert.NoError(err)
@@ -632,7 +627,7 @@ func TestMutexWfLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithMutex)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 
@@ -687,10 +682,10 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		}, func(s string) bool {
 			return strings.Contains(s, "test1")
 		})
-		wfMutex := unmarshalWF(wfWithMutex)
+		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 		wfMutex1 := wfMutex.DeepCopy()
 		wfMutex1.Name = "test1"
-		wfSema := unmarshalWF(wfWithSemaphore)
+		wfSema := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wfSema1 := wfSema.DeepCopy()
 		wfSema1.Name = "test2"
 		_, _, _, _ = concurrenyMgr.TryAcquire(wfMutex, "", wfMutex.Spec.Synchronization)

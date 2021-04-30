@@ -19,7 +19,7 @@ import (
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
 	var unlabelled, cronWf wfv1.CronWorkflow
-	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+	testutil.MustUnmarshalYAML(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: my-name
@@ -44,7 +44,7 @@ spec:
           command: ["sh", -c]
           args: ["echo hello"]`, &cronWf)
 
-	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+	testutil.MustUnmarshalYAML(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: unlabelled

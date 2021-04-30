@@ -48,7 +48,7 @@ func TestBasicMetric(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(basicMetric)
+	wf := v1alpha1.MustUnmarshalWorkflow(basicMetric)
 	ctx := context.Background()
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ spec:
 `
 
 func TestCounterMetric(t *testing.T) {
-	wf := unmarshalWF(counterMetric)
+	wf := v1alpha1.MustUnmarshalWorkflow(counterMetric)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -209,7 +209,7 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(testMetricEmissionSameOperationCreationAndFailure)
+	wf := v1alpha1.MustUnmarshalWorkflow(testMetricEmissionSameOperationCreationAndFailure)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -278,7 +278,7 @@ spec:
 `
 
 func TestRetryStrategyMetric(t *testing.T) {
-	wf := unmarshalWF(testRetryStrategyMetric)
+	wf := v1alpha1.MustUnmarshalWorkflow(testRetryStrategyMetric)
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -406,7 +406,7 @@ func TestDAGTmplMetrics(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(dagTmplMetrics)
+	wf := v1alpha1.MustUnmarshalWorkflow(dagTmplMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -471,7 +471,7 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(testRealtimeWorkflowMetricWithGlobalParameters)
+	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetricWithGlobalParameters)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -573,7 +573,7 @@ func TestProcessedRetryNode(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(testProcessedRetryNode)
+	wf := v1alpha1.MustUnmarshalWorkflow(testProcessedRetryNode)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
