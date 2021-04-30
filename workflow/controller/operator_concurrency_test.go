@@ -256,7 +256,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err:= controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {

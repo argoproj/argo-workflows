@@ -163,10 +163,10 @@ func TestResourceDurationMetric(t *testing.T) {
 	woc := wfOperationCtx{globalParams: make(common.Parameters)}
 	var node wfv1.NodeStatus
 	wfv1.MustUnmarshal([]byte(nodeStatus), &node)
-		localScope, _ := woc.prepareMetricScope(&node)
-		assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
-		assert.Equal(t, "24", localScope["resourcesDuration.memory"])
-		assert.Equal(t, "0", localScope["exitCode"])
+	localScope, _ := woc.prepareMetricScope(&node)
+	assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
+	assert.Equal(t, "24", localScope["resourcesDuration.memory"])
+	assert.Equal(t, "0", localScope["exitCode"])
 }
 
 var optionalArgumentAndParameter = `
