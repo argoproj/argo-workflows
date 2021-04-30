@@ -45,7 +45,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 * Reliability:
     * Well-tested
-    * Popular
+    * Somewhat Popular
 * Most secure:
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
