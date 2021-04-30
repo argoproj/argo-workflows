@@ -36,7 +36,7 @@
     
     
       
-        <title>Workflow Archive - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Training - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#workflow-archive" tabindex="1" class="md-skip">
+      <a href="#training" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              Workflow Archive
+              Training
             </span>
           
         </div>
@@ -296,11 +296,56 @@
       
       
 
+  
 
-  <li class="md-nav__item">
-    <a href="../training/" title="Training" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Training
+      </label>
+    
+    <a href="./" title="Training" class="md-nav__link md-nav__link--active">
       Training
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hands-on" title="Hands-On" class="md-nav__link">
+    Hands-On
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#videos" title="Videos" class="md-nav__link">
+    Videos
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
     
@@ -1520,12 +1565,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6">
     
     <label class="md-nav__link" for="nav-6">
       Operator Manual
@@ -1565,12 +1608,10 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-3" type="checkbox" id="nav-6-3" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-3" type="checkbox" id="nav-6-3">
     
     <label class="md-nav__link" for="nav-6-3">
       Configuration
@@ -1682,20 +1723,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-    <a href="./" title="Workflow Archive" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../workflow-archive/" title="Workflow Archive" class="md-nav__link">
       Workflow Archive
     </a>
-    
   </li>
 
         
@@ -2086,6 +2118,29 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hands-on" title="Hands-On" class="md-nav__link">
+    Hands-On
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#videos" title="Videos" class="md-nav__link">
+    Videos
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2096,16 +2151,20 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/workflow-archive.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/training.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="workflow-archive">Workflow Archive<a class="headerlink" href="#workflow-archive" title="Permanent link">&para;</a></h1>
-<p><img alt="GA" src="../assets/ga.svg" /></p>
-<blockquote>
-<p>v2.5 and after</p>
-</blockquote>
-<p>For many uses, you may wish to keep workflows for a long time. Argo can save completed workflows to an SQL database. </p>
-<p>To enable this feature, configure a Postgres or MySQL (&gt;= 5.7.8) database under <code>persistence</code> in <a href="../workflow-controller-configmap.yaml">your configuration</a> and set <code>archive: true</code>.</p>
+                <h1 id="training">Training<a class="headerlink" href="#training" title="Permanent link">&para;</a></h1>
+<h2 id="hands-on">Hands-On<a class="headerlink" href="#hands-on" title="Permanent link">&para;</a></h2>
+<p>We've created a Katacoda course featuring beginner and intermediate lessons. These allow to you try out Argo Workflows
+in your web browser without needing to install anything on your computer. Each lesson starts up a Kubernetes cluster
+that you can access via a web browser.</p>
+<p>The course will take around 2 hours to complete as is by far the fastest way to learn Argo Workflows. </p>
+<p><a href="https://www.katacoda.com/argoproj/courses/argo-workflows/"><img alt="Katacoda Screeshot" src="../assets/katacoda.png" /> Open the course</a></p>
+<h2 id="videos">Videos<a class="headerlink" href="#videos" title="Permanent link">&para;</a></h2>
+<p>We also have a playlist of videos that dive into various topics. This includes contributing to Argo Workflows, not
+covered in the hand-on.</p>
+<p><a href="https://youtube.com/playlist?list=PLGHfqDpnXFXLHfeapfvtt9URtUF1geuBo"><img alt="Videos Screenshot" src="../assets/videos.png" /> Open the playlist</a></p>
                 
                   
                 
@@ -2126,7 +2185,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../offloading-large-workflows/" title="Offloading Large Workflows" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../quick-start/" title="Quick Start" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -2135,19 +2194,19 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Offloading Large Workflows
+                Quick Start
               </span>
             </div>
           </a>
         
         
-          <a href="../metrics/" title="Prometheus Metrics" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../workflow-concepts/" title="Core Concepts" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Prometheus Metrics
+                Core Concepts
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
