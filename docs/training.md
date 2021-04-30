@@ -3,7 +3,7 @@
 ## Hands-On
 
 We've created a Katacoda course featuring beginner and intermediate lessons. These allow to you try out Argo Workflows
-in your web browser without needing to install anything on your computer. Each lessons starts up a Kubernetes cluster
+in your web browser without needing to install anything on your computer. Each lesson starts up a Kubernetes cluster
 that you can access via a web browser.
 
 The course will take around 2 hours to complete as is by far the fastest way to learn Argo Workflows. 
