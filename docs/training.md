@@ -2,7 +2,7 @@
 
 ## Hands-On
 
-We're created a Katacoda course featuring beginner and intermediate lessons. These allow to you try out Argo Workflows
+We've created a Katacoda course featuring beginner and intermediate lessons. These allow to you try out Argo Workflows
 in your web browser without needing to install anything on your computer. Each lessons starts up a Kubernetes cluster
 that you can access via a web browser.
 
