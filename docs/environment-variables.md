@@ -20,12 +20,14 @@ Note that these environment variables may be removed at any time.
 | `LEADER_ELECTION_LEASE_DURATION` | `time.Duration` | The duration that non-leader candidates will wait to force acquire leadership. |
 | `LEADER_ELECTION_RENEW_DEADLINE` | `time.Duration` | The duration that the acting master will retry refreshing leadership before giving up. |
 | `LEADER_ELECTION_RETRY_PERIOD` | `time.Duration` | The duration that the leader election clients should wait between tries of actions. |
+| `MANAGED_FIELDS_ENABLED` | `bool` | If managed fields should be returned by APIs. Default `false`. |
 | `MAX_OPERATION_TIME` | `time.Duration` | The maximum time a workflow operation is allowed to run for before requeuing the workflow onto the work queue. |
 | `OFFLOAD_NODE_STATUS_TTL` | `time.Duration` | The TTL to delete the offloaded node status. Currently only used for testing. |
 | `RECENTLY_STARTED_POD_DURATION` | `time.Duration` | The duration of a pod before the pod is considered to be recently started. |
 | `RETRY_BACKOFF_DURATION` | `time.Duration` | The retry backoff duration when retrying API calls. |
 | `RETRY_BACKOFF_FACTOR` | `float` | The retry backoff factor when retrying API calls. |
 | `RETRY_BACKOFF_STEPS` | `int` | The retry backoff steps when retrying API calls. |
+| `SELF_LINK_ENABLED` | `bool` | If the self-link should be returned by API calls. Be aware that the value returned will be wrong. Default `false`. |
 | `TRANSIENT_ERROR_PATTERN` | `string` | The regular expression that represents additional patterns for transient errors. |
 | `WF_DEL_PROPAGATION_POLICY` | `string` | The deletion propogation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | The periodicity for GC of workflows. |
