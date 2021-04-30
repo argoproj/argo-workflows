@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"

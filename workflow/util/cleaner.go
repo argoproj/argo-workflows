@@ -6,8 +6,8 @@ import (
 
 	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 )
 
 var (

@@ -8,10 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -6,10 +6,6 @@ import (
 	"io"
 	"regexp"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
 	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
