@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+
 	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -66,9 +67,7 @@ func RemoveManagedFields(v interface{}) {
 }
 
 func RemoveSelfLink(v interface{}) {
-	if selfLinkEnabled {
-		// noop
-	} else if v == nil {
+	if v == nil || selfLinkEnabled {
 		// noop
 	} else if x, ok := v.(metav1.Object); ok {
 		x.SetSelfLink("")
