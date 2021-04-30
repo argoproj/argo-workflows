@@ -867,10 +867,10 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/retry-backoff-s69z6
   uid: 110dbef4-c54b-4963-9739-03e9878810d9
 spec:
-  arguments: {}
+  
   entrypoint: retry-backoff
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - import random; import sys; exit_code = random.choice([1, 1]); sys.exit(exit_code)
@@ -2570,8 +2570,7 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 
 	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
 	var template wfv1.Template
-	err = json.Unmarshal([]byte(templateString), &template)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(templateString), &template)
 	parameterValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
 	assert.Equal(t, "output-value-placeholders-wf", parameterValue.String())
@@ -2608,8 +2607,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 
 	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
 	var template wfv1.Template
-	err = json.Unmarshal([]byte(templateString), &template)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(templateString), &template)
 	parameterValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
 	assert.Equal(t, "output-value-placeholders-wf-3033990984", parameterValue.String())
@@ -3382,19 +3380,19 @@ kind: Workflow
 metadata:
   name: daemon-step-dvbnn
 spec:
-  arguments: {}
+  
   entrypoint: daemon-example
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: daemon-example
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: influx
         template: influxdb
-  - arguments: {}
+  - 
     container:
       image: influxdb:1.2
       name: ""
@@ -3640,19 +3638,19 @@ kind: Workflow
 metadata:
   name: global-outputs-bg7gl
 spec:
-  arguments: {}
+  
   entrypoint: generate-globals
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: generate-globals
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: generate
         template: nested-global-output-generation
-  - arguments: {}
+  - 
     container:
       args:
       - sleep 1; echo -n hello world > /tmp/hello_world.txt
@@ -3670,7 +3668,7 @@ spec:
       - name: hello-param
         valueFrom:
           path: /tmp/hello_world.txt
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: nested-global-output-generation
@@ -3681,7 +3679,7 @@ spec:
         valueFrom:
           parameter: '{{steps.generate-output.outputs.parameters.hello-param}}'
     steps:
-    - - arguments: {}
+    - - 
         name: generate-output
         template: output-generation
 status:
@@ -3815,8 +3813,7 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 
 	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
 	var template wfv1.Template
-	err = json.Unmarshal([]byte(templateString), &template)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(templateString), &template)
 	namespaceValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, namespaceValue)
 	assert.Equal(t, "testNamespace", namespaceValue.String())
@@ -3836,7 +3833,7 @@ spec:
     - name: missing
   entrypoint: whalesay
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -3878,10 +3875,10 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/echo-wngc4
   uid: bed2749b-2971-4172-a61e-455ef02c4379
 spec:
-  arguments: {}
+  
   entrypoint: echo
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - sleep 10 && exit 1
@@ -3954,10 +3951,10 @@ kind: Workflow
 metadata:
   name: echo-r6v49
 spec:
-  arguments: {}
+  
   entrypoint: echo
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - exit 1
@@ -4052,10 +4049,10 @@ kind: Workflow
 metadata:
   name: dag-primay-branch-sd6rg
 spec:
-  arguments: {}
+  
   entrypoint: statis
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -4068,7 +4065,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit
@@ -4081,20 +4078,20 @@ spec:
     metadata: {}
     name: exit
     outputs: {}
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: A
         template: pass
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: B
         onExit: exit
         template: pass
         when: '{{tasks.A.status}} != Succeeded'
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: C
@@ -4319,7 +4316,7 @@ var workflowStatusMetric = `
 metadata:
   name: retry-to-completion-rngcr
 spec:
-  arguments: {}
+  
   entrypoint: retry-to-completion
   metrics:
     prometheus:
@@ -4336,7 +4333,7 @@ spec:
       name: result_counter
       when: ""
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - import random; import sys; exit_code = random.choice(range(0, 5)); sys.exit(exit_code)
@@ -4769,10 +4766,10 @@ metadata:
   name: resubmit-pending-wf
   namespace: argo
 spec:
-  arguments: {}
+  
   entrypoint: resubmit-pending
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: resubmit-pending
@@ -4972,7 +4969,7 @@ status:
   startedAt: "2020-07-14T20:45:25Z"
   storedTemplates: 
     namespaced/hello-world-6gphm/whalesay: 
-      arguments: {}
+      
       container: 
         args: 
           - "hello {{inputs.parameters.message}}"
@@ -5183,14 +5180,13 @@ func Test_processItem(t *testing.T) {
 	taskBytes, err := json.Marshal(task)
 	assert.NoError(t, err)
 	var items []wfv1.Item
-	err = json.Unmarshal([]byte(task.WithParam), &items)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(task.WithParam), &items)
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
 	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask)
 	if assert.NoError(t, err) {
-		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
+		assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
 }
 
@@ -5658,10 +5654,10 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-dag-h8b82
 spec:
-  arguments: {}
+  
   entrypoint: parameter-aggregation
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
       - arguments:
@@ -5693,7 +5689,7 @@ spec:
     metadata: {}
     name: parameter-aggregation
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - |
@@ -5723,7 +5719,7 @@ spec:
       - name: evenness
         valueFrom:
           path: /tmp/even
-  - arguments: {}
+  - 
     container:
       args:
       - '{{inputs.parameters.message}}'

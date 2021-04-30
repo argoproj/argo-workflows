@@ -1,12 +1,10 @@
 package test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"runtime"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/util"
 )
 
 var testDir string
@@ -20,48 +18,36 @@ func init() {
 }
 
 // LoadE2EWorkflow returns a test workflow by it's path
+// Deprecated
 func LoadE2EWorkflow(path string) *wfv1.Workflow {
-	yamlBytes, err := ioutil.ReadFile(filepath.Join(testDir, "e2e", path))
-	if err != nil {
-		panic(err)
-	}
-	return LoadWorkflowFromBytes(yamlBytes)
+	return wfv1.MustUnmarshalWorkflow("@" + filepath.Join(testDir, "e2e", path))
 }
 
 // LoadTestWorkflow returns a workflow relative to the test file
+// Deprecated
 func LoadTestWorkflow(path string) *wfv1.Workflow {
-	yamlBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return LoadWorkflowFromBytes(yamlBytes)
+	return wfv1.MustUnmarshalWorkflow("@" + path)
 }
 
 // LoadWorkflowFromBytes returns a workflow unmarshalled from an yaml byte array
+// Deprecated
 func LoadWorkflowFromBytes(yamlBytes []byte) *wfv1.Workflow {
-	v := &wfv1.Workflow{}
-	util.MustUnmarshallYAML(string(yamlBytes), v)
-	return v
+	return wfv1.MustUnmarshalWorkflow(yamlBytes)
 }
 
 // LoadTestWorkflow returns a workflow relative to the test file
+// Deprecated
 func LoadTestWorkflowTemplate(path string) *wfv1.WorkflowTemplate {
-	yamlBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return LoadWorkflowTemplateFromBytes(yamlBytes)
+	return wfv1.MustUnmarshalWorkflowTemplate("@" + path)
 }
 
 // LoadWorkflowFromBytes returns a workflow unmarshalled from an yaml byte array
+// Deprecated
 func LoadWorkflowTemplateFromBytes(yamlBytes []byte) *wfv1.WorkflowTemplate {
-	v := &wfv1.WorkflowTemplate{}
-	util.MustUnmarshallYAML(string(yamlBytes), v)
-	return v
+	return wfv1.MustUnmarshalWorkflowTemplate(yamlBytes)
 }
 
+// Deprecated
 func LoadClusterWorkflowTemplateFromBytes(yamlBytes []byte) *wfv1.ClusterWorkflowTemplate {
-	v := &wfv1.ClusterWorkflowTemplate{}
-	util.MustUnmarshallYAML(string(yamlBytes), v)
-	return v
+	return wfv1.MustUnmarshalClusterWorkflow(yamlBytes)
 }

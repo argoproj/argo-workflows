@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -22,13 +21,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
+// Deprecated
 func unmarshalTemplate(yamlStr string) *wfv1.Template {
-	var tmpl wfv1.Template
-	err := yaml.Unmarshal([]byte(yamlStr), &tmpl)
-	if err != nil {
-		panic(err)
-	}
-	return &tmpl
+	return wfv1.MustUnmarshalTemplate(yamlStr)
 }
 
 // newWoc a new operation context suitable for testing
@@ -502,8 +497,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
@@ -527,8 +521,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
 	assert.NotNil(t, tmpl.ArchiveLocation)
 }
 
@@ -557,8 +550,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 

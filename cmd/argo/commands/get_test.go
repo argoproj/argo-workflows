@@ -149,17 +149,11 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/many-items-z26lj
   uid: d21f092a-f659-4300-bd69-983a9912a379
 spec:
-  arguments: {}
   entrypoint: parallel-sleep
   templates:
-  - arguments: {}
-    inputs: {}
-    metadata: {}
-    name: parallel-sleep
-    outputs: {}
+  - name: parallel-sleep
     steps:
-    - - arguments: {}
-        name: sleep
+    - - name: sleep
         template: sleep
         withItems:
         - zero
@@ -175,19 +169,13 @@ spec:
         - ten
         - eleven
         - twelve
-  - arguments: {}
-    container:
+  - container:
       command:
       - sh
       - -c
       - sleep 10
       image: alpine:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
     name: sleep
-    outputs: {}
 status:
   conditions:
   - status: "True"

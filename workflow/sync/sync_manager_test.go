@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/yaml"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -45,7 +44,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-prtl9
   uid: 790f5c47-211f-4a3b-8949-514ae916633b
 spec:
-  arguments: {}
+  
   entrypoint: whalesay
   synchronization:
     semaphore:
@@ -53,7 +52,7 @@ spec:
         key: workflow
         name: my-config
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -119,16 +118,16 @@ metadata:
   name: semaphore-tmpl-level-xjvln
   namespace: default
 spec:
-  arguments: {}
+  
   entrypoint: semaphore-tmpl-level-example
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: semaphore-tmpl-level-example
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: generate
         template: gen-number-list
     - - arguments:
@@ -138,7 +137,7 @@ spec:
         name: sleep
         template: sleep-n-sec
         withParam: '{{steps.generate.outputs.result}}'
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: gen-number-list
@@ -153,7 +152,7 @@ spec:
         import json
         import sys
         json.dump([i for i in range(1, 3)], sys.stdout)
-  - arguments: {}
+  - 
     container:
       args:
       - echo sleeping for {{inputs.parameters.seconds}} seconds; sleep 10; echo done
@@ -311,13 +310,9 @@ var WorkflowExistenceFunc = func(s string) bool {
 	return false
 }
 
+// Deprecated
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(yamlStr), &wf)
-	if err != nil {
-		panic(err)
-	}
-	return &wf
+	return wfv1.MustUnmarshalWorkflow(yamlStr)
 }
 
 func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
@@ -346,11 +341,10 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 func TestSemaphoreWfLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
@@ -465,11 +459,10 @@ func TestSemaphoreWfLevel(t *testing.T) {
 func TestResizeSemaphoreSize(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
@@ -533,11 +526,10 @@ func TestResizeSemaphoreSize(t *testing.T) {
 func TestSemaphoreTmplLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
@@ -591,12 +583,11 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	assert := assert.New(t)
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "3"
-	assert.NoError(err)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
@@ -682,12 +673,11 @@ func TestCheckWorkflowExistence(t *testing.T) {
 	assert := assert.New(t)
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "1"
-	assert.NoError(err)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)

@@ -22,7 +22,7 @@ spec:
   - inputs: {}
     name: artifact-example
     steps:
-    - - arguments: {}
+    - - 
         name: generate-artifact
         template: generate-artifacts
     - - arguments:

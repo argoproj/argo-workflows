@@ -1,17 +1,8 @@
 package util
 
-import (
-	log "github.com/sirupsen/logrus"
-	"sigs.k8s.io/yaml"
-)
+import wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 
+// Deprecated: use MustUnmarshall
 func MustUnmarshallYAML(text string, v interface{}) {
-	err := yaml.UnmarshalStrict([]byte(text), v)
-	if err != nil {
-		log.Warnf("invalid YAML: %v", err)
-		err = yaml.Unmarshal([]byte(text), v)
-	}
-	if err != nil {
-		panic(err)
-	}
+	wfv1.MustUnmarshal(text, v)
 }

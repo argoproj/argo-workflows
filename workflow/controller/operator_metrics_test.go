@@ -153,20 +153,20 @@ metadata:
   creationTimestamp: "2020-05-14T14:30:31Z"
   name: steps-s5rz4
 spec:
-  arguments: {}
+  
   entrypoint: steps-1
   onExit: whalesay
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: steps-1
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: hello2a
         template: steps-2
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     metrics:
@@ -182,11 +182,11 @@ spec:
     name: steps-2
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: hello1
         template: whalesay
         withParam: mary had a little lamb
-  - arguments: {}
+  - 
     container:
       args:
       - hello
@@ -231,10 +231,10 @@ kind: Workflow
 metadata:
   name: workflow-template-whalesay-9pk8f
 spec:
-  arguments: {}
+  
   entrypoint: whalesay
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     metrics:
@@ -252,7 +252,7 @@ spec:
             value: hello world
         name: call-whalesay-template
         template: whalesay-template
-  - arguments: {}
+  - 
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -320,22 +320,22 @@ kind: Workflow
 metadata:
   name: hello-world-nl9bj
 spec:
-  arguments: {}
+  
   entrypoint: steps
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: random-int-dag
         template: random-int
-      - arguments: {}
+      - 
         name: flakey-dag
         template: flakey
 
     name: steps
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt
@@ -374,7 +374,7 @@ spec:
         name: rand-int-value
         valueFrom:
           path: /tmp/rand_int.txt
-  - arguments: {}
+  - 
     container:
       args:
       - import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)

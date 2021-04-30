@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -77,11 +76,9 @@ const wf1 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
                 "container": {
                     "args": [
                         "hello world"
@@ -140,11 +137,11 @@ const wf2 = `
         "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -203,11 +200,11 @@ const wf3 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -266,11 +263,11 @@ const wf4 = `
         "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -329,11 +326,11 @@ const wf5 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -640,7 +637,7 @@ func TestWatchWorkflows(t *testing.T) {
 	wf := &v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
 	}
-	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
+	v1alpha1.MustUnmarshal([]byte(wf1), &wf)
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
@@ -654,7 +651,7 @@ func TestWatchLatestWorkflow(t *testing.T) {
 	wf := &v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
 	}
-	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
+	v1alpha1.MustUnmarshal([]byte(wf1), &wf)
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{

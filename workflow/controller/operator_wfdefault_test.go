@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,6 @@ var wfDefaults = `
             - cowsay
           image: docker/whalesay
         name: whalesay-exit
-    ttlSecondsAfterFinished: 86400
     ttlStrategy: 
       secondsAfterCompletion: 60
     volumes: 
@@ -101,7 +99,6 @@ spec:
           - cowsay
         image: docker/whalesay
       name: whalesay-exit
-  ttlSecondsAfterFinished: 86400
   ttlStrategy: 
     secondsAfterCompletion: 60
   volumes: 
@@ -182,7 +179,6 @@ var storedSpecResult = `
          "name": "whalesay-exit"
       }
    ],
-   "ttlSecondsAfterFinished": 86400,
    "ttlStrategy": {
       "secondsAfterCompletion": 60
    },
@@ -228,8 +224,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	wfDefault := unmarshalWF(wfDefaults)
 	wft := unmarshalWFTmpl(simpleWFT)
 	var resultSpec wfv1.WorkflowSpec
-	err := json.Unmarshal([]byte(storedSpecResult), &resultSpec)
-	assert.NoError(err)
+	wfv1.MustUnmarshal([]byte(storedSpecResult), &resultSpec)
 
 	ctx := context.Background()
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {

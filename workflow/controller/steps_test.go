@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test"
@@ -163,13 +162,11 @@ func TestResourceDurationMetric(t *testing.T) {
 
 	woc := wfOperationCtx{globalParams: make(common.Parameters)}
 	var node wfv1.NodeStatus
-	err := yaml.Unmarshal([]byte(nodeStatus), &node)
-	if assert.NoError(t, err) {
+	wfv1.MustUnmarshal([]byte(nodeStatus), &node)
 		localScope, _ := woc.prepareMetricScope(&node)
 		assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
 		assert.Equal(t, "24", localScope["resourcesDuration.memory"])
 		assert.Equal(t, "0", localScope["exitCode"])
-	}
 }
 
 var optionalArgumentAndParameter = `
@@ -178,16 +175,16 @@ kind: Workflow
 metadata:
   name: optional-input-artifact-ctc82
 spec:
-  arguments: {}
+  
   entrypoint: plan
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: plan
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: create-artifact
         template: artifact-creation
         when: "false"
@@ -198,7 +195,7 @@ spec:
             optional: true
         name: print-artifact
         template: artifact-printing
-  - arguments: {}
+  - 
     container:
       args:
       - echo 'hello' > /tmp/hello.txt
@@ -215,7 +212,7 @@ spec:
       artifacts:
       - name: hello
         path: /tmp/hello.txt
-  - arguments: {}
+  - 
     container:
       args:
       - echo 'goodbye'

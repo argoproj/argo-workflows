@@ -46,13 +46,12 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/synchronization-wf-level-xxs94
   uid: fad73006-e1f3-4234-b04b-38c0bf79c5c1
 spec:
-  arguments: {}
   entrypoint: whalesay
   synchronization:
     mutex:
       name: test
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world

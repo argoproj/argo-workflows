@@ -10,7 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/yaml"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -135,9 +134,8 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("TmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -197,9 +195,8 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -258,9 +255,8 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err:= controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -441,9 +437,8 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
 		wf := unmarshalWF(RetryWfWithSemaphore)
@@ -491,7 +486,7 @@ metadata:
 spec:
   entrypoint: hello-hello-hello
   templates:
-  - arguments: {}
+  - 
     name: hello-hello-hello
     steps:
     - - arguments:
@@ -505,7 +500,7 @@ spec:
         configMapKeyRef:
           key: step
           name: my-config
-  - arguments: {}
+  - 
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -519,7 +514,7 @@ spec:
 `
 
 const StepWithSyncStatus = `
-piVersion: argoproj.io/v1alpha1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: steps-jklcl
@@ -650,9 +645,8 @@ func TestSynchronizationWithStep(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	t.Run("StepWithSychronization", func(t *testing.T) {

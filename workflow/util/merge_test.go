@@ -104,7 +104,6 @@ spec:
           - cowsay
         image: docker/whalesay
       name: whalesay-exit
-  ttlSecondsAfterFinished: 86400
   ttlStrategy: 
     secondsAfterCompletion: 60
   volumes: 
@@ -208,7 +207,6 @@ spec:
           - cowsay
         image: docker/whalesay
       name: whalesay-exit
-  ttlSecondsAfterFinished: 86400
   ttlStrategy: 
     secondsAfterCompletion: 60
   volumes: 

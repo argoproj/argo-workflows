@@ -1,12 +1,13 @@
 package util
 
-import "encoding/json"
+import (
+	"encoding/json"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+)
 
+// Deprecated: use MustUnmarshall
 func MustUnmarshallJSON(text string, v interface{}) {
-	err := json.Unmarshal([]byte(text), v)
-	if err != nil {
-		panic(err)
-	}
+	wfv1.MustUnmarshal(text, v)
 }
 
 func MustMarshallJSON(v interface{}) string {

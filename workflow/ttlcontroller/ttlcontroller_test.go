@@ -186,7 +186,7 @@ status:
   startedAt: "2020-06-16T00:57:45Z"
   storedTemplates:
     namespaced/workflow-template-submittable-2.9/start:
-      arguments: {}
+      
       container:
         args:
         - '{{inputs.parameters.message}}'
@@ -208,7 +208,7 @@ status:
         value: hello world
     entrypoint: start
     templates:
-    - arguments: {}
+    - 
       container:
         args:
         - '{{inputs.parameters.message}}'
@@ -302,7 +302,7 @@ status:
   startedAt: "2020-06-16T01:00:14Z"
   storedTemplates:
     namespaced/workflow-template-submittable-2.9/start:
-      arguments: {}
+      
       container:
         args:
         - '{{inputs.parameters.message}}'
@@ -324,7 +324,7 @@ status:
         value: hello world
     entrypoint: start
     templates:
-    - arguments: {}
+    - 
       container:
         args:
         - '{{inputs.parameters.message}}'

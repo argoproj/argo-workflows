@@ -2,7 +2,6 @@ package util
 
 import (
 	"context"
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -170,19 +169,13 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(yamlStr), &wf)
-	if err != nil {
-		panic(err)
-	}
+	wfv1.MustUnmarshal([]byte(yamlStr), &wf)
 	return &wf
 }
 
 func unmarshalWFT(yamlStr string) *wfv1.WorkflowTemplate {
 	var wft wfv1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &wft)
-	if err != nil {
-		panic(err)
-	}
+	wfv1.MustUnmarshal([]byte(yamlStr), &wft)
 	return &wft
 }
 
@@ -200,8 +193,7 @@ func TestPodSpecPatchMerge(t *testing.T) {
 	merged, err := PodSpecPatchMerge(&wf, &tmpl)
 	assert.NoError(t, err)
 	var spec v1.PodSpec
-	err = json.Unmarshal([]byte(merged), &spec)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(merged), &spec)
 	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 
@@ -209,8 +201,7 @@ func TestPodSpecPatchMerge(t *testing.T) {
 	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
 	merged, err = PodSpecPatchMerge(&wf, &tmpl)
 	assert.NoError(t, err)
-	err = json.Unmarshal([]byte(merged), &spec)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(merged), &spec)
 	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 }
@@ -228,19 +219,19 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/suspend
   uid: 4f08d325-dc5a-43a3-9986-259e259e6ea3
 spec:
-  arguments: {}
+  
   entrypoint: suspend
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: approve
         template: approve
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: approve
@@ -348,16 +339,16 @@ kind: Workflow
 metadata:
   name: suspend-template
 spec:
-  arguments: {}
+  
   entrypoint: suspend
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: approve
         template: approve
     - - arguments:
@@ -366,7 +357,7 @@ spec:
             value: '{{steps.approve.outputs.parameters.message}}'
         name: release
         template: whalesay
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: approve
@@ -376,7 +367,7 @@ spec:
         valueFrom:
           supplied: {}
     suspend: {}
-  - arguments: {}
+  - 
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -597,22 +588,22 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-9fkqc
   uid: 241a39ef-4ff1-487f-8461-98df5d2b50fb
 spec:
-  arguments: {}
+  
   entrypoint: foo
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: foo
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: pass
         template: pass
-    - - arguments: {}
+    - - 
         name: fail
         template: fail
-  - arguments: {}
+  - 
     container:
       args:
       - exit 0
@@ -626,7 +617,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit 1
@@ -773,7 +764,7 @@ func TestRetryWorkflow(t *testing.T) {
 
 func TestFromUnstructuredObj(t *testing.T) {
 	un := &unstructured.Unstructured{}
-	err := yaml.Unmarshal([]byte(`apiVersion: argoproj.io/v1alpha1
+	wfv1.MustUnmarshal([]byte(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: example-integers
@@ -789,9 +780,8 @@ spec:
               value: 20
         container:
           image: my-image`), un)
-	assert.NoError(t, err)
 	x := &wfv1.CronWorkflow{}
-	err = FromUnstructuredObj(un, x)
+	err := FromUnstructuredObj(un, x)
 	assert.NoError(t, err)
 }
 

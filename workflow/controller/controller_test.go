@@ -20,7 +20,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -94,7 +93,6 @@ metadata:
 spec:
   entrypoint: whalesay
   serviceAccountName: whalesay
-  ttlSecondsAfterFinished: 7
   ttlStrategy:
     secondsAfterCompletion: 5
   templates:
@@ -255,10 +253,7 @@ func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
 
 func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 	var artifact wfv1.Artifact
-	err := yaml.Unmarshal([]byte(yamlStr), &artifact)
-	if err != nil {
-		panic(err)
-	}
+	wfv1.MustUnmarshal([]byte(yamlStr), &artifact)
 	return &artifact
 }
 

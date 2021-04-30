@@ -4,10 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/yaml"
-
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/stretchr/testify/assert"
 )
 
 var invalidCwf = `
@@ -24,10 +22,9 @@ metadata:
 spec:
   schedule: '* * * * *'
   workflowSpec:
-    arguments: {}
     entrypoint: argosay
     templates:
-    - arguments: {}
+    - 
       container:
         args:
         - echo
@@ -57,21 +54,17 @@ Conditions:
 
 func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(invalidCwf), &cronWf)
-	if assert.NoError(t, err) {
-		out := getCronWorkflowGet(&cronWf)
-		assert.Contains(t, out, expectedOut)
-	}
+	v1alpha1.MustUnmarshal([]byte(invalidCwf), &cronWf)
+	out := getCronWorkflowGet(&cronWf)
+	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(invalidCwf), &cronWf)
+	v1alpha1.MustUnmarshal([]byte(invalidCwf), &cronWf)
+	next, err := GetNextRuntime(&cronWf)
 	if assert.NoError(t, err) {
-		next, err := GetNextRuntime(&cronWf)
-		if assert.NoError(t, err) {
-			assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
-			assert.Greater(t, next.Unix(), time.Now().Unix())
-		}
+		assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
+		assert.Greater(t, next.Unix(), time.Now().Unix())
 	}
 }
