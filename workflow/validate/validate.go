@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -611,35 +610,6 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ContainerSet != nil {
-		if len(tmpl.ContainerSet.Containers) == 0 {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers must have at least one container", tmpl.Name)
-		}
-
-		err := validateWorkflowFieldNames(tmpl.ContainerSet.Containers)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers%s", tmpl.Name, err.Error())
-		}
-
-		nameToContainer := make(map[string]wfv1.ContainerNode)
-		for _, ctr := range tmpl.ContainerSet.Containers {
-			nameToContainer[ctr.Name] = ctr
-		}
-
-		for _, ctr := range tmpl.ContainerSet.Containers {
-			for _, depName := range ctr.Dependencies {
-				_, ok := nameToContainer[depName]
-				if !ok {
-					return errors.Errorf(errors.CodeBadRequest,
-						"templates.%s.containerSet.containers.%s dependency '%s' not defined",
-						tmpl.Name, ctr.Name, depName)
-				}
-			}
-		}
-
-		err = verifyContainerSetNoCycles(tmpl)
-		if err != nil {
-			return err
-		}
 	}
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
@@ -1228,7 +1198,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		}
 	}
 
-	if err = verifyDAGNoCycles(tmpl, dagValidationCtx); err != nil {
+	if err = verifyNoCycles(tmpl, dagValidationCtx); err != nil {
 		return err
 	}
 
@@ -1334,51 +1304,21 @@ func validateDAGTargets(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask)
 	return nil
 }
 
-// verifyDAGNoCycles verifies there are no cycles in the DAG graph
-func verifyDAGNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
-	depGraph := make(map[string][]string)
-	for _, task := range tmpl.DAG.Tasks {
-		depGraph[task.Name] = ctx.GetTaskDependencies(task.Name)
-	}
-	err := verifyNoCycles(depGraph)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks %s", tmpl.Name, err.Error())
-	}
-	return nil
-}
-
-// verifyContainerSetNoCycles verifies there are no cycles in the ContainerSet dependency graph
-func verifyContainerSetNoCycles(tmpl *wfv1.Template) error {
-	depGraph := make(map[string][]string)
-	for _, ctr := range tmpl.ContainerSet.Containers {
-		depGraph[ctr.Name] = append(depGraph[ctr.Name], ctr.Dependencies...)
-	}
-	err := verifyNoCycles(depGraph)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers %s", tmpl.Name, err.Error())
-	}
-	return nil
-}
-
-// verifyNoCycles verifies that a dependency graph has no cycles by Depth-First Search
-// depGraph is an adjacency list, where key is a node name and value is a list of its dependencies' names
-func verifyNoCycles(depGraph map[string][]string) error {
+// verifyNoCycles verifies there are no cycles in the DAG graph
+func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	visited := make(map[string]bool)
-	var noCyclesHelper func(currentName string, cycyle []string) error
-	noCyclesHelper = func(currentName string, cycle []string) error {
-		if _, ok := visited[currentName]; ok {
+	var noCyclesHelper func(taskName string, cycle []string) error
+	noCyclesHelper = func(taskName string, cycle []string) error {
+		if _, ok := visited[taskName]; ok {
 			return nil
 		}
-		depNames, ok := depGraph[currentName]
-		if !ok {
-			return nil
-		}
-		for _, depName := range depNames {
+		task := ctx.GetTask(taskName)
+		for _, depName := range ctx.GetTaskDependencies(task.Name) {
 			for _, name := range cycle {
-				if depName == name {
+				if name == depName {
 					return errors.Errorf(errors.CodeBadRequest,
-						"dependency cycle detected: %s->%s",
-						strings.Join(cycle, "->"), name)
+						"templates.%s.tasks dependency cycle detected: %s->%s",
+						tmpl.Name, strings.Join(cycle, "->"), name)
 				}
 			}
 			cycle = append(cycle, depName)
@@ -1388,19 +1328,12 @@ func verifyNoCycles(depGraph map[string][]string) error {
 			}
 			cycle = cycle[0 : len(cycle)-1]
 		}
-		visited[currentName] = true
+		visited[taskName] = true
 		return nil
 	}
-	names := make([]string, 0)
-	for name := range depGraph {
-		names = append(names, name)
-	}
-	// sort names here to make sure the error message has consistent ordering
-	// so that we can verify the error message in unit tests
-	sort.Strings(names)
 
-	for _, name := range names {
-		err := noCyclesHelper(name, []string{})
+	for _, task := range tmpl.DAG.Tasks {
+		err := noCyclesHelper(task.Name, []string{})
 		if err != nil {
 			return err
 		}
@@ -1425,6 +1358,39 @@ func sortDAGTasks(tmpl *wfv1.Template) error {
 	tmpl.DAG.Tasks = make([]wfv1.DAGTask, len(tmpl.DAG.Tasks))
 	for index, node := range sortingResult {
 		tmpl.DAG.Tasks[index] = *taskMap[node.NodeName]
+	}
+	return nil
+}
+
+// validateContainerSet validates a ContainerSet template, returns error if the validation fails
+func (ctx *templateValidationCtx) validateContainerSet(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
+	err := validateNonLeaf(tmpl)
+	if err != nil {
+		return err
+	}
+	if len(tmpl.ContainerSet.Containers) == 0 {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s must have at least one container", tmpl.Name)
+	}
+
+	err = validateWorkflowFieldNames(tmpl.ContainerSet.Containers)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.containers%s", tmpl.Name, err.Error())
+	}
+
+	nameToContainer := make(map[string]wfv1.ContainerNode)
+	for _, ctr := range tmpl.ContainerSet.Containers {
+		nameToContainer[ctr.Name] = ctr
+	}
+
+	for _, ctr := range tmpl.ContainerSet.Containers {
+		for _, depName := range ctr.Dependencies {
+			_, ok := nameToContainer[depName]
+			if !ok {
+				return errors.Errorf(errors.CodeBadRequest,
+					"templates.%s.containers.%s dependency '%s' not defined",
+					tmpl.Name, ctr.Name, depName)
+			}
+		}
 	}
 	return nil
 }
