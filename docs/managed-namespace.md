@@ -23,3 +23,5 @@ For example:
         - --managed-namespace
         - default
 ```
+
+Please mind that both cluster scoped and namespace scoped configurations require "admin" role because some custom resource (CRD) must be created (and CRD is always a cluster level object) 
