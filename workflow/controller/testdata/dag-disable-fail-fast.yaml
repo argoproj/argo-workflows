@@ -13,7 +13,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/dag-disable-fail-fast-r6xdc
   uid: 734516b5-97f2-11e9-9fea-00163e00cf4e
 spec:
-  arguments: {}
+
   entrypoint: statis
   templates:
   - container:
@@ -73,25 +73,25 @@ spec:
   - dag:
       failFast: false
       tasks:
-      - arguments: {}
+      -
         name: A
         template: a
-      - arguments: {}
+      -
         dependencies:
         - A
         name: B
         template: b
-      - arguments: {}
+      -
         dependencies:
         - A
         name: C
         template: c
-      - arguments: {}
+      -
         dependencies:
         - B
         name: D
         template: d
-      - arguments: {}
+      -
         dependencies:
         - D
         name: E

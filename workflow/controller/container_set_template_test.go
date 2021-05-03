@@ -12,7 +12,7 @@ import (
 )
 
 func TestContainerSetTemplate(t *testing.T) {
-	wf := unmarshalWF(`
+	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: pod
 spec:
@@ -78,7 +78,7 @@ spec:
 }
 
 func TestContainerSetTemplateWithInputArtifacts(t *testing.T) {
-	wf := unmarshalWF(`
+	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: pod
 spec:
@@ -165,7 +165,7 @@ spec:
 }
 
 func TestContainerSetTemplateWithOutputArtifacts(t *testing.T) {
-	wf := unmarshalWF(`
+	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: pod
 spec:

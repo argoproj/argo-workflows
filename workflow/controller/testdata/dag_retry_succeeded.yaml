@@ -14,12 +14,12 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/dag-with-retries-4wkh8
   uid: d37a2abe-9574-11e8-b103-025000000001
 spec:
-  arguments: {}
+
   entrypoint: dag-with-retries
   templates:
   - dag:
       tasks:
-      - arguments: {}
+      -
         name: step1
         template: randomly-fail
     inputs: {}
