@@ -2112,13 +2112,14 @@
 <li><code>WorkflowFailed</code></li>
 <li><code>WorkflowTimedOut</code></li>
 </ul>
-<p>Node completion</p>
+<p>Node state change:</p>
 <ul>
+<li><code>WorkflowNodeRunning</code></li>
 <li><code>WorkflowNodeSucceeded</code></li>
 <li><code>WorkflowNodeFailed</code></li>
 <li><code>WorkflowNodeError</code></li>
 </ul>
-<p>The involved object is the workflow in both cases. Additionally, for node completion events, annotations indicate the name and type of the involved node:</p>
+<p>The involved object is the workflow in both cases. Additionally, for node state change events, annotations indicate the name and type of the involved node:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-wf.160434cb3af841f8</span>
   <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-ns</span>
