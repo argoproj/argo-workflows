@@ -13,7 +13,6 @@ import (
 	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -21,7 +20,7 @@ import (
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate
 
 func init() {
-	testutil.MustUnmarshallJSON(`{
+	v1alpha1.MustUnmarshal(`{
     "apiVersion": "argoproj.io/v1alpha1",
     "kind": "ClusterWorkflowTemplate",
     "metadata": {
@@ -60,7 +59,7 @@ func init() {
     }
 }`, &unlabelled)
 
-	testutil.MustUnmarshallJSON(`{
+	v1alpha1.MustUnmarshal(`{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
@@ -103,7 +102,7 @@ func init() {
   }
 }`, &cwftObj2)
 
-	testutil.MustUnmarshallJSON(`{
+	v1alpha1.MustUnmarshal(`{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {

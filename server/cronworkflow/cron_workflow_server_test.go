@@ -12,14 +12,13 @@ import (
 	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
 	var unlabelled, cronWf wfv1.CronWorkflow
-	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: my-name
@@ -44,7 +43,7 @@ spec:
           command: ["sh", -c]
           args: ["echo hello"]`, &cronWf)
 
-	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: unlabelled
