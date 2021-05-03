@@ -166,7 +166,7 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
-	start := time.Now()
+	defer log.Info("finished polling root processes")
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	for {
@@ -179,10 +179,11 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			}
 			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
 			// we need a bit more time
-			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
-				return
+			if p.haveContainerPIDs(containerNames) {
+				time.Sleep(time.Second)
+			} else {
+				time.Sleep(50 * time.Millisecond)
 			}
-			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
@@ -297,7 +298,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 			pid := proc.Pid()
 			if pid == 1 || pid == p.thisPID || proc.PPid() != 0 {
 				// ignore the pause container, our own pid, and non-root processes
-				return nil
+				return fmt.Errorf("ignoring PID %d (ppid=%d): %q", pid, proc.PPid(), proc.Executable())
 			}
 
 			fs, err := os.Open(fmt.Sprintf("/proc/%d/root", pid))
@@ -305,7 +306,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 				return err
 			}
 
-			if p.pidFileHandles[pid] != fs {
+			if !sameFile(p.pidFileHandles[pid], fs) {
 				// the main container may have switched (e.g. gone from busybox to the user's container)
 				if prevInfo, ok := p.pidFileHandles[pid]; ok {
 					_ = prevInfo.Close()
@@ -331,4 +332,13 @@ func (p *PNSExecutor) secureRootFiles() error {
 		}
 	}
 	return nil
+}
+
+func sameFile(a *os.File, b *os.File) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	x, _ := a.Stat()
+	y, _ := b.Stat()
+	return os.SameFile(x, y)
 }
