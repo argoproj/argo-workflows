@@ -1850,7 +1850,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`failFast`|`boolean`|FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
-|`http`|[`HTTP`](#http)|_No description available_|
+|`http`|[`HTTP`](#http)|HTTP is a HTTP template|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|

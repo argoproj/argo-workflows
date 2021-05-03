@@ -4499,7 +4499,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"http": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP"),
+							Description: "HTTP is a HTTP template",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP"),
 						},
 					},
 					"volumes": {

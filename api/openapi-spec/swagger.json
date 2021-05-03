@@ -8323,6 +8323,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "http": {
+          "description": "HTTP is a HTTP template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP"
         },
         "initContainers": {

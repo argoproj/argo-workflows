@@ -4908,7 +4908,8 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "http": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP",
+          "description": "HTTP is a HTTP template"
         },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
