@@ -539,7 +539,10 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 	if err != nil {
 		return nil, err
 	}
-	art := &wfv1.Artifact{Name: "main-logs"}
+	art := &wfv1.Artifact{
+		Name:             "main-logs",
+		ArtifactLocation: *we.Template.ArchiveLocation.DeepCopy(),
+	}
 	err = we.saveArtifactFromFile(ctx, art, fileName, mainLog)
 	if err != nil {
 		return nil, err
