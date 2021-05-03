@@ -2278,11 +2278,9 @@ kubectl create secret -n argo generic client-secret-secret \
 <p>v2.12 and after</p>
 </blockquote>
 <p>By default, your SSO session will expire after 10 hours. You can change this by adding a sessionExpiry value to your <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> under the SSO heading.</p>
-<div class="codehilite"><pre><span></span><code>```<span class="nv">yaml</span>
-<span class="nv">sso</span>:
-  # <span class="nv">Expiry</span> <span class="nv">defines</span> <span class="nv">how</span> <span class="nv">long</span> <span class="nv">your</span> <span class="nv">login</span> <span class="nv">is</span> <span class="nv">valid</span> <span class="k">for</span> <span class="nv">in</span> <span class="nv">hours</span>. <span class="ss">(</span><span class="nv">optional</span><span class="ss">)</span>
-  <span class="nv">sessionExpiry</span>: <span class="mi">240</span><span class="nv">h</span>
-```
+<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
+  <span class="c1"># Expiry defines how long your login is valid for in hours. (optional)</span>
+  <span class="nt">sessionExpiry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">240h</span>
 </code></pre></div>
                 
                   
