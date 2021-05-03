@@ -8,7 +8,7 @@ type Type = '' | 'cat' | 'container' | 'filter' | 'git' | 'group' | 'handler' | 
 const stepIcon = (type: Type): Icon => {
     switch (type) {
         case 'cat':
-            return 'exchange-alt';
+            return 'arrows-alt-h';
         case 'container':
             return 'cube';
         case 'filter':
@@ -20,7 +20,7 @@ const stepIcon = (type: Type): Icon => {
         case 'handler':
             return 'code';
         case 'map':
-            return 'exchange-alt';
+            return 'arrows-alt-h';
         default:
             return 'square';
     }

@@ -1,4 +1,5 @@
 export type Icon =
+    | 'arrows-alt-h'
     | 'arrow-left'
     | 'arrow-right'
     | 'bars'

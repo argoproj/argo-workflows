@@ -1,4 +1,5 @@
 export const icons: {[key: string]: string} = {
+    'arrows-alt-h': '\uf337',
     'arrow-right': '\uf061',
     'bed': '\uf236',
     'bell': '\uf0f3',
