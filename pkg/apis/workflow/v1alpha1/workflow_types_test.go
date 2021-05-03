@@ -94,7 +94,7 @@ func TestArtifactLocation_HasLocation(t *testing.T) {
 
 func TestArtifactoryArtifact(t *testing.T) {
 	a := &ArtifactoryArtifact{URL: "http://my-host"}
-	assert.True(t, a.HasLocation())
+	assert.False(t, a.HasLocation())
 	assert.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
 	assert.NoError(t, err)
