@@ -2608,31 +2608,11 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 	if param.GlobalName == "" {
 		return
 	}
-	index := -1
-	if woc.wf.Status.Outputs != nil {
-		for i, gParam := range woc.wf.Status.Outputs.Parameters {
-			if gParam.Name == param.GlobalName {
-				index = i
-				break
-			}
-		}
-	} else {
-		woc.wf.Status.Outputs = &wfv1.Outputs{}
-	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 	woc.globalParams[paramName] = param.Value.String()
-	if index == -1 {
-		woc.log.Infof("setting %s: '%s'", paramName, param.Value)
-		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
-		woc.wf.Status.Outputs.Parameters = append(woc.wf.Status.Outputs.Parameters, gParam)
+	wfUpdated := wfutil.AddParamToGlobalScope(woc.wf, woc.log, param)
+	if wfUpdated {
 		woc.updated = true
-	} else {
-		prevVal := *woc.wf.Status.Outputs.Parameters[index].Value
-		if prevVal != *param.Value {
-			woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, woc.wf.Status.Outputs.Parameters[index].Value, param.Value)
-			woc.wf.Status.Outputs.Parameters[index].Value = param.Value
-			woc.updated = true
-		}
 	}
 }
 
