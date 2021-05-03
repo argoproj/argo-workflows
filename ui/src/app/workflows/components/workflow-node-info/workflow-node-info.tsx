@@ -137,7 +137,7 @@ const WorkflowNodeSummary = (props: Props) => {
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>YAML</Button>}{' '}
+                {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>MANIFEST</Button>}{' '}
                 {props.node.type === 'Pod' && props.onShowContainerLogs && (
                     <DropDownButton
                         onClick={() => showLogs()}
@@ -166,6 +166,7 @@ const WorkflowNodeSummary = (props: Props) => {
                                 namespace: props.workflow.metadata.namespace,
                                 name: props.node.id
                             },
+                            workflow: props.workflow,
                             status: {
                                 startedAt: props.node.startedAt,
                                 finishedAt: props.node.finishedAt
@@ -183,7 +184,7 @@ const WorkflowNodeInputs = (props: Props) => (
     <>
         <h5>Inputs</h5>
         <WorkflowNodeParameters parameters={props.node.inputs && props.node.inputs.parameters} />
-        <WorkflowNodeArtifacts {...props} artifacts={props.node.inputs && props.node.inputs.artifacts} />
+        <WorkflowNodeArtifacts {...props} isInput={true} artifacts={props.node.inputs && props.node.inputs.artifacts} />
     </>
 );
 
@@ -199,7 +200,7 @@ const WorkflowNodeOutputs = (props: Props) => (
             </div>
         </div>
         <WorkflowNodeParameters parameters={props.node.outputs && props.node.outputs.parameters} />
-        <WorkflowNodeArtifacts {...props} artifacts={props.node.outputs && props.node.outputs.artifacts} />
+        <WorkflowNodeArtifacts {...props} isInput={false} artifacts={props.node.outputs && props.node.outputs.artifacts} />
     </>
 );
 
@@ -360,12 +361,12 @@ class WorkflowNodeContainers extends React.Component<Props, {selectedSidecar: st
     }
 }
 
-const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; archived: boolean; artifacts: Artifact[]}) => {
+const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; archived: boolean; isInput: boolean; artifacts: Artifact[]}) => {
     const artifacts =
         (props.artifacts &&
             props.artifacts.map(artifact =>
                 Object.assign({}, artifact, {
-                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.archived),
+                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.archived, props.isInput),
                     stepName: props.node.name,
                     dateCreated: props.node.finishedAt,
                     nodeName: props.node.name

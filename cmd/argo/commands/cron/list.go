@@ -30,7 +30,8 @@ func NewListCommand() *cobra.Command {
 		Short: "list cron workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewCronWorkflowServiceClient()
+			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = ""

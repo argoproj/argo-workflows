@@ -94,7 +94,15 @@ const config = {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },
+      "/input-artifacts": {
+        "target": isProd ? "" : "http://localhost:2746",
+        "secure": false
+      },
       "/artifacts-by-uid": {
+        "target": isProd ? "" : "http://localhost:2746",
+        "secure": false
+      },
+      "/input-artifacts-by-uid": {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },

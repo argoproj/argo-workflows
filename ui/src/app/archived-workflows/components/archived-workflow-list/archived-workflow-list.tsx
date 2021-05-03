@@ -47,7 +47,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         const labelQueryParam = this.queryParams('label');
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || savedOptions.pagination.limit},
-            namespace: this.props.match.params.namespace || '',
+            namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             selectedPhases: phaseQueryParam.length > 0 ? phaseQueryParam : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
@@ -125,12 +125,16 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private get filterParams() {
         const params = new URLSearchParams();
-        this.state.selectedPhases.forEach(phase => {
-            params.append('phase', phase);
-        });
-        this.state.selectedLabels.forEach(label => {
-            params.append('label', label);
-        });
+        if (this.state.selectedPhases) {
+            this.state.selectedPhases.forEach(phase => {
+                params.append('phase', phase);
+            });
+        }
+        if (this.state.selectedLabels) {
+            this.state.selectedLabels.forEach(label => {
+                params.append('label', label);
+            });
+        }
         params.append('minStartedAt', this.state.minStartedAt.toISOString());
         params.append('maxStartedAt', this.state.maxStartedAt.toISOString());
         if (this.state.pagination.offset) {
@@ -144,7 +148,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private saveHistory() {
         this.storage.setItem('options', this.state, {} as State);
-        this.url = uiUrl('archived-workflows/' + (this.state.namespace || '') + '?' + this.filterParams.toString());
+        const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
+        this.url = uiUrl('archived-workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
     }
 

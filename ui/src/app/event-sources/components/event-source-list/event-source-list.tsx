@@ -19,6 +19,7 @@ import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
+import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceCreator} from '../event-source-creator';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
@@ -31,7 +32,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(match.params.namespace || '');
+    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
@@ -48,7 +49,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
     useEffect(
         () =>
             history.push(
-                historyUrl('event-sources/{namespace}', {
+                historyUrl('event-sources' + (Utils.managedNamespace ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel,
                     selectedNode,

@@ -7,6 +7,7 @@ import {execSpec, Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
@@ -162,20 +163,22 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 {!workflow ? (
                     <Loading />
                 ) : (
-                    <div className='argo-container'>
-                        <div className='workflow-details__content'>
-                            <WorkflowSummaryPanel workflow={workflow} />
-                            {renderSecurityNudge()}
-                            {renderCostOptimisations()}
-                            {workflow.spec.arguments && workflow.spec.arguments.parameters && (
-                                <React.Fragment>
-                                    <h6>Parameters</h6>
-                                    <WorkflowParametersPanel parameters={workflow.spec.arguments.parameters} />
-                                </React.Fragment>
-                            )}
-                            <h5>Artifacts</h5>
-                            <WorkflowArtifacts workflow={workflow} archived={false} />
-                            <WorkflowResourcePanel workflow={workflow} />
+                    <div className='workflow-details__container'>
+                        <div className='argo-container'>
+                            <div className='workflow-details__content'>
+                                <WorkflowSummaryPanel workflow={workflow} />
+                                {renderSecurityNudge()}
+                                {renderCostOptimisations()}
+                                {workflow.spec.arguments && workflow.spec.arguments.parameters && (
+                                    <React.Fragment>
+                                        <h6>Parameters</h6>
+                                        <WorkflowParametersPanel parameters={workflow.spec.arguments.parameters} />
+                                    </React.Fragment>
+                                )}
+                                <h5>Artifacts</h5>
+                                <WorkflowArtifacts workflow={workflow} archived={false} />
+                                <WorkflowResourcePanel workflow={workflow} />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -201,12 +204,20 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [namespace, name]);
 
     const openLink = (link: Link) => {
-        const url = link.url
-            .replace(/\${metadata\.namespace}/g, workflow.metadata.namespace)
-            .replace(/\${metadata\.name}/g, workflow.metadata.name)
-            .replace(/\${status\.startedAt}/g, workflow.status.startedAt)
-            .replace(/\${status\.finishedAt}/g, workflow.status.finishedAt);
-        if ((window.event as MouseEvent).ctrlKey) {
+        const object = {
+            metadata: {
+                namespace: workflow.metadata.namespace,
+                name: workflow.metadata.name
+            },
+            workflow,
+            status: {
+                startedAt: workflow.status.startedAt,
+                finishedAt: workflow.status.finishedAt
+            }
+        };
+        const url = ProcessURL(link.url, object);
+
+        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
             window.open(url, '_blank');
         } else {
             document.location.href = url;

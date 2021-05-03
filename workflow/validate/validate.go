@@ -608,6 +608,18 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
 		}
 	}
+	if tmpl.ContainerSet != nil {
+		err = tmpl.ContainerSet.Validate()
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.%s", tmpl.Name, err.Error())
+		}
+		if len(tmpl.Inputs.Artifacts) > 0 || len(tmpl.Outputs.Parameters) > 0 || len(tmpl.Outputs.Artifacts) > 0 {
+			if !tmpl.ContainerSet.HasContainerNamed("main") {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers must have a container named \"main\" for input or output", tmpl.Name)
+			}
+		}
+
+	}
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
 			switch tmpl.Resource.Action {

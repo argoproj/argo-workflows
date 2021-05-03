@@ -58,8 +58,7 @@ See [TLS](tls.md).
 
 ### SSO 
 
-See [SSO](argo-server-sso.md).
-
+See [SSO](argo-server-sso.md). See [here](argo-server-sso-argocd.md) about sharing ArgoCD's Dex with ArgoWorkflows.
 
 ## Access the Argo Workflows UI
 

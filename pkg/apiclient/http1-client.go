@@ -14,6 +14,8 @@ import (
 
 type httpClient http1.Facade
 
+var _ Client = &httpClient{}
+
 func (h httpClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
 	return http1.ArchivedWorkflowsServiceClient(h), nil
 }
@@ -22,16 +24,16 @@ func (h httpClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient
 	return http1.WorkflowServiceClient(h)
 }
 
-func (h httpClient) NewCronWorkflowServiceClient() cronworkflowpkg.CronWorkflowServiceClient {
-	return http1.CronWorkflowServiceClient(h)
+func (h httpClient) NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error) {
+	return http1.CronWorkflowServiceClient(h), nil
 }
 
-func (h httpClient) NewWorkflowTemplateServiceClient() workflowtemplatepkg.WorkflowTemplateServiceClient {
-	return http1.WorkflowTemplateServiceClient(h)
+func (h httpClient) NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error) {
+	return http1.WorkflowTemplateServiceClient(h), nil
 }
 
-func (h httpClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient {
-	return http1.ClusterWorkflowTemplateServiceClient(h)
+func (h httpClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, error) {
+	return http1.ClusterWorkflowTemplateServiceClient(h), nil
 }
 
 func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {

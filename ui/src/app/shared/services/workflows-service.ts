@@ -198,13 +198,17 @@ export class WorkflowsService {
     }
 
     public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
-        return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived);
+        return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived, true);
     }
 
-    public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean) {
-        return archived
-            ? `artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`
-            : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
+    public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
+        if (archived) {
+            const endpoint = isInput ? 'input-artifacts-by-uid' : 'artifacts-by-uid';
+            return `${endpoint}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
+        } else {
+            const endpoint = isInput ? 'input-artifacts' : 'artifacts';
+            return `${endpoint}/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
+        }
     }
 
     private isNodePendingOrRunning(node: NodeStatus) {

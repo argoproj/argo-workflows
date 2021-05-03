@@ -519,6 +519,15 @@ spec:
                               type: string
                             key:
                               type: string
+                            lifecycleRule:
+                              properties:
+                                markDeletionAfterDays:
+                                  format: int32
+                                  type: integer
+                                markInfrequentAccessAfterDays:
+                                  format: int32
+                                  type: integer
+                              type: object
                             secretKeySecret:
                               properties:
                                 key:
@@ -1433,6 +1442,15 @@ spec:
                             type: string
                           key:
                             type: string
+                          lifecycleRule:
+                            properties:
+                              markDeletionAfterDays:
+                                format: int32
+                                type: integer
+                              markInfrequentAccessAfterDays:
+                                format: int32
+                                type: integer
+                            type: object
                           secretKeySecret:
                             properties:
                               key:
@@ -2860,6 +2878,15 @@ spec:
                                             type: string
                                           key:
                                             type: string
+                                          lifecycleRule:
+                                            properties:
+                                              markDeletionAfterDays:
+                                                format: int32
+                                                type: integer
+                                              markInfrequentAccessAfterDays:
+                                                format: int32
+                                                type: integer
+                                            type: object
                                           secretKeySecret:
                                             properties:
                                               key:
@@ -3619,6 +3646,15 @@ spec:
                                     type: string
                                   key:
                                     type: string
+                                  lifecycleRule:
+                                    properties:
+                                      markDeletionAfterDays:
+                                        format: int32
+                                        type: integer
+                                      markInfrequentAccessAfterDays:
+                                        format: int32
+                                        type: integer
+                                    type: object
                                   secretKeySecret:
                                     properties:
                                       key:
@@ -4502,6 +4538,15 @@ spec:
                                   type: string
                                 key:
                                   type: string
+                                lifecycleRule:
+                                  properties:
+                                    markDeletionAfterDays:
+                                      format: int32
+                                      type: integer
+                                    markInfrequentAccessAfterDays:
+                                      format: int32
+                                      type: integer
+                                  type: object
                                 secretKeySecret:
                                   properties:
                                     key:
@@ -4949,6 +4994,15 @@ spec:
                                   type: string
                                 key:
                                   type: string
+                                lifecycleRule:
+                                  properties:
+                                    markDeletionAfterDays:
+                                      format: int32
+                                      type: integer
+                                    markInfrequentAccessAfterDays:
+                                      format: int32
+                                      type: integer
+                                  type: object
                                 secretKeySecret:
                                   properties:
                                     key:
@@ -7478,6 +7532,15 @@ spec:
                               type: string
                             key:
                               type: string
+                            lifecycleRule:
+                              properties:
+                                markDeletionAfterDays:
+                                  format: int32
+                                  type: integer
+                                markInfrequentAccessAfterDays:
+                                  format: int32
+                                  type: integer
+                              type: object
                             secretKeySecret:
                               properties:
                                 key:
@@ -8905,6 +8968,15 @@ spec:
                                               type: string
                                             key:
                                               type: string
+                                            lifecycleRule:
+                                              properties:
+                                                markDeletionAfterDays:
+                                                  format: int32
+                                                  type: integer
+                                                markInfrequentAccessAfterDays:
+                                                  format: int32
+                                                  type: integer
+                                              type: object
                                             secretKeySecret:
                                               properties:
                                                 key:
@@ -9664,6 +9736,15 @@ spec:
                                       type: string
                                     key:
                                       type: string
+                                    lifecycleRule:
+                                      properties:
+                                        markDeletionAfterDays:
+                                          format: int32
+                                          type: integer
+                                        markInfrequentAccessAfterDays:
+                                          format: int32
+                                          type: integer
+                                      type: object
                                     secretKeySecret:
                                       properties:
                                         key:
@@ -10547,6 +10628,15 @@ spec:
                                     type: string
                                   key:
                                     type: string
+                                  lifecycleRule:
+                                    properties:
+                                      markDeletionAfterDays:
+                                        format: int32
+                                        type: integer
+                                      markInfrequentAccessAfterDays:
+                                        format: int32
+                                        type: integer
+                                    type: object
                                   secretKeySecret:
                                     properties:
                                       key:
@@ -10994,6 +11084,15 @@ spec:
                                     type: string
                                   key:
                                     type: string
+                                  lifecycleRule:
+                                    properties:
+                                      markDeletionAfterDays:
+                                        format: int32
+                                        type: integer
+                                      markInfrequentAccessAfterDays:
+                                        format: int32
+                                        type: integer
+                                    type: object
                                   secretKeySecret:
                                     properties:
                                       key:

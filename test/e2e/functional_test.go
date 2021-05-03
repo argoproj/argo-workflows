@@ -200,10 +200,12 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			2,
+			4,
 			func(t *testing.T, es []corev1.Event) {
 				for _, e := range es {
 					switch e.Reason {
+					case "WorkflowNodeRunning":
+						assert.Contains(t, e.Message, "Running node failed-step-event-")
 					case "WorkflowRunning":
 					case "WorkflowNodeFailed":
 						assert.Contains(t, e.Message, "Failed node failed-step-event-")
@@ -233,10 +235,13 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			3,
+			4,
 			func(t *testing.T, es []corev1.Event) {
 				for _, e := range es {
+					println(e.Reason, e.Message)
 					switch e.Reason {
+					case "WorkflowNodeRunning":
+						assert.Contains(t, e.Message, "Running node success-event-")
 					case "WorkflowRunning":
 					case "WorkflowNodeSucceeded":
 						assert.Contains(t, e.Message, "Succeeded node success-event-")

@@ -3,6 +3,6 @@ set -eux
 
 port=$1
 
-lsof -i ":$port" | grep -v PID | awk '{print $2}' | xargs kill || true
+lsof -s TCP:LISTEN -i ":$port" | grep -v PID | awk '{print $2}' | xargs kill || true
 
 
