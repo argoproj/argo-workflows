@@ -1969,7 +1969,7 @@ func (a *ArtifactoryArtifact) SetKey(key string) error {
 }
 
 func (a *ArtifactoryArtifact) HasLocation() bool {
-	return a != nil && a.URL != ""
+	return a != nil && a.URL != "" && a.UsernameSecret != nil
 }
 
 // HDFSArtifact is the location of an HDFS artifact
