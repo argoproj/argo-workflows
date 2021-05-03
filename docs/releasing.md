@@ -134,7 +134,7 @@ $ open dist
 
 Upload only the zipped binaries (`.gz` suffix) and SHA256 sums (`.sha256` suffix) to GitHub. There should be 12 uploaded files in total.
 
-### 6. Update Stable Tag
+### 7. Update Stable Tag
 
 If this is GA:
 
@@ -147,7 +147,7 @@ git push -f origin stable
 
 Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
 
-### 7. Update Homebrew
+### 8. Update Homebrew
 
 If this is GA:
 
@@ -165,7 +165,7 @@ Check that Homebrew was successfully updated after the PR was merged:
  /usr/local/bin/argo version
  ```
 
-### 8. Update Java SDK
+### 9. Update Java SDK
 
 If this is GA:
 
@@ -179,6 +179,6 @@ make publish VERSION=v2.11.5
 
 Check package published: https://github.com/argoproj-labs/argo-client-java/packages
 
-### 9. Publish Release
+### 10. Publish Release
 
 Finally, press publish on the GitHub release. Congrats, you're done!
