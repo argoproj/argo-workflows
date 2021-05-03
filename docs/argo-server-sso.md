@@ -118,8 +118,8 @@ If no rule matches, we deny the user access.
 
 By default, your SSO session will expire after 10 hours. You can change this by adding a sessionExpiry value to your [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) under the SSO heading.
 
-    ```yaml
-    sso:
-      # Expiry defines how long your login is valid for in hours. (optional)
-      sessionExpiry: 240h
-    ```
+```yaml
+sso:
+  # Expiry defines how long your login is valid for in hours. (optional)
+  sessionExpiry: 240h
+```
