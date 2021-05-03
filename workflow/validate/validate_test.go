@@ -2762,3 +2762,73 @@ func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
 		assert.Contains(t, err.Error(), "templates.main.containerSet.containers.b dependency 'c' not defined")
 	}
 }
+
+func TestInvalidContainerSetNoMainContainer(t *testing.T) {
+	invalidContainerSetTemplateWithInputArtifacts := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+`
+	invalidContainerSetTemplateWithOutputArtifacts := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      outputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+`
+	invalidContainerSetTemplateWithOutputParams := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /workspace/message
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+`
+
+	invalidManifests := []string{
+		invalidContainerSetTemplateWithInputArtifacts,
+		invalidContainerSetTemplateWithOutputArtifacts,
+		invalidContainerSetTemplateWithOutputParams,
+	}
+	for _, manifest := range invalidManifests {
+		err := validateWorkflowTemplate(manifest)
+		if assert.NotNil(t, err) {
+			assert.Contains(t, err.Error(), "containerSet.containers must have a container named \"main\" for input or output")
+		}
+	}
+}

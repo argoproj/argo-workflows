@@ -9,12 +9,12 @@ import (
 )
 
 func validateContainerSetTemplate(yamlStr string) error {
-	var tmpl Template
-	err := yaml.Unmarshal([]byte(yamlStr), &tmpl)
+	var cst ContainerSetTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &cst)
 	if err != nil {
 		panic(err)
 	}
-	return tmpl.ContainerSet.Validate(&tmpl)
+	return cst.Validate()
 }
 
 func TestContainerSetTemplate(t *testing.T) {
@@ -47,14 +47,9 @@ func TestContainerSetTemplate(t *testing.T) {
 
 func TestInvalidContainerSetEmpty(t *testing.T) {
 	invalidContainerSetEmpty := `
-name: main
-volumes:
+volumeMounts:
   - name: workspace
-    emptyDir: { }
-containerSet:
-  volumeMounts:
-    - name: workspace
-      mountPath: /workspace
+    mountPath: /workspace
 `
 	err := validateContainerSetTemplate(invalidContainerSetEmpty)
 	if assert.NotNil(t, err) {
@@ -62,72 +57,16 @@ containerSet:
 	}
 }
 
-func TestInvalidContainerSetNoMainContainer(t *testing.T) {
-	invalidContainerSetTemplateWithInputArtifacts := `
-name: main
-inputs:
-  artifacts:
-    - name: message
-      path: /tmp/message
-containerSet:
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
-`
-	invalidContainerSetTemplateWithOutputArtifacts := `
-name: main
-outputs:
-  artifacts:
-    - name: message
-      path: /tmp/message
-containerSet:
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
-`
-	invalidContainerSetTemplateWithOutputParams := `
-name: main
-outputs:
-  parameters:
-    - name: output-message
-      valueFrom:
-        path: /workspace/message
-containerSet:
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
-`
-
-	invalidManifests := []string{
-		invalidContainerSetTemplateWithInputArtifacts,
-		invalidContainerSetTemplateWithOutputArtifacts,
-		invalidContainerSetTemplateWithOutputParams,
-	}
-	for _, manifest := range invalidManifests {
-		err := validateContainerSetTemplate(manifest)
-		if assert.NotNil(t, err) {
-			assert.Contains(t, err.Error(), "containers must have a container named \"main\" for input or output")
-		}
-	}
-}
-
 func TestInvalidContainerSetDuplicateVolumeMounting(t *testing.T) {
 	invalidContainerSetDuplicateNames := `
-name: main
-volumes:
+volumeMounts:
   - name: workspace
-    emptyDir: { }
+    mountPath: /workspace
   - name: workspace2
-    emptyDir: { }
-containerSet:
-  volumeMounts:
-    - name: workspace
-      mountPath: /workspace
-    - name: workspace2
-      mountPath: /workspace
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
+    mountPath: /workspace
+containers:
+  - name: a
+    image: argoproj/argosay:v2
 `
 	err := validateContainerSetTemplate(invalidContainerSetDuplicateNames)
 	if assert.NotNil(t, err) {
@@ -137,19 +76,14 @@ containerSet:
 
 func TestInvalidContainerSetDuplicateNames(t *testing.T) {
 	invalidContainerSetDuplicateNames := `
-name: main
-volumes:
+volumeMounts:
   - name: workspace
-    emptyDir: { }
-containerSet:
-  volumeMounts:
-    - name: workspace
-      mountPath: /workspace
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
-    - name: a
-      image: argoproj/argosay:v2
+    mountPath: /workspace
+containers:
+  - name: a
+    image: argoproj/argosay:v2
+  - name: a
+    image: argoproj/argosay:v2
 `
 	err := validateContainerSetTemplate(invalidContainerSetDuplicateNames)
 	if assert.NotNil(t, err) {
@@ -159,21 +93,16 @@ containerSet:
 
 func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
 	invalidContainerSetDependencyNotFound := `
-name: main
-volumes:
+volumeMounts:
   - name: workspace
-    emptyDir: { }
-containerSet:
-  volumeMounts:
-    - name: workspace
-      mountPath: /workspace
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
-    - name: b
-      image: argoproj/argosay:v2
-      dependencies:
-        - c
+    mountPath: /workspace
+containers:
+  - name: a
+    image: argoproj/argosay:v2
+  - name: b
+    image: argoproj/argosay:v2
+    dependencies:
+      - c
 `
 	err := validateContainerSetTemplate(invalidContainerSetDependencyNotFound)
 	if assert.NotNil(t, err) {
@@ -183,23 +112,18 @@ containerSet:
 
 func TestInvalidContainerSetDependencyCycle(t *testing.T) {
 	invalidContainerSetDependencyCycle := `
-name: main
-volumes:
+volumeMounts:
   - name: workspace
-    emptyDir: { }
-containerSet:
-  volumeMounts:
-    - name: workspace
-      mountPath: /workspace
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
-      dependencies:
-        - b
-    - name: b
-      image: argoproj/argosay:v2
-      dependencies:
-        - a
+    mountPath: /workspace
+containers:
+  - name: a
+    image: argoproj/argosay:v2
+    dependencies:
+      - b
+  - name: b
+    image: argoproj/argosay:v2
+    dependencies:
+      - a
 `
 	err := validateContainerSetTemplate(invalidContainerSetDependencyCycle)
 	if assert.NotNil(t, err) {
@@ -209,30 +133,25 @@ containerSet:
 
 func TestValidContainerSet(t *testing.T) {
 	validContainerSet := `
-name: main
-volumes:
+volumeMounts:
   - name: workspace
-    emptyDir: { }
-containerSet:
-  volumeMounts:
-    - name: workspace
-      mountPath: /workspace
-  containers:
-    - name: a
-      image: argoproj/argosay:v2
-    - name: b
-      image: argoproj/argosay:v2
-      dependencies:
-        - a
-    - name: c
-      image: argoproj/argosay:v2
-      dependencies:
-        - a
-    - name: d
-      image: argoproj/argosay:v2
-      dependencies:
-        - b
-        - c
+    mountPath: /workspace
+containers:
+  - name: a
+    image: argoproj/argosay:v2
+  - name: b
+    image: argoproj/argosay:v2
+    dependencies:
+      - a
+  - name: c
+    image: argoproj/argosay:v2
+    dependencies:
+      - a
+  - name: d
+    image: argoproj/argosay:v2
+    dependencies:
+      - b
+      - c
 `
 	err := validateContainerSetTemplate(validContainerSet)
 	assert.NoError(t, err)

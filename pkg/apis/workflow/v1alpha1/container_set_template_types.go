@@ -47,7 +47,7 @@ func (in *ContainerSetTemplate) HasSequencedContainers() bool {
 }
 
 // Validate checks if the ContainerSetTemplate is valid
-func (in *ContainerSetTemplate) Validate(tmpl *Template) error {
+func (in *ContainerSetTemplate) Validate() error {
 	if len(in.Containers) == 0 {
 		return fmt.Errorf("containers must have at least one container")
 	}
@@ -59,12 +59,6 @@ func (in *ContainerSetTemplate) Validate(tmpl *Template) error {
 	err := validateWorkflowFieldNames(names, false)
 	if err != nil {
 		return fmt.Errorf("containers%s", err.Error())
-	}
-
-	if len(tmpl.Inputs.Artifacts) > 0 || len(tmpl.Outputs.Parameters) > 0 || len(tmpl.Outputs.Artifacts) > 0 {
-		if !in.HasContainerNamed("main") {
-			return fmt.Errorf("containers must have a container named \"main\" for input or output")
-		}
 	}
 
 	// Ensure there are no collisions with volume mountPaths and artifact load paths
