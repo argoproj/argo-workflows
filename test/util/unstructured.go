@@ -5,7 +5,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func MustUnmarshallUnstructured(text string) *unstructured.Unstructured {
+func MustUnmarshalUnstructured(text string) *unstructured.Unstructured {
 	v := &unstructured.Unstructured{}
 	err := yaml.UnmarshalStrict([]byte(text), v)
 	if err != nil {

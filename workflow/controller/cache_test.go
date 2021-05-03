@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,7 +95,6 @@ func TestConfigMapCacheSave(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
 	var entry cache.Entry
-	err = json.Unmarshal([]byte(cm.Data["hi-there-world"]), &entry)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(cm.Data["hi-there-world"]), &entry)
 	assert.Equal(t, entry.LastHitTimestamp.Time, entry.CreationTimestamp.Time)
 }

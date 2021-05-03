@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -46,13 +48,12 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/synchronization-wf-level-xxs94
   uid: fad73006-e1f3-4234-b04b-38c0bf79c5c1
 spec:
-  arguments: {}
   entrypoint: whalesay
   synchronization:
     mutex:
       name: test
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -95,7 +96,7 @@ func TestMutexLock(t *testing.T) {
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(mutexwfstatus)
+		wf := wfv1.MustUnmarshalWorkflow(mutexwfstatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
 		ctx := context.Background()
@@ -109,7 +110,7 @@ func TestMutexLock(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			nextWorkflow = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(mutexWf)
+		wf := wfv1.MustUnmarshalWorkflow(mutexWf)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
@@ -287,7 +288,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(mutexWfWithTmplLevel)
+		wf := wfv1.MustUnmarshalWorkflow(mutexWfWithTmplLevel)
 		tmpl := wf.Spec.Templates[1]
 
 		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
