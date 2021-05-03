@@ -754,6 +754,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
 				newNode.Message = ""
+				newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
 				newNode.FinishedAt = metav1.Time{}
 				newWF.Status.Nodes[newNode.ID] = *newNode
 				continue
@@ -775,6 +776,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 			newNode := node.DeepCopy()
 			newNode.Phase = wfv1.NodeRunning
 			newNode.Message = ""
+			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
 			newNode.FinishedAt = metav1.Time{}
 			newWF.Status.Nodes[newNode.ID] = *newNode
 			continue
