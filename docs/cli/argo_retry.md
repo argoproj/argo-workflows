@@ -21,11 +21,11 @@ argo retry [WORKFLOW...] [flags]
 
   argo retry my-wf my-other-wf my-third-wf
 
-# Retry multiple workflows by label selector
+# Retry multiple workflows by label selector:
 
   argo retry -l workflows.argoproj.io/test=true
 
-# Retry multiple workflows by field selector
+# Retry multiple workflows by field selector:
 
   argo retry --field-selector metadata.namespace=argo
 
@@ -57,8 +57,8 @@ argo retry [WORKFLOW...] [flags]
   -o, --output string                Output format. One of: name|json|yaml|wide
       --restart-successful           indicates to restart successful nodes matching the --node-field-selector
   -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
-  -w, --wait                         wait for the workflow to complete
-      --watch                        watch the workflow until it completes
+  -w, --wait                         wait for the workflow to complete, only works when a single workflow is retried
+      --watch                        watch the workflow until it completes, only works when a single workflow is retried
 ```
 
 ### Options inherited from parent commands

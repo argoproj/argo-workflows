@@ -9,10 +9,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/pkg/errors"
 )
 
 type retryOps struct {
@@ -85,8 +86,8 @@ func NewRetryCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
-	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
-	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
+	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is retried")
+	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes, only works when a single workflow is retried")
 	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&retryOpts.restartSuccessful, "restart-successful", false, "indicates to restart successful nodes matching the --node-field-selector")
 	command.Flags().StringVar(&retryOpts.nodeFieldSelector, "node-field-selector", "", "selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
@@ -122,6 +123,7 @@ func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		})
 	}
 
+	var lastRetried *wfv1.Workflow
 	retriedNames := make(map[string]bool)
 	for _, wf := range wfs {
 		if _, ok := retriedNames[wf.Name]; ok {
@@ -130,7 +132,7 @@ func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		}
 		retriedNames[wf.Name] = true
 
-		wf, err := serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
+		lastRetried, err = serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
 			Name:              wf.Name,
 			Namespace:         wf.Namespace,
 			RestartSuccessful: retryOpts.restartSuccessful,
@@ -139,8 +141,11 @@ func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		if err != nil {
 			return err
 		}
-		printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
-		waitWatchOrLog(ctx, serviceClient, wf.Namespace, []string{wf.Name}, cliSubmitOpts)
+		printWorkflow(lastRetried, getFlags{output: cliSubmitOpts.output})
+	}
+	if len(retriedNames) == 1 {
+		// watch or wait when there is only one workflow retried
+		waitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
 	}
 	return nil
 }
