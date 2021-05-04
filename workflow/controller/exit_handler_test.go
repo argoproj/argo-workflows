@@ -11,8 +11,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-var stepsOnExitTmpl = `
-apiVersion: argoproj.io/v1alpha1
+var stepsOnExitTmpl = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: steps-on-exit
@@ -59,7 +58,7 @@ spec:
 `
 
 func TestStepsOnExitTmpl(t *testing.T) {
-	wf := unmarshalWF(stepsOnExitTmpl)
+	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmpl)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -79,8 +78,7 @@ func TestStepsOnExitTmpl(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var dagOnExitTmpl = `
-apiVersion: argoproj.io/v1alpha1
+var dagOnExitTmpl = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: dag-on-exit
@@ -107,7 +105,7 @@ spec:
             arguments:
               parameters:
               - name: input
-                from: '{{tasks.leafB.outputs.parameters.result}}'
+                value: '{{tasks.leafB.outputs.parameters.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -128,7 +126,7 @@ spec:
 `
 
 func TestDAGOnExitTmpl(t *testing.T) {
-	wf := unmarshalWF(dagOnExitTmpl)
+	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmpl)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -188,7 +186,7 @@ spec:
 `
 
 func TestStepsOnExitTmplWithArt(t *testing.T) {
-	wf := unmarshalWF(stepsOnExitTmplWithArt)
+	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmplWithArt)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -276,7 +274,7 @@ spec:
 `
 
 func TestDAGOnExitTmplWithArt(t *testing.T) {
-	wf := unmarshalWF(dagOnExitTmpl)
+	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmpl)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -360,7 +358,7 @@ spec:
 `
 
 func TestStepsTmplOnExit(t *testing.T) {
-	wf := unmarshalWF(stepsTmplOnExit)
+	wf := wfv1.MustUnmarshalWorkflow(stepsTmplOnExit)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -460,7 +458,7 @@ spec:
 `
 
 func TestDAGOnExit(t *testing.T) {
-	wf := unmarshalWF(dagOnExit)
+	wf := wfv1.MustUnmarshalWorkflow(dagOnExit)
 	cancel, controller := newController(wf)
 	defer cancel()
 

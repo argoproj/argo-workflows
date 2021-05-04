@@ -1170,10 +1170,11 @@ type LifecycleHook struct {
 }
 
 func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
-	if lch.Arguments.IsEmpty() {
-		lch.Arguments = args
+	lch1 := lch.DeepCopy()
+	if lch1.Arguments.IsEmpty() {
+		lch1.Arguments = args
 	}
-	return lch.DeepCopy()
+	return lch1
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
