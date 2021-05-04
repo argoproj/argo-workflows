@@ -72,8 +72,7 @@ status:
 `
 
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(cronWfString), &cronWf)
 	wf := ConvertCronWorkflowToWorkflow(&cronWf)
 	wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime] = "2021-02-19T10:29:05-08:00"
 	wfString, err := yaml.Marshal(wf)
@@ -150,10 +149,7 @@ spec:
 
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	var wfTmpl v1alpha1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
-	if err != nil {
-		panic(err)
-	}
+	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
 	t.Run("ConvertWorkflowFromWFT", func(t *testing.T) {
 		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfTmpl.Spec.WorkflowMetadata, false)
 		assert.NotNil(t, wf)
@@ -188,10 +184,7 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 
 func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {
 	var wfTmpl v1alpha1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
-	if err != nil {
-		panic(err)
-	}
+	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
 	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfTmpl.Spec.WorkflowMetadata, true)
 	assert.NotNil(t, wf)
 	assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/cluster-workflow-template"])

@@ -53,6 +53,9 @@ args: [ "{{ inputs.parameters.message }}" ]
 
 The tag is substituted with the result of evaluating the tag as an expression.
 
+Note that any hyphenated parameter names will cause a parsing error. You can reference them by
+indexing into the parameter map, e.g. `inputs.parameters["my-param"]`.
+
 [Learn about the expression syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
 
 #### Examples
