@@ -4,10 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/yaml"
-
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var invalidCwf = `
@@ -24,10 +23,9 @@ metadata:
 spec:
   schedule: '* * * * *'
   workflowSpec:
-    arguments: {}
     entrypoint: argosay
     templates:
-    - arguments: {}
+    - 
       container:
         args:
         - echo
@@ -56,22 +54,16 @@ Conditions:
 ✖ SubmissionError              Failed to submit Workflow: spec.templates[0].name: 'argosay!3' is invalid: name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character (e.g. My-name1-2, 123-NAME)`
 
 func TestPrintCronWorkflow(t *testing.T) {
-	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(invalidCwf), &cronWf)
-	if assert.NoError(t, err) {
-		out := getCronWorkflowGet(&cronWf)
-		assert.Contains(t, out, expectedOut)
-	}
+	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
+	out := getCronWorkflowGet(cronWf)
+	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
-	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(invalidCwf), &cronWf)
+	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
+	next, err := GetNextRuntime(cronWf)
 	if assert.NoError(t, err) {
-		next, err := GetNextRuntime(&cronWf)
-		if assert.NoError(t, err) {
-			assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
-			assert.Greater(t, next.Unix(), time.Now().Unix())
-		}
+		assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
+		assert.Greater(t, next.Unix(), time.Now().Unix())
 	}
 }

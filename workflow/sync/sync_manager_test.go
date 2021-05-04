@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/yaml"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -45,7 +44,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-prtl9
   uid: 790f5c47-211f-4a3b-8949-514ae916633b
 spec:
-  arguments: {}
+  
   entrypoint: whalesay
   synchronization:
     semaphore:
@@ -53,7 +52,7 @@ spec:
         key: workflow
         name: my-config
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -119,16 +118,16 @@ metadata:
   name: semaphore-tmpl-level-xjvln
   namespace: default
 spec:
-  arguments: {}
+  
   entrypoint: semaphore-tmpl-level-example
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: semaphore-tmpl-level-example
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: generate
         template: gen-number-list
     - - arguments:
@@ -138,7 +137,7 @@ spec:
         name: sleep
         template: sleep-n-sec
         withParam: '{{steps.generate.outputs.result}}'
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: gen-number-list
@@ -153,7 +152,7 @@ spec:
         import json
         import sys
         json.dump([i for i in range(1, 3)], sys.stdout)
-  - arguments: {}
+  - 
     container:
       args:
       - echo sleeping for {{inputs.parameters.seconds}} seconds; sleep 10; echo done
@@ -311,15 +310,6 @@ var WorkflowExistenceFunc = func(s string) bool {
 	return false
 }
 
-func unmarshalWF(yamlStr string) *wfv1.Workflow {
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(yamlStr), &wf)
-	if err != nil {
-		panic(err)
-	}
-	return &wf
-}
-
 func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 	syncLimitConfig := func(lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
@@ -346,18 +336,17 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 func TestSemaphoreWfLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithStatus)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
@@ -368,7 +357,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithStatus)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
 		wf.Status.Synchronization.Semaphore.Holding = invalidSync
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
@@ -383,7 +372,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			nextKey = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
@@ -465,18 +454,17 @@ func TestSemaphoreWfLevel(t *testing.T) {
 func TestResizeSemaphoreSize(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -533,11 +521,10 @@ func TestResizeSemaphoreSize(t *testing.T) {
 func TestSemaphoreTmplLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
@@ -546,7 +533,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithTmplSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
 
 		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -591,12 +578,11 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	assert := assert.New(t)
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "3"
-	assert.NoError(err)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
@@ -607,7 +593,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 		}, WorkflowExistenceFunc)
 		var wfs []wfv1.Workflow
 		for i := 0; i < 3; i++ {
-			wf := unmarshalWF(wfWithSemaphore)
+			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "acquired", i)
 			status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
 			assert.NoError(err)
@@ -618,7 +604,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 
 		}
 		for i := 0; i < 3; i++ {
-			wf := unmarshalWF(wfWithSemaphore)
+			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "wait", i)
 			status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
 			assert.NoError(err)
@@ -641,7 +627,7 @@ func TestMutexWfLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
-		wf := unmarshalWF(wfWithMutex)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 
@@ -682,12 +668,11 @@ func TestCheckWorkflowExistence(t *testing.T) {
 	assert := assert.New(t)
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "1"
-	assert.NoError(err)
 
 	ctx := context.Background()
-	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
@@ -697,10 +682,10 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		}, func(s string) bool {
 			return strings.Contains(s, "test1")
 		})
-		wfMutex := unmarshalWF(wfWithMutex)
+		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 		wfMutex1 := wfMutex.DeepCopy()
 		wfMutex1.Name = "test1"
-		wfSema := unmarshalWF(wfWithSemaphore)
+		wfSema := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wfSema1 := wfSema.DeepCopy()
 		wfSema1.Name = "test2"
 		_, _, _, _ = concurrenyMgr.TryAcquire(wfMutex, "", wfMutex.Spec.Synchronization)

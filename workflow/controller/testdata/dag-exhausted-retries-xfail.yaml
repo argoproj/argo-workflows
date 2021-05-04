@@ -4,21 +4,21 @@ metadata:
   creationTimestamp: "2020-06-02T00:26:32Z"
   name: retry-with-dags
 spec:
-  arguments: {}
+
   entrypoint: retry-with-dags
   templates:
-    - arguments: {}
+    -
       dag:
         tasks:
-          - arguments: {}
+          -
             name: success1
             template: success
-          - arguments: {}
+          -
             dependencies:
               - success1
             name: sub-dag1
             template: sub-dag
-          - arguments: {}
+          -
             dependencies:
               - sub-dag1
             name: success2
@@ -27,17 +27,17 @@ spec:
       metadata: {}
       name: retry-with-dags
       outputs: {}
-    - arguments: {}
+    -
       dag:
         tasks:
-          - arguments: {}
+          -
             name: fail
             template: fail
       inputs: {}
       metadata: {}
       name: sub-dag
       outputs: {}
-    - arguments: {}
+    -
       container:
         command:
           - sh
@@ -52,7 +52,7 @@ spec:
       outputs: {}
       retryStrategy:
         limit: 1
-    - arguments: {}
+    -
       container:
         command:
           - sh

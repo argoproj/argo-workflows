@@ -48,7 +48,7 @@ func TestBasicMetric(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(basicMetric)
+	wf := v1alpha1.MustUnmarshalWorkflow(basicMetric)
 	ctx := context.Background()
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ spec:
 `
 
 func TestCounterMetric(t *testing.T) {
-	wf := unmarshalWF(counterMetric)
+	wf := v1alpha1.MustUnmarshalWorkflow(counterMetric)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -153,20 +153,20 @@ metadata:
   creationTimestamp: "2020-05-14T14:30:31Z"
   name: steps-s5rz4
 spec:
-  arguments: {}
+  
   entrypoint: steps-1
   onExit: whalesay
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: steps-1
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: hello2a
         template: steps-2
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     metrics:
@@ -182,11 +182,11 @@ spec:
     name: steps-2
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: hello1
         template: whalesay
         withParam: mary had a little lamb
-  - arguments: {}
+  - 
     container:
       args:
       - hello
@@ -209,7 +209,7 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(testMetricEmissionSameOperationCreationAndFailure)
+	wf := v1alpha1.MustUnmarshalWorkflow(testMetricEmissionSameOperationCreationAndFailure)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -231,10 +231,10 @@ kind: Workflow
 metadata:
   name: workflow-template-whalesay-9pk8f
 spec:
-  arguments: {}
+  
   entrypoint: whalesay
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     metrics:
@@ -252,7 +252,7 @@ spec:
             value: hello world
         name: call-whalesay-template
         template: whalesay-template
-  - arguments: {}
+  - 
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -278,7 +278,7 @@ spec:
 `
 
 func TestRetryStrategyMetric(t *testing.T) {
-	wf := unmarshalWF(testRetryStrategyMetric)
+	wf := v1alpha1.MustUnmarshalWorkflow(testRetryStrategyMetric)
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -320,22 +320,22 @@ kind: Workflow
 metadata:
   name: hello-world-nl9bj
 spec:
-  arguments: {}
+  
   entrypoint: steps
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: random-int-dag
         template: random-int
-      - arguments: {}
+      - 
         name: flakey-dag
         template: flakey
 
     name: steps
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt
@@ -374,7 +374,7 @@ spec:
         name: rand-int-value
         valueFrom:
           path: /tmp/rand_int.txt
-  - arguments: {}
+  - 
     container:
       args:
       - import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)
@@ -406,7 +406,7 @@ func TestDAGTmplMetrics(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(dagTmplMetrics)
+	wf := v1alpha1.MustUnmarshalWorkflow(dagTmplMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -471,7 +471,7 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(testRealtimeWorkflowMetricWithGlobalParameters)
+	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetricWithGlobalParameters)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -573,7 +573,7 @@ func TestProcessedRetryNode(t *testing.T) {
 	defer cancel()
 	ctx := context.Background()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(testProcessedRetryNode)
+	wf := v1alpha1.MustUnmarshalWorkflow(testProcessedRetryNode)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
