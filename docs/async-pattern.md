@@ -11,7 +11,7 @@ This document describes the second option in more detail.
 
 ## The pattern
 
-The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a `Suspend` step that suspends workflow exection and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.
+The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a `Suspend` step that suspends workflow execution and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.
 
 When implemented as a `WorkflowTemplate` it can look something like this:
 
