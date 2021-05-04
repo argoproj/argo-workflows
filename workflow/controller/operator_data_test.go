@@ -22,7 +22,7 @@ spec:
   - inputs: {}
     name: artifact-example
     steps:
-    - - arguments: {}
+    - - 
         name: generate-artifact
         template: generate-artifacts
     - - arguments:
@@ -227,7 +227,7 @@ status:
 
 // Test that a pod is created when necessary
 func TestDataTemplateCreatesPod(t *testing.T) {
-	wf := unmarshalWF(fmt.Sprintf(inMemoryDataNode, `artifactPaths: {s3: {bucket: "test"}}`))
+	wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(inMemoryDataNode, `artifactPaths: {s3: {bucket: "test"}}`))
 	cancel, controller := newController(wf)
 	defer cancel()
 

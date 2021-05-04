@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -22,20 +21,16 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
+// Deprecated
 func unmarshalTemplate(yamlStr string) *wfv1.Template {
-	var tmpl wfv1.Template
-	err := yaml.Unmarshal([]byte(yamlStr), &tmpl)
-	if err != nil {
-		panic(err)
-	}
-	return &tmpl
+	return wfv1.MustUnmarshalTemplate(yamlStr)
 }
 
 // newWoc a new operation context suitable for testing
 func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 	var wf *wfv1.Workflow
 	if len(wfs) == 0 {
-		wf = unmarshalWF(helloWorldWf)
+		wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	} else {
 		wf = &wfs[0]
 	}
@@ -149,7 +144,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	// Ensure that volume mount is added to initContainer when artifact is provided
 	// and the volume is mounted manually in the template
 	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvidedAndOverlappedPath)
-	wf := unmarshalWF(helloWorldWf)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	wf.Spec.Volumes = append(wf.Spec.Volumes, apiv1.Volume{Name: "my-mount"})
 	woc = newWoc(*wf)
 	mainCtr = tmpl.Script.Container
@@ -463,7 +458,7 @@ func setArtifactRepository(controller *WorkflowController, repo *config.Artifact
 // TestWorkflowControllerArchiveConfigUnresolvable verifies workflow fails when archive location has
 // unresolvable variables
 func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
-	wf := unmarshalWF(helloWorldWf)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	wf.Spec.Templates[0].Outputs = wfv1.Outputs{
 		Artifacts: []wfv1.Artifact{
 			{
@@ -502,8 +497,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
@@ -527,15 +521,14 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
 	assert.NotNil(t, tmpl.ArchiveLocation)
 }
 
 // TestConditionalNoAddArchiveLocation verifies we add archive location when it is needed
 func TestConditionalArchiveLocation(t *testing.T) {
 	ctx := context.Background()
-	wf := unmarshalWF(helloWorldWf)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	wf.Spec.Templates[0].Outputs = wfv1.Outputs{
 		Artifacts: []wfv1.Artifact{
 			{
@@ -557,8 +550,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
@@ -1201,20 +1193,20 @@ spec:
 `
 
 func TestPodSpecPatch(t *testing.T) {
-	wf := unmarshalWF(helloWorldWfWithPatch)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
 	ctx := context.Background()
 	woc := newWoc(*wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = unmarshalWF(helloWorldWfWithWFPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPatch)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = unmarshalWF(helloWorldWfWithWFYAMLPatch)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPatch)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1222,7 +1214,7 @@ func TestPodSpecPatch(t *testing.T) {
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 
-	wf = unmarshalWF(helloWorldWfWithInvalidPatchFormat)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPatchFormat)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1241,7 +1233,7 @@ func TestMainContainerCustomization(t *testing.T) {
 	}
 	// podSpecPatch in workflow spec takes precedence over the main container's
 	// configuration in controller so here we respect what's specified in podSpecPatch.
-	wf := unmarshalWF(helloWorldWfWithPatch)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.controller.Config.MainContainer = mainCtrSpec
@@ -1251,7 +1243,7 @@ func TestMainContainerCustomization(t *testing.T) {
 
 	// The main container's resources should be changed since the existing
 	// container's resources are not specified.
-	wf = unmarshalWF(helloWorldWf)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc = newWoc(*wf)
 	woc.controller.Config.MainContainer = mainCtrSpec
 	mainCtr = woc.execWf.Spec.Templates[0].Container
@@ -1261,7 +1253,7 @@ func TestMainContainerCustomization(t *testing.T) {
 
 	// Workflow spec's main container takes precedence over config in controller
 	// so here the main container resources remain unchanged.
-	wf = unmarshalWF(helloWorldWf)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc = newWoc(*wf)
 	woc.controller.Config.MainContainer = mainCtrSpec
 	mainCtr = woc.execWf.Spec.Templates[0].Container
@@ -1277,7 +1269,7 @@ func TestMainContainerCustomization(t *testing.T) {
 
 	// If the name of the container in the workflow spec is not "main",
 	// the main container resources should remain unchanged.
-	wf = unmarshalWF(helloWorldWf)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	mainCtr.Resources = apiv1.ResourceRequirements{
@@ -1298,7 +1290,7 @@ func TestMainContainerCustomization(t *testing.T) {
 }
 
 func TestIsResourcesSpecified(t *testing.T) {
-	wf := unmarshalWF(helloWorldWf)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWoc(*wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	mainCtr.Resources = apiv1.ResourceRequirements{Limits: apiv1.ResourceList{}}
@@ -1348,7 +1340,7 @@ spec:
 `
 
 func TestHybridWfVolumesWindows(t *testing.T) {
-	wf := unmarshalWF(helloWindowsWf)
+	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
 	woc := newWoc(*wf)
 
 	ctx := context.Background()
@@ -1360,7 +1352,7 @@ func TestHybridWfVolumesWindows(t *testing.T) {
 }
 
 func TestHybridWfVolumesLinux(t *testing.T) {
-	wf := unmarshalWF(helloLinuxWf)
+	wf := wfv1.MustUnmarshalWorkflow(helloLinuxWf)
 	woc := newWoc(*wf)
 
 	ctx := context.Background()
@@ -1448,7 +1440,7 @@ spec:
 `
 
 func TestPodMetadata(t *testing.T) {
-	wf := unmarshalWF(wfWithPodMetadata)
+	wf := wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
 	ctx := context.Background()
 	woc := newWoc(*wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
@@ -1456,7 +1448,7 @@ func TestPodMetadata(t *testing.T) {
 	assert.Equal(t, "foo", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "bar", pod.ObjectMeta.Labels["workflow-level-pod-label"])
 
-	wf = unmarshalWF(wfWithPodMetadataAndTemplateMetadata)
+	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadataAndTemplateMetadata)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
