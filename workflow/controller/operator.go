@@ -554,6 +554,13 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
+	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
+	// with it, so copy from the original workflow.
+	woc.wf.TypeMeta = woc.orig.TypeMeta
+
+	// Create WorkflowNode* events for nodes that have changed phase
+	woc.recordNodePhaseChangeEvents(woc.orig.Status.Nodes, woc.wf.Status.Nodes)
+
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
 		panic("workflow should be hydrated")
 	}
@@ -907,9 +914,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				}
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
-				}
-				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
-					woc.onNodeComplete(&node)
 				}
 			}
 			if node.Succeeded() && match {
@@ -1985,7 +1989,7 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 }
 
-// Creates a node status that is or will be chaced
+// Creates a node status that is or will be cached
 func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
 		err := fmt.Errorf("cannot initialize a cached node from a non-memoized template")
@@ -2079,23 +2083,18 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.log.Infof("node %s finished: %s", node.ID, node.FinishedAt)
 		woc.updated = true
 	}
-	if !woc.orig.Status.Nodes[node.ID].Fulfilled() && node.Fulfilled() {
-		woc.onNodeComplete(node)
-	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
 }
 
-func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
-	if !woc.controller.Config.NodeEvents.IsEnabled() {
-		return
-	}
+func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
 	if node.Message != "" {
 		message = message + ": " + node.Message
 	}
 	eventType := apiv1.EventTypeWarning
-	if node.Phase == wfv1.NodeSucceeded {
+	switch node.Phase {
+	case wfv1.NodeSucceeded, wfv1.NodeRunning:
 		eventType = apiv1.EventTypeNormal
 	}
 	woc.eventRecorder.AnnotatedEventf(
@@ -2108,6 +2107,39 @@ func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
 		fmt.Sprintf("WorkflowNode%s", node.Phase),
 		message,
 	)
+}
+
+// recordNodePhaseChangeEvents creates WorkflowNode Kubernetes events for each node
+// that has changes logged during this execution of the operator loop.
+func (woc *wfOperationCtx) recordNodePhaseChangeEvents(old wfv1.Nodes, new wfv1.Nodes) {
+	if !woc.controller.Config.NodeEvents.IsEnabled() {
+		return
+	}
+
+	// Check for newly added nodes; send an event for new nodes
+	for nodeName, newNode := range new {
+		oldNode, exists := old[nodeName]
+		if exists {
+			if oldNode.Phase == newNode.Phase {
+				continue
+			}
+			if oldNode.Phase == wfv1.NodePending && newNode.Completed() {
+				ephemeralNode := newNode.DeepCopy()
+				ephemeralNode.Phase = wfv1.NodeRunning
+				woc.recordNodePhaseEvent(ephemeralNode)
+			}
+			woc.recordNodePhaseEvent(&newNode)
+		} else {
+			if newNode.Phase == wfv1.NodeRunning {
+				woc.recordNodePhaseEvent(&newNode)
+			} else if newNode.Completed() {
+				ephemeralNode := newNode.DeepCopy()
+				ephemeralNode.Phase = wfv1.NodeRunning
+				woc.recordNodePhaseEvent(ephemeralNode)
+				woc.recordNodePhaseEvent(&newNode)
+			}
+		}
+	}
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
@@ -2576,31 +2608,11 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 	if param.GlobalName == "" {
 		return
 	}
-	index := -1
-	if woc.wf.Status.Outputs != nil {
-		for i, gParam := range woc.wf.Status.Outputs.Parameters {
-			if gParam.Name == param.GlobalName {
-				index = i
-				break
-			}
-		}
-	} else {
-		woc.wf.Status.Outputs = &wfv1.Outputs{}
-	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 	woc.globalParams[paramName] = param.Value.String()
-	if index == -1 {
-		woc.log.Infof("setting %s: '%s'", paramName, param.Value)
-		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
-		woc.wf.Status.Outputs.Parameters = append(woc.wf.Status.Outputs.Parameters, gParam)
+	wfUpdated := wfutil.AddParamToGlobalScope(woc.wf, woc.log, param)
+	if wfUpdated {
 		woc.updated = true
-	} else {
-		prevVal := *woc.wf.Status.Outputs.Parameters[index].Value
-		if prevVal != *param.Value {
-			woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, woc.wf.Status.Outputs.Parameters[index].Value, param.Value)
-			woc.wf.Status.Outputs.Parameters[index].Value = param.Value
-			woc.updated = true
-		}
 	}
 }
 
@@ -2786,7 +2798,7 @@ func parseStringToDuration(durationString string) (time.Duration, error) {
 	} else if duration, err := time.ParseDuration(durationString); err == nil {
 		suspendDuration = duration
 	} else {
-		return 0, fmt.Errorf("unable to parse %s as a duration", durationString)
+		return 0, fmt.Errorf("unable to parse %s as a duration: %w", durationString, err)
 	}
 	return suspendDuration, nil
 }

@@ -8,11 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/test"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
@@ -55,19 +53,13 @@ func validateWorkflowTemplate(yamlStr string) error {
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
 	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(yamlStr), &wf)
-	if err != nil {
-		panic(err)
-	}
+	wfv1.MustUnmarshal([]byte(yamlStr), &wf)
 	return &wf
 }
 
 func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 	var wftmpl wfv1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &wftmpl)
-	if err != nil {
-		panic(err)
-	}
+	wfv1.MustUnmarshal([]byte(yamlStr), &wftmpl)
 	return &wftmpl
 }
 
@@ -545,7 +537,7 @@ spec:
     - name: missing
   entrypoint: whalesay
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -1139,7 +1131,7 @@ spec:
           - name: art
 
   - name: whalesay
-    input:
+    inputs:
       artifacts:
       - name: art
         path: /tmp/art
@@ -1167,7 +1159,7 @@ spec:
           - name: art
 
   - name: whalesay
-    input:
+    inputs:
       artifacts:
       - name: art
         path: /tmp/art
@@ -1205,7 +1197,7 @@ spec:
           - name: art
 
   - name: whalesay
-    input:
+    inputs:
       parameters:
       - name: art
     container:
@@ -1295,7 +1287,7 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), ValidateOpts{})
 
 	assert.NoError(t, err)
 }
@@ -2729,4 +2721,106 @@ func TestMaxLengthName(t *testing.T) {
 	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
 	err = ValidateCronWorkflow(wftmplGetter, cwftmplGetter, cwf)
 	assert.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
+}
+
+var invalidContainerSetDependencyNotFound = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: workspace
+          emptyDir: { }
+      containerSet:
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+            dependencies:
+              - c
+`
+
+func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
+	_, err := validate(invalidContainerSetDependencyNotFound)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.main.containerSet.containers.b dependency 'c' not defined")
+	}
+}
+
+func TestInvalidContainerSetNoMainContainer(t *testing.T) {
+	invalidContainerSetTemplateWithInputArtifacts := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+`
+	invalidContainerSetTemplateWithOutputArtifacts := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      outputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+`
+	invalidContainerSetTemplateWithOutputParams := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /workspace/message
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+`
+
+	invalidManifests := []string{
+		invalidContainerSetTemplateWithInputArtifacts,
+		invalidContainerSetTemplateWithOutputArtifacts,
+		invalidContainerSetTemplateWithOutputParams,
+	}
+	for _, manifest := range invalidManifests {
+		err := validateWorkflowTemplate(manifest)
+		if assert.NotNil(t, err) {
+			assert.Contains(t, err.Error(), "containerSet.containers must have a container named \"main\" for input or output")
+		}
+	}
 }

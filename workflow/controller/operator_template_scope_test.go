@@ -72,9 +72,9 @@ spec:
 `
 
 func TestTemplateScope(t *testing.T) {
-	wf := unmarshalWF(testTemplateScopeWorkflowYaml)
-	wftmpl1 := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml1)
-	wftmpl2 := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
+	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeWorkflowYaml)
+	wftmpl1 := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWorkflowTemplateYaml1)
+	wftmpl2 := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWorkflowTemplateYaml2)
 
 	cancel, controller := newController(wf, wftmpl1, wftmpl2)
 	defer cancel()
@@ -167,8 +167,8 @@ spec:
 `
 
 func TestTemplateScopeWithParam(t *testing.T) {
-	wf := unmarshalWF(testTemplateScopeWithParamWorkflowYaml)
-	wftmpl := unmarshalWFTmpl(testTemplateScopeWithParamWorkflowTemplateYaml1)
+	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeWithParamWorkflowYaml)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWithParamWorkflowTemplateYaml1)
 
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
@@ -261,8 +261,8 @@ spec:
 `
 
 func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
-	wf := unmarshalWF(testTemplateScopeNestedStepsWithParamsWorkflowYaml)
-	wftmpl := unmarshalWFTmpl(testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1)
+	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeNestedStepsWithParamsWorkflowYaml)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1)
 
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
@@ -370,8 +370,8 @@ spec:
 `
 
 func TestTemplateScopeDAG(t *testing.T) {
-	wf := unmarshalWF(testTemplateScopeDAGWorkflowYaml)
-	wftmpl := unmarshalWFTmpl(testTemplateScopeDAGWorkflowTemplateYaml1)
+	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeDAGWorkflowYaml)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeDAGWorkflowTemplateYaml1)
 
 	cancel, controller := newController(wf, wftmpl)
 	defer cancel()
@@ -472,9 +472,9 @@ spec:
 `
 
 func TestTemplateClusterScope(t *testing.T) {
-	wf := unmarshalWF(testTemplateClusterScopeWorkflowYaml)
-	cwftmpl := unmarshalCWFTmpl(testTemplateClusterScopeWorkflowTemplateYaml1)
-	wftmpl := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
+	wf := wfv1.MustUnmarshalWorkflow(testTemplateClusterScopeWorkflowYaml)
+	cwftmpl := wfv1.MustUnmarshalClusterWorkflow(testTemplateClusterScopeWorkflowTemplateYaml1)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWorkflowTemplateYaml2)
 
 	cancel, controller := newController(wf, cwftmpl, wftmpl)
 	defer cancel()

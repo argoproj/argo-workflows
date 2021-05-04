@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
@@ -24,13 +23,9 @@ func createWorkflowTemplate(wfClientset wfclientset.Interface, yamlStr string) e
 	return err
 }
 
+// Deprecated
 func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
-	var wftmpl wfv1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &wftmpl)
-	if err != nil {
-		panic(err)
-	}
-	return &wftmpl
+	return wfv1.MustUnmarshalWorkflowTemplate(yamlStr)
 }
 
 var someWorkflowTemplateYaml = `
@@ -56,7 +51,6 @@ spec:
   - name: nested-whalesay-with-arguments
     steps:
       - - name: step
-    template: whalesay-with-arguments
   - name: whalesay-with-arguments
     steps:
       - - name: step

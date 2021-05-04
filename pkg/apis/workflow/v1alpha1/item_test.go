@@ -44,24 +44,21 @@ func runItemTest(t *testing.T, data string, expectedType Type) {
 
 func TestItem_GetMapVal(t *testing.T) {
 	item := Item{}
-	err := json.Unmarshal([]byte(`{"foo":"bar"}`), &item)
-	assert.NoError(t, err)
+	MustUnmarshal([]byte(`{"foo":"bar"}`), &item)
 	val := item.GetMapVal()
 	assert.Equal(t, map[string]Item{"foo": {Value: []byte(`"bar"`)}}, val)
 }
 
 func TestItem_GetListVal(t *testing.T) {
 	item := Item{}
-	err := json.Unmarshal([]byte(`["foo"]`), &item)
-	assert.NoError(t, err)
+	MustUnmarshal([]byte(`["foo"]`), &item)
 	val := item.GetListVal()
 	assert.Equal(t, []Item{{Value: []byte(`"foo"`)}}, val)
 }
 
 func TestItem_GetStrVal(t *testing.T) {
 	item := Item{}
-	err := json.Unmarshal([]byte(`"foo"`), &item)
-	assert.NoError(t, err)
+	MustUnmarshal([]byte(`"foo"`), &item)
 	val := item.GetStrVal()
 	assert.Equal(t, "foo", val)
 }
@@ -84,7 +81,7 @@ func TestItem_String(t *testing.T) {
 		t.Run(s.name, func(t *testing.T) {
 			bytes, _ := json.Marshal(s.origin)
 			var i Item
-			_ = json.Unmarshal(bytes, &i)
+			MustUnmarshal(bytes, &i)
 			assert.Equal(t, s.str, i.String())
 		})
 	}
