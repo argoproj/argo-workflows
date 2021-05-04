@@ -824,8 +824,6 @@ type ArtifactLocationType interface {
 	SetKey(key string) error
 }
 
-var keyUnsupportedErr = fmt.Errorf("key unsupported")
-
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -920,7 +918,7 @@ func (a *ArtifactLocation) HasKey() bool {
 func (a *ArtifactLocation) SetKey(key string) error {
 	v := a.Get()
 	if v == nil {
-		return keyUnsupportedErr
+		return fmt.Errorf("key unsupported: cannot set key for artifact location because it is invalid")
 	}
 	return v.SetKey(key)
 }
@@ -964,7 +962,7 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 func (a *ArtifactLocation) GetKey() (string, error) {
 	v := a.Get()
 	if v == nil {
-		return "", keyUnsupportedErr
+		return "", fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
 	}
 	return v.GetKey()
 }
@@ -1851,11 +1849,11 @@ func (g *GitArtifact) HasLocation() bool {
 }
 
 func (g *GitArtifact) GetKey() (string, error) {
-	return "", keyUnsupportedErr
+	return "", fmt.Errorf("key unsupported: git artifact does not have a key")
 }
 
 func (g *GitArtifact) SetKey(string) error {
-	return keyUnsupportedErr
+	return fmt.Errorf("key unsupported: cannot set key on git artifact")
 }
 
 func (g *GitArtifact) GetDepth() int {
@@ -1903,7 +1901,7 @@ func (a *ArtifactoryArtifact) SetKey(key string) error {
 }
 
 func (a *ArtifactoryArtifact) HasLocation() bool {
-	return a != nil && a.URL != ""
+	return a != nil && a.URL != "" && a.UsernameSecret != nil
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -1976,11 +1974,11 @@ type RawArtifact struct {
 }
 
 func (r *RawArtifact) GetKey() (string, error) {
-	return "", keyUnsupportedErr
+	return "", fmt.Errorf("key unsupported: raw artifat does not have key")
 }
 
 func (r *RawArtifact) SetKey(string) error {
-	return keyUnsupportedErr
+	return fmt.Errorf("key unsupported: cannot set key for raw artifact")
 }
 
 func (r *RawArtifact) HasLocation() bool {
