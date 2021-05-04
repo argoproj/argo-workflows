@@ -140,23 +140,6 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 	}
 	p.rootFS = rootFS
 
-	/*
-		What is a "short running container" and "late starting container"?:
-
-		Short answer: any container that exits in <5s
-
-		Long answer:
-
-		Some containers are short running and we cannot determine their PIDs because they exit too quickly.
-		This loop allows 5s for `pollRootProcesses` find PIDs, so we define any container that exits <5s as short running
-
-		Unfortunately, we cannot assume that a container that did not appeared within the 5s has completed.
-		They may still be in `ContainerCreating` state - i.e. late starting.
-	*/
-	for i := 0; !p.haveContainerPIDs(containerNames) && i < 5; i++ {
-		time.Sleep(1 * time.Second)
-	}
-
 	return p.K8sAPIExecutor.Wait(ctx, containerNames)
 }
 
@@ -180,10 +163,9 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
 			// we need a bit more time
 			if p.haveContainerPIDs(containerNames) {
-				time.Sleep(time.Second)
-			} else {
-				time.Sleep(50 * time.Millisecond)
+				return
 			}
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
@@ -218,8 +200,16 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, termina
 }
 
 func (p *PNSExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	procs, err := gops.Processes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list processes: %w", err)
+	}
 	var containerNames []string
-	for n := range p.containerNameToPID {
+	for _, proc := range procs {
+		n, err := containerNameForPID(proc.Pid())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get container name for process %d: %w", proc.Pid(), err)
+		}
 		containerNames = append(containerNames, n)
 	}
 	return containerNames, nil
@@ -296,8 +286,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 	for _, proc := range processes {
 		err = func() error {
 			pid := proc.Pid()
-			if pid == 1 || pid == p.thisPID || proc.PPid() != 0 {
-				// ignore the pause container, our own pid, and non-root processes
+			if !p.isRootContainerProcess(proc) {
 				return fmt.Errorf("ignoring PID %d (ppid=%d): %q", pid, proc.PPid(), proc.Executable())
 			}
 
@@ -332,6 +321,11 @@ func (p *PNSExecutor) secureRootFiles() error {
 		}
 	}
 	return nil
+}
+
+func (p *PNSExecutor) isRootContainerProcess(proc gops.Process) bool {
+	// ignore the pause container, our own pid, and non-root processes
+	return proc.Pid() != 1 && proc.Pid() != p.thisPID && proc.PPid() == 0
 }
 
 func sameFile(a *os.File, b *os.File) bool {
