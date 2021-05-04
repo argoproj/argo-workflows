@@ -35,7 +35,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
       --older string            Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
       --prefix string           Delete workflows by prefix
       --resubmitted             Delete resubmitted workflows
-  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 
 ### Options inherited from parent commands

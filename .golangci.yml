@@ -20,8 +20,6 @@ linters:
     - deadcode
     - errcheck
     - goimports
-    - gci
-    - gofumpt
     - gosimple
     - govet
     - misspell

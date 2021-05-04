@@ -11,13 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test"
+
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // TestDagXfail verifies a DAG can fail properly
 func TestDagXfail(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag_xfail.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_xfail.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -26,7 +26,7 @@ func TestDagXfail(t *testing.T) {
 
 // TestDagRetrySucceeded verifies a DAG will be marked Succeeded if retry was successful
 func TestDagRetrySucceeded(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag_retry_succeeded.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_retry_succeeded.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -35,7 +35,7 @@ func TestDagRetrySucceeded(t *testing.T) {
 
 // TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
 func TestDagRetryExhaustedXfail(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag-exhausted-retries-xfail.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-exhausted-retries-xfail.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -44,7 +44,7 @@ func TestDagRetryExhaustedXfail(t *testing.T) {
 
 // TestDagDisableFailFast test disable fail fast function
 func TestDagDisableFailFast(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag-disable-fail-fast.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-disable-fail-fast.yaml")
 	woc := newWoc(*wf)
 	ctx := context.Background()
 	woc.operate(ctx)
@@ -80,7 +80,6 @@ spec:
      command: [sh, -c, "exit 1"]
 
  - name: Skipped
-   when: "False"
    container:
      image: alpine:3.7
      command: [sh, -c, "echo Hello"]
@@ -102,7 +101,7 @@ func TestSingleDependency(t *testing.T) {
 		} else {
 			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
 		}
-		wf := unmarshalWF(wfString)
+		wf := wfv1.MustUnmarshalWorkflow(wfString)
 
 		ctx := context.Background()
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -187,7 +186,7 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(artifactResolutionWhenSkippedDAG)
+	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkippedDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -510,13 +509,13 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-one-will-fail2-jt776
 spec:
-  arguments: {}
+  
   entrypoint: parameter-aggregation-one-will-fail2
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         continueOn:
           failed: true
         name: generate
@@ -532,7 +531,7 @@ spec:
         name: one-will-fail
         template: one-will-fail
         withParam: '{{tasks.generate.outputs.result}}'
-      - arguments: {}
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -543,7 +542,7 @@ spec:
     metadata: {}
     name: parameter-aggregation-one-will-fail2
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - |
@@ -564,7 +563,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  - arguments: {}
+  - 
     container:
       command:
       - cowsay
@@ -575,7 +574,7 @@ spec:
     metadata: {}
     name: whalesay
     outputs: {}
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: gen-number-list
@@ -769,7 +768,7 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTaskVariables)
+	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTaskVariables)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -786,10 +785,10 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-one-will-fail-69x7k
 spec:
-  arguments: {}
+  
   entrypoint: parameter-aggregation-one-will-fail
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
       - arguments:
@@ -803,7 +802,7 @@ spec:
         withItems:
         - 1
         - 2
-      - arguments: {}
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -814,7 +813,7 @@ spec:
     metadata: {}
     name: parameter-aggregation-one-will-fail
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - |
@@ -835,7 +834,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  - arguments: {}
+  - 
     container:
       command:
       - cowsay
@@ -992,7 +991,7 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTask)
+	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTask)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1041,7 +1040,7 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(dagWithParamAndGlobalParam)
+	wf := wfv1.MustUnmarshalWorkflow(dagWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1056,27 +1055,27 @@ kind: Workflow
 metadata:
   name: dag-diamond-xfww2
 spec:
-  arguments: {}
+  
   entrypoint: diamond
   shutdown: Terminate
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: A
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: B
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: C
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - B
         - C
@@ -1086,7 +1085,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - sleep 10
@@ -1279,7 +1278,7 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(terminatingDAGWithRetryStrategyNodes)
+	wf := wfv1.MustUnmarshalWorkflow(terminatingDAGWithRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1294,16 +1293,16 @@ kind: Workflow
 metadata:
   name: dag-diamond-dj7q5
 spec:
-  arguments: {}
+  
   entrypoint: diamond
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: A
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: B
@@ -1312,7 +1311,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit 1
@@ -1437,7 +1436,7 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
+	wf := wfv1.MustUnmarshalWorkflow(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1463,29 +1462,29 @@ kind: Workflow
 metadata:
   name: wf-retry-pol
 spec:
-  arguments: {}
+  
   entrypoint: run-steps
   onExit: onExit
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: run-steps
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: run-dag
         template: run-dag
-    - - arguments: {}
+    - - 
         name: manual-onExit
         template: onExit
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: A
         template: fail
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: B
@@ -1494,7 +1493,7 @@ spec:
     metadata: {}
     name: run-dag
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit 2
@@ -1511,7 +1510,7 @@ spec:
     retryStrategy:
       limit: 100
       retryPolicy: OnError
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -1626,7 +1625,7 @@ func TestRetryStrategyNodes(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testRetryStrategyNodes)
+	wf := wfv1.MustUnmarshalWorkflow(testRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1651,17 +1650,17 @@ kind: Workflow
 metadata:
   name: dag-diamond-88trp
 spec:
-  arguments: {}
+  
   entrypoint: diamond
   templates:
-  - arguments: {}
+  - 
     dag:
       failFast: false
       tasks:
-      - arguments: {}
+      - 
         name: A
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: B
@@ -1671,7 +1670,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit 0
@@ -1685,7 +1684,7 @@ spec:
     metadata: {}
     name: echo
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit 1
@@ -1791,7 +1790,7 @@ func TestOnExitDAGPhase(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testOnExitNodeDAGPhase)
+	wf := wfv1.MustUnmarshalWorkflow(testOnExitNodeDAGPhase)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -1816,17 +1815,17 @@ kind: Workflow
 metadata:
   name: exit-handler-bug-example
 spec:
-  arguments: {}
+  
   entrypoint: dag
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: step-2
         onExit: on-exit
         template: step-template
-      - arguments: {}
+      - 
         dependencies:
         - step-2
         name: step-3
@@ -1836,7 +1835,7 @@ spec:
     metadata: {}
     name: dag
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - echo exit-handler-step-{{pod.name}}
@@ -1850,7 +1849,7 @@ spec:
     metadata: {}
     name: on-exit
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - echo step {{pod.name}}
@@ -1921,7 +1920,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testOnExitNonLeaf)
+	wf := wfv1.MustUnmarshalWorkflow(testOnExitNonLeaf)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -2032,7 +2031,7 @@ status:
 `
 
 func TestDagOptionalInputArtifacts(t *testing.T) {
-	wf := unmarshalWF(testDagOptionalInputArtifacts)
+	wf := wfv1.MustUnmarshalWorkflow(testDagOptionalInputArtifacts)
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -2051,10 +2050,10 @@ kind: Workflow
 metadata:
   name: dag-primay-branch-6bnnl
 spec:
-  arguments: {}
+  
   entrypoint: statis
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -2067,7 +2066,7 @@ spec:
     metadata: {}
     name: a
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit!
@@ -2080,19 +2079,19 @@ spec:
     metadata: {}
     name: exit
     outputs: {}
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: steps
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: step-a
         template: a
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: A
         onExit: exit
         template: steps
@@ -2189,7 +2188,7 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testDagTargetTaskOnExit)
+	wf := wfv1.MustUnmarshalWorkflow(testDagTargetTaskOnExit)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -2207,13 +2206,13 @@ kind: Workflow
 metadata:
   name: dag-hang-pcwmr
 spec:
-  arguments: {}
+  
   entrypoint: dag
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: scheduler
         template: job-scheduler
       - arguments:
@@ -2225,7 +2224,7 @@ spec:
         name: children
         template: whalesay
         withParam: '{{tasks.scheduler.outputs.parameters.scheduled-jobs}}'
-      - arguments: {}
+      - 
         dependencies:
         - children
         name: postprocess
@@ -2234,7 +2233,7 @@ spec:
     metadata: {}
     name: dag
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - echo Decided not to schedule any jobs
@@ -2251,7 +2250,7 @@ spec:
       parameters:
       - name: scheduled-jobs
         value: '[]'
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -2341,7 +2340,7 @@ func TestEmptyWithParamDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testEmptyWithParamDAG)
+	wf := wfv1.MustUnmarshalWorkflow(testEmptyWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -2356,14 +2355,14 @@ kind: Workflow
 metadata:
   name: reproduce-bug-9tpfr
 spec:
-  arguments: {}
+  
   entrypoint: start
   serviceAccountName: argo-workflow
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: gen-tasks
         template: gen-tasks
       - arguments:
@@ -2375,7 +2374,7 @@ spec:
         name: process-tasks
         template: process-tasks
         withParam: '{{tasks.gen-tasks.outputs.result}}'
-      - arguments: {}
+      - 
         dependencies:
         - process-tasks
         name: finish
@@ -2385,7 +2384,7 @@ spec:
     name: start
     outputs: {}
   - activeDeadlineSeconds: 300
-    arguments: {}
+    
     inputs: {}
     metadata: {}
     name: gen-tasks
@@ -2408,7 +2407,7 @@ spec:
         set -e
         python3 -c 'import os, json; print(json.dumps([str(i) for i in range(10)]))'
   - activeDeadlineSeconds: 1800
-    arguments: {}
+    
     inputs:
       parameters:
       - name: chunk
@@ -2438,7 +2437,7 @@ spec:
         fi
         echo "process $chunk"
   - activeDeadlineSeconds: 300
-    arguments: {}
+    
     inputs: {}
     metadata: {}
     name: finish
@@ -3018,7 +3017,7 @@ func TestFailsWithParamDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := unmarshalWF(testFailsWithParamDAG)
+	wf := wfv1.MustUnmarshalWorkflow(testFailsWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -3033,16 +3032,16 @@ kind: Workflow
 metadata:
   name: build-wf-kpxvm
 spec:
-  arguments: {}
+  
   entrypoint: test-workflow
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: A
         template: ok
-      - arguments: {}
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -3053,7 +3052,7 @@ spec:
     metadata: {}
     name: test-workflow
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - |
@@ -3068,7 +3067,7 @@ spec:
     metadata: {}
     name: ok
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - |
@@ -3141,7 +3140,7 @@ status:
 `
 
 func TestLeafContinueOn(t *testing.T) {
-	wf := unmarshalWF(testLeafContinueOn)
+	wf := wfv1.MustUnmarshalWorkflow(testLeafContinueOn)
 	cancel, controller := newController(wf)
 	defer cancel()
 

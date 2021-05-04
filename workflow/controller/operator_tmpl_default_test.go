@@ -125,7 +125,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		},
 	}
 	t.Run("tmplDefaultInConfig", func(t *testing.T) {
-		wf := unmarshalWF(defaultWf)
+		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
 		woc := newWorkflowOperationCtx(wf, controller)
 		err := woc.setExecWorkflow(context.Background())
 		assert.NoError(t, err)
@@ -137,7 +137,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		assert.Equal(t, apiv1.PullNever, tmpl.Container.ImagePullPolicy)
 	})
 	t.Run("tmplDefaultInWf", func(t *testing.T) {
-		wf := unmarshalWF(defaultWf)
+		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
 		envs := []apiv1.EnvVar{
 			{
 				Name: "test",
@@ -167,7 +167,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		assert.Nil(t, tmpl.Script)
 	})
 	t.Run("stepTmplDefaultWf", func(t *testing.T) {
-		wf := unmarshalWF(stepWf)
+		wf := wfv1.MustUnmarshalWorkflow(stepWf)
 		envs := []apiv1.EnvVar{
 			{
 				Name: "test",
@@ -206,7 +206,7 @@ func TestSetTemplateDefault(t *testing.T) {
 		assert.Nil(t, tmpl1.Script)
 	})
 	t.Run("DagTmplDefaultWf", func(t *testing.T) {
-		wf := unmarshalWF(dagWf)
+		wf := wfv1.MustUnmarshalWorkflow(dagWf)
 		envs := []apiv1.EnvVar{
 			{
 				Name: "test",

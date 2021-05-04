@@ -9,6 +9,7 @@ import (
 	"github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -106,6 +107,10 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 				return !isTransientOSSErr(err), err
 			}
 			objectName := outputArtifact.OSS.Key
+			if outputArtifact.OSS.LifecycleRule != nil {
+				err = setBucketLifecycleRule(osscli, outputArtifact.OSS)
+				return !isTransientOSSErr(err), err
+			}
 			isDir, err := file.IsDirectory(path)
 			if err != nil {
 				return false, fmt.Errorf("failed to test if %s is a directory: %w", path, err)
@@ -146,6 +151,52 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			return true, nil
 		})
 	return files, err
+}
+
+func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) error {
+	if ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays == 0 && ossArtifact.LifecycleRule.MarkDeletionAfterDays == 0 {
+		return nil
+	}
+	var markInfrequentAccessAfterDays int
+	var markDeletionAfterDays int
+	if ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays != 0 {
+		markInfrequentAccessAfterDays = int(ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays)
+	}
+	if ossArtifact.LifecycleRule.MarkDeletionAfterDays != 0 {
+		markDeletionAfterDays = int(ossArtifact.LifecycleRule.MarkDeletionAfterDays)
+	}
+	if markInfrequentAccessAfterDays > markDeletionAfterDays {
+		return fmt.Errorf("markInfrequentAccessAfterDays cannot be large than markDeletionAfterDays")
+	}
+
+	// Set expiration rule.
+	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", ossArtifact.Key, true, markInfrequentAccessAfterDays)
+	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
+	expiration := oss.LifecycleExpiration{
+		ExpiredObjectDeleteMarker: pointer.BoolPtr(true),
+	}
+	// Convert to Infrequent Access (IA) storage type for objects that are expired after a period of time.
+	versionTransition := oss.LifecycleVersionTransition{
+		NoncurrentDays: markInfrequentAccessAfterDays,
+		StorageClass:   oss.StorageIA,
+	}
+	// Mark deletion after a period of time.
+	versionExpiration := oss.LifecycleVersionExpiration{
+		NoncurrentDays: markDeletionAfterDays,
+	}
+	versionTransitionRule := oss.LifecycleRule{
+		ID:                    "version-transition-rule",
+		Prefix:                ossArtifact.Key,
+		Status:                string(oss.VersionEnabled),
+		Expiration:            &expiration,
+		NonVersionExpiration:  &versionExpiration,
+		NonVersionTransitions: []oss.LifecycleVersionTransition{versionTransition},
+	}
+
+	// Set lifecycle rules to the bucket.
+	rules := []oss.LifecycleRule{expirationRule, versionTransitionRule}
+	err := client.SetBucketLifecycle(ossArtifact.Bucket, rules)
+	return err
 }
 
 func isTransientOSSErr(err error) bool {

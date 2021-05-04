@@ -10,7 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/yaml"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -135,13 +134,12 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("TmplLevelAcquireAndRelease", func(t *testing.T) {
-		wf := unmarshalWF(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
@@ -197,13 +195,12 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
-		wf := unmarshalWF(ScriptWfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(ScriptWfWithSemaphore)
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
@@ -258,13 +255,12 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {
-		wf := unmarshalWF(ResourceWfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(ResourceWfWithSemaphore)
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
@@ -322,7 +318,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	}, workflowExistenceFunc)
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
-		wf := unmarshalWF(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.Name = "one"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
@@ -377,7 +373,7 @@ func TestMutexInDAG(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("MutexWithDAG", func(t *testing.T) {
-		wf := unmarshalWF(DAGWithMutex)
+		wf := wfv1.MustUnmarshalWorkflow(DAGWithMutex)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -441,12 +437,11 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
-		wf := unmarshalWF(RetryWfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow(RetryWfWithSemaphore)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -491,7 +486,7 @@ metadata:
 spec:
   entrypoint: hello-hello-hello
   templates:
-  - arguments: {}
+  - 
     name: hello-hello-hello
     steps:
     - - arguments:
@@ -505,7 +500,7 @@ spec:
         configMapKeyRef:
           key: step
           name: my-config
-  - arguments: {}
+  - 
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -519,7 +514,7 @@ spec:
 `
 
 const StepWithSyncStatus = `
-piVersion: argoproj.io/v1alpha1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: steps-jklcl
@@ -650,14 +645,13 @@ func TestSynchronizationWithStep(t *testing.T) {
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	t.Run("StepWithSychronization", func(t *testing.T) {
 		// First workflow Acquire the lock
-		wf := unmarshalWF(StepWithSync)
+		wf := wfv1.MustUnmarshalWorkflow(StepWithSync)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -667,7 +661,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 		assert.Len(woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		// Second workflow try to acquire the lock and wait for lock
-		wf1 := unmarshalWF(StepWithSync)
+		wf1 := wfv1.MustUnmarshalWorkflow(StepWithSync)
 		wf1.Name = "step2"
 		wf1, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf1, metav1.CreateOptions{})
 		assert.NoError(err)
@@ -679,7 +673,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Waiting, 1)
 
 		// Finished all StepGroup in step
-		wf = unmarshalWF(StepWithSyncStatus)
+		wf = wfv1.MustUnmarshalWorkflow(StepWithSyncStatus)
 		woc = newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Nil(woc.wf.Status.Synchronization)

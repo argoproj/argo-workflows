@@ -1,6 +1,6 @@
 # IDE Set-Up
 
-## Validating Argo YAML againt the JSON Schema
+## Validating Argo YAML against the JSON Schema
 
 Argo provides a [JSON Schema](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json) that enables validation of YAML resources in your IDE.
 

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -16,10 +15,9 @@ kind: Workflow
 metadata:
   name: hello-world-qgpxz
 spec:
-  arguments: {}
   entrypoint: whalesay
   templates:
-  - arguments: {}
+  - 
     container:
       args:
       - hello world
@@ -54,8 +52,7 @@ status:
 
 func TestCleanFields(t *testing.T) {
 	var wf v1alpha1.Workflow
-	err := yaml.Unmarshal([]byte(sampleWorkflow), &wf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(sampleWorkflow), &wf)
 
 	jsonWf, err := json.Marshal(wf)
 	assert.NoError(t, err)
@@ -64,7 +61,7 @@ func TestCleanFields(t *testing.T) {
 	assert.NoError(t, err)
 
 	var cleanWf v1alpha1.Workflow
-	err = json.Unmarshal(cleanJsonWf, &cleanWf)
+	v1alpha1.MustUnmarshal(cleanJsonWf, &cleanWf)
 	assert.NoError(t, err)
 
 	assert.Equal(t, v1alpha1.WorkflowSucceeded, cleanWf.Status.Phase)
@@ -76,8 +73,7 @@ func TestCleanFields(t *testing.T) {
 
 func TestCleanFieldsExclude(t *testing.T) {
 	var wf v1alpha1.Workflow
-	err := yaml.Unmarshal([]byte(sampleWorkflow), &wf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(sampleWorkflow), &wf)
 
 	jsonWf, err := json.Marshal(wf)
 	assert.NoError(t, err)
@@ -86,8 +82,7 @@ func TestCleanFieldsExclude(t *testing.T) {
 	assert.NoError(t, err)
 
 	var cleanWf v1alpha1.Workflow
-	err = json.Unmarshal(cleanJsonWf, &cleanWf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal(cleanJsonWf, &cleanWf)
 
 	assert.Empty(t, cleanWf.Status.Phase)
 	assert.Empty(t, cleanWf.Spec.Entrypoint)

@@ -3,15 +3,15 @@ package indexes
 import (
 	"testing"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 )
 
 func TestWorkflowIndexFunc(t *testing.T) {
 	obj := &unstructured.Unstructured{}
-	testutil.MustUnmarshallYAML(`
+	wfv1.MustUnmarshal(`
 apiVersion: v1
 kind: Pod
 metadata:
