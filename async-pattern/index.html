@@ -2181,7 +2181,7 @@
 </ul>
 <p>This document describes the second option in more detail.</p>
 <h2 id="the-pattern">The pattern<a class="headerlink" href="#the-pattern" title="Permanent link">&para;</a></h2>
-<p>The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a <code>Suspend</code> step that suspends workflow exection and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.</p>
+<p>The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a <code>Suspend</code> step that suspends workflow execution and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.</p>
 <p>When implemented as a <code>WorkflowTemplate</code> it can look something like this:</p>
 <div class="highlight"><pre><span></span><code>apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
