@@ -314,6 +314,7 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 	if err != nil {
 		return err
 	}
+	log.WithField("driverArt", wfv1.MustMarshallJSON(driverArt)).Info("Issue #5733: saveArtifactFromFile")
 	artDriver, err := we.InitDriver(ctx, driverArt)
 	if err != nil {
 		return err

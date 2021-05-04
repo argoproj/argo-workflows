@@ -55,7 +55,10 @@ func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 
 // UpLoad artifact to an artifactory URL
 func (a *ArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
-	log.WithField("artifact", wfv1.MustMarshallJSON(artifact)).Info("Issue #5733: Save")
+	log.
+		WithField("a", wfv1.MustMarshallJSON(a)).
+		WithField("artifact", wfv1.MustMarshallJSON(artifact)).
+		Info("Issue #5733: Save")
 	f, err := os.Open(path)
 	if err != nil {
 		return err
