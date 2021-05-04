@@ -2798,7 +2798,7 @@ func parseStringToDuration(durationString string) (time.Duration, error) {
 	} else if duration, err := time.ParseDuration(durationString); err == nil {
 		suspendDuration = duration
 	} else {
-		return 0, fmt.Errorf("unable to parse %s as a duration", durationString)
+		return 0, fmt.Errorf("unable to parse %s as a duration: %w", durationString, err)
 	}
 	return suspendDuration, nil
 }
