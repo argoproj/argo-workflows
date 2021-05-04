@@ -990,6 +990,42 @@ func (s *CLISuite) TestWorkflowResubmit() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowResubmitByLabelSelector() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"resubmit", "--selector", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowResubmitByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"resubmit", "--field-selector", "metadata.namespace=argo"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+}
+
 func (s *CLISuite) TestCron() {
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"cron", "lint", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
