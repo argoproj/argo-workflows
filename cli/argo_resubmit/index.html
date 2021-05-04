@@ -2233,6 +2233,18 @@
 
   argo resubmit my-wf
 
+# Resubmit multiple workflows:
+
+  argo resubmit my-wf my-other-wf my-third-wf
+
+# Resubmit multiple workflows by label selector:
+
+  argo resubmit -l workflows.argoproj.io/test=true
+
+# Resubmit multiple workflows by field selector:
+
+  argo resubmit --field-selector metadata.namespace=argo
+
 # Resubmit and wait for completion:
 
   argo resubmit --wait my-wf.yaml
@@ -2250,13 +2262,15 @@
   argo resubmit @latest
 </code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>  -h, --help             help for resubmit
-      --log              log the workflow until it completes
-      --memoized         re-use successful steps &amp; outputs from the previous run (experimental)
-  -o, --output string    Output format. One of: name|json|yaml|wide
-      --priority int32   workflow priority
-  -w, --wait             wait for the workflow to complete
-      --watch            watch the workflow until it completes
+<div class="highlight"><pre><span></span><code>      --field-selector string   Selector (field query) to filter on, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for resubmit
+      --log                     log the workflow until it completes
+      --memoized                re-use successful steps &amp; outputs from the previous run (experimental)
+  -o, --output string           Output format. One of: name|json|yaml|wide
+      --priority int32          workflow priority
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                    wait for the workflow to complete, only works when a single workflow is resubmitted
+      --watch                   watch the workflow until it completes, only works when a single workflow is resubmitted
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands<a class="headerlink" href="#options-inherited-from-parent-commands" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
