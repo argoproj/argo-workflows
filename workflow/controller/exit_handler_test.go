@@ -221,15 +221,14 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var dagOnExitTmplWithArt = `
-apiVersion: argoproj.io/v1alpha1
+var dagOnExitTmplWithArt = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: dag-on-exit
 spec:
-  entrypoint: suspend
+  entrypoint: main
   templates:
-  - name: suspend
+  - name: main
     dag:
       tasks:
       - name: leafA
@@ -237,19 +236,9 @@ spec:
           exit: 
             template: exitContainer
             arguments:
-              parameters:
-              - name: input
-                value: '{{tasks.leafA.outputs.parameters.result}}'
-        template: whalesay
-      - name: leafB
-        dependencies: [leafA]
-        hooks:
-          exit: 
-            template: exitContainer
-            arguments:
               artifacts:
               - name: input
-                value: '{{tasks.leafB.outputs.parameters.result}}'
+                from: '{{tasks.leafA.outputs.artifacts.result}}'
         template: whalesay
   - name: whalesay
     container:
@@ -257,11 +246,9 @@ spec:
       command: [cowsay]
       args: ["hello world"]
     outputs:
-      parameters:
+      artifacts:
       - name: result
-        valueFrom:
-          default: "welcome"
-          path: /tmp/hello_world.txt
+        path: /tmp/hello_world.txt
   - name: exitContainer
     inputs:
       artifacts:
@@ -270,11 +257,10 @@ spec:
     container:
       image: docker/whalesay
       command: [cowsay]
-      args: ["goodbye world"]
-`
+      args: ["goodbye world"]`
 
 func TestDAGOnExitTmplWithArt(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmpl)
+	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmplWithArt)
 	cancel, controller := newController(wf)
 	defer cancel()
 

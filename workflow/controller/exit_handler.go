@@ -13,7 +13,7 @@ import (
 
 func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
 	if exitHook != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
-		woc.log.Infof("Running OnExit handler: %s", exitHook)
+		woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
 
 		// Previously we used `parentDisplayName` to generate all onExit node names. However, as these can be non-unique
 		// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
