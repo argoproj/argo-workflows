@@ -257,6 +257,13 @@ func (p *PNSExecutor) getContainerPID(containerName string) int {
 	if pid, ok := p.containerNameToPID[containerName]; ok {
 		return pid
 	}
+	procs, _ := gops.Processes()
+	for _, proc := range procs {
+		n, _ := containerNameForPID(proc.Pid())
+		if n == containerName {
+			return proc.Pid()
+		}
+	}
 	for n, pid := range p.containerNameToPID {
 		// the container can't be me, and it must be anonymous, otherwise we would have determined it
 		if pid != os.Getpid() && strings.HasPrefix(n, anonymousPIDPrefix) {
