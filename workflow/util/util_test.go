@@ -461,7 +461,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 		assert.NoError(t, err)
 
-		//make sure global variable was updated
+		// make sure global variable was updated
 		wf, err := wfIf.Get(ctx, "suspend-template", metav1.GetOptions{})
 		assert.NoError(t, err)
 		assert.Equal(t, "Hello World 2", wf.Status.Outputs.Parameters[0].Value.String())
