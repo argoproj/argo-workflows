@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -50,10 +52,18 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 	return woc.countNodes(getUnsuccessfulChildrenCounter(boundaryID))
 }
 
+func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
+	_, podExist, err := woc.controller.podInformer.GetIndexer().GetByKey(fmt.Sprintf("%s/%s", woc.wf.Namespace, node.ID))
+	if err != nil {
+		woc.log.WithError(err).Error("Failed to get Pod from PodInformer")
+	}
+	return podExist
+}
+
 func (woc *wfOperationCtx) countNodes(counter counter) int64 {
 	count := 0
 	for _, node := range woc.wf.Status.Nodes {
-		if counter(node) {
+		if counter(node) && woc.nodePodExist(node) {
 			count++
 		}
 	}

@@ -4,17 +4,24 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+
+"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func getWfOperationCtx() *wfOperationCtx {
 	return &wfOperationCtx{
 		wf: &v1alpha1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "1",
+				Namespace: "default",
+			},
 			Status: v1alpha1.WorkflowStatus{
 				Nodes: map[string]v1alpha1.NodeStatus{
-					"1":  {Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeSucceeded, BoundaryID: "1"},
-					"2":  {Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeFailed, BoundaryID: "1"},
+					"1":  {ID: "1", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeSucceeded, BoundaryID: "1"},
+					"2":  {ID: "2", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeFailed, BoundaryID: "1"},
 					"3":  {Type: v1alpha1.NodeTypeSteps, Phase: v1alpha1.NodeFailed, BoundaryID: "1"},
 					"4":  {Type: v1alpha1.NodeTypeDAG, Phase: v1alpha1.NodeError, BoundaryID: "1"},
 					"5":  {Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeRunning, BoundaryID: "1"},
@@ -35,6 +42,16 @@ func getWfOperationCtx() *wfOperationCtx {
 
 func TestCounters(t *testing.T) {
 	woc := getWfOperationCtx()
+	pod := v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "1",
+			Namespace: "default",
+		},
+	}
+	cancel, controller := newController(pod)
+	defer cancel()
+	woc.controller = controller
+
 	assert.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
 	assert.Equal(t, int64(4), woc.getActivePods(""))

@@ -93,12 +93,6 @@ const (
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
-type NodeReason string
-
-const (
-	WaitingForSyncLock NodeReason = "PendingForSyncLock"
-)
-
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -1285,14 +1279,6 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	return nil
 }
 
-func (ns NodeStatus) GetReason() NodeReason {
-	// If node is waiting for synchronize lock, Pod will not be created in this scenario
-	if ns.SynchronizationStatus != nil && ns.SynchronizationStatus.Waiting != "" {
-		return WaitingForSyncLock
-	}
-	return ""
-}
-
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
@@ -1798,7 +1784,7 @@ func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
 	return ResourceScope(resourceScope), resourceName
 }
 
-var _ TemplateReferenceHolder = &NodeStatus{}
+// var _ TemplateReferenceHolder = &NodeStatus{}
 
 func (n *NodeStatus) GetTemplateName() string {
 	return n.TemplateName

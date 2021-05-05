@@ -142,7 +142,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, uns...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewSimpleClientset(objects...)
 	wfc := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
