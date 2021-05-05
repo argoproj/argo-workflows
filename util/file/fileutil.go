@@ -27,6 +27,22 @@ type TarReader interface {
 	Next() (*tar.Header, error)
 }
 
+// GetGzipReader gets the GzipReader based on `GZipImplEnvVarKey` environment variable.
+func GetGzipReader(reader io.Reader) (io.ReadCloser, error) {
+	var err error
+	var gzipReader io.ReadCloser
+	switch gzipImpl {
+	case GZIP:
+		gzipReader, err = gzip.NewReader(reader)
+	default:
+		gzipReader, err = pgzip.NewReader(reader)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return gzipReader, nil
+}
+
 // ExistsInTar return true if file or directory exists in tar
 func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 	sourcePath = strings.Trim(sourcePath, "/")
@@ -96,14 +112,7 @@ func CompressContent(content []byte) []byte {
 // DecompressContent will return the uncompressed content
 func DecompressContent(content []byte) ([]byte, error) {
 	buf := bytes.NewReader(content)
-	var err error
-	var gzipReader io.ReadCloser
-	switch gzipImpl {
-	case GZIP:
-		gzipReader, err = gzip.NewReader(buf)
-	default:
-		gzipReader, err = pgzip.NewReader(buf)
-	}
+	gzipReader, err := GetGzipReader(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
