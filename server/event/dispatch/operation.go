@@ -37,7 +37,7 @@ type Operation struct {
 }
 
 func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eventRecorder record.EventRecorder, events []wfv1.WorkflowEventBinding, namespace, discriminator string, payload *wfv1.Item) (*Operation, error) {
-	env, err := expressionEnvironment(ctx, namespace, discriminator, payload)
+	env, err := ExpressionEnvironment(ctx, namespace, discriminator, payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workflow template expression environment: %w", err)
 	}
@@ -187,7 +187,7 @@ func (o *Operation) evaluateStringExpression(statement string, errorInfo string)
 	return v, nil
 }
 
-func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
+func ExpressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
 	src := map[string]interface{}{
 		"namespace":     namespace,
 		"discriminator": discriminator,

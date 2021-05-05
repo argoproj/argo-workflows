@@ -359,7 +359,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 }
 
 func Test_expressionEnvironment(t *testing.T) {
-	env, err := expressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
+	env, err := ExpressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
 	if assert.NoError(t, err) {
 		assert.Equal(t, "my-ns", env["namespace"])
 		assert.Equal(t, "my-d", env["discriminator"])

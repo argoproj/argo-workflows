@@ -2,8 +2,10 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
+	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,7 +75,16 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 		return nil, err
 	}
 
-	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
+	env, err := dispatch.ExpressionEnvironment(ctx, req.Namespace, req.Discriminator, req.Payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create workflow template expression environment: %w", err)
+	}
+	matchedEvents, err := s.filterEvents(list, env)
+	if err != nil {
+		return nil, err
+	}
+
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(req.Namespace), matchedEvents, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +95,33 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	default:
 		return nil, apierrors.NewServiceUnavailable("operation queue full")
 	}
+}
+
+// filterEvents filters the WorkflowEventBindings, making sure only the ones have selector matched will be dispatched
+func (s *Controller) filterEvents(list *wfv1.WorkflowEventBindingList, env map[string]interface{}) ([]wfv1.WorkflowEventBinding, error) {
+	matchedEvents := make([]wfv1.WorkflowEventBinding, 0)
+	for _, wfeb := range list.Items {
+		selector := wfeb.Spec.Event.Selector
+		result, err := expr.Eval(selector, env)
+		if err != nil {
+			log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name}).Errorf("failed to evaluate workflow template expression: %s", err.Error())
+			continue
+		}
+		matched, boolExpr := result.(bool)
+		log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched, "boolExpr": boolExpr}).Debug("Selector evaluation")
+		if !boolExpr {
+			log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name}).Error("malformed workflow event binding selector expression: did not evaluate to boolean")
+			continue
+		}
+		if matched {
+			matchedEvents = append(matchedEvents, wfeb)
+		}
+	}
+
+	if len(matchedEvents) == 0 {
+		return nil, fmt.Errorf("failed to match any workflow event binding")
+	}
+	return matchedEvents, nil
 }
 
 func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg.ListWorkflowEventBindingsRequest) (*wfv1.WorkflowEventBindingList, error) {
