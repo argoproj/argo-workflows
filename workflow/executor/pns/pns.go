@@ -206,6 +206,9 @@ func (p *PNSExecutor) ListContainerNames(ctx context.Context) ([]string, error) 
 	}
 	var containerNames []string
 	for _, proc := range procs {
+		if !p.isRootContainerProcess(proc) {
+			continue
+		}
 		n, err := containerNameForPID(proc.Pid())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get container name for process %d: %w", proc.Pid(), err)
