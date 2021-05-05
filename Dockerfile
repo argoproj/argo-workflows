@@ -132,6 +132,12 @@ COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoe
 
 ENTRYPOINT [ "argoexec" ]
 
+FROM argoexec-base as argoexec-dev
+
+ADD argoexec /usr/local/bin/
+
+ENTRYPOINT [ "argoexec" ]
+
 ####################################################################################################
 
 FROM scratch as workflow-controller
