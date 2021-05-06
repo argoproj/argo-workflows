@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,4 +99,26 @@ func TestConfigMapCacheSave(t *testing.T) {
 	var entry cache.Entry
 	wfv1.MustUnmarshal([]byte(cm.Data["hi-there-world"]), &entry)
 	assert.Equal(t, entry.LastHitTimestamp.Time, entry.CreationTimestamp.Time)
+}
+
+func TestConfigMapCacheTooLarge(t *testing.T) {
+	var MockParamValue = strings.Repeat("a", apiv1.MaxSecretSize+1)
+	MockParam := wfv1.Parameter{
+		Name:  "hello",
+		Value: wfv1.AnyStringPtr(MockParamValue),
+	}
+	cancel, controller := newController()
+	defer cancel()
+	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
+
+	ctx := context.Background()
+	outputs := wfv1.Outputs{}
+	outputs.Parameters = append(outputs.Parameters, MockParam)
+	err := c.Save(ctx, "hi-there-world", "", &outputs)
+	assert.EqualError(t, err, fmt.Sprintf("data: Too long: must have at most %d bytes", apiv1.MaxSecretSize))
+
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.NotNil(t, cm)
+	assert.Equal(t, "", cm.Data["hi-there-world"])
 }
