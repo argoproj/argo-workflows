@@ -31,6 +31,10 @@ release branch. There should be a single release branch per minor release (e.g. 
 
 2. Hope for few merge conflicts!
 
+    A merge conflict during cherry-picking usually means the commit is based on another commit that should be 
+    cherry-picked first. In case of a merge conflict, you can undo the cherry-picking by `git cherry-pick --abort` and 
+    revisit the list of commits to make sure the prior commits are cherry-picked as well.
+
 3. Once done cherry-picking, push the release branch to ensure the branch can build and all tests pass.
 
 ### 3. Prepare the Release
@@ -93,13 +97,13 @@ Then follow all the normal steps. You should delete the `argo` folder once the r
    $ ./dist/argo-darwin-amd64 version
    ```
 
-1. Check the manifests contain the correct tags (search for `v3.0.3`): https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml
+1. Check the manifests contain the correct tags (search for `v3.0.3`): [https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml)
 
 1. Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml`
 
 ### 5. Release Notes
 
-Create [the release](https://github.com/argoproj/argo-workflows/releases) on Github. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
+Create [the release](https://github.com/argoproj/argo-workflows/releases) on GitHub. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
 
     ght relnote v3.0.2..v3.0.3
 
@@ -122,7 +126,7 @@ Release notes checklist:
 * All breaking changes are listed with migration steps
 * The release notes identify every publicly known vulnerability with a CVE assignment
 
-### 6. Upload Binaries and SHA256 Sums To Github
+### 6. Upload Binaries and SHA256 Sums To GitHub
 
 After running `make publish-relesae`, you will have the zipped binaries and SHA256 sums in your local.
 
@@ -145,7 +149,7 @@ git tag -f stable
 git push -f origin stable
 ```
 
-Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
+Check the manifests contain the correct tags: [https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml)
 
 ### 8. Update Homebrew
 
@@ -177,7 +181,7 @@ cd argo-client-java
 make publish VERSION=v2.11.5
 ```
 
-Check package published: https://github.com/argoproj-labs/argo-client-java/packages
+Check package published: [https://github.com/argoproj-labs/argo-client-java/packages](https://github.com/argoproj-labs/argo-client-java/packages)
 
 ### 10. Publish Release
 
