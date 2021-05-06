@@ -176,8 +176,6 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			if err := p.secureRootFiles(); err != nil {
 				log.WithError(err).Warn("failed to secure root files")
 			}
-			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
-			// we need a bit more time
 			if p.haveContainerPIDs(containerNames) {
 				return
 			}
@@ -313,7 +311,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 		err = func() error {
 			pid := proc.Pid()
 			if !p.isRootContainerProcess(proc) {
-				return fmt.Errorf("ignoring PID %d (ppid=%d): %q", pid, proc.PPid(), proc.Executable())
+				return nil
 			}
 
 			fs, err := os.Open(fmt.Sprintf("/proc/%d/root", pid))
@@ -321,7 +319,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 				return err
 			}
 
-			if !sameFile(p.pidFileHandles[pid], fs) {
+			if p.pidFileHandles[pid] != fs {
 				// the main container may have switched (e.g. gone from busybox to the user's container)
 				if prevInfo, ok := p.pidFileHandles[pid]; ok {
 					_ = prevInfo.Close()
@@ -334,7 +332,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 			if err != nil {
 				return err
 			}
-			if p.getContainerPID(containerName) != pid {
+			if p.containerNameToPID[containerName] != pid {
 				p.mu.Lock()
 				defer p.mu.Unlock()
 				p.containerNameToPID[containerName] = pid
@@ -352,13 +350,4 @@ func (p *PNSExecutor) secureRootFiles() error {
 func (p *PNSExecutor) isRootContainerProcess(proc gops.Process) bool {
 	// ignore the pause container, our own pid, and non-root processes
 	return proc.Pid() != 1 && proc.Pid() != p.thisPID && proc.PPid() == 0
-}
-
-func sameFile(a *os.File, b *os.File) bool {
-	if a == nil || b == nil {
-		return false
-	}
-	x, _ := a.Stat()
-	y, _ := b.Stat()
-	return os.SameFile(x, y)
 }
