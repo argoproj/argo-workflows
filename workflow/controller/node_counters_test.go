@@ -22,12 +22,12 @@ func getWfOperationCtx() *wfOperationCtx {
 			},
 			Status: v1alpha1.WorkflowStatus{
 				Nodes: map[string]v1alpha1.NodeStatus{
-					"1":  {ID: "1", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeSucceeded, BoundaryID: "1"},
-					"2":  {ID: "2", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeFailed, BoundaryID: "1"},
+					"1":  {Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeSucceeded, BoundaryID: "1"},
+					"2":  {Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeFailed, BoundaryID: "1"},
 					"3":  {Type: v1alpha1.NodeTypeSteps, Phase: v1alpha1.NodeFailed, BoundaryID: "1"},
 					"4":  {Type: v1alpha1.NodeTypeDAG, Phase: v1alpha1.NodeError, BoundaryID: "1"},
 					"5":  {ID: "1", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeRunning, BoundaryID: "1"},
-					"5a": {ID: "2", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodeRunning, BoundaryID: "1", SynchronizationStatus: &v1alpha1.NodeSynchronizationStatus{Waiting: "yes"}},
+					"5a": {ID: "2", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodePending, BoundaryID: "1", SynchronizationStatus: &v1alpha1.NodeSynchronizationStatus{Waiting: "yes"}},
 					"6":  {ID: "1", Type: v1alpha1.NodeTypePod, Phase: v1alpha1.NodePending, BoundaryID: "1"},
 					"7":  {ID: "2", Type: v1alpha1.NodeTypeSteps, Phase: v1alpha1.NodeRunning, BoundaryID: "1"},
 					"8":  {ID: "1", Type: v1alpha1.NodeTypeDAG, Phase: v1alpha1.NodePending, BoundaryID: "1"},
@@ -135,13 +135,15 @@ func TestCounters(t *testing.T) {
 	var pod v1.Pod
 	err := yaml.Unmarshal([]byte(podStr), &pod)
 	assert.NoError(t, err)
-	cancel, controller := newController(pod)
+	cancel, controller := newController()
 	defer cancel()
 	woc.controller = controller
 	_, err = controller.kubeclientset.CoreV1().Pods("default").Create(context.Background(), &pod, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	pod.Name = "2"
 	_, err = controller.kubeclientset.CoreV1().Pods("default").Create(context.Background(), &pod, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	err = woc.controller.podInformer.GetIndexer().Resync()
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
