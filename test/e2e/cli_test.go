@@ -773,6 +773,55 @@ func (s *CLISuite) TestWorkflowRetry() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowStop() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		Then().
+		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic-.* stopped", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopDryRun() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"stop", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic stopped \\(dry-run\\)", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopBySelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"stop", "--selector", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic-.* stopped", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"stop", "--field-selector", "metadata.namespace=argo"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic-.* stopped", output)
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowTerminate() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -931,6 +980,42 @@ func (s *CLISuite) TestWorkflowResubmit() {
 		WaitForWorkflow().
 		Given().
 		RunCli([]string{"resubmit", "--memoized", "@latest"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowResubmitByLabelSelector() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"resubmit", "--selector", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowResubmitByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"resubmit", "--field-selector", "metadata.namespace=argo"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")

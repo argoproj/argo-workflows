@@ -49,7 +49,7 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                         }
                     });
                 } else {
-                    setWorkflow(exampleWorkflow(Utils.getNamespace(namespace)));
+                    setWorkflow(exampleWorkflow(Utils.getNamespaceWithDefault(namespace)));
                 }
                 break;
         }
@@ -106,7 +106,7 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                             icon='plus'
                             onClick={() => {
                                 services.workflows
-                                    .create(workflow, Utils.getNamespace(workflow.metadata.namespace))
+                                    .create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace))
                                     .then(onCreate)
                                     .catch(setError);
                             }}>

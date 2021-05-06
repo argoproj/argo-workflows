@@ -78,11 +78,8 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 			nil
 	}
 	if g.Username != "" || g.Password != "" {
-		filename, err := filepath.Abs("git-ask-pass.sh")
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		_, err = os.Stat(filename)
+		filename := filepath.Join(os.TempDir(), "git-ask-pass.sh")
+		_, err := os.Stat(filename)
 		if os.IsNotExist(err) {
 			err := ioutil.WriteFile(filename, []byte(`#!/bin/sh
 case "$1" in

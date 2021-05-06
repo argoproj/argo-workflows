@@ -341,10 +341,15 @@ message DAGTask {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
+  // DEPRECATED: Use Hooks[exit].Template instead.
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
   optional string depends = 12;
+
+  // Hooks hold the lifecycle hook which is invoked at lifecycle of
+  // task, irrespective of the success, failure, or error status of the primary task
+  map<string, LifecycleHook> hooks = 13;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -543,6 +548,12 @@ message Inputs {
 // +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
+}
+
+message LifecycleHook {
+  optional string template = 1;
+
+  optional Arguments arguments = 2;
 }
 
 // A link to another app.
@@ -766,6 +777,18 @@ message OSSBucket {
 
   // SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm
   optional string securityToken = 6;
+
+  // LifecycleRule specifies how to manage bucket's lifecycle
+  optional OSSLifecycleRule lifecycleRule = 7;
+}
+
+// OSSLifecycleRule specifies how to manage bucket's lifecycle
+message OSSLifecycleRule {
+  // MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type
+  optional int32 markInfrequentAccessAfterDays = 1;
+
+  // MarkDeletionAfterDays is the number of days before we delete objects in the bucket
+  optional int32 markDeletionAfterDays = 2;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1614,7 +1637,12 @@ message WorkflowStep {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
+  // DEPRECATED: Use Hooks[exit].Template instead.
   optional string onExit = 11;
+
+  // Hooks holds the lifecycle hook which is invoked at lifecycle of
+  // step, irrespective of the success, failure, or error status of the primary step
+  map<string, LifecycleHook> hooks = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
