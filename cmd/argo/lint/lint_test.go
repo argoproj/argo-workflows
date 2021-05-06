@@ -34,7 +34,7 @@ spec:
         arguments:
           parameters: [{name: message, value: "hello1"}]
 
-  - name: whalesay 
+  - name: whalesay
     inputs:
       parameters:
       - name: message
@@ -211,6 +211,38 @@ func TestLintStdin(t *testing.T) {
 	assert.Contains(t, res.msg, `stdin: in "foo" (WorkflowTemplate): lint error`)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
+}
+
+func TestLintDeviceFile(t *testing.T) {
+	file, err := ioutil.TempFile("", "*.yaml")
+	fd := file.Fd()
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), lintFileData, 0o644)
+	assert.NoError(t, err)
+	defer os.Remove(file.Name())
+
+	fmtr, err := GetFormatter("simple")
+	assert.NoError(t, err)
+
+	wfServiceClientMock := &workflowmocks.WorkflowServiceClient{}
+	wftServiceSclientMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
+	wfServiceClientMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("lint error"))
+
+	deviceFileName := fmt.Sprintf("/dev/fd/%d", fd)
+
+	res, err := Lint(context.Background(), &LintOptions{
+		Files: []string{deviceFileName},
+		ServiceClients: ServiceClients{
+			WorkflowsClient: wfServiceClientMock,
+		},
+		Formatter: fmtr,
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, res.Success, false)
+	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, deviceFileName))
+	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
+	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")
 }
 
 func TestGetFormatter(t *testing.T) {
