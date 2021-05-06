@@ -3,6 +3,8 @@ package file_test
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/base64"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -27,6 +29,24 @@ func TestCompressContentString(t *testing.T) {
 		assert.Equal(t, content, resultString)
 	}
 	_ = os.Unsetenv(file.GZipImplEnvVarKey)
+}
+
+// TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
+func TestGetGzipReader(t *testing.T) {
+	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
+		_ = os.Setenv(file.GZipImplEnvVarKey, gzipImpl)
+		rawContent := "this is the content"
+		content := file.CompressEncodeString(rawContent)
+		buf, err := base64.StdEncoding.DecodeString(content)
+		assert.NoError(t, err)
+		bufReader := bytes.NewReader(buf)
+		reader, err := file.GetGzipReader(bufReader)
+		assert.NoError(t, err)
+		res, err := ioutil.ReadAll(reader)
+		assert.NoError(t, err)
+		assert.Equal(t, rawContent, string(res))
+		_ = os.Unsetenv(file.GZipImplEnvVarKey)
+	}
 }
 
 func TestExistsInTar(t *testing.T) {
