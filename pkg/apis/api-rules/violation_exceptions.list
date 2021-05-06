@@ -8,6 +8,8 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,DAGTemplate,Tasks
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,GitArtifact,Fetch
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HDFSConfig,Addresses
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTP,Body
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTP,Headers
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPArtifact,Headers
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Histogram,Buckets
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Inputs,Parameters
@@ -36,5 +38,7 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowSpec,Volumes
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStatus,PersistentVolumeClaims
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStep,WithItems
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowTaskSetSpec,Tasks
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SubmitOpts,Entrypoint
+API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Task,NodeID
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStatus,StoredWorkflowSpec

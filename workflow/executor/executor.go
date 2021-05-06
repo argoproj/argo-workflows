@@ -99,6 +99,10 @@ type ContainerRuntimeExecutor interface {
 	// Used to capture script results as an output parameter, and to archive container logs
 	GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error)
 
+	// GetExitCode returns the exit code of the container
+	// Used to capture script exit code as an output parameter
+	GetExitCode(ctx context.Context, containerName string) (string, error)
+
 	// Wait waits for the container to complete.
 	Wait(ctx context.Context, containerNames []string) error
 

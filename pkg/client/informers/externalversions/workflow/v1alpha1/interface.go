@@ -16,6 +16,8 @@ type Interface interface {
 	Workflows() WorkflowInformer
 	// WorkflowEventBindings returns a WorkflowEventBindingInformer.
 	WorkflowEventBindings() WorkflowEventBindingInformer
+	// WorkflowTaskSets returns a WorkflowTaskSetInformer.
+	WorkflowTaskSets() WorkflowTaskSetInformer
 	// WorkflowTemplates returns a WorkflowTemplateInformer.
 	WorkflowTemplates() WorkflowTemplateInformer
 }
@@ -49,6 +51,11 @@ func (v *version) Workflows() WorkflowInformer {
 // WorkflowEventBindings returns a WorkflowEventBindingInformer.
 func (v *version) WorkflowEventBindings() WorkflowEventBindingInformer {
 	return &workflowEventBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// WorkflowTaskSets returns a WorkflowTaskSetInformer.
+func (v *version) WorkflowTaskSets() WorkflowTaskSetInformer {
+	return &workflowTaskSetInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // WorkflowTemplates returns a WorkflowTemplateInformer.
