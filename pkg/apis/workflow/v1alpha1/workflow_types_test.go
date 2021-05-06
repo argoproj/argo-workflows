@@ -834,4 +834,3 @@ func TestHasChild(t *testing.T) {
 	assert.False(t, node.HasChild("c"))
 	assert.False(t, node.HasChild(""))
 }
-

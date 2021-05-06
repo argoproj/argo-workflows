@@ -961,7 +961,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending(){
+			if node.Pending() {
 				continue
 			}
 
