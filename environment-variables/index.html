@@ -2191,6 +2191,11 @@ Note that these environment variables may be removed at any time.</p>
 <td>Whether to enable tracing statements in Argo components.</td>
 </tr>
 <tr>
+<td><code>CRON_SYNC_PERIOD</code></td>
+<td><code>time.Duration</code></td>
+<td>How ofen to sync cron workflows. Default <code>10s</code></td>
+</tr>
+<tr>
 <td><code>DEFAULT_REQUEUE_TIME</code></td>
 <td><code>time.Duration</code></td>
 <td>The requeue time for the rate limiter of the workflow queue.</td>
@@ -2204,6 +2209,11 @@ Note that these environment variables may be removed at any time.</p>
 <td><code>GZIP_IMPLEMENTATION</code></td>
 <td><code>string</code></td>
 <td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip".</td>
+</tr>
+<tr>
+<td><code>INDEX_WORKFLOW_SEMAPHORE_KEYS</code></td>
+<td><code>bool</code></td>
+<td>Whether or not to index semaphores. Defaults to <code>true</code>.</td>
 </tr>
 <tr>
 <td><code>LEADER_ELECTION_IDENTITY</code></td>
