@@ -149,7 +149,6 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
-	defer log.Info("finished polling root processes")
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	for {
