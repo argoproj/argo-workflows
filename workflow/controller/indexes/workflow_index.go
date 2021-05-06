@@ -1,13 +1,23 @@
 package indexes
 
 import (
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
+	"os"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
+
+var (
+	indexWorkflowSemaphoreKeys = os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false"
+)
+
+func init() {
+	log.WithField("indexWorkflowSemaphoreKeys", indexWorkflowSemaphoreKeys).Info("index config")
+}
 
 func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	m, err := meta.Accessor(obj)
@@ -26,6 +36,11 @@ func WorkflowIndexValue(namespace, name string) string {
 }
 
 func WorkflowSemaphoreKeysIndexFunc() cache.IndexFunc {
+	if !indexWorkflowSemaphoreKeys {
+		return func(obj interface{}) ([]string, error) {
+			return nil, nil
+		}
+	}
 	return func(obj interface{}) ([]string, error) {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
