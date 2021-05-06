@@ -475,7 +475,7 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandlerError() {
 	s.Given().
 		WorkflowTemplate(`
 metadata:
-  generateName: test-exit-handler-
+  name: test-exit-handler
 spec:
   entrypoint: main
   onExit: exit-handler
@@ -491,7 +491,7 @@ spec:
 `).
 		Workflow(`
 metadata:
-  name: test-exit-handler
+  generateName: test-exit-handler-
 spec:
   workflowTemplateRef:
     name: test-exit-handler
