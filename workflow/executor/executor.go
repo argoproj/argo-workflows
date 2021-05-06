@@ -22,13 +22,14 @@ import (
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
@@ -63,9 +64,10 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName            string
+	workflowName       string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
-	RESTClient         rest.Interface
+	workflowInterface  workflow.Interface
 	Namespace          string
 	PodAnnotationsPath string
 	ExecutionControl   *common.ExecutionControl
@@ -90,7 +92,6 @@ type Initializer interface {
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
 	GetFileContents(containerName string, sourcePath string) (string, error)
-
 	// CopyFile copies a source file in a container to a local path
 	CopyFile(containerName, sourcePath, destPath string, compressionLevel int) error
 
@@ -109,11 +110,12 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, workflowInterface workflow.Interface, podName, workflowName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
+		workflowName:       workflowName,
 		ClientSet:          clientset,
-		RESTClient:         restClient,
+		workflowInterface:  workflowInterface,
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
@@ -251,7 +253,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := ioutil.WriteFile(filePath, body, 0o644)
+	err := ioutil.WriteFile(filePath, body, 0644)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
@@ -710,6 +712,24 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
+// CaptureScriptExitCode will add the exit code of a script template as output exit code
+func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
+	if !we.Template.HasOutput() {
+		log.Infof("Template type is neither of Script, Container, or Pod. Capturing exit code ignored")
+		return nil
+	}
+	log.Infof("Capturing script exit code")
+	exitCode, err := we.RuntimeExecutor.GetExitCode(ctx, common.MainContainerName)
+	if err != nil {
+		return err
+	}
+
+	if exitCode != "" {
+		we.Template.Outputs.ExitCode = &exitCode
+	}
+	return nil
+}
+
 // AnnotateOutputs annotation to the pod indicating all the outputs.
 func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
@@ -720,26 +740,51 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if !outputs.HasOutputs() {
 		return nil
 	}
-	log.Infof("Annotating pod with output")
-	outputBytes, err := json.Marshal(outputs)
-	if err != nil {
-		return errors.InternalWrapError(err)
+
+	if err := we.annotatePodWithOutputs(ctx, outputs); !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
+		return err
 	}
-	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
+
+	return we.updateTaskSetStatusWithOutputs(ctx, outputs)
 }
 
-// AddError adds an error to the list of encountered errors during execution
+func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Info("Patching taskset status with outputs")
+	tasksetInterface := we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace)
+	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+		taskset, err := tasksetInterface.Get(ctx, we.workflowName, metav1.GetOptions{})
+		if err != nil && !errorsutil.IsTransientErr(err) {
+			return false, err
+		}
+		if taskset.Status == nil {
+			taskset.Status = &wfv1.WorkflowTaskSetStatus{}
+		}
+		if taskset.Status.Nodes == nil {
+			taskset.Status.Nodes = map[string]wfv1.NodeResult{}
+		}
+		taskset.Status.Nodes[we.nodeID()] = wfv1.NodeResult{Outputs: outputs}
+		_, err = tasksetInterface.UpdateStatus(ctx, taskset, metav1.UpdateOptions{})
+		return !errorsutil.IsTransientErr(err), err
+	})
+}
+
+func (we *WorkflowExecutor) nodeID() string {
+	return we.PodName
+}
+
+func (we *WorkflowExecutor) annotatePodWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Infof("Annotating pod with outputs")
+	data, err := json.Marshal(outputs)
+	if err != nil {
+		return err
+	}
+	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(data))
+}
+
+// AddError adds an error to the list of encountered errors durign execution
 func (we *WorkflowExecutor) AddError(err error) {
 	log.Errorf("executor error: %+v", err)
 	we.errors = append(we.errors, err)
-}
-
-// HasError return the first error if exist
-func (we *WorkflowExecutor) HasError() error {
-	if len(we.errors) > 0 {
-		return we.errors[0]
-	}
-	return nil
 }
 
 // AddAnnotation adds an annotation to the workflow pod
@@ -942,17 +987,14 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 			}
 
 			file, err := os.Stat(filePath)
-			if os.IsNotExist(err) {
-				// noop
-			} else if err != nil {
+			if err != nil {
 				log.Fatal(err)
-			} else {
-				newModTime := file.ModTime()
-				if modTime != nil && !modTime.Equal(file.ModTime()) {
-					res <- struct{}{}
-				}
-				modTime = &newModTime
 			}
+			newModTime := file.ModTime()
+			if modTime != nil && !modTime.Equal(file.ModTime()) {
+				res <- struct{}{}
+			}
+			modTime = &newModTime
 			time.Sleep(pollInterval)
 		}
 	}()
@@ -1084,10 +1126,10 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 			sidecarNames = append(sidecarNames, n)
 		}
 	}
-	log.Infof("Killing sidecars %q", sidecarNames)
 	if len(sidecarNames) == 0 {
 		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
 	}
+	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }
