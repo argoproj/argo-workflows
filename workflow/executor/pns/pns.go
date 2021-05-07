@@ -166,7 +166,6 @@ func (p *PNSExecutor) Wait(ctx context.Context, containerNames []string) error {
 // "main" container.
 // Polling is necessary because it is not possible to use something like fsnotify against procfs.
 func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []string) {
-	start := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	for {
@@ -177,9 +176,7 @@ func (p *PNSExecutor) pollRootProcesses(ctx context.Context, containerNames []st
 			if err := p.secureRootFiles(); err != nil {
 				log.WithError(err).Warn("failed to secure root files")
 			}
-			// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
-			// we need a bit more time
-			if p.haveContainerPIDs(containerNames) && time.Since(start) > 5*time.Second {
+			if p.haveContainerPIDs(containerNames) {
 				return
 			}
 			time.Sleep(50 * time.Millisecond)
@@ -217,8 +214,19 @@ func (p *PNSExecutor) Kill(ctx context.Context, containerNames []string, termina
 }
 
 func (p *PNSExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	procs, err := gops.Processes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list processes: %w", err)
+	}
 	var containerNames []string
-	for n := range p.containerNameToPID {
+	for _, proc := range procs {
+		if !p.isRootContainerProcess(proc) {
+			continue
+		}
+		n, err := containerNameForPID(proc.Pid())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get container name for process %d: %w", proc.Pid(), err)
+		}
 		containerNames = append(containerNames, n)
 	}
 	return containerNames, nil
@@ -263,6 +271,13 @@ func (p *PNSExecutor) getContainerPID(containerName string) int {
 	if pid, ok := p.containerNameToPID[containerName]; ok {
 		return pid
 	}
+	procs, _ := gops.Processes()
+	for _, proc := range procs {
+		n, _ := containerNameForPID(proc.Pid())
+		if n == containerName {
+			return proc.Pid()
+		}
+	}
 	for n, pid := range p.containerNameToPID {
 		// the container can't be me, and it must be anonymous, otherwise we would have determined it
 		if pid != os.Getpid() && strings.HasPrefix(n, anonymousPIDPrefix) {
@@ -295,8 +310,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 	for _, proc := range processes {
 		err = func() error {
 			pid := proc.Pid()
-			if pid == 1 || pid == p.thisPID || proc.PPid() != 0 {
-				// ignore the pause container, our own pid, and non-root processes
+			if !p.isRootContainerProcess(proc) {
 				return nil
 			}
 
@@ -318,7 +332,7 @@ func (p *PNSExecutor) secureRootFiles() error {
 			if err != nil {
 				return err
 			}
-			if p.getContainerPID(containerName) != pid {
+			if p.containerNameToPID[containerName] != pid {
 				p.mu.Lock()
 				defer p.mu.Unlock()
 				p.containerNameToPID[containerName] = pid
@@ -331,4 +345,9 @@ func (p *PNSExecutor) secureRootFiles() error {
 		}
 	}
 	return nil
+}
+
+func (p *PNSExecutor) isRootContainerProcess(proc gops.Process) bool {
+	// ignore the pause container, our own pid, and non-root processes
+	return proc.Pid() != 1 && proc.Pid() != p.thisPID && proc.PPid() == 0
 }
