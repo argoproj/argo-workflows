@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/validation/field"
-
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -137,16 +135,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 		cache.Data = make(map[string]string)
 	}
 	cache.Data[key] = string(entryJSON)
-	totalCacheSize := 0
-	for _, v := range cache.Data {
-		totalCacheSize += len(v)
-	}
-	if totalCacheSize > apiv1.MaxSecretSize {
-		err = field.TooLong(field.NewPath("data"), "", apiv1.MaxSecretSize)
-		c.logError(err, log.Fields{"key": key, "nodeId": nodeId},
-			fmt.Sprintf("Cannot save cache entry %s with size %d since the total cache size %d would exceed the limit %d", key, len(entryJSON), totalCacheSize, apiv1.MaxSecretSize))
-		return err
-	}
+
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cache, metav1.UpdateOptions{})
 	if err != nil {
 		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Kubernetes error creating new cache entry")
