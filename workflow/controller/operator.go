@@ -1052,6 +1052,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	var newDaemonStatus *bool
 	var message string
 	updated := false
+	if node.HostNodeName != pod.Spec.NodeName {
+		node.HostNodeName = pod.Spec.NodeName
+	}
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		newPhase = wfv1.NodePending
