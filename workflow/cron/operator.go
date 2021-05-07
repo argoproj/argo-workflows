@@ -112,7 +112,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 	woc.consecutiveSubmissionErrorCount = 0
 	if woc.cronWf.Spec.Suspend {
-		woc.cronWf.Spec.Suspend = false
+		//woc.cronWf.Spec.Suspend = false
 		woc.log.Infof("Resumed previously suspended CronWorkflow %s since there are no longer consecutively failed workflows", woc.cronWf.Name)
 	}
 }
@@ -127,7 +127,7 @@ func (woc *cronWfOperationCtx) validateCronWorkflow() error {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
 		if woc.cronWf.Spec.Suspend {
-			woc.cronWf.Spec.Suspend = false
+			//woc.cronWf.Spec.Suspend = false
 			woc.log.Infof("Resumed previously suspended CronWorkflow %s since its spec is valid", woc.cronWf.Name)
 		}
 		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSpecError)
