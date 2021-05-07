@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -305,6 +306,19 @@ func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
 			}, metav1.CreateOptions{})
 			_ = woc.controller.podInformer.GetStore().Add(pod)
 		}
+	}
+}
+
+func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1.Pod) {
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, err := podcs.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	podObjs = append(podObjs, pods.Items...)
+	for _, pod := range podObjs {
+		err = woc.controller.podInformer.GetIndexer().Add(&pod)
+		fmt.Println(err)
 	}
 }
 

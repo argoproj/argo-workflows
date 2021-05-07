@@ -135,16 +135,13 @@ func TestCounters(t *testing.T) {
 	var pod v1.Pod
 	err := yaml.Unmarshal([]byte(podStr), &pod)
 	assert.NoError(t, err)
+	assert.NotNil(t, pod)
+	pod1 := pod.DeepCopy()
+	pod1.Name = "2"
 	cancel, controller := newController()
 	defer cancel()
 	woc.controller = controller
-	_, err = controller.kubeclientset.CoreV1().Pods("default").Create(context.Background(), &pod, metav1.CreateOptions{})
-	assert.NoError(t, err)
-	pod.Name = "2"
-	_, err = controller.kubeclientset.CoreV1().Pods("default").Create(context.Background(), &pod, metav1.CreateOptions{})
-	assert.NoError(t, err)
-	err = woc.controller.podInformer.GetIndexer().Resync()
-	assert.NoError(t, err)
+	syncPodsInformer(context.Background(), woc, pod, *pod1)
 	assert.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
 	assert.Equal(t, int64(4), woc.getActivePods(""))

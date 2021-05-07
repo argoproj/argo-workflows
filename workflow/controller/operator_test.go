@@ -1381,7 +1381,7 @@ func TestWorkflowParallelismLimit(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -1395,6 +1395,8 @@ func TestWorkflowParallelismLimit(t *testing.T) {
 	assert.Equal(t, 2, len(pods.Items))
 	// operate again and make sure we don't schedule any more pods
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	syncPodsInformer(ctx, woc)
+
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
@@ -6670,7 +6672,6 @@ metadata:
   name: hello-world-4srt7
   namespace: argo
 spec:
-  activeDeadlineSeconds: 300
   entrypoint: whalesay
   podSpecPatch: |
     terminationGracePeriodSeconds: 3
@@ -6683,8 +6684,7 @@ spec:
       image: docker/whalesay:latest
       name: ""
     name: whalesay
-  ttlStrategy:
-    secondsAfterCompletion: 600
+
 status:
   artifactRepositoryRef:
     configMap: artifact-repositories
@@ -6716,7 +6716,11 @@ func TestWfPendingWithNoPod(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+
 }
 
 var wfPendingWithSync = `apiVersion: argoproj.io/v1alpha1
