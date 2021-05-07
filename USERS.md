@@ -10,6 +10,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently, the following organizations are **officially** using Argo Workflows:
 
+1. [7shifts](https://www.7shifts.com)
 1. [23mofang](https://www.23mofang.com/)
 1. [Acquia](https://www.acquia.com/)
 1. [Adevinta](https://www.adevinta.com/)
@@ -132,5 +133,5 @@ In addition, the following projects are **officially** using Argo Workflows:
 
 1. [Couler](https://github.com/couler-proj/couler)
 1. [Kubeflow](https://www.kubeflow.org/)
-2. [Onepanel](https://github.com/onepanelio/onepanel)
-3. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+1. [Onepanel](https://github.com/onepanelio/onepanel)
+1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
