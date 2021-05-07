@@ -43,7 +43,6 @@ func getUnsuccessfulChildrenCounter(boundaryID string) counter {
 }
 
 func (woc *wfOperationCtx) getActivePods(boundaryID string) int64 {
-
 	return woc.countNodes(woc.getActivePodsCounter(boundaryID))
 }
 
