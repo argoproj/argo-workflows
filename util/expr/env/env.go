@@ -13,6 +13,8 @@ func GetFuncMap(m map[string]interface{}) map[string]interface{} {
 	for k, v := range exprpkg.GetExprEnvFunctionMap() {
 		env[k] = v
 	}
+	delete(env, "env")
+	delete(env, "expandenv")
 	env["toJson"] = toJson
 	env["sprig"] = sprig.GenericFuncMap()
 	return env
