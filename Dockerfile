@@ -47,7 +47,6 @@ RUN apk --no-cache add curl procps git tar libcap jq
 
 COPY hack/arch.sh hack/os.sh /bin/
 
-RUN ls
 RUN if [ $(arch.sh) = ppc64le ] || [ $(arch.sh) = s390x ]; then \
         curl -o docker.tgz https://download.docker.com/$(os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-18.06.3-ce.tgz; \
     else \
