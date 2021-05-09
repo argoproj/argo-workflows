@@ -94,7 +94,7 @@ func TestArtifactLocation_HasLocation(t *testing.T) {
 
 func TestArtifactoryArtifact(t *testing.T) {
 	a := &ArtifactoryArtifact{URL: "http://my-host"}
-	assert.True(t, a.HasLocation())
+	assert.False(t, a.HasLocation())
 	assert.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
 	assert.NoError(t, err)
@@ -824,6 +824,62 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, suspendTmpl.Resource)
 		assert.Nil(t, suspendTmpl.Data)
 	})
+}
+
+func TestDAGTask_GetExitTemplate(t *testing.T) {
+	args := Arguments{
+		Parameters: []Parameter{
+			{
+				Name:  "test",
+				Value: AnyStringPtr("welcome"),
+			},
+		},
+	}
+	task := DAGTask{
+		Hooks: map[LifecycleEvent]LifecycleHook{
+			ExitLifecycleEvent: LifecycleHook{
+				Template:  "test",
+				Arguments: args,
+			},
+		},
+	}
+	existTmpl := task.GetExitHook(Arguments{})
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
+	task = DAGTask{OnExit: "test-tmpl"}
+	existTmpl = task.GetExitHook(args)
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test-tmpl", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
+}
+
+func TestStep_GetExitTemplate(t *testing.T) {
+	args := Arguments{
+		Parameters: []Parameter{
+			{
+				Name:  "test",
+				Value: AnyStringPtr("welcome"),
+			},
+		},
+	}
+	task := WorkflowStep{
+		Hooks: map[LifecycleEvent]LifecycleHook{
+			ExitLifecycleEvent: LifecycleHook{
+				Template:  "test",
+				Arguments: args,
+			},
+		},
+	}
+	existTmpl := task.GetExitHook(Arguments{})
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
+	task = WorkflowStep{OnExit: "test-tmpl"}
+	existTmpl = task.GetExitHook(args)
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test-tmpl", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
 }
 
 func TestHasChild(t *testing.T) {
