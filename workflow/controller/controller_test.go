@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -318,7 +317,9 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 	podObjs = append(podObjs, pods.Items...)
 	for _, pod := range podObjs {
 		err = woc.controller.podInformer.GetIndexer().Add(&pod)
-		fmt.Println(err)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

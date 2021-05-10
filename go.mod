@@ -24,7 +24,6 @@ require (
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gavv/httpexpect/v2 v2.2.0
-	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/jsonreference v0.19.5
 	github.com/go-openapi/spec v0.20.0
 	github.com/go-python/gpython v0.0.3

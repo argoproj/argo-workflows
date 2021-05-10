@@ -55,10 +55,7 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 }
 
 func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
-	_, podExist, err := woc.controller.podInformer.GetIndexer().GetByKey(fmt.Sprintf("%s/%s", woc.wf.Namespace, node.ID))
-	if err != nil {
-		woc.log.WithError(err).Errorf("Failed to get Pod %s/%s from PodInformer", woc.wf.Namespace, node.ID)
-	}
+	_, podExist, _ := woc.controller.podInformer.GetIndexer().GetByKey(fmt.Sprintf("%s/%s", woc.wf.Namespace, node.ID))
 	return podExist
 }
 

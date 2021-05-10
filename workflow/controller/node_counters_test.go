@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ghodss/yaml"
-
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -133,8 +131,7 @@ status:
 func TestCounters(t *testing.T) {
 	woc := getWfOperationCtx()
 	var pod v1.Pod
-	err := yaml.Unmarshal([]byte(podStr), &pod)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(podStr), &pod)
 	assert.NotNil(t, pod)
 	pod1 := pod.DeepCopy()
 	pod1.Name = "2"
