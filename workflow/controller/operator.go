@@ -381,8 +381,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
-			// the error are handled in the callee so just log it.
 			woc.log.WithError(err).Error("error in exit template execution")
+			if !woc.wf.Status.Phase.Completed() {
+				woc.markWorkflowError(ctx, fmt.Errorf("error in exit template execution: %w", err))
+			}
 			return
 		}
 		if onExitNode == nil || !onExitNode.Fulfilled() {
@@ -961,8 +963,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			// Node will be in pending state without Pod create if Node is waiting for Synchronize lock
-			if node.Pending() && node.GetReason() == wfv1.WaitingForSyncLock {
+			if node.Pending() {
 				continue
 			}
 

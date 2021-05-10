@@ -308,6 +308,21 @@ func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
 	}
 }
 
+func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1.Pod) {
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, err := podcs.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	podObjs = append(podObjs, pods.Items...)
+	for _, pod := range podObjs {
+		err = woc.controller.podInformer.GetIndexer().Add(&pod)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())

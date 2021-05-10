@@ -590,6 +590,22 @@ validate-examples: api/jsonschema/schema.json
 .PHONY: pre-commit
 pre-commit: codegen lint test start
 
+changelog:
+	@mkdir -p dist
+ifeq ($(GIT_BRANCH),master)
+	# on master, we just show the last 10 commits
+	git log --oneline -n10 > dist/changes
+	git log --oneline -n10 --format=%an | sort -u > dist/contributors
+else
+	# on a branch we show all commits since master
+	git log --oneline    origin/master.. > dist/changes
+	git log --format=%an origin/master.. | sort -u > dist/contributors
+endif
+	echo '## Changes' > dist/changelog.md
+	cat dist/changes >> dist/changelog.md
+	echo '## Contributors' >> dist/changelog.md
+	cat dist/contributors >> dist/changelog.md
+
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)
 
@@ -601,10 +617,9 @@ prepare-release: check-version-warning clean codegen manifests
 	git tag -a $(VERSION) -m $(VERSION)
 
 .PHONY: publish-release
-publish-release: check-version-warning clis checksums
+publish-release:
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
-
 endif
 
 .PHONY: check-version-warning
