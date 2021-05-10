@@ -556,6 +556,41 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandlerError() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+    - name: main
+      container:
+        name: main
+        image: argoproj/argosay:v2
+    - name: exit-handler
+      templateRef:
+        name: nonexistent
+        template: exit-handler
+`).
+		Workflow(`
+metadata:
+  generateName: test-exit-handler-
+spec:
+  workflowTemplateRef:
+    name: test-exit-handler
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, status.Message, "error in exit template execution")
+		})
+}
+
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
 		Workflow(`
