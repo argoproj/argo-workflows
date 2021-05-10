@@ -388,6 +388,10 @@ jobs:
       - run: make clis STATIC_FILES=true
       - run: make checksums
       # https://github.com/softprops/action-gh-release
+      # This will draft the release and upload assets.
+      # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
+      # of this action.
+      # Instead, delete the release so it is re-created.
       - name: Draft release
         uses: softprops/action-gh-release@v1
         with:
