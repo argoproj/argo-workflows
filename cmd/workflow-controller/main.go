@@ -106,6 +106,8 @@ func NewRootCommand() *cobra.Command {
 
 			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
 
+			healthz(ctx, wfclientset, managedNamespace)
+
 			go func() {
 				log.Println(http.ListenAndServe("localhost:6060", nil))
 			}()
