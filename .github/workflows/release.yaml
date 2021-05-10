@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Release
 
 on:
   push:
@@ -347,3 +347,57 @@ jobs:
             docker pull $image_name
             docker pull quay.io/$image_name
           done
+
+  clis:
+    name: Build & publish CLIs
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # 0 indicates all history for all branches and tags.
+          fetch-depth: 0
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "14"
+      - uses: actions/cache@v2
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.15.7"
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/pkg/mod
+          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
+      - name: Get tag
+        run: |
+          tag=$(basename $GITHUB_REF)
+          if [ $tag = "master" ]; then
+            tag="latest"
+          fi
+          echo "##[set-output name=tag;]$tag"
+        id: tag
+      - run: make changelog
+      - run: go mod download
+      - run: make clis STATIC_FILES=true
+      - run: make checksums
+      # https://github.com/softprops/action-gh-release
+      - name: Draft release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          prerelease: true
+          tag_name: ${{ steps.tag.outputs.tag }}
+          body_path: dist/changelog.md
+          files: |
+            dist/argo-*.gz
+            dist/argo-*.gz.sha256
+            manifests/*.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
