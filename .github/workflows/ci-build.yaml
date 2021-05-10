@@ -211,7 +211,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
