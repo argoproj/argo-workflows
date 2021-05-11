@@ -2895,7 +2895,7 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 |:----------:|:----------:|---------------|
 |`action`|`string`|Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch|
 |`failureCondition`|`string`|FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed|
-|`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [	"--validate=false"  # disable resource validation]|
+|`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [	"--validate=false" ]|
 |`manifest`|`string`|Manifest contains the kubernetes manifest|
 |`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic" Must be one of: strategic, merge, json|
 |`setOwnerReference`|`boolean`|SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.|
