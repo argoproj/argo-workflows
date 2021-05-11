@@ -566,7 +566,7 @@ jobs:
             docker pull quay.io/$image_name
           done
 
-  draft-release:
+  publish-release:
     runs-on: ubuntu-20.04
     # TODO - uncomment
     # needs: [ push-images, test-images-linux-amd64, test-images-windows ]
@@ -618,11 +618,10 @@ jobs:
       # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
       # of this action.
       # Instead, delete the release so it is re-created.
-      - name: Draft release
+      - name: Publish release
         uses: softprops/action-gh-release@v1
         with:
-          draft: true
-          prerelease: true
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           tag_name: ${{ steps.tag.outputs.tag }}
           body_path: changelog
           files: |
