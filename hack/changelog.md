@@ -2,7 +2,7 @@
 
 ## What's New?
 
-Find out in [our blog post](https://blog.argoproj.io)
+Find out on [our blog](https://blog.argoproj.io).
 
 ## Breaking Changes
 
