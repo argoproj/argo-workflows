@@ -226,7 +226,7 @@ jobs:
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
-      - run: git diff --exit-code  
+      - run: git diff --exit-code
 
   build-linux-amd64:
     name: Build & push linux/amd64
@@ -234,8 +234,8 @@ jobs:
     needs: [ tests, e2e-tests, codegen, lint, ui ]
     strategy:
       matrix:
-        platform: [linux/amd64]
-        target: [workflow-controller, argocli, argoexec]
+        platform: [ linux/amd64 ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v2
 
@@ -300,8 +300,8 @@ jobs:
     needs: [ tests, e2e-tests, codegen, lint, ui ]
     strategy:
       matrix:
-        platform: [linux/arm64]
-        target: [workflow-controller, argocli, argoexec]
+        platform: [ linux/arm64 ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v2
 
@@ -408,7 +408,7 @@ jobs:
   push-linux-amd64-images:
     name: Push manifest with linux/amd64
     runs-on: ubuntu-20.04
-    needs: [build-linux-amd64]
+    needs: [ build-linux-amd64 ]
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -451,7 +451,7 @@ jobs:
   push-images:
     name: Push manifest with all images
     runs-on: ubuntu-20.04
-    needs: [build-linux-arm64, build-windows, push-linux-amd64-images]
+    needs: [ build-linux-arm64, build-windows, push-linux-amd64-images ]
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -498,11 +498,11 @@ jobs:
   test-images-linux-amd64:
     name: Try pulling linux/amd64
     runs-on: ubuntu-20.04
-    needs: [push-images]
+    needs: [ push-images ]
     strategy:
       matrix:
-        platform: [linux/amd64]
-        target: [workflow-controller, argocli, argoexec]
+        platform: [ linux/amd64 ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - name: Docker Login
         uses: Azure/docker-login@v1
@@ -535,7 +535,7 @@ jobs:
   test-images-windows:
     name: Try pulling windows
     runs-on: windows-2019
-    needs: [push-images]
+    needs: [ push-images ]
     steps:
       - name: Docker Login
         uses: Azure/docker-login@v1
@@ -569,7 +569,8 @@ jobs:
   draft-release:
     name: Build & publish CLIs
     runs-on: ubuntu-20.04
-    needs: [ push-images, test-images-linux-amd64, test-images-windows ]
+    # TODO - uncomment
+    # needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -603,9 +604,15 @@ jobs:
           echo "##[set-output name=tag;]$tag"
         id: tag
       - run: make changelog
-      - run: go mod download
+      - run: cat changelog
       - run: make manifests VERSION=${{ steps.tag.outputs.tag }}
-      - run: make clis STATIC_FILES=true 
+      - name: Print image tag (please check it is not `latest`)
+        run: |
+          grep image: dist/manifests/install.yaml
+      - run: go mod download
+      - run: make clis STATIC_FILES=true
+      - name: Print version (please check it is not dirty)
+        run: dist/argo-linux-amd64 version
       - run: make checksums
       # https://github.com/softprops/action-gh-release
       # This will draft the release and upload assets.
@@ -618,7 +625,7 @@ jobs:
           draft: true
           prerelease: true
           tag_name: ${{ steps.tag.outputs.tag }}
-          body_path: dist/changelog.md
+          body_path: changelog
           files: |
             dist/argo-*.gz
             dist/argo-*.gz.sha256

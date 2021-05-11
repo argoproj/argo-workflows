@@ -595,21 +595,14 @@ validate-examples: api/jsonschema/schema.json
 .PHONY: pre-commit
 pre-commit: codegen lint test start
 
-changelog:
-	@mkdir -p dist
 ifeq ($(GIT_BRANCH),master)
-	# on master, we just show the last 10 commits
-	git log --oneline -n10 > dist/changes
-	git log --oneline -n10 --format=%an | sort -u > dist/contributors
+LOG_OPTS := '-n10'
 else
-	# on a branch we show all commits since master
-	git log --oneline    origin/master.. > dist/changes
-	git log --format=%an origin/master.. | sort -u > dist/contributors
+LOG_OPTS := 'origin/master..'
 endif
-	echo '## Changes' > dist/changelog.md
-	cat dist/changes >> dist/changelog.md
-	echo '## Contributors' >> dist/changelog.md
-	cat dist/contributors >> dist/changelog.md
+
+changelog: /dev/null
+	version=$(VERSION) breaking_changes=`git log --oneline --grep '!:' $(LOG_OPTS)` changes=`git log --format=' * %h %s' $(LOG_OPTS)` contributors=`git log --format=' * %an' $(LOG_OPTS) | sort -u` envsubst < hack/changelog.md > changlog
 
 .PHONY: parse-examples
 parse-examples:
