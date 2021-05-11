@@ -605,16 +605,16 @@ jobs:
       - run: make changelog VERSION=${{ steps.tag.outputs.tag }}
       - run: cat changelog
       - run: make manifests VERSION=${{ steps.tag.outputs.tag }}
-      - name: Print image tag (please check it is not `latest`)
+      - name: Print image tag (please check it is not `:latest`)
         run: |
           grep image: dist/manifests/install.yaml
       - run: go mod download
-      - run: make clis STATIC_FILES=true
+      - run: make clis STATIC_FILES=true VERSION=${{ steps.tag.outputs.tag }}
       - name: Print version (please check it is not dirty)
         run: dist/argo-linux-amd64 version
       - run: make checksums
       # https://github.com/softprops/action-gh-release
-      # This will draft the release and upload assets.
+      # This will publish the release and upload assets.
       # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
       # of this action.
       # Instead, delete the release so it is re-created.
