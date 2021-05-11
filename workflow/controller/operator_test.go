@@ -2203,6 +2203,8 @@ spec:
 
   nodeSelector:
     kubernetes.io/hostname: my-host
+  
+  nodeName: my-node-name
 
   volumes:
   - name: workdir
@@ -2245,6 +2247,8 @@ func TestWorkflowSpecParam(t *testing.T) {
 	assert.True(t, found)
 
 	assert.Equal(t, "my-host", pod.Spec.NodeSelector["kubernetes.io/hostname"])
+
+	assert.Equal(t, "my-node-name", pod.Spec.NodeName)
 }
 
 func TestAddGlobalParamToScope(t *testing.T) {

@@ -251,6 +251,11 @@ type WorkflowSpec struct {
 	// a nodeSelector specified in the template.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,10,opt,name=nodeSelector"`
 
+	// NodeName is a selector which will result in all pods of the workflow
+	// to be scheduled on the selected node(s). This is able to be overridden by
+	// a nodeName specified in the template.
+	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,40,opt,name=nodeName"`
+
 	// Affinity sets the scheduling constraints for all pods in the workflow.
 	// Can be overridden by an affinity specified in the template
 	Affinity *apiv1.Affinity `json:"affinity,omitempty" protobuf:"bytes,11,opt,name=affinity"`
@@ -509,6 +514,11 @@ type Template struct {
 	// NodeSelector is a selector to schedule this step of the workflow to be
 	// run on the selected node(s). Overrides the selector set at the workflow level.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,7,opt,name=nodeSelector"`
+
+	// NodeName is a selector which will result in all pods of the workflow
+	// to be scheduled on the selected node(s). This is able to be overridden by
+	// a nodeName specified in the template.
+	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,42,opt,name=nodeName"`
 
 	// Affinity sets the pod's scheduling constraints
 	// Overrides the affinity set at the workflow level (if any)
