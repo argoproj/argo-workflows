@@ -104,7 +104,6 @@ jobs:
         with:
           path: dist/kustomize
           key: kustomize
-      - run: git fetch --tags
       - run: mkdir -p /tmp/log/argo-e2e
       - name: Install and start K3S
         timeout-minutes: 3
@@ -184,7 +183,6 @@ jobs:
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           ls /usr/local/include/google/protobuf/
-      - run: git fetch --tags
       - name: Create links
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
