@@ -602,7 +602,7 @@ jobs:
           fi
           echo "##[set-output name=tag;]$tag"
         id: tag
-      - run: make changelog
+      - run: make changelog VERSION=${{ steps.tag.outputs.tag }}
       - run: cat changelog
       - run: make manifests VERSION=${{ steps.tag.outputs.tag }}
       - name: Print image tag (please check it is not `latest`)
