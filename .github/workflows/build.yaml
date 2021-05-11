@@ -6,7 +6,6 @@ on:
       - v*
     branches:
       - master
-      - dev-*
   pull_request:
     branches:
       - master
@@ -230,6 +229,7 @@ jobs:
     name: Build & push linux/amd64
     runs-on: ubuntu-20.04
     needs: [ tests, codegen, lint, ui ]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     strategy:
       matrix:
         platform: [ linux/amd64 ]
@@ -296,6 +296,7 @@ jobs:
     name: Build & push linux/arm64
     runs-on: ubuntu-20.04
     needs: [ tests, codegen, lint, ui ]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     strategy:
       matrix:
         platform: [ linux/arm64 ]
@@ -367,6 +368,7 @@ jobs:
     name: Build & push windows
     runs-on: windows-2019
     needs: [ tests, codegen, lint, ui ]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -407,6 +409,7 @@ jobs:
     name: Push manifest with linux/amd64
     runs-on: ubuntu-20.04
     needs: [ build-linux-amd64 ]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -450,6 +453,7 @@ jobs:
     name: Push manifest with all images
     runs-on: ubuntu-20.04
     needs: [ build-linux-arm64, build-windows, push-linux-amd64-images ]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -566,13 +570,11 @@ jobs:
 
   publish-release:
     runs-on: ubuntu-20.04
+    if: startsWith(github.ref, 'refs/tags/v')
     # TODO - uncomment
     # needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     steps:
       - uses: actions/checkout@v2
-        with:
-          # 0 indicates all history for all branches and tags.
-          fetch-depth: 0
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
@@ -592,22 +594,14 @@ jobs:
           path: /home/runner/go/pkg/mod
           key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
-      - name: Get tag
-        run: |
-          tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
-            tag="latest"
-          fi
-          echo "##[set-output name=tag;]$tag"
-        id: tag
-      - run: make changelog VERSION=${{ steps.tag.outputs.tag }}
+      - run: make changelog VERSION=${GITHUB_REF##*/}
       - run: cat changelog
-      - run: make manifests VERSION=${{ steps.tag.outputs.tag }}
+      - run: make manifests VERSION=${GITHUB_REF##*/}
       - name: Print image tag (please check it is not `:latest`)
         run: |
           grep image: dist/manifests/install.yaml
       - run: go mod download
-      - run: make clis STATIC_FILES=true VERSION=${{ steps.tag.outputs.tag }}
+      - run: make clis STATIC_FILES=true VERSION=${GITHUB_REF##*/}
       - name: Print version (please check it is not dirty)
         run: dist/argo-linux-amd64 version
       - run: make checksums
@@ -616,11 +610,9 @@ jobs:
       # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
       # of this action.
       # Instead, delete the release so it is re-created.
-      - name: Publish release
-        uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v1
         with:
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
-          tag_name: ${{ steps.tag.outputs.tag }}
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/v0') || contains(github.ref, 'rc') }}
           body_path: changelog
           files: |
             dist/argo-*.gz
