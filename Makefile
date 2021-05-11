@@ -602,7 +602,7 @@ LOG_OPTS := 'origin/master..'
 endif
 
 changelog: /dev/null
-	version=$(VERSION) breaking_changes=`git log --oneline --grep '!:' $(LOG_OPTS)` changes=`git log --format=' * %h %s' $(LOG_OPTS)` contributors=`git log --format=' * %an' $(LOG_OPTS) | sort -u` envsubst < hack/changelog.md > changlog
+	version=$(VERSION) breaking_changes=`git log --oneline --grep '!:' $(LOG_OPTS)` changes=`git log --format=' * %h %s' $(LOG_OPTS)` contributors=`git log --format=' * %an' $(LOG_OPTS) | sort -u` envsubst < hack/changelog.md > changelog
 
 .PHONY: parse-examples
 parse-examples:
