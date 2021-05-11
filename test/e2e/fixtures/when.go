@@ -166,24 +166,15 @@ func (w *When) CreateCronWorkflow() *When {
 type Condition func(wf *wfv1.Workflow) (bool, string)
 
 var (
+	ToBeRunning             = ToHavePhase(wfv1.WorkflowRunning)
+	ToBeSucceeded           = ToHavePhase(wfv1.WorkflowSucceeded)
+	ToBeErrored             = ToHavePhase(wfv1.WorkflowError)
+	ToBeFailed              = ToHavePhase(wfv1.WorkflowFailed)
 	ToBeCompleted Condition = func(wf *wfv1.Workflow) (bool, string) {
 		return wf.Labels[common.LabelKeyCompleted] == "true", "to be completed"
 	}
-	ToStart     Condition = func(wf *wfv1.Workflow) (bool, string) { return !wf.Status.StartedAt.IsZero(), "to start" }
-	ToBeRunning Condition = func(wf *wfv1.Workflow) (bool, string) {
-		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-			return node.Phase == wfv1.NodeRunning
-		}), "to be running"
-	}
+	ToStart Condition = func(wf *wfv1.Workflow) (bool, string) { return !wf.Status.StartedAt.IsZero(), "to start" }
 )
-
-var ToBeSucceeded Condition = func(wf *wfv1.Workflow) (bool, string) {
-	return wf.Status.Phase == wfv1.WorkflowSucceeded, "to be succeeded"
-}
-
-var ToBeFailed Condition = func(wf *wfv1.Workflow) (bool, string) {
-	return wf.Status.Phase == wfv1.WorkflowFailed, "to be failed"
-}
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
 // This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
@@ -195,6 +186,12 @@ var ToBeDone Condition = func(wf *wfv1.Workflow) (bool, string) {
 
 var ToBeArchived Condition = func(wf *wfv1.Workflow) (bool, string) {
 	return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived", "to be archived"
+}
+
+var ToHavePhase = func(p wfv1.WorkflowPhase) Condition {
+	return func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Phase == p && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", fmt.Sprintf("to be %s", p)
+	}
 }
 
 var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
