@@ -39,7 +39,7 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
+UI                    ?= true
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -462,7 +462,7 @@ endif
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) UI=$(UI) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -471,14 +471,6 @@ $(GOPATH)/bin/stern:
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
 	stern -l workflows.argoproj.io/workflow 2>&1
-
-.PHONY: watch-pods
-watch-pods:
-	# NODE_ID:.metadata.name
-	# EXECUTION_CONTROL:.metadata.annotations.workflows\.argoproj\.io/execution
-	kubectl get pod \
-	  -o=custom-columns='WORKFLOW:.metadata.labels.workflows\.argoproj\.io/workflow,NODE_NAME:.metadata.annotations.workflows\.argoproj\.io/node-name,STATUS:.status.phase,MESSAGE:.metadata.annotations.workflows\.argoproj\.io/node-message,CTRS:.status.containerStatuses[*].name,CTR STATUS:.status.containerStatuses[*].state.terminated.reason,EXIT CODES:.status.containerStatuses[*].state.terminated.exitCode' \
-	  -w
 
 .PHONY: wait
 wait:
