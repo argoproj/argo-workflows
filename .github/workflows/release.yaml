@@ -353,6 +353,9 @@ jobs:
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     steps:
       - uses: actions/checkout@v2
+        with:
+          # 0 indicates all history for all branches and tags.
+          fetch-depth: 0
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
