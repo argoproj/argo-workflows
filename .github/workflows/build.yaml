@@ -43,11 +43,8 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-20.04
-    # test-api: 7m (1m10s locally)
-    # test-cli: 12m (4m locally)
-    # test-cron: 8m
-    # test-executor 8m (2m locally)
-    # test-functional: 13m (7m locally)
+    # by the time we are tagging, we will have had time to see if E2E tests pass on the branch
+    if: !startsWith(github.ref, 'refs/tags/v')
     timeout-minutes: 20
     env:
       KUBECONFIG: /home/runner/.kubeconfig
