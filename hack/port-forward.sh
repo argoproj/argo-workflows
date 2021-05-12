@@ -8,7 +8,7 @@ pf() {
   port=$3
   dest_port=${4:-"$port"}
   ./hack/free-port.sh $port
-  kubectl -n argo port-forward "$resource" "$port:$dest_port" > /dev/null &
+  kubectl -n argo port-forward "$resource" "$port:$dest_port" --timeout 1m > /dev/null &
   # wait until port forward is established
 	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
   info "$name on http://localhost:$port"
