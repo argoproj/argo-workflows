@@ -1059,10 +1059,17 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 				// Do not include pending nodes that are waiting for a lock
 				continue
 			}
-			activePods++
+			if woc.nodePodExist(node) {
+				activePods++
+			}
 		}
 	}
 	return activePods
+}
+
+func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
+	_, podExist, _ := woc.controller.podInformer.GetIndexer().GetByKey(fmt.Sprintf("%s/%s", woc.wf.Namespace, node.ID))
+	return podExist
 }
 
 // countActiveChildren counts the number of active (Pending/Running) children nodes of parent parentName
