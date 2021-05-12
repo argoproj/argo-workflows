@@ -122,7 +122,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 * Out-of-the box and custom Prometheus metrics
 * Windows container support
 * Embedded widgets
-* Multiplex log viewe
+* Multiplex log viewer
 
 ## Community Meetings
 
