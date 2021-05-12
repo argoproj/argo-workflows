@@ -23,7 +23,7 @@ metadata:
   generateName: dag-task-
 spec:
   entrypoint: dag-task
-  metrics:   # Custom metric workflow level
+  metrics: # Custom metric workflow level
     prometheus:
       - name: playground_workflow_duration
         help: "Duration gauge by workflow level"
@@ -77,7 +77,7 @@ spec:
       parameters:
       - name: message
       - name: tag
-    metrics:   # Custom metric template level
+    metrics: # Custom metric template level
       prometheus:
         - name: playground_workflow_duration_task_seconds
           help: "Duration gauge by task name in seconds - task level"
