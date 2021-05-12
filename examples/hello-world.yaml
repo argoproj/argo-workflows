@@ -8,6 +8,8 @@ spec:
   entrypoint: whalesay
   templates:
   - name: whalesay
+    podSpecPatch: |
+      {"containers":[{"name":"main","resources":{"limits":{"cpu":"500m","memory":"250Mi"}}},{"name":"wait","resources":{"limits":{"cpu":"500m","memory":"250Mi"}}}]}
     container:
       image: docker/whalesay:latest
       command: [cowsay]
