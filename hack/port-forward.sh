@@ -20,7 +20,7 @@ info() {
 
 if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
   pf MinIO deploy/minio 9000
-  fi
+fi
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
