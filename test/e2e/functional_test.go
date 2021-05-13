@@ -670,10 +670,8 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v2
-        args:
-          - echo
-          - ":) Hello Argo!"
-      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}]}'
+      # ordering of the containers in the next line is intentionally reversed
+      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":"wait", "resources":{"limits":{"cpu": "101m"}}}]}'
 `).
 		When().
 		SubmitWorkflow().
@@ -684,6 +682,8 @@ spec:
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
 					assert.Equal(t, c.Resources.Limits.Cpu().String(), "100m")
+				} else if c.Name == "wait" {
+					assert.Equal(t, c.Resources.Limits.Cpu().String(), "101m")
 				}
 			}
 		})
