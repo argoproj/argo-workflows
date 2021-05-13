@@ -1,5 +1,18 @@
 # Changelog
 
+## v3.1.0-rc3 (2021-05-13)
+
+ * d2bd1def Merge branch 'master' into release-3.1
+ * 37f8c7cd ci: Auto-generate changelog (#5903)
+ * ba700eed test: Fix bug in port-forward.sh (#5895)
+ * e71d33c5 fix(controller): Fix pod spec jumbling. Fixes #5897 (#5899)
+ * 9a10bd47 fix: workflow-controller: use parentId (#5831)
+
+### Contributors
+
+ * Alex Collins
+ * Jan Heylen
+
 ## v3.1.0-rc2 (2021-05-12)
 
  * df66c5af build: use fetch-depth=0
