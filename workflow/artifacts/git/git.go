@@ -118,7 +118,8 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer closer()
 
 	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
-	if g.DisableSubmodules == true {
+	if inputArtifact.Git.DisableSubmodules == true {
+		log.Info("Setting recurse submodules to NoRecurseSubmodules")
 		recurseSubmodules = git.NoRecurseSubmodules
 	}
 	repo, err := git.PlainClone(path, false, &git.CloneOptions{
@@ -162,7 +163,8 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			return g.error(err, cmd)
 		}
 		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
-		if g.DisableSubmodules == false {
+		log.Info("DisableSubmodules ", inputArtifact.Git.DisableSubmodules, inputArtifact.Git.String())
+		if inputArtifact.Git.DisableSubmodules == false {
 			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
 			submodulesCmd.Dir = path
 			submodulesCmd.Env = env
