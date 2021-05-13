@@ -25,17 +25,20 @@ info() {
 }
 echo "ALEX 9"
 
+kubectl -n argo wait --timeout 1m --for=condition=Available deploy minio
 pf MinIO svc/minio 9000
 echo "ALEX 10"
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
+  kubectl -n argo wait --timeout 1m --for=condition=Available deploy dex
   pf DEX svc/dex 5556
 fi
 echo "ALEX 11"
 
 postgres=$(kubectl -n argo get pod -l app=postgres -o name)
 if [[ "$postgres" != "" ]]; then
+  kubectl -n argo wait --timeout 1m --for=condition=Available deploy postgres
   pf Postgres "$postgres" 5432
 fi
 echo "ALEX 12"
