@@ -12,11 +12,11 @@ pf() {
   echo "ALEX 5"
   ./hack/free-port.sh $port
   echo "ALEX 6"
+  info "$name on http://localhost:$port"
   kubectl -n argo port-forward "$resource" "$port:$dest_port" > /dev/null &
   echo "ALEX 7"
   # wait until port forward is established
 	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
-  info "$name on http://localhost:$port"
 }
 
 echo "ALEX 8"
@@ -25,10 +25,8 @@ info() {
 }
 echo "ALEX 9"
 
-if [[ "$(kubectl -n argo get pod -l app=minio -o name)" != "" ]]; then
-  pf MinIO deploy/minio 9000
-fi
-echo "ALEX 9"
+pf MinIO svc/minio 9000
+echo "ALEX 10"
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
