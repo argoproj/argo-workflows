@@ -390,6 +390,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
 		}
+		pod.Spec = apiv1.PodSpec{} // zero out the pod spec so we cannot get conflicts
 		err = json.Unmarshal(modJson, &pod.Spec)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")

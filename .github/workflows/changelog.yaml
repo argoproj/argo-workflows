@@ -1,0 +1,26 @@
+name: Changelog
+
+on:
+  push:
+    branches:
+      - master
+      - dev-*
+  # run every 30m to make sure it is up-to-date
+  schedule:
+    - cron: "*/30 * * * *"
+jobs:
+  generate_changelog:
+    runs-on: ubuntu-latest
+    name: Generate changelog
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - run: git fetch --prune --prune-tags
+      - run: git tag -l 'v*'
+      # avoid invoking `make` to reduce the change of Makefile problem failing this workflow
+      - run: ./hack/changelog.sh > CHANGELOG.md
+      - uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: 'docs: updated CHANGELOG.md'
+          signoff: true
