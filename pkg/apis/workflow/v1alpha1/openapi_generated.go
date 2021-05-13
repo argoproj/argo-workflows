@@ -1911,6 +1911,13 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"disableSubmodules": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DisableSubmodules disables submodules during git clone",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"repo"},
 			},

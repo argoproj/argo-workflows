@@ -28,6 +28,7 @@ type ArtifactDriver struct {
 	Password              string
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
+	DisableSubmodules     bool
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -115,9 +116,14 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		return err
 	}
 	defer closer()
+
+	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
+	if g.DisableSubmodules == true {
+		recurseSubmodules = git.NoRecurseSubmodules
+	}
 	repo, err := git.PlainClone(path, false, &git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
-		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+		RecurseSubmodules: recurseSubmodules,
 		Auth:              auth,
 		Depth:             inputArtifact.Git.GetDepth(),
 	})
@@ -156,14 +162,16 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			return g.error(err, cmd)
 		}
 		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
-		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
-		submodulesCmd.Dir = path
-		submodulesCmd.Env = env
-		submoduleOutput, err := submodulesCmd.Output()
-		if err != nil {
-			return g.error(err, cmd)
+		if g.DisableSubmodules == false {
+			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
+			submodulesCmd.Dir = path
+			submodulesCmd.Env = env
+			submoduleOutput, err := submodulesCmd.Output()
+			if err != nil {
+				return g.error(err, cmd)
+			}
+			log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 		}
-		log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 	}
 	return nil
 }

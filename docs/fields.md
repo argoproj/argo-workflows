@@ -3370,6 +3370,7 @@ GitArtifact is the location of an git artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`depth`|`integer`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
+|`disableSubmodules`|`boolean`|DisableSubmodules disables submodules during git clone|
 |`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
 |`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
