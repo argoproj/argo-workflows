@@ -6302,10 +6302,7 @@ metadata:
   name: hello-world-4srt7
   namespace: argo
 spec:
-  activeDeadlineSeconds: 300
   entrypoint: whalesay
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
   templates:
   - container:
       args:
@@ -6315,8 +6312,6 @@ spec:
       image: docker/whalesay:latest
       name: ""
     name: whalesay
-  ttlStrategy:
-    secondsAfterCompletion: 600
 status:
   artifactRepositoryRef:
     configMap: artifact-repositories
@@ -6348,7 +6343,7 @@ func TestWfPendingWithNoPod(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var wfPendingWithSync = `apiVersion: argoproj.io/v1alpha1
