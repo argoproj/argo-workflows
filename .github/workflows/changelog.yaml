@@ -1,0 +1,31 @@
+name: Changelog
+
+on:
+  push:
+    branches:
+      - master
+      - dev-*
+  # run every 30m to make sure it is up-to-date
+  schedule:
+    - cron: "*/30 * * * *"
+jobs:
+  generate_changelog:
+    runs-on: ubuntu-latest
+    name: Generate changelog
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - run: git fetch --prune --prune-tags
+      - run: git tag -l 'v*'
+      # avoid invoking `make` to reduce the change of Makefile problem failing this workflow
+      - run: ./hack/changelog.sh > CHANGELOG.md
+      - name: Commit files
+        run: |
+          git config --local user.email argoproj@gmail.com
+          git config --local user.name 'Changelog Github Actions'
+          git add CHANGELOG.md && git commit -s -m 'docs: Updated CHANGELOG.md' && echo "push=true" >> $GITHUB_ENV || echo "No changes to CHANGELOG.md"
+
+      - name: Push changes
+        if: env.push == 'true'
+        run: git push

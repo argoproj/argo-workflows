@@ -4,12 +4,6 @@
 
 Find out on [our blog](https://blog.argoproj.io).
 
-## Breaking Changes
-
-If any.
-
-${breaking_changes}
-
 ## Argo CLI
 
 ### Mac
@@ -60,12 +54,3 @@ argo version
 kubectl create namespace argo
 kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/${version}/install.yaml
 ```
-
-## Changes
-
-${changes}
-
-## Contributors
-
-${contributors}
-

@@ -593,8 +593,8 @@ else
 LOG_OPTS := 'origin/master..'
 endif
 
-changelog: /dev/null
-	version=$(VERSION) breaking_changes=`git log --oneline --grep '!:' $(LOG_OPTS)` changes=`git log --format=' * %h %s' $(LOG_OPTS)` contributors=`git log --format=' * %an' $(LOG_OPTS) | sort -u` envsubst < hack/changelog.md > changelog
+release-notes: /dev/null
+	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
 
 .PHONY: parse-examples
 parse-examples:
