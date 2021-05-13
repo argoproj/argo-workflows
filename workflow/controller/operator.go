@@ -1703,7 +1703,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 			// It has to be one child at least
 			if lastChildNode != nil {
-				RetryOnDifferentHost(retryNodeName)(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
+				RetryOnDifferentHost(woc.wf.NodeID(retryNodeName))(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
 			}
 
 			localParams := make(map[string]string)
