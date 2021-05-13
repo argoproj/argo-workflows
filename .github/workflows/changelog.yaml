@@ -20,12 +20,7 @@ jobs:
       - run: git tag -l 'v*'
       # avoid invoking `make` to reduce the change of Makefile problem failing this workflow
       - run: ./hack/changelog.sh > CHANGELOG.md
-      - name: Commit files
-        run: |
-          git config --local user.email argoproj@gmail.com
-          git config --local user.name 'Changelog Github Actions'
-          git add CHANGELOG.md && git commit -s -m 'docs: Updated CHANGELOG.md' && echo "push=true" >> $GITHUB_ENV || echo "No changes to CHANGELOG.md"
-
-      - name: Push changes
-        if: env.push == 'true'
-        run: git push
+      - uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: 'docs: updated CHANGELOG.md'
+          signoff: true
