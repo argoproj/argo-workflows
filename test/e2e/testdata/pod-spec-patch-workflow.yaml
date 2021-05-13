@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-spec-patch-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      podSpecPatch: |
+        {"containers":[{"name":"main","resources":{"limits":{"cpu":"500m","memory":"250Mi"}}},{"name":"wait","resources":{"limits":{"cpu":"500m","memory":"250Mi"}}}]}
+      container:
+        image: argoproj/argosay:v2
