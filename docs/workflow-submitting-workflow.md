@@ -24,7 +24,7 @@ spec:
         command:
           - sh
         source: >
-          curl http://argo-server:2746/api/v1/workflows/argo/submit \
+          curl https://argo-server:2746/api/v1/workflows/argo/submit \
             -fs \
             -H "Authorization: Bearer eyJhbGci..." \
             -d '{"resourceKind": "WorkflowTemplate", "resourceName": "wait", "submitOptions": {"labels": "workflows.argoproj.io/workflow-template=wait"}}'
