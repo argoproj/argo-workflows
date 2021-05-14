@@ -82,6 +82,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -460,6 +462,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
@@ -859,6 +863,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -1213,6 +1219,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
@@ -2555,6 +2563,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -3760,6 +3770,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
