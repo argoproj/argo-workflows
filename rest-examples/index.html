@@ -2199,7 +2199,7 @@
 </ul>
 <h2 id="submitting-workflow">Submitting workflow<a class="headerlink" href="#submitting-workflow" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>curl --request POST \
-  --url http://localhost:2746/api/v1/workflows/argo \
+  --url https://localhost:2746/api/v1/workflows/argo \
   --header &#39;content-type: application/json&#39; \
   --data &#39;{
   &quot;namespace&quot;: &quot;argo&quot;,
@@ -2241,15 +2241,15 @@
 </code></pre></div>
 <h2 id="getting-workflows-for-namespace-argo">Getting workflows for namespace argo<a class="headerlink" href="#getting-workflows-for-namespace-argo" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>curl --request GET \
-  --url http://localhost:2746/api/v1/workflows/argo
+  --url https://localhost:2746/api/v1/workflows/argo
 </code></pre></div>
 <h2 id="getting-single-workflow-for-namespace-argo">Getting single workflow for namespace argo<a class="headerlink" href="#getting-single-workflow-for-namespace-argo" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>curl --request GET \
-  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
+  --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 </code></pre></div>
 <h2 id="deleting-single-workflow-for-namespace-argo">Deleting single workflow for namespace argo<a class="headerlink" href="#deleting-single-workflow-for-namespace-argo" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>curl --request DELETE \
-  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
+  --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 </code></pre></div>
                 
                   

@@ -2153,7 +2153,7 @@
 <p>Argo Workflows ships with a server that provide more features and security than before.</p>
 <p>The server can be configured with or without client auth (<code>server --auth-mode client</code>). When it is disabled, then clients must pass their Kubeconfig base 64 encoded in the HTTP <code>Authorization</code> header:</p>
 <div class="highlight"><pre><span></span><code>ARGO_TOKEN=$(argo auth token)
-curl -H &quot;Authorization: $ARGO_TOKEN&quot; http://localhost:2746/api/v1/workflows/argo
+curl -H &quot;Authorization: $ARGO_TOKEN&quot; https://localhost:2746/api/v1/workflows/argo
 </code></pre></div>
 <ul>
 <li>Learn more on <a href="../access-token/">how to generate an access token</a>.</li>
@@ -2161,7 +2161,7 @@ curl -H &quot;Authorization: $ARGO_TOKEN&quot; http://localhost:2746/api/v1/work
 <p>API reference docs :</p>
 <ul>
 <li><a href="../swagger/">Latest docs</a> (maybe incorrect)</li>
-<li>Interactively in the <a href="http://localhost:2746/apidocs">Argo Server UI</a>. (&gt;= v2.10)</li>
+<li>Interactively in the <a href="https://localhost:2746/apidocs">Argo Server UI</a>. (&gt;= v2.10)</li>
 </ul>
                 
                   

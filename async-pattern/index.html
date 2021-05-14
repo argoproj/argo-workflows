@@ -2226,7 +2226,7 @@ spec:
 <p>On job completion the external job would need to call either resume if successful:</p>
 <p>You may need  an <a href="../access-token/">access token</a>.</p>
 <div class="highlight"><pre><span></span><code>curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/resume
+  --url https://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/resume
   --header &#39;content-type: application/json&#39; \
   --header &quot;Authorization: Bearer $ARGO_TOKEN&quot; \
   --data &#39;{
@@ -2237,7 +2237,7 @@ spec:
 </code></pre></div>
 <p>or stop if unsuccessful:</p>
 <div class="highlight"><pre><span></span><code>curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/stop
+  --url https://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/stop
   --header &#39;content-type: application/json&#39; \
   --header &quot;Authorization: Bearer $ARGO_TOKEN&quot; \
   --data &#39;{

@@ -2327,6 +2327,10 @@
 <blockquote>
 <p>v2.5 and after</p>
 </blockquote>
+<div class="admonition warning">
+<p class="admonition-title">HTTP vs HTTPS</p>
+<p>Since v3.0 the Argo Server listens for HTTPS requests, rather than HTTP.</p>
+</div>
 <p>The Argo Server is a server that exposes an API and UI for workflows. You'll need to use this if you want to <a href="../offloading-large-workflows/">offload large workflows</a> or the <a href="../workflow-archive/">workflow archive</a>.</p>
 <p>You can run this in either "hosted" or "local" mode.</p>
 <p>It replaces the Argo UI.</p>
@@ -2346,7 +2350,7 @@
 <p>To run locally:</p>
 <div class="highlight"><pre><span></span><code>argo server
 </code></pre></div>
-<p>This will start a server on port 2746 which you can view at <a href="http://localhost:2746">http://localhost:2746</a>.</p>
+<p>This will start a server on port 2746 which you can view at <a href="https://localhost:2746">https://localhost:2746</a>.</p>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
 <h3 id="auth-mode">Auth Mode<a class="headerlink" href="#auth-mode" title="Permanent link">&para;</a></h3>
 <p>See <a href="../argo-server-auth-mode/">auth</a>.</p>
@@ -2367,7 +2371,7 @@ following:</p>
 <h3 id="kubectl-port-forward"><code>kubectl port-forward</code><a class="headerlink" href="#kubectl-port-forward" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>kubectl -n argo port-forward svc/argo-server <span class="m">2746</span>:2746
 </code></pre></div>
-<p>Then visit: http://127.0.0.1:2746</p>
+<p>Then visit: https://127.0.0.1:2746</p>
 <h3 id="expose-a-loadbalancer">Expose a <code>LoadBalancer</code><a class="headerlink" href="#expose-a-loadbalancer" title="Permanent link">&para;</a></h3>
 <p>Update the service to be of type <code>LoadBalancer</code>.</p>
 <div class="highlight"><pre><span></span><code>kubectl patch svc argo-server -n argo -p <span class="s1">&#39;{&quot;spec&quot;: {&quot;type&quot;: &quot;LoadBalancer&quot;}}&#39;</span>

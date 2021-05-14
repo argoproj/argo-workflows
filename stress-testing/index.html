@@ -2105,7 +2105,7 @@
 <p>Make sure you've logged in to Docker Hub: <code>docker login</code></p>
 <p>Run <code>make start PROFILE=stress IMAGE_NAMESPACE=alexcollinsintuit DOCKER_PUSH=true</code>.</p>
 <p>If this fails, just try running it again.</p>
-<p>Open http://localhost:2746 and check you can run a workflow.</p>
+<p>Open https://localhost:2746 and check you can run a workflow.</p>
 <p>Open <code>test/stress/main.go</code> and run it with a small number (e.g. 10) workflows and make sure they complete.</p>
 <p>Do you get <code>ImagePullBackOff</code>? Make sure image is <code>argoproj/argosay:v2</code> in  <code>kubectl -n argo edit workflowtemplate massive-workflow</code>.</p>
 <p>Open http://localhost:9091/graph.</p>
