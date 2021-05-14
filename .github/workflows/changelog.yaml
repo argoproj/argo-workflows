@@ -22,5 +22,6 @@ jobs:
       - run: ./hack/changelog.sh > CHANGELOG.md
       - uses: peter-evans/create-pull-request@v3
         with:
+          title: 'docs: updated CHANGELOG.md'
           commit-message: 'docs: updated CHANGELOG.md'
           signoff: true
