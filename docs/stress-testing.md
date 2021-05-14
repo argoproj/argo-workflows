@@ -14,7 +14,7 @@ Run `make start PROFILE=stress IMAGE_NAMESPACE=alexcollinsintuit DOCKER_PUSH=tru
 
 If this fails, just try running it again.
 
-Open http://localhost:2746 and check you can run a workflow.
+Open https://localhost:2746 and check you can run a workflow.
 
 Open `test/stress/main.go` and run it with a small number (e.g. 10) workflows and make sure they complete.
 
