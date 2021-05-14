@@ -12,7 +12,7 @@ The server can be configured with or without client auth (`server --auth-mode cl
 
 ```
 ARGO_TOKEN=$(argo auth token)
-curl -H "Authorization: $ARGO_TOKEN" http://localhost:2746/api/v1/workflows/argo
+curl -H "Authorization: $ARGO_TOKEN" https://localhost:2746/api/v1/workflows/argo
 ```
 
 * Learn more on [how to generate an access token](access-token.md).
@@ -20,5 +20,5 @@ curl -H "Authorization: $ARGO_TOKEN" http://localhost:2746/api/v1/workflows/argo
 API reference docs :
  
 * [Latest docs](swagger.md) (maybe incorrect)
-* Interactively in the [Argo Server UI](http://localhost:2746/apidocs). (>= v2.10)
+* Interactively in the [Argo Server UI](https://localhost:2746/apidocs). (>= v2.10)
 
