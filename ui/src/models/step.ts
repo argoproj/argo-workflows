@@ -42,8 +42,18 @@ export interface Step {
         message?: string;
         replicas: number;
         lastScaledAt?: Time;
-        sinkStatuses?: {[name: string]: {lastMessage?: {data: string}; pending?: number; metrics?: {[name: string]: Metrics}}};
-        sourceStatuses?: {[name: string]: {lastMessage?: {data: string}; pending?: number; metrics?: {[replica: string]: Metrics}}};
+        sinkStatuses?: {[name: string]: {lastMessage?: {data: string; time: Time}; lastError?: {message: string; time: Time}; metrics?: {[name: string]: Metrics}}};
+        sourceStatuses?: {
+            [name: string]: {
+                lastMessage?: {
+                    time: Time;
+                    data: string;
+                };
+                lastError?: {message: string; time: Time};
+                pending?: number;
+                metrics?: {[replica: string]: Metrics};
+            };
+        };
     };
 }
 
