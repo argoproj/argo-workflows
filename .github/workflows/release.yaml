@@ -6,6 +6,7 @@ on:
       - v*
     branches:
       - master
+      - dev-*
 
 defaults:
   run:
@@ -372,8 +373,8 @@ jobs:
           path: /home/runner/go/pkg/mod
           key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
-      - run: make changelog VERSION=${GITHUB_REF##*/}
-      - run: cat changelog
+      - run: make release-notes VERSION=${GITHUB_REF##*/}
+      - run: cat release-notes
       - run: make manifests VERSION=${GITHUB_REF##*/}
       - name: Print image tag (please check it is not `:latest`)
         run: |
@@ -391,7 +392,7 @@ jobs:
       - uses: softprops/action-gh-release@v1
         with:
           prerelease: ${{ startsWith(github.ref, 'refs/tags/v0') || contains(github.ref, 'rc') }}
-          body_path: changelog
+          body_path: release-notes
           files: |
             dist/argo-*.gz
             dist/argo-*.gz.sha256
