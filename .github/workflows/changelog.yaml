@@ -25,3 +25,6 @@ jobs:
           title: 'docs: updated CHANGELOG.md'
           commit-message: 'docs: updated CHANGELOG.md'
           signoff: true
+        env:
+          # https://github.com/peter-evans/create-pull-request/issues/48
+          GITHUB_TOKEN: ${{ secrets.CREATE_PULL_REQUEST_TOKEN }}
