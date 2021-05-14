@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - "master"
+      - create-pull-request/patch
 
 jobs:
   tests:
