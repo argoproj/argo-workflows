@@ -5,7 +5,7 @@ echo '# Changelog'
 echo
 
 tag=
-git tag -l 'v*' | sort -rd | while read last; do
+git tag -l 'v*' | grep -v0.0.0 | sort -rd | while read last; do
   if [ "$tag" != "" ]; then
     echo "## $tag ($(git log $tag -n1 --format=%as))"
     echo
