@@ -163,7 +163,6 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			return g.error(err, cmd)
 		}
 		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
-		log.Info("DisableSubmodules ", inputArtifact.Git.DisableSubmodules, inputArtifact.Git.String())
 		if !inputArtifact.Git.DisableSubmodules {
 			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
 			submodulesCmd.Dir = path
