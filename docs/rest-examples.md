@@ -14,7 +14,7 @@ Assuming
 
 ```
 curl --request POST \
-  --url http://localhost:2746/api/v1/workflows/argo \
+  --url https://localhost:2746/api/v1/workflows/argo \
   --header 'content-type: application/json' \
   --data '{
   "namespace": "argo",
@@ -59,19 +59,19 @@ curl --request POST \
 
 ```
 curl --request GET \
-  --url http://localhost:2746/api/v1/workflows/argo
+  --url https://localhost:2746/api/v1/workflows/argo
 ```
 
 ## Getting single workflow for namespace argo
 
 ```
 curl --request GET \
-  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
+  --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 ```
 
 ## Deleting single workflow for namespace argo
 
 ```
 curl --request DELETE \
-  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
+  --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 ```

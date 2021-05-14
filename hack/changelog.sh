@@ -9,7 +9,7 @@ git tag -l 'v*' | sort -rd | while read last; do
   if [ "$tag" != "" ]; then
     echo "## $tag ($(git log $tag -n1 --format=%as))"
     echo
-	  git --no-pager log --format=' * %h %s' $last..$tag
+	  git --no-pager log --format=' * [%h](https://github.com/argoproj/argo-workflows/commit/%H) %s' $last..$tag
 	  echo
 	  echo "### Contributors"
 	  echo
