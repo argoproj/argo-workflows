@@ -118,7 +118,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer closer()
 
 	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
-	if inputArtifact.Git.DisableSubmodules == true {
+	if inputArtifact.Git.DisableSubmodules {
 		log.Info("Setting recurse submodules to NoRecurseSubmodules")
 		recurseSubmodules = git.NoRecurseSubmodules
 	}
@@ -164,7 +164,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		}
 		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
 		log.Info("DisableSubmodules ", inputArtifact.Git.DisableSubmodules, inputArtifact.Git.String())
-		if inputArtifact.Git.DisableSubmodules == false {
+		if !inputArtifact.Git.DisableSubmodules {
 			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
 			submodulesCmd.Dir = path
 			submodulesCmd.Env = env
