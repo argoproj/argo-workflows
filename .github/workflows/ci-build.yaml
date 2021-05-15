@@ -5,7 +5,6 @@ on:
       - "master"
       - "release-*"
       - "!release-2.8"
-      - create-pull-request/patch
   pull_request:
     branches:
       - "master"
