@@ -4359,7 +4359,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SinkStatus": {
       "type": "object",
       "properties": {
-        "error": {
+        "lastError": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Error"
         },
         "lastMessage": {
@@ -4394,7 +4394,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus": {
       "type": "object",
       "properties": {
-        "error": {
+        "lastError": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Error"
         },
         "lastMessage": {
