@@ -1,13 +1,10 @@
 name: Changelog
 
 on:
-  push:
-    branches:
-      - master
-      - dev-*
-  # run every 30m to make sure it is up-to-date
+  # we not need or want to run on on pull request or branch changes, we just need to run periodically
+  # run every hour to make sure it is up-to-date
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 * * * *"
 jobs:
   generate_changelog:
     runs-on: ubuntu-latest
@@ -25,3 +22,7 @@ jobs:
           title: 'docs: updated CHANGELOG.md'
           commit-message: 'docs: updated CHANGELOG.md'
           signoff: true
+        env:
+          # we need to use a token, otherwise the required build jobs will not run
+          # https://github.com/peter-evans/create-pull-request/issues/48
+          GITHUB_TOKEN: ${{ secrets.CREATE_PULL_REQUEST_TOKEN }}
