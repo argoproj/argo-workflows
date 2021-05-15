@@ -770,13 +770,13 @@ func TestRetryWorkflow(t *testing.T) {
 			case wfv1.NodeSucceeded:
 				assert.Equal(t, "succeeded", node.Message)
 				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-				assert.Equal(t, createdTime, node.StartedAt)
+				assert.Equal(t, metav1.Time{}, node.StartedAt)
 				assert.Equal(t, finishedTime, node.FinishedAt)
 			case wfv1.NodeFailed:
 				assert.Equal(t, "", node.Message)
 				assert.Equal(t, wfv1.NodeRunning, node.Phase)
 				assert.Equal(t, metav1.Time{}, node.FinishedAt)
-				assert.True(t, node.StartedAt.After(createdTime.Time))
+				assert.Equal(t, metav1.Time{}, node.StartedAt)
 			}
 		}
 	}
