@@ -22,6 +22,6 @@ jobs:
           title: 'docs: updated CHANGELOG.md'
           commit-message: 'docs: updated CHANGELOG.md'
           signoff: true
-          # we need to use a token, otherwise the required build jobs will not run
+          # we need to use a token, otherwise the required build jobs will not run.
           # https://github.com/peter-evans/create-pull-request/issues/48
           token: ${{ secrets.CREATE_PULL_REQUEST_TOKEN }}
