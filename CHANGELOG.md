@@ -11251,6 +11251,18 @@
  * Alexander Matyushentsev
  * Jesse Suen
 
+## v0.0.0-dev-dataflow-3 (2021-05-14)
+
+ * [857f6b3e](https://github.com/argoproj/argo-workflows/commit/857f6b3e1655acfa3ffb34f57c2252dc728c00fe) fix: make codegen
+ * [7acc75f4](https://github.com/argoproj/argo-workflows/commit/7acc75f448c829fa03bdb3aa6e12180ebc488be9) docs: updated CHANGELOG.md (#5921)
+ * [61b251bb](https://github.com/argoproj/argo-workflows/commit/61b251bb89b740887ae3b4cec65a1b44b33bfb30) ok
+ * [64888a00](https://github.com/argoproj/argo-workflows/commit/64888a00c1785c957a34b6601a47bb6a09d9db39) ok
+
+### Contributors
+
+ * Alex Collins
+ * github-actions[bot]
+
 ## v0.0.0-dev-dataflow-2 (2021-05-14)
 
  * [a95cd787](https://github.com/argoproj/argo-workflows/commit/a95cd787b21a06d1a6e70083b553aab135854d5d) ok
