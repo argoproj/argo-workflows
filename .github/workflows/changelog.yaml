@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - master
-      - dev-*
-  # run every 30m to make sure it is up-to-date
+  # run every hour to make sure it is up-to-date
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 * * * *"
 jobs:
   generate_changelog:
     runs-on: ubuntu-latest
