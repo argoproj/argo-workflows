@@ -119,7 +119,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 
 	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
 	if inputArtifact.Git.DisableSubmodules {
-		log.Info("Setting recurse submodules to NoRecurseSubmodules")
+		log.Info("Recursive cloning of submodules is disabled")
 		recurseSubmodules = git.NoRecurseSubmodules
 	}
 	repo, err := git.PlainClone(path, false, &git.CloneOptions{
