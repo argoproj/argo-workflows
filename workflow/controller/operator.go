@@ -3246,8 +3246,7 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
 	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") ||
-		(woc.wf.Spec.Suspend != nil && woc.wf.Status.StoredWorkflowSpec.Suspend == nil) ||
-		(woc.wf.Spec.Shutdown != "" && woc.wf.Status.StoredWorkflowSpec.Shutdown == "") ||
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) ||
 		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown)
 }
 
