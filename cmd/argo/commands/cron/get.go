@@ -106,10 +106,10 @@ func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 	if len(cwf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
 		out += fmt.Sprintf(fmtStr, "Workflow Parameters:", "")
 		for _, param := range cwf.Spec.WorkflowSpec.Arguments.Parameters {
-			if param.Value == nil {
+			if !param.HasValue() {
 				continue
 			}
-			out += fmt.Sprintf(fmtStr, "  "+param.Name+":", *param.Value)
+			out += fmt.Sprintf(fmtStr, "  "+param.Name+":", param.GetValue())
 		}
 	}
 	return out
