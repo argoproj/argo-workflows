@@ -1,5 +1,24 @@
 # Changelog
 
+## v3.1.0-rc4 (2021-05-14)
+
+ * [3aa1b812](https://github.com/argoproj/argo-workflows/commit/3aa1b812f94f7eb904ea295f9710067f5f55deff) Merge branch 'master' into release-3.1
+ * [128861c5](https://github.com/argoproj/argo-workflows/commit/128861c50f2b60daded5abb7d47524e124451371) feat: DAG/TASK Custom Metrics Example (#5894)
+ * [830a159e](https://github.com/argoproj/argo-workflows/commit/830a159e60e9f0e83b1fd10c6144015957b6488c) ci: Add correct title to CHANGELOG.md PRs (#5915)
+ * [0acaf3b4](https://github.com/argoproj/argo-workflows/commit/0acaf3b40b7704017842c81c0a9108fe4eee906e) Update configure-artifact-repository.md (#5909)
+ * [948c2846](https://github.com/argoproj/argo-workflows/commit/948c28465ff30eec6f345895292bcfbb3ab65499) docs: Change `http` to `https` for argo-server. Fixes #5866 (#5904)
+ * [f8bff12e](https://github.com/argoproj/argo-workflows/commit/f8bff12e2c55336ebba64c1d2637e9eb338e3b46) docs:Changes by create-pull-request action (#5913)
+ * [d1d2c0eb](https://github.com/argoproj/argo-workflows/commit/d1d2c0eb39e351f955124c25b5bc9da950eccbaa) ci: Add links to commit hashes in auto-generated changelog (#5911)
+ * [d009e6b5](https://github.com/argoproj/argo-workflows/commit/d009e6b5835ff9f1ecf048e33ef2a86e7b603945) ci: Automatically changelog PR (#5905)
+
+### Contributors
+
+ * Alex Collins
+ * Everton
+ * Jerguš Lejko
+ * Yuan Tang
+ * github-actions[bot]
+
 ## v3.1.0-rc3 (2021-05-13)
 
  * [d2bd1def](https://github.com/argoproj/argo-workflows/commit/d2bd1defe10f5f5ecd62c7d5801a91f8c2cf2d99) Merge branch 'master' into release-3.1
