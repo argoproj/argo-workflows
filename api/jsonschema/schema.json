@@ -110,6 +110,10 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cron": {
       "properties": {
+        "layout": {
+          "title": "+kubebuilder:default=\"2006-01-02T15:04:05Z07:00\"",
+          "type": "string"
+        },
         "schedule": {
           "type": "string"
         }
@@ -126,6 +130,12 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Expand": {
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten": {
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git": {
@@ -336,24 +346,6 @@
       },
       "type": "object"
     },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Replicas": {
-      "properties": {
-        "max": {
-          "title": "this is both the min, and the initial value",
-          "type": "integer"
-        },
-        "min": {
-          "title": "+kubebuilder:default=1",
-          "type": "integer"
-        },
-        "ratio": {
-          "title": "takes precedence over min",
-          "type": "integer"
-        }
-      },
-      "title": "Used to calculate the number of replicas.\nmin(r.max, max(r.min, pending/ratio))\nExample:\nmin=1, max=4, ratio=100\npending=0, replicas=1\npending=100, replicas=1\npending=200, replicas=2\npending=300, replicas=3\npending=400, replicas=4\npending=500, replicas=4",
-      "type": "object"
-    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN": {
       "properties": {
         "clusterId": {
@@ -371,6 +363,21 @@
         },
         "subjectPrefix": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Scale": {
+      "properties": {
+        "maxReplicas": {
+          "type": "integer"
+        },
+        "minReplicas": {
+          "type": "integer"
+        },
+        "replicaRatio": {
+          "title": "takes precedence over min",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -461,7 +468,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepStatus"
         }
       },
-      "title": "+kubebuilder:object:root=true\n+kubebuilder:subresource:status\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`\n+kubebuilder:printcolumn:name=\"Replicas\",type=string,JSONPath=`.status.replicas`",
+      "title": "+kubebuilder:object:root=true\n+kubebuilder:subresource:status\n+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`\n+kubebuilder:printcolumn:name=\"Desired\",type=string,JSONPath=`.spec.replicas`\n+kubebuilder:printcolumn:name=\"Current\",type=string,JSONPath=`.status.replicas`",
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec": {
@@ -475,8 +482,14 @@
         "container": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container"
         },
+        "expand": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Expand"
+        },
         "filter": {
           "type": "string"
+        },
+        "flatten": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten"
         },
         "git": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git"
@@ -504,11 +517,14 @@
           "type": "object"
         },
         "replicas": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Replicas"
+          "type": "integer"
         },
         "restartPolicy": {
           "title": "+kubebuilder:default=OnFailure",
           "type": "string"
+        },
+        "scale": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Scale"
         },
         "serviceAccountName": {
           "title": "+kubebuilder:default=pipeline",
@@ -560,6 +576,9 @@
         },
         "replicas": {
           "type": "integer"
+        },
+        "selector": {
+          "type": "string"
         },
         "sinkStatuses": {
           "additionalProperties": {
