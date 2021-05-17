@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.1.0-rc5 (2021-05-17)
+
+ * [a899c7e0](https://github.com/argoproj/argo-workflows/commit/a899c7e0947a00e9c4131741804a0486d5892ea2) Merge branch 'master' into release-3.1
+ * [e05f7cbe](https://github.com/argoproj/argo-workflows/commit/e05f7cbe624ffada191344848d3b0b7fb9ba79ae) fix(controller): Suspend and Resume is not working in WorkflowTemplateRef scenario (#5802)
+ * [8fde4e4f](https://github.com/argoproj/argo-workflows/commit/8fde4e4f46f59a6af50e5cc432f632f6f5e774d9) fix(installation): Enable capacity to override namespace with Kustomize (#5907)
+ * [37e75b5f](https://github.com/argoproj/argo-workflows/commit/37e75b5f9ad3b09c4e50db60da41508f32bcd94b) docs: updated CHANGELOG.md (#5924)
+ * [304ab526](https://github.com/argoproj/argo-workflows/commit/304ab5261485c30206b7e27701e58b0635ca7c08) ci: fixes to changelog generation (#5923)
+
+### Contributors
+
+ * Alex Collins
+ * Daverkex
+ * Saravanan Balasubramanian
+ * github-actions[bot]
+
 ## v3.1.0-rc4 (2021-05-14)
 
  * [3aa1b812](https://github.com/argoproj/argo-workflows/commit/3aa1b812f94f7eb904ea295f9710067f5f55deff) Merge branch 'master' into release-3.1
