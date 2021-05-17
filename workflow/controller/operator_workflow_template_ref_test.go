@@ -369,3 +369,70 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		}
 	})
 }
+
+var suspendwf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-template-whalesay-template-z56dm
+  namespace: default
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: tt
+  entrypoint: whalesay-template
+  suspend: true
+  workflowTemplateRef:
+    name: workflow-template-whalesay-template
+status:
+  artifactRepositoryRef:
+    default: true
+  conditions:
+  - status: "False"
+    type: PodRunning
+  finishedAt: null
+  phase: Running
+  progress: 0/0
+  startedAt: "2021-05-13T22:56:17Z"
+  storedTemplates:
+    namespaced/workflow-template-whalesay-template/whalesay-template:
+      container:
+        args:
+        - sleep
+        command:
+        - cowsay
+        image: docker/whalesay
+        name: ""
+      name: whalesay-template
+  storedWorkflowTemplateSpec:
+    entrypoint: whalesay-template
+    suspend: true
+    templates:
+    - container:
+        args:
+        - sleep
+        command:
+        - cowsay
+        image: docker/whalesay
+        name: ""
+      name: whalesay-template
+    volumes:
+    - emptyDir: {}
+      name: data
+    workflowTemplateRef:
+      name: workflow-template-whalesay-template
+`
+
+func TestSuspendResumeWorkflowTemplateRef(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(suspendwf)
+	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.True(t, *woc.wf.Status.StoredWorkflowSpec.Suspend)
+	woc.wf.Spec.Suspend = nil
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+}
