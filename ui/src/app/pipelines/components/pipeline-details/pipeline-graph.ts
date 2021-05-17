@@ -3,7 +3,7 @@ import {Step} from '../../../../models/step';
 import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
 
-type Type = '' | 'cat' | 'container' | 'filter' | 'git' | 'group' | 'handler' | 'map';
+type Type = '' | 'cat' | 'container' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
 
 const stepIcon = (type: Type): Icon => {
     switch (type) {
@@ -11,8 +11,12 @@ const stepIcon = (type: Type): Icon => {
             return 'arrows-alt-h';
         case 'container':
             return 'cube';
+        case 'expand':
+            return 'expand';
         case 'filter':
             return 'filter';
+        case 'flatten':
+            return 'compress';
         case 'git':
             return 'code-branch';
         case 'group':
@@ -44,10 +48,14 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             ? 'cat'
             : spec.container
             ? 'container'
+            : spec.expand
+            ? 'expand'
             : spec.filter
             ? 'filter'
             : spec.git
             ? 'git'
+            : spec.flatten
+            ? 'flatten'
             : spec.group
             ? 'group'
             : spec.handler

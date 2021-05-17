@@ -11,7 +11,9 @@ export interface Step {
         name: string;
         cat?: {};
         container?: {};
+        expand?: {};
         filter?: string;
+        flatten?: {};
         git?: {};
         group?: {};
         handler?: {};
