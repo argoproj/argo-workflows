@@ -130,6 +130,8 @@ github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAF
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
 github.com/argoproj-labs/argo-dataflow v0.0.9 h1:GcfxD6uVGx2rbd/ZIcD+W6jpsANh/uKTUSfWoB1qlTA=
 github.com/argoproj-labs/argo-dataflow v0.0.9/go.mod h1:1toXoRvFZm0LgQfupTo5aT6MgOx8FE3h2XIBCrEu+Ls=
+github.com/argoproj-labs/argo-dataflow v0.0.10 h1:gwAqjSV06XNo0X6VXkAbHqBZlk4oK8KV3w8UKHbHCzc=
+github.com/argoproj-labs/argo-dataflow v0.0.10/go.mod h1:1toXoRvFZm0LgQfupTo5aT6MgOx8FE3h2XIBCrEu+Ls=
 github.com/argoproj/argo-events v1.2.0 h1:CjF8hVUkeflhaOt9uWjJK6ai6b4pw0CCUUmOnmhWnNY=
 github.com/argoproj/argo-events v1.2.0/go.mod h1:eY+egQNBLXAz/AF4mqgHsMMa4Aur7frHjUfBg+RpX04=
 github.com/argoproj/pkg v0.8.1 h1:9h/sqAjUNyk0LaHkXR+2h94KNcSchvFX5aELNjXSOoc=

@@ -126,6 +126,7 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                                 git: true,
                                 group: true,
                                 handler: true,
+                                http: true,
                                 log: true,
                                 map: true,
                                 kafka: true,

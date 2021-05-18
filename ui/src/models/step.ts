@@ -27,6 +27,7 @@ export interface Step {
                 url?: string;
                 topic: string;
             };
+            http?: {};
         }[];
         sinks: {
             name?: string;
@@ -37,6 +38,7 @@ export interface Step {
                 url?: string;
                 topic: string;
             };
+            http?: {url: string};
         }[];
     };
     status?: {

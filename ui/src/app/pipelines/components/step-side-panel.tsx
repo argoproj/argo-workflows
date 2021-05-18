@@ -76,13 +76,13 @@ export const StepSidePanel = ({
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Message</div>
                                                         <div className='columns small-1'>x {Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0)}</div>
-                                                        <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data + '...' : '-'}</div>
+                                                        <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                         <div className='columns small-3'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                     </div>
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Errors</div>
                                                         <div className='columns small-1'>⚠️ {Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0)}</div>
-                                                        <div className='columns small-6'>{x.lastError ? x.lastError.message + '...' : '-'}</div>
+                                                        <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
                                                         <div className='columns small-3'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
                                                     </div>
                                                 </div>
@@ -100,13 +100,13 @@ export const StepSidePanel = ({
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Message</div>
                                                         <div className='columns small-1'>x {Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0)}</div>
-                                                        <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data + '...' : '-'}</div>
+                                                        <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                         <div className='columns small-3'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                     </div>
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Errors</div>
                                                         <div className='columns small-1'>⚠️ {Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0)}</div>
-                                                        <div className='columns small-6'>{x.lastError ? x.lastError.message + '...' : '-'}</div>
+                                                        <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
                                                         <div className='columns small-3'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
                                                     </div>
                                                 </div>
