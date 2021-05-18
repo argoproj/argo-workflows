@@ -86,6 +86,18 @@ func (c *FakeWorkflowTaskSets) Update(ctx context.Context, workflowTaskSet *v1al
 	return obj.(*v1alpha1.WorkflowTaskSet), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeWorkflowTaskSets) UpdateStatus(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.UpdateOptions) (*v1alpha1.WorkflowTaskSet, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(workflowtasksetsResource, "status", c.ns, workflowTaskSet), &v1alpha1.WorkflowTaskSet{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.WorkflowTaskSet), err
+}
+
 // Delete takes name of the workflowTaskSet and deletes it. Returns an error if one occurs.
 func (c *FakeWorkflowTaskSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.

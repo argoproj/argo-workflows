@@ -24,6 +24,7 @@ type WorkflowTaskSetsGetter interface {
 type WorkflowTaskSetInterface interface {
 	Create(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.CreateOptions) (*v1alpha1.WorkflowTaskSet, error)
 	Update(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.UpdateOptions) (*v1alpha1.WorkflowTaskSet, error)
+	UpdateStatus(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.UpdateOptions) (*v1alpha1.WorkflowTaskSet, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
 	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.WorkflowTaskSet, error)
@@ -112,6 +113,22 @@ func (c *workflowTaskSets) Update(ctx context.Context, workflowTaskSet *v1alpha1
 		Namespace(c.ns).
 		Resource("workflowtasksets").
 		Name(workflowTaskSet.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(workflowTaskSet).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *workflowTaskSets) UpdateStatus(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.UpdateOptions) (result *v1alpha1.WorkflowTaskSet, err error) {
+	result = &v1alpha1.WorkflowTaskSet{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("workflowtasksets").
+		Name(workflowTaskSet.Name).
+		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(workflowTaskSet).
 		Do(ctx).
