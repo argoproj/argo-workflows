@@ -1274,7 +1274,10 @@ func (m *ClusterWorkflowTemplateCreateRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthClusterWorkflowTemplate
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthClusterWorkflowTemplate
 			}
 			if (iNdEx + skippy) > l {
@@ -1393,7 +1396,10 @@ func (m *ClusterWorkflowTemplateGetRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthClusterWorkflowTemplate
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthClusterWorkflowTemplate
 			}
 			if (iNdEx + skippy) > l {
@@ -1480,7 +1486,10 @@ func (m *ClusterWorkflowTemplateListRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthClusterWorkflowTemplate
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthClusterWorkflowTemplate
 			}
 			if (iNdEx + skippy) > l {
@@ -1599,7 +1608,10 @@ func (m *ClusterWorkflowTemplateUpdateRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthClusterWorkflowTemplate
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthClusterWorkflowTemplate
 			}
 			if (iNdEx + skippy) > l {
@@ -1718,7 +1730,10 @@ func (m *ClusterWorkflowTemplateDeleteRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthClusterWorkflowTemplate
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthClusterWorkflowTemplate
 			}
 			if (iNdEx + skippy) > l {
@@ -1769,7 +1784,10 @@ func (m *ClusterWorkflowTemplateDeleteResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthClusterWorkflowTemplate
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthClusterWorkflowTemplate
 			}
 			if (iNdEx + skippy) > l {
@@ -1892,7 +1910,10 @@ func (m *ClusterWorkflowTemplateLintRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthClusterWorkflowTemplate
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthClusterWorkflowTemplate
 			}
 			if (iNdEx + skippy) > l {
