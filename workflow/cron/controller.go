@@ -3,6 +3,8 @@ package cron
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"k8s.io/apimachinery/pkg/selection"
 	"reflect"
 	"time"
 
@@ -42,7 +44,6 @@ type Controller struct {
 	keyLock              sync.KeyLock
 	wfClientset          versioned.Interface
 	wfLister             util.WorkflowLister
-	wfInformer           cache.SharedIndexInformer
 	cronWfInformer       informers.GenericInformer
 	cronWfQueue          workqueue.RateLimitingInterface
 	dynamicInterface     dynamic.Interface
@@ -68,10 +69,9 @@ func init() {
 	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
 }
 
-func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, wfInformer cache.SharedIndexInformer, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
+func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
-		wfInformer:           wfInformer,
 		namespace:            namespace,
 		managedNamespace:     managedNamespace,
 		instanceId:           instanceId,
@@ -97,7 +97,12 @@ func (cc *Controller) Run(ctx context.Context) {
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfLister = util.NewWorkflowLister(cc.wfInformer)
+	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
+		wfInformerListOptionsFunc(options, cc.instanceId)
+	}, cache.Indexers{})
+	go wfInformer.Run(ctx.Done())
+
+	cc.wfLister = util.NewWorkflowLister(wfInformer)
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
@@ -285,5 +290,16 @@ func groupWorkflows(wfs []*v1alpha1.Workflow) map[types.UID][]v1alpha1.Workflow 
 func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
 	options.FieldSelector = fields.Everything().String()
 	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(instanceId))
+	options.LabelSelector = labelSelector.String()
+}
+
+func wfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
+	options.FieldSelector = fields.Everything().String()
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Exists, []string{})
+	if err != nil {
+		panic(err)
+	}
+	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
+	labelSelector = labelSelector.Add(util.InstanceIDRequirement(instanceId))
 	options.LabelSelector = labelSelector.String()
 }
