@@ -303,8 +303,10 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })
-	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
+	mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
+	mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
+	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
+	mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	mux.Handle("/metrics", promhttp.Handler())

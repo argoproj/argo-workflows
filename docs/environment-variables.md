@@ -12,10 +12,13 @@ Note that these environment variables may be removed at any time.
 | `ALWAYS_OFFLOAD_NODE_STATUS` | `bool` | Whether to always offload the node status. |
 | `ARCHIVED_WORKFLOW_GC_PERIOD` | `time.Duration` | The periodicity for GC of archived workflows. |
 | `ARGO_TRACE` | `bool` | Whether to enable tracing statements in Argo components. |
+| `CRON_SYNC_PERIOD` | `time.Duration` | How ofen to sync cron workflows. Default `10s` |
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | The requeue time for the rate limiter of the workflow queue. |
 | `EXPRESSION_TEMPLATES` | `bool` | Escape hatch to disable expression templates. Default `true`. |
 | `GZIP_IMPLEMENTATION` | `string` | The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip". |
+| `INDEX_WORKFLOW_SEMAPHORE_KEYS` | `bool` | Whether or not to index semaphores. Defaults to `true`. |
 | `LEADER_ELECTION_IDENTITY` | `string` | The ID used for workflow controllers to elect a leader. |
+| `LEADER_ELECTION_DISABLE` | `bool` | Whether leader election should be disabled. |
 | `LEADER_ELECTION_LEASE_DURATION` | `time.Duration` | The duration that non-leader candidates will wait to force acquire leadership. |
 | `LEADER_ELECTION_RENEW_DEADLINE` | `time.Duration` | The duration that the acting master will retry refreshing leadership before giving up. |
 | `LEADER_ELECTION_RETRY_PERIOD` | `time.Duration` | The duration that the leader election clients should wait between tries of actions. |

@@ -88,21 +88,14 @@ func GetFormatter(fmtr string) (Formatter, error) {
 
 // RunLint lints the specified kinds in the specified files and prints the results to os.Stdout.
 // If linting fails it will exit with status code 1.
-func RunLint(ctx context.Context, client apiclient.Client, files, kinds []string, defaultNs, output string, strict bool) {
+func RunLint(ctx context.Context, client apiclient.Client, kinds []string, output string, offline bool, opts LintOptions) {
 	fmtr, err := GetFormatter(output)
 	errors.CheckError(err)
-
 	clients, err := getLintClients(client, kinds)
 	errors.CheckError(err)
-
-	res, err := Lint(ctx, &LintOptions{
-		ServiceClients:   clients,
-		Files:            files,
-		Strict:           strict,
-		DefaultNamespace: defaultNs,
-		Formatter:        fmtr,
-		Printer:          os.Stdout,
-	})
+	opts.ServiceClients = clients
+	opts.Formatter = fmtr
+	res, err := Lint(ctx, &opts)
 	errors.CheckError(err)
 
 	if !res.Success {
@@ -136,7 +129,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 				r = os.Stdin
 			case err != nil:
 				return err
-			case lintExt[filepath.Ext(path)]:
+			case strings.HasPrefix(path, "/dev/") || lintExt[filepath.Ext(path)]:
 				f, err := os.Open(path)
 				if err != nil {
 					return err
@@ -314,16 +307,29 @@ func getObjectName(kind string, obj metav1.Object, objIndex int) string {
 
 func getLintClients(client apiclient.Client, kinds []string) (ServiceClients, error) {
 	res := ServiceClients{}
+	var err error
 	for _, kind := range kinds {
 		switch kind {
 		case wf.WorkflowPlural, wf.WorkflowShortName:
 			res.WorkflowsClient = client.NewWorkflowServiceClient()
 		case wf.WorkflowTemplatePlural, wf.WorkflowTemplateShortName:
-			res.WorkflowTemplatesClient = client.NewWorkflowTemplateServiceClient()
+			res.WorkflowTemplatesClient, err = client.NewWorkflowTemplateServiceClient()
+			if err != nil {
+				return ServiceClients{}, err
+			}
+
 		case wf.CronWorkflowPlural, wf.CronWorkflowShortName:
-			res.CronWorkflowsClient = client.NewCronWorkflowServiceClient()
+			res.CronWorkflowsClient, err = client.NewCronWorkflowServiceClient()
+			if err != nil {
+				return ServiceClients{}, err
+			}
+
 		case wf.ClusterWorkflowTemplatePlural, wf.ClusterWorkflowTemplateShortName:
-			res.ClusterWorkflowTemplateClient = client.NewClusterWorkflowTemplateServiceClient()
+			res.ClusterWorkflowTemplateClient, err = client.NewClusterWorkflowTemplateServiceClient()
+			if err != nil {
+				return ServiceClients{}, err
+			}
+
 		default:
 			return res, fmt.Errorf("unknown kind: %s", kind)
 		}

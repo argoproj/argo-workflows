@@ -29,7 +29,7 @@ require (
 	github.com/go-python/gpython v0.0.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-swagger/go-swagger v0.25.0
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
@@ -51,7 +51,8 @@ require (
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/gjson v1.6.0
+	github.com/tidwall/gjson v1.6.8
+	github.com/tidwall/pretty v1.1.0 // indirect
 	github.com/valyala/fasthttp v1.22.0 // indirect
 	github.com/valyala/fasttemplate v1.1.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -61,7 +62,7 @@ require (
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/tools v0.0.0-20200717024301-6ddee64345a6
+	golang.org/x/tools v0.0.0-20210106214847-113979e3529a
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200806141610-86f49bd18e98
 	google.golang.org/grpc v1.33.1

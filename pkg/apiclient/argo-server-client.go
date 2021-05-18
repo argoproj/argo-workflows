@@ -25,6 +25,8 @@ type argoServerClient struct {
 	*grpc.ClientConn
 }
 
+var _ Client = &argoServerClient{}
+
 func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
 	conn, err := newClientConn(opts)
 	if err != nil {
@@ -37,20 +39,20 @@ func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServic
 	return workflowpkg.NewWorkflowServiceClient(a.ClientConn)
 }
 
-func (a *argoServerClient) NewCronWorkflowServiceClient() cronworkflowpkg.CronWorkflowServiceClient {
-	return cronworkflowpkg.NewCronWorkflowServiceClient(a.ClientConn)
+func (a *argoServerClient) NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error) {
+	return cronworkflowpkg.NewCronWorkflowServiceClient(a.ClientConn), nil
 }
 
-func (a *argoServerClient) NewWorkflowTemplateServiceClient() workflowtemplatepkg.WorkflowTemplateServiceClient {
-	return workflowtemplatepkg.NewWorkflowTemplateServiceClient(a.ClientConn)
+func (a *argoServerClient) NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error) {
+	return workflowtemplatepkg.NewWorkflowTemplateServiceClient(a.ClientConn), nil
 }
 
 func (a *argoServerClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
 	return workflowarchivepkg.NewArchivedWorkflowServiceClient(a.ClientConn), nil
 }
 
-func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient {
-	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn)
+func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error) {
+	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn), nil
 }
 
 func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {

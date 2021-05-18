@@ -222,64 +222,74 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
 
-	nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
-	if !ok {
-		log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+	leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
+	if leaderElectionOff == "true" {
+		log.Info("Leader election is turned off. Running in single-instance mode")
+		logCtx := log.WithField("id", "single-instance")
+		go wfc.startLeading(ctx, logCtx, podCleanupWorkers, workflowTTLWorkers, wfWorkers, podWorkers)
+	} else {
+		nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
+		if !ok {
+			log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+		}
+		logCtx := log.WithField("id", nodeID)
+
+		var cancel context.CancelFunc
+		leaderName := "workflow-controller"
+		if wfc.Config.InstanceID != "" {
+			leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
+		}
+
+		go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+			Lock: &resourcelock.LeaseLock{
+				LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+				LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
+			},
+			ReleaseOnCancel: true,
+			LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+			RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+			RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
+			Callbacks: leaderelection.LeaderCallbacks{
+				OnStartedLeading: func(ctx context.Context) {
+					wfc.startLeading(ctx, logCtx, podCleanupWorkers, workflowTTLWorkers, wfWorkers, podWorkers)
+				},
+				OnStoppedLeading: func() {
+					logCtx.Info("stopped leading")
+					cancel()
+				},
+				OnNewLeader: func(identity string) {
+					logCtx.WithField("leader", identity).Info("new leader")
+				},
+			},
+		})
 	}
-	logCtx := log.WithField("id", nodeID)
-
-	leaderName := "workflow-controller"
-	if wfc.Config.InstanceID != "" {
-		leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
-	}
-
-	var cancel context.CancelFunc
-	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
-			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
-		},
-		ReleaseOnCancel: true,
-		LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
-		RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
-		RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
-		Callbacks: leaderelection.LeaderCallbacks{
-			OnStartedLeading: func(ctx context.Context) {
-				defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-				logCtx.Info("started leading")
-				ctx, cancel = context.WithCancel(ctx)
-
-				for i := 0; i < podCleanupWorkers; i++ {
-					go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
-				}
-				go wfc.workflowGarbageCollector(ctx.Done())
-				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
-
-				go wfc.runTTLController(ctx, workflowTTLWorkers)
-				go wfc.runCronController(ctx)
-				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
-				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
-
-				go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
-
-				for i := 0; i < wfWorkers; i++ {
-					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
-				}
-				for i := 0; i < podWorkers; i++ {
-					go wait.Until(wfc.podWorker, time.Second, ctx.Done())
-				}
-			},
-			OnStoppedLeading: func() {
-				logCtx.Info("stopped leading")
-				cancel()
-			},
-			OnNewLeader: func(identity string) {
-				logCtx.WithField("leader", identity).Info("new leader")
-			},
-		},
-	})
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Entry, podCleanupWorkers int, workflowTTLWorkers int, wfWorkers int, podWorkers int) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	logCtx.Info("started leading")
+
+	for i := 0; i < podCleanupWorkers; i++ {
+		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
+	}
+	go wfc.workflowGarbageCollector(ctx.Done())
+	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
+	go wfc.runTTLController(ctx, workflowTTLWorkers)
+	go wfc.runCronController(ctx)
+	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
+	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
+
+	go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
+
+	for i := 0; i < wfWorkers; i++ {
+		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+	}
+	for i := 0; i < podWorkers; i++ {
+		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
+	}
 }
 
 func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {

@@ -17,7 +17,8 @@ func NewDeleteCommand() *cobra.Command {
 		Short: "delete a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewCronWorkflowServiceClient()
+			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
+			errors.CheckError(err)
 			if all {
 				cronWfList, err := serviceClient.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{
 					Namespace: client.Namespace(),

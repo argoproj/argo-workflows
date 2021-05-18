@@ -8,4 +8,3 @@ spec:
     - name: run-workflow
       container:
         image: argoproj/argosay:v2
-        imagePullPolicy: IfNotPresent

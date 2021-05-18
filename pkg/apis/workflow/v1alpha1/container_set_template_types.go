@@ -1,6 +1,10 @@
 package v1alpha1
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
+)
 
 type ContainerSetTemplate struct {
 	Containers   []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
@@ -40,6 +44,56 @@ func (in *ContainerSetTemplate) HasSequencedContainers() bool {
 		}
 	}
 	return false
+}
+
+// Validate checks if the ContainerSetTemplate is valid
+func (in *ContainerSetTemplate) Validate() error {
+	if len(in.Containers) == 0 {
+		return fmt.Errorf("containers must have at least one container")
+	}
+
+	names := make([]string, 0)
+	for _, ctr := range in.Containers {
+		names = append(names, ctr.Name)
+	}
+	err := validateWorkflowFieldNames(names, false)
+	if err != nil {
+		return fmt.Errorf("containers%s", err.Error())
+	}
+
+	// Ensure there are no collisions with volume mountPaths and artifact load paths
+	mountPaths := make(map[string]string)
+	for i, volMount := range in.VolumeMounts {
+		if prev, ok := mountPaths[volMount.MountPath]; ok {
+			return fmt.Errorf("volumeMounts[%d].mountPath '%s' already mounted in %s", i, volMount.MountPath, prev)
+		}
+		mountPaths[volMount.MountPath] = fmt.Sprintf("volumeMounts.%s", volMount.Name)
+	}
+
+	// Ensure the dependencies are defined
+	nameToContainer := make(map[string]ContainerNode)
+	for _, ctr := range in.Containers {
+		nameToContainer[ctr.Name] = ctr
+	}
+	for _, ctr := range in.Containers {
+		for _, depName := range ctr.Dependencies {
+			_, ok := nameToContainer[depName]
+			if !ok {
+				return fmt.Errorf("containers.%s dependency '%s' not defined", ctr.Name, depName)
+			}
+		}
+	}
+
+	// Ensure there is no dependency cycle
+	depGraph := make(map[string][]string)
+	for _, ctr := range in.Containers {
+		depGraph[ctr.Name] = append(depGraph[ctr.Name], ctr.Dependencies...)
+	}
+	err = validateNoCycles(depGraph)
+	if err != nil {
+		return fmt.Errorf("containers %s", err.Error())
+	}
+	return nil
 }
 
 type ContainerNode struct {

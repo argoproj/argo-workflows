@@ -72,7 +72,7 @@ func (d *DockerExecutor) CopyFile(containerName string, sourcePath string, destP
 		return err
 	}
 	defer util.Close(copiedFile)
-	gzipReader, err := gzip.NewReader(copiedFile)
+	gzipReader, err := file.GetGzipReader(copiedFile)
 	if err != nil {
 		return err
 	}

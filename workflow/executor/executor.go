@@ -728,10 +728,18 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 
-// AddError adds an error to the list of encountered errors durign execution
+// AddError adds an error to the list of encountered errors during execution
 func (we *WorkflowExecutor) AddError(err error) {
 	log.Errorf("executor error: %+v", err)
 	we.errors = append(we.errors, err)
+}
+
+// HasError return the first error if exist
+func (we *WorkflowExecutor) HasError() error {
+	if len(we.errors) > 0 {
+		return we.errors[0]
+	}
+	return nil
 }
 
 // AddAnnotation adds an annotation to the workflow pod
@@ -934,14 +942,17 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 			}
 
 			file, err := os.Stat(filePath)
-			if err != nil {
+			if os.IsNotExist(err) {
+				// noop
+			} else if err != nil {
 				log.Fatal(err)
+			} else {
+				newModTime := file.ModTime()
+				if modTime != nil && !modTime.Equal(file.ModTime()) {
+					res <- struct{}{}
+				}
+				modTime = &newModTime
 			}
-			newModTime := file.ModTime()
-			if modTime != nil && !modTime.Equal(file.ModTime()) {
-				res <- struct{}{}
-			}
-			modTime = &newModTime
 			time.Sleep(pollInterval)
 		}
 	}()
@@ -1073,10 +1084,10 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 			sidecarNames = append(sidecarNames, n)
 		}
 	}
+	log.Infof("Killing sidecars %q", sidecarNames)
 	if len(sidecarNames) == 0 {
 		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
 	}
-	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }

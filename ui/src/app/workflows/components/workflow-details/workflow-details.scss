@@ -37,6 +37,12 @@
     }
   }
 
+  &__container {
+    height: calc(100vh - 2 * #{$top-bar-height});
+    max-width: 100%;
+    overflow: auto;
+  }
+
   &__graph-container {
     position: relative;
     height: calc(100vh - 2 * #{$top-bar-height});

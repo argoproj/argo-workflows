@@ -19,7 +19,6 @@ spec:
       - name: whalesay
         container:
           image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]
 

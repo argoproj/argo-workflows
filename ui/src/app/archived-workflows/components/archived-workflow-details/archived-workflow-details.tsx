@@ -6,6 +6,7 @@ import {execSpec, Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
@@ -156,18 +157,20 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         return (
             <>
                 {this.tab === 'summary' ? (
-                    <div className='argo-container'>
-                        <div className='workflow-details__content'>
-                            <WorkflowSummaryPanel workflow={this.state.workflow} />
-                            {execSpec(this.state.workflow).arguments && execSpec(this.state.workflow).arguments.parameters && (
-                                <React.Fragment>
-                                    <h6>Parameters</h6>
-                                    <WorkflowParametersPanel parameters={execSpec(this.state.workflow).arguments.parameters} />
-                                </React.Fragment>
-                            )}
-                            <h6>Artifacts</h6>
-                            <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
-                            <WorkflowResourcePanel workflow={this.state.workflow} />
+                    <div className='workflow-details__container'>
+                        <div className='argo-container'>
+                            <div className='workflow-details__content'>
+                                <WorkflowSummaryPanel workflow={this.state.workflow} />
+                                {execSpec(this.state.workflow).arguments && execSpec(this.state.workflow).arguments.parameters && (
+                                    <React.Fragment>
+                                        <h6>Parameters</h6>
+                                        <WorkflowParametersPanel parameters={execSpec(this.state.workflow).arguments.parameters} />
+                                    </React.Fragment>
+                                )}
+                                <h6>Artifacts</h6>
+                                <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
+                                <WorkflowResourcePanel workflow={this.state.workflow} />
+                            </div>
                         </div>
                     </div>
                 ) : (
@@ -261,10 +264,23 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private openLink(link: Link) {
-        document.location.href = link.url
-            .replace(/\${metadata\.namespace}/g, this.state.workflow.metadata.namespace)
-            .replace(/\${metadata\.name}/g, this.state.workflow.metadata.name)
-            .replace(/\${status\.startedAt}/g, this.state.workflow.status.startedAt)
-            .replace(/\${status\.finishedAt}/g, this.state.workflow.status.finishedAt);
+        const object = {
+            metadata: {
+                namespace: this.state.workflow.metadata.namespace,
+                name: this.state.workflow.metadata.name
+            },
+            workflow: this.state.workflow,
+            status: {
+                startedAt: this.state.workflow.status.startedAt,
+                finishedAt: this.state.workflow.status.finishedAt
+            }
+        };
+        const url = ProcessURL(link.url, object);
+
+        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
+            window.open(url, '_blank');
+        } else {
+            document.location.href = url;
+        }
     }
 }

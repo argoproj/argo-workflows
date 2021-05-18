@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/env"
+
 	"github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -53,6 +55,19 @@ const (
 	cronWorkflowWorkers      = 8
 )
 
+var (
+	cronSyncPeriod = env.LookupEnvDurationOr("CRON_SYNC_PERIOD", 10*time.Second)
+)
+
+func init() {
+	// this make sure we support timezones
+	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
+}
+
 func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, wfInformer cache.SharedIndexInformer, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
@@ -88,7 +103,8 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cron.Stop()
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
-	go wait.UntilWithContext(ctx, cc.syncAll, 10*time.Second)
+
+	go wait.UntilWithContext(ctx, cc.syncAll, cronSyncPeriod)
 
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())

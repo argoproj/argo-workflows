@@ -200,10 +200,12 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			2,
+			4,
 			func(t *testing.T, es []corev1.Event) {
 				for _, e := range es {
 					switch e.Reason {
+					case "WorkflowNodeRunning":
+						assert.Contains(t, e.Message, "Running node failed-step-event-")
 					case "WorkflowRunning":
 					case "WorkflowNodeFailed":
 						assert.Contains(t, e.Message, "Failed node failed-step-event-")
@@ -233,10 +235,13 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			3,
+			4,
 			func(t *testing.T, es []corev1.Event) {
 				for _, e := range es {
+					println(e.Reason, e.Message)
 					switch e.Reason {
+					case "WorkflowNodeRunning":
+						assert.Contains(t, e.Message, "Running node success-event-")
 					case "WorkflowRunning":
 					case "WorkflowNodeSucceeded":
 						assert.Contains(t, e.Message, "Succeeded node success-event-")
@@ -466,6 +471,41 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandlerError() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+    - name: main
+      container:
+        name: main
+        image: argoproj/argosay:v2
+    - name: exit-handler
+      templateRef:
+        name: nonexistent
+        template: exit-handler
+`).
+		Workflow(`
+metadata:
+  generateName: test-exit-handler-
+spec:
+  workflowTemplateRef:
+    name: test-exit-handler
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, status.Message, "error in exit template execution")
+		})
+}
+
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
 		Workflow(`
@@ -630,10 +670,8 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v2
-        args:
-          - echo
-          - ":) Hello Argo!"
-      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}]}'
+      # ordering of the containers in the next line is intentionally reversed
+      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":"wait", "resources":{"limits":{"cpu": "101m"}}}]}'
 `).
 		When().
 		SubmitWorkflow().
@@ -644,6 +682,8 @@ spec:
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
 					assert.Equal(t, c.Resources.Limits.Cpu().String(), "100m")
+				} else if c.Name == "wait" {
+					assert.Equal(t, c.Resources.Limits.Cpu().String(), "101m")
 				}
 			}
 		})

@@ -37,34 +37,40 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-20.04
-    # test-api: 7m (1m10s locally)
-    # test-cli: 12m (4m locally)
-    # test-cron: 8m
-    # test-executor 8m (2m locally)
-    # test-functional: 13m (7m locally)
     timeout-minutes: 20
+    env:
+      KUBECONFIG: /home/runner/.kubeconfig
     strategy:
       fail-fast: false
       matrix:
         include:
           - test: test-api
             containerRuntimeExecutor: emissary
+            profile: mysql
           - test: test-cli
             containerRuntimeExecutor: emissary
+            profile: mysql
           - test: test-cron
             containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: docker
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: k8sapi
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: kubelet
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: pns
+            profile: minimal
           - test: test-functional
             containerRuntimeExecutor: emissary
+            profile: minimal
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -86,39 +92,39 @@ jobs:
         with:
           path: dist/kustomize
           key: kustomize
-      - run: make pull-images &
-      - name: Install and start K3S v1.18.8+k3s1
-        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
-      - name: Create Kubeconfig
+      - run: mkdir -p /tmp/log/argo-e2e
+      - name: Install and start K3S
+        timeout-minutes: 3
         run: |
-          mkdir -p ~/.kube
-          until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
-          cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-          echo "- name: fake_token_user" >> ~/.kube/config
-          echo "  user:" >> ~/.kube/config
-          echo "    token: xxxxxx" >> ~/.kube/config
-      - run: git fetch --tags
-      - name: Start Argo
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.17+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
+          cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
+          echo "- name: fake_token_user" >> $KUBECONFIG
+          echo "  user:" >> $KUBECONFIG
+          echo "    token: xxxxxx" >> $KUBECONFIG
+          until kubectl cluster-info ; do sleep 10s ; done
+      - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          PROFILE=minimal
-          if [ "${{matrix.test}}" = test-cli ] || [ "${{matrix.test}}" = test-api ]; then
-            PROFILE=mysql
+      - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
+      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false > /tmp/log/argo-e2e/argo.log 2>&1 &
+        timeout-minutes: 4
+      - name: make/pull argoexec-image
+        run: |
+          if [ ${{matrix.test}} == test-executor ]; then
+            make argoexec-image STATIC_FILES=false
+          else
+            docker pull argoproj/argoexec:latest
           fi
-          mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make install PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info
-          KUBECONFIG=~/.kube/config make start   PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false DEV_IMAGE=true LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
       - run: make wait
-      - run: make ${{matrix.test}} E2E_TIMEOUT=1m
-      - name: Upload logs
+        timeout-minutes: 4
+      - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
+      - name: cat argo.log
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{matrix.test}}-${{matrix.containerRuntimeExecutor}}
-          path: /tmp/log/argo-e2e
+        run: cat /tmp/log/argo-e2e/argo.log
 
   codegen:
     name: Codegen
@@ -159,7 +165,6 @@ jobs:
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           ls /usr/local/include/google/protobuf/
-      - run: git fetch --tags
       - name: Create links
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
@@ -193,7 +198,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}

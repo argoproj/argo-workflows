@@ -9,8 +9,10 @@ import (
 	"github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
@@ -22,10 +24,13 @@ type ArtifactDriver struct {
 	SecurityToken string
 }
 
-var _ common.ArtifactDriver = &ArtifactDriver{}
+var (
+	_            common.ArtifactDriver = &ArtifactDriver{}
+	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
 
-// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
-var ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+	// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
+	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+)
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
@@ -41,7 +46,7 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 
 // Downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
 func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			log.Infof("OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
@@ -77,7 +82,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 
 // Saves an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
 func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			log.Infof("OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
@@ -102,6 +107,10 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 				return !isTransientOSSErr(err), err
 			}
 			objectName := outputArtifact.OSS.Key
+			if outputArtifact.OSS.LifecycleRule != nil {
+				err = setBucketLifecycleRule(osscli, outputArtifact.OSS)
+				return !isTransientOSSErr(err), err
+			}
 			isDir, err := file.IsDirectory(path)
 			if err != nil {
 				return false, fmt.Errorf("failed to test if %s is a directory: %w", path, err)
@@ -122,7 +131,7 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	var files []string
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
@@ -142,6 +151,52 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			return true, nil
 		})
 	return files, err
+}
+
+func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) error {
+	if ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays == 0 && ossArtifact.LifecycleRule.MarkDeletionAfterDays == 0 {
+		return nil
+	}
+	var markInfrequentAccessAfterDays int
+	var markDeletionAfterDays int
+	if ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays != 0 {
+		markInfrequentAccessAfterDays = int(ossArtifact.LifecycleRule.MarkInfrequentAccessAfterDays)
+	}
+	if ossArtifact.LifecycleRule.MarkDeletionAfterDays != 0 {
+		markDeletionAfterDays = int(ossArtifact.LifecycleRule.MarkDeletionAfterDays)
+	}
+	if markInfrequentAccessAfterDays > markDeletionAfterDays {
+		return fmt.Errorf("markInfrequentAccessAfterDays cannot be large than markDeletionAfterDays")
+	}
+
+	// Set expiration rule.
+	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", ossArtifact.Key, true, markInfrequentAccessAfterDays)
+	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
+	expiration := oss.LifecycleExpiration{
+		ExpiredObjectDeleteMarker: pointer.BoolPtr(true),
+	}
+	// Convert to Infrequent Access (IA) storage type for objects that are expired after a period of time.
+	versionTransition := oss.LifecycleVersionTransition{
+		NoncurrentDays: markInfrequentAccessAfterDays,
+		StorageClass:   oss.StorageIA,
+	}
+	// Mark deletion after a period of time.
+	versionExpiration := oss.LifecycleVersionExpiration{
+		NoncurrentDays: markDeletionAfterDays,
+	}
+	versionTransitionRule := oss.LifecycleRule{
+		ID:                    "version-transition-rule",
+		Prefix:                ossArtifact.Key,
+		Status:                string(oss.VersionEnabled),
+		Expiration:            &expiration,
+		NonVersionExpiration:  &versionExpiration,
+		NonVersionTransitions: []oss.LifecycleVersionTransition{versionTransition},
+	}
+
+	// Set lifecycle rules to the bucket.
+	rules := []oss.LifecycleRule{expirationRule, versionTransitionRule}
+	err := client.SetBucketLifecycle(ossArtifact.Bucket, rules)
+	return err
 }
 
 func isTransientOSSErr(err error) bool {

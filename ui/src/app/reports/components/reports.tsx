@@ -58,7 +58,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             archivedWorkflows: !!this.queryParam('archivedWorkflows'),
-            namespace: this.props.match.params.namespace || '',
+            namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             labels: (this.queryParam('labels') || '').split(',').filter(v => v !== '')
         };
     }
@@ -119,9 +119,10 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private saveHistory() {
+        const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
         this.url = uiUrl(
-            'reports/' +
-                this.state.namespace +
+            'reports' +
+                (newNamespace ? '/' + newNamespace : '') +
                 '?labels=' +
                 this.state.labels.join(',') +
                 (this.state.archivedWorkflows ? '&archivedWorkflows=' + this.state.archivedWorkflows : '')

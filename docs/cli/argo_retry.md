@@ -17,9 +17,17 @@ argo retry [WORKFLOW...] [flags]
 
   argo retry my-wf
 
-# Retry several workflows: 
+# Retry multiple workflows: 
 
   argo retry my-wf my-other-wf my-third-wf
+
+# Retry multiple workflows by label selector:
+
+  argo retry -l workflows.argoproj.io/test=true
+
+# Retry multiple workflows by field selector:
+
+  argo retry --field-selector metadata.namespace=argo
 
 # Retry and wait for completion:
 
@@ -42,13 +50,15 @@ argo retry [WORKFLOW...] [flags]
 ### Options
 
 ```
+      --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for retry
       --log                          log the workflow until it completes
       --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc
   -o, --output string                Output format. One of: name|json|yaml|wide
       --restart-successful           indicates to restart successful nodes matching the --node-field-selector
-  -w, --wait                         wait for the workflow to complete
-      --watch                        watch the workflow until it completes
+  -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                         wait for the workflow to complete, only works when a single workflow is retried
+      --watch                        watch the workflow until it completes, only works when a single workflow is retried
 ```
 
 ### Options inherited from parent commands
@@ -73,7 +83,7 @@ argo retry [WORKFLOW...] [flags]
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
-  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.
+  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
       --server string                  The address and port of the Kubernetes API server
       --tls-server-name string         If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
       --token string                   Bearer token for authentication to the API server

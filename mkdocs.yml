@@ -22,6 +22,7 @@ nav:
   - Overview: README.md
   - core-concepts.md
   - quick-start.md
+  - training.md
   - User Guide:
       # topics are ones that can be done using the UI only
       - Beginner:
@@ -131,6 +132,7 @@ nav:
           - workflow-executors.md
           - sidecar-injection.md
           - default-workflow-specs.md
+          - template-defaults.md
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
@@ -140,6 +142,7 @@ nav:
           - argo-server-auth-mode.md
           - tls.md
           - argo-server-sso.md
+          - argo-server-sso-argocd.md
       - high-availability.md
       - disaster-recovery.md
       - scaling.md

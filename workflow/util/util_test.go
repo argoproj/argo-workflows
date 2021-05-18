@@ -2,11 +2,11 @@ package util
 
 import (
 	"context"
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -39,7 +39,7 @@ spec:
         command: [cowsay]
         args: ["hello world"]
 `
-	wf := unmarshalWF(workflowYaml)
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
 	newWf := wf.DeepCopy()
 	wfClientSet := argofake.NewSimpleClientset()
 	ctx := context.Background()
@@ -168,24 +168,6 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 	}
 }
 
-func unmarshalWF(yamlStr string) *wfv1.Workflow {
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(yamlStr), &wf)
-	if err != nil {
-		panic(err)
-	}
-	return &wf
-}
-
-func unmarshalWFT(yamlStr string) *wfv1.WorkflowTemplate {
-	var wft wfv1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &wft)
-	if err != nil {
-		panic(err)
-	}
-	return &wft
-}
-
 var yamlStr = `
 containers:
   - name: main
@@ -200,8 +182,7 @@ func TestPodSpecPatchMerge(t *testing.T) {
 	merged, err := PodSpecPatchMerge(&wf, &tmpl)
 	assert.NoError(t, err)
 	var spec v1.PodSpec
-	err = json.Unmarshal([]byte(merged), &spec)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(merged), &spec)
 	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 
@@ -209,8 +190,7 @@ func TestPodSpecPatchMerge(t *testing.T) {
 	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
 	merged, err = PodSpecPatchMerge(&wf, &tmpl)
 	assert.NoError(t, err)
-	err = json.Unmarshal([]byte(merged), &spec)
-	assert.NoError(t, err)
+	wfv1.MustUnmarshal([]byte(merged), &spec)
 	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 }
@@ -228,19 +208,19 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/suspend
   uid: 4f08d325-dc5a-43a3-9986-259e259e6ea3
 spec:
-  arguments: {}
+  
   entrypoint: suspend
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: approve
         template: approve
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: approve
@@ -291,7 +271,7 @@ status:
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
+	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
@@ -318,7 +298,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 
 func TestStopWorkflowByNodeName(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
+	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
@@ -348,16 +328,16 @@ kind: Workflow
 metadata:
   name: suspend-template
 spec:
-  arguments: {}
+  
   entrypoint: suspend
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: approve
         template: approve
     - - arguments:
@@ -366,7 +346,7 @@ spec:
             value: '{{steps.approve.outputs.parameters.message}}'
         name: release
         template: whalesay
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: approve
@@ -376,7 +356,7 @@ spec:
         valueFrom:
           supplied: {}
     suspend: {}
-  - arguments: {}
+  - 
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -431,6 +411,7 @@ status:
           valueFrom:
             supplied: {}
         - name: message2
+          globalName: message-global-param
           valueFrom:
             supplied: {}
       phase: Running
@@ -444,7 +425,7 @@ status:
 
 func TestUpdateSuspendedNode(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(susWorkflow)
+	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
@@ -459,9 +440,14 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		assert.NoError(t, err)
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 		assert.NoError(t, err)
+
+		//make sure global variable was updated
+		wf, err := wfIf.Get(ctx, "suspend-template", metav1.GetOptions{})
+		assert.NoError(t, err)
+		assert.Equal(t, "Hello World 2", wf.Status.Outputs.Parameters[0].Value.String())
 	}
 
-	noSpaceWf := unmarshalWF(susWorkflow)
+	noSpaceWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 	noSpaceWf.Name = "suspend-template-no-outputs"
 	node := noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"]
 	node.Outputs = nil
@@ -597,22 +583,22 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-9fkqc
   uid: 241a39ef-4ff1-487f-8461-98df5d2b50fb
 spec:
-  arguments: {}
+  
   entrypoint: foo
   templates:
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: foo
     outputs: {}
     steps:
-    - - arguments: {}
+    - - 
         name: pass
         template: pass
-    - - arguments: {}
+    - - 
         name: fail
         template: fail
-  - arguments: {}
+  - 
     container:
       args:
       - exit 0
@@ -626,7 +612,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - exit 1
@@ -736,7 +722,7 @@ status:
 func TestDeepDeleteNodes(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	kubeClient := &kubefake.Clientset{}
-	origWf := unmarshalWF(deepDeleteOfNodes)
+	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
@@ -752,12 +738,21 @@ func TestDeepDeleteNodes(t *testing.T) {
 func TestRetryWorkflow(t *testing.T) {
 	kubeClient := kubefake.NewSimpleClientset()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	createdTime := metav1.Time{Time: time.Now().UTC()}
+	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
 			common.LabelKeyCompleted:               "true",
 			common.LabelKeyWorkflowArchivingStatus: "Pending",
 		}},
-		Status: wfv1.WorkflowStatus{Phase: wfv1.WorkflowFailed},
+		Status: wfv1.WorkflowStatus{
+			Phase:      wfv1.WorkflowFailed,
+			StartedAt:  createdTime,
+			FinishedAt: finishedTime,
+			Nodes: map[string]wfv1.NodeStatus{
+				"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
+				"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
+		},
 	}
 
 	ctx := context.Background()
@@ -766,14 +761,30 @@ func TestRetryWorkflow(t *testing.T) {
 	wf, err = RetryWorkflow(ctx, kubeClient, hydratorfake.Always, wfClient, wf.Name, false, "")
 	if assert.NoError(t, err) {
 		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+		assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
+		assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
 		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
 		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
+		for _, node := range wf.Status.Nodes {
+			switch node.Phase {
+			case wfv1.NodeSucceeded:
+				assert.Equal(t, "succeeded", node.Message)
+				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+				assert.Equal(t, createdTime, node.StartedAt)
+				assert.Equal(t, finishedTime, node.FinishedAt)
+			case wfv1.NodeFailed:
+				assert.Equal(t, "", node.Message)
+				assert.Equal(t, wfv1.NodeRunning, node.Phase)
+				assert.Equal(t, metav1.Time{}, node.FinishedAt)
+				assert.True(t, node.StartedAt.After(createdTime.Time))
+			}
+		}
 	}
 }
 
 func TestFromUnstructuredObj(t *testing.T) {
 	un := &unstructured.Unstructured{}
-	err := yaml.Unmarshal([]byte(`apiVersion: argoproj.io/v1alpha1
+	wfv1.MustUnmarshal([]byte(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: example-integers
@@ -789,9 +800,8 @@ spec:
               value: 20
         container:
           image: my-image`), un)
-	assert.NoError(t, err)
 	x := &wfv1.CronWorkflow{}
-	err = FromUnstructuredObj(un, x)
+	err := FromUnstructuredObj(un, x)
 	assert.NoError(t, err)
 }
 
