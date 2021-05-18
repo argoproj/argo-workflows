@@ -4152,6 +4152,17 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTP": {
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource": {
+      "type": "object"
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler": {
       "type": "object",
       "properties": {
@@ -4348,6 +4359,9 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sink": {
       "type": "object",
       "properties": {
+        "http": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink"
+        },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
         },
@@ -4385,6 +4399,9 @@
       "properties": {
         "cron": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cron"
+        },
+        "http": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"

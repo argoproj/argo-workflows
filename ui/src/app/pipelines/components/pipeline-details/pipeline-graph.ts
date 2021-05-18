@@ -100,8 +100,8 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 g.nodes.set(subjectId, {genre: 'stan', icon: 'inbox', label: x.stan.subject});
                 g.edges.set({v: subjectId, w: stepId}, {classNames, label});
             } else if (x.http) {
-                const y = new URL('http://' + pipeline.metadata.name + '-' + step.spec.name + '/sources/'+x.name);
-                const subjectId = 'http/'+ y;
+                const y = new URL('http://' + pipeline.metadata.name + '-' + step.spec.name + '/sources/' + x.name);
+                const subjectId = 'http/' + y;
                 g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
                 g.edges.set({v: subjectId, w: stepId}, {classNames, label});
             }
@@ -131,13 +131,12 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 const subjectId = 'stan/' + stanId + '/' + x.stan.subject;
                 g.nodes.set(subjectId, {genre: 'stan', icon: 'inbox', label: x.stan.subject});
                 g.edges.set({v: stepId, w: subjectId}, {classNames, label});
-
-        } else if (x.http) {
+            } else if (x.http) {
                 const y = new URL(x.http.url);
                 const subjectId = 'http/' + y;
-            g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
-            g.edges.set({v: stepId, w:subjectId}, {classNames, label});
-        }
+                g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
+                g.edges.set({v: stepId, w: subjectId}, {classNames, label});
+            }
         });
     });
     return g;
