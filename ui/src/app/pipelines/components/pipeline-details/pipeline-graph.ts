@@ -123,7 +123,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 g.nodes.set(topicId, {genre: 'kafka', icon: 'inbox', label: x.kafka.topic});
                 g.edges.set({v: stepId, w: topicId}, {classNames, label});
             } else if (x.log) {
-                const logId = 'log/' + stepId;
+                const logId = 'log/' + stepId + "/" + x.name;
                 g.nodes.set(logId, {genre: 'log', icon: 'file-alt', label: 'log'});
                 g.edges.set({v: stepId, w: logId}, {classNames, label});
             } else if (x.stan) {
