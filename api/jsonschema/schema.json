@@ -485,7 +485,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepStatus"
         }
       },
-      "title": "+kubebuilder:object:root=true\n+kubebuilder:subresource:status\n+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`\n+kubebuilder:printcolumn:name=\"Desired\",type=string,JSONPath=`.spec.replicas`\n+kubebuilder:printcolumn:name=\"Current\",type=string,JSONPath=`.status.replicas`",
+      "title": "+kubebuilder:object:root=true\n+kubebuilder:subresource:status\n+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Reason\",type=string,JSONPath=`.status.reason`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`\n+kubebuilder:printcolumn:name=\"Desired\",type=string,JSONPath=`.spec.replicas`\n+kubebuilder:printcolumn:name=\"Current\",type=string,JSONPath=`.status.replicas`",
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.StepSpec": {
@@ -589,6 +589,9 @@
           "type": "string"
         },
         "phase": {
+          "type": "string"
+        },
+        "reason": {
           "type": "string"
         },
         "replicas": {

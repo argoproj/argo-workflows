@@ -51,16 +51,16 @@ export const StepSidePanel = ({
                                             </div>
                                             <div className='row white-box__details-row'>
                                                 <div className='columns small-3'>Replicas</div>
-                                                <div className='columns small-9'>{step.status.replicas}</div>
+                                                <div className='columns small-3'>{step.status.replicas}</div>
+                                                {step.status.lastScaledAt && (
+                                                    <>
+                                                        <div className='columns small-3'>Last scaled</div>
+                                                        <div className='columns small-3'>
+                                                            <Timestamp date={step.status.lastScaledAt} />
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
-                                            {step.status.lastScaledAt && (
-                                                <div className='row white-box__details-row'>
-                                                    <div className='columns small-3'>Last scaled</div>
-                                                    <div className='columns small-9'>
-                                                        <Timestamp date={step.status.lastScaledAt} />
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                     <h5>Source Statuses</h5>
