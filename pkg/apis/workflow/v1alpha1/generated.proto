@@ -885,6 +885,9 @@ message PodGC {
 
   // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
+
+  // DelaySeconds is how long to delay pod GC for.
+  optional uint32 delaySeconds = 3;
 }
 
 // Prometheus is a prometheus metric to be emitted

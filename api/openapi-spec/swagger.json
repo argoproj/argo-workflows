@@ -7784,6 +7784,10 @@
       "description": "PodGC describes how to delete completed pods as they complete",
       "type": "object",
       "properties": {
+        "delaySeconds": {
+          "description": "DelaySeconds is how long to delay pod GC for.",
+          "type": "integer"
+        },
         "labelSelector": {
           "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector"

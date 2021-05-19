@@ -718,7 +718,8 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		}
 		if doPodGC {
 			for podName := range woc.completedPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+				delayDuration := woc.execWf.Spec.PodGC.GetDelay()
+				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delayDuration)
 			}
 		}
 	}

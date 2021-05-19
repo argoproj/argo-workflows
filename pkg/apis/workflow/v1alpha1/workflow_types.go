@@ -840,6 +840,8 @@ type PodGC struct {
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
 	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
+	// DelaySeconds is how long to delay pod GC for.
+	DelaySeconds uint32 `json:"delaySeconds,omitempty" protobuf:"bytes,3,opt,name=delaySeconds"`
 }
 
 // Matches returns whether the pod labels match with the label selector specified in podGC.
@@ -860,6 +862,11 @@ func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
 		return podGC.LabelSelector
 	}
 	return nil
+}
+
+// GetDelay gets the podGC delay as a duration.
+func (podGC *PodGC) GetDelay() time.Duration {
+	return time.Duration(podGC.DelaySeconds) * time.Second
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows

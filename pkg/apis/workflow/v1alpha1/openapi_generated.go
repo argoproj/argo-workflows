@@ -3382,6 +3382,13 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},
+					"delaySeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DelaySeconds is how long to delay pod GC for.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
 				},
 			},
 		},

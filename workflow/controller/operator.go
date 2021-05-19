@@ -595,10 +595,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:
 				if podPhase == apiv1.PodSucceeded {
-					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+					delayDuration := woc.execWf.Spec.PodGC.GetDelay()
+					woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delayDuration)
 				}
 			case wfv1.PodGCOnPodCompletion:
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+				delayDuration := woc.execWf.Spec.PodGC.GetDelay()
+				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delayDuration)
 			}
 		} else {
 			// label pods which will not be deleted

@@ -477,6 +477,45 @@ spec:
 		})
 }
 
+func (s *PodCleanupSuite) TestPodDeletionDelay() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: test-pod-cleanup-with-pod-deletion-delay-
+spec:
+  podGC:
+    strategy: OnPodCompletion
+    delaySeconds: 15
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: success
+            template: success
+    - name: success
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Wait(enoughTimeForPodCleanup).
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.NotNil(t, p, "successful pod is not deleted")
+			}
+		}).
+		When().
+		Wait(30*time.Second).
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+			if assert.NotNil(t, n) {
+				assert.Nil(t, p, "successful pod is deleted")
+			}
+		})
+}
+
 func TestPodCleanupSuite(t *testing.T) {
 	suite.Run(t, new(PodCleanupSuite))
 }

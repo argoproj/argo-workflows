@@ -820,6 +820,9 @@ spec:
                 type: object
               podGC:
                 properties:
+                  delaySeconds:
+                    format: int32
+                    type: integer
                   labelSelector:
                     properties:
                       matchExpressions:
@@ -22928,6 +22931,9 @@ spec:
                     type: object
                   podGC:
                     properties:
+                      delaySeconds:
+                        format: int32
+                        type: integer
                       labelSelector:
                         properties:
                           matchExpressions:
