@@ -18,7 +18,6 @@ import (
 const (
 	fakePodName       = "fake-test-pod-1234567890"
 	fakeNamespace     = "default"
-	fakeAnnotations   = "/tmp/podannotationspath"
 	fakeContainerName = "main"
 )
 
@@ -38,13 +37,11 @@ func TestSaveParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           templateWithOutParam,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        templateWithOutParam,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("has a newline\n", nil)
 
@@ -127,13 +124,11 @@ func TestDefaultParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           templateWithOutParam,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        templateWithOutParam,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
@@ -160,13 +155,11 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           templateWithOutParam,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        templateWithOutParam,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
@@ -317,13 +310,11 @@ func TestSaveArtifacts(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           templateWithOutParam,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        templateWithOutParam,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 
 	ctx := context.Background()

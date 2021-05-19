@@ -17,16 +17,6 @@ const (
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 
-	// PodMetadataVolumeName is the volume name defined in a workflow pod spec to expose pod metadata via downward API
-	PodMetadataVolumeName = "podmetadata"
-
-	// PodMetadataAnnotationsVolumePath is volume path for metadata.annotations in the downward API
-	PodMetadataAnnotationsVolumePath = "annotations"
-	// PodMetadataMountPath is the directory mount location for DownwardAPI volume containing pod metadata
-	PodMetadataMountPath = "/argo/" + PodMetadataVolumeName
-	// PodMetadataAnnotationsPath is the file path containing pod metadata annotations. Examined by executor
-	PodMetadataAnnotationsPath = PodMetadataMountPath + "/" + PodMetadataAnnotationsVolumePath
-
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
@@ -40,6 +30,7 @@ const (
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
+	// DEPRECATED: in v3.2
 	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
@@ -109,6 +100,8 @@ const (
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
+	// EnvVarTemplate is the template
+	EnvVarTemplate = "ARGO_TEMPLATE"
 	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
 	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`

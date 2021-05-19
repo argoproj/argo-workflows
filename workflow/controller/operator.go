@@ -1073,13 +1073,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
-		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-		if !ok {
-			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
-			return nil
-		}
-		var tmpl wfv1.Template
-		err := json.Unmarshal([]byte(tmplStr), &tmpl)
+		tmpl, err := getPodTemplate(pod)
 		if err != nil {
 			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
 			return nil
@@ -1195,6 +1189,21 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		return node
 	}
 	return nil
+}
+
+func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
+	tmpl := &wfv1.Template{}
+	if x, ok := pod.Annotations[common.AnnotationKeyTemplate]; ok {
+		return tmpl, json.Unmarshal([]byte(x), tmpl)
+	}
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarTemplate {
+				return tmpl, json.Unmarshal([]byte(e.Value), tmpl)
+			}
+		}
+	}
+	return nil, fmt.Errorf("not found")
 }
 
 func getExitCode(pod *apiv1.Pod) *int32 {

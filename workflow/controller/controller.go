@@ -457,6 +457,10 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case deadlineExceeded:
+			if err := signal.SignalContainer(wfc.restConfig, namespace, podName, common.WaitContainerName, syscall.SIGTERM); err != nil {
+				return err
+			}
 		case terminateContainers:
 			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
 				return err

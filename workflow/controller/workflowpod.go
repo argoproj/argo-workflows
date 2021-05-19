@@ -29,29 +29,6 @@ import (
 )
 
 var (
-	// volumePodMetadata makes available the pod metadata available as a file
-	// to the executor's init and sidecar containers. Specifically, the template
-	// of the pod is stored as an annotation
-	volumePodMetadata = apiv1.Volume{
-		Name: common.PodMetadataVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			DownwardAPI: &apiv1.DownwardAPIVolumeSource{
-				Items: []apiv1.DownwardAPIVolumeFile{
-					{
-						Path: common.PodMetadataAnnotationsVolumePath,
-						FieldRef: &apiv1.ObjectFieldSelector{
-							APIVersion: "v1",
-							FieldPath:  "metadata.annotations",
-						},
-					},
-				},
-			},
-		},
-	}
-	volumeMountPodMetadata = apiv1.VolumeMount{
-		Name:      volumePodMetadata.Name,
-		MountPath: common.PodMetadataMountPath,
-	}
 	volumeVarArgo = apiv1.Volume{
 		Name: "var-run-argo",
 		VolumeSource: apiv1.VolumeSource{
@@ -320,21 +297,20 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
+	for i, c := range pod.Spec.InitContainers {
+		c.Env = append(c.Env,
+			apiv1.EnvVar{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+		)
+		pod.Spec.InitContainers[i] = c
+	}
 	for i, c := range pod.Spec.Containers {
 		c.Env = append(c.Env,
 			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
+			apiv1.EnvVar{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
 			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		)
 		pod.Spec.Containers[i] = c
 	}
-
-	// Set the container template JSON in pod annotations, which executor examines for things like
-	// artifact location/path.
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return nil, err
-	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
 	// Perform one last variable substitution here. Some variables come from the from workflow
 	// configmap (e.g. archive location) or volumes attribute, and were not substituted
@@ -342,21 +318,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod, err = substitutePodParams(pod, woc.globalParams, tmpl)
 	if err != nil {
 		return nil, err
-	}
-
-	// One final check to verify all variables are resolvable for select fields. We are choosing
-	// only to check ArchiveLocation for now, since everything else should have been substituted
-	// earlier (i.e. in executeTemplate). But archive location is unique in that the variables
-	// are formulated from the configmap. We can expand this to other fields as necessary.
-	err = json.Unmarshal([]byte(pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	if err != nil {
-		return nil, err
-	}
-	for _, obj := range []interface{}{tmpl.ArchiveLocation} {
-		err = verifyResolvedVariables(obj)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Apply the patch string from template
@@ -573,9 +534,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 }
 
 func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
-	volumes := []apiv1.Volume{
-		volumePodMetadata,
-	}
+	var volumes []apiv1.Volume
 	if woc.controller.Config.KubeConfig != nil {
 		name := woc.controller.Config.KubeConfig.VolumeName
 		if name == "" {
@@ -607,9 +566,6 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-		VolumeMounts: []apiv1.VolumeMount{
-			volumeMountPodMetadata,
-		},
 	}
 	if woc.controller.Config.Executor != nil {
 		exec.Args = woc.controller.Config.Executor.Args
@@ -1103,17 +1059,6 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-}
-
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
-func verifyResolvedVariables(obj interface{}) error {
-	str, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	return template.Validate(string(str), func(tag string) error {
-		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-	})
 }
 
 // createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod

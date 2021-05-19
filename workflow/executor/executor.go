@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bufio"
-	"bytes"
 	"compress/gzip"
 	"context"
 	"encoding/json"
@@ -18,6 +17,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+
+	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
@@ -38,7 +39,6 @@ import (
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
@@ -62,14 +62,12 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	PodName            string
-	Template           wfv1.Template
-	ClientSet          kubernetes.Interface
-	RESTClient         rest.Interface
-	Namespace          string
-	PodAnnotationsPath string
-	ExecutionControl   *common.ExecutionControl
-	RuntimeExecutor    ContainerRuntimeExecutor
+	PodName         string
+	Template        wfv1.Template
+	ClientSet       kubernetes.Interface
+	RESTClient      rest.Interface
+	Namespace       string
+	RuntimeExecutor ContainerRuntimeExecutor
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -109,13 +107,12 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
 		ClientSet:          clientset,
 		RESTClient:         restClient,
 		Namespace:          namespace,
-		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
 		Template:           template,
 		memoizedConfigMaps: map[string]string{},
@@ -915,8 +912,7 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	containerNames := we.Template.GetMainContainerNames()
-	annotationUpdatesCh := we.monitorAnnotations(ctx)
-	go we.monitorDeadline(ctx, containerNames, annotationUpdatesCh)
+	go we.monitorDeadline(ctx, containerNames)
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
 		err := we.RuntimeExecutor.Wait(ctx, containerNames)
 		return err == nil, err
@@ -928,146 +924,26 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	return nil
 }
 
-func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath string) <-chan struct{} {
-	res := make(chan struct{})
-	go func() {
-		defer close(res)
-
-		var modTime *time.Time
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-
-			file, err := os.Stat(filePath)
-			if os.IsNotExist(err) {
-				// noop
-			} else if err != nil {
-				log.Fatal(err)
-			} else {
-				newModTime := file.ModTime()
-				if modTime != nil && !modTime.Equal(file.ModTime()) {
-					res <- struct{}{}
-				}
-				modTime = &newModTime
-			}
-			time.Sleep(pollInterval)
-		}
-	}()
-	return res
-}
-
-// monitorAnnotations starts a goroutine which monitors for any changes to the pod annotations.
-// Emits an event on the returned channel upon any updates
-func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struct{} {
-	log.Infof("Starting annotations monitor")
-
-	// Create a channel to listen for a SIGUSR2. Upon receiving of the signal, we force reload our annotations
-	// directly from kubernetes API. The controller uses this to fast-track notification of annotations
-	// instead of waiting for the volume file to get updated (which can take minutes)
+// monitorDeadline checks to see if we exceeded the deadline for the step and
+// terminates the main container if we did
+func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os_specific.GetOsSignal())
 
-	err := we.LoadExecutionControl() // this is much cheaper than doing `get pod`
-	if err != nil {
-		log.Errorf("Failed to reload execution control from annotations: %v", err)
-	}
-
-	// Create a channel which will notify a listener on new updates to the annotations
-	annotationUpdateCh := make(chan struct{})
-
-	annotationChanges := watchFileChanges(ctx, 10*time.Second, we.PodAnnotationsPath)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				log.Infof("Annotations monitor stopped")
-				signal.Stop(sigs)
-				close(sigs)
-				close(annotationUpdateCh)
-				return
-			case <-sigs:
-				log.Infof("Received update signal. Reloading annotations from API")
-				annotationUpdateCh <- struct{}{}
-				we.setExecutionControl(ctx)
-			case <-annotationChanges:
-				log.Infof("%s updated", we.PodAnnotationsPath)
-				err := we.LoadExecutionControl()
-				if err != nil {
-					log.Warnf("Failed to reload execution control from annotations: %v", err)
-					continue
-				}
-				if we.ExecutionControl != nil {
-					log.Infof("Execution control reloaded from annotations: %v", *we.ExecutionControl)
-				}
-				annotationUpdateCh <- struct{}{}
-			}
-		}
-	}()
-	return annotationUpdateCh
-}
-
-// setExecutionControl sets the execution control information from the pod annotation
-func (we *WorkflowExecutor) setExecutionControl(ctx context.Context) {
-	pod, err := we.getPod(ctx)
-	if err != nil {
-		log.Warnf("Failed to set execution control from API server: %v", err)
-		return
-	}
-	execCtlString, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl]
-	if !ok {
-		we.ExecutionControl = nil
-	} else {
-		var execCtl common.ExecutionControl
-		err = json.Unmarshal([]byte(execCtlString), &execCtl)
-		if err != nil {
-			log.Errorf("Error unmarshalling '%s': %v", execCtlString, err)
-			return
-		}
-		we.ExecutionControl = &execCtl
-		log.Infof("Execution control set from API: %v", *we.ExecutionControl)
-	}
-}
-
-// monitorDeadline checks to see if we exceeded the deadline for the step and
-// terminates the main container if we did
-func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string, annotationsUpdate <-chan struct{}) {
 	log.Infof("Starting deadline monitor")
 	for {
 		select {
 		case <-ctx.Done():
 			log.Info("Deadline monitor stopped")
 			return
-		case <-annotationsUpdate:
-		default:
-			// TODO(jessesuen): we do not effectively use the annotations update channel yet. Ideally, we
-			// should optimize this logic so that we use some type of mutable timer against the deadline
-			// value instead of polling.
-			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
-				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
-					var message string
-
-					// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
-					// timeouts as a failure and the pod should be annotated with that error
-					if we.ExecutionControl.Deadline.IsZero() {
-						message = "terminated"
-					} else {
-						message = "Step exceeded its deadline"
-					}
-					log.Info(message)
-					util.WriteTeriminateMessage(message)
-					log.Infof("Killing main container")
-					terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
-					err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration)
-					if err != nil {
-						log.Warnf("Failed to kill main container: %v", err)
-					}
-					return
-				}
+		case <-sigs:
+			util.WriteTeriminateMessage("terminated or step exceeded its deadline")
+			log.Infof("Killing main container")
+			terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
+			if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
+				log.Warnf("Failed to kill main container: %v", err)
 			}
-			time.Sleep(1 * time.Second)
+			return
 		}
 	}
 }
@@ -1097,105 +973,4 @@ func (we *WorkflowExecutor) Init() error {
 		return i.Init(we.Template)
 	}
 	return nil
-}
-
-// LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file
-func (we *WorkflowExecutor) LoadExecutionControl() error {
-	err := unmarshalAnnotationField(we.PodAnnotationsPath, common.AnnotationKeyExecutionControl, &we.ExecutionControl)
-	if err != nil {
-		if errors.IsCode(errors.CodeNotFound, err) {
-			return nil
-		}
-		return err
-	}
-	return nil
-}
-
-// LoadTemplate reads the template definition from the the Kubernetes downward api annotations volume file
-func LoadTemplate(path string) (*wfv1.Template, error) {
-	var tmpl wfv1.Template
-	err := unmarshalAnnotationField(path, common.AnnotationKeyTemplate, &tmpl)
-	if err != nil {
-		return nil, err
-	}
-	return &tmpl, nil
-}
-
-// unmarshalAnnotationField unmarshals the value of an annotation key into the supplied interface
-// from the downward api annotation volume file
-func unmarshalAnnotationField(filePath string, key string, into interface{}) error {
-	// Read the annotation file
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Errorf("ERROR opening annotation file from %s", filePath)
-		return errors.InternalWrapError(err)
-	}
-
-	defer func() {
-		_ = file.Close()
-	}()
-	reader := bufio.NewReader(file)
-
-	// Prefix of key property in the annotation file
-	prefix := fmt.Sprintf("%s=", key)
-
-	for {
-		// Read line-by-line
-		var buffer bytes.Buffer
-		var l []byte
-		var isPrefix bool
-		for {
-			l, isPrefix, err = reader.ReadLine()
-			buffer.Write(l)
-			// If we've reached the end of the line, stop reading.
-			if !isPrefix {
-				break
-			}
-			// If we're just at the EOF, break
-			if err != nil {
-				break
-			}
-		}
-
-		line := buffer.String()
-
-		// Read property
-		if strings.HasPrefix(line, prefix) {
-			// Trim the prefix
-			content := strings.TrimPrefix(line, prefix)
-
-			// This part is a bit tricky in terms of unmarshalling
-			// The content in the file will be something like,
-			// `"{\"type\":\"container\",\"inputs\":{},\"outputs\":{}}"`
-			// which is required to unmarshal twice
-
-			// First unmarshal to a string without escaping characters
-			var fieldString string
-			err = json.Unmarshal([]byte(content), &fieldString)
-			if err != nil {
-				log.Errorf("Error unmarshalling annotation into string, %s, %v\n", content, err)
-				return errors.InternalWrapError(err)
-			}
-
-			// Second unmarshal to a template
-			err = json.Unmarshal([]byte(fieldString), into)
-			if err != nil {
-				log.Errorf("Error unmarshalling annotation into datastructure, %s, %v\n", fieldString, err)
-				return errors.InternalWrapError(err)
-			}
-			return nil
-		}
-
-		// The end of the annotation file
-		if err == io.EOF {
-			break
-		}
-	}
-
-	if err != io.EOF {
-		return errors.InternalWrapError(err)
-	}
-
-	// If we reach here, then the key does not exist in the file
-	return errors.Errorf(errors.CodeNotFound, "Key %s not found in annotation file: %s", key, filePath)
 }

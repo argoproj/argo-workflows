@@ -16,6 +16,7 @@ type (
 
 const (
 	deletePod           podCleanupAction = "deletePod"
+	deadlineExceeded    podCleanupAction = "deadlineExceeded"
 	labelPodCompleted   podCleanupAction = "labelPodCompleted"
 	terminateContainers podCleanupAction = "terminateContainers"
 	killContainers      podCleanupAction = "killContainers"

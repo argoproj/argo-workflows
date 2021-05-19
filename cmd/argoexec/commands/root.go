@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+
 	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
@@ -32,11 +34,10 @@ const (
 )
 
 var (
-	clientConfig       clientcmd.ClientConfig
-	logLevel           string // --loglevel
-	glogLevel          int    // --gloglevel
-	logFormat          string // --log-format
-	podAnnotationsPath string // --pod-annotations
+	clientConfig clientcmd.ClientConfig
+	logLevel     string // --loglevel
+	glogLevel    int    // --gloglevel
+	logFormat    string // --log-format
 )
 
 func init() {
@@ -66,7 +67,6 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
-	command.PersistentFlags().StringVar(&podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, "Pod annotations file from k8s downward API")
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
@@ -97,8 +97,9 @@ func initExecutor() *executor.WorkflowExecutor {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
 
-	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
-	checkErr(err)
+	tmpl := &wfv1.Template{}
+	tmplString := os.Getenv(common.EnvVarTemplate)
+	checkErr(json.Unmarshal([]byte(tmplString), tmpl))
 
 	var cre executor.ContainerRuntimeExecutor
 	switch executorType {
@@ -115,9 +116,8 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, podAnnotationsPath, cre, *tmpl)
-	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
-	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
+	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl)
+	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, tmplString)
 	return &wfExecutor
 }
 
