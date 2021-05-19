@@ -323,7 +323,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	for i, c := range pod.Spec.Containers {
 		c.Env = append(c.Env,
 			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
-			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(c.Name == common.MainContainerName && opts.includeScriptOutput)},
+			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		)
 		pod.Spec.Containers[i] = c
 	}
@@ -679,9 +679,7 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts
 		pod.ObjectMeta.Labels[k] = v
 	}
 
-	execCtl := common.ExecutionControl{
-		IncludeScriptOutput: opts.includeScriptOutput,
-	}
+	execCtl := common.ExecutionControl{}
 
 	if woc.workflowDeadline != nil {
 		execCtl.Deadline = woc.workflowDeadline
