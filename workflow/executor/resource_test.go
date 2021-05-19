@@ -61,7 +61,7 @@ func TestResourcePatchFlags(t *testing.T) {
 	manifestPath := "../../examples/hello-world.yaml"
 	buff, err := ioutil.ReadFile(manifestPath)
 	assert.NoError(t, err)
-	fakeFlags := []string{"patch", "--type", "strategic", "-p", string(buff), "-o", "json"}
+	fakeFlags := []string{"patch", "--type", "strategic", "-p", string(buff), "-f", manifestPath, "-o", "json"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
