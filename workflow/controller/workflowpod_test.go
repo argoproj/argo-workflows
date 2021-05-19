@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -1350,14 +1349,13 @@ func TestPropagateMaxDuration(t *testing.T) {
 	// Ensure that volume mount is added when artifact is provided
 	tmpl := unmarshalTemplate(propagateMaxDuration)
 	woc := newWoc()
-	deadline := time.Now()
+	deadline := time.Time{}.Add(time.Second)
 	ctx := context.Background()
 	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{executionDeadline: deadline})
 	assert.NoError(t, err)
-	out, err := json.Marshal(map[string]time.Time{"deadline": deadline})
-	if assert.NoError(t, err) {
-		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
-	}
+	v, err := getPodDeadline(pod)
+	assert.NoError(t, err)
+	assert.Equal(t, v, deadline)
 }
 
 var wfWithPodMetadata = `

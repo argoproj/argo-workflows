@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 
@@ -98,8 +99,11 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 
 	tmpl := &wfv1.Template{}
-	tmplString := os.Getenv(common.EnvVarTemplate)
-	checkErr(json.Unmarshal([]byte(tmplString), tmpl))
+	checkErr(json.Unmarshal([]byte(os.Getenv(common.EnvVarTemplate)), tmpl))
+
+	includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
+	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
+	checkErr(err)
 
 	var cre executor.ContainerRuntimeExecutor
 	switch executorType {
@@ -116,8 +120,15 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl)
-	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, tmplString)
+	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline)
+	log.
+		WithField("version", version.String()).
+		WithField("namespace", namespace).
+		WithField("podName", podName).
+		WithField("template", wfv1.MustMarshallJSON(template)).
+		WithField("includeScriptOutput", includeScriptOutput).
+		WithField("deadline", deadline).
+		Info("Executor initialized")
 	return &wfExecutor
 }
 

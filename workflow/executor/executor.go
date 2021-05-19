@@ -16,9 +16,8 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"syscall"
 	"time"
-
-	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
@@ -62,12 +61,14 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	PodName         string
-	Template        wfv1.Template
-	ClientSet       kubernetes.Interface
-	RESTClient      rest.Interface
-	Namespace       string
-	RuntimeExecutor ContainerRuntimeExecutor
+	PodName             string
+	Template            wfv1.Template
+	includeScriptOutput bool
+	deadline            time.Time
+	ClientSet           kubernetes.Interface
+	RESTClient          rest.Interface
+	Namespace           string
+	RuntimeExecutor     ContainerRuntimeExecutor
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -107,17 +108,19 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
 	return WorkflowExecutor{
-		PodName:            podName,
-		ClientSet:          clientset,
-		RESTClient:         restClient,
-		Namespace:          namespace,
-		RuntimeExecutor:    cre,
-		Template:           template,
-		memoizedConfigMaps: map[string]string{},
-		memoizedSecrets:    map[string][]byte{},
-		errors:             []error{},
+		PodName:             podName,
+		ClientSet:           clientset,
+		RESTClient:          restClient,
+		Namespace:           namespace,
+		RuntimeExecutor:     cre,
+		Template:            template,
+		includeScriptOutput: includeScriptOutput,
+		deadline:            deadline,
+		memoizedConfigMaps:  map[string]string{},
+		memoizedSecrets:     map[string][]byte{},
+		errors:              []error{},
 	}
 }
 
@@ -671,7 +674,7 @@ func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Contex
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
-	if os.Getenv(common.EnvVarIncludeScriptOutput) == "false" {
+	if !we.includeScriptOutput {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
@@ -927,8 +930,16 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
 func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string) {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os_specific.GetOsSignal())
+	terminate := make(chan os.Signal, 1)
+	signal.Notify(terminate, syscall.SIGTERM)
+
+	deadlineExceeded := make(chan bool, 1)
+	if !we.deadline.IsZero() {
+		t := time.AfterFunc(time.Until(we.deadline), func() {
+			deadlineExceeded <- true
+		})
+		defer t.Stop()
+	}
 
 	log.Infof("Starting deadline monitor")
 	for {
@@ -936,15 +947,22 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		case <-ctx.Done():
 			log.Info("Deadline monitor stopped")
 			return
-		case <-sigs:
-			util.WriteTeriminateMessage("terminated or step exceeded its deadline")
-			log.Infof("Killing main container")
-			terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
-			if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
-				log.Warnf("Failed to kill main container: %v", err)
-			}
+		case <-deadlineExceeded:
+			we.killMainContainer(ctx, containerNames, "Step exceeded its deadline")
+			return
+		case <-terminate:
+			we.killMainContainer(ctx, containerNames, "terminated")
 			return
 		}
+	}
+}
+
+func (we *WorkflowExecutor) killMainContainer(ctx context.Context, containerNames []string, message string) {
+	log.Infof("Killing main container: %s", message)
+	util.WriteTeriminateMessage(message)
+	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
+	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
+		log.Warnf("Failed to kill main container: %v", err)
 	}
 }
 

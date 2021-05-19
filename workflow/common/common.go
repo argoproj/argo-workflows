@@ -30,13 +30,14 @@ const (
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
-	// DEPRECATED: in v3.2
+	// DEPRECATED: only for legacy pods
 	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
 	// AnnotationKeyExecutionControl is the pod metadata annotation key containing execution control parameters
 	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
 	// signal the executors of daemoned containers that it should terminate.
+	// DEPRECATED: only for legacy pods
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
@@ -98,6 +99,8 @@ const (
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
+	// EnvVarDeadline is the deadline for the pod
+	EnvVarDeadline = "ARGO_DEADLINE"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template
@@ -177,6 +180,7 @@ const (
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container
+// DEPRECATED: only for legacy pods
 type ExecutionControl struct {
 	// Deadline is a max timestamp in which an executor can run the container before terminating it
 	// It is used to signal the executor to terminate a daemoned container. In the future it will be
