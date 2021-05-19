@@ -1944,6 +1944,9 @@ type GitArtifact struct {
 
 	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
 	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty" protobuf:"varint,8,opt,name=insecureIgnoreHostKey"`
+
+	// DisableSubmodules disables submodules during git clone
+	DisableSubmodules bool `json:"disableSubmodules,omitempty" protobuf:"varint,9,opt,name=disableSubmodules"`
 }
 
 func (g *GitArtifact) HasLocation() bool {

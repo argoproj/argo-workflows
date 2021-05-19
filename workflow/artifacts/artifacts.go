@@ -57,6 +57,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 	if art.Git != nil {
 		gitDriver := git.ArtifactDriver{
 			InsecureIgnoreHostKey: art.Git.InsecureIgnoreHostKey,
+			DisableSubmodules:     art.Git.DisableSubmodules,
 		}
 		if art.Git.UsernameSecret != nil {
 			usernameBytes, err := ri.GetSecret(ctx, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
