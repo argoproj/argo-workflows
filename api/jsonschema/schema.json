@@ -3624,6 +3624,10 @@
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer"
         },
+        "disableSubmodules": {
+          "description": "DisableSubmodules disables submodules during git clone",
+          "type": "boolean"
+        },
         "fetch": {
           "description": "Fetch specifies a number of refs that should be fetched before checkout",
           "items": {
