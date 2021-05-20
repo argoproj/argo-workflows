@@ -12,7 +12,7 @@ func NewDataCommand() *cobra.Command {
 		Short: "Process data",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
-			wfExecutor := initExecutor()
+			wfExecutor := initExecutor(ctx)
 			return wfExecutor.Data(ctx)
 		},
 	}

@@ -32,7 +32,7 @@ func NewResourceCommand() *cobra.Command {
 }
 
 func execResource(ctx context.Context, action string) error {
-	wfExecutor := initExecutor()
+	wfExecutor := initExecutor(ctx)
 	defer wfExecutor.HandleError(ctx)
 	err := wfExecutor.StageFiles()
 	if err != nil {

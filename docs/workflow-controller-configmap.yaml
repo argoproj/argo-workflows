@@ -135,6 +135,9 @@ data:
   # disable the TLS verification of the kubelet executor (default: false)
   kubeletInsecure: false
 
+  # disable mounting a DownwardAPI volume at the executor and using it for getting pod annotations
+  downwardAPIUnavailable: false
+
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
   # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
   images: |

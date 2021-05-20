@@ -70,6 +70,7 @@ type WorkflowExecutor struct {
 	PodAnnotationsPath string
 	ExecutionControl   *common.ExecutionControl
 	RuntimeExecutor    ContainerRuntimeExecutor
+	UseDownwardAPI     bool
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -109,7 +110,7 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, useDownwardAPI bool) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
 		ClientSet:          clientset,
@@ -117,7 +118,7 @@ func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podN
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
-		Template:           template,
+		UseDownwardAPI:     useDownwardAPI,
 		memoizedConfigMaps: map[string]string{},
 		memoizedSecrets:    map[string][]byte{},
 		errors:             []error{},
@@ -928,6 +929,25 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	return nil
 }
 
+func pollChanges(ctx context.Context, pollInterval time.Duration) <-chan struct{} {
+	res := make(chan struct{})
+	go func() {
+		defer close(res)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			time.Sleep(pollInterval)
+			res <- struct{}{}
+		}
+	}()
+	return res
+}
+
 func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath string) <-chan struct{} {
 	res := make(chan struct{})
 	go func() {
@@ -970,15 +990,24 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os_specific.GetOsSignal())
 
-	err := we.LoadExecutionControl() // this is much cheaper than doing `get pod`
-	if err != nil {
-		log.Errorf("Failed to reload execution control from annotations: %v", err)
+	if !we.UseDownwardAPI {
+		we.setExecutionControl(ctx)
+	} else {
+		err := we.LoadExecutionControl() // this is much cheaper than doing `get pod`
+		if err != nil {
+			log.Errorf("Failed to reload execution control from annotations: %v", err)
+		}
 	}
 
 	// Create a channel which will notify a listener on new updates to the annotations
 	annotationUpdateCh := make(chan struct{})
 
-	annotationChanges := watchFileChanges(ctx, 10*time.Second, we.PodAnnotationsPath)
+	var annotationChanges <-chan struct{}
+	if !we.UseDownwardAPI {
+		annotationChanges = pollChanges(ctx, 10*time.Second)
+	} else {
+		annotationChanges = watchFileChanges(ctx, 10*time.Second, we.PodAnnotationsPath)
+	}
 	go func() {
 		for {
 			select {
@@ -993,11 +1022,15 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 				annotationUpdateCh <- struct{}{}
 				we.setExecutionControl(ctx)
 			case <-annotationChanges:
-				log.Infof("%s updated", we.PodAnnotationsPath)
-				err := we.LoadExecutionControl()
-				if err != nil {
-					log.Warnf("Failed to reload execution control from annotations: %v", err)
-					continue
+				if !we.UseDownwardAPI {
+					we.setExecutionControl(ctx)
+				} else {
+					log.Infof("%s updated", we.PodAnnotationsPath)
+					err := we.LoadExecutionControl()
+					if err != nil {
+						log.Warnf("Failed to reload execution control from annotations: %v", err)
+						continue
+					}
 				}
 				if we.ExecutionControl != nil {
 					log.Infof("Execution control reloaded from annotations: %v", *we.ExecutionControl)
@@ -1111,14 +1144,31 @@ func (we *WorkflowExecutor) LoadExecutionControl() error {
 	return nil
 }
 
-// LoadTemplate reads the template definition from the the Kubernetes downward api annotations volume file
-func LoadTemplate(path string) (*wfv1.Template, error) {
+// LoadTemplate reads the template definition from the the Kubernetes downward api annotations volume file or API and sets it
+func (we *WorkflowExecutor) LoadTemplate(ctx context.Context) error {
 	var tmpl wfv1.Template
-	err := unmarshalAnnotationField(path, common.AnnotationKeyTemplate, &tmpl)
-	if err != nil {
-		return nil, err
+	if !we.UseDownwardAPI {
+		pod, err := we.getPod(ctx)
+		if err != nil {
+			log.Errorf("Failed to get pod template from API server: %v", err)
+			return err
+		}
+		annotations := pod.GetAnnotations()
+		template := annotations[common.AnnotationKeyTemplate]
+		err = json.Unmarshal([]byte(template), &tmpl)
+		if err != nil {
+			log.Errorf("Failed to unmarshal pod template from API server: %v", err)
+			return err
+		}
+		we.Template = tmpl;
+		return nil
 	}
-	return &tmpl, nil
+	err := unmarshalAnnotationField(we.PodAnnotationsPath, common.AnnotationKeyTemplate, &tmpl)
+	if err != nil {
+		return err
+	}
+	we.Template = tmpl;
+	return nil
 }
 
 // unmarshalAnnotationField unmarshals the value of an annotation key into the supplied interface

@@ -117,6 +117,8 @@ const (
 	EnvVarKubeletPort = "ARGO_KUBELET_PORT"
 	// EnvVarKubeletInsecure is used to disable the TLS verification
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
+	// EnvVarDownwardAPIUnavailable is used to disable the use of the DownwardAPI volume for getting pod annotations
+	EnvVarDownwardAPIUnavailable = "ARGO_DOWNWARD_API_UNAVAILABLE"
 	// EnvVarArgoTrace is used enable tracing statements in Argo components
 	EnvVarArgoTrace = "ARGO_TRACE"
 

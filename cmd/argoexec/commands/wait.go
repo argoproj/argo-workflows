@@ -25,7 +25,7 @@ func NewWaitCommand() *cobra.Command {
 }
 
 func waitContainer(ctx context.Context) error {
-	wfExecutor := initExecutor()
+	wfExecutor := initExecutor(ctx)
 	defer wfExecutor.HandleError(ctx) // Must be placed at the bottom of defers stack.
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)

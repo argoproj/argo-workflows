@@ -52,6 +52,9 @@ type Config struct {
 	// KubeletInsecure disable the TLS verification of the kubelet containerRuntimeExecutor, default to false
 	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
 
+	// DownwardAPIUnvailable disables mounting a DownwardAPI volume at the executor and using it for getting pod annotations, default to false
+	DownwardAPIUnavailable bool `json:"downwardAPIUnavailable,omitempty"`
+
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
