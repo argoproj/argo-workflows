@@ -87,6 +87,40 @@ func TestResourcePatchFlags(t *testing.T) {
 	assert.Equal(t, args, fakeFlags)
 }
 
+// TestResourcePatchFlagsJson tests whether Resource Flags
+// are properly passed to `kubectl patch` command in json patches
+func TestResourcePatchFlagsJson(t *testing.T) {
+	fakeClientset := fake.NewSimpleClientset()
+	manifestPath := "../../examples/hello-world.yaml"
+	buff, err := ioutil.ReadFile(manifestPath)
+	assert.NoError(t, err)
+	fakeFlags := []string{"patch", "--type", "json", "-p", string(buff), "-o", "json"}
+
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+
+	template := wfv1.Template{
+		Resource: &wfv1.ResourceTemplate{
+			Action:        "patch",
+			Flags:         fakeFlags,
+			MergeStrategy: "json",
+		},
+	}
+
+	we := WorkflowExecutor{
+		PodName:            fakePodName,
+		Template:           template,
+		ClientSet:          fakeClientset,
+		Namespace:          fakeNamespace,
+		PodAnnotationsPath: fakeAnnotations,
+		ExecutionControl:   nil,
+		RuntimeExecutor:    &mockRuntimeExecutor,
+	}
+	args, err := we.getKubectlArguments("patch", manifestPath, nil)
+
+	assert.NoError(t, err)
+	assert.Equal(t, args, fakeFlags)
+}
+
 // TestResourceConditionsMatching tests whether the JSON response match
 // with either success or failure conditions.
 func TestResourceConditionsMatching(t *testing.T) {
