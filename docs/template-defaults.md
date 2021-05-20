@@ -24,7 +24,7 @@ spec:
     container:
       image: docker/whalesay:latest
 ```
-[template defaults example](examples/template-defaults.yaml)
+[template defaults example](../examples/template-defaults.yaml)
 
 ## Configuring `templateDefaults` in Controller Level
 Operator can configure the `templateDefaults` in [workflowDefaults](default-workflow-specs.md). This `templateDefault` will be applied to all the workflow which runs on the controller.
