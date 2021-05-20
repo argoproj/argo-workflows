@@ -62,7 +62,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             ? 'map'
             : '';
 
-        const nodeLabel = status.replicas !== 1 ? spec.name + ' (x' + status.replicas + ')' : spec.name;
+        const nodeLabel = status.replicas !== 1 ? spec.name + ' (x' + (status.replicas || 0) + ')' : spec.name;
         g.nodes.set(stepId, {genre: type, label: nodeLabel, icon: stepIcon(type), classNames: status.phase});
 
         const classNames = status.phase === 'Running' ? 'flow' : '';

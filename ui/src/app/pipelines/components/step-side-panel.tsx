@@ -66,7 +66,7 @@ export const StepSidePanel = ({
                                     <h5>Source Statuses</h5>
                                     {step.status.sourceStatuses ? (
                                         Object.entries(step.status.sourceStatuses).map(([name, x]) => (
-                                            <div className='white-box'>
+                                            <div className='white-box' key={name}>
                                                 <p>{name}</p>
                                                 <div className='white-box__details'>
                                                     <div className='row white-box__details-row'>
@@ -75,15 +75,20 @@ export const StepSidePanel = ({
                                                     </div>
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Message</div>
-                                                        <div className='columns small-1'>{Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0)}</div>
+                                                        <div className='columns small-1' title='Total'>
+                                                            {Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0)}
+                                                        </div>
+                                                        <div className='columns small-1' title='Rate'>
+                                                            {Object.values(x.metrics || {}).reduce((a, b) => a + b.rate || 0, 0)} TPS
+                                                        </div>
                                                         <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
-                                                        <div className='columns small-3'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
+                                                        <div className='columns small-2'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                     </div>
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Errors</div>
-                                                        <div className='columns small-1'>{Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0)}</div>
+                                                        <div className='columns small-2'>{Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0)}</div>
                                                         <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
-                                                        <div className='columns small-3'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
+                                                        <div className='columns small-2'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -94,20 +99,22 @@ export const StepSidePanel = ({
                                     <h5>Sink Statues</h5>
                                     {step.status.sinkStatuses ? (
                                         Object.entries(step.status.sinkStatuses).map(([name, x]) => (
-                                            <div className='white-box'>
+                                            <div className='white-box' key={name}>
                                                 <p>{name}</p>
                                                 <div className='white-box__details'>
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Message</div>
-                                                        <div className='columns small-1'>{Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0)}</div>
-                                                        <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
+                                                        <div className='columns small-2' title='Total'>
+                                                            {Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0)}
+                                                        </div>
+                                                        <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                         <div className='columns small-3'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                     </div>
                                                     <div className='row white-box__details-row'>
                                                         <div className='columns small-2'>Errors</div>
-                                                        <div className='columns small-1'>{Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0)}</div>
+                                                        <div className='columns small-2'>{Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0)}</div>
                                                         <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
-                                                        <div className='columns small-3'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
+                                                        <div className='columns small-2'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
                                                     </div>
                                                 </div>
                                             </div>

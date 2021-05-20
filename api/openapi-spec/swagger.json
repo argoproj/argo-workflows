@@ -4088,7 +4088,7 @@
       "properties": {
         "message": {
           "type": "string",
-          "title": "+kubebuilder:validation:MaxLength=32"
+          "title": "+kubebuilder:validation:MaxLength=64"
         },
         "time": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
@@ -4225,7 +4225,7 @@
       "properties": {
         "data": {
           "type": "string",
-          "title": "+kubebuilder:validation:MaxLength=32"
+          "title": "+kubebuilder:validation:MaxLength=64"
         },
         "time": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"

@@ -123,7 +123,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Error": {
       "properties": {
         "message": {
-          "title": "+kubebuilder:validation:MaxLength=32",
+          "title": "+kubebuilder:validation:MaxLength=64",
           "type": "string"
         },
         "time": {
@@ -260,7 +260,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message": {
       "properties": {
         "data": {
-          "title": "+kubebuilder:validation:MaxLength=32",
+          "title": "+kubebuilder:validation:MaxLength=64",
           "type": "string"
         },
         "time": {
