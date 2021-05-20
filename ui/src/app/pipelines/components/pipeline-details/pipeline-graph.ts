@@ -34,7 +34,6 @@ const pendingSymbol = '🕑';
 const errorSymbol = '⚠️ ';
 const totalSymbol = 'x';
 
-const emptySet = '∅';
 export const graph = (pipeline: Pipeline, steps: Step[]) => {
     const g = new Graph();
 
@@ -78,13 +77,9 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             );
             const label =
                 (metrics.errors > 0 ? errorSymbol + metrics.errors : '') +
-                (ss.pending ? pendingSymbol + ss.pending : '') +
-                ' ' +
-                totalSymbol +
-                (metrics.total || '?') +
-                ' (' +
-                ((ss.lastMessage || {}).data || emptySet) +
-                ')';
+                (ss.pending ? ' ' + pendingSymbol + ss.pending : '') +
+                (metrics.total ? ' ' + totalSymbol + metrics.total : '') +
+                (ss.lastMessage ? ' (' + ss.lastMessage.data + ')' : '');
             if (x.cron) {
                 const cronId = 'cron/' + stepId + '/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
@@ -116,7 +111,9 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 {total: 0, errors: 0}
             );
             const label =
-                (metrics.errors > 0 ? errorSymbol + metrics.errors : '') + ' ' + totalSymbol + (metrics.total || '?') + ' (' + ((ss.lastMessage || {}).data || emptySet) + ')';
+                (metrics.errors > 0 ? errorSymbol + metrics.errors : '') +
+                (metrics.total ? ' ' + totalSymbol + metrics.total : '') +
+                (ss.lastMessage ? ' (' + ss.lastMessage.data + ')' : '');
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
