@@ -3,6 +3,7 @@ import * as React from 'react';
 import {Step} from '../../../models/step';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
 import {Phase} from '../../shared/components/phase';
+import {SparkMeter} from '../../shared/components/spark-meter';
 import {TickMeter} from '../../shared/components/tick-meter';
 import {Timestamp} from '../../shared/components/timestamp';
 import {EventsPanel} from '../../workflows/components/events-panel';
@@ -67,40 +68,49 @@ export const StepSidePanel = ({
                                     <h5>Source Statuses</h5>
                                     {step.status.sourceStatuses ? (
                                         Object.entries(step.status.sourceStatuses).map(([name, x]) => {
-                                            const total = Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0);
-                                            const rate = Object.values(x.metrics || {}).reduce((a, b) => a + b.rate || 0, 0);
-                                            const errors = Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0);
+                                            const total = Object.values(x.metrics || {})
+                                                .filter(m => m.total)
+                                                .reduce((a, b) => a + b.total, 0);
+                                            const rate = Object.values(x.metrics || {})
+                                                .filter(m => m.rate)
+                                                .reduce((a, b) => a + b.rate, 0);
+                                            const errors = Object.values(x.metrics || {})
+                                                .filter(m => m.errors)
+                                                .reduce((a, b) => a + b.errors, 0);
                                             return (
                                                 <div className='white-box' key={name}>
                                                     <p>{name}</p>
                                                     <div className='white-box__details'>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-1'>Pending</div>
-                                                            <div className='columns small-11'>
+                                                            <div className='columns small-2'>Pending</div>
+                                                            <div className='columns small-2'>
                                                                 <TickMeter value={x.pending || 0} />
+                                                            </div>
+                                                            <div className='columns small-8'>
+                                                                <SparkMeter value={x.pending} />
                                                             </div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-1'>Message</div>
+                                                            <div className='columns small-2'>Message</div>
                                                             <div className='columns small-2' title='Total'>
                                                                 <TickMeter value={total} />
                                                             </div>
-                                                            <div className='columns small-1' title='Rate'>
+                                                            <div className='columns small-2' title='Rate'>
                                                                 <TickMeter value={rate} /> <small>TPS</small>
                                                             </div>
-                                                            <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
-                                                            <div className='columns small-2'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
+                                                            <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
+                                                            <div className='columns small-1'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-1'>Errors</div>
+                                                            <div className='columns small-2'>Errors</div>
                                                             <div className='columns small-2'>
                                                                 <TickMeter value={errors} />
                                                             </div>
-                                                            <div className='columns small-1'>
+                                                            <div className='columns small-2'>
                                                                 <TickMeter value={Math.floor((10000 * errors) / total) / 100} />%
                                                             </div>
-                                                            <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
-                                                            <div className='columns small-2'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
+                                                            <div className='columns small-5'>{x.lastError ? x.lastError.message : '-'}</div>
+                                                            <div className='columns small-1'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -112,31 +122,35 @@ export const StepSidePanel = ({
                                     <h5>Sink Statues</h5>
                                     {step.status.sinkStatuses ? (
                                         Object.entries(step.status.sinkStatuses).map(([name, x]) => {
-                                            const total = Object.values(x.metrics || {}).reduce((a, b) => a + b.total || 0, 0);
-                                            const errors = Object.values(x.metrics || {}).reduce((a, b) => a + b.errors || 0, 0);
+                                            const total = Object.values(x.metrics || {})
+                                                .filter(m => m.total)
+                                                .reduce((a, b) => a + b.total, 0);
+                                            const errors = Object.values(x.metrics || {})
+                                                .filter(m => m.errors)
+                                                .reduce((a, b) => a + b.errors, 0);
                                             return (
                                                 <div className='white-box' key={name}>
                                                     <p>{name}</p>
                                                     <div className='white-box__details'>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-1'>Message</div>
+                                                            <div className='columns small-2'>Message</div>
                                                             <div className='columns small-2' title='Total'>
                                                                 <TickMeter value={total} />
                                                             </div>
-                                                            <div className='columns small-1' />
-                                                            <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
-                                                            <div className='columns small-2'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
+                                                            <div className='columns small-2' />
+                                                            <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
+                                                            <div className='columns small-1'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-1'>Errors</div>
+                                                            <div className='columns small-2'>Errors</div>
                                                             <div className='columns small-2'>
                                                                 <TickMeter value={errors} />
                                                             </div>
-                                                            <div className='columns small-1'>
+                                                            <div className='columns small-2'>
                                                                 <TickMeter value={Math.floor((10000 * errors) / total) / 100} />%
                                                             </div>
-                                                            <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
-                                                            <div className='columns small-2'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
+                                                            <div className='columns small-5'>{x.lastError ? x.lastError.message : '-'}</div>
+                                                            <div className='columns small-1'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
                                                         </div>
                                                     </div>
                                                 </div>
