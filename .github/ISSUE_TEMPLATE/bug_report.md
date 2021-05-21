@@ -13,6 +13,10 @@ What Kubernetes provider are you using?
 
 What version of Argo Workflows are you running? 
 
+What executor are you running? Docker/K8SAPI/Kubelet/PNS/Emissary
+
+Did this work in a previous version? I.e. is it a regression?
+
 ```yaml
 Paste a workflow that reproduces the bug, including status:
 kubectl get wf -o yaml ${workflow} 
@@ -20,7 +24,12 @@ kubectl get wf -o yaml ${workflow}
 
 ```
 Paste the logs from the workflow controller:
-kubectl logs -n argo $(kubectl get pods -l app=workflow-controller -n argo -o name) | grep ${workflow}
+kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
+```
+
+```
+Paste the logs from your workflow's wait container:
+kubectl logs -c wait -l workflows.argoproj.io/workflow=${workflow}
 ```
 
 ---
