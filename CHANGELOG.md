@@ -1,5 +1,30 @@
 # Changelog
 
+## v3.1.0-rc6 (2021-05-21)
+
+ * [82b38150](https://github.com/argoproj/argo-workflows/commit/82b3815015652bb0df529a34dc6f6363608c3b09) Merge branch 'master' into release-3.1
+ * [e6e8dec9](https://github.com/argoproj/argo-workflows/commit/e6e8dec95ca17da555a1ac94cbbc9f39351939a9) docs: Fix typo on examples page, add link to GH directory (#5961)
+ * [67a38e33](https://github.com/argoproj/argo-workflows/commit/67a38e33ed1a4d33085c9f566bf64b8b15c8199e) feat: add disableSubmodules for git artifacts (#5910)
+ * [4dd8d4b9](https://github.com/argoproj/argo-workflows/commit/4dd8d4b9894043cb7e1ce54e725d736d2d5f1e63) docs: Update code of conduct link. (#5872)
+ * [7b54b182](https://github.com/argoproj/argo-workflows/commit/7b54b182cfec367d876aead36ae03a1a16632527) small fixes of spelling mistakes (#5886)
+ * [edb5933a](https://github.com/argoproj/argo-workflows/commit/edb5933abdd243f12bafd752ea34ff1d45cfc5b3) docs: fixed typo (#5890)
+ * [b42c3e2f](https://github.com/argoproj/argo-workflows/commit/b42c3e2ffb6e158b8c7d755271852ebdca416ea2) docs: correct workflow-pod-security-context.md (#5949)
+ * [76612794](https://github.com/argoproj/argo-workflows/commit/7661279417d6b4a89e8c40990fd4c9cb79933e38) docs: updated CHANGELOG.md (#5945)
+ * [56b71d07](https://github.com/argoproj/argo-workflows/commit/56b71d07d91a5aae05b087577f1b47c2acf745df) fix(controller): Revert cb9676e88857193b762b417f2c45b38e2e0967f9. Fixes #5852 (#5933)
+ * [8cb0e5c7](https://github.com/argoproj/argo-workflows/commit/8cb0e5c7d316e2741abbf776ad6bab867285ecfd) docs: Correct the order of versions in the CHANGELOG.md (#5941)
+ * [3659e679](https://github.com/argoproj/argo-workflows/commit/3659e679e7d1fcc97427d617c853e16d8e3657d4) chore: fix whitespace issue (#5940)
+ * [f0540a9b](https://github.com/argoproj/argo-workflows/commit/f0540a9ba486d33fc6a1d4934edf281bc6ea9f44) docs: updated CHANGELOG.md (#5932)
+
+### Contributors
+
+ * Alex Collins
+ * Caelan U
+ * Johannes Olsson
+ * Lars Kerick
+ * Michael Crenshaw
+ * Zach Aller
+ * github-actions[bot]
+
 ## v3.1.0-rc5 (2021-05-17)
 
  * [a899c7e0](https://github.com/argoproj/argo-workflows/commit/a899c7e0947a00e9c4131741804a0486d5892ea2) Merge branch 'master' into release-3.1
