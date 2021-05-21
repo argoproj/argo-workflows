@@ -12,8 +12,13 @@ export const TickMeter = ({value}: {value: number}) => {
     }, [value]);
     return (
         <>
-            {change === 0 ? ' ' : change > 0 ? <i className='fas fa-caret-up' /> : <i className='fas fa-caret-down' />}
             {value}
+            {change !== 0 && (
+                <small style={{color: 'gray'}}>
+                    ({change > 0 ? '+' : ''}
+                    {change})
+                </small>
+            )}
         </>
     );
 };
