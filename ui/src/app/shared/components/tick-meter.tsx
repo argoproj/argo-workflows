@@ -12,11 +12,11 @@ export const TickMeter = ({value}: {value: number}) => {
     }, [value]);
     return (
         <>
-            {value}
+            {value.toLocaleString()}
             {change !== 0 && (
                 <small style={{color: 'gray'}}>
                     ({change > 0 ? '+' : ''}
-                    {change})
+                    {change.toLocaleString()})
                 </small>
             )}
         </>

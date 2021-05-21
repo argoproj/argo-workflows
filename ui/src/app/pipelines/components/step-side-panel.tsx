@@ -75,29 +75,29 @@ export const StepSidePanel = ({
                                                     <p>{name}</p>
                                                     <div className='white-box__details'>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-2'>Pending</div>
-                                                            <div className='columns small-10'>
+                                                            <div className='columns small-1'>Pending</div>
+                                                            <div className='columns small-11'>
                                                                 <TickMeter value={x.pending || 0} />
                                                             </div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-2'>Message</div>
-                                                            <div className='columns small-1' title='Total'>
+                                                            <div className='columns small-1'>Message</div>
+                                                            <div className='columns small-2' title='Total'>
                                                                 <TickMeter value={total} />
                                                             </div>
                                                             <div className='columns small-1' title='Rate'>
-                                                                <TickMeter value={rate} /> TPS
+                                                                <TickMeter value={rate} /> <small>TPS</small>
                                                             </div>
                                                             <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                             <div className='columns small-2'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-2'>Errors</div>
-                                                            <div className='columns small-1'>
+                                                            <div className='columns small-1'>Errors</div>
+                                                            <div className='columns small-2'>
                                                                 <TickMeter value={errors} />
                                                             </div>
                                                             <div className='columns small-1'>
-                                                                <TickMeter value={Math.floor((100 * errors) / total)} />%
+                                                                <TickMeter value={Math.floor((10000 * errors) / total) / 100} />%
                                                             </div>
                                                             <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
                                                             <div className='columns small-2'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
@@ -119,20 +119,21 @@ export const StepSidePanel = ({
                                                     <p>{name}</p>
                                                     <div className='white-box__details'>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-2'>Message</div>
+                                                            <div className='columns small-1'>Message</div>
                                                             <div className='columns small-2' title='Total'>
                                                                 <TickMeter value={total} />
                                                             </div>
-                                                            <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
-                                                            <div className='columns small-3'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
+                                                            <div className='columns small-1' />
+                                                            <div className='columns small-6'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
+                                                            <div className='columns small-2'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-2'>Errors</div>
-                                                            <div className='columns small-1'>
+                                                            <div className='columns small-1'>Errors</div>
+                                                            <div className='columns small-2'>
                                                                 <TickMeter value={errors} />
                                                             </div>
                                                             <div className='columns small-1'>
-                                                                <TickMeter value={Math.floor((100 * errors) / total)} />%
+                                                                <TickMeter value={Math.floor((10000 * errors) / total) / 100} />%
                                                             </div>
                                                             <div className='columns small-6'>{x.lastError ? x.lastError.message : '-'}</div>
                                                             <div className='columns small-2'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>
