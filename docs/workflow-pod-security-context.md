@@ -15,7 +15,6 @@ spec:
   securityContext:
     runAsNonRoot: true
     runAsUser: 8737 #; any non-root user
-    privileged: false
 ```
 
 You can configure this globally using [workflow defaults](default-workflow-specs.md).
