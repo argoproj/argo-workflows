@@ -237,6 +237,10 @@
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
         },
+        "parallel": {
+          "title": "+kubebuilder:validation:Minimum=1\n+kubebuilder:default=1",
+          "type": "integer"
+        },
         "topic": {
           "type": "string"
         },
@@ -289,6 +293,10 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics": {
       "properties": {
         "errors": {
+          "format": "uint64",
+          "type": "string"
+        },
+        "rate": {
           "format": "uint64",
           "type": "string"
         },
@@ -368,6 +376,10 @@
         },
         "natsUrl": {
           "type": "string"
+        },
+        "parallel": {
+          "title": "+kubebuilder:validation:Minimum=1\n+kubebuilder:default=1",
+          "type": "integer"
         },
         "subject": {
           "type": "string"

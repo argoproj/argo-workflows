@@ -4201,6 +4201,10 @@
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
         },
+        "parallel": {
+          "type": "integer",
+          "title": "+kubebuilder:validation:Minimum=1\n+kubebuilder:default=1"
+        },
         "topic": {
           "type": "string"
         },
@@ -4253,6 +4257,10 @@
       "type": "object",
       "properties": {
         "errors": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "rate": {
           "type": "string",
           "format": "uint64"
         },
@@ -4332,6 +4340,10 @@
         },
         "natsUrl": {
           "type": "string"
+        },
+        "parallel": {
+          "type": "integer",
+          "title": "+kubebuilder:validation:Minimum=1\n+kubebuilder:default=1"
         },
         "subject": {
           "type": "string"
