@@ -218,7 +218,7 @@ export class WorkflowsService {
     private hasArtifactLogs(workflow: Workflow, nodeId: string, container: string) {
         const node = workflow.status.nodes[nodeId];
 
-        if (!node || !node.outputs) {
+        if (!node || !node.outputs || !node.outputs.artifacts) {
             return false;
         }
 
