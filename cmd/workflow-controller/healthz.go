@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	log.WithField("age", "age").Info("healthz config")
+	log.WithField("age", age).Info("healthz config")
 }
 
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
