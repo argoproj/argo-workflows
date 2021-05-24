@@ -422,6 +422,20 @@
  * uucloud
  * wanglong001
 
+## v3.0.5 (2021-05-24)
+
+ * [98b930cb](https://github.com/argoproj/argo-workflows/commit/98b930cb1a9f4304f879e33177d1c6e5b45119b7) Update manifests to v3.0.5
+ * [f893ea68](https://github.com/argoproj/argo-workflows/commit/f893ea682f1c30619195f32b58ebc4499f318d21) feat(controller): Add liveness probe (#5875)
+ * [e64607ef](https://github.com/argoproj/argo-workflows/commit/e64607efac779113dd57a9925cd06f9017186f63) fix(controller): Empty global output param crashes (#5931)
+ * [eeb5acba](https://github.com/argoproj/argo-workflows/commit/eeb5acba4565a178cde119ab92a36b291d0b3bb8) fix(ui): ensure that the artifacts property exists before inspecting it (#5977)
+ * [49979c2f](https://github.com/argoproj/argo-workflows/commit/49979c2fa5c08602b56cb21ef5e31594a1a9ddd4) fix(controller): Revert cb9676e88857193b762b417f2c45b38e2e0967f9. Fixes #5852 (#5933)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * dherman
+
 ## v3.0.4 (2021-05-06)
 
  * [d7ebc548](https://github.com/argoproj/argo-workflows/commit/d7ebc548e30cccc6b6bfc755f69145147dbe73f2) Update manifests to v3.0.4
