@@ -2211,6 +2211,11 @@ Note that these environment variables may be removed at any time.</p>
 <td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip".</td>
 </tr>
 <tr>
+<td><code>HEALTHZ_AGE</code></td>
+<td><code>time.Duration</code></td>
+<td>How old a un-reconciled workflow is to report unhealthy. Defaults to <code>5m</code>.</td>
+</tr>
+<tr>
 <td><code>INDEX_WORKFLOW_SEMAPHORE_KEYS</code></td>
 <td><code>bool</code></td>
 <td>Whether or not to index semaphores. Defaults to <code>true</code>.</td>
