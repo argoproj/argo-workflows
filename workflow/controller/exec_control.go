@@ -36,8 +36,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
-					defer wfNodesLock.Unlock()
 					node := woc.wf.Status.Nodes[pod.Name]
+					wfNodesLock.Unlock()
 					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy()))
 					return nil
 				}
@@ -55,8 +55,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
-					defer wfNodesLock.Unlock()
 					node := woc.wf.Status.Nodes[pod.Name]
+					wfNodesLock.Unlock()
 					woc.markNodePhase(node.Name, wfv1.NodeFailed, "Step exceeded its deadline")
 					return nil
 				}
@@ -74,7 +74,10 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		}
 	}
 
-	for _, c := range woc.findTemplate(pod).GetMainContainerNames() {
+	wfNodesLock.Lock()
+	template := woc.findTemplate(pod)
+	wfNodesLock.Unlock()
+	for _, c := range template.GetMainContainerNames() {
 		if woc.GetShutdownStrategy().Enabled() {
 			if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				podExecCtl.Deadline = &time.Time{}
