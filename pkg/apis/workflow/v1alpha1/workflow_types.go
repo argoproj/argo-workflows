@@ -774,6 +774,20 @@ type ValueFrom struct {
 	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
+func (p *Parameter) HasValue() bool {
+	return p.Value != nil || p.Default != nil || p.ValueFrom != nil
+}
+
+func (p *Parameter) GetValue() string {
+	if p.Value != nil {
+		return p.Value.String()
+	}
+	if p.Default != nil {
+		return p.Default.String()
+	}
+	return ""
+}
+
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
 type SuppliedValueFrom struct{}
 
