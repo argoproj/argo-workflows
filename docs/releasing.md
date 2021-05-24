@@ -103,21 +103,7 @@ Then follow all the normal steps. You should delete the `argo` folder once the r
 
 ### 5. Release Notes
 
-Create [the release](https://github.com/argoproj/argo-workflows/releases) on GitHub. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
-
-    ght relnote v3.0.2..v3.0.3
-
-Alternatively, you can get it manually with the following commands
-
-```shell
-$ git checkout release-3.0 # Ensure we are on the release branch
-
-# Change names (v3.0.2 is the PREVIOUS release in this example)
-$ git log --pretty=format:"- %s"  v3.0.2..v3.0.3 | pbcopy  
-
-# Contributor names (v3.0.2 is the PREVIOUS release in this example)
-$ git log --pretty=format:"- %an"  v3.0.2..v3.0.3 | sort | uniq
-```
+The change log is automatically generated.
 
 The release title should be the version number (e.g. `v3.0.3`) and nothing else.
 
@@ -128,7 +114,9 @@ Release notes checklist:
 
 ### 6. Upload Binaries and SHA256 Sums To GitHub
 
-After running `make publish-relesae`, you will have the zipped binaries and SHA256 sums in your local.
+> Before v3.1
+
+After running `make publish-release`, you will have the zipped binaries and SHA256 sums in your local.
 
 Open them with:
 
@@ -159,7 +147,7 @@ Update the Homebrew formula.
 
 ```bash
 export HOMEBREW_GITHUB_API_TOKEN=$GITHUB_TOKEN
-brew bump-formula-pr argo --version 2.11.5
+brew bump-formula-pr argo --version 3.0.3
 ```
 
 Check that Homebrew was successfully updated after the PR was merged:
@@ -178,7 +166,7 @@ Update the Java SDK formula.
 ```
 git clone git@github.com:argoproj-labs/argo-client-java.git
 cd argo-client-java
-make publish VERSION=v2.11.5
+make publish VERSION=v3.0.3
 ```
 
 Check package published: [https://github.com/argoproj-labs/argo-client-java/packages](https://github.com/argoproj-labs/argo-client-java/packages)
