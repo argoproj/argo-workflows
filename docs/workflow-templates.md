@@ -207,7 +207,7 @@ This behavior has been problematic and dangerous. It causes confusion and has de
 
 > 2.9 and after
 #### Create `Workflow` from `WorkflowTemplate` Spec
-You can create `Workflow` from `WorkflowTemplate` spec using `workflowTemplateRef`. If you pass the arguments to created `Workflow`, it will be merged with WorkflowTemplate arguments 
+You can create `Workflow` from `WorkflowTemplate` spec using `workflowTemplateRef`. If you pass the arguments to created `Workflow`, it will be merged with WorkflowTemplate arguments.
 Here is an example for referring `WorkflowTemplate` as Workflow with passing `entrypoint` and `Workflow Arguments` to `WorkflowTemplate`
 ```yaml
 apiVersion: argoproj.io/v1alpha1

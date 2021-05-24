@@ -494,7 +494,9 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
-			woc.globalParams["workflow.outputs.parameters."+param.Name] = param.Value.String()
+			if param.HasValue() {
+				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
+			}
 		}
 	}
 }
@@ -963,8 +965,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			// Node will be in pending state without Pod create if Node is waiting for Synchronize lock
-			if node.Pending() && node.GetReason() == wfv1.WaitingForSyncLock {
+			if node.Pending() {
 				continue
 			}
 
@@ -1704,7 +1705,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 			// It has to be one child at least
 			if lastChildNode != nil {
-				RetryOnDifferentHost(retryNodeName)(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
+				RetryOnDifferentHost(woc.wf.NodeID(retryNodeName))(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
 			}
 
 			localParams := make(map[string]string)
@@ -2611,7 +2612,9 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 		return
 	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
-	woc.globalParams[paramName] = param.Value.String()
+	if param.HasValue() {
+		woc.globalParams[paramName] = param.GetValue()
+	}
 	wfUpdated := wfutil.AddParamToGlobalScope(woc.wf, woc.log, param)
 	if wfUpdated {
 		woc.updated = true
@@ -3247,8 +3250,7 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
 	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") ||
-		(woc.wf.Spec.Suspend != nil && woc.wf.Status.StoredWorkflowSpec.Suspend == nil) ||
-		(woc.wf.Spec.Shutdown != "" && woc.wf.Status.StoredWorkflowSpec.Shutdown == "") ||
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) ||
 		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown)
 }
 

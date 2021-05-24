@@ -93,12 +93,6 @@ const (
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
-type NodeReason string
-
-const (
-	WaitingForSyncLock NodeReason = "PendingForSyncLock"
-)
-
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -780,6 +774,20 @@ type ValueFrom struct {
 	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
+func (p *Parameter) HasValue() bool {
+	return p.Value != nil || p.Default != nil || p.ValueFrom != nil
+}
+
+func (p *Parameter) GetValue() string {
+	if p.Value != nil {
+		return p.Value.String()
+	}
+	if p.Default != nil {
+		return p.Default.String()
+	}
+	return ""
+}
+
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
 type SuppliedValueFrom struct{}
 
@@ -1329,14 +1337,6 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 		}
 	}
 	return nil
-}
-
-func (ns NodeStatus) GetReason() NodeReason {
-	// If node is waiting for synchronize lock, Pod will not be created in this scenario
-	if ns.SynchronizationStatus != nil && ns.SynchronizationStatus.Waiting != "" {
-		return WaitingForSyncLock
-	}
-	return ""
 }
 
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
@@ -1958,6 +1958,9 @@ type GitArtifact struct {
 
 	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
 	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty" protobuf:"varint,8,opt,name=insecureIgnoreHostKey"`
+
+	// DisableSubmodules disables submodules during git clone
+	DisableSubmodules bool `json:"disableSubmodules,omitempty" protobuf:"varint,9,opt,name=disableSubmodules"`
 }
 
 func (g *GitArtifact) HasLocation() bool {

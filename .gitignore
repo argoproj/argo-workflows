@@ -9,6 +9,7 @@ cmd/**/debug
 hack/**/debug
 /argo
 /argoexec
+release-notes
 debug.test
 git-ask-pass.sh
 *.iml
