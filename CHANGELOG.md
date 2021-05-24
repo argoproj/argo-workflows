@@ -422,6 +422,15 @@
  * uucloud
  * wanglong001
 
+## v3.0.6 (2021-05-24)
+
+ * [4a7004d0](https://github.com/argoproj/argo-workflows/commit/4a7004d045e2d8f5f90f9e8caaa5e44c013be9d6) Update manifests to v3.0.6
+ * [10ecb7e5](https://github.com/argoproj/argo-workflows/commit/10ecb7e5b1264c283d5b88a214431743c8da3468) fix(controller): Listen on :6060 (#5988)
+
+### Contributors
+
+ * Alex Collins
+
 ## v3.0.5 (2021-05-24)
 
  * [98b930cb](https://github.com/argoproj/argo-workflows/commit/98b930cb1a9f4304f879e33177d1c6e5b45119b7) Update manifests to v3.0.5
