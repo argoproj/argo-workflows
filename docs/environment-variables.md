@@ -16,6 +16,7 @@ Note that these environment variables may be removed at any time.
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | The requeue time for the rate limiter of the workflow queue. |
 | `EXPRESSION_TEMPLATES` | `bool` | Escape hatch to disable expression templates. Default `true`. |
 | `GZIP_IMPLEMENTATION` | `string` | The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip". |
+| `HEALTHZ_AGE` | `time.Duration` | How old a un-reconciled workflow is to report unhealthy. Defaults to `5m`. |
 | `INDEX_WORKFLOW_SEMAPHORE_KEYS` | `bool` | Whether or not to index semaphores. Defaults to `true`. |
 | `LEADER_ELECTION_IDENTITY` | `string` | The ID used for workflow controllers to elect a leader. |
 | `LEADER_ELECTION_DISABLE` | `bool` | Whether leader election should be disabled. |
