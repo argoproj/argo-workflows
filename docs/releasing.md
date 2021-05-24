@@ -93,11 +93,14 @@ Then follow all the normal steps. You should delete the `argo` folder once the r
    ```
    
 1. Check the correct versions are printed. Ensure the `GitTreeState` is `Clean`.
+
    ```sh
    $ ./dist/argo-darwin-amd64 version
    ```
 
-1. Check the manifests contain the correct tags (search for `v3.0.3`): [https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml)
+**Only in v3.0 and before**:
+
+1. Check the manifests contain the correct tags (search for `v3.0.3`): [https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml) 
 
 1. Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml`
 
