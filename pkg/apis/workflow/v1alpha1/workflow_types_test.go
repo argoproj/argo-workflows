@@ -640,6 +640,23 @@ func TestHasChild(t *testing.T) {
 	assert.False(t, node.HasChild(""))
 }
 
+func TestParameterGetValue(t *testing.T) {
+	empty := Parameter{}
+	defaultVal := Parameter{Default: AnyStringPtr("Default")}
+	value := Parameter{Value: AnyStringPtr("Test")}
+
+	valueFrom := Parameter{ValueFrom: &ValueFrom{}}
+	assert.False(t, empty.HasValue())
+	assert.Empty(t, empty.GetValue())
+	assert.True(t, defaultVal.HasValue())
+	assert.NotEmpty(t, defaultVal.GetValue())
+	assert.Equal(t, "Default", defaultVal.GetValue())
+	assert.True(t, value.HasValue())
+	assert.NotEmpty(t, value.GetValue())
+	assert.Equal(t, "Test", value.GetValue())
+	assert.True(t, valueFrom.HasValue())
+}
+
 func TestNodeStatusGetReason(t *testing.T) {
 	nodeStatus := NodeStatus{Phase: NodePending}
 	nodeStatusWithLock := NodeStatus{Phase: NodePending, SynchronizationStatus: &NodeSynchronizationStatus{Waiting: "test"}}
