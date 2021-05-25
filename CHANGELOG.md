@@ -1,5 +1,24 @@
 # Changelog
 
+## v3.1.0-rc7 (2021-05-24)
+
+ * [546fd3a6](https://github.com/argoproj/argo-workflows/commit/546fd3a644eec65eb8f558d2f05d6dcfd32193dc) Merge branch 'master' into release-3.1
+ * [d55a8dbb](https://github.com/argoproj/argo-workflows/commit/d55a8dbb841a55db70b96568fdd9ef402548d567) feat(controller): Add liveness probe (#5875)
+ * [46dcaea5](https://github.com/argoproj/argo-workflows/commit/46dcaea53d91b522dfd87b442ce949e3a4de7e76) fix(controller): Lock nodes in pod reconciliation. Fixes #5979 (#5982)
+ * [60b6b5cf](https://github.com/argoproj/argo-workflows/commit/60b6b5cf64adec380bc195aa87e4f0b12182fe16) fix(controller): Empty global output param crashes (#5931)
+ * [453086f9](https://github.com/argoproj/argo-workflows/commit/453086f94c9b540205784bd2944541b1b43555bd) fix(ui): ensure that the artifacts property exists before inspecting it (#5977)
+ * [079a506e](https://github.com/argoproj/argo-workflows/commit/079a506e432fd08b6465dc2d0b688ed2b78e9691) docs: update bug_report.md (#5971)
+ * [adda0e46](https://github.com/argoproj/argo-workflows/commit/adda0e46e746e99c4e4bfd8d89b8a291d4ada60f) docs: fix indentation (#5970)
+ * [7a8d16c0](https://github.com/argoproj/argo-workflows/commit/7a8d16c0d73a0fa2331112bc73146cd9302c7b40) docs: updated CHANGELOG.md (#5968)
+
+### Contributors
+
+ * Alex Collins
+ * Maximilian Roos
+ * Saravanan Balasubramanian
+ * dherman
+ * github-actions[bot]
+
 ## v3.1.0-rc6 (2021-05-21)
 
  * [82b38150](https://github.com/argoproj/argo-workflows/commit/82b3815015652bb0df529a34dc6f6363608c3b09) Merge branch 'master' into release-3.1
@@ -402,6 +421,20 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.5 (2021-05-24)
+
+ * [98b930cb](https://github.com/argoproj/argo-workflows/commit/98b930cb1a9f4304f879e33177d1c6e5b45119b7) Update manifests to v3.0.5
+ * [f893ea68](https://github.com/argoproj/argo-workflows/commit/f893ea682f1c30619195f32b58ebc4499f318d21) feat(controller): Add liveness probe (#5875)
+ * [e64607ef](https://github.com/argoproj/argo-workflows/commit/e64607efac779113dd57a9925cd06f9017186f63) fix(controller): Empty global output param crashes (#5931)
+ * [eeb5acba](https://github.com/argoproj/argo-workflows/commit/eeb5acba4565a178cde119ab92a36b291d0b3bb8) fix(ui): ensure that the artifacts property exists before inspecting it (#5977)
+ * [49979c2f](https://github.com/argoproj/argo-workflows/commit/49979c2fa5c08602b56cb21ef5e31594a1a9ddd4) fix(controller): Revert cb9676e88857193b762b417f2c45b38e2e0967f9. Fixes #5852 (#5933)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * dherman
 
 ## v3.0.4 (2021-05-06)
 
