@@ -62,14 +62,15 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	PodName            string
-	Template           wfv1.Template
-	ClientSet          kubernetes.Interface
-	RESTClient         rest.Interface
-	Namespace          string
-	PodAnnotationsPath string
-	ExecutionControl   *common.ExecutionControl
-	RuntimeExecutor    ContainerRuntimeExecutor
+	PodName             string
+	Template            wfv1.Template
+	IncludeScriptOutput bool
+	ClientSet           kubernetes.Interface
+	RESTClient          rest.Interface
+	Namespace           string
+	PodAnnotationsPath  string
+	ExecutionControl    *common.ExecutionControl
+	RuntimeExecutor     ContainerRuntimeExecutor
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -109,18 +110,19 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool) WorkflowExecutor {
 	return WorkflowExecutor{
-		PodName:            podName,
-		ClientSet:          clientset,
-		RESTClient:         restClient,
-		Namespace:          namespace,
-		PodAnnotationsPath: podAnnotationsPath,
-		RuntimeExecutor:    cre,
-		Template:           template,
-		memoizedConfigMaps: map[string]string{},
-		memoizedSecrets:    map[string][]byte{},
-		errors:             []error{},
+		PodName:             podName,
+		ClientSet:           clientset,
+		RESTClient:          restClient,
+		Namespace:           namespace,
+		PodAnnotationsPath:  podAnnotationsPath,
+		RuntimeExecutor:     cre,
+		Template:            template,
+		IncludeScriptOutput: includeScriptOutput,
+		memoizedConfigMaps:  map[string]string{},
+		memoizedSecrets:     map[string][]byte{},
+		errors:              []error{},
 	}
 }
 
@@ -674,7 +676,7 @@ func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Contex
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
-	if we.ExecutionControl == nil || !we.ExecutionControl.IncludeScriptOutput {
+	if !we.IncludeScriptOutput {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
