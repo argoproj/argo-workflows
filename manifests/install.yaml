@@ -613,6 +613,7 @@ spec:
             port: 6060
           initialDelaySeconds: 90
           periodSeconds: 60
+          timeoutSeconds: 30
         name: workflow-controller
         ports:
         - containerPort: 9090
