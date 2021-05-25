@@ -3,6 +3,7 @@ package commands
 import (
 	"crypto/tls"
 	"fmt"
+	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"reflect"
@@ -152,6 +153,14 @@ See %s`, help.ArgoSever),
 			server, err := apiserver.NewArgoServer(ctx, opts)
 			if err != nil {
 				return err
+			}
+
+			// disabled by default, for security
+			if os.Getenv("ARGO_SERVER_PPROF") == "true" {
+				go func() {
+					log.Println("starting server for pprof or :6060, see https://golang.org/pkg/net/http/pprof/")
+					log.Println(http.ListenAndServe(":6060", nil))
+				}()
 			}
 
 			server.Run(ctx, port, browserOpenFunc)
