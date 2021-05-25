@@ -1,5 +1,19 @@
 # Changelog
 
+## v3.1.0-rc8 (2021-05-24)
+
+ * [c8df5eae](https://github.com/argoproj/argo-workflows/commit/c8df5eae262223e8d32d740f43b8a7c013aba4ce) Merge branch 'master' into release-3.1
+ * [f3d95821](https://github.com/argoproj/argo-workflows/commit/f3d95821faf8b87d416a2d6ee1334b9e45869c84) fix(controller): Listen on :6060 (#5988)
+ * [ffd429ea](https://github.com/argoproj/argo-workflows/commit/ffd429ea9be4be848237f281b8788e46c5eb5a14) docs: Update releasing.md (#5803)
+ * [c8ffc970](https://github.com/argoproj/argo-workflows/commit/c8ffc9700223f8919c03a4de3287fd44694a24da) docs: updated CHANGELOG.md (#5986)
+ * [75ceb9bf](https://github.com/argoproj/argo-workflows/commit/75ceb9bf30fe0f26a658f275375ae4bbed54b9f9) docs: updated CHANGELOG.md (#5985)
+
+### Contributors
+
+ * Alex Collins
+ * Simon Behar
+ * github-actions[bot]
+
 ## v3.1.0-rc7 (2021-05-24)
 
  * [546fd3a6](https://github.com/argoproj/argo-workflows/commit/546fd3a644eec65eb8f558d2f05d6dcfd32193dc) Merge branch 'master' into release-3.1
