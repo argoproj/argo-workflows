@@ -115,9 +115,9 @@ jobs:
       - name: make/pull argoexec-image
         run: |
           if [ ${{matrix.test}} == test-executor ]; then
-            make argoexec-image STATIC_FILES=false
+            make argoexec-alpine-image STATIC_FILES=false
           else
-            docker pull argoproj/argoexec:latest
+            docker pull argoproj/argoexec-alpine:latest || make argoexec-alpine-image STATIC_FILES=false
           fi
       - run: make wait
         timeout-minutes: 4

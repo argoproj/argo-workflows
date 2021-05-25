@@ -137,7 +137,7 @@ endif
 build: clis images
 
 .PHONY: images
-images: argocli-image argoexec-image workflow-controller-image
+images: argocli-image argoexec-image argoexec-alpine-image workflow-controller-image
 
 # cli
 
@@ -219,6 +219,7 @@ else
 endif
 
 argoexec-image:
+argoexec-alpine-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
@@ -228,7 +229,7 @@ argoexec-image:
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
-scan-images: scan-workflow-controller scan-argoexec scan-argocli
+scan-images: scan-workflow-controller scan-argoexec scan-argoexec-alpine scan-argocli
 
 scan-%:
 	docker scan --severity=high $(IMAGE_NAMESPACE)/$*:$(VERSION)

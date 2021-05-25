@@ -944,7 +944,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:latest
+        - argoproj/argoexec-alpine:latest
         - --namespaced
         command:
         - workflow-controller
