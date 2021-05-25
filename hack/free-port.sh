@@ -1,8 +1,6 @@
 #!/bin/sh
-set -eux
+set -eu
 
 port=$1
 
-lsof -i ":$port" | grep -v PID | awk '{print $2}' | xargs kill || true
-
-
+lsof -s TCP:LISTEN -i ":$port" | grep -v PID | awk '{print $2}' | xargs -L 1 kill || true

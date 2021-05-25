@@ -11,6 +11,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 Currently, the following organizations are **officially** using Argo Workflows:
 
 1. [23mofang](https://www.23mofang.com/)
+1. [7shifts](https://www.7shifts.com)
 1. [Acquia](https://www.acquia.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
@@ -23,6 +24,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [BEI.RE](https://www.bei.re/)
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
+1. [Bloomberg](https://www.bloomberg.com/)
 1. [ByteDance](https://www.bytedance.com/en/)
 1. [bonprix](https://en.bonprix.de/corporate/our-company/)
 1. [Canva](https://www.canva.com/)
@@ -131,5 +133,5 @@ In addition, the following projects are **officially** using Argo Workflows:
 
 1. [Couler](https://github.com/couler-proj/couler)
 1. [Kubeflow](https://www.kubeflow.org/)
-2. [Onepanel](https://github.com/onepanelio/onepanel)
-3. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+1. [Onepanel](https://github.com/onepanelio/onepanel)
+1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,6 @@ var wfDefaults = `
             - cowsay
           image: docker/whalesay
         name: whalesay-exit
-    ttlSecondsAfterFinished: 86400
     ttlStrategy: 
       secondsAfterCompletion: 60
     volumes: 
@@ -101,7 +99,6 @@ spec:
           - cowsay
         image: docker/whalesay
       name: whalesay-exit
-  ttlSecondsAfterFinished: 86400
   ttlStrategy: 
     secondsAfterCompletion: 60
   volumes: 
@@ -182,7 +179,6 @@ var storedSpecResult = `
          "name": "whalesay-exit"
       }
    ],
-   "ttlSecondsAfterFinished": 86400,
    "ttlStrategy": {
       "secondsAfterCompletion": 60
    },
@@ -200,10 +196,10 @@ var storedSpecResult = `
 func TestWFDefaultsWithWorkflow(t *testing.T) {
 	assert := assert.New(t)
 
-	wfDefault := unmarshalWF(wfDefaults)
-	wf := unmarshalWF(simpleWf)
+	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
+	wf := wfv1.MustUnmarshalWorkflow(simpleWf)
 	wf1 := wf.DeepCopy()
-	wfResult := unmarshalWF(wf_wfdefaultResult)
+	wfResult := wfv1.MustUnmarshalWorkflow(wf_wfdefaultResult)
 	cancel, controller := newControllerWithDefaults()
 	defer cancel()
 
@@ -225,11 +221,10 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 
 func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	assert := assert.New(t)
-	wfDefault := unmarshalWF(wfDefaults)
-	wft := unmarshalWFTmpl(simpleWFT)
+	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
+	wft := wfv1.MustUnmarshalWorkflowTemplate(simpleWFT)
 	var resultSpec wfv1.WorkflowSpec
-	err := json.Unmarshal([]byte(storedSpecResult), &resultSpec)
-	assert.NoError(err)
+	wfv1.MustUnmarshal([]byte(storedSpecResult), &resultSpec)
 
 	ctx := context.Background()
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {

@@ -893,3 +893,32 @@ func TestDAGDependenciesDigit(t *testing.T) {
 		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 	}
 }
+
+var dagWithDigitNoDepends = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: 5A
+            template: pass
+          - name: B
+            template: pass
+    - name: pass
+      container:
+        image: alpine:3.7
+        command:
+          - sh
+          - -c
+          - exit 0
+`
+
+func TestDAGWithDigitNameNoDepends(t *testing.T) {
+	_, err := validate(dagWithDigitNoDepends)
+	assert.NoError(t, err)
+}

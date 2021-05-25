@@ -3422,12 +3422,19 @@
           "description": "Depends are name of other targets which this depends on",
           "type": "string"
         },
+        "hooks": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          },
+          "description": "Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task",
+          "type": "object"
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {
@@ -3467,7 +3474,7 @@
       "description": "DAGTemplate is a template subtype for directed acyclic graph templates",
       "properties": {
         "failFast": {
-          "description": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo_workflows/issues/1442",
+          "description": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442",
           "type": "boolean"
         },
         "target": {
@@ -3616,6 +3623,10 @@
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer"
+        },
+        "disableSubmodules": {
+          "description": "DisableSubmodules disables submodules during git clone",
+          "type": "boolean"
         },
         "fetch": {
           "description": "Fetch specifies a number of refs that should be fetched before checkout",
@@ -3805,6 +3816,20 @@
     },
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
+    },
+    "io.argoproj.workflow.v1alpha1.LifecycleHook": {
+      "properties": {
+        "arguments": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "template": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "template"
+      ],
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -4149,6 +4174,10 @@
           "description": "Key is the path in the bucket where the artifact resides",
           "type": "string"
         },
+        "lifecycleRule": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSLifecycleRule",
+          "description": "LifecycleRule specifies how to manage bucket's lifecycle"
+        },
         "secretKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SecretKeySecret is the secret selector to the bucket's secret key"
@@ -4161,6 +4190,20 @@
       "required": [
         "key"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OSSLifecycleRule": {
+      "description": "OSSLifecycleRule specifies how to manage bucket's lifecycle",
+      "properties": {
+        "markDeletionAfterDays": {
+          "description": "MarkDeletionAfterDays is the number of days before we delete objects in the bucket",
+          "type": "integer"
+        },
+        "markInfrequentAccessAfterDays": {
+          "description": "MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type",
+          "type": "integer"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Outputs": {
@@ -5744,12 +5787,19 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn",
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified"
         },
+        "hooks": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          },
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object"
+        },
         "name": {
           "description": "Name of the step",
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {

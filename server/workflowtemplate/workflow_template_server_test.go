@@ -14,7 +14,6 @@ import (
 	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -162,9 +161,9 @@ const wftStr3 = `{
 
 func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
 	var unlabelledObj, wftObj1, wftObj2 v1alpha1.WorkflowTemplate
-	testutil.MustUnmarshallJSON(unlabelled, &unlabelledObj)
-	testutil.MustUnmarshallJSON(wftStr2, &wftObj1)
-	testutil.MustUnmarshallJSON(wftStr3, &wftObj2)
+	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
+	v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
+	v1alpha1.MustUnmarshal(wftStr3, &wftObj2)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
@@ -175,7 +174,7 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
 	t.Run("Labelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
-		testutil.MustUnmarshallJSON(wftStr1, &wftReq)
+		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wftRsp)
@@ -183,7 +182,7 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
-		testutil.MustUnmarshallJSON(unlabelled, &wftReq.Template)
+		v1alpha1.MustUnmarshal(unlabelled, &wftReq.Template)
 		wftReq.Namespace = "default"
 		wftReq.Template.Name = "foo"
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
@@ -248,7 +247,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
 	t.Run("Labelled", func(t *testing.T) {
 		var wftObj1 v1alpha1.WorkflowTemplate
-		testutil.MustUnmarshallJSON(wftStr2, &wftObj1)
+		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
 		wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
 		wftRsp, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
 			Namespace: "default",

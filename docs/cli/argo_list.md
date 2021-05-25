@@ -24,7 +24,7 @@ argo list [flags]
       --prefix string           Filter workflows by prefix
       --resubmitted             Show resubmitted workflows
       --running                 Show running workflows. Mutually exclusive with --completed.
-  -l, --selector string         Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
       --since string            Show only workflows created after than a relative duration
       --status strings          Filter by status (comma separated)
 ```

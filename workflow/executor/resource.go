@@ -60,8 +60,11 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 		return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
 	resourceFullName := fmt.Sprintf("%s.%s/%s", resourceKind, resourceGroup, resourceName)
-	selfLink := obj.GetSelfLink()
-	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
+	resourceNamespace := obj.GetNamespace()
+	// We cannot use `obj.GetSelfLink()` directly since it is deprecated and will be removed after Kubernetes 1.21: https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink
+	selfLink := fmt.Sprintf("apis/%s/namespaces/%s/%s/%s",
+		obj.GetAPIVersion(), resourceNamespace, resourceKind, resourceName)
+	log.Infof("Resource: %s/%s. SelfLink: %s", resourceNamespace, resourceFullName, selfLink)
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
 }
 
@@ -84,10 +87,17 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		output = "name"
 	}
 
+	appendFileFlag := true
 	if action == "patch" {
 		mergeStrategy := "strategic"
 		if we.Template.Resource.MergeStrategy != "" {
 			mergeStrategy = we.Template.Resource.MergeStrategy
+			if mergeStrategy == "json" {
+				// Action "patch" require flag "-p" with resource arguments.
+				// But kubectl disallow specify both "-f" flag and resource arguments.
+				// Flag "-f" should be excluded for action "patch" here if it's a json patch.
+				appendFileFlag = false
+			}
 		}
 
 		args = append(args, "--type")
@@ -101,10 +111,7 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		args = append(args, flags...)
 	}
 
-	// Action "patch" require flag "-p" with resource arguments.
-	// But kubectl disallow specify both "-f" flag and resource arguments.
-	// Flag "-f" should be excluded for action "patch" here.
-	if len(buff) != 0 && action != "patch" {
+	if len(buff) != 0 && appendFileFlag {
 		args = append(args, "-f")
 		args = append(args, manifestPath)
 	}

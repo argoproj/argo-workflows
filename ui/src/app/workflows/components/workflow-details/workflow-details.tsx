@@ -163,20 +163,22 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 {!workflow ? (
                     <Loading />
                 ) : (
-                    <div className='argo-container'>
-                        <div className='workflow-details__content'>
-                            <WorkflowSummaryPanel workflow={workflow} />
-                            {renderSecurityNudge()}
-                            {renderCostOptimisations()}
-                            {workflow.spec.arguments && workflow.spec.arguments.parameters && (
-                                <React.Fragment>
-                                    <h6>Parameters</h6>
-                                    <WorkflowParametersPanel parameters={workflow.spec.arguments.parameters} />
-                                </React.Fragment>
-                            )}
-                            <h5>Artifacts</h5>
-                            <WorkflowArtifacts workflow={workflow} archived={false} />
-                            <WorkflowResourcePanel workflow={workflow} />
+                    <div className='workflow-details__container'>
+                        <div className='argo-container'>
+                            <div className='workflow-details__content'>
+                                <WorkflowSummaryPanel workflow={workflow} />
+                                {renderSecurityNudge()}
+                                {renderCostOptimisations()}
+                                {workflow.spec.arguments && workflow.spec.arguments.parameters && (
+                                    <React.Fragment>
+                                        <h6>Parameters</h6>
+                                        <WorkflowParametersPanel parameters={workflow.spec.arguments.parameters} />
+                                    </React.Fragment>
+                                )}
+                                <h5>Artifacts</h5>
+                                <WorkflowArtifacts workflow={workflow} archived={false} />
+                                <WorkflowResourcePanel workflow={workflow} />
+                            </div>
                         </div>
                     </div>
                 )}

@@ -450,6 +450,39 @@ type SetOperationValues struct {
 	OutputParameters map[string]string
 }
 
+func AddParamToGlobalScope(wf *wfv1.Workflow, log *log.Entry, param wfv1.Parameter) bool {
+	wfUpdated := false
+	if param.GlobalName == "" {
+		return wfUpdated
+	}
+	index := -1
+	if wf.Status.Outputs != nil {
+		for i, gParam := range wf.Status.Outputs.Parameters {
+			if gParam.Name == param.GlobalName {
+				index = i
+				break
+			}
+		}
+	} else {
+		wf.Status.Outputs = &wfv1.Outputs{}
+	}
+	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	if index == -1 {
+		log.Infof("setting %s: '%s'", paramName, param.Value)
+		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
+		wf.Status.Outputs.Parameters = append(wf.Status.Outputs.Parameters, gParam)
+		wfUpdated = true
+	} else {
+		prevVal := *wf.Status.Outputs.Parameters[index].Value
+		if prevVal != *param.Value {
+			log.Infof("overwriting %s: '%s' -> '%s'", paramName, wf.Status.Outputs.Parameters[index].Value, param.Value)
+			wf.Status.Outputs.Parameters[index].Value = param.Value
+			wfUpdated = true
+		}
+	}
+	return wfUpdated
+}
+
 func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
@@ -502,6 +535,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 									node.Outputs.Parameters[i].ValueFrom = nil
 									nodeUpdated = true
 									hit = true
+									AddParamToGlobalScope(wf, log.NewEntry(log.StandardLogger()), node.Outputs.Parameters[i])
 									break
 								}
 							}
@@ -720,6 +754,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	newWF.Status.Phase = wfv1.WorkflowRunning
 	newWF.Status.Nodes = make(wfv1.Nodes)
 	newWF.Status.Message = ""
+	newWF.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 	newWF.Status.FinishedAt = metav1.Time{}
 	newWF.Spec.Shutdown = ""
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
@@ -753,6 +788,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
 				newNode.Message = ""
+				newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
 				newNode.FinishedAt = metav1.Time{}
 				newWF.Status.Nodes[newNode.ID] = *newNode
 				continue
@@ -774,6 +810,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 			newNode := node.DeepCopy()
 			newNode.Phase = wfv1.NodeRunning
 			newNode.Message = ""
+			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
 			newNode.FinishedAt = metav1.Time{}
 			newWF.Status.Nodes[newNode.ID] = *newNode
 			continue

@@ -28,6 +28,7 @@ type ArtifactDriver struct {
 	Password              string
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
+	DisableSubmodules     bool
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -78,11 +79,8 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 			nil
 	}
 	if g.Username != "" || g.Password != "" {
-		filename, err := filepath.Abs("git-ask-pass.sh")
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		_, err = os.Stat(filename)
+		filename := filepath.Join(os.TempDir(), "git-ask-pass.sh")
+		_, err := os.Stat(filename)
 		if os.IsNotExist(err) {
 			err := ioutil.WriteFile(filename, []byte(`#!/bin/sh
 case "$1" in
@@ -118,9 +116,15 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		return err
 	}
 	defer closer()
+
+	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
+	if inputArtifact.Git.DisableSubmodules {
+		log.Info("Recursive cloning of submodules is disabled")
+		recurseSubmodules = git.NoRecurseSubmodules
+	}
 	repo, err := git.PlainClone(path, false, &git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
-		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+		RecurseSubmodules: recurseSubmodules,
 		Auth:              auth,
 		Depth:             inputArtifact.Git.GetDepth(),
 	})
@@ -159,14 +163,16 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			return g.error(err, cmd)
 		}
 		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
-		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
-		submodulesCmd.Dir = path
-		submodulesCmd.Env = env
-		submoduleOutput, err := submodulesCmd.Output()
-		if err != nil {
-			return g.error(err, cmd)
+		if !inputArtifact.Git.DisableSubmodules {
+			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
+			submodulesCmd.Dir = path
+			submodulesCmd.Env = env
+			submoduleOutput, err := submodulesCmd.Output()
+			if err != nil {
+				return g.error(err, cmd)
+			}
+			log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 		}
-		log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 	}
 	return nil
 }
