@@ -3,6 +3,7 @@ package commands
 import (
 	"crypto/tls"
 	"fmt"
+	_ "net/http/pprof"
 	"os"
 	"reflect"
 	"time"
