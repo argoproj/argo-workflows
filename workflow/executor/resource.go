@@ -60,11 +60,8 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 		return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
 	resourceFullName := fmt.Sprintf("%s.%s/%s", resourceKind, resourceGroup, resourceName)
-	resourceNamespace := obj.GetNamespace()
-	// We cannot use `obj.GetSelfLink()` directly since it is deprecated and will be removed after Kubernetes 1.21: https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink
-	selfLink := fmt.Sprintf("apis/%s/namespaces/%s/%s/%s",
-		obj.GetAPIVersion(), resourceNamespace, resourceKind, resourceName)
-	log.Infof("Resource: %s/%s. SelfLink: %s", resourceNamespace, resourceFullName, selfLink)
+	selfLink := obj.GetSelfLink()
+	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
 }
 
