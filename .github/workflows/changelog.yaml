@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
       - run: git fetch --prune --prune-tags
       - run: git tag -l 'v*'
-      # avoid invoking `make` to reduce the change of Makefile problem failing this workflow
+      # avoid invoking `make` to reduce the risk of a Makefile bug failing this workflow
       - run: ./hack/changelog.sh > CHANGELOG.md
       - uses: peter-evans/create-pull-request@v3
         with:
