@@ -158,7 +158,7 @@ See %s`, help.ArgoSever),
 			// disabled by default, for security
 			if os.Getenv("ARGO_SERVER_PPROF") == "true" {
 				go func() {
-					log.Println("starting server for pprof or :6060, see https://golang.org/pkg/net/http/pprof/")
+					log.Println("starting server for pprof on :6060, see https://golang.org/pkg/net/http/pprof/")
 					log.Println(http.ListenAndServe(":6060", nil))
 				}()
 			}
