@@ -1,5 +1,63 @@
 # Changelog
 
+## v3.1.0-rc8 (2021-05-24)
+
+ * [c8df5eae](https://github.com/argoproj/argo-workflows/commit/c8df5eae262223e8d32d740f43b8a7c013aba4ce) Merge branch 'master' into release-3.1
+ * [f3d95821](https://github.com/argoproj/argo-workflows/commit/f3d95821faf8b87d416a2d6ee1334b9e45869c84) fix(controller): Listen on :6060 (#5988)
+ * [ffd429ea](https://github.com/argoproj/argo-workflows/commit/ffd429ea9be4be848237f281b8788e46c5eb5a14) docs: Update releasing.md (#5803)
+ * [c8ffc970](https://github.com/argoproj/argo-workflows/commit/c8ffc9700223f8919c03a4de3287fd44694a24da) docs: updated CHANGELOG.md (#5986)
+ * [75ceb9bf](https://github.com/argoproj/argo-workflows/commit/75ceb9bf30fe0f26a658f275375ae4bbed54b9f9) docs: updated CHANGELOG.md (#5985)
+
+### Contributors
+
+ * Alex Collins
+ * Simon Behar
+ * github-actions[bot]
+
+## v3.1.0-rc7 (2021-05-24)
+
+ * [546fd3a6](https://github.com/argoproj/argo-workflows/commit/546fd3a644eec65eb8f558d2f05d6dcfd32193dc) Merge branch 'master' into release-3.1
+ * [d55a8dbb](https://github.com/argoproj/argo-workflows/commit/d55a8dbb841a55db70b96568fdd9ef402548d567) feat(controller): Add liveness probe (#5875)
+ * [46dcaea5](https://github.com/argoproj/argo-workflows/commit/46dcaea53d91b522dfd87b442ce949e3a4de7e76) fix(controller): Lock nodes in pod reconciliation. Fixes #5979 (#5982)
+ * [60b6b5cf](https://github.com/argoproj/argo-workflows/commit/60b6b5cf64adec380bc195aa87e4f0b12182fe16) fix(controller): Empty global output param crashes (#5931)
+ * [453086f9](https://github.com/argoproj/argo-workflows/commit/453086f94c9b540205784bd2944541b1b43555bd) fix(ui): ensure that the artifacts property exists before inspecting it (#5977)
+ * [079a506e](https://github.com/argoproj/argo-workflows/commit/079a506e432fd08b6465dc2d0b688ed2b78e9691) docs: update bug_report.md (#5971)
+ * [adda0e46](https://github.com/argoproj/argo-workflows/commit/adda0e46e746e99c4e4bfd8d89b8a291d4ada60f) docs: fix indentation (#5970)
+ * [7a8d16c0](https://github.com/argoproj/argo-workflows/commit/7a8d16c0d73a0fa2331112bc73146cd9302c7b40) docs: updated CHANGELOG.md (#5968)
+
+### Contributors
+
+ * Alex Collins
+ * Maximilian Roos
+ * Saravanan Balasubramanian
+ * dherman
+ * github-actions[bot]
+
+## v3.1.0-rc6 (2021-05-21)
+
+ * [82b38150](https://github.com/argoproj/argo-workflows/commit/82b3815015652bb0df529a34dc6f6363608c3b09) Merge branch 'master' into release-3.1
+ * [e6e8dec9](https://github.com/argoproj/argo-workflows/commit/e6e8dec95ca17da555a1ac94cbbc9f39351939a9) docs: Fix typo on examples page, add link to GH directory (#5961)
+ * [67a38e33](https://github.com/argoproj/argo-workflows/commit/67a38e33ed1a4d33085c9f566bf64b8b15c8199e) feat: add disableSubmodules for git artifacts (#5910)
+ * [4dd8d4b9](https://github.com/argoproj/argo-workflows/commit/4dd8d4b9894043cb7e1ce54e725d736d2d5f1e63) docs: Update code of conduct link. (#5872)
+ * [7b54b182](https://github.com/argoproj/argo-workflows/commit/7b54b182cfec367d876aead36ae03a1a16632527) small fixes of spelling mistakes (#5886)
+ * [edb5933a](https://github.com/argoproj/argo-workflows/commit/edb5933abdd243f12bafd752ea34ff1d45cfc5b3) docs: fixed typo (#5890)
+ * [b42c3e2f](https://github.com/argoproj/argo-workflows/commit/b42c3e2ffb6e158b8c7d755271852ebdca416ea2) docs: correct workflow-pod-security-context.md (#5949)
+ * [76612794](https://github.com/argoproj/argo-workflows/commit/7661279417d6b4a89e8c40990fd4c9cb79933e38) docs: updated CHANGELOG.md (#5945)
+ * [56b71d07](https://github.com/argoproj/argo-workflows/commit/56b71d07d91a5aae05b087577f1b47c2acf745df) fix(controller): Revert cb9676e88857193b762b417f2c45b38e2e0967f9. Fixes #5852 (#5933)
+ * [8cb0e5c7](https://github.com/argoproj/argo-workflows/commit/8cb0e5c7d316e2741abbf776ad6bab867285ecfd) docs: Correct the order of versions in the CHANGELOG.md (#5941)
+ * [3659e679](https://github.com/argoproj/argo-workflows/commit/3659e679e7d1fcc97427d617c853e16d8e3657d4) chore: fix whitespace issue (#5940)
+ * [f0540a9b](https://github.com/argoproj/argo-workflows/commit/f0540a9ba486d33fc6a1d4934edf281bc6ea9f44) docs: updated CHANGELOG.md (#5932)
+
+### Contributors
+
+ * Alex Collins
+ * Caelan U
+ * Johannes Olsson
+ * Lars Kerick
+ * Michael Crenshaw
+ * Zach Aller
+ * github-actions[bot]
+
 ## v3.1.0-rc5 (2021-05-17)
 
  * [a899c7e0](https://github.com/argoproj/argo-workflows/commit/a899c7e0947a00e9c4131741804a0486d5892ea2) Merge branch 'master' into release-3.1
@@ -377,6 +435,29 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.6 (2021-05-24)
+
+ * [4a7004d0](https://github.com/argoproj/argo-workflows/commit/4a7004d045e2d8f5f90f9e8caaa5e44c013be9d6) Update manifests to v3.0.6
+ * [10ecb7e5](https://github.com/argoproj/argo-workflows/commit/10ecb7e5b1264c283d5b88a214431743c8da3468) fix(controller): Listen on :6060 (#5988)
+
+### Contributors
+
+ * Alex Collins
+
+## v3.0.5 (2021-05-24)
+
+ * [98b930cb](https://github.com/argoproj/argo-workflows/commit/98b930cb1a9f4304f879e33177d1c6e5b45119b7) Update manifests to v3.0.5
+ * [f893ea68](https://github.com/argoproj/argo-workflows/commit/f893ea682f1c30619195f32b58ebc4499f318d21) feat(controller): Add liveness probe (#5875)
+ * [e64607ef](https://github.com/argoproj/argo-workflows/commit/e64607efac779113dd57a9925cd06f9017186f63) fix(controller): Empty global output param crashes (#5931)
+ * [eeb5acba](https://github.com/argoproj/argo-workflows/commit/eeb5acba4565a178cde119ab92a36b291d0b3bb8) fix(ui): ensure that the artifacts property exists before inspecting it (#5977)
+ * [49979c2f](https://github.com/argoproj/argo-workflows/commit/49979c2fa5c08602b56cb21ef5e31594a1a9ddd4) fix(controller): Revert cb9676e88857193b762b417f2c45b38e2e0967f9. Fixes #5852 (#5933)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * dherman
 
 ## v3.0.4 (2021-05-06)
 

@@ -1,12 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-patch-
+  generateName: k8s-patch-basic-
   labels:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
-      This example shows a more advanced patch with json mergeStrategy
+      This example shows a standard patch with the default mergeStrategy
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
 spec:
@@ -15,11 +15,11 @@ spec:
   - name: main
     resource:
       action: patch
-      mergeStrategy: json
-      flags:
-      - pod
-      - "{{pod.name}}"
       manifest: |
-        - op: add
-          path: /metadata/annotations/foo
-          value: bar
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: {{pod.name}}
+          annotations:
+            foo: bar
+

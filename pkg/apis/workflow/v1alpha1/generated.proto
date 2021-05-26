@@ -449,6 +449,9 @@ message GitArtifact {
 
   // InsecureIgnoreHostKey disables SSH strict host key checking during git clone
   optional bool insecureIgnoreHostKey = 8;
+
+  // DisableSubmodules disables submodules during git clone
+  optional bool disableSubmodules = 9;
 }
 
 // HDFSArtifact is the location of an HDFS artifact

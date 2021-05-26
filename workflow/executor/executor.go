@@ -63,11 +63,13 @@ const (
 type WorkflowExecutor struct {
 	PodName             string
 	Template            wfv1.Template
-	includeScriptOutput bool
+	IncludeScriptOutput bool
 	deadline            time.Time
 	ClientSet           kubernetes.Interface
 	RESTClient          rest.Interface
 	Namespace           string
+	PodAnnotationsPath  string
+	ExecutionControl    *common.ExecutionControl
 	RuntimeExecutor     ContainerRuntimeExecutor
 
 	// memoized configmaps
@@ -116,7 +118,7 @@ func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podN
 		Namespace:           namespace,
 		RuntimeExecutor:     cre,
 		Template:            template,
-		includeScriptOutput: includeScriptOutput,
+		IncludeScriptOutput: includeScriptOutput,
 		deadline:            deadline,
 		memoizedConfigMaps:  map[string]string{},
 		memoizedSecrets:     map[string][]byte{},
@@ -674,7 +676,7 @@ func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Contex
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
-	if !we.includeScriptOutput {
+	if !we.IncludeScriptOutput {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}

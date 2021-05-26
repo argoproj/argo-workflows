@@ -38,17 +38,16 @@ spec:
           ports:
             - name: metrics
               containerPort: 9090
-          # Periodically check we are listening on the metrics port
-          # causing a restart if it is not OK.
-          # This takes advantage of the fact that if the metrics service has died,
-          # then the controller has died.
-          # In testing, it appears to take 60-90s from failure to restart.
+            - containerPort: 6060
           livenessProbe:
             httpGet:
-              port: metrics
-              path: /metrics
-            initialDelaySeconds: 30
-            periodSeconds: 30
+              port: 6060
+              path: /healthz
+            # Require three failures to tolerate transient errors.
+            failureThreshold: 3
+            initialDelaySeconds: 90
+            periodSeconds: 60
+            timeoutSeconds: 30
       securityContext:
         runAsNonRoot: true
       nodeSelector:
