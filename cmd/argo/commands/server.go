@@ -7,6 +7,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -156,10 +157,14 @@ See %s`, help.ArgoSever),
 			}
 
 			// disabled by default, for security
-			if os.Getenv("ARGO_SERVER_PPROF") == "true" {
+			if x, enabled := os.LookupEnv("ARGO_SERVER_PPROF"); enabled {
 				go func() {
-					log.Println("starting server for pprof on :6060, see https://golang.org/pkg/net/http/pprof/")
-					log.Println(http.ListenAndServe(":6060", nil))
+					port, err := strconv.Atoi(x)
+					if err != nil {
+						port = 6060
+					}
+					log.Infof("starting server for pprof on :%d, see https://golang.org/pkg/net/http/pprof/", port)
+					log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 				}()
 			}
 
