@@ -1,5 +1,19 @@
 # Changelog
 
+## v3.1.0-rc8 (2021-05-24)
+
+ * [c8df5eae](https://github.com/argoproj/argo-workflows/commit/c8df5eae262223e8d32d740f43b8a7c013aba4ce) Merge branch 'master' into release-3.1
+ * [f3d95821](https://github.com/argoproj/argo-workflows/commit/f3d95821faf8b87d416a2d6ee1334b9e45869c84) fix(controller): Listen on :6060 (#5988)
+ * [ffd429ea](https://github.com/argoproj/argo-workflows/commit/ffd429ea9be4be848237f281b8788e46c5eb5a14) docs: Update releasing.md (#5803)
+ * [c8ffc970](https://github.com/argoproj/argo-workflows/commit/c8ffc9700223f8919c03a4de3287fd44694a24da) docs: updated CHANGELOG.md (#5986)
+ * [75ceb9bf](https://github.com/argoproj/argo-workflows/commit/75ceb9bf30fe0f26a658f275375ae4bbed54b9f9) docs: updated CHANGELOG.md (#5985)
+
+### Contributors
+
+ * Alex Collins
+ * Simon Behar
+ * github-actions[bot]
+
 ## v3.1.0-rc7 (2021-05-24)
 
  * [546fd3a6](https://github.com/argoproj/argo-workflows/commit/546fd3a644eec65eb8f558d2f05d6dcfd32193dc) Merge branch 'master' into release-3.1
@@ -421,6 +435,24 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.7 (2021-05-25)
+
+ * [e79e7ccd](https://github.com/argoproj/argo-workflows/commit/e79e7ccda747fa4487bf889142c744457c26e9f7) Update manifests to v3.0.7
+ * [b6e986c8](https://github.com/argoproj/argo-workflows/commit/b6e986c85f36e6a182bf1e58a992d2e26bce1feb) fix(controller): Increase readiness timeout from 1s to 30s (#6007)
+
+### Contributors
+
+ * Alex Collins
+
+## v3.0.6 (2021-05-24)
+
+ * [4a7004d0](https://github.com/argoproj/argo-workflows/commit/4a7004d045e2d8f5f90f9e8caaa5e44c013be9d6) Update manifests to v3.0.6
+ * [10ecb7e5](https://github.com/argoproj/argo-workflows/commit/10ecb7e5b1264c283d5b88a214431743c8da3468) fix(controller): Listen on :6060 (#5988)
+
+### Contributors
+
+ * Alex Collins
 
 ## v3.0.5 (2021-05-24)
 
