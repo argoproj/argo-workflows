@@ -436,6 +436,15 @@
  * uucloud
  * wanglong001
 
+## v3.0.7 (2021-05-25)
+
+ * [e79e7ccd](https://github.com/argoproj/argo-workflows/commit/e79e7ccda747fa4487bf889142c744457c26e9f7) Update manifests to v3.0.7
+ * [b6e986c8](https://github.com/argoproj/argo-workflows/commit/b6e986c85f36e6a182bf1e58a992d2e26bce1feb) fix(controller): Increase readiness timeout from 1s to 30s (#6007)
+
+### Contributors
+
+ * Alex Collins
+
 ## v3.0.6 (2021-05-24)
 
  * [4a7004d0](https://github.com/argoproj/argo-workflows/commit/4a7004d045e2d8f5f90f9e8caaa5e44c013be9d6) Update manifests to v3.0.6
