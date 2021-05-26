@@ -50,6 +50,10 @@ status:
   startedAt: "2020-12-01T17:30:46Z"
 `
 
+func CleanFields(x string, dataBytes []byte) ([]byte, error) {
+	return NewCleaner(x).CleanFields(dataBytes)
+}
+
 func TestCleanFields(t *testing.T) {
 	var wf v1alpha1.Workflow
 	v1alpha1.MustUnmarshal([]byte(sampleWorkflow), &wf)
