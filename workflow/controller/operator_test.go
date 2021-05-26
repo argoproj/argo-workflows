@@ -1234,13 +1234,20 @@ func TestAssessNodeStatus(t *testing.T) {
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodRunning,
+			},
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name: common.EnvVarTemplate,
+								Value: "{}",
+							},
+						},
+					},
+				},
 			},
 		},
 		node: &wfv1.NodeStatus{},

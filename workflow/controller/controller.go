@@ -464,18 +464,6 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if err := signal.SignalContainer(wfc.restConfig, namespace, podName, common.WaitContainerName, syscall.SIGTERM); err != nil {
 				return err
 			}
-			// legacy pods must have their annotations updated, it can take several minutes for this to propagate,
-			//  that delay must be traded against the fact these are legacy pods and this code should be removed at some point
-			if err := common.AddPodAnnotation(
-				ctx,
-				wfc.kubeclientset,
-				podName,
-				namespace,
-				common.AnnotationKeyExecutionControl,
-				wfv1.MustMarshallJSON(common.ExecutionControl{Deadline: &time.Time{}}),
-			); err != nil {
-				return err
-			}
 		case terminateContainers:
 			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
 				return err

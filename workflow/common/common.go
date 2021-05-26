@@ -1,8 +1,6 @@
 package common
 
 import (
-	"time"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -29,16 +27,8 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
-	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
-	// DEPRECATED: only for legacy pods
-	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
-	// AnnotationKeyExecutionControl is the pod metadata annotation key containing execution control parameters
-	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
-	// signal the executors of daemoned containers that it should terminate.
-	// DEPRECATED: only for legacy pods
-	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
@@ -178,15 +168,6 @@ const (
 
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
-
-// ExecutionControl contains execution control parameters for executor to decide how to execute the container
-// DEPRECATED: only for legacy pods
-type ExecutionControl struct {
-	// Deadline is a max timestamp in which an executor can run the container before terminating it
-	// It is used to signal the executor to terminate a daemoned container. In the future it will be
-	// used to support workflow or steps/dag level timeouts.
-	Deadline *time.Time `json:"deadline,omitempty"`
-}
 
 func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {

@@ -1192,9 +1192,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
 	tmpl := &wfv1.Template{}
-	if x, ok := pod.Annotations[common.AnnotationKeyTemplate]; ok {
-		return tmpl, json.Unmarshal([]byte(x), tmpl)
-	}
 	for _, c := range pod.Spec.Containers {
 		for _, e := range c.Env {
 			if e.Name == common.EnvVarTemplate {
