@@ -29,29 +29,6 @@ import (
 )
 
 var (
-	// volumePodMetadata makes available the pod metadata available as a file
-	// to the executor's init and sidecar containers. Specifically, the template
-	// of the pod is stored as an annotation
-	volumePodMetadata = apiv1.Volume{
-		Name: common.PodMetadataVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			DownwardAPI: &apiv1.DownwardAPIVolumeSource{
-				Items: []apiv1.DownwardAPIVolumeFile{
-					{
-						Path: common.PodMetadataAnnotationsVolumePath,
-						FieldRef: &apiv1.ObjectFieldSelector{
-							APIVersion: "v1",
-							FieldPath:  "metadata.annotations",
-						},
-					},
-				},
-			},
-		},
-	}
-	volumeMountPodMetadata = apiv1.VolumeMount{
-		Name:      volumePodMetadata.Name,
-		MountPath: common.PodMetadataMountPath,
-	}
 	volumeVarArgo = apiv1.Volume{
 		Name: "var-run-argo",
 		VolumeSource: apiv1.VolumeSource{
@@ -273,7 +250,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl, opts)
+	woc.addMetadata(pod, tmpl)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -320,9 +297,19 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	// Add standard environment variables, making pod spec larger
-	envVars := []apiv1.EnvVar{
-		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
+	deadline := time.Time{}
+	if woc.workflowDeadline != nil {
+		deadline = *woc.workflowDeadline
+	}
+	if deadline.IsZero() || opts.executionDeadline.Before(deadline) {
+		deadline = opts.executionDeadline
+	}
+
+	// add standard environment variables, making pod spec larger
+	envVars :=  []apiv1.EnvVar{
+			{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+			{Name: common.EnvVarDeadline, Value: deadline.Format(time.RFC3339)},
+			{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 	}
 
 	for i, c := range pod.Spec.InitContainers {
@@ -336,35 +323,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.Containers[i] = c
 	}
 
-	// Set the container template JSON in pod annotations, which executor examines for things like
-	// artifact location/path.
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return nil, err
-	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
-
 	// Perform one last variable substitution here. Some variables come from the from workflow
 	// configmap (e.g. archive location) or volumes attribute, and were not substituted
 	// in executeTemplate.
 	pod, err = substitutePodParams(pod, woc.globalParams, tmpl)
 	if err != nil {
 		return nil, err
-	}
-
-	// One final check to verify all variables are resolvable for select fields. We are choosing
-	// only to check ArchiveLocation for now, since everything else should have been substituted
-	// earlier (i.e. in executeTemplate). But archive location is unique in that the variables
-	// are formulated from the configmap. We can expand this to other fields as necessary.
-	err = json.Unmarshal([]byte(pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	if err != nil {
-		return nil, err
-	}
-	for _, obj := range []interface{}{tmpl.ArchiveLocation} {
-		err = verifyResolvedVariables(obj)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Apply the patch string from template
@@ -581,9 +545,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 }
 
 func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
-	volumes := []apiv1.Volume{
-		volumePodMetadata,
-	}
+	var volumes []apiv1.Volume
 	if woc.controller.Config.KubeConfig != nil {
 		name := woc.controller.Config.KubeConfig.VolumeName
 		if name == "" {
@@ -615,9 +577,6 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-		VolumeMounts: []apiv1.VolumeMount{
-			volumeMountPodMetadata,
-		},
 	}
 	if woc.controller.Config.Executor != nil {
 		exec.Args = woc.controller.Config.Executor.Args
@@ -669,7 +628,7 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 }
 
 // addMetadata applies metadata specified in the template
-func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if woc.wf.Spec.PodMetadata != nil {
 		// add workflow-level pod annotations and labels
 		for k, v := range woc.wf.Spec.PodMetadata.Annotations {
@@ -685,27 +644,6 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts
 	}
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
-	}
-
-	execCtl := common.ExecutionControl{}
-
-	if woc.workflowDeadline != nil {
-		execCtl.Deadline = woc.workflowDeadline
-	}
-
-	// If we're passed down an executionDeadline, only set it if there isn't one set already, or if it's before than
-	// the one already set.
-	if !opts.executionDeadline.IsZero() && (execCtl.Deadline == nil || opts.executionDeadline.Before(*execCtl.Deadline)) {
-		execCtl.Deadline = &opts.executionDeadline
-	}
-
-	if execCtl.Deadline != nil {
-		execCtlBytes, err := json.Marshal(execCtl)
-		if err != nil {
-			panic(err)
-		}
-
-		pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
 	}
 }
 
@@ -1111,17 +1049,6 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-}
-
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
-func verifyResolvedVariables(obj interface{}) error {
-	str, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	return template.Validate(string(str), func(tag string) error {
-		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-	})
 }
 
 // createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod

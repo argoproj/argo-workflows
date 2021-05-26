@@ -2,7 +2,7 @@ package signal
 
 import (
 	"fmt"
-	"syscall"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
@@ -10,8 +10,12 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func SignalContainer(restConfig *rest.Config, namespace string, pod string, container string, s syscall.Signal) error {
-	return ExecPodContainerAndGetOutput(restConfig, namespace, pod, container, "/bin/sh", "-c", fmt.Sprintf("kill -s%d -- -1", s))
+func SignalContainer(restConfig *rest.Config, namespace string, pod string, container string, s os.Signal) error {
+	command := fmt.Sprintf("kill -s%d -- -1", s)
+	if container == "wait" {
+		command = fmt.Sprintf("kill -s %d $(pidof argoexec)", s)
+	}
+	return ExecPodContainerAndGetOutput(restConfig, namespace, pod, container, "sh", "-c", command)
 }
 
 func ExecPodContainerAndGetOutput(restConfig *rest.Config, namespace string, pod string, container string, command ...string) error {
