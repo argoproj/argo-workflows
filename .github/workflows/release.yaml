@@ -352,6 +352,8 @@ jobs:
     runs-on: ubuntu-20.04
     # TODO
     # needs: [ push-images, test-images-linux-amd64, test-images-windows ]
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
