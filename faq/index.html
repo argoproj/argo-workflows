@@ -36,7 +36,7 @@
     
     
       
-        <title>IDE Set-Up - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>FAQ - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#ide-set-up" tabindex="1" class="md-skip">
+      <a href="#faq" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              IDE Set-Up
+              FAQ
             </span>
           
         </div>
@@ -308,12 +308,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5">
     
     <label class="md-nav__link" for="nav-5">
       User Guide
@@ -917,69 +915,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        IDE Set-Up
-      </label>
-    
-    <a href="./" title="IDE Set-Up" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../ide-setup/" title="IDE Set-Up" class="md-nav__link">
       IDE Set-Up
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#validating-argo-yaml-against-the-json-schema" title="Validating Argo YAML against the JSON Schema" class="md-nav__link">
-    Validating Argo YAML against the JSON Schema
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#intellij-idea-community-utimate-editions" title="IntelliJ IDEA (Community &amp; Utimate Editions)" class="md-nav__link">
-    IntelliJ IDEA (Community &amp; Utimate Editions)
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vscode" title="VSCode" class="md-nav__link">
-    VSCode
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -2060,11 +2000,20 @@
       
       
 
+  
 
-  <li class="md-nav__item">
-    <a href="../faq/" title="FAQ" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+    <a href="./" title="FAQ" class="md-nav__link md-nav__link--active">
       FAQ
     </a>
+    
   </li>
 
     
@@ -2145,42 +2094,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#validating-argo-yaml-against-the-json-schema" title="Validating Argo YAML against the JSON Schema" class="md-nav__link">
-    Validating Argo YAML against the JSON Schema
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#intellij-idea-community-utimate-editions" title="IntelliJ IDEA (Community &amp; Utimate Editions)" class="md-nav__link">
-    IntelliJ IDEA (Community &amp; Utimate Editions)
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vscode" title="VSCode" class="md-nav__link">
-    VSCode
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2191,36 +2104,30 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/ide-setup.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/faq.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="ide-set-up">IDE Set-Up<a class="headerlink" href="#ide-set-up" title="Permanent link">&para;</a></h1>
-<h2 id="validating-argo-yaml-against-the-json-schema">Validating Argo YAML against the JSON Schema<a class="headerlink" href="#validating-argo-yaml-against-the-json-schema" title="Permanent link">&para;</a></h2>
-<p>Argo provides a <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">JSON Schema</a> that enables validation of YAML resources in your IDE.</p>
-<h3 id="intellij-idea-community-utimate-editions">IntelliJ IDEA (Community &amp; Utimate Editions)<a class="headerlink" href="#intellij-idea-community-utimate-editions" title="Permanent link">&para;</a></h3>
-<p>YAML validation is supported natively in IDEA.</p>
-<p>Configure your IDE to reference the Argo schema and map it to your Argo YAML files:</p>
-<p><img alt="IDEA Configure Schema" src="../assets/intellij-ide-step-1-config.png" />
-- The schema is located at <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json</a>.
-- Specify a file glob pattern that locates <strong>your</strong> Argo files. The example glob here is for the Argo Github project!
-- Note that you may need to restart IDEA to pick up the changes.</p>
-<p>That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.</p>
-<p><img alt="IDEA Example Functionality" src="../assets/intellij-ide-step-1-example-functionality.png" /></p>
-<h3 id="vscode">VSCode<a class="headerlink" href="#vscode" title="Permanent link">&para;</a></h3>
-<p>The <a href="https://github.com/redhat-developer/vscode-yaml">Red Hat YAML</a> plugin will provide error highlighting and autocompletion for Argo resources.</p>
-<p>Install the Red Hat YAML plugin in VSCode and open extension settings:</p>
-<p><img alt="VSCode Install Plugin" src="../assets/vscode-ide-step-1-install-plugin.png" /></p>
-<p>Open the YAML schemas settings:</p>
-<p><img alt="VSCode YAML Schema Settings" src="../assets/vscode-ide-step-2-schema-settings.png" /></p>
-<p>Add the Argo schema setting <code>yaml.schemas</code>:</p>
-<p><img alt="VSCode Specify Argo Schema" src="../assets/vscode-ide-step-3-spec-schema.png" /></p>
-<ul>
-<li>The schema is located at <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json</a>.</li>
-<li>Specify a file glob pattern that locates <strong>your</strong> Argo files. The example glob here is for the Argo Github project!</li>
-<li>Note that other defined schemas with overlapping glob patterns may cause errors.</li>
-</ul>
-<p>That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.</p>
-<p><img alt="VScode Example Functionality" src="../assets/vscode-ide-step-4-example-functionality.png" /></p>
+                <h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>"token not valid for running mode", "any bearer token is able to login in the UI or use the API"</p>
+</blockquote>
+<p>You've not configured Argo Server authentication correctly. If you want SSO, try running with <code>--auth-mode=sso</code>.</p>
+<p><a href="../argo-server/">Learn more about the Argo Server set-up</a></p>
+<blockquote>
+<p>Argo Server return EOF error</p>
+</blockquote>
+<p>Since v3.0 the Argo Server listens for HTTPS requests, rather than HTTP. Try changing your URL to HTTPS, or start Argo Server using <code>--secure=false</code>.</p>
+<blockquote>
+<p>My workflow hangs</p>
+</blockquote>
+<p>Check your <code>wait</code> container logs:</p>
+<p>Is there an RBAC error?</p>
+<p><a href="../workflow-rbac/">Learn more about workflow RBAC</a></p>
+<blockquote>
+<p>There is an error about /var/run/docker.sock.</p>
+</blockquote>
+<p>Try using a different container runtime executor.</p>
+<p><a href="../workflow-executors/">Learn more about executors</a></p>
                 
                   
                 
@@ -2241,7 +2148,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../security/" title="Security" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../releasing/" title="Release Instructions" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -2250,19 +2157,19 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Security
+                Release Instructions
               </span>
             </div>
           </a>
         
         
-          <a href="../examples/" title="Examples" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../roadmap/" title="Roadmap" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Examples
+                Roadmap
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
