@@ -5,13 +5,7 @@ import (
 	"strings"
 )
 
-// CleanFields remove fields based on the query
-// `status.phase` - only return status.phase
-// `-status.phase`
 func CleanFields(fieldsQuery string, dataBytes []byte) ([]byte, error) {
-	if fieldsQuery == "" {
-		return dataBytes, nil // abort early to avoid CPU and memory intensive json marshaling
-	}
 	exclude := false
 	fields := make(map[string]interface{})
 	if fieldsQuery != "" {
