@@ -198,7 +198,7 @@ export class WorkflowsService {
     }
 
     public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
-        return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived, true);
+        return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived, false);
     }
 
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
