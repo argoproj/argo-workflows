@@ -10,7 +10,7 @@ spec:
           args:
             - --loglevel=warn
             - --configmap=workflow-controller-configmap
-            - --executor-image=argoproj/argoexec-alpine:latest
+            - --executor-image=argoproj/argoexec:latest
             - --namespaced
             - --burst=2048
             - --qps=512

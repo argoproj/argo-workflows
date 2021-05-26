@@ -28,7 +28,7 @@ spec:
             - --configmap
             - workflow-controller-configmap
             - --executor-image
-            - argoproj/argoexec-alpine:latest
+            - argoproj/argoexec:latest
           env:
             - name: LEADER_ELECTION_IDENTITY
               valueFrom:

@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         platform: [ linux/amd64 ]
-        target: [ workflow-controller, argocli, argoexec, argoexec-alpine ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v2
 
@@ -84,7 +84,7 @@ jobs:
     strategy:
       matrix:
         platform: [ linux/arm64 ]
-        target: [ workflow-controller, argocli, argoexec, argoexec-alpine ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v2
 
@@ -177,7 +177,7 @@ jobs:
             tag="latest"
           fi
 
-          targets="argoexec argoexec-alpine"
+          targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}-windows"
             docker build --target $target -t $image_name -f Dockerfile.windows .
@@ -219,7 +219,7 @@ jobs:
             tag="latest"
           fi
 
-          targets="workflow-controller argoexec argoexec-alpine argocli"
+          targets="workflow-controller argoexec argocli"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
 
@@ -262,11 +262,11 @@ jobs:
             tag="latest"
           fi
 
-          targets="workflow-controller argoexec argoexec-alpine argocli"
+          targets="workflow-controller argoexec argocli"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
 
-            if [ $target = "argoexec" ] || [ $target = "argoexec-image" ]; then
+            if [ $target = "argoexec" ]; then
               docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
@@ -284,7 +284,7 @@ jobs:
     strategy:
       matrix:
         platform: [ linux/amd64 ]
-        target: [ workflow-controller, argocli, argoexec, argoexec-alpine  ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - name: Docker Login
         uses: Azure/docker-login@v1
@@ -341,7 +341,7 @@ jobs:
             tag="latest"
           fi
 
-          targets="argoexec argoexec-alpine"
+          targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
             docker pull $image_name

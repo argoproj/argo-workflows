@@ -490,7 +490,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec-alpine:latest
+        - argoproj/argoexec:latest
         - --namespaced
         command:
         - workflow-controller
