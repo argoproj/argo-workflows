@@ -65,6 +65,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	}
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
+			woc.log.Infof("Shutting down pod %s", pod.Name)
 			woc.queuePodForCleanup(pod.Name, shutdownPod)
 		}
 	}

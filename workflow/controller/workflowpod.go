@@ -305,11 +305,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		deadline = opts.executionDeadline
 	}
 
-	// add standard environment variables, making pod spec larger
-	envVars :=  []apiv1.EnvVar{
-			{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
-			{Name: common.EnvVarDeadline, Value: deadline.Format(time.RFC3339)},
-			{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
+	// Add standard environment variables, making pod spec larger
+	envVars := []apiv1.EnvVar{
+		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
+		{Name: common.EnvVarDeadline, Value: deadline.Format(time.RFC3339)},
 	}
 
 	for i, c := range pod.Spec.InitContainers {

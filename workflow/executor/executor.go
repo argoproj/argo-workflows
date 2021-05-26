@@ -951,7 +951,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 			we.killMainContainer(ctx, containerNames, "Step exceeded its deadline")
 			return
 		case <-terminate:
-			we.killMainContainer(ctx, containerNames, "terminated")
+			we.killMainContainer(ctx, containerNames, "Step terminated")
 			return
 		}
 	}

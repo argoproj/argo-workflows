@@ -103,13 +103,11 @@ func TestResourcePatchFlagsJson(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           template,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        template,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	args, err := we.getKubectlArguments("patch", manifestPath, nil)
 
