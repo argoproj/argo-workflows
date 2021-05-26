@@ -158,11 +158,11 @@ See %s`, help.ArgoSever),
 
 			// disabled by default, for security
 			if x, enabled := os.LookupEnv("ARGO_SERVER_PPROF"); enabled {
+				port, err := strconv.Atoi(x)
+				if err != nil {
+					return err
+				}
 				go func() {
-					port, err := strconv.Atoi(x)
-					if err != nil {
-						port = 6060
-					}
 					log.Infof("starting server for pprof on :%d, see https://golang.org/pkg/net/http/pprof/", port)
 					log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 				}()
