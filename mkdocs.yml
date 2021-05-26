@@ -158,6 +158,7 @@ nav:
       - static-code-analysis.md
       - stress-testing.md
       - releasing.md
+  - FAQ: faq.md
   - Releases ⧉: https://github.com/argoproj/argo-workflows/releases
   - Roadmap: roadmap.md
   - Blog ⧉: https://blog.argoproj.io/
