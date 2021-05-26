@@ -350,8 +350,7 @@ jobs:
 
   publish-release:
     runs-on: ubuntu-20.04
-    # TODO
-    # needs: [ push-images, test-images-linux-amd64, test-images-windows ]
+    needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     env:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
