@@ -50,6 +50,18 @@ status:
   startedAt: "2020-12-01T17:30:46Z"
 `
 
+func TestCleanFieldsNoop(t *testing.T) {
+	var wf v1alpha1.Workflow
+	v1alpha1.MustUnmarshal([]byte(sampleWorkflow), &wf)
+
+	jsonWf, err := json.Marshal(wf)
+	assert.NoError(t, err)
+
+	cleanJsonWf, err := CleanFields("", jsonWf)
+	assert.NoError(t, err)
+	assert.Equal(t, jsonWf, cleanJsonWf)
+}
+
 func TestCleanFields(t *testing.T) {
 	var wf v1alpha1.Workflow
 	v1alpha1.MustUnmarshal([]byte(sampleWorkflow), &wf)
