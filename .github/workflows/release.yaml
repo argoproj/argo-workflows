@@ -350,7 +350,6 @@ jobs:
 
   publish-release:
     runs-on: ubuntu-20.04
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     steps:
       - uses: actions/checkout@v2
@@ -390,6 +389,7 @@ jobs:
       # of this action.
       # Instead, delete the release so it is re-created.
       - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           prerelease: ${{ startsWith(github.ref, 'refs/tags/v0') || contains(github.ref, 'rc') }}
           body_path: release-notes
