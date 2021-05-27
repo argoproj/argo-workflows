@@ -1098,7 +1098,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		woc.cleanUpPod(pod)
+		woc.cleanUpPod(pod, tmpl)
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -1208,9 +1208,9 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 	return nil
 }
 
-func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod) {
+func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	for _, c := range pod.Status.ContainerStatuses {
-		if (c.Name == common.WaitContainerName || c.Name == common.MainContainerName) && c.State.Terminated == nil {
+		if (c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name)) && c.State.Terminated == nil {
 			return // we must not do anything if the wait or main containers are still running
 		}
 	}
