@@ -289,8 +289,11 @@ func (p *PNSExecutor) getContainerPID(containerName string) int {
 }
 
 func containerNameForPID(pid int) (string, error) {
+	anonymousName := fmt.Sprintf("%s%d", anonymousPIDPrefix, pid) // we give all a "container name", including a fake name for injected sidecars
 	data, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/environ", pid))
-	if err != nil {
+	if os.IsPermission(err) {
+		return anonymousName, nil
+	} else if err != nil {
 		return "", err
 	}
 	prefix := common.EnvVarContainerName + "="
@@ -299,7 +302,7 @@ func containerNameForPID(pid int) (string, error) {
 			return strings.TrimPrefix(l, prefix), nil
 		}
 	}
-	return fmt.Sprintf("%s%d", anonymousPIDPrefix, pid), nil // we give all a "container name", including a fake name for injected sidecars
+	return anonymousName, nil
 }
 
 func (p *PNSExecutor) secureRootFiles() error {

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: runasnonroot-sidecar-injected-
+spec:
+  entrypoint: main
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 8737
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+    containers:
+      - name: wait
+      - name: main
+      - name: sidecar
+        image: argoproj/argosay:v1
+        command:
+         - sh
+         - -c
+        args:
+          - "sleep 999"
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v1
