@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"path"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -13,6 +14,11 @@ import (
 )
 
 var EmptyConfigFunc = func() interface{} { return &Config{} }
+
+type ResourceRateLimit struct {
+	Limit float64 `json:"limit"`
+	Burst int     `json:"burst"`
+}
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {
@@ -79,6 +85,9 @@ type Config struct {
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
+	// ResourceRateLimit limits the rate at which pods are created
+	ResourceRateLimit *ResourceRateLimit `json:"resourceRateLimit,omitempty"`
+
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`
 
@@ -120,6 +129,16 @@ func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error
 		return name, nil
 	}
 	return c.ContainerRuntimeExecutor, nil
+}
+
+func (c Config) GetResourceRateLimit() ResourceRateLimit {
+	if c.ResourceRateLimit != nil {
+		return *c.ResourceRateLimit
+	}
+	return ResourceRateLimit{
+		Limit: math.MaxFloat32,
+		Burst: math.MaxInt32,
+	}
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
