@@ -61,9 +61,6 @@ func (t *throttler) Add(key Key, priority int32, creationTime time.Time) {
 	if _, ok := t.pending[bucketKey]; !ok {
 		t.pending[bucketKey] = &priorityQueue{itemByKey: make(map[string]*item)}
 	}
-	if _, ok := t.inProgress[bucketKey]; !ok {
-		t.inProgress[bucketKey] = make(bucket)
-	}
 	t.pending[bucketKey].add(key, priority, creationTime)
 	t.queueThrottled(bucketKey)
 }
@@ -91,14 +88,17 @@ func (t *throttler) Remove(key Key) {
 	}
 	if x, ok := t.pending[bucketKey]; ok {
 		x.remove(key)
-		t.queueThrottled(bucketKey)
 	}
+	t.queueThrottled(bucketKey)
 }
 
 func (t *throttler) queueThrottled(bucketKey BucketKey) {
+	if _, ok := t.inProgress[bucketKey]; !ok {
+		t.inProgress[bucketKey] = make(bucket)
+	}
 	inProgress := t.inProgress[bucketKey]
-	pending := t.pending[bucketKey]
-	for pending.Len() > 0 && t.parallelism > len(inProgress) {
+	pending, ok := t.pending[bucketKey]
+	for ok && pending.Len() > 0 && t.parallelism > len(inProgress) {
 		key := pending.pop().key
 		inProgress[key] = true
 		t.queue(key)

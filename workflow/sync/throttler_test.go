@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,6 +19,24 @@ func TestNoParallelismSamePriority(t *testing.T) {
 	assert.True(t, throttler.Admit("a"))
 	assert.True(t, throttler.Admit("b"))
 	assert.True(t, throttler.Admit("c"))
+}
+
+func TestNoParallelismMultipleBuckets(t *testing.T) {
+	throttler := NewThrottler(1, func(key Key) BucketKey {
+		namespace, _, _ := cache.SplitMetaNamespaceKey(key)
+		return namespace
+	}, func(key string) {})
+
+	throttler.Add("a/0", 0, time.Now())
+	throttler.Add("a/1", 0, time.Now())
+	throttler.Add("b/0", 0, time.Now())
+	throttler.Add("b/1", 0, time.Now())
+
+	assert.True(t, throttler.Admit("a/0"))
+	assert.False(t, throttler.Admit("a/1"))
+	assert.True(t, throttler.Admit("b/0"))
+	throttler.Remove("a/0")
+	assert.True(t, throttler.Admit("a/1"))
 }
 
 func TestWithParallelismLimitAndPriority(t *testing.T) {

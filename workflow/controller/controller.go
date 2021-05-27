@@ -652,6 +652,8 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	// TODO - once the namespaceThrottler is proven, then we can move and modify this block of code to also
+	// mark those workflows as pending so the user knows why they are not running
 	if !wfc.throttler.Admit(key.(string)) {
 		log.WithFields(log.Fields{"key": key}).Info("Workflow processing has been postponed due to max parallelism limit")
 		return true
@@ -675,6 +677,12 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
+
+	if !wfc.namespaceThrottler.Admit(key.(string)) {
+		woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because there are too many workflows are already running in its namespace")
+		woc.persistUpdates(ctx)
+		return true
+	}
 
 	// make sure this is removed from the throttler is complete
 	defer func() {
