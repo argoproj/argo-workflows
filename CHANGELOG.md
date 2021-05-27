@@ -1,5 +1,49 @@
 # Changelog
 
+## v3.1.0-rc9 (2021-05-26)
+
+ * [5c6322d3](https://github.com/argoproj/argo-workflows/commit/5c6322d386a0d5f98dc3bcd683dae27b1b49eb05) Merge branch 'master' into release-3.1
+ * [c3895e4c](https://github.com/argoproj/argo-workflows/commit/c3895e4ce32019c5f419c3f11bbb047e058bbf51) docs: updated CHANGELOG.md (#6025)
+ * [bad61555](https://github.com/argoproj/argo-workflows/commit/bad61555093f59a647b20df75f83e1cf9687f7b5) fix(ui): Fix link for archived logs (#6019)
+ * [2d077e4d](https://github.com/argoproj/argo-workflows/commit/2d077e4d5c54ef9d07f51ce80cf0ec88b40305a6) docs: Add FAQ (#6023)
+ * [3cfc96b7](https://github.com/argoproj/argo-workflows/commit/3cfc96b7c3c90edec77be0841152dad4d9f18f52) revert: "fix(executor): Fix compatibility issue with k8s>=1.21 when s… (#6012)
+ * [7e27044b](https://github.com/argoproj/argo-workflows/commit/7e27044b71620dc7c7dd338eac873e0cff244e2d) fix(controller): Increase readiness timeout from 1s to 30s (#6007)
+ * [79f5fa5f](https://github.com/argoproj/argo-workflows/commit/79f5fa5f3e348fca5255d9c98b3fb186bc23cb3e) feat: Pass include script output as an environment variable (#5994)
+ * [d7517cfc](https://github.com/argoproj/argo-workflows/commit/d7517cfcaf141fc06e19720996d7b43ddb3fa7b6) Mention that 'archive' do not support logs of pods (#6005)
+ * [6cda063a](https://github.com/argoproj/argo-workflows/commit/6cda063aca83610f11d28252e928f730694bf218) ci: only run changelog job on tag (#6003)
+ * [d7c5cf6c](https://github.com/argoproj/argo-workflows/commit/d7c5cf6c95056a82ea94e37da925ed566991e548) fix(executor): Fix compatibility issue with k8s>=1.21 when selfLink is no longer populated (#5992)
+ * [a2c6241a](https://github.com/argoproj/argo-workflows/commit/a2c6241ae21e749a3c5865153755136ddd878d5c) fix(validate): Fix DAG validation on task names when depends/dependencies is not used. Fixes #5993 (#5998)
+ * [8b256150](https://github.com/argoproj/argo-workflows/commit/8b256150233b0de18bc156da0e762be6ab04a9f6) docs: updated CHANGELOG.md (#5999)
+ * [516c54a7](https://github.com/argoproj/argo-workflows/commit/516c54a7f04e6a0042028674c5b172fbc8efdd5b) docs: Correct quoting. Fixes #5957 (#6001)
+ * [a99d5b82](https://github.com/argoproj/argo-workflows/commit/a99d5b821bee5edb296f8af1c3badb503025f026) fix(controller): Fix sync manager panic. Fixes #5939 (#5991)
+ * [80f8473a](https://github.com/argoproj/argo-workflows/commit/80f8473a13482387b9f54f9288f4a982a210cdea) fix(executor): resource patch for non-json patches regression (#5951)
+ * [7cebfc5c](https://github.com/argoproj/argo-workflows/commit/7cebfc5c85f85576a4213f2594acea363104ce28) docs: updated CHANGELOG.md (#5989)
+
+### Contributors
+
+ * Alex Collins
+ * Antony Chazapis
+ * Christophe Blin
+ * Peixuan Ding
+ * William Reed
+ * Yuan Tang
+ * amit
+ * github-actions[bot]
+
+## v3.1.0-rc8 (2021-05-24)
+
+ * [c8df5eae](https://github.com/argoproj/argo-workflows/commit/c8df5eae262223e8d32d740f43b8a7c013aba4ce) Merge branch 'master' into release-3.1
+ * [f3d95821](https://github.com/argoproj/argo-workflows/commit/f3d95821faf8b87d416a2d6ee1334b9e45869c84) fix(controller): Listen on :6060 (#5988)
+ * [ffd429ea](https://github.com/argoproj/argo-workflows/commit/ffd429ea9be4be848237f281b8788e46c5eb5a14) docs: Update releasing.md (#5803)
+ * [c8ffc970](https://github.com/argoproj/argo-workflows/commit/c8ffc9700223f8919c03a4de3287fd44694a24da) docs: updated CHANGELOG.md (#5986)
+ * [75ceb9bf](https://github.com/argoproj/argo-workflows/commit/75ceb9bf30fe0f26a658f275375ae4bbed54b9f9) docs: updated CHANGELOG.md (#5985)
+
+### Contributors
+
+ * Alex Collins
+ * Simon Behar
+ * github-actions[bot]
+
 ## v3.1.0-rc7 (2021-05-24)
 
  * [546fd3a6](https://github.com/argoproj/argo-workflows/commit/546fd3a644eec65eb8f558d2f05d6dcfd32193dc) Merge branch 'master' into release-3.1
@@ -421,6 +465,15 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.7 (2021-05-25)
+
+ * [e79e7ccd](https://github.com/argoproj/argo-workflows/commit/e79e7ccda747fa4487bf889142c744457c26e9f7) Update manifests to v3.0.7
+ * [b6e986c8](https://github.com/argoproj/argo-workflows/commit/b6e986c85f36e6a182bf1e58a992d2e26bce1feb) fix(controller): Increase readiness timeout from 1s to 30s (#6007)
+
+### Contributors
+
+ * Alex Collins
 
 ## v3.0.6 (2021-05-24)
 
