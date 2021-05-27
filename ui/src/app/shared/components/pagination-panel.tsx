@@ -2,11 +2,13 @@ import * as React from 'react';
 import {Pagination, parseLimit} from '../pagination';
 import {WarningIcon} from './fa-icons';
 
+require('./pagination-panel-p.scss');
+
+
 export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void; numRecords: number}> {
     public render() {
-        const styles: React.CSSProperties = {padding-bottom: '45px'}
         return (
-            <p style={styles}>
+            <p style={{paddingBottom: '45px'}}>
                 <button
                     disabled={!this.props.pagination.offset}
                     className='argo-button argo-button--base-o'
