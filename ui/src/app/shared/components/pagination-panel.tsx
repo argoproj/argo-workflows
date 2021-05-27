@@ -5,7 +5,7 @@ import {WarningIcon} from './fa-icons';
 export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void; numRecords: number}> {
     public render() {
         return (
-            <p>
+            <p style={{paddingBottom: '45px'}}>
                 <button
                     disabled={!this.props.pagination.offset}
                     className='argo-button argo-button--base-o'
