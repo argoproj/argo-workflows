@@ -98,6 +98,7 @@ message WorkflowDeleteResponse {
 message WatchWorkflowsRequest {
     string namespace = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+    string fields = 3;
 }
 
 message WorkflowWatchEvent {
