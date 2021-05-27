@@ -1209,18 +1209,19 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 }
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
+	var toCleanPod bool
 	for _, c := range pod.Status.ContainerStatuses {
-		if (c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name)) && c.State.Terminated == nil {
-			return // we must not do anything if the wait or main containers are still running
+		// Only clean up pod when both the wait and the main containers are terminated
+		if c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name) {
+			if c.State.Terminated != nil {
+				toCleanPod = true
+			} else {
+				toCleanPod = false
+			}
 		}
 	}
-	// the wait container has terminated, so all other containers should be killed
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Terminated != nil {
-			continue
-		}
+	if toCleanPod {
 		woc.queuePodForCleanup(pod.Name, terminateContainers)
-		return
 	}
 }
 
