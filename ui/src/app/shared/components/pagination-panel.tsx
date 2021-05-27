@@ -2,8 +2,6 @@ import * as React from 'react';
 import {Pagination, parseLimit} from '../pagination';
 import {WarningIcon} from './fa-icons';
 
-require('./pagination-panel-p.scss');
-
 
 export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void; numRecords: number}> {
     public render() {
