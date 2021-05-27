@@ -77,7 +77,14 @@ func NewRootCommand() *cobra.Command {
 func initExecutor() *executor.WorkflowExecutor {
 	version := argo.GetVersion()
 	executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
-	log.WithFields(log.Fields{"version": version.Version, "executorType": executorType}).Info("Starting Workflow Executor")
+	groups, _ := os.Getgroups()
+	log.WithField("version", version.Version).
+		WithField("executorType", executorType).
+		WithField("groups", groups).
+		WithField("gid", os.Getgid()).
+		WithField("uid", os.Getuid()).
+		WithField("pid", os.Getpid()).
+		Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, executorType))
