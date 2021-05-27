@@ -1423,3 +1423,22 @@ func TestPodMetadata(t *testing.T) {
 	assert.Equal(t, "hello", pod.ObjectMeta.Annotations["template-level-pod-annotation"])
 	assert.Equal(t, "world", pod.ObjectMeta.Labels["template-level-pod-label"])
 }
+
+func TestGetDeadline(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWoc(*wf)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	deadline, _ := getPodDeadline(pod)
+	assert.Equal(t, time.Time{}, deadline)
+
+	executionDeadline := time.Now().Add(5 * time.Minute)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx = context.Background()
+	woc = newWoc(*wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{executionDeadline: executionDeadline})
+	deadline, _ = getPodDeadline(pod)
+	assert.Equal(t, executionDeadline.Format(time.RFC3339), deadline.Format(time.RFC3339))
+}

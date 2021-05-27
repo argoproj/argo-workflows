@@ -297,19 +297,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	deadline := time.Time{}
-	if woc.workflowDeadline != nil {
-		deadline = *woc.workflowDeadline
-	}
-	if deadline.IsZero() || opts.executionDeadline.Before(deadline) {
-		deadline = opts.executionDeadline
-	}
-
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
-		{Name: common.EnvVarDeadline, Value: deadline.Format(time.RFC3339)},
+		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
 	}
 
 	for i, c := range pod.Spec.InitContainers {
@@ -329,6 +321,27 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod, err = substitutePodParams(pod, woc.globalParams, tmpl)
 	if err != nil {
 		return nil, err
+	}
+
+	// One final check to verify all variables are resolvable for select fields. We are choosing
+	// only to check ArchiveLocation for now, since everything else should have been substituted
+	// earlier (i.e. in executeTemplate). But archive location is unique in that the variables
+	// are formulated from the configmap. We can expand this to other fields as necessary.
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarTemplate {
+				err = json.Unmarshal([]byte(e.Value), tmpl)
+				if err != nil {
+					return nil, err
+				}
+				for _, obj := range []interface{}{tmpl.ArchiveLocation} {
+					err = verifyResolvedVariables(obj)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
 	}
 
 	// Apply the patch string from template
@@ -404,6 +417,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
+}
+
+func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
+	deadline := time.Time{}
+	if woc.workflowDeadline != nil {
+		deadline = *woc.workflowDeadline
+	}
+	if !opts.executionDeadline.IsZero() && (deadline.IsZero() || opts.executionDeadline.Before(deadline)) {
+		deadline = opts.executionDeadline
+	}
+	return &deadline
 }
 
 func (woc *wfOperationCtx) getImage(image string) config.Image {
@@ -1049,6 +1073,17 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
+}
+
+// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
+func verifyResolvedVariables(obj interface{}) error {
+	str, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	return template.Validate(string(str), func(tag string) error {
+		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
+	})
 }
 
 // createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod

@@ -121,12 +121,11 @@ func initExecutor() *executor.WorkflowExecutor {
 	checkErr(err)
 
 	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline)
-	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	log.
 		WithField("version", version.String()).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
-		WithField("template", string(yamlBytes)).
+		WithField("template", wfv1.MustMarshallJSON(&wfExecutor.Template)).
 		WithField("includeScriptOutput", includeScriptOutput).
 		WithField("deadline", deadline).
 		Info("Executor initialized")
