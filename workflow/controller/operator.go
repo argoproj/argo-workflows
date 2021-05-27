@@ -189,6 +189,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}()
 
+	// perform this check as early as possible, because we want to avoid any unnecessary processing
+	if woc.wf.Status.Phase == wfv1.WorkflowUnknown && !woc.controller.namespaceThrottler.Admit(woc.wf.Namespace+"/"+woc.wf.Name) {
+		woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "workflow postponed because there are too many workflows are already running in its namespace")
+		return
+	}
+
 	woc.log.Infof("Processing workflow")
 
 	// Set the Execute workflow spec for execution
@@ -1853,7 +1859,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		markCompleted = phase.Completed()
 	}
-	if woc.wf.Status.StartedAt.IsZero() {
+	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()

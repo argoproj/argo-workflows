@@ -8,7 +8,7 @@ import (
 )
 
 func TestNoParallelismSamePriority(t *testing.T) {
-	throttler := NewThrottler(0, nil)
+	throttler := NewThrottler(0, SingleBucket, nil)
 
 	throttler.Add("c", 0, time.Now().Add(2*time.Hour))
 	throttler.Add("b", 0, time.Now().Add(1*time.Hour))
@@ -21,7 +21,7 @@ func TestNoParallelismSamePriority(t *testing.T) {
 
 func TestWithParallelismLimitAndPriority(t *testing.T) {
 	queuedKey := ""
-	throttler := NewThrottler(2, func(key string) { queuedKey = key })
+	throttler := NewThrottler(2, SingleBucket, func(key string) { queuedKey = key })
 
 	throttler.Add("a", 1, time.Now())
 	throttler.Add("b", 2, time.Now())

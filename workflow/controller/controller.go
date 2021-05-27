@@ -95,6 +95,7 @@ type WorkflowController struct {
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
+	namespaceThrottler    sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
@@ -145,15 +146,19 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(&fixedItemIntervalRateLimiter{}, "workflow_queue")
-	wfc.throttler = wfc.newThrottler()
+	wfc.throttler = wfc.newThrottler(wfc.Config.Parallelism, sync.SingleBucket)
+	wfc.namespaceThrottler = wfc.newThrottler(wfc.Config.NamespaceParallelism, func(key sync.Key) sync.BucketKey {
+		namespace, _, _ := cache.SplitMetaNamespaceKey(key)
+		return namespace
+	})
 	wfc.podQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
 }
 
-func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.AddRateLimited(key) })
+func (wfc *WorkflowController) newThrottler(parallelism int, bucketFunc sync.BucketFunc) sync.Throttler {
+	return sync.NewThrottler(parallelism, bucketFunc, func(key string) { wfc.wfQueue.AddRateLimited(key) })
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -676,6 +681,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		// must be done with woc
 		if woc.wf.Labels[common.LabelKeyCompleted] == "true" {
 			wfc.throttler.Remove(key.(string))
+			wfc.namespaceThrottler.Remove(key.(string))
 		}
 	}()
 
@@ -806,6 +812,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
+						wfc.namespaceThrottler.Add(key, priority, creation)
 					}
 				},
 				UpdateFunc: func(old, new interface{}) {
@@ -819,6 +826,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.wfQueue.AddRateLimited(key)
 						priority, creation := getWfPriority(new)
 						wfc.throttler.Add(key, priority, creation)
+						wfc.namespaceThrottler.Add(key, priority, creation)
 					}
 				},
 				DeleteFunc: func(obj interface{}) {
@@ -829,6 +837,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.releaseAllWorkflowLocks(obj)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
+						wfc.namespaceThrottler.Remove(key)
 					}
 				},
 			},

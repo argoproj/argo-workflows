@@ -79,6 +79,9 @@ type Config struct {
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
+	// NamespaceParallelism limits the max workflows that can execute at the same time in a namespace
+	NamespaceParallelism int `json:"namespaceParallelism,omitempty"`
+
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`
 

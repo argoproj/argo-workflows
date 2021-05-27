@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
+
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -182,7 +184,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-		wfc.throttler = wfc.newThrottler()
+		wfc.throttler = wfc.newThrottler(wfc.Config.Parallelism, argosync.SingleBucket)
+		wfc.namespaceThrottler = wfc.newThrottler(wfc.Config.NamespaceParallelism, argosync.SingleBucket)
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	}

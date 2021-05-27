@@ -115,6 +115,40 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 	})
 }
 
+func TestNamespaceParallelism(t *testing.T) {
+	wf0 := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-0
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     container: 
+       image: my-image
+`)
+	wf1 := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-1
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf0, wf1, func(x *WorkflowController) {
+		x.Config.NamespaceParallelism = 1
+	})
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf0, controller)
+	woc.operate(context.Background())
+	woc = newWorkflowOperationCtx(wf1, controller)
+	woc.operate(context.Background())
+	assert.Equal(t, wfv1.WorkflowPending, woc.wf.Status.Phase)
+	assert.Zero(t, woc.wf.Status.StartedAt, "pending workflows should not have start time set")
+	assert.Equal(t, "workflow postponed because there are too many workflows are already running in its namespace", woc.wf.Status.Message)
+}
+
 func TestResourcesDuration(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
