@@ -4,6 +4,7 @@ import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
@@ -82,7 +83,12 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	}
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory()
+	wfc.rateLimiter = wfc.newRateLimiter()
 	return nil
+}
+
+func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {
+	return rate.NewLimiter(rate.Limit(wfc.Config.GetResourceRateLimit().Limit), wfc.Config.GetResourceRateLimit().Burst)
 }
 
 // executorImage returns the image to use for the workflow executor
