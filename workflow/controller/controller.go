@@ -155,7 +155,11 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.AddRateLimited(key) })
+	f := func(key string) { wfc.wfQueue.AddRateLimited(key) }
+	return sync.ChainThrottler{
+		sync.NewThrottler(wfc.Config.Parallelism, sync.SingleBucket, f),
+		sync.NewThrottler(wfc.Config.NamespaceParallelism, sync.NamespaceBucket, f),
+	}
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -649,11 +653,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if !wfc.throttler.Admit(key.(string)) {
-		log.WithFields(log.Fields{"key": key}).Info("Workflow processing has been postponed due to max parallelism limit")
-		return true
-	}
-
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
@@ -672,6 +671,15 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
+
+	if !wfc.throttler.Admit(key.(string)) {
+		log.WithField("key", key).Info("Workflow processing has been postponed due to max parallelism limit")
+		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
+			woc.persistUpdates(ctx)
+		}
+		return true
+	}
 
 	// make sure this is removed from the throttler is complete
 	defer func() {
