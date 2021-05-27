@@ -4,9 +4,6 @@ metadata:
   generateName: sidecar-injected-
 spec:
   entrypoint: main
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 8737
   podSpecPatch: |
     terminationGracePeriodSeconds: 3
     containers:
