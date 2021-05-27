@@ -3,6 +3,9 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
+  resourceRateLimit: |
+    limit: 10
+    burst: 1
   workflowDefaults: |
     spec:
       activeDeadlineSeconds: 300
