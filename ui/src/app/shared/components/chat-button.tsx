@@ -21,7 +21,7 @@ export const ChatButton = () => {
     }
 
     return (
-        <div style={{position: 'fixed', right: 25, bottom: 55}}>
+        <div style={{position: 'fixed', right: 10, bottom: 10}}>
             <a href={link.url} className='argo-button argo-button--special'>
                 <i className='fas fa-comment-alt' /> {link.name}
             </a>
