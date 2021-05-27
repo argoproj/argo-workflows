@@ -2,7 +2,7 @@
 
 ## Pre-requisites
 
-* [Go](https://golang.org/dl/) (The project currently uses version 1.13)
+* [Go](https://golang.org/dl/) (The project currently uses version 1.15)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
 * [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
