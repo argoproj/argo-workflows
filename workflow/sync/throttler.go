@@ -4,7 +4,11 @@ import (
 	"container/heap"
 	"sync"
 	"time"
+
+	"k8s.io/client-go/tools/cache"
 )
+
+//go:generate mockery -name Throttler
 
 // Throttler allows the controller to limit number of items it is processing in parallel.
 // Items are processed in priority order, and one processing starts, other items (including higher-priority items)
@@ -25,6 +29,10 @@ type BucketKey = string
 type BucketFunc func(Key) BucketKey
 
 var SingleBucket BucketFunc = func(key Key) BucketKey { return "" }
+var NamespaceBucket BucketFunc = func(key Key) BucketKey {
+	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
+	return namespace
+}
 
 type throttler struct {
 	queue       QueueFunc

@@ -9,6 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_NamespaceBucket(t *testing.T) {
+	assert.Equal(t, "a", NamespaceBucket("a/b"))
+}
+
 func TestNoParallelismSamePriority(t *testing.T) {
 	throttler := NewThrottler(0, SingleBucket, nil)
 

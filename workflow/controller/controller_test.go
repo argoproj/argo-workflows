@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
-
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -184,8 +182,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-		wfc.throttler = wfc.newThrottler(wfc.Config.Parallelism, argosync.SingleBucket)
-		wfc.namespaceThrottler = wfc.newThrottler(wfc.Config.NamespaceParallelism, argosync.SingleBucket)
+		wfc.throttler = wfc.newThrottler()
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	}
@@ -462,8 +459,17 @@ func TestClusterController(t *testing.T) {
 }
 
 func TestParallelism(t *testing.T) {
-	cancel, controller := newController(
-		wfv1.MustUnmarshalWorkflow(`
+	for tt, f := range map[string]func(controller *WorkflowController){
+		"Parallelism": func(x *WorkflowController) {
+			x.Config.Parallelism = 1
+		},
+		"NamespaceParallelism": func(x *WorkflowController) {
+			x.Config.NamespaceParallelism = 1
+		},
+	} {
+		t.Run(tt, func(t *testing.T) {
+			cancel, controller := newController(
+				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-0
 spec:
@@ -473,7 +479,7 @@ spec:
       container:
         image: my-image
 `),
-		wfv1.MustUnmarshalWorkflow(`
+				wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: my-wf-1
 spec:
@@ -483,23 +489,26 @@ spec:
       container:
         image: my-image
 `),
-		func(controller *WorkflowController) { controller.Config.Parallelism = 1 },
-	)
-	defer cancel()
-	ctx := context.Background()
-	assert.True(t, controller.processNextItem(ctx))
-	assert.True(t, controller.processNextItem(ctx))
+				f,
+			)
+			defer cancel()
+			ctx := context.Background()
+			assert.True(t, controller.processNextItem(ctx))
+			assert.True(t, controller.processNextItem(ctx))
 
-	expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
-		if assert.NotNil(t, wf) {
-			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-		}
-	})
-	expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
-		if assert.NotNil(t, wf) {
-			assert.Empty(t, wf.Status.Phase)
-		}
-	})
+			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+				}
+			})
+			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				}
+			})
+		})
+	}
 }
 
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
