@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.1.0-rc10 (2021-05-27)
+
+ * [a83ec048](https://github.com/argoproj/argo-workflows/commit/a83ec048fd9c19fba3bcc0062aa720c19d4968a3) Merge branch 'master' into release-3.1
+ * [73539fad](https://github.com/argoproj/argo-workflows/commit/73539fadbe81b644b912ef0ddddebb178c97cc94) feat(controller): Support rate-limitng pod creation. (#4892)
+ * [e566c106](https://github.com/argoproj/argo-workflows/commit/e566c106bbe9baf8ab3628a80235467bb867b57e) fix(server): Only hydrate nodes if they are needed. Fixes #6000 (#6004)
+ * [c21af210](https://github.com/argoproj/argo-workflows/commit/c21af210a3afa23c51f7787fcf154b4841d5ac94) docs: Update Go version to 1.15 in local dev guide (#6035)
+ * [2e70ff2f](https://github.com/argoproj/argo-workflows/commit/2e70ff2f90d00203ac1c9cdecf7f87e0d9ef37c2) ci: Dry-run publish-release on master (#6029)
+ * [d218ea71](https://github.com/argoproj/argo-workflows/commit/d218ea71776fa7d072bbeafa614b36eb34940023) fix(ui): typo (#6027)
+ * [02be2422](https://github.com/argoproj/argo-workflows/commit/02be2422838c486cdc98a8cc938b259bcaa04b7c) docs: updated CHANGELOG.md (#6026)
+
+### Contributors
+
+ * Alex Collins
+ * Stephan van Maris
+ * Yuan Tang
+ * github-actions[bot]
+
 ## v3.1.0-rc9 (2021-05-26)
 
  * [5c6322d3](https://github.com/argoproj/argo-workflows/commit/5c6322d386a0d5f98dc3bcd683dae27b1b49eb05) Merge branch 'master' into release-3.1
