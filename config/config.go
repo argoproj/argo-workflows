@@ -85,6 +85,9 @@ type Config struct {
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
+	// NamespaceParallelism limits the max workflows that can execute at the same time in a namespace
+	NamespaceParallelism int `json:"namespaceParallelism,omitempty"`
+
 	// ResourceRateLimit limits the rate at which pods are created
 	ResourceRateLimit *ResourceRateLimit `json:"resourceRateLimit,omitempty"`
 
