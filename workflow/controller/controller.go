@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,6 +84,7 @@ type WorkflowController struct {
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig       *rest.Config
 	kubeclientset    kubernetes.Interface
+	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
 

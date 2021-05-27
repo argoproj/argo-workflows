@@ -554,6 +554,32 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
+func Test_createWorkflowPod_rateLimited(t *testing.T) {
+	for limit, limited := range map[config.ResourceRateLimit]bool{
+		{Limit: 0, Burst: 0}: true,
+		{Limit: 1, Burst: 1}: false,
+		{Limit: 0, Burst: 1}: false,
+		{Limit: 1, Burst: 1}: false,
+	} {
+		t.Run(fmt.Sprintf("%v", limit), func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+			cancel, controller := newController(wf, func(c *WorkflowController) {
+				c.Config.ResourceRateLimit = &limit
+			})
+			defer cancel()
+			woc := newWorkflowOperationCtx(wf, controller)
+			woc.operate(context.Background())
+			x := woc.wf.Status.Nodes[woc.wf.Name]
+			assert.Equal(t, wfv1.NodePending, x.Phase)
+			if limited {
+				assert.Equal(t, "resource creation rate-limit reached", x.Message)
+			} else {
+				assert.Empty(t, x.Message)
+			}
+		})
+	}
+}
+
 func Test_createWorkflowPod_emissary(t *testing.T) {
 	t.Run("NoCommand", func(t *testing.T) {
 		woc := newWoc()

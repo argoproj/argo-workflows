@@ -185,6 +185,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.throttler = wfc.newThrottler()
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.rateLimiter = wfc.newRateLimiter()
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
