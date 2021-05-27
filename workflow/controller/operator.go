@@ -1210,7 +1210,7 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod) {
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
+		if (c.Name == common.WaitContainerName || c.Name == common.MainContainerName) && c.State.Terminated == nil {
 			return // we must not do anything if the wait or main containers are still running
 		}
 	}
