@@ -61,7 +61,14 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                 <Loading />
             ) : pipelines.length === 0 ? (
                 <ZeroState title='No pipelines'>
-                    <p>A pipeline is something super secret. Shhhh...</p>
+                    <p>
+                        A pipeline is made up of one or more steps. Each step within a pipeline consumes message from one or more sources (such Kafka, NATS, or a HTTP endpoint),
+                        processes it, and optionally sends a new message to one or more sinks (such as Kafka or log file).
+                    </p>
+                    <p>
+                        Steps within a pipeline can automatically scale horizontally (starting more pods based on pending messages or a HPA), and explicitly scale vertically (going
+                        parallel within pod) to process thousands of messages per second.
+                    </p>
                     <p>
                         <a href='https://github.com/argoproj-labs/argo-dataflow'>Learn more</a>.
                     </p>
