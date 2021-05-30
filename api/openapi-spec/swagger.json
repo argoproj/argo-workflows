@@ -4261,8 +4261,7 @@
           "format": "uint64"
         },
         "rate": {
-          "type": "string",
-          "format": "uint64"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
         },
         "total": {
           "type": "string",

@@ -3,7 +3,7 @@ import {ObjectMeta, Time, WatchEvent} from 'argo-ui/src/models/kubernetes';
 interface Metrics {
     total?: number;
     errors?: number;
-    rate?: number;
+    rate?: string;
 }
 
 export interface Step {
