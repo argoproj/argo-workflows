@@ -79,9 +79,9 @@ spec:
           spec:
             serviceAccountName: argo
             containers:
-            - name: pi
-              image: perl
-              command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+            - name: argosay-container
+              image: argoproj/argosay:v2
+              command: ["/argosay"]
             restartPolicy: Never
 `).
 		When().
