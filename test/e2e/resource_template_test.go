@@ -54,6 +54,45 @@ spec:
 		})
 }
 
+func (s *ResourceTemplateSuite) TestResourceTemplateWithPod() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-pod-
+spec:
+  serviceAccount: argo
+  entrypoint: main
+  templates:
+    - name: main
+      serviceAccountName: argo
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifest: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            generateName: k8s-pod-resource-
+          spec:
+            serviceAccountName: argo
+            containers:
+            - name: pi
+              image: perl
+              command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+            restartPolicy: Never
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestResourceTemplateSuite(t *testing.T) {
 	suite.Run(t, new(ResourceTemplateSuite))
 }
