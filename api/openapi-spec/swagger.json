@@ -2429,6 +2429,11 @@
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "podLogOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "fields",
+            "in": "query"
           }
         ],
         "responses": {

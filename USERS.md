@@ -124,6 +124,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Vispera](https://www.vispera.co)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
+1. [VMware](https://www.vmware.com/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
 
