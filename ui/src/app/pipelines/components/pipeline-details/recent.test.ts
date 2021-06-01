@@ -1,4 +1,4 @@
-import {recent} from "./recent";
+import {recent} from './recent';
 
 describe('recent', () => {
     test('recency', () => {
