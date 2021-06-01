@@ -2429,11 +2429,6 @@
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "podLogOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "fields",
-            "in": "query"
           }
         ],
         "responses": {
@@ -2753,6 +2748,11 @@
             "type": "string",
             "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
             "name": "listOptions.continue",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "fields",
             "in": "query"
           }
         ],

@@ -6,6 +6,7 @@ import {Phase} from '../../shared/components/phase';
 import {SparkMeter} from '../../shared/components/spark-meter';
 import {TickMeter} from '../../shared/components/tick-meter';
 import {Timestamp} from '../../shared/components/timestamp';
+import {parseResourceQuantity} from '../../shared/resource-quantity';
 import {EventsPanel} from '../../workflows/components/events-panel';
 import {PipelineLogsViewer} from './pipeline-logs-viewer';
 
@@ -73,7 +74,7 @@ export const StepSidePanel = ({
                                                 .reduce((a, b) => a + b.total, 0);
                                             const rate = Object.values(x.metrics || {})
                                                 .filter(m => m.rate)
-                                                .reduce((a, b) => a + b.rate, 0);
+                                                .reduce((a, b) => a + parseResourceQuantity(b.rate), 0);
                                             const errors = Object.values(x.metrics || {})
                                                 .filter(m => m.errors)
                                                 .reduce((a, b) => a + b.errors, 0);

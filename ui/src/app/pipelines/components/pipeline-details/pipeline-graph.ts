@@ -2,6 +2,7 @@ import {Pipeline} from '../../../../models/pipeline';
 import {Step} from '../../../../models/step';
 import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
+import {parseResourceQuantity} from '../../../shared/resource-quantity';
 
 type Type = '' | 'cat' | 'container' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
 
@@ -44,22 +45,22 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         const type: Type = spec.cat
             ? 'cat'
             : spec.container
-                ? 'container'
-                : spec.expand
-                    ? 'expand'
-                    : spec.filter
-                        ? 'filter'
-                        : spec.git
-                            ? 'git'
-                            : spec.flatten
-                                ? 'flatten'
-                                : spec.group
-                                    ? 'group'
-                                    : spec.handler
-                                        ? 'handler'
-                                        : spec.map
-                                            ? 'map'
-                                            : '';
+            ? 'container'
+            : spec.expand
+            ? 'expand'
+            : spec.filter
+            ? 'filter'
+            : spec.git
+            ? 'git'
+            : spec.flatten
+            ? 'flatten'
+            : spec.group
+            ? 'group'
+            : spec.handler
+            ? 'handler'
+            : spec.map
+            ? 'map'
+            : '';
 
         const nodeLabel = status.replicas !== 1 ? spec.name + ' (x' + (status.replicas || 0) + ')' : spec.name;
         g.nodes.set(stepId, {genre: type, label: nodeLabel, icon: stepIcon(type), classNames: status.phase});
@@ -67,12 +68,15 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         const classNames = status.phase === 'Running' ? 'flow' : '';
         (spec.sources || []).forEach((x, i) => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
-            const rate = Object.values(ss.metrics || {}).map(m => parseFloat(m.rate)).reduce((a, b) => (a || 0) + (b || 0), 0);
+            const rate = Object.values(ss.metrics || {})
+                .map(m => parseResourceQuantity(m.rate))
+                .reduce((a, b) => (a || 0) + (b || 0), 0);
 
             const label =
                 (ss.lastError && (new Date().getTime() - new Date(ss.lastMessage.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') +
                 (ss.pending ? ' ' + pendingSymbol + ss.pending : '') +
-                rate + ' TPS';
+                rate +
+                ' TPS';
             if (x.cron) {
                 const cronId = 'cron/' + stepId + '/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
@@ -96,10 +100,10 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         });
         (spec.sinks || []).forEach((x, i) => {
             const ss = (status.sinkStatuses || {})[x.name || ''] || {};
-            const rate = Object.values(ss.metrics || {}).map(m => parseFloat(m.rate)).reduce((a, b) => (a || 0) + (b || 0), 0);
-            const label =
-                (ss.lastError && (new Date().getTime() - new Date(ss.lastMessage.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') +
-                rate + ' TPS';
+            const rate = Object.values(ss.metrics || {})
+                .map(m => parseResourceQuantity(m.rate))
+                .reduce((a, b) => (a || 0) + (b || 0), 0);
+            const label = (ss.lastError && (new Date().getTime() - new Date(ss.lastMessage.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') + rate + ' TPS';
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
