@@ -5880,6 +5880,75 @@ func TestParamAggregation(t *testing.T) {
 	}
 }
 
+func TestCleanUpPod(t *testing.T) {
+	pod := apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name:  common.WaitContainerName,
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+				},
+				{
+					Name:  common.MainContainerName,
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+				},
+			}}}
+	tmpl := wfv1.Template{}
+	assert.True(t, cleanUpPod(&pod, tmpl))
+
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name:  common.WaitContainerName,
+					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+				},
+				{
+					Name:  common.MainContainerName,
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+				},
+			}}}
+	tmpl = wfv1.Template{}
+	assert.False(t, cleanUpPod(&pod, tmpl))
+
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name:  common.WaitContainerName,
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+				},
+				{
+					Name:  common.MainContainerName,
+					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+				},
+			}}}
+	tmpl = wfv1.Template{}
+	assert.False(t, cleanUpPod(&pod, tmpl))
+
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name:  common.MainContainerName,
+					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+				},
+			}}}
+	tmpl = wfv1.Template{}
+	assert.False(t, cleanUpPod(&pod, tmpl))
+
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name:  common.MainContainerName,
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+				},
+			}}}
+	tmpl = wfv1.Template{}
+	assert.True(t, cleanUpPod(&pod, tmpl))
+}
+
 func TestRetryOnDiffHost(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
