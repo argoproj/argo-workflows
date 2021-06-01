@@ -5908,7 +5908,6 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
 			}}}
-	tmpl = wfv1.Template{}
 	assert.False(t, cleanUpPod(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -5923,7 +5922,6 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
 			}}}
-	tmpl = wfv1.Template{}
 	assert.False(t, cleanUpPod(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -5934,7 +5932,6 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
 			}}}
-	tmpl = wfv1.Template{}
 	assert.False(t, cleanUpPod(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -5945,7 +5942,6 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
 			}}}
-	tmpl = wfv1.Template{}
 	assert.True(t, cleanUpPod(&pod, tmpl))
 }
 
