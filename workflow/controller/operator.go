@@ -1098,7 +1098,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		woc.queuePodForCleanup(pod, tmpl)
+		woc.cleanUpPod(pod, tmpl)
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -1208,7 +1208,7 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 	return nil
 }
 
-func cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) bool {
+func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
 	for _, c := range pod.Status.ContainerStatuses {
 		// Only clean up pod when both the wait and the main containers are terminated
 		if c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name) {
@@ -1220,8 +1220,8 @@ func cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) queuePodForCleanup(pod *apiv1.Pod, tmpl wfv1.Template) {
-	if cleanUpPod(pod, tmpl) {
+func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
+	if podHasContainerNeedingTermination(pod, tmpl) {
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, terminateContainers)
 	}
 }

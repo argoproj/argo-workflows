@@ -5880,7 +5880,7 @@ func TestParamAggregation(t *testing.T) {
 	}
 }
 
-func TestCleanUpPod(t *testing.T) {
+func TestPodHasContainerNeedingTermination(t *testing.T) {
 	pod := apiv1.Pod{
 		Status: apiv1.PodStatus{
 			ContainerStatuses: []apiv1.ContainerStatus{
@@ -5894,7 +5894,7 @@ func TestCleanUpPod(t *testing.T) {
 				},
 			}}}
 	tmpl := wfv1.Template{}
-	assert.True(t, cleanUpPod(&pod, tmpl))
+	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
 		Status: apiv1.PodStatus{
@@ -5908,7 +5908,7 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
 			}}}
-	assert.False(t, cleanUpPod(&pod, tmpl))
+	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
 		Status: apiv1.PodStatus{
@@ -5922,7 +5922,7 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
 			}}}
-	assert.False(t, cleanUpPod(&pod, tmpl))
+	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
 		Status: apiv1.PodStatus{
@@ -5932,7 +5932,7 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
 			}}}
-	assert.False(t, cleanUpPod(&pod, tmpl))
+	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
 		Status: apiv1.PodStatus{
@@ -5942,7 +5942,7 @@ func TestCleanUpPod(t *testing.T) {
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
 			}}}
-	assert.True(t, cleanUpPod(&pod, tmpl))
+	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 }
 
 func TestRetryOnDiffHost(t *testing.T) {
