@@ -73,7 +73,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 .reduce((a, b) => (a || 0) + (b || 0), 0);
 
             const label =
-                (ss.lastError && (new Date().getTime() - new Date(ss.lastMessage.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') +
+                (ss.lastError && (new Date().getTime() - new Date(ss.lastError.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') +
                 (ss.pending ? ' ' + pendingSymbol + ss.pending : '') +
                 rate +
                 ' TPS';
@@ -103,7 +103,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             const rate = Object.values(ss.metrics || {})
                 .map(m => parseResourceQuantity(m.rate))
                 .reduce((a, b) => (a || 0) + (b || 0), 0);
-            const label = (ss.lastError && (new Date().getTime() - new Date(ss.lastMessage.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') + rate + ' TPS';
+            const label = (ss.lastError && (new Date().getTime() - new Date(ss.lastError.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') + rate + ' TPS';
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
