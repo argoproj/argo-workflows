@@ -73,8 +73,8 @@ export const StepSidePanel = ({
                                                 .filter(m => m.total)
                                                 .reduce((a, b) => a + b.total, 0);
                                             const rate = Object.values(x.metrics || {})
-                                                .filter(m => m.rate)
-                                                .reduce((a, b) => a + parseResourceQuantity(b.rate), 0);
+                                                .map(m => parseResourceQuantity(m.rate))
+                                                .reduce((a, b) => a + b, 0);
                                             const errors = Object.values(x.metrics || {})
                                                 .filter(m => m.errors)
                                                 .reduce((a, b) => a + b.errors, 0);
@@ -97,7 +97,7 @@ export const StepSidePanel = ({
                                                                 <TickMeter value={total} />
                                                             </div>
                                                             <div className='columns small-2' title='Rate'>
-                                                                <TickMeter value={rate} /> <small>TPS</small>
+                                                                ＊<TickMeter value={rate} /> <small>TPS</small>
                                                             </div>
                                                             <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                             <div className='columns small-1'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>

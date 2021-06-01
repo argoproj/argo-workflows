@@ -18,6 +18,8 @@ const units: {[key: string]: number} = {
 };
 
 export const parseResourceQuantity = (x: string): number => {
-    const y = /([0-9]+)([^0-9]*)/.exec(x);
+    const y = /^([.0-9]+)([^0-9]*)$/.exec(x); // we tolerate a decimal point, just because historically rate was a float, but this probably can be removed some day
+
+    console.log(x, y[0], y[1], parseFloat(y[1]), units[y[2]]);
     return parseFloat(y[1]) * units[y[2]];
 };

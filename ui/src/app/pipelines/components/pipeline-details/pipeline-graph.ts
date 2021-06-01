@@ -3,6 +3,7 @@ import {Step} from '../../../../models/step';
 import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
 import {parseResourceQuantity} from '../../../shared/resource-quantity';
+import {recent} from './recent';
 
 type Type = '' | 'cat' | 'container' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
 
@@ -32,7 +33,8 @@ const stepIcon = (type: Type): Icon => {
 };
 
 const pendingSymbol = '🕑';
-const errorSymbol = '⚠️ ';
+const errorSymbol = '⚠️';
+const tachometerSymbol = '＊';
 
 export const graph = (pipeline: Pipeline, steps: Step[]) => {
     const g = new Graph();
@@ -70,13 +72,10 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
             const rate = Object.values(ss.metrics || {})
                 .map(m => parseResourceQuantity(m.rate))
-                .reduce((a, b) => (a || 0) + (b || 0), 0);
+                .reduce((a, b) => a + b, 0);
 
             const label =
-                (ss.lastError && (new Date().getTime() - new Date(ss.lastError.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') +
-                (ss.pending ? ' ' + pendingSymbol + ss.pending : '') +
-                rate +
-                ' TPS';
+                (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + (ss.pending ? ' ' + pendingSymbol + ss.pending + ' ' : '') + (tachometerSymbol + rate);
             if (x.cron) {
                 const cronId = 'cron/' + stepId + '/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
@@ -100,10 +99,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         });
         (spec.sinks || []).forEach((x, i) => {
             const ss = (status.sinkStatuses || {})[x.name || ''] || {};
-            const rate = Object.values(ss.metrics || {})
-                .map(m => parseResourceQuantity(m.rate))
-                .reduce((a, b) => (a || 0) + (b || 0), 0);
-            const label = (ss.lastError && (new Date().getTime() - new Date(ss.lastError.time).getTime()) / (1000 * 60 * 60 * 24) < 15 ? errorSymbol : '') + rate + ' TPS';
+            const label = recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '';
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
