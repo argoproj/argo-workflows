@@ -1072,12 +1072,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
-		tmpl, err := getPodTemplate(pod)
-		if err != nil {
-			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
-			return nil
-		}
-		if tmpl.Daemon != nil && *tmpl.Daemon {
+		tmpl := woc.findTemplate(pod)
+		if tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon {
 			// pod is running and template is marked daemon. check if everything is ready
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
 				if !ctrStatus.Ready {
@@ -1188,29 +1184,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		return node
 	}
 	return nil
-}
-
-func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
-	tmpl := &wfv1.Template{}
-	for _, c := range pod.Spec.Containers {
-		for _, e := range c.Env {
-			if e.Name == common.EnvVarTemplate {
-				return tmpl, json.Unmarshal([]byte(e.Value), tmpl)
-			}
-		}
-	}
-	return nil, fmt.Errorf("not found")
-}
-
-func getPodDeadline(pod *apiv1.Pod) (time.Time, error) {
-	for _, c := range pod.Spec.Containers {
-		for _, e := range c.Env {
-			if e.Name == common.EnvVarDeadline {
-				return time.Parse(time.RFC3339, e.Value)
-			}
-		}
-	}
-	return time.Time{}, fmt.Errorf("not found")
 }
 
 func getExitCode(pod *apiv1.Pod) *int32 {

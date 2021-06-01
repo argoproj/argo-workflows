@@ -1237,18 +1237,6 @@ func TestAssessNodeStatus(t *testing.T) {
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodRunning,
 			},
-			Spec: apiv1.PodSpec{
-				Containers: []apiv1.Container{
-					{
-						Env: []apiv1.EnvVar{
-							{
-								Name: common.EnvVarTemplate,
-								Value: "{}",
-							},
-						},
-					},
-				},
-			},
 		},
 		node: &wfv1.NodeStatus{},
 		want: wfv1.NodeRunning,
@@ -1273,6 +1261,29 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
+}
+
+func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
+	tmpl := &wfv1.Template{}
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarTemplate {
+				return tmpl, json.Unmarshal([]byte(e.Value), tmpl)
+			}
+		}
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func getPodDeadline(pod *apiv1.Pod) (time.Time, error) {
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarDeadline {
+				return time.Parse(time.RFC3339, e.Value)
+			}
+		}
+	}
+	return time.Time{}, fmt.Errorf("not found")
 }
 
 func TestGetPodTemplate(t *testing.T) {
